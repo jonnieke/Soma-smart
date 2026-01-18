@@ -1,0 +1,8 @@
+{
+  "name": "Soma Smart",
+  "description": "Soma Smart is an AI-powered learning platform that turns textbooks, class notes, and exams into simple explanations, practice quizzes, and voice-guided learning for students with Teachers assist and Parents progress overview.",
+  "requestFramePermissions": [
+    "microphone",
+    "camera"
+  ]
+}
