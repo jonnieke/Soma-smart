@@ -11,7 +11,7 @@ interface AppContextType {
   studentCode: string;
   usageCount: number;
   incrementUsage: () => void;
-  registerStudent: (name: string, grade: string) => void;
+  registerStudent: (name: string, grade: string) => Promise<string | null>;
   login: (code: string) => Promise<boolean>;
   // Teacher Specific
   teacherUsageCount: number;
@@ -20,6 +20,9 @@ interface AppContextType {
   updateTeacherProfile: (profile: TeacherProfile) => void;
   teacherHistory: TeacherActivity[];
   saveTeacherActivity: (activity: TeacherActivity) => void;
+  // Revision
+  revisionUsageCount: number;
+  incrementRevisionUsage: () => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -41,6 +44,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [teacherUsageCount, setTeacherUsageCount] = useState<number>(0);
   const [teacherProfile, setTeacherProfile] = useState<TeacherProfile | null>(null);
   const [teacherHistory, setTeacherHistory] = useState<TeacherActivity[]>([]);
+
+  // Revision State
+  const [revisionUsageCount, setRevisionUsageCount] = useState<number>(0);
+  const incrementRevisionUsage = () => setRevisionUsageCount(prev => prev + 1);
 
   // --- Initial Load from Supabase ---
   useEffect(() => {
@@ -83,7 +90,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   };
 
-  const registerStudent = async (name: string, grade: string) => {
+  const registerStudent = async (name: string, grade: string): Promise<string | null> => {
     try {
       console.log("Attempting registration via signUp (Email/Pass)...");
       // 1. Create Auth User (Anonymous fall back to email/pass)
@@ -96,15 +103,22 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         email,
         password,
       });
+
+      console.log("Supabase Auth Response:", authData);
+
       if (authError) throw authError;
 
       const userId = authData.user?.id;
-      if (!userId) throw new Error("No User ID");
+      const session = authData.session;
 
+      if (!userId) throw new Error("No User ID returned from SignUp");
+      // Session check skipped for now as we might be handling confirmation differently or just want to create the record
+
+      // Generate Student ID
       const newCode = "SOMA-" + Math.floor(1000 + Math.random() * 9000);
 
-      // 2. Save Profile to DB
-      const { error: dbError } = await supabase.from('profiles').insert({
+      // 2. Save Profile (Upsert to handle race conditions/triggers)
+      const { error: dbError } = await supabase.from('profiles').upsert({
         id: userId,
         role: 'LEARNER',
         full_name: name,
@@ -112,7 +126,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         student_id: newCode
       });
 
-      if (dbError) throw dbError;
+      if (dbError) {
+        console.error("Database Error details:", dbError);
+        throw dbError;
+      }
 
       // 3. Update Local State
       setStudentCode(newCode);
@@ -120,9 +137,22 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       setIsRegistered(true);
       setRole(UserRole.LEARNER); // Auto switch to learner
 
-    } catch (error) {
-      console.error("Registration Failed:", error);
-      alert("Could not register. Please try again.");
+      // Save to local history for recovery
+      try {
+        const history = JSON.parse(localStorage.getItem('soma_recent_login') || '[]');
+        const newItem = { code: newCode, name, timestamp: Date.now() };
+        const updated = [newItem, ...history.filter((h: any) => h.code !== newCode)].slice(0, 5);
+        localStorage.setItem('soma_recent_login', JSON.stringify(updated));
+      } catch (e) {
+        console.error("Failed to save local history", e);
+      }
+
+      return newCode;
+
+    } catch (error: any) {
+      console.error("Registration Failed Full Error:", error);
+      alert(`Registration Failed: ${error.message || JSON.stringify(error)}`);
+      return null;
     }
   };
 
@@ -153,10 +183,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       setIsRegistered(true);
       setRole(UserRole.LEARNER);
 
-      // In full Auth, we would sign them in. 
-      // For now, if they are "anonymous", we can try link logic or just rely on state if persistence isn't critical across devices (it is).
-      // Since we are Anonymous, we are technically signed in as a "User", but maybe not THAT user.
-      // For this kid-friendly ID flow, effectively "impersonating" the profile locally is sufficient for the demo flow.
+      // Save to local history for recovery
+      try {
+        const history = JSON.parse(localStorage.getItem('soma_recent_login') || '[]');
+        const newItem = { code: profile.student_id, name: profile.full_name, timestamp: Date.now() };
+        const updated = [newItem, ...history.filter((h: any) => h.code !== profile.student_id)].slice(0, 5);
+        localStorage.setItem('soma_recent_login', JSON.stringify(updated));
+      } catch (e) { console.error(e); }
+
       return true;
     } catch (e) {
       console.error("Login Error:", e);
@@ -164,12 +198,53 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   };
 
-  const saveActivity = (type: 'EXPLANATION' | 'QUIZ', topic: string, details: any) => {
+  // Sync History on Login
+  useEffect(() => {
+    const loadHistory = async () => {
+      if (!studentCode) return;
+
+      try {
+        const { data, error } = await supabase
+          .from('activities')
+          .select('*')
+          .eq('student_id', studentCode)
+          .order('created_at', { ascending: false });
+
+        if (error) {
+          // If table doesn't exist, we just ignore it for now (graceful degradation)
+          console.warn("Could not fetch history (maybe table missing):", error);
+          return;
+        }
+
+        if (data) {
+          const mapped: LearnerActivity[] = data.map((d: any) => ({
+            id: d.id,
+            type: d.type,
+            topic: d.topic,
+            date: new Date(d.created_at).toLocaleString(),
+            score: d.score,
+            details: typeof d.details === 'string' ? d.details : JSON.stringify(d.details)
+          }));
+          setLearnerHistory(mapped);
+        }
+      } catch (e) {
+        console.error("History Load Error:", e);
+      }
+    };
+
+    if (isRegistered && studentCode) {
+      loadHistory();
+    }
+  }, [isRegistered, studentCode]);
+
+  const saveActivity = async (type: 'EXPLANATION' | 'QUIZ', topic: string, details: any) => {
     const now = new Date();
     const dateStr = now.toLocaleDateString([], { month: 'short', day: 'numeric' }) + ' ' + now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
+    // Optimistic UI Update
+    const tempId = Date.now().toString();
     const newActivity: LearnerActivity = {
-      id: Date.now().toString(),
+      id: tempId,
       type,
       topic,
       date: dateStr,
@@ -177,17 +252,42 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       details: JSON.stringify(details)
     };
     setLearnerHistory(prev => [newActivity, ...prev]);
+
+    // Persist to Supabase
+    if (studentCode) {
+      try {
+        const { error } = await supabase.from('activities').insert({
+          student_id: studentCode,
+          type,
+          topic,
+          score: details.score,
+          details: JSON.stringify(details)
+        });
+
+        if (error) console.error("Failed to save activity to DB:", error);
+      } catch (e) {
+        console.error("DB Save Exception:", e);
+      }
+    }
   };
 
-  const deleteActivity = (id: string) => {
+  const deleteActivity = async (id: string) => {
+    // Optimistic Delete
     setLearnerHistory(prev => prev.filter(item => item.id !== id));
+
+    if (studentCode) {
+      try {
+        await supabase.from('activities').delete().eq('id', id);
+      } catch (e) { console.error(e); }
+    }
   };
 
   return (
     <AppContext.Provider value={{
       role, setRole, learnerHistory, saveActivity, deleteActivity, studentCode,
       usageCount, incrementUsage, isRegistered, studentProfile, registerStudent, login,
-      teacherUsageCount, incrementTeacherUsage, teacherProfile, updateTeacherProfile, teacherHistory, saveTeacherActivity
+      teacherUsageCount, incrementTeacherUsage, teacherProfile, updateTeacherProfile, teacherHistory, saveTeacherActivity,
+      revisionUsageCount, incrementRevisionUsage
     }}>
       {children}
     </AppContext.Provider>

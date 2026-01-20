@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
     GraduationCap, Users, Baby, ChevronRight, MessageSquare,
-    ScanLine, CheckCircle, Menu, X, CheckSquare, Play
+    ScanLine, CheckCircle, Menu, X, CheckSquare, Play, BookOpen
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { UserRole } from '../types';
@@ -79,6 +79,9 @@ export const LandingPage: React.FC = () => {
                             </button>
                             <button onClick={() => handleRoleSelect(UserRole.TEACHER)} className="flex items-center gap-2 text-gray-600 hover:text-blue-600 font-medium transition-colors">
                                 <GraduationCap className="w-5 h-5 text-gray-500" /> Teachers
+                            </button>
+                            <button onClick={() => navigate('/revision')} className="flex items-center gap-2 text-gray-600 hover:text-orange-600 font-medium transition-colors">
+                                <BookOpen className="w-5 h-5 text-orange-500" /> Revision
                             </button>
                             <button onClick={() => handleRoleSelect(UserRole.PARENT)} className="flex items-center gap-2 text-gray-600 hover:text-blue-600 font-medium transition-colors">
                                 <Users className="w-5 h-5 text-gray-500" /> Parents

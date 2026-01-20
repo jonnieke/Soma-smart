@@ -132,10 +132,27 @@ export const explainAudio = async (base64Audio: string, mimeType: string, level:
   }
 };
 
+import { getContext } from './contextService';
+
 export const explainTopic = async (topic: string, level: 'Simple' | 'Exam'): Promise<ExplanationResult> => {
   const model = MODEL_NAME;
+  const context = getContext();
+
+  let contextInstruction = "";
+  if (context) {
+    contextInstruction = `
+    IMPORTANT: You have been provided with specific source material called "${context.name}".
+    You MUST answer the question using ONLY this source material. Do not use outside knowledge unless necessary to clarify terms.
+    
+    Source Material:
+    "${context.content.substring(0, 30000)}" 
+    `;
+    // Note: 30k chars is a safe limit for Flash model context window, though it handles much more.
+  }
 
   const prompt = `
+    ${contextInstruction}
+
     Explain the topic "${topic}" in ${level === 'Simple' ? 'very simple language for a young student' : 'exam-ready academic language'}.
     1. Provide a clear explanation.
     2. Provide 3-5 short bullet points summarizing key takeaways.

@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { LayoutDashboard, Users, CreditCard, Settings, LogOut, Menu, X, Bell } from 'lucide-react';
+import { LayoutDashboard, Users, CreditCard, Settings, LogOut, Menu, X, Bell, BookOpen } from 'lucide-react';
 import { ViewState } from '../../../types';
 
 interface AdminLayoutProps {
@@ -17,6 +17,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children, activeTab, o
         { id: 'OVERVIEW', label: 'Overview', icon: <LayoutDashboard className="w-5 h-5" /> },
         { id: 'USERS', label: 'User Management', icon: <Users className="w-5 h-5" /> },
         { id: 'FINANCE', label: 'Financials', icon: <CreditCard className="w-5 h-5" /> },
+        { id: 'CURRICULUM', label: 'Curriculum & AI', icon: <BookOpen className="w-5 h-5" /> },
         { id: 'SETTINGS', label: 'System & Logs', icon: <Settings className="w-5 h-5" /> },
     ];
 
@@ -45,8 +46,8 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children, activeTab, o
                             key={item.id}
                             onClick={() => onTabChange(item.id)}
                             className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-all ${activeTab === item.id
-                                    ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-900/50'
-                                    : 'hover:bg-slate-800 hover:text-white'
+                                ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-900/50'
+                                : 'hover:bg-slate-800 hover:text-white'
                                 }`}
                         >
                             <span className="flex-shrink-0">{item.icon}</span>

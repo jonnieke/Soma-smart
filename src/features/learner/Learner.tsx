@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Sparkles, Home, X, XCircle, Camera, ScanLine, Mic, Upload, Clock,
-  CheckCircle, ImageIcon, Trash2, AlertTriangle, BookOpen, Volume2,
-  ArrowRight, UserCircle, Download, Brain
+  CheckCircle, Play, Pause, ChevronRight, Star, BookOpen, Brain, Lightbulb, Lock, Volume2,
+  ArrowRight, UserCircle, Download, ImageIcon, Trash2, AlertTriangle
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { RevisionLanding } from '../revision/RevisionLanding';
@@ -35,7 +35,8 @@ interface LearnerProps {
 export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, saveActivity, deleteActivity, history, studentCode, profile }) => {
   const navigate = useNavigate();
   // We use useApp here to get usageCount and isRegistered centrally
-  const { usageCount, incrementUsage, isRegistered } = useApp();
+  const { usageCount, incrementUsage, isRegistered, revisionUsageCount, incrementRevisionUsage } = useApp();
+  const location = useLocation(); // Need import
 
   // Protect Route - Redirect to Home if not registered
   useEffect(() => {
@@ -45,6 +46,14 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, saveActiv
   }, [isRegistered, navigate]);
 
   const [mode, setMode] = useState<'MENU' | 'SCAN' | 'RESULT' | 'QUIZ' | 'REVISION'>('MENU');
+  const [showRevisionPaywall, setShowRevisionPaywall] = useState(false);
+
+  useEffect(() => {
+    // Check if we navigated here with a specific mode
+    if (location.state && (location.state as any).mode === 'REVISION') {
+      setMode('REVISION');
+    }
+  }, [location]);
   const [level, setLevel] = useState<'Simple' | 'Exam'>('Simple');
 
   // ... (rest of state) ...
@@ -64,7 +73,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, saveActiv
   const [stickyQuizTaken, setStickyQuizTaken] = useState(false);
   const [stickyQuizData, setStickyQuizData] = useState<QuizData | null>(null);
   const [quizData, setQuizData] = useState<QuizData | null>(null);
-  const [qualityWarning, setQualityWarning] = useState<string | null>(null);
+  const [qualityWarning, setQualityWarning] = useState<{ show: boolean, issues: string[], file: File | null } | null>(null);
   // Separate warning object to match usage if needed, or just simplify
   const [qualityCallback, setQualityCallback] = useState<(() => void) | null>(null); // For custom modal action maybe? Unused but keeping clean.
 
@@ -211,7 +220,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, saveActiv
     try {
       const issues = await checkImageQuality(file);
       if (issues.warning) {
-        setQualityWarning(issues.warning);
+        setQualityWarning({ show: true, issues: [issues.warning], file }); // Wrap string in array/object
         setLoading(false);
         return;
       }
@@ -520,12 +529,20 @@ ${explanation.explanation}
       const textToRead = `${explanation.topic}. ${explanation.summaryPoints.join('. ')}. Here is the explanation: ${explanation.explanation}`;
 
       setIsPlaying(true);
-      await generateSpeech(textToRead);
-      setIsPlaying(false);
-    } catch (e) {
-      console.error(e);
-      alert("Could not generate speech");
-      setIsPlaying(false);
+      const audioUrl = await generateSpeech(textToRead);
+      const audio = new Audio(audioUrl);
+      audioRef.current = audio;
+      audio.onended = () => setIsPlaying(false);
+      audio.play();
+    } catch (e: any) {
+      console.error("ElevenLabs Error:", e);
+      // Show audible or visual warning that we are falling back
+      alert(`Premium Voice Error: ${e.message || "Unknown"}. Using standard voice.`);
+
+      const textToRead = explanation.summaryPoints.join(". ") + ". " + explanation.explanation;
+      const u = new SpeechSynthesisUtterance(textToRead);
+      u.onend = () => setIsPlaying(false);
+      window.speechSynthesis.speak(u);
     } finally {
       setLoading(false);
     }
@@ -752,6 +769,25 @@ ${explanation.explanation}
                 </div>
               </motion.button>
 
+              {/* Exam Revision Action */}
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => setMode('REVISION')}
+                className="col-span-2 bg-gradient-to-br from-amber-500 to-orange-600 text-white p-5 rounded-2xl shadow-lg shadow-orange-200 flex items-center justify-between group overflow-hidden relative"
+              >
+                <div className="relative z-10 text-left">
+                  <div className="bg-white/20 w-10 h-10 rounded-full flex items-center justify-center mb-3">
+                    <Brain className="w-5 h-5 text-white" />
+                  </div>
+                  <h3 className="text-xl font-bold">Exam Revision</h3>
+                  <p className="text-orange-100 text-xs">Upload past papers & get AI coaching</p>
+                </div>
+                <div className="absolute right-[-20px] bottom-[-20px] opacity-20 transform rotate-12 group-hover:rotate-0 transition-transform duration-500">
+                  <BookOpen className="w-32 h-32" />
+                </div>
+              </motion.button>
+
               {/* Voice Action */}
               <motion.button
                 whileHover={{ scale: 1.02 }}
@@ -848,7 +884,7 @@ ${explanation.explanation}
         <LoginModal isOpen={showLogin} onClose={() => setShowLogin(false)} />
 
         {/* Quality Warning Modal Re-implementation at root level of component if needed, or keeping existing logic but ensuring z-index is high */}
-        {qualityWarning.show && (
+        {qualityWarning && qualityWarning.show && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-6">
             <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl">
               <div className="flex flex-col items-center text-center">
@@ -868,14 +904,14 @@ ${explanation.explanation}
 
                 <div className="grid grid-cols-2 gap-3 w-full">
                   <Button variant="outline" fullWidth onClick={() => {
-                    setQualityWarning({ show: false, issues: [], file: null });
+                    setQualityWarning(null);
                     startCamera();
                   }}>
                     Try Again
                   </Button>
                   <Button fullWidth onClick={() => {
                     const f = qualityWarning.file;
-                    setQualityWarning({ show: false, issues: [], file: null });
+                    setQualityWarning(null);
                     if (f) processFile(f);
                   }}>
                     Use Anyway
@@ -1080,6 +1116,59 @@ ${explanation.explanation}
       saveActivity('QUIZ', quizData.topic, { score });
       setMode('MENU');
     }} onExit={() => setMode('RESULT')} />;
+  }
+
+  // --- REVISION RENDER ---
+  if (mode === 'REVISION') {
+    if (showRevisionPaywall) {
+      return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+          <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-white rounded-3xl p-8 max-w-md w-full text-center relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-orange-500 to-amber-500" />
+            <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Lock className="w-8 h-8 text-orange-600" />
+            </div>
+            <h2 className="text-2xl font-bold text-slate-800 mb-2">Revision Limit Reached</h2>
+            <p className="text-slate-500 mb-6">You have used your 5 free revision scans. Upgrade to continue excelling in your exams!</p>
+
+            <div className="space-y-3">
+              <Button fullWidth className="py-4 text-lg bg-slate-900 border-none">
+                Upgrade for KES 20/Day
+              </Button>
+              <button onClick={() => navigate('/')} className="text-slate-500 text-sm font-bold hover:text-slate-800">
+                Back to Home
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      );
+    }
+
+    if (revisionFile) {
+      return (
+        <RevisionSession
+          file={revisionFile}
+          mode={revisionMode}
+          onBack={() => setRevisionFile(null)}
+        />
+      );
+    }
+    return (
+      <RevisionLanding
+        onStartSession={(file, mode) => {
+          if (revisionUsageCount >= 5) {
+            setShowRevisionPaywall(true);
+            return;
+          }
+          incrementRevisionUsage();
+          setRevisionFile(file);
+          setRevisionMode(mode);
+        }}
+        onNavigate={(view) => {
+          if (view === ViewState.DASHBOARD) setMode('MENU');
+        }}
+      />
+    );
   }
 
   return null;

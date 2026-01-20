@@ -8,17 +8,17 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   icon?: ReactNode;
 }
 
-export const Button: React.FC<ButtonProps> = ({ 
-  children, 
-  variant = 'primary', 
-  fullWidth = false, 
+export const Button: React.FC<ButtonProps> = ({
+  children,
+  variant = 'primary',
+  fullWidth = false,
   isLoading = false,
   className = '',
   icon,
-  ...props 
+  ...props
 }) => {
   const baseStyle = "inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all duration-200 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed text-base md:text-lg";
-  
+
   const variants = {
     primary: "bg-primary text-white shadow-lg shadow-indigo-200 hover:bg-indigo-700",
     secondary: "bg-secondary text-white shadow-lg shadow-emerald-200 hover:bg-emerald-600",
@@ -29,8 +29,8 @@ export const Button: React.FC<ButtonProps> = ({
   const widthClass = fullWidth ? "w-full" : "";
 
   return (
-    <button 
-      className={`${baseStyle} ${variants[variant]} ${widthClass} ${className}`} 
+    <button
+      className={`${baseStyle} ${variants[variant]} ${widthClass} ${className}`}
       disabled={isLoading || props.disabled}
       {...props}
     >
@@ -58,18 +58,16 @@ export const Card: React.FC<CardProps> = ({ children, className = '', title, ...
   </div>
 );
 
-export const MarkdownText: React.FC<{ content: string }> = ({ content }) => {
-  // Simple markdown-to-html replacement for list items and bold text
-  // In a real app, use a library like react-markdown
-  const processText = (text: string) => {
-    return text
-      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-      .replace(/## (.*?)\n/g, '<h3 class="text-xl font-bold mt-4 mb-2 text-primary">$1</h3>')
-      .replace(/- (.*?)\n/g, '<li class="ml-4 list-disc text-gray-700 mb-1">$1</li>')
-      .replace(/\n/g, '<br/>');
-  };
+import ReactMarkdown from 'react-markdown';
 
-  return <div className="prose prose-indigo max-w-none" dangerouslySetInnerHTML={{ __html: processText(content) }} />;
+// ...
+
+export const MarkdownText: React.FC<{ content: string }> = ({ content }) => {
+  return (
+    <div className="prose prose-indigo max-w-none prose-p:text-slate-600 prose-headings:text-indigo-900 prose-strong:text-indigo-800 text-sm md:text-base">
+      <ReactMarkdown>{content}</ReactMarkdown>
+    </div>
+  );
 };
 
 export const Header: React.FC<{ title: string; onBack?: () => void; onHome?: () => void }> = ({ title, onBack, onHome }) => (
