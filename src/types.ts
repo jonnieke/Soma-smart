@@ -13,7 +13,8 @@ export enum ViewState {
   UPLOAD_CONVERT = 'UPLOAD_CONVERT',
   VOICE_NOTES = 'VOICE_NOTES',
   QUIZ_GENERATOR = 'QUIZ_GENERATOR',
-  PARENT_OVERVIEW = 'PARENT_OVERVIEW'
+  PARENT_OVERVIEW = 'PARENT_OVERVIEW',
+  REVISION = 'REVISION'
 }
 
 export interface ExplanationResult {
@@ -64,4 +65,58 @@ export interface GeoLocation {
 export interface LearnerProfile {
   name: string;
   code: string;
+}
+
+export interface TeacherProfile {
+  name: string;
+  classes: string[]; // e.g. ["Grade 4", "Grade 5"]
+  subjects: string[]; // e.g. ["Math", "Science"]
+}
+
+export interface TeacherActivity {
+  id: string;
+  type: 'NOTE' | 'QUIZ';
+  title: string;
+  className: string;
+  subject: string;
+  date: string;
+  content: any; // The full Note or Quiz object
+}
+
+// --- REVISION ASSISTANT TYPES ---
+
+export enum RevisionMode {
+  LEARN = 'LEARN',
+  EXAM = 'EXAM',
+  WEAK_AREAS = 'WEAK_AREAS'
+}
+
+export enum TutoringStep {
+  A_UNDERSTAND = 'A_UNDERSTAND',
+  B_THINKING = 'B_THINKING',
+  C_SOLUTION = 'C_SOLUTION',
+  D_REFLECTION = 'D_REFLECTION'
+}
+
+export interface ExamQuestion {
+  id: number;
+  number: string; // "1a", "2", etc.
+  text: string;    // Extracted text
+  topic: string;
+  subStrand?: string;
+  competency?: string;
+  marks?: number;
+}
+
+export interface ExamAnalysis {
+  subject: string;
+  grade: string;
+  questions: ExamQuestion[];
+}
+
+export interface TutorResponse {
+  text: string; // The main teaching text
+  step: TutoringStep;
+  nextStep: TutoringStep | 'COMPLETE';
+  hint?: string; // Optional hint
 }

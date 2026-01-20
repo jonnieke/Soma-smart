@@ -16,17 +16,39 @@ import stepScanImg from '../assets/images/step_scan.png';
 import stepExplainImg from '../assets/images/step_explain.png';
 import stepQuizImg from '../assets/images/step_quiz.png';
 import stepAudioImg from '../assets/images/step_audio.png';
+import { RegistrationModal } from '../components/RegistrationModal';
+import { LegalModal } from '../components/LegalModal';
+import { ContactModal } from '../components/ContactModal';
 
 export const LandingPage: React.FC = () => {
     const navigate = useNavigate();
     const { setRole } = useApp();
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+    const [showRegistration, setShowRegistration] = useState(false);
+    const [showPrivacy, setShowPrivacy] = useState(false);
+    const [showTerms, setShowTerms] = useState(false);
+    const [showContact, setShowContact] = useState(false);
 
     const handleRoleSelect = (selectedRole: UserRole) => {
         setRole(selectedRole);
         if (selectedRole === UserRole.LEARNER) navigate('/learner');
         else if (selectedRole === UserRole.TEACHER) navigate('/teacher');
         else if (selectedRole === UserRole.PARENT) navigate('/parent');
+    };
+
+    const handleGetStarted = () => {
+        setRole(UserRole.LEARNER); // Default to learner
+        setShowRegistration(true);
+    };
+
+    const handleRegistrationSuccess = () => {
+        setShowRegistration(false);
+        navigate('/learner');
+    };
+
+    const handleModalClose = () => {
+        setShowRegistration(false);
+        // Do NOT navigate. Just close.
     };
 
     return (
@@ -91,7 +113,7 @@ export const LandingPage: React.FC = () => {
 
                         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12">
                             <button
-                                onClick={() => document.getElementById('roles-section')?.scrollIntoView({ behavior: 'smooth' })}
+                                onClick={handleGetStarted}
                                 className="px-8 py-3.5 bg-blue-600 text-white rounded-md font-bold text-lg shadow-lg shadow-blue-200 hover:bg-blue-700 transition-all hover:-translate-y-1 w-full sm:w-auto"
                             >
                                 Get Started Free &gt;
@@ -116,6 +138,29 @@ export const LandingPage: React.FC = () => {
                             </div>
                         </div>
                     </motion.div>
+                </div>
+            </section>
+
+            {/* --- PROMOTIONAL CTA --- */}
+            <section className="bg-indigo-900 text-white py-4 px-4 overflow-hidden relative">
+                <div className="absolute top-0 left-0 w-full h-full bg-[linear-gradient(45deg,transparent_25%,rgba(255,255,255,0.05)_50%,transparent_75%,transparent_100%)] bg-[length:250%_250%] animate-[shimmer_3s_infinite_linear]"></div>
+                <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 relative z-10">
+                    <div className="flex items-center gap-4">
+                        <div className="bg-yellow-400 text-indigo-900 font-black px-4 py-2 rounded-lg -rotate-3 hover:rotate-0 transition-transform shadow-lg cursor-default">
+                            LIMITED OFFER
+                        </div>
+                        <div>
+                            <p className="font-bold text-lg md:text-xl">
+                                Try Teacher Pro: <span className="text-yellow-300">30 Days Free</span> for just <span className="text-yellow-300">1 Bob!</span>
+                            </p>
+                        </div>
+                    </div>
+                    <button
+                        onClick={() => handleRoleSelect(UserRole.TEACHER)}
+                        className="bg-white text-indigo-900 font-bold px-6 py-2 rounded-full hover:bg-yellow-400 hover:text-indigo-900 transition-all shadow-lg flex items-center gap-2"
+                    >
+                        Claim Offer <ChevronRight className="w-4 h-4" />
+                    </button>
                 </div>
             </section>
 
@@ -233,7 +278,7 @@ export const LandingPage: React.FC = () => {
                                     <div className="w-10 h-10 bg-blue-900 text-white rounded-full flex items-center justify-center font-bold text-lg absolute -top-2 -left-2 z-20 shadow-lg border-2 border-white">
                                         {i + 1}
                                     </div>
-                                    <div className="w-40 h-40 rounded-full bg-white flex items-center justify-center shadow-lg p-6 group-hover:scale-105 transition-transform duration-300">
+                                    <div className="w-40 h-40 rounded-full bg-white flex items-center justify-center shadow-lg p-4 group-hover:scale-105 transition-transform duration-300">
                                         <img src={step.img} alt={step.title} className="w-full h-full object-contain" />
                                     </div>
                                 </div>
@@ -278,13 +323,115 @@ export const LandingPage: React.FC = () => {
                 <div className="max-w-7xl mx-auto px-4 flex flex-col md:flex-row justify-center items-center gap-8 text-sm text-slate-500">
                     <p>&copy; {new Date().getFullYear()} Soma Smart</p>
                     <div className="w-px h-4 bg-slate-300 hidden md:block"></div>
-                    <a href="#" className="hover:text-blue-600 transition-colors">Privacy</a>
+                    <button onClick={() => setShowPrivacy(true)} className="hover:text-blue-600 transition-colors">Privacy</button>
                     <div className="w-px h-4 bg-slate-300 hidden md:block"></div>
-                    <a href="#" className="hover:text-blue-600 transition-colors">Terms</a>
+                    <button onClick={() => setShowTerms(true)} className="hover:text-blue-600 transition-colors">Terms</button>
                     <div className="w-px h-4 bg-slate-300 hidden md:block"></div>
-                    <a href="#" className="hover:text-blue-600 transition-colors">Contact</a>
+                    <button onClick={() => setShowContact(true)} className="hover:text-blue-600 transition-colors">Contact</button>
+                    <div className="w-px h-4 bg-slate-300 hidden md:block"></div>
+                    <button onClick={() => navigate('/admin')} className="text-slate-400 hover:text-slate-600 transition-colors text-xs flex items-center gap-1">
+                        <span className="w-2 h-2 rounded-full bg-emerald-500"></span> Admin
+                    </button>
                 </div>
             </footer>
+            {/* --- MODALS --- */}
+            <RegistrationModal
+                isOpen={showRegistration}
+                onClose={handleModalClose}
+                onSuccess={handleRegistrationSuccess}
+            />
+
+            <ContactModal
+                isOpen={showContact}
+                onClose={() => setShowContact(false)}
+            />
+
+            <LegalModal
+                isOpen={showPrivacy}
+                onClose={() => setShowPrivacy(false)}
+                title="Privacy Policy"
+                content={
+                    <div className="space-y-6 text-sm text-slate-600">
+                        <div className="p-4 bg-blue-50 rounded-lg border border-blue-100 text-blue-800">
+                            <strong>Note:</strong> This is a simplified educational platform. We treat all user data with the highest standard of care.
+                        </div>
+
+                        <section>
+                            <h3 className="text-lg font-bold text-slate-900 mb-2">1. Information We Collect</h3>
+                            <ul className="list-disc pl-5 space-y-1">
+                                <li><strong>User Account Data:</strong> Name, Grade, and Student ID (generated locally).</li>
+                                <li><strong>Usage Data:</strong> Topics scanned, questions asked, and quizzes taken.</li>
+                                <li><strong>Device Information:</strong> Basic browser type to ensure app compatibility.</li>
+                            </ul>
+                        </section>
+
+                        <section>
+                            <h3 className="text-lg font-bold text-slate-900 mb-2">2. How We Use Your Data</h3>
+                            <p>All data is used strictly to provide the educational service:</p>
+                            <ul className="list-disc pl-5 space-y-1 mt-2">
+                                <li>To generate AI explanations relevant to your grade level.</li>
+                                <li>To track learning progress for Parents and Teachers.</li>
+                                <li>To improve the accuracy of our educational content.</li>
+                            </ul>
+                        </section>
+
+                        <section>
+                            <h3 className="text-lg font-bold text-slate-900 mb-2">3. Data Safety & AI</h3>
+                            <p>We use Google's Gemini AI to process text and images. </p>
+                            <ul className="list-disc pl-5 space-y-1 mt-2">
+                                <li>We do <strong>not</strong> use your personal data to train public AI models.</li>
+                                <li>Your data is processed ephemerally for the purpose of the immediate query.</li>
+                            </ul>
+                        </section>
+
+                        <section>
+                            <h3 className="text-lg font-bold text-slate-900 mb-2">4. Children's Privacy</h3>
+                            <p>Soma Smart is designed for students. We do not require email addresses or phone numbers from students under 13. Parent supervision is encouraged.</p>
+                        </section>
+                    </div>
+                }
+            />
+
+            <LegalModal
+                isOpen={showTerms}
+                onClose={() => setShowTerms(false)}
+                title="Terms of Service"
+                content={
+                    <div className="space-y-6 text-sm text-slate-600">
+                        <div className="p-4 bg-orange-50 rounded-lg border border-orange-100 text-orange-800">
+                            <strong>Important:</strong> Soma Smart is an educational aid, not a substitute for professional schooling.
+                        </div>
+
+                        <section>
+                            <h3 className="text-lg font-bold text-slate-900 mb-2">1. Acceptance of Terms</h3>
+                            <p>By accessing Soma Smart, you agree to be bound by these Terms of Service. If you do not agree, please do not use the platform.</p>
+                        </section>
+
+                        <section>
+                            <h3 className="text-lg font-bold text-slate-900 mb-2">2. Educational Disclaimer</h3>
+                            <p>The content provided by Soma Smart is generated by Artificial Intelligence. While we strive for accuracy:</p>
+                            <ul className="list-disc pl-5 space-y-1 mt-2">
+                                <li>Information should be verified with official textbooks.</li>
+                                <li>We are not liable for any inaccuracies in exam preparation materials.</li>
+                            </ul>
+                        </section>
+
+                        <section>
+                            <h3 className="text-lg font-bold text-slate-900 mb-2">3. User Conduct</h3>
+                            <p>You agree to use this platform responsibly:</p>
+                            <ul className="list-disc pl-5 space-y-1 mt-2">
+                                <li>Do not upload inappropriate, harmful, or copyright-infringing content.</li>
+                                <li>Do not attempt to reverse-engineer or "jailbreak" the AI assistant.</li>
+                            </ul>
+                        </section>
+
+                        <section>
+                            <h3 className="text-lg font-bold text-slate-900 mb-2">4. Subscription & Access</h3>
+                            <p>Soma Smart offers a limited free tier. Continued access to advanced features (Voice Notes, Unlimited Scanning) may require a premium subscription in the future.</p>
+                        </section>
+                    </div>
+                }
+            />
         </div>
     );
 };
