@@ -117,6 +117,16 @@ export interface ExamAnalysis {
 export interface TutorResponse {
   text: string; // The main teaching text
   step: TutoringStep;
+
   nextStep: TutoringStep | 'COMPLETE';
   hint?: string; // Optional hint
+}
+
+export interface LessonRecap {
+  topic: string;
+  summary: string; // Brief overview
+  keyPoints: string[]; // Bullet points
+  examTips: string[]; // "This often comes in exams as..."
+  definitions: { term: string; definition: string }[];
+  teacherNotes?: string; // Teacher specific field
 }

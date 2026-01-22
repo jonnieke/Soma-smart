@@ -13,6 +13,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
     const { registerStudent, login, studentCode } = useApp();
     const [name, setName] = useState("");
     const [grade, setGrade] = useState("");
+    const [pin, setPin] = useState("");
     const [loginId, setLoginId] = useState("");
     const [mode, setMode] = useState<'REGISTER' | 'LOGIN'>('REGISTER');
     const [step, setStep] = useState<'FORM' | 'SUCCESS'>('FORM');
@@ -22,9 +23,13 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
         e.preventDefault();
         setLoading(true);
         if (mode === 'REGISTER') {
-            if (name && grade) {
-                await registerStudent(name, grade);
+            if (name && grade && pin.length >= 4) {
+                await registerStudent(name, grade, pin);
                 setStep('SUCCESS');
+            } else if (!pin || pin.length < 4) {
+                alert("Please create a 4-digit Secret PIN to protect your account.");
+                setLoading(false);
+                return;
             }
         } else {
             if (loginId) {
@@ -99,6 +104,22 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
                                                 className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none"
                                                 placeholder="e.g. Grade 5"
                                             />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">Secret PIN (For Recovery) 🔐</label>
+                                            <input
+                                                type="text"
+                                                inputMode="numeric"
+                                                maxLength={4}
+                                                required
+                                                value={pin}
+                                                onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))}
+                                                className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none tracking-widest text-lg font-mono"
+                                                placeholder="e.g. 1234"
+                                            />
+                                            <p className="text-xs text-orange-600 mt-1 font-medium bg-orange-50 p-2 rounded">
+                                                Write this down! You will need it if you forget your Student ID.
+                                            </p>
                                         </div>
                                     </>
                                 ) : (

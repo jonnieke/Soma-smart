@@ -427,6 +427,93 @@ export const generateTeacherQuiz = async (topic: string): Promise<QuizData> => {
   return generateQuiz("", topic);
 }
 
+export const generateAdvancedTeacherQuiz = async (
+  images: string[],
+  topic: string,
+  grade: string,
+  count: number,
+  type: 'MCQ' | 'OPEN'
+): Promise<QuizData> => {
+  const model = MODEL_NAME;
+
+  const imageParts = images.map(img => ({
+    inlineData: { mimeType: "image/jpeg", data: img }
+  }));
+
+  const prompt = `
+    You are an expert Kenyan Competency-Based Curriculum (CBC) Developer.
+    
+    Task: Create a professional ${grade} Exam Quiz about "${topic}".
+    
+    Source Material: Use the attached images as context.
+    
+    Requirements:
+    1. Generate EXACTLY ${count} questions.
+    2. Format: ${type === 'MCQ' ? 'Multiple Choice Questions (4 options)' : 'Short Answer / Structured Questions (No options)'}.
+    3. Standard: Align with Kenyan CBC standards (Scenario-based, Critical Thinking, Application).
+    4. Language: Academic and age-appropriate for ${grade}.
+    
+    Output JSON structure:
+    {
+      "topic": "${topic}",
+      "questions": [
+        {
+          "id": 1,
+          "type": "${type === 'MCQ' ? 'MCQ' : 'SHORT'}",
+          "question": "Question text here...",
+          "options": ["A", "B", "C", "D"] (Only if MCQ),
+          "correctAnswer": "Correct Answer",
+          "explanation": "Brief explanation for the teacher marking scheme"
+        }
+      ]
+    }
+  `;
+
+  try {
+    const response = await ai.models.generateContent({
+      model,
+      contents: {
+        parts: [
+          ...imageParts,
+          { text: prompt }
+        ]
+      },
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            topic: { type: Type.STRING },
+            questions: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  id: { type: Type.INTEGER },
+                  type: { type: Type.STRING, enum: ["MCQ", "SHORT"] },
+                  question: { type: Type.STRING },
+                  options: { type: Type.ARRAY, items: { type: Type.STRING } },
+                  correctAnswer: { type: Type.STRING },
+                  explanation: { type: Type.STRING }
+                },
+                required: ["id", "type", "question", "correctAnswer", "explanation"]
+              }
+            }
+          },
+          required: ["topic", "questions"]
+        }
+      }
+    });
+
+    const text = response.text;
+    if (!text) throw new Error("No response from AI");
+    return JSON.parse(text) as QuizData;
+  } catch (error) {
+    console.error("Error generating advanced quiz:", error);
+    throw error;
+  }
+};
+
 // --- ASK SOMA CHATBOT ---
 
 export const askSoma = async (userQuery: string, chatHistory: { role: 'user' | 'model', text: string }[]): Promise<string> => {
@@ -613,6 +700,78 @@ export const getRevisionTutorResponse = async (
     return JSON.parse(text) as TutorResponse;
   } catch (error) {
     console.error("Error in revision tutor:", error);
+    throw error;
+  }
+};
+// --- TSC LIVE & RECAP FEATURES ---
+
+import { LessonRecap } from "../types";
+
+export const generateLessonRecap = async (inputBase64: string, mimeType: string, audience: 'LEARNER' | 'TEACHER'): Promise<LessonRecap> => {
+  const model = MODEL_NAME;
+
+  const learnerPrompt = `
+    You are an expert tutor helping a student understand a live lesson they just attended.
+    1. Analyze the recording/notes.
+    2. Extract the Main Topic.
+    3. Write a fun, simple Summary (2-3 sentences).
+    4. List 5 Key Points (Bullet points).
+    5. Highlight 3 "Exam Tips" - things they must remember for tests.
+    6. define 3 key terms used.
+    
+    Output JSON.
+  `;
+
+  const teacherPrompt = `
+    You are a curriculum expert summarizing a lesson for a fellow teacher.
+    1. Analyze the recording/notes.
+    2. Extract Topic and Competencies covered.
+    3. Provide a professional Summary.
+    4. List Key Teaching Points.
+    5. Suggest 3 Follow-up assessment ideas.
+    
+    Output JSON compatible with the schema, mapping 'teacherNotes' to specific pedagogy comments.
+  `;
+
+  const prompt = audience === 'LEARNER' ? learnerPrompt : teacherPrompt;
+
+  try {
+    const response = await ai.models.generateContent({
+      model,
+      contents: {
+        parts: [
+          { inlineData: { mimeType, data: inputBase64 } },
+          { text: prompt }
+        ]
+      },
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            topic: { type: Type.STRING },
+            summary: { type: Type.STRING },
+            keyPoints: { type: Type.ARRAY, items: { type: Type.STRING } },
+            examTips: { type: Type.ARRAY, items: { type: Type.STRING } },
+            definitions: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.OBJECT,
+                properties: { term: { type: Type.STRING }, definition: { type: Type.STRING } }
+              }
+            },
+            teacherNotes: { type: Type.STRING, description: "Only if audience is TEACHER" }
+          },
+          required: ["topic", "summary", "keyPoints", "examTips", "definitions"]
+        }
+      }
+    });
+
+    const text = response.text;
+    if (!text) throw new Error("No response from AI");
+    return JSON.parse(text) as LessonRecap;
+  } catch (error) {
+    console.error("Error generating lesson recap:", error);
     throw error;
   }
 };

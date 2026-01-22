@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Sparkles, School, Book, Plus, X, GraduationCap } from 'lucide-react';
 import { Button } from './Shared';
+import { useApp } from '../context/AppContext';
 import { TeacherProfile } from '../types';
 
 interface TeacherOnboardingProps {
@@ -10,11 +11,19 @@ interface TeacherOnboardingProps {
 }
 
 export const TeacherOnboarding: React.FC<TeacherOnboardingProps> = ({ onComplete, onClose }) => {
+    const { registerTeacher } = useApp();
     const [step, setStep] = useState(1);
+
+    // Auth State
     const [name, setName] = useState("");
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
+
+    // Profile State
     const [classes, setClasses] = useState<string[]>([]);
     const [subjects, setSubjects] = useState<string[]>([]);
     const [currentInput, setCurrentInput] = useState("");
+    const [loading, setLoading] = useState(false);
 
     const handleAddClass = () => {
         if (currentInput.trim()) {
@@ -36,9 +45,16 @@ export const TeacherOnboarding: React.FC<TeacherOnboardingProps> = ({ onComplete
         setList(newList);
     };
 
-    const handleFinish = () => {
-        if (name && classes.length > 0 && subjects.length > 0) {
-            onComplete({ name, classes, subjects });
+    const handleFinish = async () => {
+        if (name && email && password && classes.length > 0 && subjects.length > 0) {
+            setLoading(true);
+            const success = await registerTeacher(name, email, password, classes, subjects);
+            if (success) {
+                // Determine if we need to call onComplete or if context update is enough
+                // Applying manual update just in case, but auth state change in context should handle navigation
+                onComplete({ name, classes, subjects });
+            }
+            setLoading(false);
         }
     };
 
@@ -72,16 +88,39 @@ export const TeacherOnboarding: React.FC<TeacherOnboardingProps> = ({ onComplete
 
                     {step === 1 && (
                         <div className="space-y-4">
-                            <label className="block font-bold text-slate-700">What's your name?</label>
-                            <input
-                                autoFocus
-                                type="text"
-                                value={name}
-                                onChange={(e) => setName(e.target.value)}
-                                placeholder="e.g. Mr. Kamau"
-                                className="w-full p-4 border rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-lg"
-                            />
-                            <Button fullWidth onClick={() => setStep(2)} disabled={!name}>Next</Button>
+                            <div>
+                                <label className="block font-bold text-slate-700 text-sm mb-1">Full Name</label>
+                                <input
+                                    autoFocus
+                                    type="text"
+                                    value={name}
+                                    onChange={(e) => setName(e.target.value)}
+                                    placeholder="e.g. Mr. Kamau"
+                                    className="w-full p-3 border rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
+                                />
+                            </div>
+                            <div>
+                                <label className="block font-bold text-slate-700 text-sm mb-1">Email Address</label>
+                                <input
+                                    type="email"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    placeholder="teacher@school.com"
+                                    className="w-full p-3 border rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
+                                />
+                            </div>
+                            <div>
+                                <label className="block font-bold text-slate-700 text-sm mb-1">Create Password</label>
+                                <input
+                                    type="password"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    placeholder="******"
+                                    className="w-full p-3 border rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
+                                />
+                            </div>
+                            <Button fullWidth onClick={() => setStep(2)} disabled={!name || !email || !password || password.length < 6}>Next</Button>
+                            {password && password.length < 6 && <p className="text-xs text-red-500">Password must be at least 6 characters.</p>}
                         </div>
                     )}
 
@@ -142,7 +181,9 @@ export const TeacherOnboarding: React.FC<TeacherOnboardingProps> = ({ onComplete
 
                             <div className="flex gap-3">
                                 <Button variant="secondary" onClick={() => setStep(2)} className="flex-1">Back</Button>
-                                <Button onClick={handleFinish} disabled={subjects.length === 0} className="flex-1 bg-green-600 hover:bg-green-700">Complete Setup</Button>
+                                <Button onClick={handleFinish} disabled={subjects.length === 0 || loading} className="flex-1 bg-green-600 hover:bg-green-700">
+                                    {loading ? "Creating Account..." : "Complete Setup"}
+                                </Button>
                             </div>
                         </div>
                     )}

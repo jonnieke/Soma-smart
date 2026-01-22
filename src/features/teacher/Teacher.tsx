@@ -5,8 +5,9 @@ import { Button, Card, Header, MarkdownText } from '../../components/Shared';
 import { TeacherPaywall } from '../../components/TeacherPaywall';
 import { TeacherOnboarding } from '../../components/TeacherOnboarding';
 import { useApp } from '../../context/AppContext';
-import { convertNotes, processVoiceNote, generateTeacherQuiz, fileToGenerativePart } from '../../services/geminiService';
+import { convertNotes, processVoiceNote, generateTeacherQuiz, generateAdvancedTeacherQuiz, fileToGenerativePart } from '../../services/geminiService';
 import { ViewState, TeacherNote, QuizData, TeacherActivity } from '../../types';
+import { PdfPageSelector } from '../../components/PdfPageSelector';
 
 interface TeacherProps {
     onNavigate: (view: ViewState) => void;
@@ -21,6 +22,16 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate }) => {
     // Selection State
     const [selectedClass, setSelectedClass] = useState<string>(teacherProfile?.classes[0] || "");
     const [selectedSubject, setSelectedSubject] = useState<string>(teacherProfile?.subjects[0] || "");
+
+    // Advanced Quiz State
+    const [advMode, setAdvMode] = useState(false);
+    const [advFiles, setAdvFiles] = useState<File[]>([]);
+    const [advTopic, setAdvTopic] = useState("");
+    const [advCount, setAdvCount] = useState(5);
+    const [advType, setAdvType] = useState<'MCQ' | 'OPEN'>('MCQ');
+
+    // PDF Selection State
+    const [pdfFile, setPdfFile] = useState<File | null>(null);
 
     // Results
     const [generatedNote, setGeneratedNote] = useState<TeacherNote | null>(null);
@@ -157,19 +168,33 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate }) => {
         }
     };
 
-    const handleQuizGen = async (topic: string) => {
-        if (!topic) return;
+    const handleAdvancedQuizGen = async () => {
+        if (!advTopic || advFiles.length === 0) return;
         if (!checkLimit()) return;
 
         setLoading(true);
         incrementTeacherUsage();
         try {
-            const result = await generateTeacherQuiz(topic);
+            // Convert all files to base64
+            const images = await Promise.all(advFiles.map(f => fileToGenerativePart(f)));
+
+            const result = await generateAdvancedTeacherQuiz(
+                images,
+                advTopic,
+                selectedClass,
+                advCount,
+                advType
+            );
+
             setGeneratedQuiz(result);
             handleSaveToHistory('QUIZ', result.topic, result);
             setActiveTab('QUIZ');
+            // Reset fields
+            setAdvFiles([]);
+            setAdvTopic("");
         } catch (e) {
-            alert("Error generating quiz");
+            alert("Error generating advanced quiz. Please try again.");
+            console.error(e);
         } finally {
             setLoading(false);
         }
@@ -185,6 +210,19 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate }) => {
         }
     };
 
+    const handleAdvFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files) {
+            const files = Array.from(e.target.files);
+            // Check for PDF
+            const pdf = files.find(f => f.type === 'application/pdf');
+            if (pdf) {
+                setPdfFile(pdf);
+                // Don't set advFiles yet wait for selection
+            } else {
+                setAdvFiles(prev => [...prev, ...files]);
+            }
+        }
+    };
 
     // --- Render ---
 
@@ -195,6 +233,16 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate }) => {
     return (
         <div className="min-h-screen bg-slate-50 pb-20 font-sans text-slate-800 max-w-4xl mx-auto shadow-2xl border-x border-slate-100 relative">
             <TeacherPaywall isOpen={showPaywall} onClose={() => setShowPaywall(false)} />
+            {pdfFile && (
+                <PdfPageSelector
+                    file={pdfFile}
+                    onCancel={() => setPdfFile(null)}
+                    onSelectionComplete={(files) => {
+                        setAdvFiles(prev => [...prev, ...files]);
+                        setPdfFile(null);
+                    }}
+                />
+            )}
 
             {/* Hero Header */}
             <div className="bg-gradient-to-r from-indigo-900 to-purple-900 px-8 pt-6 pb-20 rounded-b-[3rem] shadow-lg relative overflow-hidden">
@@ -317,78 +365,146 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate }) => {
                                     )}
                                 </motion.div>
 
-                                {/* Tool 3: Quiz Gen */}
-                                <motion.div whileHover={{ y: -5 }} className="md:col-span-2 bg-gradient-to-br from-indigo-50 to-white p-6 rounded-3xl shadow-sm border border-indigo-100 flex flex-col md:flex-row items-center gap-6">
-                                    <div className="text-center md:text-left flex-1">
-                                        <div className="flex items-center gap-3 mb-2 justify-center md:justify-start">
-                                            <div className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center">
-                                                <Brain className="w-5 h-5 text-indigo-600" />
+                                {/* Tool 3: Advanced Quiz Gen */}
+                                <motion.div whileHover={{ y: -5 }} className="md:col-span-2 bg-gradient-to-br from-indigo-50 to-white p-6 rounded-3xl shadow-sm border border-indigo-100 relative overflow-hidden">
+                                    <div className="absolute top-0 right-0 p-4 opacity-10 pointer-events-none">
+                                        <Crown className="w-32 h-32 text-indigo-900" />
+                                    </div>
+
+                                    <div className="flex flex-col md:flex-row gap-8 relative z-10">
+                                        <div className="flex-1">
+                                            <div className="flex items-center gap-3 mb-4">
+                                                <div className="w-10 h-10 bg-indigo-600 text-white rounded-xl flex items-center justify-center shadow-lg shadow-indigo-200">
+                                                    <Brain className="w-5 h-5" />
+                                                </div>
+                                                <div>
+                                                    <h3 className="font-bold text-lg text-indigo-900">Exam Generator (CBE)</h3>
+                                                    <p className="text-xs text-indigo-600 font-medium bg-indigo-100 px-2 py-0.5 rounded-full inline-block">Kenyan Standard</p>
+                                                </div>
                                             </div>
-                                            <h3 className="font-bold text-lg text-indigo-900">Instant Quiz Generator</h3>
+
+                                            <div className="space-y-4">
+                                                <div>
+                                                    <label className="text-xs font-bold text-indigo-900 uppercase tracking-wider mb-1 block">Quiz Topic</label>
+                                                    <input
+                                                        type="text"
+                                                        value={advTopic}
+                                                        onChange={(e) => setAdvTopic(e.target.value)}
+                                                        placeholder={`e.g. ${selectedSubject} End Term Exam`}
+                                                        className="w-full px-4 py-3 rounded-xl border border-indigo-200 focus:ring-2 focus:ring-indigo-500 outline-none text-sm bg-white"
+                                                    />
+                                                </div>
+
+                                                <div className="grid grid-cols-2 gap-4">
+                                                    <div>
+                                                        <label className="text-xs font-bold text-indigo-900 uppercase tracking-wider mb-1 block">Questions</label>
+                                                        <select
+                                                            value={advCount}
+                                                            onChange={(e) => setAdvCount(Number(e.target.value))}
+                                                            className="w-full px-4 py-3 rounded-xl border border-indigo-200 focus:ring-2 focus:ring-indigo-500 outline-none text-sm bg-white"
+                                                        >
+                                                            <option value={5}>5 Questions</option>
+                                                            <option value={10}>10 Questions</option>
+                                                            <option value={15}>15 Questions</option>
+                                                        </select>
+                                                    </div>
+                                                    <div>
+                                                        <label className="text-xs font-bold text-indigo-900 uppercase tracking-wider mb-1 block">Type</label>
+                                                        <select
+                                                            value={advType}
+                                                            onChange={(e) => setAdvType(e.target.value as 'MCQ' | 'OPEN')}
+                                                            className="w-full px-4 py-3 rounded-xl border border-indigo-200 focus:ring-2 focus:ring-indigo-500 outline-none text-sm bg-white"
+                                                        >
+                                                            <option value="MCQ">Multiple Choice</option>
+                                                            <option value="OPEN">Structured / Open</option>
+                                                        </select>
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </div>
-                                        <p className="text-sm text-indigo-700/80 mb-4">Create a {selectedSubject} quiz for {selectedClass}.</p>
-                                        <div className="flex gap-2">
-                                            <input
-                                                type="text"
-                                                id="quiz-topic"
-                                                placeholder={`e.g. ${selectedSubject} Topic...`}
-                                                className="flex-1 px-4 py-2 rounded-xl border-indigo-200 focus:ring-2 focus:ring-indigo-500 outline-none text-sm"
-                                                onKeyDown={(e) => e.key === 'Enter' && handleQuizGen(e.currentTarget.value)}
-                                            />
-                                            <Button onClick={() => {
-                                                const val = (document.getElementById('quiz-topic') as HTMLInputElement).value;
-                                                handleQuizGen(val);
-                                            }}>Generate</Button>
+
+                                        <div className="flex-1 border-t md:border-t-0 md:border-l border-indigo-100 md:pl-8 pt-6 md:pt-0">
+                                            <label className="text-xs font-bold text-indigo-900 uppercase tracking-wider mb-2 block">Source Material (Scans)</label>
+
+                                            <div className="border-2 border-dashed border-indigo-200 rounded-xl bg-indigo-50/50 p-6 text-center hover:bg-indigo-50 transition-colors relative">
+                                                <input
+                                                    type="file"
+                                                    multiple
+                                                    accept="image/*,application/pdf"
+                                                    onChange={handleAdvFileUpload}
+                                                    className="absolute inset-0 opacity-0 cursor-pointer"
+                                                />
+                                                <Upload className="w-8 h-8 text-indigo-400 mx-auto mb-2" />
+                                                <p className="text-sm font-bold text-indigo-900">
+                                                    {advFiles.length > 0 ? `${advFiles.length} files selected` : "Upload Textbooks/Notes"}
+                                                </p>
+                                                <p className="text-xs text-indigo-500 mt-1">
+                                                    {advFiles.length > 0 ? "Click to change" : "Images or PDF (Books)"}
+                                                </p>
+                                            </div>
+
+                                            <div className="mt-6">
+                                                <Button
+                                                    fullWidth
+                                                    onClick={handleAdvancedQuizGen}
+                                                    disabled={!advTopic || advFiles.length === 0}
+                                                    className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-200"
+                                                >
+                                                    <Sparkles className="w-4 h-4 mr-2" /> Generate Exam
+                                                </Button>
+                                                {!advTopic && <p className="text-[10px] text-center text-indigo-400 mt-2">Enter a topic and upload files to start.</p>}
+                                            </div>
                                         </div>
                                     </div>
                                 </motion.div>
                             </div>
                         )}
+                        {
+                            activeTab === 'LIBRARY' && (
+                                <div className="bg-white rounded-3xl shadow-sm border border-slate-200 p-6 min-h-[500px]">
+                                    <div className="flex items-center gap-2 mb-6 pb-4 border-b">
+                                        <Filter className="w-5 h-5 text-slate-400" />
+                                        <h3 className="font-bold text-lg text-slate-700">Class Library</h3>
+                                        <span className="ml-auto text-sm text-slate-500 font-medium bg-slate-100 px-3 py-1 rounded-full">{selectedClass}</span>
+                                        <span className="text-sm text-slate-500 font-medium bg-slate-100 px-3 py-1 rounded-full">{selectedSubject}</span>
+                                    </div>
 
-                        {activeTab === 'LIBRARY' && (
-                            <div className="bg-white rounded-3xl shadow-sm border border-slate-200 p-6 min-h-[500px]">
-                                <div className="flex items-center gap-2 mb-6 pb-4 border-b">
-                                    <Filter className="w-5 h-5 text-slate-400" />
-                                    <h3 className="font-bold text-lg text-slate-700">Class Library</h3>
-                                    <span className="ml-auto text-sm text-slate-500 font-medium bg-slate-100 px-3 py-1 rounded-full">{selectedClass}</span>
-                                    <span className="text-sm text-slate-500 font-medium bg-slate-100 px-3 py-1 rounded-full">{selectedSubject}</span>
-                                </div>
-
-                                <div className="space-y-4">
-                                    {teacherHistory.filter(item => (!selectedClass || item.className === selectedClass) && (!selectedSubject || item.subject === selectedSubject)).length === 0 ? (
-                                        <div className="text-center py-20 text-slate-400">
-                                            <Library className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                                            <p>No items found for this class & subject.</p>
-                                        </div>
-                                    ) : (
-                                        teacherHistory
-                                            .filter(item => (!selectedClass || item.className === selectedClass) && (!selectedSubject || item.subject === selectedSubject))
-                                            .map((item) => (
-                                                <motion.div
-                                                    key={item.id}
-                                                    initial={{ opacity: 0, y: 10 }}
-                                                    animate={{ opacity: 1, y: 0 }}
-                                                    onClick={() => loadHistoryItem(item)}
-                                                    className="p-4 border border-slate-100 rounded-xl hover:bg-slate-50 cursor-pointer flex items-center justify-between group transition-all"
-                                                >
-                                                    <div className="flex items-center gap-4">
-                                                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${item.type === 'NOTE' ? 'bg-blue-100 text-blue-600' : 'bg-indigo-100 text-indigo-600'}`}>
-                                                            {item.type === 'NOTE' ? <FileText className="w-5 h-5" /> : <Brain className="w-5 h-5" />}
+                                    <div className="space-y-4">
+                                        {teacherHistory.filter(item => (!selectedClass || item.className === selectedClass) && (!selectedSubject || item.subject === selectedSubject)).length === 0 ? (
+                                            <div className="text-center py-20 text-slate-400">
+                                                <Library className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                                                <p>No items found for this class & subject.</p>
+                                            </div>
+                                        ) : (
+                                            teacherHistory
+                                                .filter(item => (!selectedClass || item.className === selectedClass) && (!selectedSubject || item.subject === selectedSubject))
+                                                .map((item) => (
+                                                    <motion.div
+                                                        key={item.id}
+                                                        initial={{ opacity: 0, y: 10 }}
+                                                        animate={{ opacity: 1, y: 0 }}
+                                                        onClick={() => loadHistoryItem(item)}
+                                                        className="p-4 border border-slate-100 rounded-xl hover:bg-slate-50 cursor-pointer flex items-center justify-between group transition-all"
+                                                    >
+                                                        <div className="flex items-center gap-4">
+                                                            <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${item.type === 'NOTE' ? 'bg-blue-100 text-blue-600' : 'bg-indigo-100 text-indigo-600'}`}>
+                                                                {item.type === 'NOTE' ? <FileText className="w-5 h-5" /> : <Brain className="w-5 h-5" />}
+                                                            </div>
+                                                            <div>
+                                                                <h4 className="font-bold text-slate-800">{item.title}</h4>
+                                                                <p className="text-xs text-slate-500 flex items-center gap-2">
+                                                                    <Calendar className="w-3 h-3" /> {item.date}
+                                                                </p>
+                                                            </div>
                                                         </div>
-                                                        <div>
-                                                            <h4 className="font-bold text-slate-800">{item.title}</h4>
-                                                            <p className="text-xs text-slate-500 flex items-center gap-2">
-                                                                <Calendar className="w-3 h-3" /> {item.date}
-                                                            </p>
-                                                        </div>
-                                                    </div>
-                                                    <ArrowRight className="w-4 h-4 text-slate-300 group-hover:text-indigo-500" />
-                                                </motion.div>
-                                            ))
-                                    )}
+                                                        <ArrowRight className="w-4 h-4 text-slate-300 group-hover:text-indigo-500" />
+                                                    </motion.div>
+                                                ))
+                                        )}
+                                    </div>
                                 </div>
-                            </div>
-                        )}
+                            )
+                        }
                     </>
                 ) : (
                     // RESULTS VIEW
@@ -492,7 +608,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate }) => {
                         </div>
                     </motion.div>
                 )}
-            </div>
-        </div>
+            </div >
+        </div >
     );
 };

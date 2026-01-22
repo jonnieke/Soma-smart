@@ -9,10 +9,15 @@ interface AppContextType {
   saveActivity: (type: 'EXPLANATION' | 'QUIZ', topic: string, details: any) => void;
   deleteActivity: (id: string) => void;
   studentCode: string;
+  isRegistered: boolean;
+  studentProfile: { name: string, grade: string } | null;
   usageCount: number;
   incrementUsage: () => void;
-  registerStudent: (name: string, grade: string) => Promise<string | null>;
+  registerStudent: (name: string, grade: string, pin: string) => Promise<string | null>;
+  registerTeacher: (name: string, email: string, password: string, classes: string[], subjects: string[]) => Promise<boolean>;
   login: (code: string) => Promise<boolean>;
+  loginTeacher: (email: string, pass: string) => Promise<boolean>;
+  recoverStudentId: (name: string, pin: string) => Promise<string | null>;
   // Teacher Specific
   teacherUsageCount: number;
   incrementTeacherUsage: () => void;
@@ -71,12 +76,22 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             setRole(UserRole.LEARNER);
           } else if (profile.role === 'TEACHER') {
             // Update teacher state
-            setTeacherProfile({
-              name: profile.full_name,
-              classes: [], // Fetch from separate table if needed later
-              subjects: []
-            });
             setRole(UserRole.TEACHER);
+            // Fetch classes/subjects if they exist in profile
+            if (profile.classes || profile.subjects) {
+              setTeacherProfile({
+                name: profile.full_name,
+                classes: profile.classes || [],
+                subjects: profile.subjects || []
+              });
+            } else {
+              // Fallback if not yet set
+              setTeacherProfile({
+                name: profile.full_name,
+                classes: [],
+                subjects: []
+              });
+            }
           }
         }
       }
@@ -90,7 +105,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   };
 
-  const registerStudent = async (name: string, grade: string): Promise<string | null> => {
+  const registerStudent = async (name: string, grade: string, pin: string): Promise<string | null> => {
     try {
       console.log("Attempting registration via signUp (Email/Pass)...");
       // 1. Create Auth User (Anonymous fall back to email/pass)
@@ -123,7 +138,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         role: 'LEARNER',
         full_name: name,
         grade: grade,
-        student_id: newCode
+        student_id: newCode,
+        recovery_pin: pin
       });
 
       if (dbError) {
@@ -156,11 +172,106 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   };
 
+  const recoverStudentId = async (name: string, pin: string): Promise<string | null> => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('student_id')
+        .ilike('full_name', name)
+        .eq('recovery_pin', pin)
+        .maybeSingle();
+
+      if (error) throw error;
+      return data?.student_id || null;
+    } catch (e) {
+      console.error("Recovery Failed:", e);
+      return null;
+    }
+  };
+
+  const loginTeacher = async (email: string, pass: string): Promise<boolean> => {
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password: pass
+      });
+
+      if (error) throw error;
+
+      if (data.user) {
+        // Fetch profile to set state
+        const { data: profile } = await supabase.from('profiles').select('*').eq('id', data.user.id).single();
+        if (profile) {
+          setTeacherProfile({
+            name: profile.full_name,
+            classes: profile.classes || [],
+            subjects: profile.subjects || []
+          });
+          setRole(UserRole.TEACHER);
+          return true;
+        }
+      }
+      return false;
+    } catch (e) {
+      console.error("Teacher Login Error", e);
+      return false;
+    }
+  };
+
   const incrementTeacherUsage = () => setTeacherUsageCount(prev => prev + 1);
 
+  const registerTeacher = async (name: string, email: string, password: string, classes: string[], subjects: string[]): Promise<boolean> => {
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            full_name: name,
+            role: 'TEACHER',
+            classes,
+            subjects
+          }
+        }
+      });
+
+      if (error) throw error;
+
+      if (data.user) {
+        // Create profile entry if trigger doesn't exist (Manual Fallback)
+        const { error: profileError } = await supabase.from('profiles').upsert({
+          id: data.user.id,
+          full_name: name,
+          role: 'TEACHER',
+          classes: classes,
+          subjects: subjects,
+          email: email
+        });
+
+        if (profileError) console.error("Profile creation warning:", profileError);
+
+        setTeacherProfile({ name, classes, subjects });
+        setRole(UserRole.TEACHER);
+        return true;
+      }
+      return false;
+    } catch (e: any) {
+      console.error("Teacher Registration Error:", e);
+      alert(e.message);
+      return false;
+    }
+  };
+
   const updateTeacherProfile = async (profile: TeacherProfile) => {
-    // For now just local updating for UI, but could sync to DB
     setTeacherProfile(profile);
+    // Sync to DB
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      await supabase.from('profiles').update({
+        classes: profile.classes,
+        subjects: profile.subjects
+      }).eq('id', user.id);
+    }
   };
 
   const saveTeacherActivity = (activity: TeacherActivity) => {
@@ -285,7 +396,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   return (
     <AppContext.Provider value={{
       role, setRole, learnerHistory, saveActivity, deleteActivity, studentCode,
-      usageCount, incrementUsage, isRegistered, studentProfile, registerStudent, login,
+      usageCount, incrementUsage, isRegistered, studentProfile, registerStudent, login, recoverStudentId, registerTeacher, loginTeacher,
       teacherUsageCount, incrementTeacherUsage, teacherProfile, updateTeacherProfile, teacherHistory, saveTeacherActivity,
       revisionUsageCount, incrementRevisionUsage
     }}>

@@ -15,8 +15,11 @@ import { LoginModal } from '../../components/LoginModal'; // Assuming path
 import { MarkdownText, Button, Card } from '../../components/Shared';
 import {
   fileToGenerativePart, explainImage, explainAudio, explainTopic,
-  generateQuickQuiz, generateQuiz, generateSpeech
+  generateQuickQuiz, generateQuiz, generateSpeech, generateLessonRecap
 } from '../../services/geminiService';
+import confetti from 'canvas-confetti';
+import { calculateTotalXP, calculateLevel } from '../../services/gamificationService';
+import { TscLiveBanner } from '../../components/TscLiveBanner';
 
 // Simple Button component if not imported (placeholder or real import)
 // const Button = ... (If it's a custom component, imply import. If standard HTML button is used in code, maybe it was styled component?)
@@ -38,14 +41,34 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, saveActiv
   const { usageCount, incrementUsage, isRegistered, revisionUsageCount, incrementRevisionUsage } = useApp();
   const location = useLocation(); // Need import
 
-  // Protect Route - Redirect to Home if not registered
+  // --- GAMIFICATION ENGINE ---
+  const totalXP = React.useMemo(() => calculateTotalXP(history), [history]);
+  const levelInfo = React.useMemo(() => calculateLevel(totalXP), [totalXP]);
+  const prevXPRef = useRef(totalXP);
+
+  useEffect(() => {
+    if (totalXP > prevXPRef.current) {
+      const diff = totalXP - prevXPRef.current;
+      if (diff > 0) {
+        confetti({
+          particleCount: 100,
+          spread: 70,
+          origin: { y: 0.6 },
+          colors: ['#FFD700', '#FFA500', '#FF4500']
+        });
+      }
+    }
+    prevXPRef.current = totalXP;
+  }, [totalXP]);
+
   useEffect(() => {
     if (!isRegistered) {
       navigate('/');
     }
   }, [isRegistered, navigate]);
 
-  const [mode, setMode] = useState<'MENU' | 'SCAN' | 'RESULT' | 'QUIZ' | 'REVISION'>('MENU');
+  const [mode, setMode] = useState<'MENU' | 'SCAN' | 'RESULT' | 'QUIZ' | 'REVISION' | 'RECAP_RESULT'>('MENU');
+  const [recapData, setRecapData] = useState<any>(null); // Store LessonRecap
   const [showRevisionPaywall, setShowRevisionPaywall] = useState(false);
 
   useEffect(() => {
@@ -605,6 +628,57 @@ ${explanation.explanation}
     );
   }
 
+  if (mode === 'RECAP_RESULT' && recapData) {
+    return (
+      <div className="min-h-screen bg-slate-50 pb-20 font-sans text-slate-800 max-w-lg mx-auto shadow-2xl border-x border-slate-100">
+        <div className="bg-white p-6 sticky top-0 z-10 shadow-sm flex items-center gap-4">
+          <button onClick={() => setMode('MENU')}><ArrowRight className="w-6 h-6 rotate-180" /></button>
+          <h2 className="font-bold text-lg">Lesson Recap</h2>
+        </div>
+
+        <div className="p-6 space-y-6">
+          <div className="bg-gradient-to-br from-indigo-500 to-purple-600 p-6 rounded-3xl text-white shadow-lg relative overflow-hidden">
+            <h1 className="text-2xl font-bold mb-2">{recapData.topic}</h1>
+            <p className="opacity-90">{recapData.summary}</p>
+          </div>
+
+          <div>
+            <h3 className="font-bold text-slate-900 mb-3 flex items-center gap-2"><Star className="w-5 h-5 text-yellow-500" /> Key Points</h3>
+            <ul className="space-y-3">
+              {recapData.keyPoints.map((p: string, i: number) => (
+                <li key={i} className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm flex gap-3">
+                  <span className="w-6 h-6 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center font-bold text-xs flex-shrink-0">{i + 1}</span>
+                  <span className="text-sm">{p}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div>
+            <h3 className="font-bold text-slate-900 mb-3 flex items-center gap-2"><AlertTriangle className="w-5 h-5 text-red-500" /> Exam Tips</h3>
+            <div className="bg-red-50 border border-red-100 rounded-xl p-4 space-y-2">
+              {recapData.examTips.map((tip: string, i: number) => (
+                <p key={i} className="text-sm text-red-800 font-medium">• {tip}</p>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <h3 className="font-bold text-slate-900 mb-3 flex items-center gap-2"><BookOpen className="w-5 h-5 text-blue-500" /> Definitions</h3>
+            <div className="space-y-2">
+              {recapData.definitions.map((def: any, i: number) => (
+                <div key={i} className="bg-blue-50 p-3 rounded-lg">
+                  <span className="font-bold text-blue-900">{def.term}: </span>
+                  <span className="text-blue-800 text-sm">{def.definition}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // Error View
   if (error) {
     return (
@@ -654,6 +728,11 @@ ${explanation.explanation}
           <div className="absolute top-0 right-0 w-32 h-32 bg-yellow-100 rounded-full blur-3xl opacity-50 -mr-16 -mt-16"></div>
           <div className="absolute top-20 left-10 w-20 h-20 bg-blue-100 rounded-full blur-2xl opacity-50"></div>
 
+          {/* TSC LIVE BANNER */}
+          <div className="mb-6 relative z-10">
+            <TscLiveBanner />
+          </div>
+
           <div className="flex justify-between items-start relative z-10">
             <div>
               <motion.div
@@ -679,6 +758,36 @@ ${explanation.explanation}
               >
                 Ready to explore something new?
               </motion.p>
+
+              {/* GAMIFICATION PROGRESS */}
+              <motion.div
+                initial={{ opacity: 0, width: 0 }}
+                animate={{ opacity: 1, width: '100%' }}
+                transition={{ delay: 0.4 }}
+                className="mt-5 w-full max-w-[240px]"
+              >
+                <div className="flex justify-between items-center mb-1">
+                  <span className="text-xs font-bold text-slate-800 flex items-center gap-1">
+                    <div className="w-5 h-5 bg-yellow-400 rounded-full flex items-center justify-center shadow-sm">
+                      <Star className="w-3 h-3 text-yellow-900 fill-yellow-900" />
+                    </div>
+                    Level {levelInfo.level}
+                  </span>
+                  <span className="text-[10px] font-bold text-slate-400">{Math.floor(levelInfo.progressPercent)}% to L{levelInfo.level + 1}</span>
+                </div>
+                <div className="h-3 bg-slate-100 rounded-full overflow-hidden border border-slate-200 p-[2px]">
+                  <motion.div
+                    layout
+                    initial={{ width: 0 }}
+                    animate={{ width: `${levelInfo.progressPercent}%` }}
+                    transition={{ type: 'spring', stiffness: 50 }}
+                    className="h-full bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full shadow-sm"
+                  />
+                </div>
+                <div className="text-right mt-1">
+                  <span className="text-[10px] font-bold text-indigo-400">{totalXP} Total XP</span>
+                </div>
+              </motion.div>
             </div>
 
             <button onClick={() => onNavigate(ViewState.DASHBOARD)} className="p-2 bg-slate-100 rounded-xl hover:bg-slate-200 transition-colors group" title="Back to Home">
@@ -749,6 +858,52 @@ ${explanation.explanation}
             <input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handleFileUpload} />
             <input type="file" accept="audio/*" className="hidden" ref={audioInputRef} onChange={handleAudioUpload} />
 
+            {/* Hidden Input for Recap */}
+            <input
+              type="file"
+              id="recap-upload"
+              className="hidden"
+              accept="audio/*,image/*"
+              onChange={async (e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+
+                setLoading(true);
+                setLoadingText("Summarizing lesson...");
+                setMode('SCAN');
+
+                try {
+                  let base64 = "";
+                  if (file.type.startsWith('image')) {
+                    base64 = await fileToGenerativePart(file);
+                  } else {
+                    // For audio/video
+                    const reader = new FileReader();
+                    reader.readAsDataURL(file);
+                    await new Promise(resolve => reader.onloadend = resolve);
+                    base64 = (reader.result as string).split(',')[1];
+                  }
+                  // Simple hack: assume video is audio for now or fails gracefully
+                  const audience = 'LEARNER';
+                  const result = await generateLessonRecap(base64, file.type, audience);
+                  setRecapData(result);
+                  setMode('RECAP_RESULT');
+                  saveActivity({
+                    id: Date.now().toString(),
+                    type: 'EXPLANATION',
+                    topic: result.topic,
+                    date: new Date().toLocaleDateString(),
+                    details: JSON.stringify({ type: 'RECAP', data: result, source: file.type.startsWith('image') ? 'image' : 'audio' })
+                  } as any);
+                } catch (e) {
+                  alert("Recap failed. Please try again.");
+                  setMode('MENU');
+                } finally {
+                  setLoading(false);
+                }
+              }}
+            />
+
             <div className="grid grid-cols-2 gap-4">
               {/* Camera Action */}
               <motion.button
@@ -785,6 +940,28 @@ ${explanation.explanation}
                 </div>
                 <div className="absolute right-[-20px] bottom-[-20px] opacity-20 transform rotate-12 group-hover:rotate-0 transition-transform duration-500">
                   <BookOpen className="w-32 h-32" />
+                </div>
+              </motion.button>
+
+              {/* Lesson Recap Action (NEW) */}
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => document.getElementById('recap-upload')?.click()}
+                className="col-span-2 bg-gradient-to-br from-red-500 to-pink-600 text-white p-5 rounded-2xl shadow-lg shadow-pink-200 flex items-center justify-between group overflow-hidden relative"
+              >
+                <div className="relative z-10 text-left">
+                  <div className="bg-white/20 w-10 h-10 rounded-full flex items-center justify-center mb-3">
+                    <Mic className="w-5 h-5 text-white" />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-xl font-bold">Lesson Recap</h3>
+                    <span className="bg-white text-red-600 text-[10px] font-bold px-2 py-0.5 rounded-full">TSC LIVE</span>
+                  </div>
+                  <p className="text-pink-100 text-xs">Record live stream & get simplified notes</p>
+                </div>
+                <div className="absolute right-[-20px] bottom-[-20px] opacity-20 transform rotate-12 group-hover:rotate-0 transition-transform duration-500">
+                  <Sparkles className="w-32 h-32" />
                 </div>
               </motion.button>
 
@@ -1119,7 +1296,7 @@ ${explanation.explanation}
   }
 
   // --- REVISION RENDER ---
-  if (mode === 'REVISION') {
+  if ((mode as string) === 'REVISION') {
     if (showRevisionPaywall) {
       return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">

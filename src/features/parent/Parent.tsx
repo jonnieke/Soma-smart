@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Header, Card, Button } from '../../components/Shared';
 import { ViewState, LearnerActivity } from '../../types';
+import { calculateTotalXP, calculateLevel } from '../../services/gamificationService';
 import { Book, CheckCircle, Clock, Lock, User, TrendingUp, Award, AlertCircle, ChevronRight, Activity, Calendar, Star, Zap, Home, X } from 'lucide-react';
 
 interface ParentProps {
@@ -52,7 +53,21 @@ export const ParentDashboard: React.FC<ParentProps> = ({ onNavigate, activityLog
             value: q.score || 0
         }));
 
-        return { totalQuizzes, avgScore, masteryLevel, totalTopics: topics.length, subjects, graphData };
+        // Gamification Stats
+        const totalXP = calculateTotalXP(activityLog);
+        const levelInfo = calculateLevel(totalXP);
+
+        return {
+            totalQuizzes,
+            avgScore,
+            masteryLevel,
+            totalTopics: topics.length,
+            subjects,
+            graphData,
+            level: levelInfo.level,
+            xp: levelInfo.totalXP,
+            nextLevelProgress: levelInfo.progressPercent
+        };
     }, [activityLog]);
 
 
@@ -170,9 +185,17 @@ export const ParentDashboard: React.FC<ParentProps> = ({ onNavigate, activityLog
                                     : "Consistent practice is paying off. Keep up the momentum!"}
                             </p>
                         </div>
-                        <div className="bg-white/10 backdrop-blur-md p-4 rounded-2xl border border-white/10 text-center min-w-[120px]">
-                            <p className="text-indigo-200 text-xs font-bold uppercase mb-1">Current Grade</p>
-                            <p className="text-4xl font-extrabold text-white">{stats.avgScore}%</p>
+                        <div className="flex gap-4">
+                            <div className="bg-white/10 backdrop-blur-md p-4 rounded-2xl border border-white/10 text-center min-w-[100px]">
+                                <p className="text-indigo-200 text-xs font-bold uppercase mb-1">Avg Score</p>
+                                <p className="text-3xl font-extrabold text-white">{stats.avgScore}%</p>
+                            </div>
+                            <div className="bg-white/10 backdrop-blur-md p-4 rounded-2xl border border-white/10 text-center min-w-[100px]">
+                                <p className="text-indigo-200 text-xs font-bold uppercase mb-1 flex items-center justify-center gap-1">
+                                    <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" /> Level
+                                </p>
+                                <p className="text-3xl font-extrabold text-white">{stats.level}</p>
+                            </div>
                         </div>
                     </div>
                 </motion.div>
