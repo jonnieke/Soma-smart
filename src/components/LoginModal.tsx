@@ -10,7 +10,7 @@ interface LoginModalProps {
 }
 
 export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, initialTab = 'STUDENT' }) => {
-    const { login, loginTeacher, recoverStudentId } = useApp();
+    const { login, loginTeacher, recoverStudentId, resetPassword } = useApp();
 
     // Tab State
     const [activeTab, setActiveTab] = useState<'STUDENT' | 'TEACHER'>(initialTab);
@@ -27,6 +27,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, initial
     const [error, setError] = useState("");
     const [showRecents, setShowRecents] = useState(false);
     const [showRecovery, setShowRecovery] = useState(false);
+    const [showTeacherRecovery, setShowTeacherRecovery] = useState(false);
 
     // Recovery State
     const [recName, setRecName] = useState("");
@@ -302,7 +303,13 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, initial
                                             Forgot ID?
                                         </button>
                                     ) : (
-                                        <div /> // Placeholder for grid alignment
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowTeacherRecovery(true)}
+                                            className="py-2 text-sm text-indigo-600 font-medium hover:bg-indigo-50 rounded-lg transition-colors"
+                                        >
+                                            Forgot Password?
+                                        </button>
                                     )}
                                     <button
                                         type="button"

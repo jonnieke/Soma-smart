@@ -17,6 +17,7 @@ interface AppContextType {
   registerTeacher: (name: string, email: string, password: string, classes: string[], subjects: string[]) => Promise<boolean>;
   login: (code: string) => Promise<boolean>;
   loginTeacher: (email: string, pass: string) => Promise<boolean>;
+  resetPassword: (email: string) => Promise<boolean>;
   recoverStudentId: (name: string, pin: string) => Promise<string | null>;
   // Teacher Specific
   teacherUsageCount: number;
@@ -218,6 +219,21 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   };
 
+  const resetPassword = async (email: string): Promise<boolean> => {
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: window.location.origin + '/reset-password', // Ensure route exists or just main logic
+      });
+
+      if (error) throw error;
+      return true;
+    } catch (e: any) {
+      console.error("Reset Password Error:", e);
+      alert(e.message || "Failed to send reset email.");
+      return false;
+    }
+  };
+
   const incrementTeacherUsage = () => setTeacherUsageCount(prev => prev + 1);
 
   const registerTeacher = async (name: string, email: string, password: string, classes: string[], subjects: string[]): Promise<boolean> => {
@@ -396,7 +412,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   return (
     <AppContext.Provider value={{
       role, setRole, learnerHistory, saveActivity, deleteActivity, studentCode,
-      usageCount, incrementUsage, isRegistered, studentProfile, registerStudent, login, recoverStudentId, registerTeacher, loginTeacher,
+      usageCount, incrementUsage, isRegistered, studentProfile, registerStudent, login, recoverStudentId, registerTeacher, loginTeacher, resetPassword,
       teacherUsageCount, incrementTeacherUsage, teacherProfile, updateTeacherProfile, teacherHistory, saveTeacherActivity,
       revisionUsageCount, incrementRevisionUsage
     }}>
