@@ -6,13 +6,21 @@ import { useApp } from '../context/AppContext';
 interface LoginModalProps {
     isOpen: boolean;
     onClose: () => void;
+    initialTab?: 'STUDENT' | 'TEACHER';
 }
 
-export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
+export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, initialTab = 'STUDENT' }) => {
     const { login, loginTeacher, recoverStudentId } = useApp();
 
     // Tab State
-    const [activeTab, setActiveTab] = useState<'STUDENT' | 'TEACHER'>('STUDENT');
+    const [activeTab, setActiveTab] = useState<'STUDENT' | 'TEACHER'>(initialTab);
+
+    React.useEffect(() => {
+        if (isOpen) {
+            setActiveTab(initialTab);
+        }
+    }, [isOpen, initialTab]);
+
 
     // Student State
     const [code, setCode] = useState("");

@@ -66,7 +66,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           .from('profiles')
           .select('*')
           .eq('id', session.user.id)
-          .single();
+          .maybeSingle();
 
         if (profile) {
           if (profile.role === 'LEARNER') {
@@ -200,7 +200,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
       if (data.user) {
         // Fetch profile to set state
-        const { data: profile } = await supabase.from('profiles').select('*').eq('id', data.user.id).single();
+        const { data: profile } = await supabase.from('profiles').select('*').eq('id', data.user.id).maybeSingle();
         if (profile) {
           setTeacherProfile({
             name: profile.full_name,

@@ -4,6 +4,7 @@ import { Upload, Mic, FileText, Share2, StopCircle, Download, BookOpen, Crown, B
 import { Button, Card, Header, MarkdownText } from '../../components/Shared';
 import { TeacherPaywall } from '../../components/TeacherPaywall';
 import { TeacherOnboarding } from '../../components/TeacherOnboarding';
+import { LoginModal } from '../../components/LoginModal';
 import { useApp } from '../../context/AppContext';
 import { convertNotes, processVoiceNote, generateTeacherQuiz, generateAdvancedTeacherQuiz, fileToGenerativePart } from '../../services/geminiService';
 import { ViewState, TeacherNote, QuizData, TeacherActivity } from '../../types';
@@ -16,6 +17,7 @@ interface TeacherProps {
 export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate }) => {
     const { teacherUsageCount, incrementTeacherUsage, teacherProfile, updateTeacherProfile, teacherHistory, saveTeacherActivity } = useApp();
     const [showPaywall, setShowPaywall] = useState(false);
+    const [showLoginModal, setShowLoginModal] = useState(false);
     const [activeTab, setActiveTab] = useState<'HOME' | 'CONVERT' | 'VOICE' | 'QUIZ' | 'LIBRARY'>('HOME');
     const [loading, setLoading] = useState(false);
 
@@ -227,7 +229,20 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate }) => {
     // --- Render ---
 
     if (!teacherProfile) {
-        return <TeacherOnboarding onComplete={(p) => updateTeacherProfile(p)} onClose={() => onNavigate(ViewState.DASHBOARD)} />;
+        return (
+            <>
+                <TeacherOnboarding
+                    onComplete={(p) => updateTeacherProfile(p)}
+                    onClose={() => onNavigate(ViewState.DASHBOARD)}
+                    onLogin={() => setShowLoginModal(true)}
+                />
+                <LoginModal
+                    isOpen={showLoginModal}
+                    onClose={() => setShowLoginModal(false)}
+                    initialTab="TEACHER"
+                />
+            </>
+        );
     }
 
     return (

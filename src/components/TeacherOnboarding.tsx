@@ -8,9 +8,10 @@ import { TeacherProfile } from '../types';
 interface TeacherOnboardingProps {
     onComplete: (profile: TeacherProfile) => void;
     onClose: () => void;
+    onLogin?: () => void;
 }
 
-export const TeacherOnboarding: React.FC<TeacherOnboardingProps> = ({ onComplete, onClose }) => {
+export const TeacherOnboarding: React.FC<TeacherOnboardingProps> = ({ onComplete, onClose, onLogin }) => {
     const { registerTeacher } = useApp();
     const [step, setStep] = useState(1);
 
@@ -121,6 +122,17 @@ export const TeacherOnboarding: React.FC<TeacherOnboardingProps> = ({ onComplete
                             </div>
                             <Button fullWidth onClick={() => setStep(2)} disabled={!name || !email || !password || password.length < 6}>Next</Button>
                             {password && password.length < 6 && <p className="text-xs text-red-500">Password must be at least 6 characters.</p>}
+
+                            {onLogin && (
+                                <div className="pt-2 text-center">
+                                    <button
+                                        onClick={onLogin}
+                                        className="text-sm font-medium text-slate-500 hover:text-indigo-600 transition-colors"
+                                    >
+                                        Already have an account? <span className="font-bold underline decoration-indigo-200 underline-offset-4">Login here</span>
+                                    </button>
+                                </div>
+                            )}
                         </div>
                     )}
 
