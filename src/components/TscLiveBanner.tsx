@@ -29,38 +29,42 @@ export const TscLiveBanner: React.FC = () => {
     }, []);
 
     return (
-        <div className="bg-gradient-to-r from-red-600 to-red-800 rounded-3xl p-6 mb-8 text-white shadow-xl relative overflow-hidden">
-            {/* Background elements */}
-            <div className="absolute right-0 top-0 w-64 h-64 bg-white/10 rounded-full -mr-16 -mt-16 blur-2xl"></div>
+        <a
+            href={LIVE_LINK}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="group relative overflow-hidden bg-gradient-to-r from-red-600 to-red-800 text-white rounded-full p-1 pr-5 inline-flex items-center gap-3 shadow-lg hover:shadow-red-500/20 hover:scale-105 transition-all duration-300 w-auto max-w-full"
+        >
+            {/* Pulsing glow if live */}
+            {timeLeft === "LIVE NOW" && (
+                <div className="absolute inset-0 bg-red-500 animate-pulse opacity-20"></div>
+            )}
 
-            <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
-                <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                        <span className="bg-red-500/50 border border-red-400/30 text-white text-xs font-bold px-2 py-0.5 rounded-full animate-pulse flex items-center gap-1">
-                            <span className="w-1.5 h-1.5 bg-white rounded-full"></span> {timeLeft === "LIVE NOW" ? "LIVE ON AIR" : "UPCOMING EVENT"}
-                        </span>
-                        <span className="text-red-100 text-xs font-medium">Teachers Service Commission</span>
-                    </div>
-                    <h2 className="text-2xl font-bold mb-2">Free Online Livestreaming Lesson Program</h2>
-                    <p className="text-red-100 text-sm mb-4 max-w-lg">
-                        Join expert teachers from across the county for high-quality Term I lessons. Don't miss out on this opportunity!
-                    </p>
-                    <div className="flex flex-wrap gap-4 text-xs font-medium text-red-100">
-                        <span className="flex items-center gap-1"><Calendar className="w-4 h-4" /> Start: 12th Jan, 2026</span>
-                        <span className="flex items-center gap-1"><Video className="w-4 h-4" /> 8 Weeks Duration</span>
-                    </div>
-                </div>
-
-                <div className="flex-shrink-0">
-                    <a href={LIVE_LINK} target="_blank" rel="noopener noreferrer">
-                        <button className="bg-white text-red-700 hover:bg-gray-100 font-bold py-3 px-6 rounded-xl shadow-lg transition-transform hover:scale-105 flex items-center gap-2">
-                            <Play className="w-5 h-5 fill-current" />
-                            Join Live Class
-                        </button>
-                    </a>
-                    <p className="text-center text-xs text-red-200 mt-2">Via Microsoft Teams / Zoom</p>
-                </div>
+            <div className="bg-white text-red-700 w-10 h-10 rounded-full flex items-center justify-center shrink-0 shadow-sm relative z-10">
+                <Play className="w-5 h-5 fill-current ml-0.5" />
             </div>
-        </div>
+
+            <div className="flex flex-col relative z-10">
+                <span className="text-[10px] font-bold opacity-90 uppercase tracking-wider flex items-center gap-1.5 text-red-100">
+                    {timeLeft === "LIVE NOW" ? (
+                        <>
+                            <span className="relative flex h-2 w-2">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-100 opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
+                            </span>
+                            LIVE ON AIR
+                        </>
+                    ) : (
+                        <>
+                            <Calendar className="w-3 h-3" />
+                            STARTING SOON
+                        </>
+                    )}
+                </span>
+                <span className="text-sm font-bold leading-none text-white whitespace-nowrap">TSC Online Lessons</span>
+            </div>
+
+            <ExternalLink className="w-4 h-4 text-red-200 opacity-50 group-hover:opacity-100 ml-auto" />
+        </a>
     );
 };

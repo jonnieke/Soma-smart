@@ -9,15 +9,43 @@ interface RegistrationModalProps {
     onSuccess: () => void;
 }
 
+import confetti from 'canvas-confetti';
+
 export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, onClose, onSuccess }) => {
     const { registerStudent, login, studentCode } = useApp();
     const [name, setName] = useState("");
     const [grade, setGrade] = useState("");
     const [pin, setPin] = useState("");
+    // Recovery State
+    const [showRecovery, setShowRecovery] = useState(false);
+    const [recName, setRecName] = useState("");
+    const [recPin, setRecPin] = useState("");
+    const [recResult, setRecResult] = useState("");
+    const { recoverStudentId } = useApp();
+    const [recoveryError, setRecoveryError] = useState("");
+
     const [loginId, setLoginId] = useState("");
     const [mode, setMode] = useState<'REGISTER' | 'LOGIN'>('REGISTER');
     const [step, setStep] = useState<'FORM' | 'SUCCESS'>('FORM');
     const [loading, setLoading] = useState(false);
+
+    // Reset to Register mode when opened
+    React.useEffect(() => {
+        if (isOpen) {
+            setMode('REGISTER');
+            setStep('FORM');
+            setShowRecovery(false);
+            setLoginId("");
+        }
+    }, [isOpen]);
+
+    // Kenyan Grade Options (CBC System + PP)
+    const gradeOptions = [
+        "Play Group", "PP1", "PP2",
+        "Grade 1", "Grade 2", "Grade 3",
+        "Grade 4", "Grade 5", "Grade 6",
+        "Grade 7 (JSS)", "Grade 8 (JSS)", "Grade 9 (JSS)"
+    ];
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -25,9 +53,31 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
         if (mode === 'REGISTER') {
             if (name && grade && pin.length >= 4) {
                 await registerStudent(name, grade, pin);
+
+                // Trigger Confetti
+                const duration = 3 * 1000;
+                const animationEnd = Date.now() + duration;
+                const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 60 };
+
+                const interval: any = setInterval(function () {
+                    const timeLeft = animationEnd - Date.now();
+
+                    if (timeLeft <= 0) {
+                        return clearInterval(interval);
+                    }
+
+                    const particleCount = 50 * (timeLeft / duration);
+                    confetti({ ...defaults, particleCount, origin: { x: Math.random() * 0.2 + 0.1, y: Math.random() - 0.2 } });
+                    confetti({ ...defaults, particleCount, origin: { x: Math.random() * 0.2 + 0.7, y: Math.random() - 0.2 } });
+                }, 250);
+
                 setStep('SUCCESS');
             } else if (!pin || pin.length < 4) {
                 alert("Please create a 4-digit Secret PIN to protect your account.");
+                setLoading(false);
+                return;
+            } else if (!grade) {
+                alert("Please select your Grade/Class.");
                 setLoading(false);
                 return;
             }
@@ -45,6 +95,94 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
     };
 
     if (!isOpen) return null;
+
+    // Recovery View
+    if (showRecovery) {
+        return (
+            <AnimatePresence>
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={onClose}>
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.95 }}
+                        onClick={(e) => e.stopPropagation()}
+                        className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden"
+                    >
+                        <div className="p-6">
+                            <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+                                <User className="w-5 h-5 text-orange-500" /> Recover ID
+                            </h3>
+
+                            {recResult ? (
+                                <div className="text-center py-4">
+                                    <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                        <CheckCircle className="w-8 h-8 text-green-600" />
+                                    </div>
+                                    <p className="text-gray-600 mb-2">We found your account!</p>
+                                    <p className="text-3xl font-mono font-bold text-blue-600 tracking-wider mb-6 bg-blue-50 py-2 rounded-lg">{recResult}</p>
+                                    <button
+                                        onClick={() => { setLoginId(recResult); setShowRecovery(false); setRecResult(""); setMode('LOGIN'); }}
+                                        className="w-full py-3 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 shadow-lg"
+                                    >
+                                        Login with this ID
+                                    </button>
+                                </div>
+                            ) : (
+                                <form onSubmit={async (e) => {
+                                    e.preventDefault();
+                                    setRecoveryError("");
+                                    setLoading(true);
+                                    const id = await recoverStudentId(recName, recPin);
+                                    setLoading(false);
+                                    if (id) setRecResult(id);
+                                    else setRecoveryError("Details match no account. Check spelling!");
+                                }}>
+                                    <div className="space-y-4">
+                                        <div className="bg-orange-50 p-3 rounded-lg border border-orange-100 mb-4">
+                                            <p className="text-xs text-orange-800">
+                                                Enter the Name and 4-digit PIN you used during registration.
+                                            </p>
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                                            <input
+                                                type="text"
+                                                required
+                                                value={recName}
+                                                onChange={(e) => setRecName(e.target.value)}
+                                                className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none"
+                                                placeholder="As registered"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">Secret PIN</label>
+                                            <input
+                                                type="text"
+                                                inputMode="numeric"
+                                                maxLength={4}
+                                                required
+                                                value={recPin}
+                                                onChange={(e) => setRecPin(e.target.value)}
+                                                className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none font-mono tracking-widest text-center text-xl"
+                                                placeholder="****"
+                                            />
+                                        </div>
+                                        {recoveryError && <p className="text-red-500 text-sm font-medium">{recoveryError}</p>}
+                                        <button type="submit" disabled={loading} className="w-full py-3 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-bold shadow-md">
+                                            {loading ? "Searching..." : "Find My ID"}
+                                        </button>
+                                    </div>
+                                </form>
+                            )}
+                            <button onClick={() => { setShowRecovery(false); setRecoveryError(""); setRecResult(""); }} className="w-full mt-4 py-2 text-gray-500 hover:text-gray-800 font-medium text-sm">
+                                Cancel & Back
+                            </button>
+                        </div>
+                    </motion.div>
+                </div>
+            </AnimatePresence>
+        );
+    }
 
     return (
         <AnimatePresence>
@@ -96,14 +234,22 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
                                         </div>
                                         <div>
                                             <label className="block text-sm font-medium text-gray-700 mb-1">Grade / Class</label>
-                                            <input
-                                                type="text"
-                                                required
-                                                value={grade}
-                                                onChange={(e) => setGrade(e.target.value)}
-                                                className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none"
-                                                placeholder="e.g. Grade 5"
-                                            />
+                                            <div className="relative">
+                                                <select
+                                                    required
+                                                    value={grade}
+                                                    onChange={(e) => setGrade(e.target.value)}
+                                                    className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none appearance-none bg-white cursor-pointer"
+                                                >
+                                                    <option value="" disabled>Select your Grade</option>
+                                                    {gradeOptions.map(g => (
+                                                        <option key={g} value={g}>{g}</option>
+                                                    ))}
+                                                </select>
+                                                <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">
+                                                    ▼
+                                                </div>
+                                            </div>
                                         </div>
                                         <div>
                                             <label className="block text-sm font-medium text-gray-700 mb-1">Secret PIN (For Recovery) 🔐</label>
@@ -114,8 +260,8 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
                                                 required
                                                 value={pin}
                                                 onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))}
-                                                className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none tracking-widest text-lg font-mono"
-                                                placeholder="e.g. 1234"
+                                                className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none tracking-widest text-lg font-mono text-center"
+                                                placeholder="0000"
                                             />
                                             <p className="text-xs text-orange-600 mt-1 font-medium bg-orange-50 p-2 rounded">
                                                 Write this down! You will need it if you forget your Student ID.
@@ -124,7 +270,16 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
                                     </>
                                 ) : (
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Student ID</label>
+                                        <div className="flex justify-between items-center mb-1">
+                                            <label className="block text-sm font-medium text-gray-700">Student ID</label>
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowRecovery(true)}
+                                                className="text-xs text-orange-600 font-bold hover:underline"
+                                            >
+                                                Forgot ID?
+                                            </button>
+                                        </div>
                                         <input
                                             type="text"
                                             required
@@ -139,7 +294,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
                                 <button
                                     type="submit"
                                     disabled={loading}
-                                    className={`w-full py-3.5 ${mode === 'REGISTER' ? 'bg-blue-600 hover:bg-blue-700' : 'bg-green-600 hover:bg-green-700'} text-white rounded-lg font-bold text-lg transition-colors shadow-lg mt-4 disabled:opacity-50`}
+                                    className={`w-full py-3.5 ${mode === 'REGISTER' ? 'bg-blue-600 hover:bg-blue-700 shadow-blue-200' : 'bg-green-600 hover:bg-green-700 shadow-green-200'} text-white rounded-lg font-bold text-lg transition-all shadow-lg mt-4 disabled:opacity-50 hover:scale-[1.02] active:scale-[0.98]`}
                                 >
                                     {loading ? 'Processing...' : (mode === 'REGISTER' ? 'Get My Student ID' : 'Login')}
                                 </button>
@@ -148,35 +303,41 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
                             <div className="mt-6 text-center">
                                 <button
                                     onClick={() => setMode(mode === 'REGISTER' ? 'LOGIN' : 'REGISTER')}
-                                    className="text-sm font-medium text-slate-500 hover:text-slate-800 underline"
+                                    className="text-sm font-medium text-slate-500 hover:text-slate-800 underline transition-colors"
                                 >
                                     {mode === 'REGISTER' ? 'Already have an ID? Login here' : "Don't have an ID? Create Profile"}
                                 </button>
                             </div>
                         </div>
                     ) : (
-                        <div className="p-8 text-center">
-                            <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                                <CheckCircle className="w-10 h-10 text-green-600" />
+                        <div className="p-8 text-center relative overflow-hidden">
+                            {/* Confetti canvas is handled by the library automatically, but we can add bg visuals */}
+                            <div className="absolute inset-0 bg-gradient-to-br from-white via-green-50 to-blue-50 opacity-50 z-0"></div>
+
+                            <div className="relative z-10">
+                                <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6 shadow-green-200 shadow-lg">
+                                    <CheckCircle className="w-10 h-10 text-green-600" />
+                                </div>
+                                <h2 className="text-2xl font-bold text-gray-900 mb-2">Registration Complete!</h2>
+                                <p className="text-gray-600 mb-6">Your unique Student ID has been generated.</p>
+
+                                <div className="bg-white border-2 border-dashed border-blue-300 rounded-xl p-6 mb-6 shadow-sm">
+                                    <p className="text-sm text-gray-500 uppercase font-bold tracking-wide mb-2">Your Student ID</p>
+                                    <p className="text-4xl font-mono font-bold text-blue-600 tracking-wider copy select-all">{studentCode}</p>
+                                    <p className="text-xs text-blue-400 mt-2 font-medium">We'll remember you on this device!</p>
+                                </div>
+
+                                <p className="text-sm text-yellow-800 bg-yellow-50 border border-yellow-200 p-4 rounded-lg mb-6">
+                                    ⚠️ Save this ID! You will need it to login later, and for your parents to track your progress.
+                                </p>
+
+                                <button
+                                    onClick={onSuccess}
+                                    className="w-full py-3.5 bg-green-600 text-white rounded-lg font-bold text-lg hover:bg-green-700 transition-all shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-[0.98]"
+                                >
+                                    Let's Start Learning! 🚀
+                                </button>
                             </div>
-                            <h2 className="text-2xl font-bold text-gray-900 mb-2">Registration Complete!</h2>
-                            <p className="text-gray-600 mb-6">Your unique Student ID has been generated.</p>
-
-                            <div className="bg-slate-50 border-2 border-dashed border-slate-300 rounded-xl p-6 mb-6">
-                                <p className="text-sm text-gray-500 uppercase font-bold tracking-wide mb-2">Your Student ID</p>
-                                <p className="text-4xl font-mono font-bold text-blue-600 tracking-wider copy">{studentCode}</p>
-                            </div>
-
-                            <p className="text-sm text-yellow-700 bg-yellow-50 p-4 rounded-lg mb-6">
-                                ⚠️ Save this ID! You will need it to login later, and for your parents to track your progress.
-                            </p>
-
-                            <button
-                                onClick={onSuccess}
-                                className="w-full py-3.5 bg-green-600 text-white rounded-lg font-bold text-lg hover:bg-green-700 transition-colors shadow-lg"
-                            >
-                                Continue Learning
-                            </button>
                         </div>
                     )}
                 </motion.div>

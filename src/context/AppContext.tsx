@@ -29,6 +29,10 @@ interface AppContextType {
   // Revision
   revisionUsageCount: number;
   incrementRevisionUsage: () => void;
+  // Subscription
+  isPro: boolean;
+  subscriptionPlan: 'FREE' | 'DAILY' | 'MONTHLY';
+  upgradeAccount: (plan: 'DAILY' | 'MONTHLY') => Promise<boolean>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -409,12 +413,28 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   };
 
+  // Subscription State
+  const [isPro, setIsPro] = useState(false);
+  const [subscriptionPlan, setSubscriptionPlan] = useState<'FREE' | 'DAILY' | 'MONTHLY'>('FREE');
+
+  const upgradeAccount = async (plan: 'DAILY' | 'MONTHLY') => {
+    // Mock Payment Process
+    await new Promise(resolve => setTimeout(resolve, 2000)); // Simulate API call
+    setIsPro(true);
+    setSubscriptionPlan(plan);
+    setUsageCount(0); // Reset limits
+    setRevisionUsageCount(0);
+    // Ideally save to DB/Profile here
+    return true;
+  };
+
   return (
     <AppContext.Provider value={{
       role, setRole, learnerHistory, saveActivity, deleteActivity, studentCode,
       usageCount, incrementUsage, isRegistered, studentProfile, registerStudent, login, recoverStudentId, registerTeacher, loginTeacher, resetPassword,
       teacherUsageCount, incrementTeacherUsage, teacherProfile, updateTeacherProfile, teacherHistory, saveTeacherActivity,
-      revisionUsageCount, incrementRevisionUsage
+      revisionUsageCount, incrementRevisionUsage,
+      isPro, subscriptionPlan, upgradeAccount
     }}>
       {children}
     </AppContext.Provider>

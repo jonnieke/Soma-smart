@@ -12,6 +12,7 @@ import { RevisionSession } from '../revision/RevisionSession';
 import { RevisionMode, LearnerProfile, LearnerActivity, ViewState, ExplanationResult, QuizData } from '../../types';
 import { RegistrationModal } from '../../components/RegistrationModal'; // Assuming path
 import { LoginModal } from '../../components/LoginModal'; // Assuming path
+import { SubscriptionModal } from '../../components/SubscriptionModal';
 import { MarkdownText, Button, Card } from '../../components/Shared';
 import {
   fileToGenerativePart, explainImage, explainAudio, explainTopic,
@@ -174,6 +175,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, saveActiv
   // REMOVE duplicate useApp call that was around here
   const [showRegistration, setShowRegistration] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
+  const [showSubscription, setShowSubscription] = useState(false);
 
   const checkLimit = (): boolean => {
     if (!isRegistered && usageCount >= 3) {
@@ -818,7 +820,7 @@ ${explanation.explanation}
                   <p className="text-xl font-bold font-mono tracking-widest">{displayCode}</p>
                 </div>
               </div>
-              {!profile ? (
+              {!profile && !displayCode ? (
                 <button onClick={(e) => { e.stopPropagation(); setShowLogin(true); }} className="px-3 py-1.5 bg-white text-blue-600 text-xs font-bold rounded-lg shadow-sm hover:bg-blue-50 transition-colors">
                   Login
                 </button>
@@ -830,7 +832,7 @@ ${explanation.explanation}
 
           {!profile && (
             <p className="text-xs text-center mt-3 text-slate-400">
-              {3 - usageCount} free scans remaining. <button onClick={() => setShowRegistration(true)} className="text-blue-600 font-bold hover:underline">Register Free</button>
+              {3 - usageCount} free scans remaining. <button onClick={() => setShowSubscription(true)} className="text-blue-600 font-bold hover:underline">Subscribe</button>
             </p>
           )}
         </div>
@@ -1057,8 +1059,13 @@ ${explanation.explanation}
           )}
         </div>
 
-        <RegistrationModal isOpen={showRegistration} onClose={() => setShowRegistration(false)} />
+        <RegistrationModal
+          isOpen={showRegistration}
+          onClose={() => setShowRegistration(false)}
+          onSuccess={() => setShowRegistration(false)}
+        />
         <LoginModal isOpen={showLogin} onClose={() => setShowLogin(false)} />
+        <SubscriptionModal isOpen={showSubscription} onClose={() => setShowSubscription(false)} />
 
         {/* Quality Warning Modal Re-implementation at root level of component if needed, or keeping existing logic but ensuring z-index is high */}
         {qualityWarning && qualityWarning.show && (

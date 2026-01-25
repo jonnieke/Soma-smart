@@ -96,6 +96,33 @@ export const LandingPage: React.FC = () => {
                         </div>
                     </div>
                 </div>
+
+                {/* Mobile Menu Drawer */}
+                <AnimatePresence>
+                    {mobileMenuOpen && (
+                        <motion.div
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: 'auto', opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            className="md:hidden border-t border-slate-100 overflow-hidden bg-white"
+                        >
+                            <nav className="flex flex-col p-4 space-y-4">
+                                <button onClick={() => { handleRoleSelect(UserRole.LEARNER); setMobileMenuOpen(false); }} className="flex items-center gap-3 p-3 rounded-lg bg-blue-50 text-blue-700 font-bold">
+                                    <Baby className="w-5 h-5" /> Students
+                                </button>
+                                <button onClick={() => { handleRoleSelect(UserRole.TEACHER); setMobileMenuOpen(false); }} className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 text-slate-600 font-medium">
+                                    <GraduationCap className="w-5 h-5" /> Teachers
+                                </button>
+                                <button onClick={() => { navigate('/revision'); setMobileMenuOpen(false); }} className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 text-slate-600 font-medium">
+                                    <BookOpen className="w-5 h-5" /> Revision
+                                </button>
+                                <button onClick={() => { handleRoleSelect(UserRole.PARENT); setMobileMenuOpen(false); }} className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 text-slate-600 font-medium">
+                                    <Users className="w-5 h-5" /> Parents
+                                </button>
+                            </nav>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
             </motion.header>
 
             {/* --- HERO SECTION --- */}
