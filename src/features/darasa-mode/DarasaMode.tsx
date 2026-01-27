@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Mic, BookOpen, PlayCircle, ArrowLeft, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { AudioRecorder } from './components/AudioRecorder';
 import { LessonReview } from './components/LessonReview';
 import { StudentLessonView } from './components/StudentLessonView';
-import { processLessonAudio } from './services/darasaService';
+import { processLessonAudio, processRevisionFile, getLessonsFromStorage, saveLessonToStorage } from './services/darasaService';
 import { LessonResult } from '../../types';
 
 export const DarasaMode: React.FC = () => {
@@ -12,11 +12,19 @@ export const DarasaMode: React.FC = () => {
     const [view, setView] = useState<'DASHBOARD' | 'RECORDING' | 'PROCESSING' | 'REVIEW' | 'PREVIEW'>('DASHBOARD');
     const [currentLesson, setCurrentLesson] = useState<LessonResult | null>(null);
 
+    const [recentLessons, setRecentLessons] = useState<LessonResult[]>([]);
+
+    useEffect(() => {
+        setRecentLessons(getLessonsFromStorage());
+    }, [view]); // Reload when view changes (e.g. after save)
+
     const handleCaptureComplete = async (blob: Blob) => {
         setView('PROCESSING');
         try {
             const result = await processLessonAudio(blob);
             setCurrentLesson(result);
+            // Auto-save on creation
+            saveLessonToStorage(result);
             setView('REVIEW');
         } catch (error) {
             console.error("Processing failed", error);
@@ -25,12 +33,23 @@ export const DarasaMode: React.FC = () => {
         }
     };
 
+    const handleRevisionUpload = async (file: File) => {
+        setView('PROCESSING');
+        try {
+            const result = await processRevisionFile(file);
+            setCurrentLesson(result);
+            saveLessonToStorage(result);
+            setView('REVIEW');
+        } catch (error) {
+            console.error("Revision processing failed", error);
+            alert("Failed to process revision notes. Please ensure the file is a clear image or PDF.");
+            setView('DASHBOARD');
+        }
+    };
+
     const handleSaveLesson = (lesson: LessonResult) => {
-        // Mock save
-        console.log("Saving lesson:", lesson);
-        // In real implementation, this would save to database
-        // For now, let's just create a shareable link mockup
-        alert("Lesson saved! Share code: DARASA-123");
+        saveLessonToStorage(lesson);
+        alert("Lesson saved securely!");
         setView('DASHBOARD');
     };
 
@@ -123,25 +142,49 @@ export const DarasaMode: React.FC = () => {
                                         accept="image/*,.pdf"
                                         onChange={(e) => {
                                             const file = e.target.files?.[0];
-                                            if (file) {
-                                                console.log("File selected:", file);
-                                                alert("Revision feature coming soon! File selected: " + file.name);
-                                                // TODO: Implement file processing for revision
-                                            }
+                                            if (file) handleRevisionUpload(file);
                                         }}
                                     />
                                 </label>
                             </div>
                         </div>
 
-                        {/* Recent Activity Placeholder */}
+                        {/* Recent Activity */}
                         <div className="mt-12">
                             <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
                                 <PlayCircle className="w-5 h-5 text-slate-400" /> Recent Sessions
                             </h3>
-                            <div className="p-8 text-center bg-white rounded-xl border border-dashed border-slate-300 text-slate-400">
-                                No recent sessions found. Start your first class!
-                            </div>
+
+                            {recentLessons.length === 0 ? (
+                                <div className="p-8 text-center bg-white rounded-xl border border-dashed border-slate-300 text-slate-400">
+                                    No recent sessions found. Start your first class!
+                                </div>
+                            ) : (
+                                <div className="space-y-3">
+                                    {recentLessons.map((lesson) => (
+                                        <div
+                                            key={lesson.id}
+                                            onClick={() => {
+                                                setCurrentLesson(lesson);
+                                                setView('REVIEW');
+                                            }}
+                                            className="bg-white p-4 rounded-xl border border-slate-200 hover:border-indigo-300 hover:shadow-md transition-all cursor-pointer flex items-center justify-between"
+                                        >
+                                            <div>
+                                                <h4 className="font-bold text-slate-800">{lesson.topic}</h4>
+                                                <p className="text-sm text-slate-500 line-clamp-1">{lesson.summary}</p>
+                                                <div className="flex gap-2 mt-1">
+                                                    <span className="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">{new Date(lesson.date).toLocaleDateString()}</span>
+                                                    <span className="text-xs bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded-full">{lesson.quiz.length} Questions</span>
+                                                </div>
+                                            </div>
+                                            <div className="text-indigo-600">
+                                                <ArrowLeft className="w-5 h-5 rotate-180" />
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
                         </div>
                     </>
                 )}

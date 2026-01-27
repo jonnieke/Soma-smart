@@ -871,3 +871,97 @@ export const generateDarasaLesson = async (audioBase64: string): Promise<LessonR
     throw error;
   }
 };
+
+export const generateDarasaRevision = async (imageBase64: string, mimeType: string): Promise<LessonResult> => {
+  const model = MODEL_NAME;
+
+  const prompt = `
+    You are an expert Teaching Assistant for a Kenyan Classroom.
+    1. Analyze this image of lesson notes or a textbook page.
+    2. Extract the Main Topic.
+    3. Write a clear, simple Summary (2-3 sentences).
+    4. Create "Simplified Notes" broken into logical sections (Title + Content).
+    5. Generate a Quiz with 3-5 Multiple Choice Questions based DIRECTLY on the content.
+
+    Output structured JSON matching this schema:
+    {
+       "topic": "String",
+       "summary": "String",
+       "simplifiedNotes": [
+          { "title": "Section Title", "content": "Simplified explanation..." }
+       ],
+       "quiz": [
+          {
+             "id": 1,
+             "type": "MCQ",
+             "question": "Question text",
+             "options": ["Option A", "Option B", "Option C", "Option D"],
+             "correctAnswer": 0,
+             "explanation": "Why this is correct"
+          }
+       ]
+    }
+  `;
+
+  try {
+    const response = await ai.models.generateContent({
+      model,
+      contents: {
+        parts: [
+          { inlineData: { mimeType, data: imageBase64 } },
+          { text: prompt }
+        ]
+      },
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            topic: { type: Type.STRING },
+            summary: { type: Type.STRING },
+            simplifiedNotes: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  title: { type: Type.STRING },
+                  content: { type: Type.STRING }
+                },
+                required: ["title", "content"]
+              }
+            },
+            quiz: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  id: { type: Type.INTEGER },
+                  type: { type: Type.STRING, enum: ["MCQ"] },
+                  question: { type: Type.STRING },
+                  options: { type: Type.ARRAY, items: { type: Type.STRING } },
+                  correctAnswer: { type: Type.INTEGER },
+                  explanation: { type: Type.STRING }
+                },
+                required: ["id", "type", "question", "options", "correctAnswer", "explanation"]
+              }
+            }
+          },
+          required: ["topic", "summary", "simplifiedNotes", "quiz"]
+        }
+      }
+    });
+
+    const text = response.text;
+    if (!text) throw new Error("No response from AI");
+
+    const result = JSON.parse(text);
+    return {
+      id: Date.now().toString(),
+      date: new Date().toISOString(),
+      ...result
+    };
+  } catch (error) {
+    console.error("Error generating Darasa revision:", error);
+    throw error;
+  }
+};
