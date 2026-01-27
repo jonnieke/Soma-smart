@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Play, Pause, FileText, HelpCircle, CheckCircle, XCircle, ArrowLeft } from 'lucide-react';
-import { LessonResult } from '../types';
+import { LessonResult } from '../../../types';
 
 interface StudentLessonViewProps {
     lesson: LessonResult;
@@ -13,9 +13,9 @@ export const StudentLessonView: React.FC<StudentLessonViewProps> = ({ lesson, on
     const [showResults, setShowResults] = useState(false);
     const [isPlaying, setIsPlaying] = useState(false);
 
-    const handleAnswer = (questionId: string, optionIndex: number) => {
+    const handleAnswer = (questionId: string | number, optionIndex: number) => {
         if (showResults) return;
-        setQuizAnswers(prev => ({ ...prev, [questionId]: optionIndex }));
+        setQuizAnswers(prev => ({ ...prev, [String(questionId)]: optionIndex }));
     };
 
     const calculateScore = () => {
@@ -115,11 +115,11 @@ export const StudentLessonView: React.FC<StudentLessonViewProps> = ({ lesson, on
                                             let btnClass = "w-full text-left p-3 rounded-lg border text-sm transition-all ";
 
                                             if (showResults) {
-                                                if (optIdx === q.correctAnswer) btnClass += "bg-green-100 border-green-300 text-green-900 font-bold";
-                                                else if (hasAnswered && optIdx === quizAnswers[q.id] && optIdx !== q.correctAnswer) btnClass += "bg-red-100 border-red-300 text-red-900";
+                                                if (optIdx === Number(q.correctAnswer)) btnClass += "bg-green-100 border-green-300 text-green-900 font-bold";
+                                                else if (hasAnswered && optIdx === quizAnswers[String(q.id)] && optIdx !== Number(q.correctAnswer)) btnClass += "bg-red-100 border-red-300 text-red-900";
                                                 else btnClass += "bg-slate-50 border-slate-200 text-slate-400";
                                             } else {
-                                                if (hasAnswered && optIdx === quizAnswers[q.id]) btnClass += "bg-indigo-100 border-indigo-300 text-indigo-900 font-bold";
+                                                if (hasAnswered && optIdx === quizAnswers[String(q.id)]) btnClass += "bg-indigo-100 border-indigo-300 text-indigo-900 font-bold";
                                                 else btnClass += "bg-white border-slate-200 text-slate-600 hover:bg-slate-50";
                                             }
 

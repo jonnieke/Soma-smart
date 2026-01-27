@@ -1,5 +1,5 @@
 import { GoogleGenAI, Type, Modality } from "@google/genai";
-import { ExplanationResult, QuizData, TeacherNote, RevisionMode, TutoringStep, ExamQuestion, ExamAnalysis, TutorResponse } from "../types";
+import { ExplanationResult, QuizData, TeacherNote, RevisionMode, TutoringStep, ExamQuestion, ExamAnalysis, TutorResponse, LessonResult } from "../types";
 
 const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
 
@@ -772,6 +772,102 @@ export const generateLessonRecap = async (inputBase64: string, mimeType: string,
     return JSON.parse(text) as LessonRecap;
   } catch (error) {
     console.error("Error generating lesson recap:", error);
+    throw error;
+  }
+};
+
+// --- DARASA AI FEATURES ---
+
+export const generateDarasaLesson = async (audioBase64: string): Promise<LessonResult> => {
+  const model = MODEL_NAME;
+
+  const prompt = `
+    You are an expert Teaching Assistant for a Kenyan Classroom.
+    1. Listen to this teacher's lesson recording.
+    2. Extract the Main Topic.
+    3. Write a clear, simple Summary (2-3 sentences).
+    4. Create "Simplified Notes" broken into logical sections (Title + Content).
+    5. Generate a Quiz with 3-5 Multiple Choice Questions based DIRECTLY on what was said.
+
+    Output structured JSON matching this schema:
+    {
+       "topic": "String",
+       "summary": "String",
+       "simplifiedNotes": [
+          { "title": "Section Title", "content": "Simplified explanation..." }
+       ],
+       "quiz": [
+          {
+             "id": 1,
+             "type": "MCQ",
+             "question": "Question text",
+             "options": ["Option A", "Option B", "Option C", "Option D"],
+             "correctAnswer": 0,
+             "explanation": "Why this is correct"
+          }
+       ]
+    }
+  `;
+
+  try {
+    const response = await ai.models.generateContent({
+      model,
+      contents: {
+        parts: [
+          { inlineData: { mimeType: "audio/mp3", data: audioBase64 } },
+          { text: prompt }
+        ]
+      },
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            topic: { type: Type.STRING },
+            summary: { type: Type.STRING },
+            simplifiedNotes: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  title: { type: Type.STRING },
+                  content: { type: Type.STRING }
+                },
+                required: ["title", "content"]
+              }
+            },
+            quiz: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  id: { type: Type.INTEGER },
+                  type: { type: Type.STRING, enum: ["MCQ"] },
+                  question: { type: Type.STRING },
+                  options: { type: Type.ARRAY, items: { type: Type.STRING } },
+                  correctAnswer: { type: Type.INTEGER },
+                  explanation: { type: Type.STRING }
+                },
+                required: ["id", "type", "question", "options", "correctAnswer", "explanation"]
+              }
+            }
+          },
+          required: ["topic", "summary", "simplifiedNotes", "quiz"]
+        }
+      }
+    });
+
+    const text = response.text;
+    if (!text) throw new Error("No response from AI");
+
+    const result = JSON.parse(text);
+    return {
+      id: Date.now().toString(),
+      date: new Date().toISOString(),
+      ...result
+    };
+  } catch (error) {
+    console.error("Error generating Darasa lesson:", error);
     throw error;
   }
 };

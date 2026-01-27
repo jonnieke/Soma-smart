@@ -27,11 +27,11 @@ export interface ExplanationResult {
 }
 
 export interface QuizQuestion {
-  id: number;
+  id: number | string;
   type: 'MCQ' | 'SHORT';
   question: string;
   options?: string[];
-  correctAnswer: string; // For MCQ: option text. For Short: key phrase.
+  correctAnswer: string | number; // For MCQ: option text/index. For Short: key phrase.
   explanation: string;
 }
 
@@ -129,4 +129,20 @@ export interface LessonRecap {
   examTips: string[]; // "This often comes in exams as..."
   definitions: { term: string; definition: string }[];
   teacherNotes?: string; // Teacher specific field
+}
+
+// --- DARASA MODE TYPES ---
+
+export interface NoteSection {
+  title: string;
+  content: string;
+}
+
+export interface LessonResult {
+  id: string;
+  topic: string;
+  date: string;
+  simplifiedNotes: NoteSection[];
+  quiz: QuizQuestion[];
+  summary: string;
 }

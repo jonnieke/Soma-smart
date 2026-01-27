@@ -5,7 +5,7 @@ import { AudioRecorder } from './components/AudioRecorder';
 import { LessonReview } from './components/LessonReview';
 import { StudentLessonView } from './components/StudentLessonView';
 import { processLessonAudio } from './services/darasaService';
-import { LessonResult } from './types';
+import { LessonResult } from '../../types';
 
 export const DarasaMode: React.FC = () => {
     const navigate = useNavigate();
@@ -108,16 +108,29 @@ export const DarasaMode: React.FC = () => {
                                 </button>
                             </div>
 
-                            {/* Revision Card */}
-                            <div className="bg-white p-6 rounded-2xl shadow-lg border border-orange-50 hover:shadow-xl transition-all cursor-pointer group">
+                            <div className="bg-white p-6 rounded-2xl shadow-lg border border-orange-50 hover:shadow-xl transition-all cursor-pointer group relative">
                                 <div className="w-14 h-14 bg-orange-100 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                                     <BookOpen className="w-7 h-7 text-orange-600" />
                                 </div>
                                 <h3 className="text-xl font-bold text-slate-800 mb-2">Create Revision</h3>
-                                <p className="text-slate-500 mb-4">Turn past notes or key points into a quick revision wrapper.</p>
-                                <button className="w-full py-2 bg-orange-100 text-orange-700 rounded-lg font-bold hover:bg-orange-200 transition-colors">
-                                    Upload / Write
-                                </button>
+                                <p className="text-slate-500 mb-4">Upload past notes (PDF/Image) to generate a revision quiz.</p>
+
+                                <label className="w-full py-2 bg-orange-100 text-orange-700 rounded-lg font-bold hover:bg-orange-200 transition-colors text-center block cursor-pointer">
+                                    Upload Notes
+                                    <input
+                                        type="file"
+                                        className="hidden"
+                                        accept="image/*,.pdf"
+                                        onChange={(e) => {
+                                            const file = e.target.files?.[0];
+                                            if (file) {
+                                                console.log("File selected:", file);
+                                                alert("Revision feature coming soon! File selected: " + file.name);
+                                                // TODO: Implement file processing for revision
+                                            }
+                                        }}
+                                    />
+                                </label>
                             </div>
                         </div>
 

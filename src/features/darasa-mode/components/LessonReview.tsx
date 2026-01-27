@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { ArrowLeft, Save, Share2, FileText, HelpCircle, Check, Edit2, Eye } from 'lucide-react';
-import { LessonResult } from '../types';
+import { LessonResult } from '../../../types';
 
 interface LessonReviewProps {
     lesson: LessonResult;
@@ -128,9 +128,9 @@ export const LessonReview: React.FC<LessonReviewProps> = ({ lesson, onBack, onSa
 
                                             <div className="grid grid-cols-1 gap-2">
                                                 {q.options.map((opt, optIdx) => (
-                                                    <div key={optIdx} className={`flex items-center px-3 py-2 rounded-lg border ${optIdx === q.correctAnswer ? 'bg-green-50 border-green-200' : 'bg-white border-slate-200'}`}>
-                                                        <div className={`w-4 h-4 rounded-full border flex items-center justify-center mr-3 ${optIdx === q.correctAnswer ? 'border-green-500 bg-green-500' : 'border-slate-300'}`}>
-                                                            {optIdx === q.correctAnswer && <Check className="w-3 h-3 text-white" />}
+                                                    <div key={optIdx} className={`flex items-center px-3 py-2 rounded-lg border ${optIdx === Number(q.correctAnswer) ? 'bg-green-50 border-green-200' : 'bg-white border-slate-200'}`}>
+                                                        <div className={`w-4 h-4 rounded-full border flex items-center justify-center mr-3 ${optIdx === Number(q.correctAnswer) ? 'border-green-500 bg-green-500' : 'border-slate-300'}`}>
+                                                            {optIdx === Number(q.correctAnswer) && <Check className="w-3 h-3 text-white" />}
                                                         </div>
                                                         <input
                                                             value={opt}
