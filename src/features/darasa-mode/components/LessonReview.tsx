@@ -6,10 +6,11 @@ interface LessonReviewProps {
     lesson: LessonResult;
     onBack: () => void;
     onSave: (updatedLesson: LessonResult) => void;
+    onDownload: (lesson: LessonResult) => void;
     onPreview: () => void;
 }
 
-export const LessonReview: React.FC<LessonReviewProps> = ({ lesson, onBack, onSave, onPreview }) => {
+export const LessonReview: React.FC<LessonReviewProps> = ({ lesson, onBack, onSave, onDownload, onPreview }) => {
     const [activeTab, setActiveTab] = useState<'NOTES' | 'QUIZ'>('NOTES');
     const [editedLesson, setEditedLesson] = useState<LessonResult>(lesson);
 
@@ -30,17 +31,10 @@ export const LessonReview: React.FC<LessonReviewProps> = ({ lesson, onBack, onSa
 
                 <div className="flex gap-3">
                     <button
-                        onClick={() => {
-                            const blob = new Blob([JSON.stringify(lesson, null, 2)], { type: 'application/json' });
-                            const url = URL.createObjectURL(blob);
-                            const a = document.createElement('a');
-                            a.href = url;
-                            a.download = `darasa-lesson-${lesson.topic.replace(/\s+/g, '-').toLowerCase()}.json`;
-                            a.click();
-                        }}
+                        onClick={() => onDownload(editedLesson)}
                         className="px-4 py-2 bg-white text-slate-600 font-medium rounded-lg border border-slate-200 hover:bg-slate-50 transition-colors"
                     >
-                        Download JSON
+                        Download Notes
                     </button>
                     <button
                         onClick={onPreview}

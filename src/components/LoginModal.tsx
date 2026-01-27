@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Lock, LogIn, User, GraduationCap, X, Plus } from 'lucide-react';
+import { Lock, LogIn, User, GraduationCap, X, Plus, CheckCircle } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 
 interface LoginModalProps {
@@ -11,22 +11,17 @@ interface LoginModalProps {
 }
 
 export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, initialTab = 'STUDENT' }) => {
-    const { login, loginTeacher, recoverStudentId } = useApp();
+    const { login, loginTeacher, recoverStudentId, resetPassword } = useApp();
     const navigate = useNavigate();
 
     // Tab State
     const [activeTab, setActiveTab] = useState<'STUDENT' | 'TEACHER'>(initialTab);
-
-    // Effect to reset/detect state when modal opens
-
-
 
     // Student State
     const [code, setCode] = useState("");
     const [error, setError] = useState("");
     const [showRecents, setShowRecents] = useState(false);
     const [showRecovery, setShowRecovery] = useState(false);
-
 
     // Recovery State
     const [recName, setRecName] = useState("");
@@ -39,11 +34,15 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, initial
     const [password, setPassword] = useState("");
     const [loading, setLoading] = useState(false);
 
+    // Reset Password State
+    const [showReset, setShowReset] = useState(false);
+    const [resetEmail, setResetEmail] = useState("");
+    const [resetSent, setResetSent] = useState(false);
+
     // Effect to reset/detect state when modal opens
-    React.useEffect(() => {
+    useEffect(() => {
         if (isOpen) {
             setActiveTab(initialTab);
-            // Auto-load recents logic is handled in rendering, but we refresh local state here
             try {
                 const h = JSON.parse(localStorage.getItem('soma_recent_login') || '[]');
                 setRecents(h);
@@ -55,7 +54,6 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, initial
             }
         }
     }, [isOpen, initialTab]);
-
 
     const handleRecentClick = (recentCode: string) => {
         setCode(recentCode);
@@ -101,7 +99,88 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, initial
         }
     };
 
+    const handleReset = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setLoading(true);
+        setError("");
+        const success = await resetPassword(resetEmail);
+        setLoading(false);
+        if (success) {
+            setResetSent(true);
+        } else {
+            setError("Failed to send reset email. Please try again.");
+        }
+    };
+
     if (!isOpen) return null;
+
+    // View: Reset Password
+    if (showReset) {
+        return (
+            <AnimatePresence>
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={onClose}>
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.95 }}
+                        onClick={(e) => e.stopPropagation()}
+                        className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden"
+                    >
+                        <div className="p-6">
+                            <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+                                <Lock className="w-5 h-5 text-indigo-500" /> Reset Password
+                            </h3>
+
+                            {resetSent ? (
+                                <div className="text-center py-4">
+                                    <motion.div
+                                        initial={{ scale: 0 }} animate={{ scale: 1 }}
+                                        className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4"
+                                    >
+                                        <CheckCircle className="w-8 h-8 text-green-600" />
+                                    </motion.div>
+                                    <p className="text-gray-900 font-bold mb-2">Check your inbox!</p>
+                                    <p className="text-gray-500 text-sm mb-6">We've sent a password reset link to <br /> <span className="font-bold text-indigo-600">{resetEmail}</span></p>
+                                    <button
+                                        onClick={() => { setShowReset(false); setResetSent(false); setResetEmail(""); }}
+                                        className="w-full py-3 bg-indigo-600 text-white rounded-lg font-bold hover:bg-indigo-700 shadow-md transition-all"
+                                    >
+                                        Back to Login
+                                    </button>
+                                </div>
+                            ) : (
+                                <form onSubmit={handleReset}>
+                                    <div className="space-y-4">
+                                        <p className="text-sm text-gray-500 mb-4">
+                                            Enter your email address and we'll send you a link to reset your password.
+                                        </p>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
+                                            <input
+                                                type="email"
+                                                required
+                                                value={resetEmail}
+                                                onChange={(e) => setResetEmail(e.target.value)}
+                                                className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 outline-none"
+                                                placeholder="teacher@school.com"
+                                            />
+                                        </div>
+                                        {error && <p className="text-red-500 text-sm font-medium">{error}</p>}
+                                        <button type="submit" disabled={loading} className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-bold shadow-md transition-all">
+                                            {loading ? "Sending..." : "Send Reset Link"}
+                                        </button>
+                                    </div>
+                                </form>
+                            )}
+                            <button onClick={() => { setShowReset(false); setError(""); }} className="w-full mt-4 py-2 text-gray-500 hover:text-gray-800 font-medium text-sm">
+                                Cancel
+                            </button>
+                        </div>
+                    </motion.div>
+                </div>
+            </AnimatePresence>
+        );
+    }
 
     // View: Saved Student Accounts (Sticky Login)
     if (showRecents && activeTab === 'STUDENT') {
@@ -360,7 +439,13 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, initial
                                     <div>
                                         <div className="flex justify-between items-center mb-1">
                                             <label className="block text-sm font-medium text-gray-700">Password</label>
-
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowReset(true)}
+                                                className="text-xs text-indigo-600 font-bold hover:underline"
+                                            >
+                                                Forgot?
+                                            </button>
                                         </div>
                                         <input
                                             type="password"

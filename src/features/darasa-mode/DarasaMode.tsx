@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Mic, BookOpen, PlayCircle, ArrowLeft, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useApp } from '../../context/AppContext';
 import { AudioRecorder } from './components/AudioRecorder';
 import { LessonReview } from './components/LessonReview';
 import { StudentLessonView } from './components/StudentLessonView';
@@ -9,22 +10,66 @@ import { LessonResult } from '../../types';
 
 export const DarasaMode: React.FC = () => {
     const navigate = useNavigate();
+    const { role } = useApp();
     const [view, setView] = useState<'DASHBOARD' | 'RECORDING' | 'PROCESSING' | 'REVIEW' | 'PREVIEW'>('DASHBOARD');
     const [currentLesson, setCurrentLesson] = useState<LessonResult | null>(null);
 
     const [recentLessons, setRecentLessons] = useState<LessonResult[]>([]);
+    const [loadingHistory, setLoadingHistory] = useState(false);
 
     useEffect(() => {
-        setRecentLessons(getLessonsFromStorage());
-    }, [view]); // Reload when view changes (e.g. after save)
+        if (role === 'TEACHER') {
+            setLoadingHistory(true);
+            getLessonsFromStorage()
+                .then(setRecentLessons)
+                .finally(() => setLoadingHistory(false));
+        } else {
+            setRecentLessons([]);
+        }
+    }, [view, role]);
+    // ... existing code ...
+    <div className="space-y-3">
+        {recentLessons.map((lesson, index) => (
+            <div
+                key={`${lesson.id}-${index}`}
+                onClick={() => {
+                    setCurrentLesson(lesson);
+                    setView('REVIEW');
+                }}
+                className="bg-white p-4 rounded-xl border border-slate-200 hover:border-indigo-300 hover:shadow-md transition-all cursor-pointer flex items-center justify-between"
+            >
+                <div>
+                    <h4 className="font-bold text-slate-800">{lesson.topic}</h4>
+                    <p className="text-sm text-slate-500 line-clamp-1">{lesson.summary}</p>
+                    <div className="flex gap-2 mt-1">
+                        <span className="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">{new Date(lesson.date).toLocaleDateString()}</span>
+                        <span className="text-xs bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded-full">{lesson.quiz.length} Questions</span>
+                    </div>
+                </div>
+                <div className="text-indigo-600">
+                    <ArrowLeft className="w-5 h-5 rotate-180" />
+                </div>
+            </div>
+        ))}
+    </div>
 
     const handleCaptureComplete = async (blob: Blob) => {
+        if (role !== 'TEACHER') {
+            alert("Please login as a Teacher to save lessons.");
+            // Proceed to review but warn they can't save? 
+            // Or maybe just let them proceed but save will fail.
+            // Let's let them proceed to review, but auto-save will skip if not auth.
+        }
+
         setView('PROCESSING');
         try {
             const result = await processLessonAudio(blob);
             setCurrentLesson(result);
-            // Auto-save on creation
-            saveLessonToStorage(result);
+
+            if (role === 'TEACHER') {
+                await saveLessonToStorage(result);
+            }
+
             setView('REVIEW');
         } catch (error) {
             console.error("Processing failed", error);
@@ -38,7 +83,11 @@ export const DarasaMode: React.FC = () => {
         try {
             const result = await processRevisionFile(file);
             setCurrentLesson(result);
-            saveLessonToStorage(result);
+
+            if (role === 'TEACHER') {
+                await saveLessonToStorage(result);
+            }
+
             setView('REVIEW');
         } catch (error) {
             console.error("Revision processing failed", error);
@@ -47,10 +96,59 @@ export const DarasaMode: React.FC = () => {
         }
     };
 
-    const handleSaveLesson = (lesson: LessonResult) => {
-        saveLessonToStorage(lesson);
-        alert("Lesson saved securely!");
-        setView('DASHBOARD');
+    const handleSaveLesson = async (lesson: LessonResult) => {
+        if (role !== 'TEACHER') {
+            // Direct redirect to simplify flow
+            navigate('/teacher');
+            return;
+        }
+
+        try {
+            await saveLessonToStorage(lesson);
+            alert("Lesson saved securely to cloud!");
+            setView('DASHBOARD');
+        } catch (e) {
+            alert("Failed to save to cloud.");
+        }
+    };
+
+    const handleDownload = (lesson: LessonResult) => {
+        if (role !== 'TEACHER') {
+            // Direct redirect to simplify flow
+            navigate('/teacher');
+            return;
+        }
+
+        // Generate Readable Text Format
+        let content = `TOPIC: ${lesson.topic.toUpperCase()}\n`;
+        content += `DATE: ${new Date(lesson.date).toLocaleDateString()}\n`;
+        content += `----------------------------------------\n\n`;
+
+        content += `SUMMARY:\n${lesson.summary}\n\n`;
+
+        content += `NOTES:\n`;
+        lesson.simplifiedNotes.forEach((note, i) => {
+            content += `${i + 1}. ${note.title}\n${note.content}\n\n`;
+        });
+
+        content += `----------------------------------------\n`;
+        content += `QUIZ (${lesson.quiz.length} Questions):\n\n`;
+
+        lesson.quiz.forEach((q, i) => {
+            content += `Q${i + 1}: ${q.question}\n`;
+            if (q.options) {
+                q.options.forEach((opt, oi) => content += `   ${['A', 'B', 'C', 'D'][oi]}. ${opt}\n`);
+            }
+            content += `   ANSWER: ${q.correctAnswer}\n`;
+            content += `   EXPLANATION: ${q.explanation}\n\n`;
+        });
+
+        const blob = new Blob([content], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `Lesson-${lesson.topic.replace(/\s+/g, '-').replace(/[^a-z0-9-]/gi, '')}.txt`;
+        a.click();
     };
 
     if (view === 'PREVIEW' && currentLesson) {
@@ -68,6 +166,7 @@ export const DarasaMode: React.FC = () => {
                 lesson={currentLesson}
                 onBack={() => setView('DASHBOARD')}
                 onSave={handleSaveLesson}
+                onDownload={handleDownload}
                 onPreview={() => setView('PREVIEW')}
             />
         );
@@ -161,9 +260,9 @@ export const DarasaMode: React.FC = () => {
                                 </div>
                             ) : (
                                 <div className="space-y-3">
-                                    {recentLessons.map((lesson) => (
+                                    {recentLessons.map((lesson, index) => (
                                         <div
-                                            key={lesson.id}
+                                            key={`${lesson.id}-${index}`}
                                             onClick={() => {
                                                 setCurrentLesson(lesson);
                                                 setView('REVIEW');

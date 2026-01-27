@@ -44,36 +44,63 @@ export const processRevisionFile = async (file: File): Promise<LessonResult> => 
     });
 };
 
-// Persistence Keys
-const STORAGE_KEY = 'darasa_sessions_v1';
+import { supabase } from '../../../lib/supabase';
 
-export const saveLessonToStorage = (lesson: LessonResult): void => {
+// DB Table Name
+const TABLE_NAME = 'darasa_lessons';
+
+export const saveLessonToStorage = async (lesson: LessonResult): Promise<void> => {
     try {
-        const existing = getLessonsFromStorage();
-        const updated = [lesson, ...existing];
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) throw new Error("User not authenticated");
+
+        // Upsert to Supabase
+        const { error } = await supabase.from(TABLE_NAME).upsert({
+            id: lesson.id, // Ensure uuid
+            user_id: user.id,
+            topic: lesson.topic,
+            summary: lesson.summary,
+            content: lesson, // Store full JSON
+            created_at: lesson.date
+        });
+
+        if (error) throw error;
     } catch (e) {
-        console.error("Failed to save lesson", e);
+        console.error("Failed to save lesson to cloud:", e);
+        throw e;
     }
 };
 
-export const getLessonsFromStorage = (): LessonResult[] => {
+export const getLessonsFromStorage = async (): Promise<LessonResult[]> => {
     try {
-        const raw = localStorage.getItem(STORAGE_KEY);
-        if (!raw) return [];
-        return JSON.parse(raw);
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return [];
+
+        const { data, error } = await supabase
+            .from(TABLE_NAME)
+            .select('*')
+            .eq('user_id', user.id)
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        return data?.map(row => {
+            // Handle legacy or structure differences if needed
+            // Assuming row.content holds the full LessonResult structure
+            return typeof row.content === 'string' ? JSON.parse(row.content) : row.content;
+        }) || [];
     } catch (e) {
-        console.error("Failed to load lessons", e);
+        console.error("Failed to load lessons from cloud:", e);
         return [];
     }
 };
 
-export const deleteLessonFromStorage = (id: string): void => {
+export const deleteLessonFromStorage = async (id: string): Promise<void> => {
     try {
-        const existing = getLessonsFromStorage();
-        const updated = existing.filter(l => l.id !== id);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+        const { error } = await supabase.from(TABLE_NAME).delete().eq('id', id);
+        if (error) throw error;
     } catch (e) {
-        console.error("Failed to delete lesson", e);
+        console.error("Failed to delete lesson:", e);
+        throw e;
     }
 };
