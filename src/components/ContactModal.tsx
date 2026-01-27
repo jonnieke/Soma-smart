@@ -64,7 +64,7 @@ export const ContactModal: React.FC<ContactModalProps> = ({ isOpen, onClose }) =
                             <X className="w-5 h-5 text-white" />
                         </button>
                         <h2 className="text-2xl font-bold relative z-10">Get in Touch</h2>
-                        <p className="text-blue-100 text-sm relative z-10 mt-1">We'd love to hear from you!</p>
+                        <p className="text-blue-100 text-sm relative z-10 mt-1">We&apos;d love to hear from you!</p>
                     </div>
 
                     {/* Content */}
@@ -75,7 +75,7 @@ export const ContactModal: React.FC<ContactModalProps> = ({ isOpen, onClose }) =
                                     <Send className="w-8 h-8" />
                                 </div>
                                 <h3 className="text-2xl font-bold text-gray-800">Message Sent!</h3>
-                                <p className="text-gray-500">Thanks for reaching out. We'll get back to you shortly.</p>
+                                <p className="text-gray-500">Thanks for reaching out. We&apos;ll get back to you shortly.</p>
                             </div>
                         ) : (
                             <form onSubmit={handleSubmit} className="space-y-5">

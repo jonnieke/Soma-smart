@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
     GraduationCap, Users, Baby, ChevronRight, MessageSquare,
-    ScanLine, CheckCircle, Menu, X, CheckSquare, Play, BookOpen
+    ScanLine, CheckCircle, Menu, X, CheckSquare, Play, BookOpen, LogOut
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { UserRole } from '../types';
@@ -19,21 +19,40 @@ import stepAudioImg from '../assets/images/step_audio.png';
 import { RegistrationModal } from '../components/RegistrationModal';
 import { LegalModal } from '../components/LegalModal';
 import { ContactModal } from '../components/ContactModal';
+import { SubscriptionModal } from '../components/SubscriptionModal';
+import { LoginModal } from '../components/LoginModal';
 
 export const LandingPage: React.FC = () => {
     const navigate = useNavigate();
-    const { setRole } = useApp();
+    const { setRole, role, logout } = useApp(); // Need role for check and logout function
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [showRegistration, setShowRegistration] = useState(false);
     const [showPrivacy, setShowPrivacy] = useState(false);
     const [showTerms, setShowTerms] = useState(false);
     const [showContact, setShowContact] = useState(false);
+    const [showSubscription, setShowSubscription] = useState(false);
+    const [showLogin, setShowLogin] = useState(false);
+    const [isClaimingOffer, setIsClaimingOffer] = useState(false);
+    const { isRegistered } = useApp(); // Destructure isRegistered for check
 
     const handleRoleSelect = (selectedRole: UserRole) => {
-        setRole(selectedRole);
-        if (selectedRole === UserRole.LEARNER) navigate('/learner');
-        else if (selectedRole === UserRole.TEACHER) navigate('/teacher');
-        else if (selectedRole === UserRole.PARENT) navigate('/parent');
+        if (selectedRole === UserRole.LEARNER) {
+            if (isRegistered) {
+                setRole(UserRole.LEARNER);
+                navigate('/learner');
+            } else {
+                setRole(UserRole.LEARNER); // Set context role
+                setShowLogin(true); // Show Login Form for ID entry
+            }
+        }
+        else if (selectedRole === UserRole.TEACHER) {
+            setRole(selectedRole);
+            navigate('/teacher');
+        }
+        else if (selectedRole === UserRole.PARENT) {
+            setRole(selectedRole);
+            navigate('/parent');
+        }
     };
 
     const handleGetStarted = () => {
@@ -43,7 +62,26 @@ export const LandingPage: React.FC = () => {
 
     const handleRegistrationSuccess = () => {
         setShowRegistration(false);
-        navigate('/learner');
+        if (isClaimingOffer) {
+            // Navigate to the appropriate dashboard with openSubscription flag
+            const target = role === UserRole.TEACHER ? '/teacher' : '/learner';
+            navigate(target, { state: { openSubscription: true } });
+            setIsClaimingOffer(false);
+        } else {
+            navigate('/learner');
+        }
+    };
+
+    const handleClaimOffer = () => {
+        // User requested this to route to Learner flow instead of Teacher
+        setRole(UserRole.LEARNER);
+
+        if (isRegistered) {
+            navigate('/learner', { state: { openSubscription: true } });
+        } else {
+            setIsClaimingOffer(true);
+            setShowRegistration(true);
+        }
     };
 
     const handleModalClose = () => {
@@ -143,10 +181,18 @@ export const LandingPage: React.FC = () => {
 
                         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12">
                             <button
-                                onClick={handleGetStarted}
-                                className="px-8 py-3.5 bg-blue-600 text-white rounded-md font-bold text-lg shadow-lg shadow-blue-200 hover:bg-blue-700 transition-all hover:-translate-y-1 w-full sm:w-auto"
+                                onClick={isRegistered ? logout : handleGetStarted}
+                                className={`px-8 py-3.5 ${isRegistered ? 'bg-slate-700 hover:bg-slate-800' : 'bg-blue-600 hover:bg-blue-700'} text-white rounded-md font-bold text-lg shadow-lg shadow-blue-200 transition-all hover:-translate-y-1 w-full sm:w-auto flex items-center justify-center gap-2`}
                             >
-                                Get Started Free &gt;
+                                {isRegistered ? (
+                                    <>
+                                        Logout <LogOut className="w-5 h-5" />
+                                    </>
+                                ) : (
+                                    <>
+                                        Get Started Free &gt;
+                                    </>
+                                )}
                             </button>
                             <button
                                 onClick={() => handleRoleSelect(UserRole.TEACHER)}
@@ -154,6 +200,17 @@ export const LandingPage: React.FC = () => {
                             >
                                 For Schools & Teachers &gt;
                             </button>
+                            <div className="flex flex-col items-center gap-2 w-full sm:w-auto">
+                                <button
+                                    onClick={() => navigate('/teacher/darasa')}
+                                    className="px-8 py-3.5 bg-indigo-600 text-white rounded-md font-bold text-lg shadow-lg shadow-indigo-200 transition-all hover:-translate-y-1 w-full flex items-center justify-center gap-2"
+                                >
+                                    <span className="flex items-center gap-2">
+                                        Try Darasa Mode <span className="bg-indigo-500 px-1.5 py-0.5 rounded text-xs uppercase tracking-wider">New</span>
+                                    </span>
+                                </button>
+                                <span className="text-xs text-indigo-600 font-medium italic">Capture Lesson, Create Summarized Notes</span>
+                            </div>
                         </div>
 
                         <div className="flex flex-wrap justify-center gap-x-8 gap-y-4 text-sm font-semibold text-slate-600 border-t border-dashed border-slate-200 pt-8 max-w-4xl mx-auto">
@@ -186,7 +243,7 @@ export const LandingPage: React.FC = () => {
                         </div>
                     </div>
                     <button
-                        onClick={() => handleRoleSelect(UserRole.TEACHER)}
+                        onClick={handleClaimOffer}
                         className="bg-white text-indigo-900 font-bold px-6 py-2 rounded-full hover:bg-yellow-400 hover:text-indigo-900 transition-all shadow-lg flex items-center gap-2"
                     >
                         Claim Offer <ChevronRight className="w-4 h-4" />
@@ -376,6 +433,17 @@ export const LandingPage: React.FC = () => {
                 onClose={() => setShowContact(false)}
             />
 
+            <SubscriptionModal
+                isOpen={showSubscription}
+                onClose={() => setShowSubscription(false)}
+            />
+
+            <LoginModal
+                isOpen={showLogin}
+                onClose={() => setShowLogin(false)}
+                initialTab="STUDENT"
+            />
+
             <LegalModal
                 isOpen={showPrivacy}
                 onClose={() => setShowPrivacy(false)}
@@ -407,7 +475,7 @@ export const LandingPage: React.FC = () => {
 
                         <section>
                             <h3 className="text-lg font-bold text-slate-900 mb-2">3. Data Safety & AI</h3>
-                            <p>We use Google's Gemini AI to process text and images. </p>
+                            <p>We use Google&apos;s Gemini AI to process text and images. </p>
                             <ul className="list-disc pl-5 space-y-1 mt-2">
                                 <li>We do <strong>not</strong> use your personal data to train public AI models.</li>
                                 <li>Your data is processed ephemerally for the purpose of the immediate query.</li>
@@ -415,7 +483,7 @@ export const LandingPage: React.FC = () => {
                         </section>
 
                         <section>
-                            <h3 className="text-lg font-bold text-slate-900 mb-2">4. Children's Privacy</h3>
+                            <h3 className="text-lg font-bold text-slate-900 mb-2">4. Children&apos;s Privacy</h3>
                             <p>Soma Smart is designed for students. We do not require email addresses or phone numbers from students under 13. Parent supervision is encouraged.</p>
                         </section>
                     </div>
@@ -451,7 +519,7 @@ export const LandingPage: React.FC = () => {
                             <p>You agree to use this platform responsibly:</p>
                             <ul className="list-disc pl-5 space-y-1 mt-2">
                                 <li>Do not upload inappropriate, harmful, or copyright-infringing content.</li>
-                                <li>Do not attempt to reverse-engineer or "jailbreak" the AI assistant.</li>
+                                <li>Do not attempt to reverse-engineer or &quot;jailbreak&quot; the AI assistant.</li>
                             </ul>
                         </section>
 

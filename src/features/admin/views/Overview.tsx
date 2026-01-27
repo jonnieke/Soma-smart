@@ -1,13 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { DollarSign, Users, Activity, CheckCircle, TrendingUp, ArrowUp } from 'lucide-react';
-import { getAdminStats, AdminStats } from '../../../services/paymentService';
+import { getAdminStats, AdminStats } from '../../../services/paymentService'; // Keep for legacy check or remove if unused, but we switch to adminService
+import { fetchDashboardStats, DashboardStats } from '../../../services/adminService';
 
 export const Overview: React.FC = () => {
-    const [stats, setStats] = useState<AdminStats | null>(null);
+    const [stats, setStats] = useState<DashboardStats | null>(null);
 
     useEffect(() => {
-        getAdminStats().then(setStats);
+        fetchDashboardStats().then(setStats);
     }, []);
 
     if (!stats) return <div className="p-12 text-center text-slate-400">Loading metrics...</div>;
@@ -24,23 +25,23 @@ export const Overview: React.FC = () => {
                     bg="bg-emerald-50"
                 />
                 <MetricCard
-                    title="Active Trials"
-                    value={stats.activeTrials.toString()}
-                    change="+5 today"
+                    title="Total Students"
+                    value={stats.totalStudents.toLocaleString()}
+                    change="Active"
                     icon={<Users className="w-6 h-6 text-blue-600" />}
                     bg="bg-blue-50"
                 />
                 <MetricCard
                     title="Verified Users"
-                    value={stats.verifiedUsers.toString()}
-                    change="+18.2%"
+                    value={stats.verifiedUsers.toLocaleString()}
+                    change={`${Math.round((stats.verifiedUsers / (stats.totalStudents + stats.totalTeachers + stats.totalParents || 1)) * 100)}%`}
                     icon={<CheckCircle className="w-6 h-6 text-indigo-600" />}
                     bg="bg-indigo-50"
                 />
                 <MetricCard
                     title="Active Pro"
-                    value={stats.activePro.toString()}
-                    change="+2.1%"
+                    value={stats.activePro.toLocaleString()}
+                    change="Growing"
                     icon={<Activity className="w-6 h-6 text-purple-600" />}
                     bg="bg-purple-50"
                 />
@@ -56,26 +57,31 @@ export const Overview: React.FC = () => {
                             <p className="text-sm text-slate-400">Daily active students & teachers</p>
                         </div>
                         <select className="bg-slate-50 border border-slate-200 rounded-lg px-3 py-1 text-sm text-slate-600 outline-none">
-                            <option>Last 7 Days</option>
-                            <option>Last 30 Days</option>
+                            <option>Last 14 Days</option>
                         </select>
                     </div>
 
-                    {/* Mock Graph */}
+                    {/* Real Graph */}
                     <div className="h-64 flex items-end justify-between gap-2 px-2">
-                        {[40, 65, 45, 80, 55, 90, 75, 40, 65, 45, 80, 55, 95, 85].map((h, i) => (
-                            <motion.div
-                                key={i}
-                                initial={{ height: 0 }}
-                                animate={{ height: `${h}%` }}
-                                transition={{ delay: i * 0.05 }}
-                                className="w-full bg-indigo-500/10 hover:bg-indigo-500 rounded-t-sm relative group cursor-pointer transition-colors"
-                            >
-                                <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">
-                                    {h * 12}
-                                </div>
-                            </motion.div>
-                        ))}
+                        {stats.activityTrend.map((h, i) => {
+                            // Normalize height for display (max 100%)
+                            const max = Math.max(...stats.activityTrend, 1);
+                            const heightPct = (h / max) * 100;
+
+                            return (
+                                <motion.div
+                                    key={i}
+                                    initial={{ height: 0 }}
+                                    animate={{ height: `${heightPct}%` }}
+                                    transition={{ delay: i * 0.05 }}
+                                    className="w-full bg-indigo-500/10 hover:bg-indigo-500 rounded-t-sm relative group cursor-pointer transition-colors"
+                                >
+                                    <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
+                                        {h} Activities
+                                    </div>
+                                </motion.div>
+                            )
+                        })}
                     </div>
                 </div>
 
@@ -83,11 +89,13 @@ export const Overview: React.FC = () => {
                 <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
                     <h3 className="text-lg font-bold text-slate-800 mb-6">Live Feed</h3>
                     <div className="space-y-6">
-                        <FeedItem title="New Student Registered" time="2 min ago" type="student" />
-                        <FeedItem title="Teacher Verified (ID: 8829)" time="15 min ago" type="teacher" />
-                        <FeedItem title="Payment Received (KES 500)" time="1 hour ago" type="money" />
-                        <FeedItem title="New Parent Account" time="2 hours ago" type="parent" />
-                        <FeedItem title="Quiz Generated (Grade 4)" time="3 hours ago" type="system" />
+                        {stats.recentActivity.length === 0 ? (
+                            <p className="text-slate-400 text-sm">No recent activity.</p>
+                        ) : (
+                            stats.recentActivity.map((item) => (
+                                <FeedItem key={item.id} title={item.title} time={item.time} type={item.type} />
+                            ))
+                        )}
                     </div>
                 </div>
             </div>

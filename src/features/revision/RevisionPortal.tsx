@@ -3,15 +3,15 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     BookOpen, Sparkles, AlertTriangle, ArrowRight, UserCircle,
-    CheckCircle, School, GraduationCap, Brain, Lock
+    CheckCircle, School, GraduationCap, Brain, Lock, LogOut
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { Button, Card, Header } from '../../components/Shared';
-import { ViewState } from '../../types';
+import { ViewState, UserRole } from '../../types';
 
 export const RevisionPortal: React.FC = () => {
     const navigate = useNavigate();
-    const { isRegistered, studentCode, setRole, setStudentCode, setView } = useApp();
+    const { isRegistered, studentCode, setRole, setStudentCode, logout } = useApp();
 
     // State for Onboarding
     const [step, setStep] = useState<'INTRO' | 'FORM' | 'CODE' | 'LIMIT'>('INTRO');
@@ -62,14 +62,26 @@ export const RevisionPortal: React.FC = () => {
     };
 
     const handleStartRevision = () => {
-        setRole('LEARNER'); // Ensure role is set
+        setRole(UserRole.LEARNER); // Ensure role is set
         navigate('/learner', { state: { mode: 'REVISION' } });
     };
 
     return (
         <div className="min-h-screen bg-slate-50 font-sans text-slate-900">
             {/* Header */}
-            <Header title="Revision Assistance" onHome={() => navigate('/')} />
+            <div className="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between sticky top-0 z-30">
+                <div className="flex items-center gap-4">
+                    <button onClick={() => navigate('/')} className="p-2 -ml-2 hover:bg-slate-50 rounded-full text-slate-400 hover:text-slate-600 transition-colors">
+                        <ArrowRight className="w-6 h-6 rotate-180" />
+                    </button>
+                    <h1 className="font-bold text-lg text-slate-800">Revision Assistance</h1>
+                </div>
+                {isRegistered && (
+                    <button onClick={logout} className="p-2 hover:bg-red-50 text-slate-400 hover:text-red-500 rounded-full transition-colors" title="Logout">
+                        <LogOut className="w-5 h-5" />
+                    </button>
+                )}
+            </div>
 
             <main className="max-w-lg mx-auto p-6 md:pt-10">
                 <AnimatePresence mode='wait'>
@@ -203,7 +215,7 @@ export const RevisionPortal: React.FC = () => {
                             </div>
 
                             <div>
-                                <h2 className="text-2xl font-bold text-slate-800">You're All Set!</h2>
+                                <h2 className="text-2xl font-bold text-slate-800">You&apos;re All Set!</h2>
                                 <p className="text-slate-500">Here is your unique Revision Code. Use it to login anytime.</p>
                             </div>
 

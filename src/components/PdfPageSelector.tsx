@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import * as pdfjsLib from 'pdfjs-dist';
 import { Button } from './Shared';
-import { Check, X, Loader2, Minimize2, Maximize2 } from 'lucide-react'; // Added icons
+import { Check, X, Loader2 } from 'lucide-react'; // Added icons
 
 // Configure worker - crucial for pdfjs-dist
 // Using Vite's ?url import to get the correct path to the worker in node_modules

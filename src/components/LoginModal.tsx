@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Lock, LogIn, User, GraduationCap, X, Plus } from 'lucide-react';
 import { useApp } from '../context/AppContext';
@@ -11,24 +12,13 @@ interface LoginModalProps {
 
 export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, initialTab = 'STUDENT' }) => {
     const { login, loginTeacher, recoverStudentId } = useApp();
+    const navigate = useNavigate();
 
     // Tab State
     const [activeTab, setActiveTab] = useState<'STUDENT' | 'TEACHER'>(initialTab);
 
     // Effect to reset/detect state when modal opens
-    React.useEffect(() => {
-        if (isOpen) {
-            setActiveTab(initialTab);
-            // Auto-load recents logic is handled in rendering, but we refresh local state here
-            try {
-                const h = JSON.parse(localStorage.getItem('soma_recent_login') || '[]');
-                setRecents(h);
-                if (h.length > 0 && initialTab === 'STUDENT') {
-                    setShowRecents(true);
-                }
-            } catch { }
-        }
-    }, [isOpen, initialTab]);
+
 
 
     // Student State
@@ -36,7 +26,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, initial
     const [error, setError] = useState("");
     const [showRecents, setShowRecents] = useState(false);
     const [showRecovery, setShowRecovery] = useState(false);
-    const [showTeacherRecovery, setShowTeacherRecovery] = useState(false);
+
 
     // Recovery State
     const [recName, setRecName] = useState("");
@@ -49,11 +39,31 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, initial
     const [password, setPassword] = useState("");
     const [loading, setLoading] = useState(false);
 
+    // Effect to reset/detect state when modal opens
+    React.useEffect(() => {
+        if (isOpen) {
+            setActiveTab(initialTab);
+            // Auto-load recents logic is handled in rendering, but we refresh local state here
+            try {
+                const h = JSON.parse(localStorage.getItem('soma_recent_login') || '[]');
+                setRecents(h);
+                if (h.length > 0 && initialTab === 'STUDENT') {
+                    setShowRecents(true);
+                }
+            } catch {
+                // ignore
+            }
+        }
+    }, [isOpen, initialTab]);
+
 
     const handleRecentClick = (recentCode: string) => {
         setCode(recentCode);
         login(recentCode).then(success => {
-            if (success) onClose();
+            if (success) {
+                onClose();
+                navigate('/learner');
+            }
             else setError("Expired or Invalid ID");
         });
     };
@@ -71,8 +81,10 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, initial
         setError("");
 
         if (activeTab === 'STUDENT') {
-            if (login(code)) {
+            const success = await login(code);
+            if (success) {
                 onClose();
+                navigate('/learner');
             } else {
                 setError("Invalid Student ID. Please check and try again.");
             }
@@ -82,6 +94,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, initial
             setLoading(false);
             if (success) {
                 onClose();
+                navigate('/teacher');
             } else {
                 setError("Login failed. Check your email and password.");
             }
@@ -110,7 +123,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, initial
 
                         <div className="p-6">
                             <div className="space-y-3">
-                                {recents.map((r, i) => (
+                                {recents.map((r) => (
                                     <motion.div
                                         key={r.code}
                                         whileHover={{ scale: 1.02 }}
@@ -188,10 +201,16 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, initial
                                     <p className="text-gray-600 mb-2">We found your account!</p>
                                     <p className="text-3xl font-mono font-bold text-blue-600 tracking-wider mb-6 bg-blue-50 py-2 rounded-lg">{recResult}</p>
                                     <button
-                                        onClick={() => { setCode(recResult); setShowRecovery(false); setRecResult(""); }}
+                                        onClick={() => {
+                                            setCode(recResult);
+                                            setShowRecovery(false);
+                                            setRecResult("");
+                                            // Auto login attempt or just fill? 
+                                            // Code fills input, user clicks login.
+                                        }}
                                         className="w-full py-3 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 shadow-lg hover:shadow-xl transition-all"
                                     >
-                                        Login with this ID
+                                        Use this ID
                                     </button>
                                 </div>
                             ) : (
@@ -341,13 +360,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, initial
                                     <div>
                                         <div className="flex justify-between items-center mb-1">
                                             <label className="block text-sm font-medium text-gray-700">Password</label>
-                                            <button
-                                                type="button"
-                                                onClick={() => setShowTeacherRecovery(true)}
-                                                className="text-xs text-indigo-600 font-bold hover:underline"
-                                            >
-                                                Forgot?
-                                            </button>
+
                                         </div>
                                         <input
                                             type="password"

@@ -56,7 +56,7 @@ export const TeacherPaywall: React.FC<TeacherPaywallProps> = ({ isOpen, onClose 
                         <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
                             <CheckCircle className="w-10 h-10 text-green-600" />
                         </div>
-                        <h2 className="text-2xl font-bold text-slate-900 mb-2">You're a Pro!</h2>
+                        <h2 className="text-2xl font-bold text-slate-900 mb-2">You&apos;re a Pro!</h2>
                         <p className="text-slate-500 mb-6">Your 30-day free trial has started. Verification successful.</p>
                         <Button fullWidth onClick={onClose} className="shadow-lg shadow-green-200 bg-green-600 hover:bg-green-700">
                             Start Teaching

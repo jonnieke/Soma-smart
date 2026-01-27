@@ -8,6 +8,7 @@ import { ParentPage } from './pages/ParentPage';
 import { AdminDashboard } from './features/admin/Admin';
 import { RevisionPortal } from './features/revision/RevisionPortal';
 import { AskSoma } from './components/AskSoma';
+import { DarasaMode } from './features/darasa-mode/DarasaMode';
 
 const App: React.FC = () => {
     return (
@@ -19,8 +20,9 @@ const App: React.FC = () => {
                     <Route path="/learner" element={<LearnerPage />} />
                     <Route path="/teacher" element={<TeacherPage />} />
                     <Route path="/parent" element={<ParentPage />} />
-                    <Route path="/admin" element={<AdminDashboard onNavigate={(view) => window.location.href = '/'} />} />
+                    <Route path="/admin" element={<AdminDashboard onNavigate={() => window.location.href = '/'} />} />
                     <Route path="/revision" element={<RevisionPortal />} />
+                    <Route path="/teacher/darasa" element={<DarasaMode />} />
                     <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
             </AppProvider>

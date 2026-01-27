@@ -1,0 +1,221 @@
+﻿
+> soma-smart@0.0.0 lint
+> eslint src --report-unused-disable-directives --max-warnings 0
+
+
+D:\software\soma 17.1\Soma-smart\Soma-smart-main\Soma-smart\src\App.tsx
+  22:80  warning  'view' is defined but never used  @typescript-eslint/no-unused-vars
+
+D:\software\soma 17.1\Soma-smart\Soma-smart-main\Soma-smart\src\components\ContactModal.tsx
+   4:19  warning  'Phone' is defined but never used                                @typescript-eslint/no-unused-vars
+  67:83  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+  78:89  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+
+D:\software\soma 17.1\Soma-smart\Soma-smart-main\Soma-smart\src\components\LoginModal.tsx
+   25:17  error    Error: Cannot access variable before it is declared
+
+`setRecents` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time.
+
+D:\software\soma 17.1\Soma-smart\Soma-smart-main\Soma-smart\src\components\LoginModal.tsx:25:17
+  23 |             try {
+  24 |                 const h = JSON.parse(localStorage.getItem('soma_recent_login') || '[]');
+> 25 |                 setRecents(h);
+     |                 ^^^^^^^^^^ `setRecents` accessed before it is declared
+  26 |                 if (h.length > 0 && initialTab === 'STUDENT') {
+  27 |                     setShowRecents(true);
+  28 |                 }
+
+D:\software\soma 17.1\Soma-smart\Soma-smart-main\Soma-smart\src\components\LoginModal.tsx:45:21
+  43 |     const [recPin, setRecPin] = useState("");
+  44 |     const [recResult, setRecResult] = useState("");
+> 45 |     const [recents, setRecents] = useState<{ code: string, name: string }[]>([]);
+     |                     ^^^^^^^^^^ `setRecents` is declared here
+  46 |
+  47 |     // Teacher State
+  48 |     const [email, setEmail] = useState("");  react-hooks/immutability
+   27:21  error    Error: Cannot access variable before it is declared
+
+`setShowRecents` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time.
+
+D:\software\soma 17.1\Soma-smart\Soma-smart-main\Soma-smart\src\components\LoginModal.tsx:27:21
+  25 |                 setRecents(h);
+  26 |                 if (h.length > 0 && initialTab === 'STUDENT') {
+> 27 |                     setShowRecents(true);
+     |                     ^^^^^^^^^^^^^^ `setShowRecents` accessed before it is declared
+  28 |                 }
+  29 |             } catch { }
+  30 |         }
+
+D:\software\soma 17.1\Soma-smart\Soma-smart-main\Soma-smart\src\components\LoginModal.tsx:37:25
+  35 |     const [code, setCode] = useState("");
+  36 |     const [error, setError] = useState("");
+> 37 |     const [showRecents, setShowRecents] = useState(false);
+     |                         ^^^^^^^^^^^^^^ `setShowRecents` is declared here
+  38 |     const [showRecovery, setShowRecovery] = useState(false);
+  39 |     const [showTeacherRecovery, setShowTeacherRecovery] = useState(false);
+  40 |           react-hooks/immutability
+   29:21  error    Empty block statement                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       no-empty
+   39:12  warning  'showTeacherRecovery' is assigned a value but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    @typescript-eslint/no-unused-vars
+  113:50  warning  'i' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               @typescript-eslint/no-unused-vars
+
+D:\software\soma 17.1\Soma-smart\Soma-smart-main\Soma-smart\src\components\PdfPageSelector.tsx
+   1:38  warning  'useRef' is defined but never used                                                                                                                                                                                               @typescript-eslint/no-unused-vars
+   4:29  warning  'Minimize2' is defined but never used                                                                                                                                                                                            @typescript-eslint/no-unused-vars
+   4:40  warning  'Maximize2' is defined but never used                                                                                                                                                                                            @typescript-eslint/no-unused-vars
+  22:12  warning  'pdf' is assigned a value but never used                                                                                                                                                                                         @typescript-eslint/no-unused-vars
+  49:30  warning  Unexpected any. Specify a different type                                                                                                                                                                                         @typescript-eslint/no-explicit-any
+  66:8   warning  React Hook useEffect has a missing dependency: 'onCancel'. Either include it or remove the dependency array. If 'onCancel' changes too often, find the parent component that defines it and wrap that definition in useCallback  react-hooks/exhaustive-deps
+
+D:\software\soma 17.1\Soma-smart\Soma-smart-main\Soma-smart\src\components\RegistrationModal.tsx
+    3:16  warning  'GraduationCap' is defined but never used                        @typescript-eslint/no-unused-vars
+   62:33  warning  Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+  327:93  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+  338:40  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+
+D:\software\soma 17.1\Soma-smart\Soma-smart-main\Soma-smart\src\components\SubscriptionModal.tsx
+  3:45  warning  'CreditCard' is defined but never used  @typescript-eslint/no-unused-vars
+
+D:\software\soma 17.1\Soma-smart\Soma-smart-main\Soma-smart\src\components\TeacherOnboarding.tsx
+   3:10  warning  'Sparkles' is defined but never used                             @typescript-eslint/no-unused-vars
+   3:20  warning  'School' is defined but never used                               @typescript-eslint/no-unused-vars
+   3:28  warning  'Book' is defined but never used                                 @typescript-eslint/no-unused-vars
+  79:63  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+
+D:\software\soma 17.1\Soma-smart\Soma-smart-main\Soma-smart\src\components\TeacherPaywall.tsx
+   3:10  warning  'Lock' is defined but never used                                 @typescript-eslint/no-unused-vars
+  41:18  warning  'e' is defined but never used                                    @typescript-eslint/no-unused-vars
+  59:83  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+
+D:\software\soma 17.1\Soma-smart\Soma-smart-main\Soma-smart\src\components\TscLiveBanner.tsx
+   2:40  warning  'Video' is defined but never used                                                                              @typescript-eslint/no-unused-vars
+   3:10  warning  'Button' is defined but never used                                                                             @typescript-eslint/no-unused-vars
+  29:8   warning  React Hook useEffect has a missing dependency: 'START_DATE'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+D:\software\soma 17.1\Soma-smart\Soma-smart-main\Soma-smart\src\context\AppContext.tsx
+    9:72  warning  Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+  132:13  warning  'session' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  165:57  warning  Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+  173:21  warning  Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+  234:17  warning  Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+  278:17  warning  Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+  321:57  warning  Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+  351:58  warning  Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+  371:85  warning  Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+
+D:\software\soma 17.1\Soma-smart\Soma-smart-main\Soma-smart\src\features\admin\layout\AdminLayout.tsx
+  4:10  warning  'ViewState' is defined but never used  @typescript-eslint/no-unused-vars
+
+D:\software\soma 17.1\Soma-smart\Soma-smart-main\Soma-smart\src\features\admin\views\Curriculum.tsx
+  22:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+D:\software\soma 17.1\Soma-smart\Soma-smart-main\Soma-smart\src\features\admin\views\Overview.tsx
+    3:64  warning  'ArrowUp' is defined but never used       @typescript-eslint/no-unused-vars
+   98:57  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  111:42  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  112:19  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+D:\software\soma 17.1\Soma-smart\Soma-smart-main\Soma-smart\src\features\admin\views\Users.tsx
+  41:64  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+D:\software\soma 17.1\Soma-smart\Soma-smart-main\Soma-smart\src\features\learner\Learner.tsx
+     6:16  warning  'Play' is defined but never used                         @typescript-eslint/no-unused-vars
+     6:22  warning  'Pause' is defined but never used                        @typescript-eslint/no-unused-vars
+     6:29  warning  'ChevronRight' is defined but never used                 @typescript-eslint/no-unused-vars
+     6:66  warning  'Lightbulb' is defined but never used                    @typescript-eslint/no-unused-vars
+    16:32  warning  'Card' is defined but never used                         @typescript-eslint/no-unused-vars
+    72:46  warning  Unexpected any. Specify a different type                 @typescript-eslint/no-explicit-any
+    77:46  warning  Unexpected any. Specify a different type                 @typescript-eslint/no-explicit-any
+   102:10  warning  'qualityCallback' is assigned a value but never used     @typescript-eslint/no-unused-vars
+   102:27  warning  'setQualityCallback' is assigned a value but never used  @typescript-eslint/no-unused-vars
+   105:25  warning  'setRecordingTime' is assigned a value but never used    @typescript-eslint/no-unused-vars
+   108:22  warning  'setScanStatus' is assigned a value but never used       @typescript-eslint/no-unused-vars
+   220:21  warning  Unexpected any. Specify a different type                 @typescript-eslint/no-explicit-any
+   350:17  warning  Unexpected any. Specify a different type                 @typescript-eslint/no-explicit-any
+   429:14  warning  'e' is defined but never used                            @typescript-eslint/no-unused-vars
+   499:14  warning  'error' is defined but never used                        @typescript-eslint/no-unused-vars
+   562:17  warning  Unexpected any. Specify a different type                 @typescript-eslint/no-explicit-any
+   577:9   warning  'playBuffer' is assigned a value but never used          @typescript-eslint/no-unused-vars
+   671:48  warning  Unexpected any. Specify a different type                 @typescript-eslint/no-explicit-any
+   706:11  warning  'audioHistory' is assigned a value but never used        @typescript-eslint/no-unused-vars
+   714:11  warning  'scanHistory' is assigned a value but never used         @typescript-eslint/no-unused-vars
+   899:24  warning  Unexpected any. Specify a different type                 @typescript-eslint/no-explicit-any
+   900:26  warning  'e' is defined but never used                            @typescript-eslint/no-unused-vars
+  1023:30  warning  Unexpected any. Specify a different type                 @typescript-eslint/no-explicit-any
+  1024:75  error    Empty block statement                                    no-empty
+
+D:\software\soma 17.1\Soma-smart\Soma-smart-main\Soma-smart\src\features\parent\Parent.tsx
+    3:18  warning  'Card' is defined but never used                                 @typescript-eslint/no-unused-vars
+    6:29  warning  'Clock' is defined but never used                                @typescript-eslint/no-unused-vars
+    6:80  warning  'ChevronRight' is defined but never used                         @typescript-eslint/no-unused-vars
+  101:70  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+  375:67  warning  Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+
+D:\software\soma 17.1\Soma-smart\Soma-smart-main\Soma-smart\src\features\revision\RevisionLanding.tsx
+  1:35  warning  'useCallback' is defined but never used  @typescript-eslint/no-unused-vars
+  2:10  warning  'useApp' is defined but never used       @typescript-eslint/no-unused-vars
+  3:59  warning  'ScanLine' is defined but never used     @typescript-eslint/no-unused-vars
+  3:85  warning  'CheckCircle' is defined but never used  @typescript-eslint/no-unused-vars
+
+D:\software\soma 17.1\Soma-smart\Soma-smart-main\Soma-smart\src\features\revision\RevisionPortal.tsx
+    5:25  warning  'AlertTriangle' is defined but never used                                                                       @typescript-eslint/no-unused-vars
+    6:48  warning  'Lock' is defined but never used                                                                                @typescript-eslint/no-unused-vars
+    9:18  warning  'Card' is defined but never used                                                                                @typescript-eslint/no-unused-vars
+   10:10  warning  'ViewState' is defined but never used                                                                           @typescript-eslint/no-unused-vars
+   14:65  warning  'setView' is assigned a value but never used                                                                    @typescript-eslint/no-unused-vars
+   27:12  warning  'usageCount' is assigned a value but never used                                                                 @typescript-eslint/no-unused-vars
+   27:24  warning  'setUsageCount' is assigned a value but never used                                                              @typescript-eslint/no-unused-vars
+   37:8   warning  React Hook useEffect has a missing dependency: 'studentCode'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  206:86  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`                                                 react/no-unescaped-entities
+
+D:\software\soma 17.1\Soma-smart\Soma-smart-main\Soma-smart\src\features\revision\RevisionSession.tsx
+   2:10  warning  'useApp' is defined but never used                                                                                                                                                                                           @typescript-eslint/no-unused-vars
+   3:46  warning  'CheckCircle' is defined but never used                                                                                                                                                                                      @typescript-eslint/no-unused-vars
+   3:71  warning  'ChevronRight' is defined but never used                                                                                                                                                                                     @typescript-eslint/no-unused-vars
+   4:10  warning  'ViewState' is defined but never used                                                                                                                                                                                        @typescript-eslint/no-unused-vars
+   4:77  warning  'TutorResponse' is defined but never used                                                                                                                                                                                    @typescript-eslint/no-unused-vars
+   6:18  warning  'AnimatePresence' is defined but never used                                                                                                                                                                                  @typescript-eslint/no-unused-vars
+   7:10  warning  'Header' is defined but never used                                                                                                                                                                                           @typescript-eslint/no-unused-vars
+  57:8   warning  React Hook useEffect has a missing dependency: 'onExit'. Either include it or remove the dependency array. If 'onExit' changes too often, find the parent component that defines it and wrap that definition in useCallback  react-hooks/exhaustive-deps
+
+D:\software\soma 17.1\Soma-smart\Soma-smart-main\Soma-smart\src\features\teacher\Teacher.tsx
+    2:18   warning  'AnimatePresence' is defined but never used                                                                                               @typescript-eslint/no-unused-vars
+    3:33   warning  'Share2' is defined but never used                                                                                                        @typescript-eslint/no-unused-vars
+    3:63   warning  'BookOpen' is defined but never used                                                                                                      @typescript-eslint/no-unused-vars
+    3:97   warning  'X' is defined but never used                                                                                                             @typescript-eslint/no-unused-vars
+    3:113  warning  'Play' is defined but never used                                                                                                          @typescript-eslint/no-unused-vars
+    3:119  warning  'Pause' is defined but never used                                                                                                         @typescript-eslint/no-unused-vars
+    3:126  warning  'Trash2' is defined but never used                                                                                                        @typescript-eslint/no-unused-vars
+    4:18   warning  'Card' is defined but never used                                                                                                          @typescript-eslint/no-unused-vars
+    4:24   warning  'Header' is defined but never used                                                                                                        @typescript-eslint/no-unused-vars
+    9:42   warning  'generateTeacherQuiz' is defined but never used                                                                                           @typescript-eslint/no-unused-vars
+   29:12   warning  'advMode' is assigned a value but never used                                                                                              @typescript-eslint/no-unused-vars
+   29:21   warning  'setAdvMode' is assigned a value but never used                                                                                           @typescript-eslint/no-unused-vars
+   52:8    warning  React Hook useEffect has missing dependencies: 'selectedClass' and 'selectedSubject'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+   65:23   warning  Unexpected any. Specify a different type                                                                                                  @typescript-eslint/no-explicit-any
+   85:81   warning  Unexpected any. Specify a different type                                                                                                  @typescript-eslint/no-explicit-any
+  111:18   warning  'e' is defined but never used                                                                                                             @typescript-eslint/no-unused-vars
+  139:18   warning  'e' is defined but never used                                                                                                             @typescript-eslint/no-unused-vars
+  167:18   warning  'e' is defined but never used                                                                                                             @typescript-eslint/no-unused-vars
+  371:105  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`                                                                           react/no-unescaped-entities
+
+D:\software\soma 17.1\Soma-smart\Soma-smart-main\Soma-smart\src\pages\LandingPage.tsx
+    5:50  warning  'Play' is defined but never used                                 @typescript-eslint/no-unused-vars
+  410:45  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+  418:94  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+  454:75  error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  454:85  error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+
+D:\software\soma 17.1\Soma-smart\Soma-smart-main\Soma-smart\src\services\contextService.ts
+  43:55  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+D:\software\soma 17.1\Soma-smart\Soma-smart-main\Soma-smart\src\services\geminiService.ts
+  1:29  warning  'Modality' is defined but never used  @typescript-eslint/no-unused-vars
+
+D:\software\soma 17.1\Soma-smart\Soma-smart-main\Soma-smart\src\services\paymentService.ts
+  77:25  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+D:\software\soma 17.1\Soma-smart\Soma-smart-main\Soma-smart\src\types.ts
+  83:12  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+Γ£û 124 problems (17 errors, 107 warnings)
+

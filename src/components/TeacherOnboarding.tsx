@@ -76,7 +76,7 @@ export const TeacherOnboarding: React.FC<TeacherOnboardingProps> = ({ onComplete
                 <div className="bg-indigo-600 p-6 text-white text-center">
                     <GraduationCap className="w-12 h-12 mx-auto mb-3 text-indigo-200" />
                     <h2 className="text-2xl font-bold">Welcome, Teacher!</h2>
-                    <p className="text-indigo-200 text-sm">Let's set up your digital classroom.</p>
+                    <p className="text-indigo-200 text-sm">Let&apos;s set up your digital classroom.</p>
                 </div>
 
                 <div className="p-8 space-y-6 overflow-y-auto">

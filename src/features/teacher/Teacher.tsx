@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Upload, Mic, FileText, Share2, StopCircle, Download, BookOpen, Crown, Brain, Sparkles, X, CheckCircle, Play, Pause, Trash2, ArrowRight, Library, Filter, Calendar, Home } from 'lucide-react';
+import { Upload, Mic, FileText, Share2, StopCircle, Download, BookOpen, Crown, Brain, Sparkles, X, CheckCircle, Play, Pause, Trash2, ArrowRight, Library, Filter, Calendar, Home, LogOut } from 'lucide-react';
 import { Button, Card, Header, MarkdownText } from '../../components/Shared';
 import { TeacherPaywall } from '../../components/TeacherPaywall';
 import { TeacherOnboarding } from '../../components/TeacherOnboarding';
@@ -14,9 +14,21 @@ interface TeacherProps {
     onNavigate: (view: ViewState) => void;
 }
 
+import { useNavigate, useLocation } from 'react-router-dom';
+
 export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate }) => {
-    const { teacherUsageCount, incrementTeacherUsage, teacherProfile, updateTeacherProfile, teacherHistory, saveTeacherActivity } = useApp();
+    const { teacherUsageCount, incrementTeacherUsage, teacherProfile, updateTeacherProfile, teacherHistory, saveTeacherActivity, logout } = useApp();
     const [showPaywall, setShowPaywall] = useState(false);
+    const location = useLocation();
+
+    // Check for subscription intent from Landing Page
+    useEffect(() => {
+        if (location.state && (location.state as any).openSubscription) {
+            setShowPaywall(true);
+            // Optional: clear state so it doesn't reopen on refresh if state persists (though location state usually clears on new navigation, refresh might keep it depending on browser)
+            // But for now this is fine.
+        }
+    }, [location]);
     const [showLoginModal, setShowLoginModal] = useState(false);
     const [activeTab, setActiveTab] = useState<'HOME' | 'CONVERT' | 'VOICE' | 'QUIZ' | 'LIBRARY'>('HOME');
     const [loading, setLoading] = useState(false);
@@ -281,9 +293,14 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate }) => {
                             </div>
                         </motion.div>
 
-                        <button onClick={() => onNavigate(ViewState.DASHBOARD)} className="p-2 bg-white/10 hover:bg-white/20 rounded-xl backdrop-blur-md transition-colors group" title="Back to Home">
-                            <Home className="w-6 h-6 text-white" />
-                        </button>
+                        <div className="flex gap-2">
+                            <button onClick={() => onNavigate(ViewState.DASHBOARD)} className="p-2 bg-white/10 hover:bg-white/20 rounded-xl backdrop-blur-md transition-colors group" title="Back to Home">
+                                <Home className="w-6 h-6 text-white" />
+                            </button>
+                            <button onClick={() => { logout(); onNavigate(ViewState.DASHBOARD); }} className="p-2 bg-white/10 hover:bg-red-500/20 rounded-xl backdrop-blur-md transition-colors group" title="Logout">
+                                <LogOut className="w-6 h-6 text-white group-hover:text-red-200" />
+                            </button>
+                        </div>
                     </div>
 
                     {/* Context Selectors */}
@@ -368,7 +385,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate }) => {
                                         <Mic className={`w-8 h-8 ${isRecording ? 'text-red-500' : 'text-purple-600'}`} />
                                     </div>
                                     <h3 className="font-bold text-lg text-slate-800 mb-2">{isRecording ? "Recording..." : "Voice Lesson"}</h3>
-                                    <p className="text-sm text-slate-500 mb-6">Dictate your thoughts. We'll format them for {selectedSubject}.</p>
+                                    <p className="text-sm text-slate-500 mb-6">Dictate your thoughts. We&apos;ll format them for {selectedSubject}.</p>
                                     {isRecording ? (
                                         <Button fullWidth onClick={stopRecording} className="bg-red-500 hover:bg-red-600 text-white border-transparent">
                                             <StopCircle className="w-4 h-4 mr-2" /> Stop & Process ({formatTime(recordingTime)})

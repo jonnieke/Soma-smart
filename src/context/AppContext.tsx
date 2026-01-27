@@ -9,6 +9,7 @@ interface AppContextType {
   saveActivity: (type: 'EXPLANATION' | 'QUIZ', topic: string, details: any) => void;
   deleteActivity: (id: string) => void;
   studentCode: string;
+  setStudentCode: (code: string) => void;
   isRegistered: boolean;
   studentProfile: { name: string, grade: string } | null;
   usageCount: number;
@@ -33,13 +34,12 @@ interface AppContextType {
   isPro: boolean;
   subscriptionPlan: 'FREE' | 'DAILY' | 'MONTHLY';
   upgradeAccount: (plan: 'DAILY' | 'MONTHLY') => Promise<boolean>;
+  logout: () => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 import { supabase } from '../lib/supabase';
-
-// ... (Interface update if needed, but keeping it same for now)
 
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [role, setRole] = useState<UserRole>(UserRole.NONE);
@@ -59,10 +59,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [revisionUsageCount, setRevisionUsageCount] = useState<number>(0);
   const incrementRevisionUsage = () => setRevisionUsageCount(prev => prev + 1);
 
-  // --- Initial Load from Supabase ---
+  // --- Initial Load from Supabase & Local Storage ---
   useEffect(() => {
     const initSession = async () => {
-      // Check if we have an active session
+      // 1. Check if we have an active Supabase session (Teacher/Student via Auth)
       const { data: { session } } = await supabase.auth.getSession();
 
       if (session) {
@@ -90,13 +90,34 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
                 subjects: profile.subjects || []
               });
             } else {
-              // Fallback if not yet set
               setTeacherProfile({
                 name: profile.full_name,
                 classes: [],
                 subjects: []
               });
             }
+          }
+        }
+      } else {
+        // 2. No Supabase session? Check for persistent local Student ID
+        const savedStudentCode = localStorage.getItem('soma_active_student');
+        if (savedStudentCode) {
+          console.log("Found persistent student session:", savedStudentCode);
+          // Verify/Fetch profile for this code
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('student_id', savedStudentCode)
+            .maybeSingle();
+
+          if (profile) {
+            setStudentCode(profile.student_id);
+            setStudentProfile({ name: profile.full_name, grade: profile.grade });
+            setIsRegistered(true);
+            setRole(UserRole.LEARNER);
+          } else {
+            // Invalid code stored? Clear it.
+            localStorage.removeItem('soma_active_student');
           }
         }
       }
@@ -157,6 +178,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       setStudentProfile({ name, grade });
       setIsRegistered(true);
       setRole(UserRole.LEARNER); // Auto switch to learner
+
+      // PERSIST LOGIN
+      localStorage.setItem('soma_active_student', newCode);
 
       // Save to local history for recovery
       try {
@@ -300,11 +324,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const login = async (codeInput: string): Promise<boolean> => {
     try {
+      const sanitizedCode = codeInput.trim().toUpperCase(); // Force uppercase
+
       const { data: profile, error } = await supabase
         .from('profiles')
         .select('*')
-        .eq('student_id', codeInput)
-        .single();
+        .eq('student_id', sanitizedCode)
+        .maybeSingle(); // Use maybeSingle to avoid 406 error if not found
 
       if (error || !profile) return false;
 
@@ -313,6 +339,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       setStudentProfile({ name: profile.full_name, grade: profile.grade });
       setIsRegistered(true);
       setRole(UserRole.LEARNER);
+
+      // PERSIST LOGIN
+      localStorage.setItem('soma_active_student', profile.student_id);
 
       // Save to local history for recovery
       try {
@@ -430,11 +459,26 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   return (
     <AppContext.Provider value={{
-      role, setRole, learnerHistory, saveActivity, deleteActivity, studentCode,
+      role, setRole, learnerHistory, saveActivity, deleteActivity, studentCode, setStudentCode,
       usageCount, incrementUsage, isRegistered, studentProfile, registerStudent, login, recoverStudentId, registerTeacher, loginTeacher, resetPassword,
       teacherUsageCount, incrementTeacherUsage, teacherProfile, updateTeacherProfile, teacherHistory, saveTeacherActivity,
       revisionUsageCount, incrementRevisionUsage,
-      isPro, subscriptionPlan, upgradeAccount
+      isPro, subscriptionPlan, upgradeAccount,
+      logout: async () => {
+        await supabase.auth.signOut();
+        setRole(UserRole.NONE);
+        setStudentCode("");
+        setIsRegistered(false);
+        setStudentProfile(null);
+        setTeacherProfile(null);
+        setTeacherHistory([]);
+        localStorage.removeItem('soma_recent_login'); // Optional: clear history if desired, or keep it. Keeping for now is fine.
+
+        // Clear Persistent Session
+        localStorage.removeItem('soma_active_student');
+
+        // Clear any specific session data if needed
+      }
     }}>
       {children}
     </AppContext.Provider>

@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Sparkles, Home, X, XCircle, Camera, ScanLine, Mic, Upload, Clock,
   CheckCircle, Play, Pause, ChevronRight, Star, BookOpen, Brain, Lightbulb, Lock, Volume2,
-  ArrowRight, UserCircle, Download, ImageIcon, Trash2, AlertTriangle
+  ArrowRight, UserCircle, Download, ImageIcon, Trash2, AlertTriangle, LogOut
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { RevisionLanding } from '../revision/RevisionLanding';
@@ -39,8 +39,15 @@ interface LearnerProps {
 export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, saveActivity, deleteActivity, history, studentCode, profile }) => {
   const navigate = useNavigate();
   // We use useApp here to get usageCount and isRegistered centrally
-  const { usageCount, incrementUsage, isRegistered, revisionUsageCount, incrementRevisionUsage } = useApp();
-  const location = useLocation(); // Need import
+  const { usageCount, incrementUsage, isRegistered, revisionUsageCount, incrementRevisionUsage, logout, isPro } = useApp();
+  const location = useLocation();
+
+  // Check for subscription intent
+  React.useEffect(() => {
+    if (location.state && (location.state as any).openSubscription) {
+      setShowSubscription(true);
+    }
+  }, [location]);
 
   // --- GAMIFICATION ENGINE ---
   const totalXP = React.useMemo(() => calculateTotalXP(history), [history]);
@@ -135,11 +142,14 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, saveActiv
     return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
   };
 
+  const streamRef = useRef<MediaStream | null>(null);
+
   const startCamera = async () => {
     try {
       setLoading(true);
       setShowCamera(true);
       const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+      streamRef.current = stream; // Save stream to ref for cleanup
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
       }
@@ -150,6 +160,24 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, saveActiv
       setLoading(false);
     }
   };
+
+  // Fix: Stop camera when component unmounts or scanner closes
+  useEffect(() => {
+    return () => {
+      if (videoRef.current && videoRef.current.srcObject) {
+        const stream = videoRef.current.srcObject as MediaStream;
+        stream.getTracks().forEach(track => track.stop());
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!showCamera && videoRef.current && videoRef.current.srcObject) {
+      const stream = videoRef.current.srcObject as MediaStream;
+      stream.getTracks().forEach(track => track.stop());
+      videoRef.current.srcObject = null;
+    }
+  }, [showCamera]);
 
   const capturePhoto = () => {
     if (videoRef.current) {
@@ -162,9 +190,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, saveActiv
           const file = new File([blob], "camera_capture.jpg", { type: "image/jpeg" });
           processFile(file);
           setShowCamera(false);
-          // Stop stream
-          const stream = videoRef.current?.srcObject as MediaStream;
-          stream?.getTracks().forEach(track => track.stop());
+          stopCameraStream(); // Explicitly stop
         }
       }, 'image/jpeg');
     }
@@ -795,7 +821,11 @@ ${explanation.explanation}
             <button onClick={() => onNavigate(ViewState.DASHBOARD)} className="p-2 bg-slate-100 rounded-xl hover:bg-slate-200 transition-colors group" title="Back to Home">
               <Home className="w-6 h-6 text-slate-500 group-hover:text-blue-600 transition-colors" />
             </button>
+            <button onClick={() => { logout(); navigate('/'); }} className="ml-2 p-2 bg-slate-100 rounded-xl hover:bg-red-100 transition-colors group" title="Logout">
+              <LogOut className="w-6 h-6 text-slate-500 group-hover:text-red-500 transition-colors" />
+            </button>
           </div>
+
 
           {/* Student ID Card - Mini */}
           <motion.div
@@ -830,7 +860,7 @@ ${explanation.explanation}
             </div>
           </motion.div>
 
-          {!profile && (
+          {!profile && !isPro && (
             <p className="text-xs text-center mt-3 text-slate-400">
               {3 - usageCount} free scans remaining. <button onClick={() => setShowSubscription(true)} className="text-blue-600 font-bold hover:underline">Subscribe</button>
             </p>

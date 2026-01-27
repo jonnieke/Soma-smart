@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { Header, Card, Button } from '../../components/Shared';
 import { ViewState, LearnerActivity } from '../../types';
 import { calculateTotalXP, calculateLevel } from '../../services/gamificationService';
-import { Book, CheckCircle, Clock, Lock, User, TrendingUp, Award, AlertCircle, ChevronRight, Activity, Calendar, Star, Zap, Home, X } from 'lucide-react';
+import { Book, CheckCircle, Clock, Lock, User, TrendingUp, Award, AlertCircle, ChevronRight, Activity, Calendar, Star, Zap, Home, X, LogOut } from 'lucide-react';
 
 interface ParentProps {
     onNavigate: (view: ViewState) => void;
@@ -98,7 +98,7 @@ export const ParentDashboard: React.FC<ParentProps> = ({ onNavigate, activityLog
 
                         <h2 className="text-3xl font-bold text-slate-900 mb-2">Welcome, Parent!</h2>
                         <p className="text-slate-500 mb-8 px-4">
-                            Unlock real-time insights into your child's learning journey. Enter their Student ID to begin.
+                            Unlock real-time insights into your child&apos;s learning journey. Enter their Student ID to begin.
                         </p>
 
                         <div className="space-y-6">
@@ -159,9 +159,14 @@ export const ParentDashboard: React.FC<ParentProps> = ({ onNavigate, activityLog
                         <p className="text-xs text-slate-500 font-medium">ID: {validStudentCode}</p>
                     </div>
                 </div>
-                <button onClick={() => onNavigate(ViewState.DASHBOARD)} className="p-2 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors group" title="Back to Home">
-                    <Home className="w-6 h-6 text-slate-500 group-hover:text-indigo-600" />
-                </button>
+                <div className="flex gap-2">
+                    <button onClick={() => onNavigate(ViewState.DASHBOARD)} className="p-2 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors group" title="Back to Home">
+                        <Home className="w-6 h-6 text-slate-500 group-hover:text-indigo-600" />
+                    </button>
+                    <button onClick={() => { setIsAuthenticated(false); onNavigate(ViewState.DASHBOARD); }} className="p-2 bg-red-50 hover:bg-red-100 rounded-xl transition-colors group" title="Logout">
+                        <LogOut className="w-6 h-6 text-red-500 group-hover:text-red-600" />
+                    </button>
+                </div>
             </header>
 
             <main className="p-6 space-y-8">

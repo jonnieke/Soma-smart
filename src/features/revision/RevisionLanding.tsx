@@ -1,6 +1,6 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { useApp } from '../../context/AppContext';
-import { Upload, BookOpen, Brain, TrendingUp, ArrowRight, ScanLine, X, Camera, Zap, CheckCircle, Smartphone } from 'lucide-react';
+import { Upload, BookOpen, Brain, TrendingUp, ArrowRight, ScanLine, X, Camera, Zap, CheckCircle, Smartphone, LogOut } from 'lucide-react';
 import { ViewState, RevisionMode } from '../../types';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -10,6 +10,7 @@ interface Props {
 }
 
 export const RevisionLanding: React.FC<Props> = ({ onStartSession, onNavigate }) => {
+    const { logout } = useApp();
     const [dragActive, setDragActive] = useState(false);
     const [selectedMode, setSelectedMode] = useState<RevisionMode>(RevisionMode.LEARN);
 
@@ -94,9 +95,14 @@ export const RevisionLanding: React.FC<Props> = ({ onStartSession, onNavigate })
                 <div className="absolute bottom-[-10%] left-[-10%] w-60 h-60 bg-purple-500 rounded-full blur-[80px] opacity-20"></div>
 
                 <div className="relative z-10 max-w-xl mx-auto">
-                    <button onClick={() => onNavigate(ViewState.DASHBOARD)} className="mb-6 text-blue-200 hover:text-white transition-colors flex items-center gap-2 font-bold text-sm bg-white/10 w-fit px-4 py-2 rounded-full backdrop-blur-md border border-white/10">
-                        <ArrowRight className="w-4 h-4 rotate-180" /> Back to Dashboard
-                    </button>
+                    <div className="flex justify-between items-center mb-6">
+                        <button onClick={() => onNavigate(ViewState.DASHBOARD)} className="text-blue-200 hover:text-white transition-colors flex items-center gap-2 font-bold text-sm bg-white/10 w-fit px-4 py-2 rounded-full backdrop-blur-md border border-white/10">
+                            <ArrowRight className="w-4 h-4 rotate-180" /> Back to Dashboard
+                        </button>
+                        <button onClick={() => { logout(); onNavigate(ViewState.DASHBOARD); }} className="text-blue-200 hover:text-red-200 transition-colors flex items-center gap-2 font-bold text-sm bg-white/10 w-fit px-4 py-2 rounded-full backdrop-blur-md border border-white/10 ml-auto">
+                            <LogOut className="w-4 h-4" /> Logout
+                        </button>
+                    </div>
 
                     <h1 className="text-4xl font-black mb-3 tracking-tight leading-tight">
                         Revision <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-300 to-indigo-300">Assistant</span>
