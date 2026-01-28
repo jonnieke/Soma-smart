@@ -8,9 +8,10 @@ interface LoginModalProps {
     isOpen: boolean;
     onClose: () => void;
     initialTab?: 'STUDENT' | 'TEACHER';
+    onSwitchToRegister?: () => void;
 }
 
-export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, initialTab = 'STUDENT' }) => {
+export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, initialTab = 'STUDENT', onSwitchToRegister }) => {
     const { login, loginTeacher, recoverStudentId, resetPassword } = useApp();
     const navigate = useNavigate();
 
@@ -284,8 +285,6 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, initial
                                             setCode(recResult);
                                             setShowRecovery(false);
                                             setRecResult("");
-                                            // Auto login attempt or just fill? 
-                                            // Code fills input, user clicks login.
                                         }}
                                         className="w-full py-3 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 shadow-lg hover:shadow-xl transition-all"
                                     >
@@ -470,12 +469,36 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, initial
                                     <LogIn className="w-4 h-4" /> {loading ? "Logging in..." : "Login"}
                                 </button>
 
+                                {/* Switch Links */}
+                                {activeTab === 'STUDENT' && onSwitchToRegister && (
+                                    <button
+                                        type="button"
+                                        onClick={onSwitchToRegister}
+                                        className="w-full py-2 text-sm text-blue-600 font-bold hover:bg-blue-50 rounded-lg transition-colors"
+                                    >
+                                        Don't have an ID? Create Profile
+                                    </button>
+                                )}
+
+                                {activeTab === 'TEACHER' && (
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            onClose();
+                                            navigate('/teacher');
+                                        }}
+                                        className="w-full py-2 text-sm text-indigo-600 font-bold hover:bg-indigo-50 rounded-lg transition-colors"
+                                    >
+                                        New Teacher? Create Account
+                                    </button>
+                                )}
+
                                 <button
                                     type="button"
                                     onClick={onClose}
-                                    className="w-full py-3 text-sm text-gray-500 font-medium hover:bg-gray-100 rounded-lg transition-colors"
+                                    className="w-full py-2 text-sm text-gray-400 font-medium hover:text-gray-600 transition-colors"
                                 >
-                                    Cancel
+                                    Cancels
                                 </button>
                             </div>
                         </form>

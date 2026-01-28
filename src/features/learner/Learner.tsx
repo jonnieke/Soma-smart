@@ -39,7 +39,7 @@ interface LearnerProps {
 export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, saveActivity, deleteActivity, history, studentCode, profile }) => {
   const navigate = useNavigate();
   // We use useApp here to get usageCount and isRegistered centrally
-  const { usageCount, incrementUsage, isRegistered, revisionUsageCount, incrementRevisionUsage, logout, isPro } = useApp();
+  const { usageCount, incrementUsage, isRegistered, revisionUsageCount, incrementRevisionUsage, logout, isPro, isPromoActive } = useApp();
   const location = useLocation();
 
   // Check for subscription intent
@@ -204,6 +204,9 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, saveActiv
   const [showSubscription, setShowSubscription] = useState(false);
 
   const checkLimit = (): boolean => {
+    // Promo = Unlimited Checks
+    if (isPromoActive) return true;
+
     if (!isRegistered && usageCount >= 3) {
       setShowRegistration(true);
       return false;

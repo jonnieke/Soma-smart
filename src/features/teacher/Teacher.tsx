@@ -17,7 +17,7 @@ interface TeacherProps {
 import { useNavigate, useLocation } from 'react-router-dom';
 
 export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate }) => {
-    const { teacherUsageCount, incrementTeacherUsage, teacherProfile, updateTeacherProfile, teacherHistory, saveTeacherActivity, logout } = useApp();
+    const { teacherUsageCount, incrementTeacherUsage, teacherProfile, updateTeacherProfile, teacherHistory, saveTeacherActivity, logout, isPromoActive } = useApp();
     const [showPaywall, setShowPaywall] = useState(false);
     const location = useLocation();
 
@@ -65,6 +65,9 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate }) => {
 
     // Check limits
     const checkLimit = () => {
+        // If Promo is active, no limits!
+        if (isPromoActive) return true;
+
         if (teacherUsageCount >= 5) {
             setShowPaywall(true);
             return false;

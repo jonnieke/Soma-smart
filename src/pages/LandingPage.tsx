@@ -21,6 +21,7 @@ import { LegalModal } from '../components/LegalModal';
 import { ContactModal } from '../components/ContactModal';
 import { SubscriptionModal } from '../components/SubscriptionModal';
 import { LoginModal } from '../components/LoginModal';
+import { TscLiveBanner } from '../components/TscLiveBanner';
 
 export const LandingPage: React.FC = () => {
     const navigate = useNavigate();
@@ -229,27 +230,9 @@ export const LandingPage: React.FC = () => {
             </section>
 
             {/* --- PROMOTIONAL CTA --- */}
-            <section className="bg-indigo-900 text-white py-4 px-4 overflow-hidden relative">
-                <div className="absolute top-0 left-0 w-full h-full bg-[linear-gradient(45deg,transparent_25%,rgba(255,255,255,0.05)_50%,transparent_75%,transparent_100%)] bg-[length:250%_250%] animate-[shimmer_3s_infinite_linear]"></div>
-                <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 relative z-10">
-                    <div className="flex items-center gap-4">
-                        <div className="bg-yellow-400 text-indigo-900 font-black px-4 py-2 rounded-lg -rotate-3 hover:rotate-0 transition-transform shadow-lg cursor-default">
-                            LIMITED OFFER
-                        </div>
-                        <div>
-                            <p className="font-bold text-lg md:text-xl">
-                                Try Teacher Pro: <span className="text-yellow-300">30 Days Free</span> for just <span className="text-yellow-300">1 Bob!</span>
-                            </p>
-                        </div>
-                    </div>
-                    <button
-                        onClick={handleClaimOffer}
-                        className="bg-white text-indigo-900 font-bold px-6 py-2 rounded-full hover:bg-yellow-400 hover:text-indigo-900 transition-all shadow-lg flex items-center gap-2"
-                    >
-                        Claim Offer <ChevronRight className="w-4 h-4" />
-                    </button>
-                </div>
-            </section>
+            <div className="w-full">
+                <TscLiveBanner />
+            </div>
 
             {/* --- ROLES SECTION --- */}
             <section id="roles-section" className="py-12 bg-white relative">
@@ -426,6 +409,10 @@ export const LandingPage: React.FC = () => {
                 isOpen={showRegistration}
                 onClose={handleModalClose}
                 onSuccess={handleRegistrationSuccess}
+                onSwitchToLogin={() => {
+                    setShowRegistration(false);
+                    setShowLogin(true);
+                }}
             />
 
             <ContactModal
@@ -442,6 +429,10 @@ export const LandingPage: React.FC = () => {
                 isOpen={showLogin}
                 onClose={() => setShowLogin(false)}
                 initialTab="STUDENT"
+                onSwitchToRegister={() => {
+                    setShowLogin(false);
+                    setShowRegistration(true);
+                }}
             />
 
             <LegalModal

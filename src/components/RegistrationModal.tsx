@@ -1,41 +1,31 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { User, GraduationCap, CheckCircle, X } from 'lucide-react';
+import { User, CheckCircle, X } from 'lucide-react';
 import { useApp } from '../context/AppContext';
+import confetti from 'canvas-confetti';
 
 interface RegistrationModalProps {
     isOpen: boolean;
     onClose: () => void;
     onSuccess: () => void;
+    onSwitchToLogin: () => void;
 }
 
-import confetti from 'canvas-confetti';
-
-export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, onClose, onSuccess }) => {
-    const { registerStudent, login, studentCode } = useApp();
+export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, onClose, onSuccess, onSwitchToLogin }) => {
+    const { registerStudent, studentCode } = useApp();
     const [name, setName] = useState("");
     const [grade, setGrade] = useState("");
     const [pin, setPin] = useState("");
-    // Recovery State
-    const [showRecovery, setShowRecovery] = useState(false);
-    const [recName, setRecName] = useState("");
-    const [recPin, setRecPin] = useState("");
-    const [recResult, setRecResult] = useState("");
-    const { recoverStudentId } = useApp();
-    const [recoveryError, setRecoveryError] = useState("");
-
-    const [loginId, setLoginId] = useState("");
-    const [mode, setMode] = useState<'REGISTER' | 'LOGIN'>('REGISTER');
     const [step, setStep] = useState<'FORM' | 'SUCCESS'>('FORM');
     const [loading, setLoading] = useState(false);
 
-    // Reset to Register mode when opened
+    // Reset when opened
     React.useEffect(() => {
         if (isOpen) {
-            setMode('REGISTER');
             setStep('FORM');
-            setShowRecovery(false);
-            setLoginId("");
+            setName("");
+            setGrade("");
+            setPin("");
         }
     }, [isOpen]);
 
@@ -50,10 +40,11 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
-        if (mode === 'REGISTER') {
-            if (name && grade && pin.length >= 4) {
-                await registerStudent(name, grade, pin);
 
+        if (name && grade && pin.length >= 4) {
+            const result = await registerStudent(name, grade, pin);
+
+            if (result.success) {
                 // Trigger Confetti
                 const duration = 3 * 1000;
                 const animationEnd = Date.now() + duration;
@@ -72,117 +63,18 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
                 }, 250);
 
                 setStep('SUCCESS');
-            } else if (!pin || pin.length < 4) {
-                alert("Please create a 4-digit Secret PIN to protect your account.");
-                setLoading(false);
-                return;
-            } else if (!grade) {
-                alert("Please select your Grade/Class.");
-                setLoading(false);
-                return;
+            } else {
+                alert("Registration Error: " + result.message);
             }
-        } else {
-            if (loginId) {
-                const success = await login(loginId);
-                if (success) {
-                    onSuccess();
-                } else {
-                    alert("Invalid Student ID. Please check and try again.");
-                }
-            }
+        } else if (!pin || pin.length < 4) {
+            alert("Please create a 4-digit Secret PIN to protect your account.");
+        } else if (!grade) {
+            alert("Please select your Grade/Class.");
         }
         setLoading(false);
     };
 
     if (!isOpen) return null;
-
-    // Recovery View
-    if (showRecovery) {
-        return (
-            <AnimatePresence>
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={onClose}>
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.95 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.95 }}
-                        onClick={(e) => e.stopPropagation()}
-                        className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden"
-                    >
-                        <div className="p-6">
-                            <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-                                <User className="w-5 h-5 text-orange-500" /> Recover ID
-                            </h3>
-
-                            {recResult ? (
-                                <div className="text-center py-4">
-                                    <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                                        <CheckCircle className="w-8 h-8 text-green-600" />
-                                    </div>
-                                    <p className="text-gray-600 mb-2">We found your account!</p>
-                                    <p className="text-3xl font-mono font-bold text-blue-600 tracking-wider mb-6 bg-blue-50 py-2 rounded-lg">{recResult}</p>
-                                    <button
-                                        onClick={() => { setLoginId(recResult); setShowRecovery(false); setRecResult(""); setMode('LOGIN'); }}
-                                        className="w-full py-3 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 shadow-lg"
-                                    >
-                                        Login with this ID
-                                    </button>
-                                </div>
-                            ) : (
-                                <form onSubmit={async (e) => {
-                                    e.preventDefault();
-                                    setRecoveryError("");
-                                    setLoading(true);
-                                    const id = await recoverStudentId(recName, recPin);
-                                    setLoading(false);
-                                    if (id) setRecResult(id);
-                                    else setRecoveryError("Details match no account. Check spelling!");
-                                }}>
-                                    <div className="space-y-4">
-                                        <div className="bg-orange-50 p-3 rounded-lg border border-orange-100 mb-4">
-                                            <p className="text-xs text-orange-800">
-                                                Enter the Name and 4-digit PIN you used during registration.
-                                            </p>
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
-                                            <input
-                                                type="text"
-                                                required
-                                                value={recName}
-                                                onChange={(e) => setRecName(e.target.value)}
-                                                className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none"
-                                                placeholder="As registered"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">Secret PIN</label>
-                                            <input
-                                                type="text"
-                                                inputMode="numeric"
-                                                maxLength={4}
-                                                required
-                                                value={recPin}
-                                                onChange={(e) => setRecPin(e.target.value)}
-                                                className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none font-mono tracking-widest text-center text-xl"
-                                                placeholder="****"
-                                            />
-                                        </div>
-                                        {recoveryError && <p className="text-red-500 text-sm font-medium">{recoveryError}</p>}
-                                        <button type="submit" disabled={loading} className="w-full py-3 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-bold shadow-md">
-                                            {loading ? "Searching..." : "Find My ID"}
-                                        </button>
-                                    </div>
-                                </form>
-                            )}
-                            <button onClick={() => { setShowRecovery(false); setRecoveryError(""); setRecResult(""); }} className="w-full mt-4 py-2 text-gray-500 hover:text-gray-800 font-medium text-sm">
-                                Cancel & Back
-                            </button>
-                        </div>
-                    </motion.div>
-                </div>
-            </AnimatePresence>
-        );
-    }
 
     return (
         <AnimatePresence>
@@ -207,111 +99,85 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
                     {step === 'FORM' ? (
                         <div className="p-8">
                             <div className="text-center mb-6">
-                                <div className={`w-16 h-16 ${mode === 'REGISTER' ? 'bg-blue-100 text-blue-600' : 'bg-green-100 text-green-600'} rounded-full flex items-center justify-center mx-auto mb-4 transition-colors`}>
+                                <div className="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4 transition-colors">
                                     <User className="w-8 h-8" />
                                 </div>
                                 <h2 className="text-2xl font-bold text-gray-900">
-                                    {mode === 'REGISTER' ? 'Create Student Profile' : 'Student Login'}
+                                    Create Student Profile
                                 </h2>
                                 <p className="text-gray-500 mt-2">
-                                    {mode === 'REGISTER' ? 'Register to start your personalized learning journey!' : 'Enter your Student ID to continue where you left off.'}
+                                    Register to start your personalized learning journey!
                                 </p>
                             </div>
 
                             <form onSubmit={handleSubmit} className="space-y-4">
-                                {mode === 'REGISTER' ? (
-                                    <>
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">Student Name</label>
-                                            <input
-                                                type="text"
-                                                required
-                                                value={name}
-                                                onChange={(e) => setName(e.target.value)}
-                                                className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none"
-                                                placeholder="e.g. John Doe"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">Grade / Class</label>
-                                            <div className="relative">
-                                                <select
-                                                    required
-                                                    value={grade}
-                                                    onChange={(e) => setGrade(e.target.value)}
-                                                    className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none appearance-none bg-white cursor-pointer"
-                                                >
-                                                    <option value="" disabled>Select your Grade</option>
-                                                    {gradeOptions.map(g => (
-                                                        <option key={g} value={g}>{g}</option>
-                                                    ))}
-                                                </select>
-                                                <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">
-                                                    ▼
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">Secret PIN (For Recovery) 🔐</label>
-                                            <input
-                                                type="text"
-                                                inputMode="numeric"
-                                                maxLength={4}
-                                                required
-                                                value={pin}
-                                                onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))}
-                                                className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none tracking-widest text-lg font-mono text-center"
-                                                placeholder="0000"
-                                            />
-                                            <p className="text-xs text-orange-600 mt-1 font-medium bg-orange-50 p-2 rounded">
-                                                Write this down! You will need it if you forget your Student ID.
-                                            </p>
-                                        </div>
-                                    </>
-                                ) : (
-                                    <div>
-                                        <div className="flex justify-between items-center mb-1">
-                                            <label className="block text-sm font-medium text-gray-700">Student ID</label>
-                                            <button
-                                                type="button"
-                                                onClick={() => setShowRecovery(true)}
-                                                className="text-xs text-orange-600 font-bold hover:underline"
-                                            >
-                                                Forgot ID?
-                                            </button>
-                                        </div>
-                                        <input
-                                            type="text"
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Student Name</label>
+                                    <input
+                                        type="text"
+                                        required
+                                        value={name}
+                                        onChange={(e) => setName(e.target.value)}
+                                        className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none"
+                                        placeholder="e.g. John Doe"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Grade / Class</label>
+                                    <div className="relative">
+                                        <select
                                             required
-                                            value={loginId}
-                                            onChange={(e) => setLoginId(e.target.value.toUpperCase())}
-                                            className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-500 outline-none text-center font-mono tracking-widest uppercase text-lg"
-                                            placeholder="SOMA-XXXX"
-                                        />
+                                            value={grade}
+                                            onChange={(e) => setGrade(e.target.value)}
+                                            className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none appearance-none bg-white cursor-pointer"
+                                        >
+                                            <option value="" disabled>Select your Grade</option>
+                                            {gradeOptions.map(g => (
+                                                <option key={g} value={g}>{g}</option>
+                                            ))}
+                                        </select>
+                                        <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">
+                                            ▼
+                                        </div>
                                     </div>
-                                )}
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Secret PIN (For Recovery) 🔐</label>
+                                    <input
+                                        type="text"
+                                        inputMode="numeric"
+                                        maxLength={4}
+                                        required
+                                        value={pin}
+                                        onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))}
+                                        className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none tracking-widest text-lg font-mono text-center"
+                                        placeholder="0000"
+                                    />
+                                    <p className="text-xs text-orange-600 mt-1 font-medium bg-orange-50 p-2 rounded">
+                                        Write this down! You will need it if you forget your Student ID.
+                                    </p>
+                                </div>
 
                                 <button
                                     type="submit"
                                     disabled={loading}
-                                    className={`w-full py-3.5 ${mode === 'REGISTER' ? 'bg-blue-600 hover:bg-blue-700 shadow-blue-200' : 'bg-green-600 hover:bg-green-700 shadow-green-200'} text-white rounded-lg font-bold text-lg transition-all shadow-lg mt-4 disabled:opacity-50 hover:scale-[1.02] active:scale-[0.98]`}
+                                    className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 shadow-blue-200 text-white rounded-lg font-bold text-lg transition-all shadow-lg mt-4 disabled:opacity-50 hover:scale-[1.02] active:scale-[0.98]"
                                 >
-                                    {loading ? 'Processing...' : (mode === 'REGISTER' ? 'Get My Student ID' : 'Login')}
+                                    {loading ? 'Processing...' : 'Get My Student ID'}
                                 </button>
                             </form>
 
                             <div className="mt-6 text-center">
                                 <button
-                                    onClick={() => setMode(mode === 'REGISTER' ? 'LOGIN' : 'REGISTER')}
+                                    onClick={onSwitchToLogin}
                                     className="text-sm font-medium text-slate-500 hover:text-slate-800 underline transition-colors"
                                 >
-                                    {mode === 'REGISTER' ? 'Already have an ID? Login here' : "Don&apos;t have an ID? Create Profile"}
+                                    Already have an ID? Login here
                                 </button>
                             </div>
                         </div>
                     ) : (
                         <div className="p-8 text-center relative overflow-hidden">
-                            {/* Confetti canvas is handled by the library automatically, but we can add bg visuals */}
                             <div className="absolute inset-0 bg-gradient-to-br from-white via-green-50 to-blue-50 opacity-50 z-0"></div>
 
                             <div className="relative z-10">
@@ -324,7 +190,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
                                 <div className="bg-white border-2 border-dashed border-blue-300 rounded-xl p-6 mb-6 shadow-sm">
                                     <p className="text-sm text-gray-500 uppercase font-bold tracking-wide mb-2">Your Student ID</p>
                                     <p className="text-4xl font-mono font-bold text-blue-600 tracking-wider copy select-all">{studentCode}</p>
-                                    <p className="text-xs text-blue-400 mt-2 font-medium">We&apos;ll remember you on this device!</p>
+                                    <p className="text-xs text-blue-400 mt-2 font-medium">We'll remember you on this device!</p>
                                 </div>
 
                                 <p className="text-sm text-yellow-800 bg-yellow-50 border border-yellow-200 p-4 rounded-lg mb-6">
@@ -335,7 +201,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
                                     onClick={onSuccess}
                                     className="w-full py-3.5 bg-green-600 text-white rounded-lg font-bold text-lg hover:bg-green-700 transition-all shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-[0.98]"
                                 >
-                                    Let&apos;s Start Learning! 🚀
+                                    Let's Start Learning! 🚀
                                 </button>
                             </div>
                         </div>

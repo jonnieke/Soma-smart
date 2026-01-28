@@ -14,8 +14,8 @@ interface AppContextType {
   studentProfile: { name: string, grade: string } | null;
   usageCount: number;
   incrementUsage: () => void;
-  registerStudent: (name: string, grade: string, pin: string) => Promise<string | null>;
-  registerTeacher: (name: string, email: string, password: string, classes: string[], subjects: string[]) => Promise<boolean>;
+  registerStudent: (name: string, grade: string, pin: string) => Promise<{ success: boolean; message?: string; data?: string }>;
+  registerTeacher: (name: string, email: string, password: string, classes: string[], subjects: string[]) => Promise<{ success: boolean; message?: string }>;
   login: (code: string) => Promise<boolean>;
   loginTeacher: (email: string, pass: string) => Promise<boolean>;
   resetPassword: (email: string) => Promise<boolean>;
@@ -35,6 +35,7 @@ interface AppContextType {
   subscriptionPlan: 'FREE' | 'DAILY' | 'MONTHLY';
   upgradeAccount: (plan: 'DAILY' | 'MONTHLY') => Promise<boolean>;
   logout: () => Promise<void>;
+  isPromoActive: boolean;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -58,6 +59,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   // Revision State
   const [revisionUsageCount, setRevisionUsageCount] = useState<number>(0);
   const incrementRevisionUsage = () => setRevisionUsageCount(prev => prev + 1);
+
+  // Promo State
+  const [isPromoActive, setIsPromoActive] = useState(false);
 
   // --- Initial Load from Supabase & Local Storage ---
   useEffect(() => {
@@ -121,6 +125,20 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           }
         }
       }
+
+      // 3. Fetch Promo Settings
+      const { data: promoData } = await supabase
+        .from('system_settings')
+        .select('value')
+        .eq('key', 'promo_end_date')
+        .maybeSingle();
+
+      if (promoData) {
+        const endDate = new Date(promoData.value);
+        if (endDate > new Date()) {
+          setIsPromoActive(true);
+        }
+      }
     };
     initSession();
   }, []);
@@ -131,11 +149,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   };
 
-  const registerStudent = async (name: string, grade: string, pin: string): Promise<string | null> => {
+  const registerStudent = async (name: string, grade: string, pin: string): Promise<{ success: boolean; message?: string; data?: string }> => {
     try {
       console.log("Attempting registration via signUp (Email/Pass)...");
-      // 1. Create Auth User (Anonymous fall back to email/pass)
-      // Since anonymous might be disabled, we autogenerate credentials
       const dummyId = Math.random().toString(36).substring(7);
       const email = `student-${Date.now()}-${dummyId}@soma.app`;
       const password = `soma-${Date.now()}`;
@@ -145,20 +161,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         password,
       });
 
-      console.log("Supabase Auth Response:", authData);
-
       if (authError) throw authError;
 
       const userId = authData.user?.id;
-      const session = authData.session;
-
       if (!userId) throw new Error("No User ID returned from SignUp");
-      // Session check skipped for now as we might be handling confirmation differently or just want to create the record
 
-      // Generate Student ID
       const newCode = "SOMA-" + Math.floor(1000 + Math.random() * 9000);
 
-      // 2. Save Profile (Upsert to handle race conditions/triggers)
       const { error: dbError } = await supabase.from('profiles').upsert({
         id: userId,
         role: 'LEARNER',
@@ -168,21 +177,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         recovery_pin: pin
       });
 
-      if (dbError) {
-        console.error("Database Error details:", dbError);
-        throw dbError;
-      }
+      if (dbError) throw dbError;
 
-      // 3. Update Local State
       setStudentCode(newCode);
       setStudentProfile({ name, grade });
       setIsRegistered(true);
-      setRole(UserRole.LEARNER); // Auto switch to learner
+      setRole(UserRole.LEARNER);
 
-      // PERSIST LOGIN
       localStorage.setItem('soma_active_student', newCode);
 
-      // Save to local history for recovery
       try {
         const history = JSON.parse(localStorage.getItem('soma_recent_login') || '[]');
         const newItem = { code: newCode, name, timestamp: Date.now() };
@@ -192,12 +195,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         console.error("Failed to save local history", e);
       }
 
-      return newCode;
+      return { success: true, data: newCode };
 
     } catch (error: any) {
-      console.error("Registration Failed Full Error:", error);
-      alert(`Registration Failed: ${error.message || JSON.stringify(error)}`);
-      return null;
+      console.error("Registration Failed:", error);
+      return { success: false, message: error.message || "Registration failed" };
     }
   };
 
@@ -264,7 +266,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const incrementTeacherUsage = () => setTeacherUsageCount(prev => prev + 1);
 
-  const registerTeacher = async (name: string, email: string, password: string, classes: string[], subjects: string[]): Promise<boolean> => {
+  const registerTeacher = async (name: string, email: string, password: string, classes: string[], subjects: string[]): Promise<{ success: boolean; message?: string }> => {
     try {
       const { data, error } = await supabase.auth.signUp({
         email,
@@ -296,13 +298,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
         setTeacherProfile({ name, classes, subjects });
         setRole(UserRole.TEACHER);
-        return true;
+        return { success: true };
       }
-      return false;
+      return { success: false, message: "No user returned from signup" };
     } catch (e: any) {
       console.error("Teacher Registration Error:", e);
-      alert(e.message);
-      return false;
+      return { success: false, message: e.message || "Registration failed" };
     }
   };
 
@@ -464,6 +465,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       teacherUsageCount, incrementTeacherUsage, teacherProfile, updateTeacherProfile, teacherHistory, saveTeacherActivity,
       revisionUsageCount, incrementRevisionUsage,
       isPro, subscriptionPlan, upgradeAccount,
+      isPromoActive,
       logout: async () => {
         await supabase.auth.signOut();
         setRole(UserRole.NONE);

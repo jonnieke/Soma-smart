@@ -49,11 +49,18 @@ export const TeacherOnboarding: React.FC<TeacherOnboardingProps> = ({ onComplete
     const handleFinish = async () => {
         if (name && email && password && classes.length > 0 && subjects.length > 0) {
             setLoading(true);
-            const success = await registerTeacher(name, email, password, classes, subjects);
-            if (success) {
-                // Determine if we need to call onComplete or if context update is enough
-                // Applying manual update just in case, but auth state change in context should handle navigation
+            const result = await registerTeacher(name, email, password, classes, subjects);
+
+            if (result.success) {
                 onComplete({ name, classes, subjects });
+            } else {
+                // Handle Error
+                if (result.message && (result.message.includes("already registered") || result.message.includes("unique constrain"))) {
+                    alert("Account already exists! Please login instead.");
+                    if (onLogin) onLogin();
+                } else {
+                    alert("Registration Error: " + result.message);
+                }
             }
             setLoading(false);
         }
