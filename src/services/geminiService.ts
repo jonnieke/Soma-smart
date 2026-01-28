@@ -374,15 +374,29 @@ export const convertNotes = async (base64Data: string, mimeType: string): Promis
   }
 };
 
-export const processVoiceNote = async (audioBase64: string): Promise<TeacherNote> => {
+export const processVoiceNote = async (audioBase64: string, mimeType: string = "audio/mp3"): Promise<TeacherNote> => {
   const model = MODEL_NAME;
 
   const prompt = `
-        Transcribe this audio recording from a teacher.
-        Based on the transcription:
-        1. Create structured lesson notes.
-        2. Create a simplified version for students.
-        Output JSON.
+        You are an expert Study Companion (like NotebookLM) for a Grade 2 classroom.
+        
+        TASK 1: LISTEN & VERIFY
+        - Listen to the audio.
+        - If the audio is silent, just background noise, or unintelligible:
+          - Set topic to "Unclear Audio".
+          - Set simplifiedNotes to "I couldn't hear any clear speech. Please try recording again closer to the microphone."
+          - Set structuredNotes to "Audio was unclear."
+          - STOP there.
+        
+        TASK 2: TRANSCRIBE & SIMPLIFY (Only if speech is clear)
+        - Transcribe the teacher's lesson.
+        - Create a "NotebookLM Style" Study Guide:
+          1. **Topic**: A fun, catchy title.
+          2. **The Big Idea**: One simple sentence explaining what this is about.
+          3. **Key Points**: 3-4 bullet points using simple words (Grade 2 level).
+          4. **Fun Fact / Example**: A relatable example for a 7-year-old.
+        
+        Format as JSON.
     `;
 
   try {
@@ -390,7 +404,7 @@ export const processVoiceNote = async (audioBase64: string): Promise<TeacherNote
       model,
       contents: {
         parts: [
-          { inlineData: { mimeType: "audio/mp3", data: audioBase64 } },
+          { inlineData: { mimeType: mimeType, data: audioBase64 } },
           { text: prompt }
         ]
       },

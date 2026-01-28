@@ -9,6 +9,7 @@ import { AdminDashboard } from './features/admin/Admin';
 import { RevisionPortal } from './features/revision/RevisionPortal';
 import { AskSoma } from './components/AskSoma';
 import { DarasaMode } from './features/darasa-mode/DarasaMode';
+import { ResetPassword } from './pages/ResetPassword';
 
 const App: React.FC = () => {
     return (
@@ -23,6 +24,7 @@ const App: React.FC = () => {
                     <Route path="/admin" element={<AdminDashboard onNavigate={() => window.location.href = '/'} />} />
                     <Route path="/revision" element={<RevisionPortal />} />
                     <Route path="/teacher/darasa" element={<DarasaMode />} />
+                    <Route path="/reset-password" element={<ResetPassword />} />
                     <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
             </AppProvider>

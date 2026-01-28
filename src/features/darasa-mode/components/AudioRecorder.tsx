@@ -70,7 +70,9 @@ export const AudioRecorder: React.FC<AudioRecorderProps> = ({ onCaptureComplete,
     const stopRecordingCleanup = () => {
         if (timerRef.current) clearInterval(timerRef.current);
         if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
-        if (audioContextRef.current) audioContextRef.current.close();
+        if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
+            audioContextRef.current.close().catch(e => console.warn("Error closing AudioContext:", e));
+        }
 
         if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
             mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());

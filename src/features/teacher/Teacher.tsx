@@ -136,7 +136,16 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate }) => {
         if (!checkLimit()) return;
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            const mediaRecorder = new MediaRecorder(stream);
+
+            // Determine supported mime type
+            let mimeType = 'audio/webm';
+            if (MediaRecorder.isTypeSupported('audio/mp4')) {
+                mimeType = 'audio/mp4';
+            } else if (MediaRecorder.isTypeSupported('audio/webm')) {
+                mimeType = 'audio/webm';
+            }
+
+            const mediaRecorder = new MediaRecorder(stream, { mimeType });
             mediaRecorderRef.current = mediaRecorder;
             chunksRef.current = [];
 
@@ -145,7 +154,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate }) => {
             };
 
             mediaRecorder.onstop = async () => {
-                const blob = new Blob(chunksRef.current, { type: 'audio/mp3' });
+                const blob = new Blob(chunksRef.current, { type: mimeType });
                 await handleAudioProcessing(blob);
             };
 
@@ -173,7 +182,8 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate }) => {
             reader.onloadend = async () => {
                 const base64String = reader.result as string;
                 const base64Data = base64String.split(',')[1];
-                const result = await processVoiceNote(base64Data);
+                // Pass the blob's type to the service
+                const result = await processVoiceNote(base64Data, blob.type);
                 setGeneratedNote(result);
                 handleSaveToHistory('NOTE', result.topic, result);
                 setActiveTab('VOICE');
