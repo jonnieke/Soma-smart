@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Lock, LogIn, User, GraduationCap, X, Plus, CheckCircle } from 'lucide-react';
+import { Lock, LogIn, User, GraduationCap, X, Plus, CheckCircle, Eye, EyeOff } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 
 interface LoginModalProps {
@@ -33,6 +33,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, initial
     // Teacher State
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+    const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
 
     // Reset Password State
@@ -89,13 +90,17 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, initial
             }
         } else {
             setLoading(true);
-            const success = await loginTeacher(email, password);
+            const { success, message } = await loginTeacher(email, password);
             setLoading(false);
             if (success) {
                 onClose();
                 navigate('/teacher');
             } else {
-                setError("Login failed. Check your email and password.");
+                if (message && message.includes("Invalid login credentials")) {
+                    setError("Account not found or password incorrect. If you are new, please Create Account below.");
+                } else {
+                    setError(message || "Login failed. Check your email and password.");
+                }
             }
         }
     };
@@ -446,14 +451,23 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, initial
                                                 Forgot?
                                             </button>
                                         </div>
-                                        <input
-                                            type="password"
-                                            required
-                                            value={password}
-                                            onChange={(e) => setPassword(e.target.value)}
-                                            className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 outline-none"
-                                            placeholder="******"
-                                        />
+                                        <div className="relative">
+                                            <input
+                                                type={showPassword ? "text" : "password"}
+                                                required
+                                                value={password}
+                                                onChange={(e) => setPassword(e.target.value)}
+                                                className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 outline-none pr-10"
+                                                placeholder="******"
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowPassword(!showPassword)}
+                                                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                                            >
+                                                {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                                            </button>
+                                        </div>
                                     </div>
                                 </>
                             )}

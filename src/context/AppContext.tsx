@@ -17,7 +17,7 @@ interface AppContextType {
   registerStudent: (name: string, grade: string, pin: string) => Promise<{ success: boolean; message?: string; data?: string }>;
   registerTeacher: (name: string, email: string, password: string, classes: string[], subjects: string[]) => Promise<{ success: boolean; message?: string }>;
   login: (code: string) => Promise<boolean>;
-  loginTeacher: (email: string, pass: string) => Promise<boolean>;
+  loginTeacher: (email: string, pass: string) => Promise<{ success: boolean; message?: string }>;
   resetPassword: (email: string) => Promise<boolean>;
   recoverStudentId: (name: string, pin: string) => Promise<string | null>;
   // Teacher Specific
@@ -36,6 +36,7 @@ interface AppContextType {
   upgradeAccount: (plan: 'DAILY' | 'MONTHLY') => Promise<boolean>;
   logout: () => Promise<void>;
   isPromoActive: boolean;
+  promoEndDate: Date | null;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -62,6 +63,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   // Promo State
   const [isPromoActive, setIsPromoActive] = useState(false);
+  const [promoEndDate, setPromoEndDate] = useState<Date | null>(null);
 
   // --- Initial Load from Supabase & Local Storage ---
   useEffect(() => {
@@ -137,6 +139,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         const endDate = new Date(promoData.value);
         if (endDate > new Date()) {
           setIsPromoActive(true);
+          setPromoEndDate(endDate);
         }
       }
     };
@@ -220,32 +223,79 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   };
 
-  const loginTeacher = async (email: string, pass: string): Promise<boolean> => {
+  const loginTeacher = async (email: string, pass: string): Promise<{ success: boolean; message?: string }> => {
     try {
+      console.log("Attempting login for:", email);
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password: pass
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Supabase Auth Error:", error.message);
+        return { success: false, message: error.message };
+      }
 
       if (data.user) {
+        console.log("Auth successful, User ID:", data.user.id);
+
         // Fetch profile to set state
-        const { data: profile } = await supabase.from('profiles').select('*').eq('id', data.user.id).maybeSingle();
+        const { data: profile, error: profileError } = await supabase.from('profiles').select('*').eq('id', data.user.id).maybeSingle();
+
+        if (profileError) {
+          console.error("Profile Fetch Error:", profileError.message);
+        }
+
         if (profile) {
+          console.log("Profile found:", profile.role);
           setTeacherProfile({
             name: profile.full_name,
             classes: profile.classes || [],
             subjects: profile.subjects || []
           });
           setRole(UserRole.TEACHER);
-          return true;
+          return { success: true };
+        } else {
+          console.warn("CRITICAL: Auth succeeded but NO PROFILE found. Attempting to auto-create profile...");
+
+          // Auto-repair: Create a basic profile
+          const { error: insertError } = await supabase.from('profiles').insert([
+            {
+              id: data.user.id,
+              full_name: email.split('@')[0], // Fallback name from email
+              role: 'TEACHER',
+              email: email,
+              classes: [],
+              subjects: []
+            }
+          ]);
+
+          if (insertError) {
+            console.error("Auto-create profile failed:", insertError);
+            return { success: false, message: "Account exists but profile is corrupted. Please contact support." };
+          }
+
+          // Retry fetching profile
+          const { data: newProfile } = await supabase.from('profiles').select('*').eq('id', data.user.id).single();
+
+          if (newProfile) {
+            console.log("Profile auto-created successfully.");
+            setTeacherProfile({
+              name: newProfile.full_name,
+              classes: newProfile.classes || [],
+              subjects: newProfile.subjects || []
+            });
+            setRole(UserRole.TEACHER);
+            return { success: true };
+          } else {
+            return { success: false, message: "Failed to create profile." };
+          }
         }
       }
-      return false;
-    } catch (e) {
-      console.error("Teacher Login Error", e);
-      return false;
+      return { success: false, message: "No user returned" };
+    } catch (e: any) {
+      console.error("Teacher Login Exception:", e);
+      return { success: false, message: e.message || "Login Exception" };
     }
   };
 
@@ -466,6 +516,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       revisionUsageCount, incrementRevisionUsage,
       isPro, subscriptionPlan, upgradeAccount,
       isPromoActive,
+      promoEndDate,
       logout: async () => {
         await supabase.auth.signOut();
         setRole(UserRole.NONE);

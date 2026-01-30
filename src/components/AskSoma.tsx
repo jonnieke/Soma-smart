@@ -3,8 +3,11 @@ import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MessageSquare, X, Send, Sparkles, User, Bot } from 'lucide-react';
 import { askSoma } from '../services/geminiService';
+import ReactMarkdown from 'react-markdown';
+import { useNavigate } from 'react-router-dom';
 
 export const AskSoma: React.FC = () => {
+    const navigate = useNavigate();
     const [isOpen, setIsOpen] = useState(false);
     const [messages, setMessages] = useState<{ role: 'user' | 'model', text: string }[]>([
         { role: 'model', text: "Hi! I'm Soma. 👋 How can I help you learn today?" }
@@ -49,6 +52,27 @@ export const AskSoma: React.FC = () => {
         "Can I create a quiz?",
         "Help me study!"
     ];
+
+    // Custom Link Renderer for ReactMarkdown
+    const LinkRenderer = (props: any) => {
+        return (
+            <a
+                href={props.href}
+                onClick={(e) => {
+                    if (props.href?.startsWith('/')) {
+                        e.preventDefault();
+                        navigate(props.href);
+                        setIsOpen(false); // Close chat on navigation
+                    }
+                }}
+                className="text-blue-600 underline font-semibold hover:text-blue-800"
+                target={props.href?.startsWith('/') ? "_self" : "_blank"}
+                rel="noopener noreferrer"
+            >
+                {props.children}
+            </a>
+        );
+    };
 
     return (
         <>
@@ -108,7 +132,9 @@ export const AskSoma: React.FC = () => {
                                         ? 'bg-blue-600 text-white rounded-tr-none'
                                         : 'bg-white text-slate-800 border border-slate-200 rounded-tl-none'
                                         }`}>
-                                        {msg.text}
+                                        <ReactMarkdown components={{ a: LinkRenderer }}>
+                                            {msg.text}
+                                        </ReactMarkdown>
                                     </div>
                                 </motion.div>
                             ))}

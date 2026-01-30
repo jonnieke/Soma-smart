@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Upload, Mic, FileText, Share2, StopCircle, Download, BookOpen, Crown, Brain, Sparkles, X, CheckCircle, Play, Pause, Trash2, ArrowRight, Library, Filter, Calendar, Home, LogOut } from 'lucide-react';
+import { Upload, Mic, FileText, Share2, StopCircle, Download, BookOpen, Crown, Brain, Sparkles, X, CheckCircle, Play, Pause, Trash2, ArrowRight, Library, Filter, Calendar, Home, LogOut, MonitorPlay } from 'lucide-react';
 import { Button, Card, Header, MarkdownText } from '../../components/Shared';
 import { TeacherPaywall } from '../../components/TeacherPaywall';
 import { TeacherOnboarding } from '../../components/TeacherOnboarding';
@@ -17,16 +17,15 @@ interface TeacherProps {
 import { useNavigate, useLocation } from 'react-router-dom';
 
 export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate }) => {
-    const { teacherUsageCount, incrementTeacherUsage, teacherProfile, updateTeacherProfile, teacherHistory, saveTeacherActivity, logout, isPromoActive } = useApp();
+    const { teacherUsageCount, incrementTeacherUsage, teacherProfile, updateTeacherProfile, teacherHistory, saveTeacherActivity, logout, isPromoActive, promoEndDate } = useApp();
     const [showPaywall, setShowPaywall] = useState(false);
     const location = useLocation();
+    const navigate = useNavigate();
 
     // Check for subscription intent from Landing Page
     useEffect(() => {
         if (location.state && (location.state as any).openSubscription) {
             setShowPaywall(true);
-            // Optional: clear state so it doesn't reopen on refresh if state persists (though location state usually clears on new navigation, refresh might keep it depending on browser)
-            // But for now this is fine.
         }
     }, [location]);
     const [showLoginModal, setShowLoginModal] = useState(false);
@@ -95,6 +94,37 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate }) => {
         return `${mins}:${secs.toString().padStart(2, '0')}`;
     };
 
+    // Promo Timer Logic
+    const [timeLeft, setTimeLeft] = useState("");
+
+    useEffect(() => {
+        if (!isPromoActive || !promoEndDate) return;
+
+        const updateTimer = () => {
+            const now = new Date();
+            const end = new Date(promoEndDate);
+            const diff = end.getTime() - now.getTime();
+
+            if (diff <= 0) {
+                setTimeLeft("Ending soon");
+                return;
+            }
+
+            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+
+            if (days > 0) {
+                setTimeLeft(`${days}d ${hours}h left`);
+            } else {
+                setTimeLeft(`${hours}h left`);
+            }
+        };
+
+        updateTimer();
+        const interval = setInterval(updateTimer, 60000); // Update every minute
+        return () => clearInterval(interval);
+    }, [isPromoActive, promoEndDate]);
+
     // --- Handlers ---
 
     const handleSaveToHistory = (type: 'NOTE' | 'QUIZ', title: string, content: any) => {
@@ -130,8 +160,6 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate }) => {
         }
     };
 
-    // ... (Recording handlers remain similar but need to save history)
-
     const startRecording = async () => {
         if (!checkLimit()) return;
         try {
@@ -155,13 +183,25 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate }) => {
 
             mediaRecorder.onstop = async () => {
                 const blob = new Blob(chunksRef.current, { type: mimeType });
+                console.log("Audio Blob Created:", blob.size, blob.type);
+
+                // Stop all tracks now that we have the full blob
+                stream.getTracks().forEach(track => track.stop());
+
+                if (blob.size < 1000) {
+                    alert("Recording too short or empty. Please try again.");
+                    setLoading(false);
+                    return;
+                }
+
                 await handleAudioProcessing(blob);
             };
 
             mediaRecorder.start();
             setIsRecording(true);
         } catch (e) {
-            alert("Microphone access denied or not available.");
+            console.error("Mic Error:", e);
+            alert("Microphone access denied. Please check your browser settings.");
         }
     };
 
@@ -169,7 +209,6 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate }) => {
         if (mediaRecorderRef.current && isRecording) {
             mediaRecorderRef.current.stop();
             setIsRecording(false);
-            mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
             incrementTeacherUsage();
         }
     };
@@ -182,7 +221,6 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate }) => {
             reader.onloadend = async () => {
                 const base64String = reader.result as string;
                 const base64Data = base64String.split(',')[1];
-                // Pass the blob's type to the service
                 const result = await processVoiceNote(base64Data, blob.type);
                 setGeneratedNote(result);
                 handleSaveToHistory('NOTE', result.topic, result);
@@ -190,7 +228,8 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate }) => {
                 setLoading(false);
             };
         } catch (e) {
-            alert("Error processing audio");
+            console.error("Processing Error:", e);
+            alert("Error processing audio. Please try again.");
             setLoading(false);
         }
     };
@@ -202,7 +241,6 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate }) => {
         setLoading(true);
         incrementTeacherUsage();
         try {
-            // Convert all files to base64
             const images = await Promise.all(advFiles.map(f => fileToGenerativePart(f)));
 
             const result = await generateAdvancedTeacherQuiz(
@@ -216,7 +254,6 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate }) => {
             setGeneratedQuiz(result);
             handleSaveToHistory('QUIZ', result.topic, result);
             setActiveTab('QUIZ');
-            // Reset fields
             setAdvFiles([]);
             setAdvTopic("");
         } catch (e) {
@@ -230,7 +267,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate }) => {
     const loadHistoryItem = (item: TeacherActivity) => {
         if (item.type === 'NOTE') {
             setGeneratedNote(item.content);
-            setActiveTab('CONVERT'); // Re-use convert view for notes
+            setActiveTab('CONVERT');
         } else {
             setGeneratedQuiz(item.content);
             setActiveTab('QUIZ');
@@ -240,11 +277,9 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate }) => {
     const handleAdvFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files) {
             const files = Array.from(e.target.files);
-            // Check for PDF
             const pdf = files.find(f => f.type === 'application/pdf');
             if (pdf) {
                 setPdfFile(pdf);
-                // Don't set advFiles yet wait for selection
             } else {
                 setAdvFiles(prev => [...prev, ...files]);
             }
@@ -298,10 +333,16 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate }) => {
                             </div>
                             <div>
                                 <h2 className="text-white font-bold">{teacherProfile.name}</h2>
-                                {teacherUsageCount < 5 && (
-                                    <span className="text-indigo-200 text-xs flex items-center gap-1">
-                                        <Sparkles className="w-3 h-3" /> {5 - teacherUsageCount} free uses left
+                                {isPromoActive ? (
+                                    <span className="text-emerald-300 text-xs flex items-center gap-1 font-bold bg-emerald-500/20 px-2 py-0.5 rounded-full border border-emerald-400/30">
+                                        <Crown className="w-3 h-3" /> Unlimited Access (Ends in {timeLeft})
                                     </span>
+                                ) : (
+                                    teacherUsageCount < 5 && (
+                                        <span className="text-indigo-200 text-xs flex items-center gap-1">
+                                            <Sparkles className="w-3 h-3" /> {5 - teacherUsageCount} free uses left
+                                        </span>
+                                    )
                                 )}
                             </div>
                         </motion.div>
@@ -379,6 +420,28 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate }) => {
                     <>
                         {activeTab === 'HOME' && (
                             <div className="grid md:grid-cols-2 gap-4 pb-24">
+                                {/* New Tool: Darasa Mode (Full Width) */}
+                                <motion.div
+                                    whileHover={{ y: -5 }}
+                                    onClick={() => navigate('/teacher/darasa')}
+                                    className="md:col-span-2 bg-gradient-to-r from-orange-500 to-amber-500 p-6 rounded-3xl shadow-lg border border-orange-400 flex flex-row items-center cursor-pointer group relative overflow-hidden"
+                                >
+                                    <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -mr-20 -mt-20"></div>
+
+                                    <div className="w-16 h-16 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center mr-6 shadow-inner border border-white/20 group-hover:scale-110 transition-transform">
+                                        <MonitorPlay className="w-8 h-8 text-white" />
+                                    </div>
+                                    <div className="flex-1 text-white relative z-10">
+                                        <h3 className="font-bold text-xl mb-1 flex items-center gap-2">
+                                            Darasa Mode <span className="text-[10px] bg-white/20 px-2 py-0.5 rounded-full font-mono uppercase tracking-wider">Live</span>
+                                        </h3>
+                                        <p className="text-orange-50 text-sm opacity-90">Launch interactive classroom presentation. Access history & saved lessons.</p>
+                                    </div>
+                                    <div className="bg-white/20 p-2 rounded-full backdrop-blur-sm group-hover:bg-white/30 transition-colors">
+                                        <ArrowRight className="w-6 h-6 text-white" />
+                                    </div>
+                                </motion.div>
+
                                 {/* Tool 1: Notes Converter */}
                                 <motion.div whileHover={{ y: -5 }} className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 flex flex-col items-center text-center cursor-pointer group hover:border-indigo-200 hover:shadow-md transition-all">
                                     <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
@@ -653,7 +716,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate }) => {
                         </div>
                     </motion.div>
                 )}
-            </div >
-        </div >
+            </div>
+        </div>
     );
 };

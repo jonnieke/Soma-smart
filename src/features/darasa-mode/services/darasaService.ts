@@ -9,8 +9,9 @@ export const processLessonAudio = async (audioBlob: Blob): Promise<LessonResult>
                 const base64String = reader.result as string;
                 // Remove prefix if present (e.g. data:audio/webm;base64,)
                 const base64Data = base64String.split(',')[1];
+                const mimeType = audioBlob.type || 'audio/webm'; // Default to webm if missing
 
-                const result = await generateDarasaLesson(base64Data);
+                const result = await generateDarasaLesson(base64Data, mimeType);
                 resolve(result);
             } catch (error) {
                 console.error("Error processing lesson audio:", error);
@@ -54,17 +55,29 @@ export const saveLessonToStorage = async (lesson: LessonResult): Promise<void> =
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) throw new Error("User not authenticated");
 
+        // Validate ID format. If it's a timestamp (legacy from Gemini), generate a real UUID
+        let lessonId = lesson.id;
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+        if (!uuidRegex.test(lessonId)) {
+            // It's likely a timestamp string, so we generate a new UUID for DB storage
+            lessonId = crypto.randomUUID();
+        }
+
         // Upsert to Supabase
         const { error } = await supabase.from(TABLE_NAME).upsert({
-            id: lesson.id, // Ensure uuid
+            id: lessonId,
             user_id: user.id,
             topic: lesson.topic,
             summary: lesson.summary,
-            content: lesson, // Store full JSON
-            created_at: lesson.date
+            content: { ...lesson, id: lessonId }, // Store full JSON with the correct UUID
+            created_at: new Date().toISOString() // Ensure standard ISO format
         });
 
-        if (error) throw error;
+        if (error) {
+            console.error("Supabase Upsert Error:", error);
+            throw error;
+        }
     } catch (e) {
         console.error("Failed to save lesson to cloud:", e);
         throw e;

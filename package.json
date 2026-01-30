@@ -11,12 +11,13 @@
     "format": "prettier --write \"src/**/*.{ts,tsx,css,json}\""
   },
   "dependencies": {
-    "@google/genai": "^1.37.0",
+    "@google/generative-ai": "^0.21.0",
     "@supabase/supabase-js": "^2.90.1",
     "@types/canvas-confetti": "^1.9.0",
     "axios": "^1.13.2",
     "canvas-confetti": "^1.9.4",
     "framer-motion": "^12.27.0",
+    "jspdf": "^4.0.0",
     "lucide-react": "^0.562.0",
     "pdfjs-dist": "^5.4.530",
     "react": "^19.2.3",

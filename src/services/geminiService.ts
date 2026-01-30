@@ -1,4 +1,4 @@
-import { GoogleGenAI, Type, Modality } from "@google/genai";
+import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
 import { ExplanationResult, QuizData, TeacherNote, RevisionMode, TutoringStep, ExamQuestion, ExamAnalysis, TutorResponse, LessonResult } from "../types";
 
 const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
@@ -7,15 +7,13 @@ if (!apiKey) {
   console.error("API_KEY is missing from environment variables.");
 }
 
-const ai = new GoogleGenAI({
-  apiKey: apiKey || 'DUMMY_KEY_FOR_DEV'
-});
+const genAI = new GoogleGenerativeAI(apiKey || 'DUMMY_KEY_FOR_DEV');
 
 if (!apiKey) {
   console.warn("Using DUMMY_KEY_FOR_DEV. Results will fail. Please check .env and Vite config.");
 }
 
-const MODEL_NAME = "gemini-2.5-flash"; // Validated from models list for 2026 env
+const MODEL_NAME = "gemini-2.0-flash"; // Upgraded to latest available version
 
 // --- Helper: File to Base64 ---
 export const fileToGenerativePart = async (file: File): Promise<string> => {
@@ -23,7 +21,6 @@ export const fileToGenerativePart = async (file: File): Promise<string> => {
     const reader = new FileReader();
     reader.onloadend = () => {
       const base64String = reader.result as string;
-      // Remove data url prefix (e.g. "data:image/jpeg;base64,")
       const base64Data = base64String.split(',')[1];
       resolve(base64Data);
     };
@@ -35,7 +32,22 @@ export const fileToGenerativePart = async (file: File): Promise<string> => {
 // --- LEARNER FEATURES ---
 
 export const explainImage = async (base64Image: string, mimeType: string, level: 'Simple' | 'Exam'): Promise<ExplanationResult> => {
-  const model = MODEL_NAME;
+  const model = genAI.getGenerativeModel({
+    model: MODEL_NAME,
+    generationConfig: {
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: SchemaType.OBJECT,
+        properties: {
+          topic: { type: SchemaType.STRING },
+          explanation: { type: SchemaType.STRING, description: "Markdown formatted explanation" },
+          summaryPoints: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
+          relatedTopics: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } }
+        },
+        required: ["topic", "explanation", "summaryPoints", "relatedTopics"]
+      }
+    }
+  });
 
   const prompt = `
     Analyze this image. It is likely a textbook page, homework, or notes.
@@ -48,30 +60,12 @@ export const explainImage = async (base64Image: string, mimeType: string, level:
   `;
 
   try {
-    const response = await ai.models.generateContent({
-      model,
-      contents: {
-        parts: [
-          { inlineData: { mimeType, data: base64Image } },
-          { text: prompt }
-        ]
-      },
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            topic: { type: Type.STRING },
-            explanation: { type: Type.STRING, description: "Markdown formatted explanation" },
-            summaryPoints: { type: Type.ARRAY, items: { type: Type.STRING } },
-            relatedTopics: { type: Type.ARRAY, items: { type: Type.STRING } }
-          },
-          required: ["topic", "explanation", "summaryPoints", "relatedTopics"]
-        }
-      }
-    });
+    const result = await model.generateContent([
+      prompt,
+      { inlineData: { data: base64Image, mimeType: mimeType } }
+    ]);
 
-    const text = response.text;
+    const text = result.response.text();
     if (!text) throw new Error("No response from AI");
 
     const json = JSON.parse(text);
@@ -83,7 +77,23 @@ export const explainImage = async (base64Image: string, mimeType: string, level:
 };
 
 export const explainAudio = async (base64Audio: string, mimeType: string, level: 'Simple' | 'Exam'): Promise<ExplanationResult> => {
-  const model = MODEL_NAME;
+  const model = genAI.getGenerativeModel({
+    model: MODEL_NAME,
+    generationConfig: {
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: SchemaType.OBJECT,
+        properties: {
+          transcript: { type: SchemaType.STRING },
+          topic: { type: SchemaType.STRING },
+          explanation: { type: SchemaType.STRING, description: "Markdown formatted explanation" },
+          summaryPoints: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
+          relatedTopics: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } }
+        },
+        required: ["transcript", "topic", "explanation", "summaryPoints", "relatedTopics"]
+      }
+    }
+  });
 
   const prompt = `
     Listen to this audio. It is likely a student asking a question or reading study material.
@@ -97,31 +107,12 @@ export const explainAudio = async (base64Audio: string, mimeType: string, level:
   `;
 
   try {
-    const response = await ai.models.generateContent({
-      model,
-      contents: {
-        parts: [
-          { inlineData: { mimeType, data: base64Audio } },
-          { text: prompt }
-        ]
-      },
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            transcript: { type: Type.STRING },
-            topic: { type: Type.STRING },
-            explanation: { type: Type.STRING, description: "Markdown formatted explanation" },
-            summaryPoints: { type: Type.ARRAY, items: { type: Type.STRING } },
-            relatedTopics: { type: Type.ARRAY, items: { type: Type.STRING } }
-          },
-          required: ["transcript", "topic", "explanation", "summaryPoints", "relatedTopics"]
-        }
-      }
-    });
+    const result = await model.generateContent([
+      prompt,
+      { inlineData: { data: base64Audio, mimeType: mimeType } }
+    ]);
 
-    const text = response.text;
+    const text = result.response.text();
     if (!text) throw new Error("No response from AI");
 
     const json = JSON.parse(text);
@@ -135,7 +126,23 @@ export const explainAudio = async (base64Audio: string, mimeType: string, level:
 import { getContext } from './contextService';
 
 export const explainTopic = async (topic: string, level: 'Simple' | 'Exam'): Promise<ExplanationResult> => {
-  const model = MODEL_NAME;
+  const model = genAI.getGenerativeModel({
+    model: MODEL_NAME,
+    generationConfig: {
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: SchemaType.OBJECT,
+        properties: {
+          topic: { type: SchemaType.STRING },
+          explanation: { type: SchemaType.STRING, description: "Markdown formatted explanation" },
+          summaryPoints: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
+          relatedTopics: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } }
+        },
+        required: ["topic", "explanation", "summaryPoints", "relatedTopics"]
+      }
+    }
+  });
+
   const context = getContext();
 
   let contextInstruction = "";
@@ -147,7 +154,6 @@ export const explainTopic = async (topic: string, level: 'Simple' | 'Exam'): Pro
     Source Material:
     "${context.content.substring(0, 30000)}" 
     `;
-    // Note: 30k chars is a safe limit for Flash model context window, though it handles much more.
   }
 
   const prompt = `
@@ -162,25 +168,9 @@ export const explainTopic = async (topic: string, level: 'Simple' | 'Exam'): Pro
   `;
 
   try {
-    const response = await ai.models.generateContent({
-      model,
-      contents: { parts: [{ text: prompt }] },
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            topic: { type: Type.STRING },
-            explanation: { type: Type.STRING, description: "Markdown formatted explanation" },
-            summaryPoints: { type: Type.ARRAY, items: { type: Type.STRING } },
-            relatedTopics: { type: Type.ARRAY, items: { type: Type.STRING } }
-          },
-          required: ["topic", "explanation", "summaryPoints", "relatedTopics"]
-        }
-      }
-    });
+    const result = await model.generateContent(prompt);
 
-    const text = response.text;
+    const text = result.response.text();
     if (!text) throw new Error("No response from AI");
 
     const json = JSON.parse(text);
@@ -192,7 +182,34 @@ export const explainTopic = async (topic: string, level: 'Simple' | 'Exam'): Pro
 };
 
 export const generateQuiz = async (content: string, topic: string): Promise<QuizData> => {
-  const model = MODEL_NAME;
+  const model = genAI.getGenerativeModel({
+    model: MODEL_NAME,
+    generationConfig: {
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: SchemaType.OBJECT,
+        properties: {
+          topic: { type: SchemaType.STRING },
+          questions: {
+            type: SchemaType.ARRAY,
+            items: {
+              type: SchemaType.OBJECT,
+              properties: {
+                id: { type: SchemaType.INTEGER },
+                type: { type: SchemaType.STRING, enum: ["MCQ", "SHORT"] },
+                question: { type: SchemaType.STRING },
+                options: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING }, description: "Only for MCQ" },
+                correctAnswer: { type: SchemaType.STRING },
+                explanation: { type: SchemaType.STRING }
+              },
+              required: ["id", "type", "question", "correctAnswer", "explanation"]
+            }
+          }
+        },
+        required: ["topic", "questions"]
+      }
+    }
+  });
 
   const prompt = `
     Based on the following content about "${topic}":
@@ -206,37 +223,9 @@ export const generateQuiz = async (content: string, topic: string): Promise<Quiz
   `;
 
   try {
-    const response = await ai.models.generateContent({
-      model,
-      contents: { parts: [{ text: prompt }] },
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            topic: { type: Type.STRING },
-            questions: {
-              type: Type.ARRAY,
-              items: {
-                type: Type.OBJECT,
-                properties: {
-                  id: { type: Type.INTEGER },
-                  type: { type: Type.STRING, enum: ["MCQ", "SHORT"] },
-                  question: { type: Type.STRING },
-                  options: { type: Type.ARRAY, items: { type: Type.STRING }, description: "Only for MCQ" },
-                  correctAnswer: { type: Type.STRING },
-                  explanation: { type: Type.STRING }
-                },
-                required: ["id", "type", "question", "correctAnswer", "explanation"]
-              }
-            }
-          },
-          required: ["topic", "questions"]
-        }
-      }
-    });
+    const result = await model.generateContent(prompt);
 
-    const text = response.text;
+    const text = result.response.text();
     if (!text) throw new Error("No response from AI");
     return JSON.parse(text) as QuizData;
   } catch (error) {
@@ -246,7 +235,34 @@ export const generateQuiz = async (content: string, topic: string): Promise<Quiz
 };
 
 export const generateQuickQuiz = async (content: string, topic: string): Promise<QuizData> => {
-  const model = MODEL_NAME;
+  const model = genAI.getGenerativeModel({
+    model: MODEL_NAME,
+    generationConfig: {
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: SchemaType.OBJECT,
+        properties: {
+          topic: { type: SchemaType.STRING },
+          questions: {
+            type: SchemaType.ARRAY,
+            items: {
+              type: SchemaType.OBJECT,
+              properties: {
+                id: { type: SchemaType.INTEGER },
+                type: { type: SchemaType.STRING, enum: ["MCQ"] },
+                question: { type: SchemaType.STRING },
+                options: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
+                correctAnswer: { type: SchemaType.STRING },
+                explanation: { type: SchemaType.STRING }
+              },
+              required: ["id", "type", "question", "correctAnswer", "explanation"]
+            }
+          }
+        },
+        required: ["topic", "questions"]
+      }
+    }
+  });
 
   const prompt = `
     Based on the explanation of "${topic}", generate a quick "Sticky Quiz" to test immediate retention.
@@ -259,37 +275,9 @@ export const generateQuickQuiz = async (content: string, topic: string): Promise
   `;
 
   try {
-    const response = await ai.models.generateContent({
-      model,
-      contents: { parts: [{ text: prompt }] },
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            topic: { type: Type.STRING },
-            questions: {
-              type: Type.ARRAY,
-              items: {
-                type: Type.OBJECT,
-                properties: {
-                  id: { type: Type.INTEGER },
-                  type: { type: Type.STRING, enum: ["MCQ"] },
-                  question: { type: Type.STRING },
-                  options: { type: Type.ARRAY, items: { type: Type.STRING } },
-                  correctAnswer: { type: Type.STRING },
-                  explanation: { type: Type.STRING }
-                },
-                required: ["id", "type", "question", "correctAnswer", "explanation"]
-              }
-            }
-          },
-          required: ["topic", "questions"]
-        }
-      }
-    });
+    const result = await model.generateContent(prompt);
 
-    const text = response.text;
+    const text = result.response.text();
     if (!text) throw new Error("No response from AI");
     return JSON.parse(text) as QuizData;
   } catch (error) {
@@ -326,7 +314,21 @@ export const generateSpeech = async (text: string): Promise<void> => {
 // --- TEACHER FEATURES ---
 
 export const convertNotes = async (base64Data: string, mimeType: string): Promise<TeacherNote> => {
-  const model = MODEL_NAME;
+  const model = genAI.getGenerativeModel({
+    model: MODEL_NAME,
+    generationConfig: {
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: SchemaType.OBJECT,
+        properties: {
+          topic: { type: SchemaType.STRING },
+          structuredNotes: { type: SchemaType.STRING, description: "Markdown" },
+          simplifiedNotes: { type: SchemaType.STRING, description: "Markdown" }
+        },
+        required: ["topic", "structuredNotes", "simplifiedNotes"]
+      }
+    }
+  });
 
   const prompt = `
     Analyze this document. 
@@ -337,36 +339,19 @@ export const convertNotes = async (base64Data: string, mimeType: string): Promis
   `;
 
   try {
-    const response = await ai.models.generateContent({
-      model,
-      contents: {
-        parts: [
-          { inlineData: { mimeType, data: base64Data } },
-          { text: prompt }
-        ]
-      },
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            topic: { type: Type.STRING },
-            structuredNotes: { type: Type.STRING, description: "Markdown" },
-            simplifiedNotes: { type: Type.STRING, description: "Markdown" }
-          },
-          required: ["topic", "structuredNotes", "simplifiedNotes"]
-        }
-      }
-    });
+    const result = await model.generateContent([
+      prompt,
+      { inlineData: { data: base64Data, mimeType: mimeType } }
+    ]);
 
-    const text = response.text;
+    const text = result.response.text();
     if (!text) throw new Error("No response from AI");
 
-    const result = JSON.parse(text);
+    const json = JSON.parse(text);
     return {
       id: Date.now().toString(),
       date: new Date().toLocaleDateString(),
-      ...result
+      ...json
     };
   } catch (error) {
     console.error("Error converting notes:", error);
@@ -375,7 +360,21 @@ export const convertNotes = async (base64Data: string, mimeType: string): Promis
 };
 
 export const processVoiceNote = async (audioBase64: string, mimeType: string = "audio/mp3"): Promise<TeacherNote> => {
-  const model = MODEL_NAME;
+  const model = genAI.getGenerativeModel({
+    model: MODEL_NAME,
+    generationConfig: {
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: SchemaType.OBJECT,
+        properties: {
+          topic: { type: SchemaType.STRING },
+          structuredNotes: { type: SchemaType.STRING },
+          simplifiedNotes: { type: SchemaType.STRING }
+        },
+        required: ["topic", "structuredNotes", "simplifiedNotes"]
+      }
+    }
+  });
 
   const prompt = `
         You are an expert Study Companion (like NotebookLM) for a Grade 2 classroom.
@@ -400,36 +399,34 @@ export const processVoiceNote = async (audioBase64: string, mimeType: string = "
     `;
 
   try {
-    const response = await ai.models.generateContent({
-      model,
-      contents: {
-        parts: [
-          { inlineData: { mimeType: mimeType, data: audioBase64 } },
-          { text: prompt }
-        ]
-      },
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            topic: { type: Type.STRING },
-            structuredNotes: { type: Type.STRING },
-            simplifiedNotes: { type: Type.STRING }
-          },
-          required: ["topic", "structuredNotes", "simplifiedNotes"]
-        }
-      }
-    });
+    const result = await model.generateContent([
+      prompt,
+      { inlineData: { data: audioBase64, mimeType: mimeType } }
+    ]);
 
-    const text = response.text;
+    const text = result.response.text();
     if (!text) throw new Error("No response from AI");
-    const result = JSON.parse(text);
-    return {
-      id: Date.now().toString(),
-      date: new Date().toLocaleDateString(),
-      ...result
-    };
+
+    try {
+      // Try to clean potential markdown fences ```json\n?|```/g
+      const cleanedText = text.replace(/```json\n?|```/g, '').trim();
+      const json = JSON.parse(cleanedText);
+      return {
+        id: Date.now().toString(),
+        date: new Date().toLocaleDateString(),
+        ...json
+      };
+    } catch (parseError) {
+      console.warn("AI returned non-JSON text:", text);
+      // Fallback: If AI refused or gave plain text, wrap it safely
+      return {
+        id: Date.now().toString(),
+        date: new Date().toLocaleDateString(),
+        topic: "Audio Processing Note",
+        structuredNotes: "The AI could not strictly format the notes.",
+        simplifiedNotes: text || "We heard you, but couldn't generate the specific format. Please try again."
+      };
+    }
 
   } catch (error) {
     console.error("Error processing voice note:", error);
@@ -448,7 +445,34 @@ export const generateAdvancedTeacherQuiz = async (
   count: number,
   type: 'MCQ' | 'OPEN'
 ): Promise<QuizData> => {
-  const model = MODEL_NAME;
+  const model = genAI.getGenerativeModel({
+    model: MODEL_NAME,
+    generationConfig: {
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: SchemaType.OBJECT,
+        properties: {
+          topic: { type: SchemaType.STRING },
+          questions: {
+            type: SchemaType.ARRAY,
+            items: {
+              type: SchemaType.OBJECT,
+              properties: {
+                id: { type: SchemaType.INTEGER },
+                type: { type: SchemaType.STRING, enum: ["MCQ", "SHORT"] },
+                question: { type: SchemaType.STRING },
+                options: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
+                correctAnswer: { type: SchemaType.STRING },
+                explanation: { type: SchemaType.STRING }
+              },
+              required: ["id", "type", "question", "correctAnswer", "explanation"]
+            }
+          }
+        },
+        required: ["topic", "questions"]
+      }
+    }
+  });
 
   const imageParts = images.map(img => ({
     inlineData: { mimeType: "image/jpeg", data: img }
@@ -484,42 +508,12 @@ export const generateAdvancedTeacherQuiz = async (
   `;
 
   try {
-    const response = await ai.models.generateContent({
-      model,
-      contents: {
-        parts: [
-          ...imageParts,
-          { text: prompt }
-        ]
-      },
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            topic: { type: Type.STRING },
-            questions: {
-              type: Type.ARRAY,
-              items: {
-                type: Type.OBJECT,
-                properties: {
-                  id: { type: Type.INTEGER },
-                  type: { type: Type.STRING, enum: ["MCQ", "SHORT"] },
-                  question: { type: Type.STRING },
-                  options: { type: Type.ARRAY, items: { type: Type.STRING } },
-                  correctAnswer: { type: Type.STRING },
-                  explanation: { type: Type.STRING }
-                },
-                required: ["id", "type", "question", "correctAnswer", "explanation"]
-              }
-            }
-          },
-          required: ["topic", "questions"]
-        }
-      }
-    });
+    const result = await model.generateContent([
+      ...imageParts,
+      prompt
+    ]);
 
-    const text = response.text;
+    const text = result.response.text();
     if (!text) throw new Error("No response from AI");
     return JSON.parse(text) as QuizData;
   } catch (error) {
@@ -531,23 +525,18 @@ export const generateAdvancedTeacherQuiz = async (
 // --- ASK SOMA CHATBOT ---
 
 export const askSoma = async (userQuery: string, chatHistory: { role: 'user' | 'model', text: string }[]): Promise<string> => {
-  const model = MODEL_NAME;
+  const model = genAI.getGenerativeModel({ model: MODEL_NAME });
 
   // Construct prompt with history manually
-  const systemInstruction = "You are Soma, a helpful, friendly, and encouraging AI learning assistant for the Soma Smart app. Your goal is to guide students, parents, and teachers. Help them navigate features:\n\n1. **Scanning**: Tell them they can scan textbooks to get simple explanations.\n2. **Voice Notes**: Explain how teachers can record notes to simplify them.\n3. **Quizzes**: Mention that quizzes are auto-generated from their content.\n4. **Student ID**: Remind them their ID is for login and parent tracking.\n\nKeep answers short (under 3 sentences) and fun. Use emojis! 🌟";
+  const systemInstruction = "You are Soma, a helpful, friendly, and encouraging AI learning assistant for the Soma Smart app. Your goal is to guide students, parents, and teachers.\\n\\nFEATURES & NAVIGATION:\\n1. **Scanning**: Tell them they can scan textbooks to get simple explanations.\\n2. **Voice Notes**: Explain how teachers can record notes to simplify them.\\n3. **Quizzes**: Mention that quizzes are auto-generated from their content.\\n4. **Student ID**: Remind them their ID is for login and parent tracking.\\n\\nIMPORTANT: You can direct users to specific features. Use these EXACT links:\\n- To go to Darasa Mode (Teacher recording): [Darasa Mode](/teacher/darasa)\\n- To go to Student Dashboard: [Student Dashboard](/learner)\\n- To go to Teacher Dashboard: [Teacher Dashboard](/teacher)\\n- To go to Revision Portal: [Revision Portal](/revision)\\n\\nKeep answers short (under 3 sentences) and fun. Use emojis! 🌟";
 
-  const historyText = chatHistory.map(msg => `${msg.role === 'user' ? 'User' : 'Soma'}: ${msg.text}`).join('\n');
-  const fullPrompt = `${systemInstruction}\n\n${historyText}\nUser: ${userQuery}\nSoma:`;
+  const historyText = chatHistory.map(msg => `${msg.role === 'user' ? 'User' : 'Soma'}: ${msg.text}`).join('\\n');
+  const fullPrompt = `${systemInstruction}\\n\\n${historyText}\\nUser: ${userQuery}\\nSoma:`;
 
   try {
-    const response = await ai.models.generateContent({
-      model: model,
-      contents: {
-        parts: [{ text: fullPrompt }]
-      }
-    });
+    const result = await model.generateContent(fullPrompt);
 
-    const text = response.text;
+    const text = result.response.text();
     if (!text) return "I'm thinking... but got stuck! 😅";
     return text;
   } catch (error) {
@@ -559,7 +548,36 @@ export const askSoma = async (userQuery: string, chatHistory: { role: 'user' | '
 // --- REVISION ASSISTANT FEATURES ---
 
 export const analyzeExamPaper = async (base64Image: string, mimeType: string): Promise<ExamAnalysis> => {
-  const model = MODEL_NAME;
+  const model = genAI.getGenerativeModel({
+    model: MODEL_NAME,
+    generationConfig: {
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: SchemaType.OBJECT,
+        properties: {
+          subject: { type: SchemaType.STRING },
+          grade: { type: SchemaType.STRING },
+          questions: {
+            type: SchemaType.ARRAY,
+            items: {
+              type: SchemaType.OBJECT,
+              properties: {
+                id: { type: SchemaType.INTEGER },
+                number: { type: SchemaType.STRING },
+                text: { type: SchemaType.STRING },
+                topic: { type: SchemaType.STRING },
+                subStrand: { type: SchemaType.STRING },
+                competency: { type: SchemaType.STRING },
+                marks: { type: SchemaType.INTEGER }
+              },
+              required: ["id", "number", "text", "topic", "competency"]
+            }
+          }
+        },
+        required: ["subject", "grade", "questions"]
+      }
+    }
+  });
 
   const prompt = `
     Analyze this exam paper image.
@@ -586,44 +604,12 @@ export const analyzeExamPaper = async (base64Image: string, mimeType: string): P
   `;
 
   try {
-    const response = await ai.models.generateContent({
-      model,
-      contents: {
-        parts: [
-          { inlineData: { mimeType, data: base64Image } },
-          { text: prompt }
-        ]
-      },
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            subject: { type: Type.STRING },
-            grade: { type: Type.STRING },
-            questions: {
-              type: Type.ARRAY,
-              items: {
-                type: Type.OBJECT,
-                properties: {
-                  id: { type: Type.INTEGER },
-                  number: { type: Type.STRING },
-                  text: { type: Type.STRING },
-                  topic: { type: Type.STRING },
-                  subStrand: { type: Type.STRING },
-                  competency: { type: Type.STRING },
-                  marks: { type: Type.INTEGER }
-                },
-                required: ["id", "number", "text", "topic", "competency"]
-              }
-            }
-          },
-          required: ["subject", "grade", "questions"]
-        }
-      }
-    });
+    const result = await model.generateContent([
+      prompt,
+      { inlineData: { data: base64Image, mimeType: mimeType } }
+    ]);
 
-    const text = response.text;
+    const text = result.response.text();
     if (!text) throw new Error("No response from AI");
 
     return JSON.parse(text) as ExamAnalysis;
@@ -639,7 +625,22 @@ export const getRevisionTutorResponse = async (
   history: { role: 'user' | 'model', text: string }[],
   mode: RevisionMode
 ): Promise<TutorResponse> => {
-  const model = MODEL_NAME;
+  const model = genAI.getGenerativeModel({
+    model: MODEL_NAME,
+    generationConfig: {
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: SchemaType.OBJECT,
+        properties: {
+          text: { type: SchemaType.STRING },
+          step: { type: SchemaType.STRING },
+          nextStep: { type: SchemaType.STRING },
+          hint: { type: SchemaType.STRING }
+        },
+        required: ["text", "step", "nextStep"]
+      }
+    }
+  });
 
   const systemInstruction = `
     You are Soma Smart Revision Assist, an expert CBC/CBE-aligned learning coach for Kenyan learners.
@@ -691,25 +692,9 @@ export const getRevisionTutorResponse = async (
   const fullPrompt = `${systemInstruction}\n\nChat History:\n${chatContext}\n\nAssistant:`;
 
   try {
-    const response = await ai.models.generateContent({
-      model,
-      contents: { parts: [{ text: fullPrompt }] },
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            text: { type: Type.STRING },
-            step: { type: Type.STRING },
-            nextStep: { type: Type.STRING },
-            hint: { type: Type.STRING }
-          },
-          required: ["text", "step", "nextStep"]
-        }
-      }
-    });
+    const result = await model.generateContent(fullPrompt);
 
-    const text = response.text;
+    const text = result.response.text();
     if (!text) throw new Error("No response from AI");
     return JSON.parse(text) as TutorResponse;
   } catch (error) {
@@ -722,7 +707,30 @@ export const getRevisionTutorResponse = async (
 import { LessonRecap } from "../types";
 
 export const generateLessonRecap = async (inputBase64: string, mimeType: string, audience: 'LEARNER' | 'TEACHER'): Promise<LessonRecap> => {
-  const model = MODEL_NAME;
+  const model = genAI.getGenerativeModel({
+    model: MODEL_NAME,
+    generationConfig: {
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: SchemaType.OBJECT,
+        properties: {
+          topic: { type: SchemaType.STRING },
+          summary: { type: SchemaType.STRING },
+          keyPoints: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
+          examTips: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
+          definitions: {
+            type: SchemaType.ARRAY,
+            items: {
+              type: SchemaType.OBJECT,
+              properties: { term: { type: SchemaType.STRING }, definition: { type: SchemaType.STRING } }
+            }
+          },
+          teacherNotes: { type: SchemaType.STRING, description: "Only if audience is TEACHER" }
+        },
+        required: ["topic", "summary", "keyPoints", "examTips", "definitions"]
+      }
+    }
+  });
 
   const learnerPrompt = `
     You are an expert tutor helping a student understand a live lesson they just attended.
@@ -750,38 +758,12 @@ export const generateLessonRecap = async (inputBase64: string, mimeType: string,
   const prompt = audience === 'LEARNER' ? learnerPrompt : teacherPrompt;
 
   try {
-    const response = await ai.models.generateContent({
-      model,
-      contents: {
-        parts: [
-          { inlineData: { mimeType, data: inputBase64 } },
-          { text: prompt }
-        ]
-      },
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            topic: { type: Type.STRING },
-            summary: { type: Type.STRING },
-            keyPoints: { type: Type.ARRAY, items: { type: Type.STRING } },
-            examTips: { type: Type.ARRAY, items: { type: Type.STRING } },
-            definitions: {
-              type: Type.ARRAY,
-              items: {
-                type: Type.OBJECT,
-                properties: { term: { type: Type.STRING }, definition: { type: Type.STRING } }
-              }
-            },
-            teacherNotes: { type: Type.STRING, description: "Only if audience is TEACHER" }
-          },
-          required: ["topic", "summary", "keyPoints", "examTips", "definitions"]
-        }
-      }
-    });
+    const result = await model.generateContent([
+      prompt,
+      { inlineData: { data: inputBase64, mimeType: mimeType } }
+    ]);
 
-    const text = response.text;
+    const text = result.response.text();
     if (!text) throw new Error("No response from AI");
     return JSON.parse(text) as LessonRecap;
   } catch (error) {
@@ -792,93 +774,91 @@ export const generateLessonRecap = async (inputBase64: string, mimeType: string,
 
 // --- DARASA AI FEATURES ---
 
-export const generateDarasaLesson = async (audioBase64: string): Promise<LessonResult> => {
-  const model = MODEL_NAME;
+// --- DARASA AI FEATURES ---
+
+export const generateDarasaLesson = async (audioBase64: string, mimeType: string = "audio/mp3"): Promise<LessonResult> => {
+  const model = genAI.getGenerativeModel({
+    model: MODEL_NAME,
+    generationConfig: {
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: SchemaType.OBJECT,
+        properties: {
+          topic: { type: SchemaType.STRING },
+          summary: { type: SchemaType.STRING },
+          simplifiedNotes: {
+            type: SchemaType.ARRAY,
+            items: {
+              type: SchemaType.OBJECT,
+              properties: {
+                title: { type: SchemaType.STRING },
+                content: { type: SchemaType.STRING }
+              },
+              required: ["title", "content"]
+            }
+          },
+          quiz: {
+            type: SchemaType.ARRAY,
+            items: {
+              type: SchemaType.OBJECT,
+              properties: {
+                id: { type: SchemaType.INTEGER },
+                type: { type: SchemaType.STRING, enum: ["MCQ"] },
+                question: { type: SchemaType.STRING },
+                options: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
+                correctAnswer: { type: SchemaType.INTEGER },
+                explanation: { type: SchemaType.STRING }
+              },
+              required: ["id", "type", "question", "options", "correctAnswer", "explanation"]
+            }
+          }
+        },
+        required: ["topic", "summary", "simplifiedNotes", "quiz"]
+      }
+    }
+  });
 
   const prompt = `
     You are an expert Teaching Assistant for a Kenyan Classroom.
-    1. Listen to this teacher's lesson recording.
-    2. Extract the Main Topic.
-    3. Write a clear, simple Summary (2-3 sentences).
-    4. Create "Simplified Notes" broken into logical sections (Title + Content).
-    5. Generate a Quiz with 3-5 Multiple Choice Questions based DIRECTLY on what was said.
+    
+    TASK 1: ANALYZE RECORDING
+    Listen to this teacher's lesson recording carefully.
+    
+    TASK 2: COMPREHENSIVE NOTES
+    Create detailed, professional-grade teacher notes (not just a summary). 
+    - **Introduction**: Briefly introduce the topic.
+    - **Core Concepts**: Explain 3-5 main concepts covered in depth.
+    - **Examples**: Provide 2-3 real-world examples mentioned or relevant to the context.
+    - **Summary**: A concluding paragraph.
+    
+    Map this to the "simplifiedNotes" schema as sections:
+    - Title: "Introduction", Content: ...
+    - Title: "Core Concepts", Content: ... (Use markdown bullets)
+    - etc.
 
-    Output structured JSON matching this schema:
-    {
-       "topic": "String",
-       "summary": "String",
-       "simplifiedNotes": [
-          { "title": "Section Title", "content": "Simplified explanation..." }
-       ],
-       "quiz": [
-          {
-             "id": 1,
-             "type": "MCQ",
-             "question": "Question text",
-             "options": ["Option A", "Option B", "Option C", "Option D"],
-             "correctAnswer": 0,
-             "explanation": "Why this is correct"
-          }
-       ]
-    }
+    TASK 3: EXTENSIVE QUIZ
+    Generate a robust quiz to strictly test understanding.
+    - **Quantity**: Generate AT LEAST 8 questions (Target 10).
+    - **Type**: Multiple Choice.
+    - **Difficulty**: Mixed (Easy to Hard).
+    
+    Output structured JSON matching the schema.
   `;
 
   try {
-    const response = await ai.models.generateContent({
-      model,
-      contents: {
-        parts: [
-          { inlineData: { mimeType: "audio/mp3", data: audioBase64 } },
-          { text: prompt }
-        ]
-      },
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            topic: { type: Type.STRING },
-            summary: { type: Type.STRING },
-            simplifiedNotes: {
-              type: Type.ARRAY,
-              items: {
-                type: Type.OBJECT,
-                properties: {
-                  title: { type: Type.STRING },
-                  content: { type: Type.STRING }
-                },
-                required: ["title", "content"]
-              }
-            },
-            quiz: {
-              type: Type.ARRAY,
-              items: {
-                type: Type.OBJECT,
-                properties: {
-                  id: { type: Type.INTEGER },
-                  type: { type: Type.STRING, enum: ["MCQ"] },
-                  question: { type: Type.STRING },
-                  options: { type: Type.ARRAY, items: { type: Type.STRING } },
-                  correctAnswer: { type: Type.INTEGER },
-                  explanation: { type: Type.STRING }
-                },
-                required: ["id", "type", "question", "options", "correctAnswer", "explanation"]
-              }
-            }
-          },
-          required: ["topic", "summary", "simplifiedNotes", "quiz"]
-        }
-      }
-    });
+    const result = await model.generateContent([
+      prompt,
+      { inlineData: { data: audioBase64, mimeType: mimeType } }
+    ]);
 
-    const text = response.text;
+    const text = result.response.text();
     if (!text) throw new Error("No response from AI");
 
-    const result = JSON.parse(text);
+    const parsedResult = JSON.parse(text);
     return {
       id: Date.now().toString(),
       date: new Date().toISOString(),
-      ...result
+      ...parsedResult
     };
   } catch (error) {
     console.error("Error generating Darasa lesson:", error);
@@ -887,7 +867,46 @@ export const generateDarasaLesson = async (audioBase64: string): Promise<LessonR
 };
 
 export const generateDarasaRevision = async (imageBase64: string, mimeType: string): Promise<LessonResult> => {
-  const model = MODEL_NAME;
+  const model = genAI.getGenerativeModel({
+    model: MODEL_NAME,
+    generationConfig: {
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: SchemaType.OBJECT,
+        properties: {
+          topic: { type: SchemaType.STRING },
+          summary: { type: SchemaType.STRING },
+          simplifiedNotes: {
+            type: SchemaType.ARRAY,
+            items: {
+              type: SchemaType.OBJECT,
+              properties: {
+                title: { type: SchemaType.STRING },
+                content: { type: SchemaType.STRING }
+              },
+              required: ["title", "content"]
+            }
+          },
+          quiz: {
+            type: SchemaType.ARRAY,
+            items: {
+              type: SchemaType.OBJECT,
+              properties: {
+                id: { type: SchemaType.INTEGER },
+                type: { type: SchemaType.STRING, enum: ["MCQ"] },
+                question: { type: SchemaType.STRING },
+                options: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
+                correctAnswer: { type: SchemaType.INTEGER },
+                explanation: { type: SchemaType.STRING }
+              },
+              required: ["id", "type", "question", "options", "correctAnswer", "explanation"]
+            }
+          }
+        },
+        required: ["topic", "summary", "simplifiedNotes", "quiz"]
+      }
+    }
+  });
 
   const prompt = `
     You are an expert Teaching Assistant for a Kenyan Classroom.
@@ -918,61 +937,19 @@ export const generateDarasaRevision = async (imageBase64: string, mimeType: stri
   `;
 
   try {
-    const response = await ai.models.generateContent({
-      model,
-      contents: {
-        parts: [
-          { inlineData: { mimeType, data: imageBase64 } },
-          { text: prompt }
-        ]
-      },
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            topic: { type: Type.STRING },
-            summary: { type: Type.STRING },
-            simplifiedNotes: {
-              type: Type.ARRAY,
-              items: {
-                type: Type.OBJECT,
-                properties: {
-                  title: { type: Type.STRING },
-                  content: { type: Type.STRING }
-                },
-                required: ["title", "content"]
-              }
-            },
-            quiz: {
-              type: Type.ARRAY,
-              items: {
-                type: Type.OBJECT,
-                properties: {
-                  id: { type: Type.INTEGER },
-                  type: { type: Type.STRING, enum: ["MCQ"] },
-                  question: { type: Type.STRING },
-                  options: { type: Type.ARRAY, items: { type: Type.STRING } },
-                  correctAnswer: { type: Type.INTEGER },
-                  explanation: { type: Type.STRING }
-                },
-                required: ["id", "type", "question", "options", "correctAnswer", "explanation"]
-              }
-            }
-          },
-          required: ["topic", "summary", "simplifiedNotes", "quiz"]
-        }
-      }
-    });
+    const result = await model.generateContent([
+      prompt,
+      { inlineData: { data: imageBase64, mimeType: mimeType } }
+    ]);
 
-    const text = response.text;
+    const text = result.response.text();
     if (!text) throw new Error("No response from AI");
 
-    const result = JSON.parse(text);
+    const parsedResult = JSON.parse(text);
     return {
       id: Date.now().toString(),
       date: new Date().toISOString(),
-      ...result
+      ...parsedResult
     };
   } catch (error) {
     console.error("Error generating Darasa revision:", error);

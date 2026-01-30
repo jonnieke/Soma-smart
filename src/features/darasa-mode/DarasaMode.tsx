@@ -1,318 +1,311 @@
-import React, { useState, useEffect } from 'react';
-import { Mic, BookOpen, PlayCircle, ArrowLeft, Loader2 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-import { useApp } from '../../context/AppContext';
+import React, { useRef, useEffect } from 'react';
+import { ArrowLeft, Loader2, BookOpen, Play, Check, Trash2, Mic, Share2, Download } from 'lucide-react';
 import { AudioRecorder } from './components/AudioRecorder';
 import { LessonReview } from './components/LessonReview';
-import { StudentLessonView } from './components/StudentLessonView';
-import { processLessonAudio, processRevisionFile, getLessonsFromStorage, saveLessonToStorage } from './services/darasaService';
-import { LessonResult } from '../../types';
+import { useDarasaLesson } from './hooks/useDarasaLesson';
+import { jsPDF } from 'jspdf';
+import { useApp } from '../../context/AppContext';
+import { LoginModal } from '../../components/LoginModal';
+import { UserRole } from '../../types';
 
-export const DarasaMode: React.FC = () => {
-    const navigate = useNavigate();
+interface DarasaModeProps {
+    onBack: () => void;
+}
+
+export const DarasaMode: React.FC<DarasaModeProps> = ({ onBack }) => {
+    const {
+        state,
+        lesson,
+        audioBlob,
+        error,
+        captureAudio,
+        confirmProcessing,
+        saveCurrentLesson,
+        history,
+        reset
+    } = useDarasaLesson();
+
+    // Features
     const { role } = useApp();
-    const [view, setView] = useState<'DASHBOARD' | 'RECORDING' | 'PROCESSING' | 'REVIEW' | 'PREVIEW'>('DASHBOARD');
-    const [currentLesson, setCurrentLesson] = useState<LessonResult | null>(null);
+    const [showLogin, setShowLogin] = React.useState(false);
+    const [isStudentPreview, setIsStudentPreview] = React.useState(false);
 
-    const [recentLessons, setRecentLessons] = useState<LessonResult[]>([]);
-    const [loadingHistory, setLoadingHistory] = useState(false);
-
+    // Enforce Login on Entry
     useEffect(() => {
-        if (role === 'TEACHER') {
-            setLoadingHistory(true);
-            getLessonsFromStorage()
-                .then(setRecentLessons)
-                .finally(() => setLoadingHistory(false));
-        } else {
-            setRecentLessons([]);
+        if (role !== UserRole.TEACHER) {
+            setShowLogin(true);
         }
-    }, [view, role]);
-    // ... existing code ...
-    <div className="space-y-3">
-        {recentLessons.map((lesson, index) => (
-            <div
-                key={`${lesson.id}-${index}`}
-                onClick={() => {
-                    setCurrentLesson(lesson);
-                    setView('REVIEW');
-                }}
-                className="bg-white p-4 rounded-xl border border-slate-200 hover:border-indigo-300 hover:shadow-md transition-all cursor-pointer flex items-center justify-between"
-            >
-                <div>
-                    <h4 className="font-bold text-slate-800">{lesson.topic}</h4>
-                    <p className="text-sm text-slate-500 line-clamp-1">{lesson.summary}</p>
-                    <div className="flex gap-2 mt-1">
-                        <span className="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">{new Date(lesson.date).toLocaleDateString()}</span>
-                        <span className="text-xs bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded-full">{lesson.quiz.length} Questions</span>
-                    </div>
-                </div>
-                <div className="text-indigo-600">
-                    <ArrowLeft className="w-5 h-5 rotate-180" />
-                </div>
-            </div>
-        ))}
-    </div>
+    }, [role]);
 
-    const handleCaptureComplete = async (blob: Blob) => {
-        if (role !== 'TEACHER') {
-            alert("Please login as a Teacher to save lessons.");
-            // Proceed to review but warn they can't save? 
-            // Or maybe just let them proceed but save will fail.
-            // Let's let them proceed to review, but auto-save will skip if not auth.
-        }
+    const handleDownloadPDF = () => {
+        if (!lesson) return;
+        const doc = new jsPDF();
 
-        setView('PROCESSING');
-        try {
-            const result = await processLessonAudio(blob);
-            setCurrentLesson(result);
+        doc.setFontSize(18);
+        doc.text(lesson.topic, 10, 10);
 
-            if (role === 'TEACHER') {
-                await saveLessonToStorage(result);
-            }
+        doc.setFontSize(12);
+        doc.text("Summary:", 10, 20);
+        const summaryLines = doc.splitTextToSize(lesson.summary, 190);
+        doc.text(summaryLines, 10, 25);
 
-            setView('REVIEW');
-        } catch (error) {
-            console.error("Processing failed", error);
-            alert("Failed to process audio. Please try again.");
-            setView('DASHBOARD');
-        }
-    };
+        // Notes content loop
+        let y = 40 + (summaryLines.length * 5);
 
-    const handleRevisionUpload = async (file: File) => {
-        setView('PROCESSING');
-        try {
-            const result = await processRevisionFile(file);
-            setCurrentLesson(result);
-
-            if (role === 'TEACHER') {
-                await saveLessonToStorage(result);
-            }
-
-            setView('REVIEW');
-        } catch (error) {
-            console.error("Revision processing failed", error);
-            alert("Failed to process revision notes. Please ensure the file is a clear image or PDF.");
-            setView('DASHBOARD');
-        }
-    };
-
-    const handleSaveLesson = async (lesson: LessonResult) => {
-        if (role !== 'TEACHER') {
-            // Direct redirect to simplify flow
-            navigate('/teacher');
-            return;
-        }
-
-        try {
-            await saveLessonToStorage(lesson);
-            alert("Lesson saved securely to cloud!");
-            setView('DASHBOARD');
-        } catch (e) {
-            alert("Failed to save to cloud.");
-        }
-    };
-
-    const handleDownload = (lesson: LessonResult) => {
-        if (role !== 'TEACHER') {
-            // Direct redirect to simplify flow
-            navigate('/teacher');
-            return;
-        }
-
-        // Generate Readable Text Format
-        let content = `TOPIC: ${lesson.topic.toUpperCase()}\n`;
-        content += `DATE: ${new Date(lesson.date).toLocaleDateString()}\n`;
-        content += `----------------------------------------\n\n`;
-
-        content += `SUMMARY:\n${lesson.summary}\n\n`;
-
-        content += `NOTES:\n`;
-        lesson.simplifiedNotes.forEach((note, i) => {
-            content += `${i + 1}. ${note.title}\n${note.content}\n\n`;
+        lesson.simplifiedNotes.forEach((note) => {
+            if (y > 270) { doc.addPage(); y = 10; }
+            doc.setFontSize(14);
+            doc.text(note.title, 10, y);
+            y += 7;
+            doc.setFontSize(11);
+            const contentLines = doc.splitTextToSize(note.content, 190);
+            doc.text(contentLines, 10, y);
+            y += (contentLines.length * 5) + 5;
         });
 
-        content += `----------------------------------------\n`;
-        content += `QUIZ (${lesson.quiz.length} Questions):\n\n`;
+        // Quiz
+        if (y > 250) { doc.addPage(); y = 10; }
+        y += 10;
+        doc.setFontSize(14);
+        doc.text("QUIZ", 10, y);
+        y += 10;
+        doc.setFontSize(11);
 
         lesson.quiz.forEach((q, i) => {
-            content += `Q${i + 1}: ${q.question}\n`;
-            if (q.options) {
-                q.options.forEach((opt, oi) => content += `   ${['A', 'B', 'C', 'D'][oi]}. ${opt}\n`);
-            }
-            content += `   ANSWER: ${q.correctAnswer}\n`;
-            content += `   EXPLANATION: ${q.explanation}\n\n`;
+            if (y > 270) { doc.addPage(); y = 10; }
+            const qText = doc.splitTextToSize(`${i + 1}. ${q.question}`, 190);
+            doc.text(qText, 10, y);
+            y += (qText.length * 5);
+            doc.text(`   Answer: ${q.options[q.correctAnswer]}`, 10, y);
+            y += 7;
         });
 
-        const blob = new Blob([content], { type: 'text/plain' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `Lesson-${lesson.topic.replace(/\s+/g, '-').replace(/[^a-z0-9-]/gi, '')}.txt`;
-        a.click();
+        doc.save(`${lesson.topic.replace(/\s+/g, '_')}.pdf`);
     };
 
-    if (view === 'PREVIEW' && currentLesson) {
+    const handleShare = async () => {
+        if (!lesson) return;
+
+        // Ensure strictly saved/logged in (redundant check but safe)
+        if (role !== UserRole.TEACHER) {
+            setShowLogin(true);
+            return;
+        }
+
+        const shareText = `📚 *Lesson: ${lesson.topic}*\n\n${lesson.summary}\n\nStart learning on Soma Smart!`;
+
+        if (navigator.share) {
+            try {
+                await navigator.share({
+                    title: lesson.topic,
+                    text: shareText,
+                    url: window.location.href
+                });
+            } catch (err) {
+                console.warn("Share API failed/cancelled, falling back to clipboard", err);
+                navigator.clipboard.writeText(shareText);
+                alert("Link copied to clipboard! (Share menu closed)");
+            }
+        } else {
+            navigator.clipboard.writeText(shareText);
+            alert("Lesson details copied to clipboard!");
+        }
+    };
+
+    const handleSave = async () => {
+        if (role !== UserRole.TEACHER) {
+            setShowLogin(true);
+            return;
+        }
+        await saveCurrentLesson();
+        alert("Lesson Saved Successfully to your Teacher Account!");
+    };
+
+    // Mode: Student Preview
+    if (isStudentPreview && lesson) {
         return (
-            <StudentLessonView
-                lesson={currentLesson}
-                onExit={() => setView('REVIEW')}
-            />
-        )
+            <div className="bg-slate-50 min-h-screen pb-20 animate-in fade-in duration-300">
+                <div className="sticky top-0 bg-white z-20 border-b border-slate-200 px-4 py-3 flex items-center justify-between shadow-sm">
+                    <button onClick={() => setIsStudentPreview(false)} className="flex items-center gap-2 text-slate-600 font-bold hover:text-indigo-600 transition-colors">
+                        <ArrowLeft className="w-5 h-5" /> Back to Editor
+                    </button>
+                    <div className="text-sm font-bold text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full">
+                        Student View Preview
+                    </div>
+                </div>
+
+                <div className="max-w-md mx-auto px-4 py-8">
+                    <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 mb-6">
+                        <span className="text-xs font-bold text-indigo-500 uppercase tracking-wider">Lesson Topic</span>
+                        <h1 className="text-2xl font-bold text-slate-900 mt-1 mb-2">{lesson.topic}</h1>
+                        <p className="text-slate-600 leading-relaxed text-sm">{lesson.summary}</p>
+                    </div>
+
+                    <div className="space-y-4">
+                        {lesson.simplifiedNotes.map((note, i) => (
+                            <div key={i} className="bg-white rounded-xl p-5 shadow-sm border border-slate-100">
+                                <h3 className="font-bold text-slate-800 mb-2 text-lg">{note.title}</h3>
+                                <div className="text-slate-600 leading-relaxed prose prose-indigo prose-sm">
+                                    {note.content.split('\n').map((line, l) => (
+                                        <p key={l} className="mb-2 last:mb-0">{line}</p>
+                                    ))}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
+                    <div className="mt-8">
+                        <button className="w-full py-4 bg-indigo-600 text-white font-bold rounded-xl shadow-lg shadow-indigo-200 hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2">
+                            <BookOpen className="w-5 h-5" /> Take Quiz ({lesson.quiz.length} Questions)
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
     }
 
-    if (view === 'REVIEW' && currentLesson) {
+    // Mode: Review (Final AI Result)
+    if (state === 'review' && lesson) {
         return (
             <LessonReview
-                lesson={currentLesson}
-                onBack={() => setView('DASHBOARD')}
-                onSave={handleSaveLesson}
-                onDownload={handleDownload}
-                onPreview={() => setView('PREVIEW')}
+                lesson={lesson}
+                onBack={reset}
+                onSave={handleSave}
+                onDownload={handleDownloadPDF}
+                onShare={handleShare}
+                onPreview={() => setIsStudentPreview(true)}
             />
         );
     }
 
-    return (
-        <div className="min-h-screen bg-slate-50 font-sans text-slate-900">
-            {/* Header */}
-            <header className="bg-white border-b border-slate-200 sticky top-0 z-10">
-                <div className="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between">
-                    <div className="flex items-center gap-2 cursor-pointer" onClick={() => {
-                        if (view === 'RECORDING') setView('DASHBOARD');
-                        else navigate('/teacher');
-                    }}>
-                        <div className="bg-indigo-600 p-1.5 rounded-lg">
-                            <Mic className="w-5 h-5 text-white" />
-                        </div>
-                        <h1 className="font-bold text-xl text-slate-800">Darasa Mode</h1>
+
+    // Mode: Audio Review (Intermediate Step)
+    if (state === 'audio_review' && audioBlob) {
+        const audioUrl = URL.createObjectURL(audioBlob);
+
+        return (
+            <div className="max-w-xl mx-auto px-4 py-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <div className="text-center mb-8">
+                    <h2 className="text-2xl font-bold text-slate-800 mb-2">Review Recording</h2>
+                    <p className="text-slate-500">Listen to verify clarity before we analyze it.</p>
+                </div>
+
+                <div className="bg-white rounded-2xl shadow-xl border border-indigo-100 p-8">
+                    <div className="bg-slate-50 rounded-xl p-6 mb-8 flex items-center justify-center">
+                        <audio controls src={audioUrl} className="w-full" />
                     </div>
-                    <div className="flex items-center gap-4">
-                        {view === 'RECORDING' && (
-                            <button onClick={() => setView('DASHBOARD')} className="text-sm font-medium text-slate-500 hover:text-slate-800 flex items-center gap-1">
-                                <ArrowLeft className="w-4 h-4" /> Cancel
-                            </button>
-                        )}
-                        <div className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-700 font-bold border border-indigo-200">
-                            T
-                        </div>
+
+                    <div className="flex gap-4">
+                        <button
+                            onClick={reset}
+                            className="flex-1 py-3 px-4 rounded-xl border border-red-200 text-red-600 font-bold hover:bg-red-50 transition-colors flex items-center justify-center gap-2"
+                        >
+                            <Trash2 className="w-5 h-5" /> Retake
+                        </button>
+                        <button
+                            onClick={confirmProcessing}
+                            className="flex-1 py-3 px-4 rounded-xl bg-indigo-600 text-white font-bold hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-200 flex items-center justify-center gap-2"
+                        >
+                            <Check className="w-5 h-5" /> Analyze Lesson
+                        </button>
                     </div>
                 </div>
-            </header>
+            </div>
+        );
+    }
 
-            {/* Main Content Area */}
-            <main className="max-w-3xl mx-auto px-4 py-8">
+    // Mode: Processing
+    if (state === 'processing') {
+        return (
+            <div className="flex flex-col items-center justify-center min-h-[60vh] animate-in fade-in duration-500">
+                <div className="relative">
+                    <div className="absolute inset-0 bg-indigo-500 blur-xl opacity-20 animate-pulse rounded-full" />
+                    <Loader2 className="w-16 h-16 text-indigo-600 animate-spin relative z-10" />
+                </div>
+                <h3 className="mt-8 text-2xl font-bold text-slate-800">Generating Lesson...</h3>
+                <p className="text-slate-500 mt-2 text-center max-w-md">
+                    Our AI is analyzing the audio, creating notes, highlighting key terms, and generating quiz questions.
+                </p>
+            </div>
+        );
+    }
 
-                {view === 'DASHBOARD' && (
-                    <>
-                        <div className="text-center mb-10">
-                            <h2 className="text-3xl font-bold text-slate-900 mb-3">Good Morning, Teacher.</h2>
-                            <p className="text-slate-600 text-lg">What would you like to capture today?</p>
-                        </div>
+    // Mode: Idle / Recording
+    return (
+        <div className="max-w-4xl mx-auto px-4 py-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            {/* Header */}
+            <div className="mb-8 flex items-center justify-between">
+                <button
+                    onClick={onBack}
+                    className="flex items-center text-slate-500 hover:text-slate-800 transition-colors gap-2"
+                >
+                    <ArrowLeft className="w-5 h-5" />
+                    Back to Dashboard
+                </button>
+                <div className="flex items-center gap-2 text-indigo-600 bg-indigo-50 px-4 py-2 rounded-full text-sm font-medium">
+                    <BookOpen className="w-4 h-4" />
+                    Darasa AI Mode
+                </div>
+            </div>
 
-                        {/* Action Cards */}
-                        <div className="grid md:grid-cols-2 gap-6">
-                            {/* Capture Card */}
-                            <div
-                                onClick={() => setView('RECORDING')}
-                                className="bg-white p-6 rounded-2xl shadow-lg border border-indigo-50 hover:shadow-xl transition-all cursor-pointer group"
-                            >
-                                <div className="w-14 h-14 bg-indigo-100 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                                    <Mic className="w-7 h-7 text-indigo-600" />
-                                </div>
-                                <h3 className="text-xl font-bold text-slate-800 mb-2">Capture Lesson</h3>
-                                <p className="text-slate-500 mb-4">Record your explanation and let AI create notes and quizzes instantly.</p>
-                                <button className="w-full py-2 bg-indigo-600 text-white rounded-lg font-bold hover:bg-indigo-700 transition-colors">
-                                    Start Recording
-                                </button>
-                            </div>
+            <div className="text-center mb-12">
+                <h1 className="text-4xl font-bold text-slate-900 mb-4 tracking-tight">
+                    Record Your Class
+                </h1>
+                <p className="text-lg text-slate-600 max-w-2xl mx-auto">
+                    Capture the lesson in real-time. Soma will generate comprehensive notes, summaries, and quizzes automatically.
+                </p>
+            </div>
 
-                            <div className="bg-white p-6 rounded-2xl shadow-lg border border-orange-50 hover:shadow-xl transition-all cursor-pointer group relative">
-                                <div className="w-14 h-14 bg-orange-100 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                                    <BookOpen className="w-7 h-7 text-orange-600" />
-                                </div>
-                                <h3 className="text-xl font-bold text-slate-800 mb-2">Create Revision</h3>
-                                <p className="text-slate-500 mb-4">Upload past notes (PDF/Image) to generate a revision quiz.</p>
+            {error && (
+                <div className="max-w-xl mx-auto mb-8 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl flex items-center gap-3 animate-in shake">
+                    <div className="w-2 h-2 rounded-full bg-red-500" />
+                    {error}
+                </div>
+            )}
 
-                                <label className="w-full py-2 bg-orange-100 text-orange-700 rounded-lg font-bold hover:bg-orange-200 transition-colors text-center block cursor-pointer">
-                                    Upload Notes
-                                    <input
-                                        type="file"
-                                        className="hidden"
-                                        accept="image/*,.pdf"
-                                        onChange={(e) => {
-                                            const file = e.target.files?.[0];
-                                            if (file) handleRevisionUpload(file);
+            <AudioRecorder
+                onCaptureComplete={captureAudio}
+                onCancel={onBack}
+            />
+
+            {/* History Section */}
+            {history.length > 0 && (
+                <div className="mt-16 border-t border-slate-200 pt-8">
+                    <h3 className="text-xl font-bold text-slate-800 mb-6 flex items-center gap-2">
+                        <BookOpen className="w-5 h-5" />
+                        Recent Lessons
+                    </h3>
+                    <div className="grid gap-4 md:grid-cols-2">
+                        {history.map((h) => (
+                            <div key={h.id} className="bg-white p-4 rounded-xl shadow-sm border border-slate-100 hover:shadow-md transition-shadow">
+                                <h4 className="font-bold text-slate-900 line-clamp-1">{h.topic}</h4>
+                                <p className="text-sm text-slate-500 line-clamp-2 mt-1">{h.summary}</p>
+                                <div className="mt-3 flex justify-between items-center text-xs text-slate-400">
+                                    <span>{new Date(h.date).toLocaleDateString()}</span>
+                                    <button
+                                        className="text-indigo-600 hover:text-indigo-800 p-1"
+                                        onClick={() => {
+                                            const shareText = `📚 *${h.topic}*\n${h.summary}`;
+                                            navigator.clipboard.writeText(shareText);
+                                            alert("Copied to clipboard");
                                         }}
-                                    />
-                                </label>
-                            </div>
-                        </div>
-
-                        {/* Recent Activity */}
-                        <div className="mt-12">
-                            <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
-                                <PlayCircle className="w-5 h-5 text-slate-400" /> Recent Sessions
-                            </h3>
-
-                            {recentLessons.length === 0 ? (
-                                <div className="p-8 text-center bg-white rounded-xl border border-dashed border-slate-300 text-slate-400">
-                                    No recent sessions found. Start your first class!
+                                    >
+                                        <Share2 className="w-4 h-4" />
+                                    </button>
                                 </div>
-                            ) : (
-                                <div className="space-y-3">
-                                    {recentLessons.map((lesson, index) => (
-                                        <div
-                                            key={`${lesson.id}-${index}`}
-                                            onClick={() => {
-                                                setCurrentLesson(lesson);
-                                                setView('REVIEW');
-                                            }}
-                                            className="bg-white p-4 rounded-xl border border-slate-200 hover:border-indigo-300 hover:shadow-md transition-all cursor-pointer flex items-center justify-between"
-                                        >
-                                            <div>
-                                                <h4 className="font-bold text-slate-800">{lesson.topic}</h4>
-                                                <p className="text-sm text-slate-500 line-clamp-1">{lesson.summary}</p>
-                                                <div className="flex gap-2 mt-1">
-                                                    <span className="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">{new Date(lesson.date).toLocaleDateString()}</span>
-                                                    <span className="text-xs bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded-full">{lesson.quiz.length} Questions</span>
-                                                </div>
-                                            </div>
-                                            <div className="text-indigo-600">
-                                                <ArrowLeft className="w-5 h-5 rotate-180" />
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-                    </>
-                )}
-
-                {view === 'RECORDING' && (
-                    <div className="flex flex-col items-center justify-center min-h-[60vh]">
-                        <AudioRecorder
-                            onCaptureComplete={handleCaptureComplete}
-                            onCancel={() => setView('DASHBOARD')}
-                        />
-                    </div>
-                )}
-
-                {view === 'PROCESSING' && (
-                    <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
-                        <div className="relative mb-6">
-                            <div className="absolute inset-0 bg-indigo-500 rounded-full opacity-20 animate-ping"></div>
-                            <div className="relative bg-white p-4 rounded-full shadow-xl">
-                                <Loader2 className="w-12 h-12 text-indigo-600 animate-spin" />
                             </div>
-                        </div>
-                        <h3 className="text-2xl font-bold text-slate-800 mb-2">Understanding Lesson...</h3>
-                        <p className="text-slate-500 max-w-sm">
-                            We're converting your audio into simplified notes and generating a quiz. This takes about 10 seconds.
-                        </p>
+                        ))}
                     </div>
-                )}
+                </div>
+            )}
 
-            </main>
+            {/* Login Modal Enforcement */}
+            <LoginModal
+                isOpen={showLogin}
+                onClose={() => setShowLogin(false)}
+                initialTab="TEACHER" // Corrected Enum case
+            />
         </div>
     );
 };

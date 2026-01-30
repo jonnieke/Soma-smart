@@ -379,10 +379,10 @@ export const LandingPage: React.FC = () => {
                             Start Learning Smarter <ChevronRight className="w-5 h-5" />
                         </button>
                         <button
-                            onClick={() => handleRoleSelect(UserRole.TEACHER)}
+                            onClick={() => navigate('/teacher/darasa')}
                             className="px-8 py-4 bg-white text-blue-900 rounded-md font-bold text-lg hover:bg-gray-100 transition-all w-full sm:w-auto flex items-center justify-center gap-2 shadow-lg"
                         >
-                            Book a School Demo <ChevronRight className="w-5 h-5" />
+                            Darasa Mode <ChevronRight className="w-5 h-5" />
                         </button>
                     </div>
                 </div>

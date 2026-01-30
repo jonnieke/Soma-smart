@@ -7,10 +7,11 @@ interface LessonReviewProps {
     onBack: () => void;
     onSave: (updatedLesson: LessonResult) => void;
     onDownload: (lesson: LessonResult) => void;
+    onShare: () => void;
     onPreview: () => void;
 }
 
-export const LessonReview: React.FC<LessonReviewProps> = ({ lesson, onBack, onSave, onDownload, onPreview }) => {
+export const LessonReview: React.FC<LessonReviewProps> = ({ lesson, onBack, onSave, onDownload, onShare, onPreview }) => {
     const [activeTab, setActiveTab] = useState<'NOTES' | 'QUIZ'>('NOTES');
     const [editedLesson, setEditedLesson] = useState<LessonResult>(lesson);
 
@@ -35,6 +36,12 @@ export const LessonReview: React.FC<LessonReviewProps> = ({ lesson, onBack, onSa
                         className="px-4 py-2 bg-white text-slate-600 font-medium rounded-lg border border-slate-200 hover:bg-slate-50 transition-colors"
                     >
                         Download Notes
+                    </button>
+                    <button
+                        onClick={onShare}
+                        className="px-4 py-2 bg-white text-slate-600 font-medium rounded-lg border border-slate-200 hover:bg-slate-50 transition-colors flex items-center gap-2"
+                    >
+                        <Share2 className="w-4 h-4" /> Share
                     </button>
                     <button
                         onClick={onPreview}
