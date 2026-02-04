@@ -7,6 +7,7 @@ import { TeacherPage } from './pages/TeacherPage';
 import { ParentPage } from './pages/ParentPage';
 import { AdminDashboard } from './features/admin/Admin';
 import { RevisionPortal } from './features/revision/RevisionPortal';
+import { RevisionDashboard } from './features/revision/RevisionDashboard';
 import { AskSoma } from './components/AskSoma';
 import { DarasaMode } from './features/darasa-mode/DarasaMode';
 import { ResetPassword } from './pages/ResetPassword';
@@ -31,6 +32,7 @@ const App: React.FC = () => {
                     <Route path="/parent" element={<ParentPage />} />
                     <Route path="/admin" element={<AdminDashboard onNavigate={() => window.location.href = '/'} />} />
                     <Route path="/revision" element={<RevisionPortal />} />
+                    <Route path="/revision/dashboard" element={<RevisionDashboard />} />
                     <Route path="/teacher/darasa" element={<DarasaPage />} />
                     <Route path="/reset-password" element={<ResetPassword />} />
                     <Route path="/pricing" element={<PricingPage />} />

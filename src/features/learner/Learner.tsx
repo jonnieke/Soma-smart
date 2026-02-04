@@ -7,9 +7,7 @@ import {
   ArrowRight, UserCircle, Download, ImageIcon, Trash2, AlertTriangle, LogOut
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
-import { RevisionLanding } from '../revision/RevisionLanding';
-import { RevisionSession } from '../revision/RevisionSession';
-import { ExplanationResult, QuizData, RevisionMode, TutoringStep, ViewState, SubscriptionPlan, LearnerProfile, LearnerActivity, TeacherActivity } from '../../types';
+import { ExplanationResult, QuizData, ViewState, SubscriptionPlan, LearnerProfile, LearnerActivity } from '../../types';
 import { PricingPage } from '../subscription/PricingPage';
 import { PaymentFlow } from '../subscription/PaymentFlow';
 import { STUDENT_PLANS } from '../../data/pricing';
@@ -92,16 +90,14 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
     }
   }, [isRegistered, navigate]);
 
-  const [mode, setMode] = useState<'MENU' | 'SCAN' | 'RESULT' | 'QUIZ' | 'REVISION' | 'RECAP_RESULT'>('MENU');
+  const [mode, setMode] = useState<'MENU' | 'SCAN' | 'RESULT' | 'QUIZ' | 'RECAP_RESULT'>('MENU');
   const [recapData, setRecapData] = useState<any>(null); // Store LessonRecap
-  const [showRevisionPaywall, setShowRevisionPaywall] = useState(false);
 
-  useEffect(() => {
-    // Check if we navigated here with a specific mode
-    if (location.state && (location.state as any).mode === 'REVISION') {
-      setMode('REVISION');
-    }
-  }, [location]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<{ title: string, message: string } | null>(null);
+  const [loadingText, setLoadingText] = useState("Processing...");
+  const [audioData, setAudioData] = useState<{ base64: string, mimeType: string } | null>(null);
+
   const [level, setLevel] = useState<'Simple' | 'Exam'>('Simple');
 
   // ... (rest of state) ...
@@ -109,14 +105,6 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
   // Image data state (renamed from image for clarity and type safety)
   const [imageData, setImageData] = useState<{ base64: string, mimeType: string } | null>(null);
 
-  // Revision State
-  const [revisionData, setRevisionData] = useState<File | TeacherActivity | null>(null);
-  const [revisionMode, setRevisionMode] = useState<RevisionMode>(RevisionMode.LEARN);
-
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<{ title: string, message: string } | null>(null);
-  const [loadingText, setLoadingText] = useState("Processing...");
-  const [audioData, setAudioData] = useState<{ base64: string, mimeType: string } | null>(null);
   const [explanation, setExplanation] = useState<ExplanationResult | null>(null);
   const [stickyQuizTaken, setStickyQuizTaken] = useState(false);
   const [stickyQuizData, setStickyQuizData] = useState<QuizData | null>(null);
@@ -1085,7 +1073,7 @@ ${explanation.explanation}
               <motion.button
                 whileHover={isOnline ? { scale: 1.02 } : {}}
                 whileTap={isOnline ? { scale: 0.98 } : {}}
-                onClick={isOnline ? () => setMode('REVISION') : undefined}
+                onClick={isOnline ? () => navigate('/revision') : undefined}
                 className={`col-span-2 p-5 rounded-2xl shadow-lg flex items-center justify-between group overflow-hidden relative transition-all ${isOnline ? 'bg-gradient-to-br from-amber-500 to-orange-600 text-white shadow-orange-200' : 'bg-slate-100 text-slate-400 cursor-not-allowed grayscale'}`}
               >
                 <div className="relative z-10 text-left">
@@ -1276,32 +1264,6 @@ ${explanation.explanation}
     );
   }
 
-  if (mode === 'REVISION') {
-    if (revisionData) {
-      return (
-        <RevisionSession
-          data={revisionData}
-          mode={revisionMode}
-          onExit={() => {
-            setRevisionData(null);
-            // Stay in REVISION mode but go back to landing basically
-          }}
-        />
-      );
-    }
-    return (
-      <RevisionLanding
-        onStartSession={(data, rMode) => {
-          setRevisionData(data);
-          setRevisionMode(rMode as RevisionMode);
-        }}
-        onNavigate={(view) => {
-          if (view === ViewState.DASHBOARD) setMode('MENU');
-          else onNavigate(view);
-        }}
-      />
-    );
-  }
 
   if (mode === 'SCAN' && loading) {
     return (
@@ -1474,58 +1436,7 @@ ${explanation.explanation}
     }} onExit={() => setMode('RESULT')} />;
   }
 
-  // --- REVISION RENDER ---
-  if ((mode as string) === 'REVISION') {
-    if (showRevisionPaywall) {
-      return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-          <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-white rounded-3xl p-8 max-w-md w-full text-center relative overflow-hidden">
-            <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-orange-500 to-amber-500" />
-            <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Lock className="w-8 h-8 text-orange-600" />
-            </div>
-            <h2 className="text-2xl font-bold text-slate-800 mb-2">Revision Limit Reached</h2>
-            <p className="text-slate-500 mb-6">You have used your 5 free revision scans. Upgrade to continue excelling in your exams!</p>
-
-            <div className="space-y-3">
-              <Button fullWidth onClick={() => setMode('PRICING' as any)} className="py-4 text-lg bg-slate-900 border-none">
-                Upgrade for KES 10
-              </Button>
-              <button onClick={() => setMode('MENU')} className="text-slate-500 text-sm font-bold hover:text-slate-800">
-                Back to Dashboard
-              </button>
-            </div>
-          </motion.div>
-        </div>
-      );
-    }
-
-    if (revisionData) {
-      return (
-        <RevisionSession
-          data={revisionData}
-          mode={revisionMode}
-          onExit={() => setRevisionData(null)}
-        />
-      );
-    }
-    return (
-      <RevisionLanding
-        onStartSession={(data, mode) => {
-          if (!isPro && !isPromoActive && revisionUsageCount >= 5) {
-            setShowRevisionPaywall(true);
-            return;
-          }
-          incrementRevisionUsage();
-          setRevisionData(data);
-          setRevisionMode(mode);
-        }}
-        onNavigate={(view) => {
-          if (view === ViewState.DASHBOARD) setMode('MENU');
-        }}
-      />
-    );
-  }
+  // --- PRICING & PAYMENT ---
 
   if (mode === ('PRICING' as any)) {
     return (

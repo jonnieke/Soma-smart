@@ -100,10 +100,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
         if (profile) {
           setUserId(session.user.id);
-          if (profile.role === 'LEARNER') {
+          if (profile.role === 'LEARNER' || profile.role === 'REVISION') {
             setStudentProfile({ id: profile.id, name: profile.full_name, grade: profile.grade, email: profile.email });
             setIsRegistered(true);
-            setRole(UserRole.LEARNER);
+            setRole(profile.role === 'REVISION' ? UserRole.REVISION : UserRole.LEARNER);
           } else if (profile.role === 'TEACHER') {
             // Update teacher state
             setRole(UserRole.TEACHER);
@@ -142,7 +142,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             setStudentCode(profile.student_id);
             setStudentProfile({ id: profile.id, name: profile.full_name, grade: profile.grade, email: profile.email });
             setIsRegistered(true);
-            setRole(UserRole.LEARNER);
+            setRole(profile.role === 'REVISION' ? UserRole.REVISION : UserRole.LEARNER);
           } else {
             // Invalid code stored? Clear it.
             localStorage.removeItem('soma_active_student');
@@ -466,7 +466,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       setStudentCode(profile.student_id);
       setStudentProfile({ id: profile.id, name: profile.full_name, grade: profile.grade, email: profile.email });
       setIsRegistered(true);
-      setRole(UserRole.LEARNER);
+      setRole(profile.role === 'REVISION' ? UserRole.REVISION : UserRole.LEARNER);
 
       // PERSIST LOGIN
       localStorage.setItem('soma_active_student', profile.student_id);

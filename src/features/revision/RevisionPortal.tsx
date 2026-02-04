@@ -9,6 +9,7 @@ import { useApp } from '../../context/AppContext';
 import { Button, Card, Header } from '../../components/Shared';
 import { ViewState, UserRole } from '../../types';
 import { LoginModal } from '../../components/LoginModal';
+import { supabase } from '../../lib/supabase';
 
 export const RevisionPortal: React.FC = () => {
     const navigate = useNavigate();
@@ -28,44 +29,38 @@ export const RevisionPortal: React.FC = () => {
     const [usageCount, setUsageCount] = useState(0); // Mock for now
     const [showLogin, setShowLogin] = useState(false);
 
-    // Effect to check if already registered
-    useEffect(() => {
-        // If we have a student code, maybe skip to Menu?
-        // For now, let's treat "Revision" as a special mode.
-        // Actually, if registered, we want to allow them to use their existing code
-        if (isRegistered && studentCode) {
-            // Maybe show "Continue as [Name]"
-        }
-    }, [isRegistered]);
-
-    const handleGenerateCode = () => {
+    const handleGenerateCode = async () => {
         if (!name || !school) return;
         setLoading(true);
 
-        // Simulate API call
-        setTimeout(() => {
+        try {
             const code = `REV-${Math.floor(1000 + Math.random() * 9000)}`;
+
+            // Persist to DB
+            const { error: dbError } = await supabase.from('profiles').upsert({
+                full_name: name,
+                school_name: school, // We might need to handle this field or use another
+                grade: examType,
+                student_id: code,
+                role: 'REVISION'
+            });
+
+            if (dbError) throw dbError;
+
             setGeneratedCode(code);
             setStep('CODE');
-            setLoading(false);
-            // Here we would ideally save this specific session or "Revision User" to DB/Context
-            // For simplicity, we can update the AppContext "StudentCode" to this new code 
-            // IF they are not already logged in. 
-            // But better is to just copy it to clipboard and ask them to "Login" via standard flow OR
-            // Auto-login them as a Guest Learner.
-
-            // Let's Auto-login for seamless UX
             setStudentCode(code);
-            // We set role to LEARNER so they can access the dashboard.
-            // But we specifically want the REVISION view.
-            // We'll navigate to /learner and set the ViewState to REVISION?
-            // Or we pass state?
-        }, 1500);
+            setRole(UserRole.REVISION);
+        } catch (e) {
+            console.error("Failed to create revision account:", e);
+        } finally {
+            setLoading(false);
+        }
     };
 
     const handleStartRevision = () => {
-        setRole(UserRole.LEARNER); // Ensure role is set
-        navigate('/learner', { state: { mode: 'REVISION' } });
+        setRole(UserRole.REVISION); // Ensure role is set to REVISION
+        navigate('/revision/dashboard');
     };
 
     return (
@@ -162,9 +157,9 @@ export const RevisionPortal: React.FC = () => {
                                 <div className="bg-blue-50 p-4 rounded-2xl border border-blue-100 mb-6 flex items-center justify-between">
                                     <div>
                                         <p className="text-blue-800 font-bold text-sm">Welcome back, {studentProfile?.name}!</p>
-                                        <p className="text-blue-600 text-xs">You are already registered. Click below to start.</p>
+                                        <p className="text-blue-600 text-xs">Access your dedicated revision space.</p>
                                     </div>
-                                    <Button onClick={handleStartRevision}>Go to Session</Button>
+                                    <Button onClick={handleStartRevision}>Open Dashboard</Button>
                                 </div>
                             )}
                             <div className="text-center mb-6">
