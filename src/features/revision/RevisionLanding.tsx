@@ -94,7 +94,7 @@ export const RevisionLanding: React.FC<Props> = ({ onStartSession, onNavigate })
                 <div className="absolute top-[-20%] right-[-10%] w-80 h-80 bg-blue-500 rounded-full blur-[100px] opacity-20 animate-pulse"></div>
                 <div className="absolute bottom-[-10%] left-[-10%] w-60 h-60 bg-purple-500 rounded-full blur-[80px] opacity-20"></div>
 
-                <div className="relative z-10 max-w-xl mx-auto">
+                <div className="relative z-10 max-w-2xl mx-auto">
                     <div className="flex justify-between items-center mb-6">
                         <button onClick={() => onNavigate(ViewState.DASHBOARD)} className="text-blue-200 hover:text-white transition-colors flex items-center gap-2 font-bold text-sm bg-white/10 w-fit px-4 py-2 rounded-full backdrop-blur-md border border-white/10">
                             <ArrowRight className="w-4 h-4 rotate-180" /> Back to Dashboard
@@ -113,7 +113,7 @@ export const RevisionLanding: React.FC<Props> = ({ onStartSession, onNavigate })
                 </div>
             </div>
 
-            <main className="max-w-xl mx-auto px-6 -mt-8 relative z-20 space-y-8">
+            <main className="max-w-2xl mx-auto px-6 -mt-8 relative z-20 space-y-8">
 
                 {/* Mode Selection Cards */}
                 <div className="bg-white p-2 rounded-2xl shadow-xl shadow-slate-200/50 flex gap-2 overflow-x-auto no-scrollbar">

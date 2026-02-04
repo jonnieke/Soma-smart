@@ -3,16 +3,18 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Sparkles, Home, X, XCircle, Camera, ScanLine, Mic, Upload, Clock,
-  CheckCircle, Play, Pause, ChevronRight, Star, BookOpen, Brain, Lightbulb, Lock, Volume2,
+  CheckCircle, Play, Pause, ChevronRight, Star, BookOpen, Brain, Lightbulb, Lock, Volume2, CreditCard,
   ArrowRight, UserCircle, Download, ImageIcon, Trash2, AlertTriangle, LogOut
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { RevisionLanding } from '../revision/RevisionLanding';
 import { RevisionSession } from '../revision/RevisionSession';
-import { RevisionMode, LearnerProfile, LearnerActivity, ViewState, ExplanationResult, QuizData } from '../../types';
+import { ExplanationResult, QuizData, RevisionMode, TutoringStep, ViewState, SubscriptionPlan, LearnerProfile, LearnerActivity } from '../../types';
+import { PricingPage } from '../subscription/PricingPage';
+import { PaymentFlow } from '../subscription/PaymentFlow';
+import { STUDENT_PLANS } from '../../data/pricing';
 import { RegistrationModal } from '../../components/RegistrationModal'; // Assuming path
 import { LoginModal } from '../../components/LoginModal'; // Assuming path
-import { SubscriptionModal } from '../../components/SubscriptionModal';
 import { MarkdownText, Button, Card } from '../../components/Shared';
 import {
   fileToGenerativePart, explainImage, explainAudio, explainTopic,
@@ -29,25 +31,40 @@ import { TscLiveBanner } from '../../components/TscLiveBanner';
 
 interface LearnerProps {
   onNavigate: (view: ViewState) => void;
-  saveActivity: (activity: LearnerActivity) => void;
-  deleteActivity: (id: string) => void;
-  history: LearnerActivity[];
-  studentCode: string | null;
   profile: LearnerProfile | null;
 }
 
-export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, saveActivity, deleteActivity, history, studentCode, profile }) => {
+export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }) => {
   const navigate = useNavigate();
   // We use useApp here to get usageCount and isRegistered centrally
-  const { usageCount, incrementUsage, isRegistered, revisionUsageCount, incrementRevisionUsage, logout, isPro, isPromoActive } = useApp();
+  const {
+    learnerHistory: history, saveActivity, deleteActivity, studentCode,
+    usageCount, incrementUsage, isRegistered, studentProfile,
+    isPromoActive, upgradeAccount, revisionUsageCount, incrementRevisionUsage,
+    logout, isPro, subscriptionPlan
+  } = useApp();
   const location = useLocation();
 
   // Check for subscription intent
   React.useEffect(() => {
-    if (location.state && (location.state as any).openSubscription) {
-      setShowSubscription(true);
+    const state = location.state as { selectedPlan?: SubscriptionPlan; openSubscription?: boolean };
+
+    if (state?.selectedPlan) {
+      if (isPro) {
+        // Already pro, just stay on dashboard and clear state
+        navigate(location.pathname, { replace: true, state: {} });
+      } else {
+        setSelectedPlan(state.selectedPlan);
+        setMode('PAYMENT' as any);
+        // Clear state to avoid re-triggering on refresh
+        navigate(location.pathname, { replace: true, state: {} });
+      }
+    } else if (state?.openSubscription) {
+      setMode('PRICING' as any);
+      // Clear state
+      navigate(location.pathname, { replace: true, state: {} });
     }
-  }, [location]);
+  }, [location.state, isPro, navigate]);
 
   // --- GAMIFICATION ENGINE ---
   const totalXP = React.useMemo(() => calculateTotalXP(history), [history]);
@@ -97,7 +114,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, saveActiv
   const [revisionMode, setRevisionMode] = useState<RevisionMode>(RevisionMode.LEARN);
 
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<{ title: string, message: string } | null>(null);
   const [loadingText, setLoadingText] = useState("Processing...");
   const [audioData, setAudioData] = useState<{ base64: string, mimeType: string } | null>(null);
   const [explanation, setExplanation] = useState<ExplanationResult | null>(null);
@@ -112,7 +129,8 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, saveActiv
   const [recordingTime, setRecordingTime] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [showCamera, setShowCamera] = useState(false);
-  const [scanStatus, setScanStatus] = useState<'idle' | 'scanning' | 'success'>('idle');
+  const [scanStatus, setScanStatus] = useState<'idle' | 'scanning' | 'success' | 'STABILIZING' | 'CAPTURING' | 'LOOKING'>('idle');
+  const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan | null>(null);
 
   // Refs
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -120,6 +138,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, saveActiv
   const audioInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const checkImageQuality = (file: File): Promise<{ ok: boolean; warning?: string }> => {
     return new Promise((resolve) => {
@@ -144,6 +163,18 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, saveActiv
 
   const streamRef = useRef<MediaStream | null>(null);
 
+  const stopCameraStream = () => {
+    if (videoRef.current && videoRef.current.srcObject) {
+      const stream = videoRef.current.srcObject as MediaStream;
+      stream.getTracks().forEach(track => track.stop());
+      videoRef.current.srcObject = null;
+    }
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
+    }
+  };
+
   const startCamera = async () => {
     try {
       setLoading(true);
@@ -156,7 +187,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, saveActiv
       setLoading(false);
     } catch (err) {
       console.error(err);
-      setError("Unable to access camera.");
+      setError({ title: "Camera Error", message: "Unable to access camera." });
       setLoading(false);
     }
   };
@@ -172,10 +203,8 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, saveActiv
   }, []);
 
   useEffect(() => {
-    if (!showCamera && videoRef.current && videoRef.current.srcObject) {
-      const stream = videoRef.current.srcObject as MediaStream;
-      stream.getTracks().forEach(track => track.stop());
-      videoRef.current.srcObject = null;
+    if (!showCamera) {
+      stopCameraStream();
     }
   }, [showCamera]);
 
@@ -201,11 +230,10 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, saveActiv
   // REMOVE duplicate useApp call that was around here
   const [showRegistration, setShowRegistration] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
-  const [showSubscription, setShowSubscription] = useState(false);
 
   const checkLimit = (): boolean => {
-    // Promo = Unlimited Checks
-    if (isPromoActive) return true;
+    // Promo or Pro = Unlimited Checks
+    if (isPromoActive || isPro) return true;
 
     if (!isRegistered && usageCount >= 3) {
       setShowRegistration(true);
@@ -233,12 +261,18 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, saveActiv
       setStickyQuizTaken(false); // Reset sticky quiz status for new content
       setStickyQuizData(null); // Clear prefetched quiz
       setMode('RESULT');
-      saveActivity('EXPLANATION', result.topic, {
-        summary: result.summaryPoints,
-        source: 'image',
-        explanation: result,
-        imageBase64: base64,
-        mimeType: file.type
+      saveActivity({
+        id: Date.now().toString(),
+        type: 'EXPLANATION',
+        topic: result.topic,
+        date: new Date().toLocaleDateString(),
+        details: JSON.stringify({
+          summary: result.summaryPoints,
+          source: 'image',
+          explanation: result,
+          imageBase64: base64,
+          mimeType: file.type
+        })
       });
 
       // Trigger background quiz generation
@@ -328,7 +362,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, saveActiv
       setIsRecording(true);
     } catch (e) {
       console.error(e);
-      setError("Camera access denied or unavailable.");
+      setError({ title: "Microphone Error", message: "Microphone access denied or unavailable." });
     }
   };
 
@@ -362,12 +396,18 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, saveActiv
         setStickyQuizTaken(false); // Reset sticky quiz
         setStickyQuizData(null); // Clear prefetched quiz
         setMode('RESULT');
-        saveActivity('EXPLANATION', result.topic, {
-          summary: result.summaryPoints,
-          source: 'audio',
-          explanation: result,
-          audioBase64: base64Data,
-          mimeType: mimeType
+        saveActivity({
+          id: Date.now().toString(),
+          type: 'EXPLANATION',
+          topic: result.topic,
+          date: new Date().toLocaleDateString(),
+          details: JSON.stringify({
+            summary: result.summaryPoints,
+            source: 'audio',
+            explanation: result,
+            audioBase64: base64Data,
+            mimeType: mimeType
+          })
         });
         setLoading(false);
 
@@ -444,10 +484,16 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, saveActiv
       setStickyQuizTaken(false); // Reset sticky quiz
       setStickyQuizData(null);
       setMode('RESULT');
-      saveActivity('EXPLANATION', result.topic, {
-        summary: result.summaryPoints,
-        source: 'text',
-        explanation: result
+      saveActivity({
+        id: Date.now().toString(),
+        type: 'EXPLANATION',
+        topic: result.topic,
+        date: new Date().toLocaleDateString(),
+        details: JSON.stringify({
+          summary: result.summaryPoints,
+          source: 'text',
+          explanation: result
+        })
       });
 
       // Trigger background quiz generation
@@ -583,11 +629,8 @@ ${explanation.explanation}
       const textToRead = `${explanation.topic}. ${explanation.summaryPoints.join('. ')}. Here is the explanation: ${explanation.explanation}`;
 
       setIsPlaying(true);
-      const audioUrl = await generateSpeech(textToRead);
-      const audio = new Audio(audioUrl);
-      audioRef.current = audio;
-      audio.onended = () => setIsPlaying(false);
-      audio.play();
+      await generateSpeech(textToRead);
+      setIsPlaying(false);
     } catch (e: any) {
       console.error("ElevenLabs Error:", e);
       // Show audible or visual warning that we are falling back
@@ -661,7 +704,7 @@ ${explanation.explanation}
 
   if (mode === 'RECAP_RESULT' && recapData) {
     return (
-      <div className="min-h-screen bg-slate-50 pb-20 font-sans text-slate-800 max-w-lg mx-auto shadow-2xl border-x border-slate-100">
+      <div className="min-h-screen bg-slate-50 pb-20 font-sans text-slate-800 max-w-4xl mx-auto shadow-2xl border-x border-slate-100">
         <div className="bg-white p-6 sticky top-0 z-10 shadow-sm flex items-center gap-4">
           <button onClick={() => setMode('MENU')}><ArrowRight className="w-6 h-6 rotate-180" /></button>
           <h2 className="font-bold text-lg">Lesson Recap</h2>
@@ -752,7 +795,7 @@ ${explanation.explanation}
     const greeting = profile ? `Hi, ${profile.name.split(' ')[0]}!` : "My Learning Buddy";
 
     return (
-      <div className="min-h-screen bg-slate-50 pb-24 font-sans text-slate-800 max-w-lg mx-auto shadow-2xl border-x border-slate-100">
+      <div className="min-h-screen bg-slate-50 pb-24 font-sans text-slate-800 max-w-4xl mx-auto shadow-2xl border-x border-slate-100">
 
         {/* --- HERO HEADER --- */}
         <div className="bg-white px-6 pt-8 pb-6 rounded-b-[3rem] shadow-sm relative overflow-hidden">
@@ -824,6 +867,9 @@ ${explanation.explanation}
             <button onClick={() => onNavigate(ViewState.DASHBOARD)} className="p-2 bg-slate-100 rounded-xl hover:bg-slate-200 transition-colors group" title="Back to Home">
               <Home className="w-6 h-6 text-slate-500 group-hover:text-blue-600 transition-colors" />
             </button>
+            <button onClick={() => setMode('PRICING' as any)} className="p-2 bg-indigo-100 rounded-xl hover:bg-indigo-200 transition-colors group" title="Pricing Plans">
+              <CreditCard className="w-6 h-6 text-indigo-600" />
+            </button>
             <button onClick={() => { logout(); navigate('/'); }} className="ml-2 p-2 bg-slate-100 rounded-xl hover:bg-red-100 transition-colors group" title="Logout">
               <LogOut className="w-6 h-6 text-slate-500 group-hover:text-red-500 transition-colors" />
             </button>
@@ -863,9 +909,9 @@ ${explanation.explanation}
             </div>
           </motion.div>
 
-          {!profile && !isPro && (
+          {!profile && subscriptionPlan === 'FREE' && (
             <p className="text-xs text-center mt-3 text-slate-400">
-              {3 - usageCount} free scans remaining. <button onClick={() => setShowSubscription(true)} className="text-blue-600 font-bold hover:underline">Subscribe</button>
+              {3 - usageCount} free scans remaining. <button onClick={() => setMode('PRICING' as any)} className="text-blue-600 font-bold hover:underline">Subscribe for Feb 27 Launch</button>
             </p>
           )}
         </div>
@@ -939,7 +985,7 @@ ${explanation.explanation}
               }}
             />
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {/* Camera Action */}
               <motion.button
                 whileHover={{ scale: 1.02 }}
@@ -1051,7 +1097,7 @@ ${explanation.explanation}
               <p className="text-slate-500">No learning adventures yet!</p>
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {history.slice(0, 10).map((item, index) => {
                 let details: any = {};
                 try { details = JSON.parse(item.details || '{}'); } catch { }
@@ -1096,9 +1142,9 @@ ${explanation.explanation}
           isOpen={showRegistration}
           onClose={() => setShowRegistration(false)}
           onSuccess={() => setShowRegistration(false)}
+          onSwitchToLogin={() => { setShowRegistration(false); setShowLogin(true); }}
         />
         <LoginModal isOpen={showLogin} onClose={() => setShowLogin(false)} />
-        <SubscriptionModal isOpen={showSubscription} onClose={() => setShowSubscription(false)} />
 
         {/* Quality Warning Modal Re-implementation at root level of component if needed, or keeping existing logic but ensuring z-index is high */}
         {qualityWarning && qualityWarning.show && (
@@ -1172,7 +1218,7 @@ ${explanation.explanation}
 
   if (mode === 'SCAN' && loading) {
     return (
-      <div className="h-screen flex flex-col items-center justify-center p-8 text-center bg-slate-50 max-w-lg mx-auto shadow-2xl border-x border-slate-100">
+      <div className="h-screen flex flex-col items-center justify-center p-8 text-center bg-slate-50 max-w-4xl mx-auto shadow-2xl border-x border-slate-100">
         <div className="relative">
           <div className="absolute inset-0 bg-blue-100 rounded-full animate-ping opacity-75"></div>
           <div className="relative bg-white p-6 rounded-full shadow-xl">
@@ -1187,7 +1233,7 @@ ${explanation.explanation}
 
   if (mode === 'RESULT' && explanation) {
     return (
-      <div className="bg-slate-50 min-h-screen pb-32 max-w-lg mx-auto shadow-2xl border-x border-slate-100">
+      <div className="bg-slate-50 min-h-screen pb-32 max-w-4xl mx-auto shadow-2xl border-x border-slate-100">
         {/* Sticky Glass Header */}
         <motion.div
           initial={{ y: -20, opacity: 0 }}
@@ -1330,7 +1376,13 @@ ${explanation.explanation}
 
   if (mode === 'QUIZ' && quizData) {
     return <QuizRunner data={quizData} onComplete={(score) => {
-      saveActivity('QUIZ', quizData.topic, { score });
+      saveActivity({
+        id: Date.now().toString(),
+        type: 'QUIZ',
+        topic: quizData.topic,
+        date: new Date().toLocaleDateString(),
+        score
+      });
       setMode('MENU');
     }} onExit={() => setMode('RESULT')} />;
   }
@@ -1349,11 +1401,11 @@ ${explanation.explanation}
             <p className="text-slate-500 mb-6">You have used your 5 free revision scans. Upgrade to continue excelling in your exams!</p>
 
             <div className="space-y-3">
-              <Button fullWidth className="py-4 text-lg bg-slate-900 border-none">
-                Upgrade for KES 20/Day
+              <Button fullWidth onClick={() => setMode('PRICING' as any)} className="py-4 text-lg bg-slate-900 border-none">
+                Upgrade for KES 10
               </Button>
-              <button onClick={() => navigate('/')} className="text-slate-500 text-sm font-bold hover:text-slate-800">
-                Back to Home
+              <button onClick={() => setMode('MENU')} className="text-slate-500 text-sm font-bold hover:text-slate-800">
+                Back to Dashboard
               </button>
             </div>
           </motion.div>
@@ -1366,14 +1418,14 @@ ${explanation.explanation}
         <RevisionSession
           file={revisionFile}
           mode={revisionMode}
-          onBack={() => setRevisionFile(null)}
+          onExit={() => setRevisionFile(null)}
         />
       );
     }
     return (
       <RevisionLanding
         onStartSession={(file, mode) => {
-          if (revisionUsageCount >= 5) {
+          if (!isPro && !isPromoActive && revisionUsageCount >= 5) {
             setShowRevisionPaywall(true);
             return;
           }
@@ -1384,6 +1436,32 @@ ${explanation.explanation}
         onNavigate={(view) => {
           if (view === ViewState.DASHBOARD) setMode('MENU');
         }}
+      />
+    );
+  }
+
+  if (mode === ('PRICING' as any)) {
+    return (
+      <PricingPage
+        onSelectPlan={(plan) => {
+          setSelectedPlan(plan);
+          setMode('PAYMENT' as any);
+        }}
+        onClose={() => setMode('MENU')}
+      />
+    );
+  }
+
+  if (mode === ('PAYMENT' as any) && selectedPlan) {
+    return (
+      <PaymentFlow
+        plan={selectedPlan}
+        onSuccess={async () => {
+          await upgradeAccount(selectedPlan);
+          setMode('MENU');
+          setSelectedPlan(null);
+        }}
+        onCancel={() => setMode('PRICING' as any)}
       />
     );
   }
@@ -1410,7 +1488,7 @@ const QuizRunner: React.FC<{ data: QuizData; onComplete: (score: number) => void
 
   const handleCheck = () => {
     setShowResult(true);
-    const correct = selectedAnswer.toLowerCase().trim() === question.correctAnswer.toLowerCase().trim();
+    const correct = selectedAnswer.toLowerCase().trim() === String(question.correctAnswer).toLowerCase().trim();
     setIsCorrect(correct);
     if (correct) setScore(s => s + 1);
   };

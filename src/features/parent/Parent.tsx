@@ -1,9 +1,10 @@
 import React, { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import { Header, Card, Button } from '../../components/Shared';
 import { ViewState, LearnerActivity } from '../../types';
 import { calculateTotalXP, calculateLevel } from '../../services/gamificationService';
-import { Book, CheckCircle, Clock, Lock, User, TrendingUp, Award, AlertCircle, ChevronRight, Activity, Calendar, Star, Zap, Home, X, LogOut } from 'lucide-react';
+import { Book, CheckCircle, Clock, Lock, User, TrendingUp, Award, AlertCircle, ChevronRight, Activity, Calendar, Star, Zap, Home, X, LogOut, CreditCard } from 'lucide-react';
 
 interface ParentProps {
     onNavigate: (view: ViewState) => void;
@@ -12,6 +13,7 @@ interface ParentProps {
 }
 
 export const ParentDashboard: React.FC<ParentProps> = ({ onNavigate, activityLog, validStudentCode }) => {
+    const navigate = useNavigate();
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [inputCode, setInputCode] = useState('');
     const [error, setError] = useState('');
@@ -80,7 +82,7 @@ export const ParentDashboard: React.FC<ParentProps> = ({ onNavigate, activityLog
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="w-full max-w-md bg-white rounded-[2rem] shadow-2xl border border-indigo-100 p-8 text-center relative overflow-hidden"
+                        className="w-full max-w-xl bg-white rounded-[2rem] shadow-2xl border border-indigo-100 p-8 text-center relative overflow-hidden"
                     >
                         <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500"></div>
 
@@ -162,6 +164,9 @@ export const ParentDashboard: React.FC<ParentProps> = ({ onNavigate, activityLog
                 <div className="flex gap-2">
                     <button onClick={() => onNavigate(ViewState.DASHBOARD)} className="p-2 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors group" title="Back to Home">
                         <Home className="w-6 h-6 text-slate-500 group-hover:text-indigo-600" />
+                    </button>
+                    <button onClick={() => navigate('/pricing')} className="p-2 bg-indigo-50 hover:bg-indigo-100 rounded-xl transition-colors group" title="Pricing Plans">
+                        <CreditCard className="w-6 h-6 text-indigo-600" />
                     </button>
                     <button onClick={() => { setIsAuthenticated(false); onNavigate(ViewState.DASHBOARD); }} className="p-2 bg-red-50 hover:bg-red-100 rounded-xl transition-colors group" title="Logout">
                         <LogOut className="w-6 h-6 text-red-500 group-hover:text-red-600" />

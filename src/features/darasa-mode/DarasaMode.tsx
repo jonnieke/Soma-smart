@@ -134,7 +134,7 @@ export const DarasaMode: React.FC<DarasaModeProps> = ({ onBack }) => {
                     </div>
                 </div>
 
-                <div className="max-w-md mx-auto px-4 py-8">
+                <div className="max-w-2xl mx-auto px-4 py-8">
                     <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 mb-6">
                         <span className="text-xs font-bold text-indigo-500 uppercase tracking-wider">Lesson Topic</span>
                         <h1 className="text-2xl font-bold text-slate-900 mt-1 mb-2">{lesson.topic}</h1>
@@ -184,7 +184,7 @@ export const DarasaMode: React.FC<DarasaModeProps> = ({ onBack }) => {
         const audioUrl = URL.createObjectURL(audioBlob);
 
         return (
-            <div className="max-w-xl mx-auto px-4 py-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="max-w-2xl mx-auto px-4 py-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
                 <div className="text-center mb-8">
                     <h2 className="text-2xl font-bold text-slate-800 mb-2">Review Recording</h2>
                     <p className="text-slate-500">Listen to verify clarity before we analyze it.</p>

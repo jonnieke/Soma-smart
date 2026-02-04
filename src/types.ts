@@ -14,8 +14,12 @@ export enum ViewState {
   VOICE_NOTES = 'VOICE_NOTES',
   QUIZ_GENERATOR = 'QUIZ_GENERATOR',
   PARENT_OVERVIEW = 'PARENT_OVERVIEW',
-  REVISION = 'REVISION'
+  REVISION = 'REVISION',
+  PRICING = 'PRICING'
 }
+
+export type SubscriptionTier = 'FREE' | 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'TERMLY' | 'ANNUAL';
+export type UserSegment = 'STUDENT' | 'TEACHER' | 'SCHOOL';
 
 export interface ExplanationResult {
   topic: string;
@@ -63,12 +67,18 @@ export interface GeoLocation {
 }
 
 export interface LearnerProfile {
+  id?: string;
   name: string;
   code: string;
+  subscriptionTier: SubscriptionTier;
+  subscriptionExpiry: string | null;
+  schoolId?: string;
 }
 
 export interface TeacherProfile {
+  id: string;
   name: string;
+  email?: string;
   classes: string[]; // e.g. ["Grade 4", "Grade 5"]
   subjects: string[]; // e.g. ["Math", "Science"]
 }
@@ -145,4 +155,22 @@ export interface LessonResult {
   simplifiedNotes: NoteSection[];
   quiz: QuizQuestion[];
   summary: string;
+}
+
+export interface School {
+  id: string;
+  name: string;
+  teacherLimit: number;
+  subscriptionStatus: 'ACTIVE' | 'EXPIRED' | 'TRIAL';
+  expiry: string;
+  createdAt: string;
+}
+
+export interface SubscriptionPlan {
+  id: string;
+  segment: UserSegment;
+  name: string;
+  price: number;
+  duration: SubscriptionTier;
+  savings?: string;
 }

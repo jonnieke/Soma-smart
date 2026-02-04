@@ -6,7 +6,7 @@ import { ViewState } from '../types';
 
 export const LearnerPage: React.FC = () => {
     const navigate = useNavigate();
-    const { learnerHistory, saveActivity, deleteActivity, studentCode } = useApp();
+    const { learnerHistory, saveActivity, deleteActivity, studentCode, studentProfile, subscriptionPlan, subscriptionExpiry } = useApp();
 
     const handleNavigate = (view: ViewState) => {
         if (view === ViewState.DASHBOARD) {
@@ -17,10 +17,7 @@ export const LearnerPage: React.FC = () => {
     return (
         <LearnerDashboard
             onNavigate={handleNavigate}
-            saveActivity={saveActivity}
-            deleteActivity={deleteActivity}
-            history={learnerHistory}
-            studentCode={studentCode}
+            profile={studentProfile ? { name: studentProfile.name, code: studentCode, subscriptionTier: subscriptionPlan, subscriptionExpiry: subscriptionExpiry } : null}
         />
     );
 };

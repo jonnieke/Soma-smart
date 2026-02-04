@@ -10,6 +10,7 @@ import { RevisionPortal } from './features/revision/RevisionPortal';
 import { AskSoma } from './components/AskSoma';
 import { DarasaMode } from './features/darasa-mode/DarasaMode';
 import { ResetPassword } from './pages/ResetPassword';
+import { PricingPage } from './pages/PricingPage';
 
 const DarasaPage = () => {
     const navigate = useNavigate();
@@ -30,6 +31,7 @@ const App: React.FC = () => {
                     <Route path="/revision" element={<RevisionPortal />} />
                     <Route path="/teacher/darasa" element={<DarasaPage />} />
                     <Route path="/reset-password" element={<ResetPassword />} />
+                    <Route path="/pricing" element={<PricingPage />} />
                     <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
             </AppProvider>

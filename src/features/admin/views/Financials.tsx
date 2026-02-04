@@ -20,10 +20,24 @@ export const FinancialsView: React.FC = () => {
                 <Button variant="outline" className="gap-2"><Download className="w-4 h-4" /> Export CSV</Button>
             </div>
 
-            <div className="bg-slate-900 text-white p-6 rounded-2xl relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500 rounded-full blur-[60px] opacity-20"></div>
-                <p className="text-slate-400 text-sm font-medium mb-1">Total Revenue</p>
-                <h2 className="text-3xl font-black mb-4">KES {revenue.toLocaleString()}</h2>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="bg-slate-900 text-white p-6 rounded-2xl relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500 rounded-full blur-[60px] opacity-20"></div>
+                    <p className="text-slate-400 text-xs font-medium mb-1">Total Revenue</p>
+                    <h2 className="text-2xl font-black mb-1">KES {revenue.toLocaleString()}</h2>
+                </div>
+                <div className="bg-white p-6 rounded-2xl border border-slate-200">
+                    <p className="text-slate-500 text-xs font-medium mb-1">Students</p>
+                    <h2 className="text-2xl font-black text-slate-800">KES {(revenue * 0.6).toLocaleString()}</h2>
+                </div>
+                <div className="bg-white p-6 rounded-2xl border border-slate-200">
+                    <p className="text-slate-500 text-xs font-medium mb-1">Teachers</p>
+                    <h2 className="text-2xl font-black text-slate-800">KES {(revenue * 0.3).toLocaleString()}</h2>
+                </div>
+                <div className="bg-white p-6 rounded-2xl border border-slate-200">
+                    <p className="text-slate-500 text-xs font-medium mb-1">Schools</p>
+                    <h2 className="text-2xl font-black text-slate-800">KES {(revenue * 0.1).toLocaleString()}</h2>
+                </div>
             </div>
 
             <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">

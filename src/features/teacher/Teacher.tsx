@@ -1,14 +1,15 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Upload, Mic, FileText, Share2, StopCircle, Download, BookOpen, Crown, Brain, Sparkles, X, CheckCircle, Play, Pause, Trash2, ArrowRight, Library, Filter, Calendar, Home, LogOut, MonitorPlay } from 'lucide-react';
+import { Upload, Mic, FileText, Share2, StopCircle, Download, BookOpen, Crown, Brain, Sparkles, X, CheckCircle, Play, Pause, Trash2, ArrowRight, Library, Filter, Calendar, Home, LogOut, MonitorPlay, CreditCard } from 'lucide-react';
 import { Button, Card, Header, MarkdownText } from '../../components/Shared';
 import { TeacherPaywall } from '../../components/TeacherPaywall';
 import { TeacherOnboarding } from '../../components/TeacherOnboarding';
 import { LoginModal } from '../../components/LoginModal';
 import { useApp } from '../../context/AppContext';
 import { convertNotes, processVoiceNote, generateTeacherQuiz, generateAdvancedTeacherQuiz, fileToGenerativePart } from '../../services/geminiService';
-import { ViewState, TeacherNote, QuizData, TeacherActivity } from '../../types';
+import { ViewState, TeacherNote, QuizData, TeacherActivity, SubscriptionPlan } from '../../types';
 import { PdfPageSelector } from '../../components/PdfPageSelector';
+import { PaymentFlow } from '../subscription/PaymentFlow';
 
 interface TeacherProps {
     onNavigate: (view: ViewState) => void;
@@ -17,17 +18,34 @@ interface TeacherProps {
 import { useNavigate, useLocation } from 'react-router-dom';
 
 export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate }) => {
-    const { teacherUsageCount, incrementTeacherUsage, teacherProfile, updateTeacherProfile, teacherHistory, saveTeacherActivity, logout, isPromoActive, promoEndDate } = useApp();
+    const {
+        teacherUsageCount, incrementTeacherUsage, teacherProfile,
+        updateTeacherProfile, teacherHistory, saveTeacherActivity,
+        logout, isPromoActive, promoEndDate, isPro, upgradeAccount
+    } = useApp();
     const [showPaywall, setShowPaywall] = useState(false);
+    const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan | null>(null);
     const location = useLocation();
     const navigate = useNavigate();
 
     // Check for subscription intent from Landing Page
     useEffect(() => {
-        if (location.state && (location.state as any).openSubscription) {
+        const state = location.state as { selectedPlan?: SubscriptionPlan; openSubscription?: boolean };
+
+        if (state?.selectedPlan) {
+            if (isPro) {
+                // Already pro, just stay on dashboard and clear state
+                navigate(location.pathname, { replace: true, state: {} });
+            } else {
+                setSelectedPlan(state.selectedPlan);
+                // Clear state to avoid re-triggering on refresh
+                navigate(location.pathname, { replace: true, state: {} });
+            }
+        } else if (state?.openSubscription) {
             setShowPaywall(true);
+            navigate(location.pathname, { replace: true, state: {} });
         }
-    }, [location]);
+    }, [location.state, isPro, navigate]);
     const [showLoginModal, setShowLoginModal] = useState(false);
     const [activeTab, setActiveTab] = useState<'HOME' | 'CONVERT' | 'VOICE' | 'QUIZ' | 'LIBRARY'>('HOME');
     const [loading, setLoading] = useState(false);
@@ -64,8 +82,8 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate }) => {
 
     // Check limits
     const checkLimit = () => {
-        // If Promo is active, no limits!
-        if (isPromoActive) return true;
+        // If Promo or Pro is active, no limits!
+        if (isPromoActive || isPro) return true;
 
         if (teacherUsageCount >= 5) {
             setShowPaywall(true);
@@ -351,6 +369,9 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate }) => {
                             <button onClick={() => onNavigate(ViewState.DASHBOARD)} className="p-2 bg-white/10 hover:bg-white/20 rounded-xl backdrop-blur-md transition-colors group" title="Back to Home">
                                 <Home className="w-6 h-6 text-white" />
                             </button>
+                            <button onClick={() => navigate('/pricing')} className="p-2 bg-indigo-500/20 hover:bg-indigo-500/30 rounded-xl backdrop-blur-md transition-colors group" title="Pricing Plans">
+                                <CreditCard className="w-6 h-6 text-white" />
+                            </button>
                             <button onClick={() => { logout(); onNavigate(ViewState.DASHBOARD); }} className="p-2 bg-white/10 hover:bg-red-500/20 rounded-xl backdrop-blur-md transition-colors group" title="Logout">
                                 <LogOut className="w-6 h-6 text-white group-hover:text-red-200" />
                             </button>
@@ -419,7 +440,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate }) => {
                 ) : !generatedNote && !generatedQuiz ? (
                     <>
                         {activeTab === 'HOME' && (
-                            <div className="grid md:grid-cols-2 gap-4 pb-24">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pb-24">
                                 {/* New Tool: Darasa Mode (Full Width) */}
                                 <motion.div
                                     whileHover={{ y: -5 }}
@@ -503,7 +524,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate }) => {
                                                     />
                                                 </div>
 
-                                                <div className="grid grid-cols-2 gap-4">
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-left">
                                                     <div>
                                                         <label className="text-xs font-bold text-indigo-900 uppercase tracking-wider mb-1 block">Questions</label>
                                                         <select
@@ -571,7 +592,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate }) => {
                             activeTab === 'LIBRARY' && (
                                 <div className="bg-white rounded-3xl shadow-sm border border-slate-200 p-6 min-h-[500px]">
                                     <div className="flex items-center gap-2 mb-6 pb-4 border-b">
-                                        <Filter className="w-5 h-5 text-slate-400" />
+                                        <Filter className="w-5 h-5 mx-auto text-slate-400" />
                                         <h3 className="font-bold text-lg text-slate-700">Class Library</h3>
                                         <span className="ml-auto text-sm text-slate-500 font-medium bg-slate-100 px-3 py-1 rounded-full">{selectedClass}</span>
                                         <span className="text-sm text-slate-500 font-medium bg-slate-100 px-3 py-1 rounded-full">{selectedSubject}</span>
@@ -717,6 +738,18 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate }) => {
                     </motion.div>
                 )}
             </div>
+
+            {/* Payment Flow Overlay */}
+            {selectedPlan && (
+                <PaymentFlow
+                    plan={selectedPlan}
+                    onSuccess={async () => {
+                        await upgradeAccount(selectedPlan);
+                        setSelectedPlan(null);
+                    }}
+                    onCancel={() => setSelectedPlan(null)}
+                />
+            )}
         </div>
     );
 };

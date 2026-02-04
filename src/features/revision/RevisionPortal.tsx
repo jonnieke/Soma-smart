@@ -83,7 +83,7 @@ export const RevisionPortal: React.FC = () => {
                 )}
             </div>
 
-            <main className="max-w-lg mx-auto p-6 md:pt-10">
+            <main className="max-w-4xl mx-auto p-6 md:pt-10">
                 <AnimatePresence mode='wait'>
 
                     {/* STEP 1: INTRO */}

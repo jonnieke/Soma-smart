@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
     GraduationCap, Users, Baby, ChevronRight, MessageSquare,
-    ScanLine, CheckCircle, Menu, X, CheckSquare, Play, BookOpen, LogOut
+    ScanLine, CheckCircle, Menu, X, CheckSquare, Play, BookOpen, LogOut,
+    CreditCard
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { UserRole } from '../types';
@@ -21,22 +22,42 @@ import stepAudioImg from '../assets/images/step_audio.png';
 import { RegistrationModal } from '../components/RegistrationModal';
 import { LegalModal } from '../components/LegalModal';
 import { ContactModal } from '../components/ContactModal';
-import { SubscriptionModal } from '../components/SubscriptionModal';
 import { LoginModal } from '../components/LoginModal';
 import { TscLiveBanner } from '../components/TscLiveBanner';
 
 export const LandingPage: React.FC = () => {
     const navigate = useNavigate();
-    const { setRole, role, logout } = useApp(); // Need role for check and logout function
+    const location = useLocation();
+    const { setRole, role, logout, isRegistered, isPromoActive, isPro } = useApp();
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [showRegistration, setShowRegistration] = useState(false);
     const [showPrivacy, setShowPrivacy] = useState(false);
     const [showTerms, setShowTerms] = useState(false);
     const [showContact, setShowContact] = useState(false);
-    const [showSubscription, setShowSubscription] = useState(false);
     const [showLogin, setShowLogin] = useState(false);
     const [isClaimingOffer, setIsClaimingOffer] = useState(false);
-    const { isRegistered } = useApp(); // Destructure isRegistered for check
+
+    // Handle incoming plan selection from PricingPage
+    React.useEffect(() => {
+        const state = location.state as { selectedPlan?: any; showRegistration?: boolean };
+        if (state?.selectedPlan) {
+            // If already pro, go straight to relative dashboard
+            if (isPro) {
+                const target = state.selectedPlan.segment === 'TEACHER' ? '/teacher' : '/learner';
+                navigate(target, { replace: true });
+                return;
+            }
+
+            // If not registered, show registration
+            if (!isRegistered) {
+                setShowRegistration(true);
+            } else {
+                // If registered but not pro, go to dashboard with plan intent
+                const target = state.selectedPlan.segment === 'TEACHER' ? '/teacher' : '/learner';
+                navigate(target, { state: { selectedPlan: state.selectedPlan }, replace: true });
+            }
+        }
+    }, [location.state, isPro, isRegistered, navigate]);
 
     const handleRoleSelect = (selectedRole: UserRole) => {
         if (selectedRole === UserRole.LEARNER) {
@@ -122,6 +143,12 @@ export const LandingPage: React.FC = () => {
                             <button onClick={() => navigate('/revision')} className="flex items-center gap-2 text-gray-600 hover:text-orange-600 font-medium transition-colors">
                                 <BookOpen className="w-5 h-5 text-orange-500" /> Revision
                             </button>
+                            <button onClick={() => navigate('/pricing')} className="flex items-center gap-2 text-gray-600 hover:text-indigo-600 font-medium transition-colors relative">
+                                <CreditCard className="w-5 h-5 text-indigo-500" /> Pricing
+                                {isPromoActive && (
+                                    <span className="absolute -top-3 -right-6 px-1.5 py-0.5 bg-emerald-500 text-white text-[8px] font-bold rounded-full animate-pulse shadow-sm">FREE</span>
+                                )}
+                            </button>
                             <button onClick={() => handleRoleSelect(UserRole.PARENT)} className="flex items-center gap-2 text-gray-600 hover:text-blue-600 font-medium transition-colors">
                                 <Users className="w-5 h-5 text-gray-500" /> Parents
                             </button>
@@ -154,6 +181,14 @@ export const LandingPage: React.FC = () => {
                                 </button>
                                 <button onClick={() => { navigate('/revision'); setMobileMenuOpen(false); }} className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 text-slate-600 font-medium">
                                     <BookOpen className="w-5 h-5" /> Revision
+                                </button>
+                                <button onClick={() => { navigate('/pricing'); setMobileMenuOpen(false); }} className="flex items-center justify-between p-3 rounded-lg hover:bg-slate-50 text-slate-600 font-medium">
+                                    <div className="flex items-center gap-3">
+                                        <CreditCard className="w-5 h-5 text-indigo-500" /> Pricing
+                                    </div>
+                                    {isPromoActive && (
+                                        <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 text-[10px] font-bold rounded-full">FREE UNTIL FEB 27</span>
+                                    )}
                                 </button>
                                 <button onClick={() => { handleRoleSelect(UserRole.PARENT); setMobileMenuOpen(false); }} className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 text-slate-600 font-medium">
                                     <Users className="w-5 h-5" /> Parents
@@ -306,7 +341,7 @@ export const LandingPage: React.FC = () => {
                         <p className="text-slate-500 text-lg max-w-2xl mx-auto">Whether you're studying for exams, preparing lessons, or supporting your child's journey, we have tools for you.</p>
                     </div>
 
-                    <div className="grid md:grid-cols-3 gap-8">
+                    <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-8">
                         {/* Learner Card */}
                         <motion.div
                             whileHover={{ y: -10 }}
@@ -420,7 +455,7 @@ export const LandingPage: React.FC = () => {
                         <p className="text-slate-600 text-lg max-w-2xl mx-auto">Get from a confused student to a subject master in 4 easy steps.</p>
                     </div>
 
-                    <div className="grid md:grid-cols-4 gap-8 relative">
+                    <div className="grid sm:grid-cols-2 md:grid-cols-4 gap-8 relative">
                         {/* Connecting Line (Desktop) */}
                         <div className="hidden md:block absolute top-[28%] left-[10%] right-[10%] h-0.5 bg-gradient-to-r from-blue-200 via-orange-200 to-green-200 -z-0"></div>
 
@@ -517,11 +552,6 @@ export const LandingPage: React.FC = () => {
             <ContactModal
                 isOpen={showContact}
                 onClose={() => setShowContact(false)}
-            />
-
-            <SubscriptionModal
-                isOpen={showSubscription}
-                onClose={() => setShowSubscription(false)}
             />
 
             <LoginModal

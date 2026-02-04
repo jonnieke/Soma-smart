@@ -1,6 +1,6 @@
 import React from 'react';
-import { motion } from 'framer-motion';
 import { LayoutDashboard, Users, CreditCard, Settings, LogOut, Menu, X, Bell, BookOpen } from 'lucide-react';
+import { AnimatePresence, motion } from 'framer-motion';
 import { ViewState } from '../../../types';
 
 interface AdminLayoutProps {
@@ -12,6 +12,7 @@ interface AdminLayoutProps {
 
 export const AdminLayout: React.FC<AdminLayoutProps> = ({ children, activeTab, onTabChange, onLogout }) => {
     const [isSidebarOpen, setIsSidebarOpen] = React.useState(true);
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
 
     const navItems = [
         { id: 'OVERVIEW', label: 'Overview', icon: <LayoutDashboard className="w-5 h-5" /> },
@@ -79,15 +80,85 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children, activeTab, o
                 </button>
             </motion.aside>
 
-            {/* Mobile Sidebar Overlay would go here in a real app */}
+            {/* Mobile Sidebar */}
+            <AnimatePresence>
+                {isMobileMenuOpen && (
+                    <>
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            onClick={() => setIsMobileMenuOpen(false)}
+                            className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60] md:hidden"
+                        />
+                        <motion.aside
+                            initial={{ x: -280 }}
+                            animate={{ x: 0 }}
+                            exit={{ x: -280 }}
+                            className="fixed inset-y-0 left-0 w-72 bg-slate-900 text-slate-300 z-[70] md:hidden flex flex-col shadow-2xl"
+                        >
+                            <div className="p-6 flex items-center justify-between mb-6">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 bg-indigo-500 rounded-lg flex items-center justify-center text-white font-bold flex-shrink-0">
+                                        A
+                                    </div>
+                                    <span className="font-bold text-white text-lg tracking-tight">
+                                        Soma Admin
+                                    </span>
+                                </div>
+                                <button onClick={() => setIsMobileMenuOpen(false)} className="p-1 text-slate-500 hover:text-white">
+                                    <X className="w-6 h-6" />
+                                </button>
+                            </div>
+
+                            <nav className="flex-1 px-4 space-y-2">
+                                {navItems.map((item) => (
+                                    <button
+                                        key={item.id}
+                                        onClick={() => {
+                                            onTabChange(item.id);
+                                            setIsMobileMenuOpen(false);
+                                        }}
+                                        className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-all ${activeTab === item.id
+                                            ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-900/50'
+                                            : 'hover:bg-slate-800 hover:text-white'
+                                            }`}
+                                    >
+                                        <span className="flex-shrink-0">{item.icon}</span>
+                                        <span className="font-medium">{item.label}</span>
+                                    </button>
+                                ))}
+                            </nav>
+
+                            <div className="p-4 border-t border-slate-800">
+                                <button
+                                    onClick={onLogout}
+                                    className="w-full flex items-center gap-4 px-4 py-3 text-red-400 hover:bg-slate-800 rounded-xl transition-all"
+                                >
+                                    <LogOut className="w-5 h-5 flex-shrink-0" />
+                                    <span className="font-medium">Logout</span>
+                                </button>
+                            </div>
+                        </motion.aside>
+                    </>
+                )}
+            </AnimatePresence>
 
             {/* Main Content */}
             <div className="flex-1 flex flex-col h-screen overflow-hidden">
                 {/* Top Header */}
-                <header className="h-16 bg-white border-b border-slate-200 px-8 flex items-center justify-between z-10">
-                    <h2 className="text-xl font-bold text-slate-800 capitalize">
-                        {navItems.find(i => i.id === activeTab)?.label}
-                    </h2>
+                <header className="h-16 bg-white border-b border-slate-200 px-4 md:px-8 flex items-center justify-between z-10">
+                    <div className="flex items-center gap-4">
+                        <button
+                            onClick={() => setIsMobileMenuOpen(true)}
+                            className="p-2 -ml-2 text-slate-500 md:hidden hover:bg-slate-50 rounded-lg"
+                        >
+                            <Menu className="w-6 h-6" />
+                        </button>
+                        <h2 className="text-lg md:text-xl font-bold text-slate-800 capitalize">
+                            {navItems.find(i => i.id === activeTab)?.label}
+                        </h2>
+                    </div>
                     <div className="flex items-center gap-4">
                         <button className="p-2 text-slate-400 hover:bg-slate-50 rounded-full relative">
                             <Bell className="w-5 h-5" />

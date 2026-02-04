@@ -6,12 +6,12 @@ interface AppContextType {
   role: UserRole;
   setRole: (role: UserRole) => void;
   learnerHistory: LearnerActivity[];
-  saveActivity: (type: 'EXPLANATION' | 'QUIZ', topic: string, details: any) => void;
+  saveActivity: (activity: LearnerActivity) => void;
   deleteActivity: (id: string) => void;
   studentCode: string;
   setStudentCode: (code: string) => void;
   isRegistered: boolean;
-  studentProfile: { name: string, grade: string } | null;
+  studentProfile: { id: string, name: string, grade: string, email?: string } | null;
   usageCount: number;
   incrementUsage: () => void;
   registerStudent: (name: string, grade: string, pin: string) => Promise<{ success: boolean; message?: string; data?: string }>;
@@ -32,16 +32,20 @@ interface AppContextType {
   incrementRevisionUsage: () => void;
   // Subscription
   isPro: boolean;
-  subscriptionPlan: 'FREE' | 'DAILY' | 'MONTHLY';
-  upgradeAccount: (plan: 'DAILY' | 'MONTHLY') => Promise<boolean>;
+  subscriptionPlan: SubscriptionTier;
+  subscriptionExpiry: string | null;
+  upgradeAccount: (plan: SubscriptionPlan) => Promise<boolean>;
   logout: () => Promise<void>;
   isPromoActive: boolean;
   promoEndDate: Date | null;
+  userId: string | null;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 import { supabase } from '../lib/supabase';
+import { checkSubscriptionAccess, updateSubscription } from '../services/subscriptionService';
+import { SubscriptionTier, SubscriptionPlan } from '../types';
 
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [role, setRole] = useState<UserRole>(UserRole.NONE);
@@ -50,7 +54,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [studentCode, setStudentCode] = useState<string>("");
   const [usageCount, setUsageCount] = useState<number>(0);
   const [isRegistered, setIsRegistered] = useState<boolean>(false);
-  const [studentProfile, setStudentProfile] = useState<{ name: string, grade: string } | null>(null);
+  const [studentProfile, setStudentProfile] = useState<{ id: string, name: string, grade: string, email?: string } | null>(null);
 
   // Teacher State
   const [teacherUsageCount, setTeacherUsageCount] = useState<number>(0);
@@ -64,6 +68,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   // Promo State
   const [isPromoActive, setIsPromoActive] = useState(false);
   const [promoEndDate, setPromoEndDate] = useState<Date | null>(null);
+
+  // Subscription State
+  const [isPro, setIsPro] = useState(false);
+  const [subscriptionPlan, setSubscriptionPlan] = useState<SubscriptionTier>('FREE');
+  const [subscriptionExpiry, setSubscriptionExpiry] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
 
   // --- Initial Load from Supabase & Local Storage ---
   useEffect(() => {
@@ -80,9 +90,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           .maybeSingle();
 
         if (profile) {
+          setUserId(session.user.id);
           if (profile.role === 'LEARNER') {
-            setStudentCode(profile.student_id);
-            setStudentProfile({ name: profile.full_name, grade: profile.grade });
+            setStudentProfile({ id: profile.id, name: profile.full_name, grade: profile.grade, email: profile.email });
             setIsRegistered(true);
             setRole(UserRole.LEARNER);
           } else if (profile.role === 'TEACHER') {
@@ -91,12 +101,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             // Fetch classes/subjects if they exist in profile
             if (profile.classes || profile.subjects) {
               setTeacherProfile({
+                id: profile.id,
                 name: profile.full_name,
+                email: profile.email,
                 classes: profile.classes || [],
                 subjects: profile.subjects || []
               });
             } else {
               setTeacherProfile({
+                id: profile.id,
                 name: profile.full_name,
                 classes: [],
                 subjects: []
@@ -118,7 +131,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
           if (profile) {
             setStudentCode(profile.student_id);
-            setStudentProfile({ name: profile.full_name, grade: profile.grade });
+            setStudentProfile({ id: profile.id, name: profile.full_name, grade: profile.grade, email: profile.email });
             setIsRegistered(true);
             setRole(UserRole.LEARNER);
           } else {
@@ -126,21 +139,26 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             localStorage.removeItem('soma_active_student');
           }
         }
+
+        // 3. Check Subscription Access
+        if (session) {
+          const access = await checkSubscriptionAccess(session.user.id, 'STUDENT'); // Defaulting to student for unified check
+          setIsPro(access.isPro);
+          setSubscriptionPlan(access.tier);
+          setSubscriptionExpiry(access.expiry);
+        }
       }
 
-      // 3. Fetch Promo Settings
-      const { data: promoData } = await supabase
-        .from('system_settings')
-        .select('value')
-        .eq('key', 'promo_end_date')
-        .maybeSingle();
+      // 3. Set Promo Settings (Hardcoded as per user request to start on Feb 27th)
+      const LAUNCH_DATE = new Date('2026-02-27T00:00:00+03:00');
+      const now = new Date();
 
-      if (promoData) {
-        const endDate = new Date(promoData.value);
-        if (endDate > new Date()) {
-          setIsPromoActive(true);
-          setPromoEndDate(endDate);
-        }
+      if (LAUNCH_DATE > now) {
+        setIsPromoActive(true);
+        setPromoEndDate(LAUNCH_DATE);
+      } else {
+        setIsPromoActive(false);
+        setPromoEndDate(null);
       }
     };
     initSession();
@@ -183,7 +201,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       if (dbError) throw dbError;
 
       setStudentCode(newCode);
-      setStudentProfile({ name, grade });
+      setStudentProfile({ id: userId, name, grade });
       setIsRegistered(true);
       setRole(UserRole.LEARNER);
 
@@ -249,6 +267,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         if (profile) {
           console.log("Profile found:", profile.role);
           setTeacherProfile({
+            id: profile.id,
             name: profile.full_name,
             classes: profile.classes || [],
             subjects: profile.subjects || []
@@ -281,6 +300,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           if (newProfile) {
             console.log("Profile auto-created successfully.");
             setTeacherProfile({
+              id: newProfile.id,
               name: newProfile.full_name,
               classes: newProfile.classes || [],
               subjects: newProfile.subjects || []
@@ -346,7 +366,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
         if (profileError) console.error("Profile creation warning:", profileError);
 
-        setTeacherProfile({ name, classes, subjects });
+        setTeacherProfile({ id: data.user.id, name, classes, subjects });
         setRole(UserRole.TEACHER);
         return { success: true };
       }
@@ -387,7 +407,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
       // Found them! "Sign In"
       setStudentCode(profile.student_id);
-      setStudentProfile({ name: profile.full_name, grade: profile.grade });
+      setStudentProfile({ id: profile.id, name: profile.full_name, grade: profile.grade, email: profile.email });
       setIsRegistered(true);
       setRole(UserRole.LEARNER);
 
@@ -448,19 +468,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   }, [isRegistered, studentCode]);
 
-  const saveActivity = async (type: 'EXPLANATION' | 'QUIZ', topic: string, details: any) => {
+  const saveActivity = async (activity: LearnerActivity) => {
     const now = new Date();
     const dateStr = now.toLocaleDateString([], { month: 'short', day: 'numeric' }) + ' ' + now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
     // Optimistic UI Update
-    const tempId = Date.now().toString();
     const newActivity: LearnerActivity = {
-      id: tempId,
-      type,
-      topic,
-      date: dateStr,
-      score: details.score,
-      details: JSON.stringify(details)
+      ...activity,
+      date: activity.date || dateStr
     };
     setLearnerHistory(prev => [newActivity, ...prev]);
 
@@ -469,10 +484,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       try {
         const { error } = await supabase.from('activities').insert({
           student_id: studentCode,
-          type,
-          topic,
-          score: details.score,
-          details: JSON.stringify(details)
+          type: activity.type,
+          topic: activity.topic,
+          score: activity.score,
+          details: activity.details
         });
 
         if (error) console.error("Failed to save activity to DB:", error);
@@ -493,19 +508,21 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   };
 
-  // Subscription State
-  const [isPro, setIsPro] = useState(false);
-  const [subscriptionPlan, setSubscriptionPlan] = useState<'FREE' | 'DAILY' | 'MONTHLY'>('FREE');
+  const upgradeAccount = async (plan: SubscriptionPlan) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return false;
 
-  const upgradeAccount = async (plan: 'DAILY' | 'MONTHLY') => {
-    // Mock Payment Process
-    await new Promise(resolve => setTimeout(resolve, 2000)); // Simulate API call
-    setIsPro(true);
-    setSubscriptionPlan(plan);
-    setUsageCount(0); // Reset limits
-    setRevisionUsageCount(0);
-    // Ideally save to DB/Profile here
-    return true;
+    const success = await updateSubscription(user.id, plan);
+    if (success) {
+      setIsPro(true);
+      setSubscriptionPlan(plan.duration);
+      setUsageCount(0);
+      setRevisionUsageCount(0);
+      // Update expiry locally (re-fetch to be safe)
+      const access = await checkSubscriptionAccess(user.id, plan.segment);
+      setSubscriptionExpiry(access.expiry);
+    }
+    return success;
   };
 
   return (
@@ -514,9 +531,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       usageCount, incrementUsage, isRegistered, studentProfile, registerStudent, login, recoverStudentId, registerTeacher, loginTeacher, resetPassword,
       teacherUsageCount, incrementTeacherUsage, teacherProfile, updateTeacherProfile, teacherHistory, saveTeacherActivity,
       revisionUsageCount, incrementRevisionUsage,
-      isPro, subscriptionPlan, upgradeAccount,
+      isPro, subscriptionPlan, subscriptionExpiry, upgradeAccount,
       isPromoActive,
       promoEndDate,
+      userId,
       logout: async () => {
         await supabase.auth.signOut();
         setRole(UserRole.NONE);
