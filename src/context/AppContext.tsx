@@ -27,6 +27,7 @@ interface AppContextType {
   updateTeacherProfile: (profile: TeacherProfile) => void;
   teacherHistory: TeacherActivity[];
   saveTeacherActivity: (activity: TeacherActivity) => void;
+  deleteTeacherActivity: (id: string) => Promise<void>;
   // Revision
   revisionUsageCount: number;
   incrementRevisionUsage: () => void;
@@ -39,6 +40,9 @@ interface AppContextType {
   isPromoActive: boolean;
   promoEndDate: Date | null;
   userId: string | null;
+  isOnline: boolean;
+  availableQuizzes: TeacherActivity[];
+  fetchAvailableQuizzes: (subject?: string) => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -46,11 +50,13 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 import { supabase } from '../lib/supabase';
 import { checkSubscriptionAccess, updateSubscription } from '../services/subscriptionService';
 import { SubscriptionTier, SubscriptionPlan } from '../types';
+import { offlineService } from '../services/offlineService';
+import { useOnlineStatus } from '../hooks/useOnlineStatus';
 
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [role, setRole] = useState<UserRole>(UserRole.NONE);
 
-  const [learnerHistory, setLearnerHistory] = useState<LearnerActivity[]>([]);
+  const [learnerHistory, setLearnerHistory] = useState<LearnerActivity[]>(offlineService.getLearnerHistory());
   const [studentCode, setStudentCode] = useState<string>("");
   const [usageCount, setUsageCount] = useState<number>(0);
   const [isRegistered, setIsRegistered] = useState<boolean>(false);
@@ -59,7 +65,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   // Teacher State
   const [teacherUsageCount, setTeacherUsageCount] = useState<number>(0);
   const [teacherProfile, setTeacherProfile] = useState<TeacherProfile | null>(null);
-  const [teacherHistory, setTeacherHistory] = useState<TeacherActivity[]>([]);
+  const [teacherHistory, setTeacherHistory] = useState<TeacherActivity[]>(offlineService.getTeacherHistory());
+  const [availableQuizzes, setAvailableQuizzes] = useState<TeacherActivity[]>([]);
+
+  const isOnline = useOnlineStatus();
 
   // Revision State
   const [revisionUsageCount, setRevisionUsageCount] = useState<number>(0);
@@ -269,10 +278,17 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           setTeacherProfile({
             id: profile.id,
             name: profile.full_name,
+            email: profile.email,
             classes: profile.classes || [],
             subjects: profile.subjects || []
           });
           setRole(UserRole.TEACHER);
+
+          // Clear Learner Session for clarity
+          setStudentCode("");
+          setStudentProfile(null);
+          localStorage.removeItem('soma_active_student');
+
           return { success: true };
         } else {
           console.warn("CRITICAL: Auth succeeded but NO PROFILE found. Attempting to auto-create profile...");
@@ -366,8 +382,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
         if (profileError) console.error("Profile creation warning:", profileError);
 
-        setTeacherProfile({ id: data.user.id, name, classes, subjects });
+        setTeacherProfile({ id: data.user.id, name, email, classes, subjects });
         setRole(UserRole.TEACHER);
+
+        // Clear Learner Session
+        setStudentCode("");
+        setStudentProfile(null);
+        localStorage.removeItem('soma_active_student');
+
         return { success: true };
       }
       return { success: false, message: "No user returned from signup" };
@@ -379,6 +401,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const updateTeacherProfile = async (profile: TeacherProfile) => {
     setTeacherProfile(profile);
+    setRole(UserRole.TEACHER);
+
+    // Clear any lingering Learner state when active as Teacher
+    setStudentCode("");
+    setStudentProfile(null);
+    localStorage.removeItem('soma_active_student');
+
     // Sync to DB
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
@@ -389,8 +418,36 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   };
 
-  const saveTeacherActivity = (activity: TeacherActivity) => {
-    setTeacherHistory(prev => [activity, ...prev]);
+  const saveTeacherActivity = async (activity: TeacherActivity) => {
+    // Optimistic UI Update + Local Save
+    const internalActivity = { ...activity, pendingSync: !isOnline };
+    setTeacherHistory(prev => [internalActivity, ...prev]);
+    offlineService.saveTeacherHistory([internalActivity, ...teacherHistory]);
+
+    // Persist to Supabase if Online
+    if (isOnline) {
+      const { data: { session } } = await supabase.auth.getSession();
+      const user = session?.user;
+
+      if (user) {
+        try {
+          const { error } = await supabase.from('activities').insert({
+            student_id: user.id, // Using user.id as student_id for teachers
+            type: activity.type,
+            topic: activity.title,
+            details: {
+              className: activity.className,
+              subject: activity.subject,
+              content: activity.content
+            }
+          });
+
+          if (error) console.error("Failed to save teacher activity to DB:", error);
+        } catch (e) {
+          console.error("Teacher DB Save Exception:", e);
+        }
+      }
+    }
   };
 
   const login = async (codeInput: string): Promise<boolean> => {
@@ -456,7 +513,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             score: d.score,
             details: typeof d.details === 'string' ? d.details : JSON.stringify(d.details)
           }));
-          setLearnerHistory(mapped);
+          const merged = offlineService.mergeLearnerHistory(mapped);
+          setLearnerHistory(merged);
         }
       } catch (e) {
         console.error("History Load Error:", e);
@@ -468,19 +526,74 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   }, [isRegistered, studentCode]);
 
+  // Sync Teacher History
+  useEffect(() => {
+    const loadTeacherHistory = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user || role !== UserRole.TEACHER) return;
+
+      try {
+        const { data, error } = await supabase
+          .from('activities')
+          .select('*')
+          .eq('student_id', session.user.id)
+          .order('created_at', { ascending: false });
+
+        if (error) {
+          console.warn("Could not fetch teacher history:", error);
+          return;
+        }
+
+        if (data) {
+          const mapped: TeacherActivity[] = data.map((d: any) => ({
+            id: d.id,
+            type: d.type as 'NOTE' | 'QUIZ',
+            title: d.topic,
+            className: d.details?.className || '',
+            subject: d.details?.subject || '',
+            date: new Date(d.created_at).toLocaleDateString(),
+            content: d.details?.content
+          }));
+          const merged = offlineService.mergeTeacherHistory(mapped);
+          setTeacherHistory(merged);
+        }
+      } catch (e) {
+        console.error("Teacher History Load Error:", e);
+      }
+    };
+
+    if (role === UserRole.TEACHER) {
+      loadTeacherHistory();
+    }
+  }, [role]);
+
+  const deleteTeacherActivity = async (id: string) => {
+    // Optimistic UI Update
+    setTeacherHistory(prev => prev.filter(item => item.id !== id));
+
+    try {
+      const { error } = await supabase.from('activities').delete().eq('id', id);
+      if (error) throw error;
+    } catch (e) {
+      console.error("Failed to delete teacher activity:", e);
+    }
+  };
+
   const saveActivity = async (activity: LearnerActivity) => {
     const now = new Date();
     const dateStr = now.toLocaleDateString([], { month: 'short', day: 'numeric' }) + ' ' + now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-    // Optimistic UI Update
+    // Optimistic UI Update + Local Save
     const newActivity: LearnerActivity = {
       ...activity,
-      date: activity.date || dateStr
+      date: activity.date || dateStr,
+      pendingSync: !isOnline
     };
     setLearnerHistory(prev => [newActivity, ...prev]);
+    offlineService.saveLearnerHistory([newActivity, ...learnerHistory]);
 
-    // Persist to Supabase
-    if (studentCode) {
+    // Persist to Supabase if Online
+    if (isOnline && studentCode) {
       try {
         const { error } = await supabase.from('activities').insert({
           student_id: studentCode,
@@ -508,6 +621,54 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   };
 
+  // Auto-Sync Effect
+  useEffect(() => {
+    if (isOnline) {
+      const syncPending = async () => {
+        // Sync Learner
+        const pendingLearner = learnerHistory.filter(h => h.pendingSync);
+        for (const activity of pendingLearner) {
+          try {
+            const { error } = await supabase.from('activities').insert({
+              student_id: studentCode,
+              type: activity.type,
+              topic: activity.topic,
+              score: activity.score,
+              details: activity.details
+            });
+            if (!error) {
+              setLearnerHistory(prev => prev.map(h => h.id === activity.id ? { ...h, pendingSync: false } : h));
+            }
+          } catch (e) { console.error("Sync failed", e); }
+        }
+
+        // Sync Teacher
+        const pendingTeacher = teacherHistory.filter(h => h.pendingSync);
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
+          for (const activity of pendingTeacher) {
+            try {
+              const { error } = await supabase.from('activities').insert({
+                student_id: session.user.id,
+                type: activity.type,
+                topic: activity.title,
+                details: {
+                  className: activity.className,
+                  subject: activity.subject,
+                  content: activity.content
+                }
+              });
+              if (!error) {
+                setTeacherHistory(prev => prev.map(h => h.id === activity.id ? { ...h, pendingSync: false } : h));
+              }
+            } catch (e) { console.error("Sync failed", e); }
+          }
+        }
+      };
+      syncPending();
+    }
+  }, [isOnline]);
+
   const upgradeAccount = async (plan: SubscriptionPlan) => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return false;
@@ -525,11 +686,46 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     return success;
   };
 
+  const fetchAvailableQuizzes = async (subject?: string) => {
+    try {
+      let query = supabase
+        .from('activities')
+        .select('*')
+        .eq('type', 'QUIZ')
+        .order('created_at', { ascending: false });
+
+      if (subject) {
+        query = query.eq('subject', subject);
+      }
+
+      const { data, error } = await query.limit(20);
+      if (error) throw error;
+
+      const mappedData: TeacherActivity[] = (data || []).map(item => {
+        const details = typeof item.details === 'string' ? JSON.parse(item.details || '{}') : item.details;
+        return {
+          id: item.id,
+          type: item.type,
+          title: item.title || item.topic,
+          className: item.class_name || details?.className || '',
+          subject: item.subject || details?.subject || '',
+          date: item.created_at,
+          content: item.content || details?.content
+        };
+      });
+
+      setAvailableQuizzes(mappedData);
+    } catch (e) {
+      console.error("Error fetching available quizzes:", e);
+    }
+  };
+
   return (
     <AppContext.Provider value={{
       role, setRole, learnerHistory, saveActivity, deleteActivity, studentCode, setStudentCode,
+      isOnline,
       usageCount, incrementUsage, isRegistered, studentProfile, registerStudent, login, recoverStudentId, registerTeacher, loginTeacher, resetPassword,
-      teacherUsageCount, incrementTeacherUsage, teacherProfile, updateTeacherProfile, teacherHistory, saveTeacherActivity,
+      teacherUsageCount, incrementTeacherUsage, teacherProfile, updateTeacherProfile, teacherHistory, saveTeacherActivity, deleteTeacherActivity,
       revisionUsageCount, incrementRevisionUsage,
       isPro, subscriptionPlan, subscriptionExpiry, upgradeAccount,
       isPromoActive,
@@ -549,7 +745,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         localStorage.removeItem('soma_active_student');
 
         // Clear any specific session data if needed
-      }
+      },
+      availableQuizzes,
+      fetchAvailableQuizzes
     }}>
       {children}
     </AppContext.Provider>

@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Smartphone, Loader2, CheckCircle2, XCircle, ArrowLeft, ShieldCheck, CreditCard, ExternalLink, ArrowRight } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { pesapalService } from '../../services/pesapalService';
+import { UserRole } from '../../types';
 
 interface Props {
     plan: any;
@@ -22,18 +23,31 @@ export const PaymentFlow: React.FC<Props> = ({ plan, onSuccess, onCancel }) => {
 
     // Pre-fill profile data for registered users
     useEffect(() => {
-        if (studentProfile) {
-            const names = studentProfile.name.split(' ');
-            setFirstName(names[0] || '');
-            setLastName(names.slice(1).join(' ') || 'Learner');
-            // Email might not be in studentProfile yet, but we can attempt to get it if needed
-            // For now, if studentProfile exists, we at least have the name
-        } else if (teacherProfile) {
+        // STRICT ROLE CHECKING: Prioritize the profile that matches the current active role
+        if (role === UserRole.TEACHER && teacherProfile) {
             const names = teacherProfile.name.split(' ');
             setFirstName(names[0] || '');
             setLastName(names.slice(1).join(' ') || 'Teacher');
+            setEmail(teacherProfile.email || '');
+        } else if (role === UserRole.LEARNER && studentProfile) {
+            const names = studentProfile.name.split(' ');
+            setFirstName(names[0] || '');
+            setLastName(names.slice(1).join(' ') || 'Learner');
+            if (studentProfile.email) setEmail(studentProfile.email);
+        } else if (teacherProfile) {
+            // Fallback for teacher profile if role specifically isn't set yet but profile exists
+            const names = teacherProfile.name.split(' ');
+            setFirstName(names[0] || '');
+            setLastName(names.slice(1).join(' ') || 'Teacher');
+            setEmail(teacherProfile.email || '');
+        } else if (studentProfile) {
+            // Fallback for student profile
+            const names = studentProfile.name.split(' ');
+            setFirstName(names[0] || '');
+            setLastName(names.slice(1).join(' ') || 'Learner');
+            if (studentProfile.email) setEmail(studentProfile.email);
         }
-    }, [studentProfile, teacherProfile]);
+    }, [studentProfile, teacherProfile, role]);
 
     const isRegistered = !!(studentProfile || teacherProfile);
 

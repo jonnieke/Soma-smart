@@ -8,10 +8,11 @@ import {
 import { useApp } from '../../context/AppContext';
 import { Button, Card, Header } from '../../components/Shared';
 import { ViewState, UserRole } from '../../types';
+import { LoginModal } from '../../components/LoginModal';
 
 export const RevisionPortal: React.FC = () => {
     const navigate = useNavigate();
-    const { isRegistered, studentCode, setRole, setStudentCode, logout } = useApp();
+    const { isRegistered, studentCode, setRole, setStudentCode, logout, studentProfile } = useApp();
 
     // State for Onboarding
     const [step, setStep] = useState<'INTRO' | 'FORM' | 'CODE' | 'LIMIT'>('INTRO');
@@ -25,6 +26,7 @@ export const RevisionPortal: React.FC = () => {
 
     // Usage Limit (Local for now or Context)
     const [usageCount, setUsageCount] = useState(0); // Mock for now
+    const [showLogin, setShowLogin] = useState(false);
 
     // Effect to check if already registered
     useEffect(() => {
@@ -74,7 +76,7 @@ export const RevisionPortal: React.FC = () => {
                     <button onClick={() => navigate('/')} className="p-2 -ml-2 hover:bg-slate-50 rounded-full text-slate-400 hover:text-slate-600 transition-colors">
                         <ArrowRight className="w-6 h-6 rotate-180" />
                     </button>
-                    <h1 className="font-bold text-lg text-slate-800">Revision Assistance</h1>
+                    <h1 className="font-bold text-lg text-slate-800">Candidate Exam Prep</h1>
                 </div>
                 {isRegistered && (
                     <button onClick={logout} className="p-2 hover:bg-red-50 text-slate-400 hover:text-red-500 rounded-full transition-colors" title="Logout">
@@ -101,10 +103,10 @@ export const RevisionPortal: React.FC = () => {
                             </div>
 
                             <div>
-                                <h1 className="text-3xl font-extrabold text-slate-800 mb-2">Ace Your Exams</h1>
-                                <p className="text-slate-500 text-lg">
-                                    AI-powered revision coach for KEPSEA, KCSE, and Mocks.
-                                    Upload papers, get step-by-step help, and track your progress.
+                                <h1 className="text-3xl font-extrabold text-slate-900 mb-2">Candidate Revision Center</h1>
+                                <p className="text-slate-600 text-lg">
+                                    AI-powered coaching specialized for <b>KCSE, KPSEA & KEPSEA</b> candidates.
+                                    Analyze past papers and master your final exams.
                                 </p>
                             </div>
 
@@ -119,13 +121,31 @@ export const RevisionPortal: React.FC = () => {
                                 </div>
                             </div>
 
-                            <Button fullWidth onClick={() => setStep('FORM')} className="text-lg py-4 shadow-xl shadow-orange-100 bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 border-none">
-                                Get Started <ArrowRight className="ml-2 w-5 h-5" />
+                            <Button
+                                fullWidth
+                                onClick={isRegistered ? handleStartRevision : () => setStep('FORM')}
+                                className="text-lg py-4 shadow-xl shadow-orange-100 bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 border-none"
+                            >
+                                {isRegistered ? `Continue as Candidate ${studentProfile?.name?.split(' ')[0] || ''}` : 'Get Started'} <ArrowRight className="ml-2 w-5 h-5" />
                             </Button>
 
                             <p className="text-xs text-slate-400">
-                                Already have a code? <button onClick={() => navigate('/learner')} className="text-blue-600 font-bold hover:underline">Login here</button>
+                                {isRegistered ? (
+                                    <span>Using code <b>{studentCode}</b></span>
+                                ) : (
+                                    <>Already have a code? <button onClick={() => setShowLogin(true)} className="text-blue-600 font-bold hover:underline">Login here</button></>
+                                )}
                             </p>
+
+                            <LoginModal
+                                isOpen={showLogin}
+                                onClose={() => setShowLogin(false)}
+                                initialTab="STUDENT"
+                                onSuccess={() => {
+                                    setShowLogin(false);
+                                    handleStartRevision();
+                                }}
+                            />
                         </motion.div>
                     )}
 
@@ -138,6 +158,15 @@ export const RevisionPortal: React.FC = () => {
                             exit={{ opacity: 0, x: -20 }}
                             className="space-y-6"
                         >
+                            {isRegistered && (
+                                <div className="bg-blue-50 p-4 rounded-2xl border border-blue-100 mb-6 flex items-center justify-between">
+                                    <div>
+                                        <p className="text-blue-800 font-bold text-sm">Welcome back, {studentProfile?.name}!</p>
+                                        <p className="text-blue-600 text-xs">You are already registered. Click below to start.</p>
+                                    </div>
+                                    <Button onClick={handleStartRevision}>Go to Session</Button>
+                                </div>
+                            )}
                             <div className="text-center mb-6">
                                 <h2 className="text-2xl font-bold text-slate-800">Setup Profile</h2>
                                 <p className="text-slate-500 text-sm">Tell us a bit about yourself to personalize your revision.</p>
@@ -181,10 +210,9 @@ export const RevisionPortal: React.FC = () => {
                                             onChange={(e) => setExamType(e.target.value)}
                                             className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 focus:border-orange-500 focus:ring-2 focus:ring-orange-200 outline-none transition-all appearance-none bg-white"
                                         >
-                                            <option value="KCSE">KCSE (Form 4)</option>
-                                            <option value="KEPSEA">KEPSEA (Grade 6)</option>
-                                            <option value="MOCKS">Mocks / Term Exams</option>
-                                            <option value="JSS">JSS Assessment</option>
+                                            <option value="KCSE">KCSE (Form 4 Candidate)</option>
+                                            <option value="KPSEA">KPSEA (Grade 9 Candidate)</option>
+                                            <option value="KEPSEA">KEPSEA (Grade 6 Candidate)</option>
                                         </select>
                                     </div>
                                 </div>
@@ -215,7 +243,7 @@ export const RevisionPortal: React.FC = () => {
                             </div>
 
                             <div>
-                                <h2 className="text-2xl font-bold text-slate-800">You&apos;re All Set!</h2>
+                                <h2 className="text-2xl font-bold text-slate-800">Candidate Profile Ready!</h2>
                                 <p className="text-slate-500">Here is your unique Revision Code. Use it to login anytime.</p>
                             </div>
 

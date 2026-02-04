@@ -23,10 +23,9 @@ export const pesapalService = {
             created_at: new Date().toISOString()
         });
 
-        // 2. Call Edge Function
-        const { data, error } = await supabase.functions.invoke('pesapal', {
+        // 2. Call Edge Function with subpath routing
+        const { data, error } = await supabase.functions.invoke('pesapal/initiate-order', {
             body: {
-                path: 'initiate-order', // Note: My internal path handler in edge function
                 amount: plan.price,
                 description: `Soma Smart ${plan.name} Subscription`,
                 reference: reference,
@@ -49,9 +48,8 @@ export const pesapalService = {
      * Checks the status of a specific order
      */
     async checkTransactionStatus(orderTrackingId: string) {
-        const { data, error } = await supabase.functions.invoke('pesapal', {
+        const { data, error } = await supabase.functions.invoke('pesapal/check-status', {
             body: {
-                path: 'check-status',
                 OrderTrackingId: orderTrackingId
             }
         });

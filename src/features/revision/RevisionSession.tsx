@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useApp } from '../../context/AppContext';
-import { MessageCircle, Volume2, ArrowRight, CheckCircle, HelpCircle, ChevronRight, ZoomIn, ZoomOut, X } from 'lucide-react';
-import { ViewState, RevisionMode, ExamAnalysis, ExamQuestion, TutoringStep, TutorResponse } from '../../types';
-import { analyzeExamPaper, getRevisionTutorResponse, fileToGenerativePart } from '../../services/geminiService';
+import { MessageCircle, Volume2, ArrowRight, CheckCircle, HelpCircle, ChevronRight, ZoomIn, ZoomOut, X, FileText } from 'lucide-react';
+import { ViewState, RevisionMode, ExamAnalysis, ExamQuestion, TutoringStep, TutorResponse, TeacherActivity, QuizData } from '../../types';
+import { analyzeExamPaper, getRevisionTutorResponse, fileToGenerativePart, generateSpeech, stopSpeech } from '../../services/geminiService';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Header } from '../../components/Shared';
 
 interface Props {
-    file: File;
+    data: File | TeacherActivity;
     mode: RevisionMode;
     onExit: () => void;
 }
@@ -19,7 +19,7 @@ interface ChatMessage {
     step?: TutoringStep;
 }
 
-export const RevisionSession: React.FC<Props> = ({ file, mode, onExit }) => {
+export const RevisionSession: React.FC<Props> = ({ data, mode, onExit }) => {
     // State
     const [analysis, setAnalysis] = useState<ExamAnalysis | null>(null);
     const [loading, setLoading] = useState(true);
@@ -40,21 +40,38 @@ export const RevisionSession: React.FC<Props> = ({ file, mode, onExit }) => {
     useEffect(() => {
         const init = async () => {
             try {
-                const base64 = await fileToGenerativePart(file);
-                setImageSrc(URL.createObjectURL(file));
+                if (data instanceof File) {
+                    const base64 = await fileToGenerativePart(data);
+                    setImageSrc(URL.createObjectURL(data));
 
-                setLoadingText("Analyzing structure...");
-                const result = await analyzeExamPaper(base64, file.type);
-                setAnalysis(result);
+                    setLoadingText("Scanning exam paper...");
+                    const result = await analyzeExamPaper(base64, data.type);
+                    setAnalysis(result);
+                } else {
+                    const quiz = data.content as QuizData;
+                    const mappedAnalysis: ExamAnalysis = {
+                        subject: data.subject,
+                        grade: data.className,
+                        questions: (quiz?.questions || []).map((q, idx) => ({
+                            id: typeof q.id === 'number' ? q.id : idx,
+                            number: (idx + 1).toString(),
+                            text: q.question,
+                            topic: quiz?.topic || data.title,
+                            marks: 5
+                        }))
+                    };
+                    setAnalysis(mappedAnalysis);
+                    setImageSrc(null);
+                }
                 setLoading(false);
             } catch (error) {
                 console.error(error);
-                alert("Failed to analyze exam paper. Please try a clearer image.");
+                alert("Failed to load revision content.");
                 onExit();
             }
         };
         init();
-    }, [file]);
+    }, [data]);
 
     // Scroll to bottom of chat
     useEffect(() => {
@@ -115,21 +132,21 @@ export const RevisionSession: React.FC<Props> = ({ file, mode, onExit }) => {
     };
 
     // TTS Logic
-    const handleReadAloud = (text: string) => {
+    const handleReadAloud = async (text: string) => {
         if (isPlaying) {
-            window.speechSynthesis.cancel();
+            stopSpeech();
             setIsPlaying(false);
             return;
         }
 
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = 'en-US'; // Could be dynamic or localized
-        utterance.rate = 0.9; // Slightly slower for teaching
-        utterance.onend = () => setIsPlaying(false);
-        utterance.onerror = () => setIsPlaying(false);
-
         setIsPlaying(true);
-        window.speechSynthesis.speak(utterance);
+        try {
+            await generateSpeech(text);
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setIsPlaying(false);
+        }
     };
 
     const getLastModelMessage = () => {
@@ -157,22 +174,32 @@ export const RevisionSession: React.FC<Props> = ({ file, mode, onExit }) => {
                 </div>
 
                 <div className="relative w-full h-full flex items-center justify-center overflow-auto" style={{ cursor: 'grab' }}>
-                    {imageSrc && (
+                    {imageSrc ? (
                         <img
                             src={imageSrc}
                             alt="Exam Paper"
                             className="max-w-none transition-transform duration-200"
                             style={{ transform: `scale(${imageZoom})` }}
                         />
+                    ) : (
+                        <div className="text-center text-white/40 space-y-4">
+                            <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mx-auto">
+                                <FileText className="w-10 h-10" />
+                            </div>
+                            <p className="font-bold text-lg">Candidate Test Paper</p>
+                            <p className="text-sm opacity-60">You are revising a national syllabus quiz.</p>
+                        </div>
                     )}
                 </div>
 
                 {/* Zoom Controls */}
-                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 bg-black/60 p-2 rounded-xl backdrop-blur-sm">
-                    <button onClick={() => setImageZoom(z => Math.max(0.5, z - 0.2))} className="p-2 text-white hover:bg-white/20 rounded-lg"><ZoomOut className="w-5 h-5" /></button>
-                    <span className="text-white text-xs py-2 min-w-[3rem] text-center">{Math.round(imageZoom * 100)}%</span>
-                    <button onClick={() => setImageZoom(z => Math.min(3, z + 0.2))} className="p-2 text-white hover:bg-white/20 rounded-lg"><ZoomIn className="w-5 h-5" /></button>
-                </div>
+                {imageSrc && (
+                    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 bg-black/60 p-2 rounded-xl backdrop-blur-sm">
+                        <button onClick={() => setImageZoom(z => Math.max(0.5, z - 0.2))} className="p-2 text-white hover:bg-white/20 rounded-lg"><ZoomOut className="w-5 h-5" /></button>
+                        <span className="text-white text-xs py-2 min-w-[3rem] text-center">{Math.round(imageZoom * 100)}%</span>
+                        <button onClick={() => setImageZoom(z => Math.min(3, z + 0.2))} className="p-2 text-white hover:bg-white/20 rounded-lg"><ZoomIn className="w-5 h-5" /></button>
+                    </div>
+                )}
             </div>
 
             {/* RIGHT: Interaction Panel */}
@@ -181,7 +208,7 @@ export const RevisionSession: React.FC<Props> = ({ file, mode, onExit }) => {
                 {/* Header */}
                 <div className="p-4 border-b flex justify-between items-center bg-white z-20">
                     <div>
-                        <h2 className="font-bold text-slate-800">Revision Assist</h2>
+                        <h2 className="font-bold text-slate-800">Candidate Specialist</h2>
                         <p className="text-xs text-slate-500 flex items-center gap-1">
                             <span className={`w-2 h-2 rounded-full ${mode === RevisionMode.EXAM ? 'bg-orange-500' : 'bg-green-500'}`} />
                             {mode === RevisionMode.EXAM ? 'Exam Mode' : 'Learn Mode'}
@@ -240,8 +267,8 @@ export const RevisionSession: React.FC<Props> = ({ file, mode, onExit }) => {
                             {chatHistory.map((msg) => (
                                 <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                                     <div className={`max-w-[85%] p-4 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap ${msg.role === 'user'
-                                            ? 'bg-indigo-600 text-white rounded-br-none shadow-md'
-                                            : 'bg-white text-slate-700 border border-slate-200 rounded-bl-none shadow-sm'
+                                        ? 'bg-indigo-600 text-white rounded-br-none shadow-md'
+                                        : 'bg-white text-slate-700 border border-slate-200 rounded-bl-none shadow-sm'
                                         }`}>
                                         {msg.role === 'model' && (
                                             <div className="flex gap-2 mb-2">

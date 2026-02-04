@@ -21,7 +21,9 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate }) => {
     const {
         teacherUsageCount, incrementTeacherUsage, teacherProfile,
         updateTeacherProfile, teacherHistory, saveTeacherActivity,
-        logout, isPromoActive, promoEndDate, isPro, upgradeAccount
+        deleteTeacherActivity,
+        logout, isPromoActive, promoEndDate, isPro, upgradeAccount,
+        isOnline
     } = useApp();
     const [showPaywall, setShowPaywall] = useState(false);
     const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan | null>(null);
@@ -167,7 +169,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate }) => {
         incrementTeacherUsage();
         try {
             const base64 = await fileToGenerativePart(file);
-            const result = await convertNotes(base64, file.type);
+            const result = await convertNotes(base64, file.type, selectedSubject, selectedClass);
             setGeneratedNote(result);
             handleSaveToHistory('NOTE', result.topic, result);
             setActiveTab('CONVERT');
@@ -239,7 +241,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate }) => {
             reader.onloadend = async () => {
                 const base64String = reader.result as string;
                 const base64Data = base64String.split(',')[1];
-                const result = await processVoiceNote(base64Data, blob.type);
+                const result = await processVoiceNote(base64Data, blob.type, selectedSubject, selectedClass);
                 setGeneratedNote(result);
                 handleSaveToHistory('NOTE', result.topic, result);
                 setActiveTab('VOICE');
@@ -464,32 +466,47 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate }) => {
                                 </motion.div>
 
                                 {/* Tool 1: Notes Converter */}
-                                <motion.div whileHover={{ y: -5 }} className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 flex flex-col items-center text-center cursor-pointer group hover:border-indigo-200 hover:shadow-md transition-all">
-                                    <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                                        <FileText className="w-8 h-8 text-blue-600" />
+                                <motion.div
+                                    whileHover={isOnline ? { y: -5 } : {}}
+                                    className={`bg-white p-6 rounded-3xl shadow-sm border border-slate-100 flex flex-col items-center text-center group transition-all ${isOnline ? 'cursor-pointer hover:border-indigo-200 hover:shadow-md' : 'opacity-60 grayscale cursor-not-allowed'}`}
+                                >
+                                    <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-4 transition-transform ${isOnline ? 'bg-blue-50 group-hover:scale-110' : 'bg-slate-100'}`}>
+                                        <FileText className={`w-8 h-8 ${isOnline ? 'text-blue-600' : 'text-slate-400'}`} />
                                     </div>
                                     <h3 className="font-bold text-lg text-slate-800 mb-2">Textbook to Lesson</h3>
-                                    <p className="text-sm text-slate-500 mb-6">Upload a photo. Get a structured lesson plan for {selectedClass}.</p>
-                                    <Button fullWidth variant="outline" onClick={() => document.getElementById('file-upload')?.click()}>
-                                        <Upload className="w-4 h-4 mr-2" /> Upload Photo
+                                    <p className="text-sm text-slate-500 mb-6">
+                                        {isOnline ? `Upload a photo. Get a structured lesson plan for ${selectedClass}.` : "Internet required for conversion."}
+                                    </p>
+                                    <Button
+                                        fullWidth
+                                        variant="outline"
+                                        onClick={isOnline ? () => document.getElementById('file-upload')?.click() : undefined}
+                                        disabled={!isOnline}
+                                    >
+                                        <Upload className="w-4 h-4 mr-2" /> {isOnline ? "Upload Photo" : "Disconnected"}
                                     </Button>
                                     <input type="file" id="file-upload" className="hidden" accept="image/*,.pdf" onChange={handleFileUpload} />
                                 </motion.div>
 
                                 {/* Tool 2: Voice Notes */}
-                                <motion.div whileHover={{ y: -5 }} className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 flex flex-col items-center text-center cursor-pointer group hover:border-purple-200 hover:shadow-md transition-all">
-                                    <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-4 transition-transform ${isRecording ? 'bg-red-100 animate-pulse scale-110' : 'bg-purple-50 group-hover:scale-110'}`}>
-                                        <Mic className={`w-8 h-8 ${isRecording ? 'text-red-500' : 'text-purple-600'}`} />
+                                <motion.div
+                                    whileHover={isOnline ? { y: -5 } : {}}
+                                    className={`bg-white p-6 rounded-3xl shadow-sm border border-slate-100 flex flex-col items-center text-center group transition-all ${isOnline ? 'cursor-pointer hover:border-purple-200 hover:shadow-md' : 'opacity-60 grayscale cursor-not-allowed'}`}
+                                >
+                                    <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-4 transition-transform ${isRecording ? 'bg-red-100 animate-pulse scale-110' : isOnline ? 'bg-purple-50 group-hover:scale-110' : 'bg-slate-100'}`}>
+                                        <Mic className={`w-8 h-8 ${isRecording ? 'text-red-500' : isOnline ? 'text-purple-600' : 'text-slate-400'}`} />
                                     </div>
                                     <h3 className="font-bold text-lg text-slate-800 mb-2">{isRecording ? "Recording..." : "Voice Lesson"}</h3>
-                                    <p className="text-sm text-slate-500 mb-6">Dictate your thoughts. We&apos;ll format them for {selectedSubject}.</p>
+                                    <p className="text-sm text-slate-500 mb-6">
+                                        {isOnline ? `Dictate your thoughts. We'll format them for ${selectedSubject}.` : "Internet required for recording."}
+                                    </p>
                                     {isRecording ? (
                                         <Button fullWidth onClick={stopRecording} className="bg-red-500 hover:bg-red-600 text-white border-transparent">
                                             <StopCircle className="w-4 h-4 mr-2" /> Stop & Process ({formatTime(recordingTime)})
                                         </Button>
                                     ) : (
-                                        <Button fullWidth variant="outline" onClick={startRecording}>
-                                            <Mic className="w-4 h-4 mr-2" /> Start Recording
+                                        <Button fullWidth variant="outline" onClick={isOnline ? startRecording : undefined} disabled={!isOnline}>
+                                            <Mic className="w-4 h-4 mr-2" /> {isOnline ? "Start Recording" : "Disconnected"}
                                         </Button>
                                     )}
                                 </motion.div>
@@ -575,13 +592,17 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate }) => {
                                             <div className="mt-6">
                                                 <Button
                                                     fullWidth
-                                                    onClick={handleAdvancedQuizGen}
-                                                    disabled={!advTopic || advFiles.length === 0}
-                                                    className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-200"
+                                                    onClick={isOnline ? handleAdvancedQuizGen : undefined}
+                                                    disabled={!isOnline || !advTopic || advFiles.length === 0}
+                                                    className={`shadow-lg ${isOnline ? 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-indigo-200' : 'bg-slate-100 text-slate-400 grayscale'}`}
                                                 >
-                                                    <Sparkles className="w-4 h-4 mr-2" /> Generate Exam
+                                                    <Sparkles className="w-4 h-4 mr-2" /> {isOnline ? "Generate Exam" : "Internet Required"}
                                                 </Button>
-                                                {!advTopic && <p className="text-[10px] text-center text-indigo-400 mt-2">Enter a topic and upload files to start.</p>}
+                                                {!isOnline ? (
+                                                    <p className="text-[10px] text-center text-slate-400 mt-2 font-bold uppercase tracking-wider">Connect to internet to use AI</p>
+                                                ) : !advTopic && (
+                                                    <p className="text-[10px] text-center text-indigo-400 mt-2">Enter a topic and upload files to start.</p>
+                                                )}
                                             </div>
                                         </div>
                                     </div>
@@ -612,8 +633,8 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate }) => {
                                                         key={item.id}
                                                         initial={{ opacity: 0, y: 10 }}
                                                         animate={{ opacity: 1, y: 0 }}
-                                                        onClick={() => loadHistoryItem(item)}
                                                         className="p-4 border border-slate-100 rounded-xl hover:bg-slate-50 cursor-pointer flex items-center justify-between group transition-all"
+                                                        onClick={() => loadHistoryItem(item)}
                                                     >
                                                         <div className="flex items-center gap-4">
                                                             <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${item.type === 'NOTE' ? 'bg-blue-100 text-blue-600' : 'bg-indigo-100 text-indigo-600'}`}>
@@ -626,7 +647,21 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate }) => {
                                                                 </p>
                                                             </div>
                                                         </div>
-                                                        <ArrowRight className="w-4 h-4 text-slate-300 group-hover:text-indigo-500" />
+                                                        <div className="flex items-center gap-2">
+                                                            <button
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    if (window.confirm("Are you sure you want to delete this lesson?")) {
+                                                                        deleteTeacherActivity(item.id);
+                                                                    }
+                                                                }}
+                                                                className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                                                                title="Delete Lesson"
+                                                            >
+                                                                <Trash2 className="w-4 h-4" />
+                                                            </button>
+                                                            <ArrowRight className="w-4 h-4 text-slate-300 group-hover:text-indigo-500" />
+                                                        </div>
                                                     </motion.div>
                                                 ))
                                         )}

@@ -141,7 +141,7 @@ export const LandingPage: React.FC = () => {
                                 <GraduationCap className="w-5 h-5 text-gray-500" /> Teachers
                             </button>
                             <button onClick={() => navigate('/revision')} className="flex items-center gap-2 text-gray-600 hover:text-orange-600 font-medium transition-colors">
-                                <BookOpen className="w-5 h-5 text-orange-500" /> Revision
+                                <BookOpen className="w-5 h-5 text-orange-500" /> Candidate Prep
                             </button>
                             <button onClick={() => navigate('/pricing')} className="flex items-center gap-2 text-gray-600 hover:text-indigo-600 font-medium transition-colors relative">
                                 <CreditCard className="w-5 h-5 text-indigo-500" /> Pricing
@@ -180,7 +180,7 @@ export const LandingPage: React.FC = () => {
                                     <GraduationCap className="w-5 h-5" /> Teachers
                                 </button>
                                 <button onClick={() => { navigate('/revision'); setMobileMenuOpen(false); }} className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 text-slate-600 font-medium">
-                                    <BookOpen className="w-5 h-5" /> Revision
+                                    <BookOpen className="w-5 h-5" /> Candidate Prep
                                 </button>
                                 <button onClick={() => { navigate('/pricing'); setMobileMenuOpen(false); }} className="flex items-center justify-between p-3 rounded-lg hover:bg-slate-50 text-slate-600 font-medium">
                                     <div className="flex items-center gap-3">
@@ -319,7 +319,7 @@ export const LandingPage: React.FC = () => {
                             <MessageSquare className="w-5 h-5" /> SIMPLE EXPLANATIONS
                         </div>
                         <div className="flex items-center gap-2 hover:text-green-600 transition-colors cursor-default">
-                            <CheckCircle className="w-5 h-5" /> SMART QUIZZES
+                            <CheckCircle className="w-5 h-5" /> NATIONAL EXAM PREP
                         </div>
                         <div className="flex items-center gap-2 hover:text-indigo-600 transition-colors cursor-default">
                             <Play className="w-5 h-5" /> DARASA MODE

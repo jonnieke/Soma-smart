@@ -1,18 +1,27 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { useApp } from '../../context/AppContext';
-import { Upload, BookOpen, Brain, TrendingUp, ArrowRight, ScanLine, X, Camera, Zap, CheckCircle, Smartphone, LogOut } from 'lucide-react';
-import { ViewState, RevisionMode } from '../../types';
+import { Upload, BookOpen, Brain, TrendingUp, ArrowRight, ScanLine, X, Camera, Zap, CheckCircle, Smartphone, LogOut, Filter, FileText, ChevronRight } from 'lucide-react';
+import { ViewState, RevisionMode, TeacherActivity } from '../../types';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface Props {
-    onStartSession: (file: File, mode: RevisionMode) => void;
+    onStartSession: (data: File | TeacherActivity, mode: RevisionMode) => void;
     onNavigate: (view: ViewState) => void;
 }
 
 export const RevisionLanding: React.FC<Props> = ({ onStartSession, onNavigate }) => {
-    const { logout } = useApp();
+    const { logout, availableQuizzes, fetchAvailableQuizzes, isOnline } = useApp();
     const [dragActive, setDragActive] = useState(false);
     const [selectedMode, setSelectedMode] = useState<RevisionMode>(RevisionMode.LEARN);
+    const [loadingQuizzes, setLoadingQuizzes] = useState(false);
+
+    // Fetch quizzes on mount
+    React.useEffect(() => {
+        if (isOnline) {
+            setLoadingQuizzes(true);
+            fetchAvailableQuizzes().finally(() => setLoadingQuizzes(false));
+        }
+    }, [isOnline]);
 
     // Camera State
     const [showCamera, setShowCamera] = useState(false);
@@ -105,10 +114,10 @@ export const RevisionLanding: React.FC<Props> = ({ onStartSession, onNavigate })
                     </div>
 
                     <h1 className="text-4xl font-black mb-3 tracking-tight leading-tight">
-                        Revision <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-300 to-indigo-300">Assistant</span>
+                        Candidate <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-300 to-indigo-300">Specialist</span>
                     </h1>
                     <p className="text-blue-100/80 font-medium text-lg max-w-sm leading-relaxed">
-                        Your AI tutor for exam mastery. Scan any past paper and get instant, step-by-step guidance.
+                        Your AI tutor for exam mastery. Scan any national past paper and get instant, step-by-step guidance.
                     </p>
                 </div>
             </div>
@@ -146,12 +155,12 @@ export const RevisionLanding: React.FC<Props> = ({ onStartSession, onNavigate })
                         className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white p-1 rounded-3xl shadow-xl shadow-blue-200 transition-all transform hover:scale-[1.02] group"
                     >
                         <div className="bg-white/10 border border-white/20 rounded-[1.3rem] p-6 flex items-center justify-between backdrop-blur-sm">
-                            <div className="flex items-center gap-5">
-                                <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center shadow-lg text-blue-600 group-hover:rotate-12 transition-transform duration-500">
+                            <div className="flex items-center gap-4">
+                                <div className="w-14 h-14 bg-white/20 rounded-2xl flex items-center justify-center">
                                     <Camera className="w-8 h-8" />
                                 </div>
                                 <div className="text-left">
-                                    <h3 className="font-bold text-xl">Scan with Camera</h3>
+                                    <h3 className="font-bold text-xl">Scan Candidate Paper</h3>
                                     <p className="text-blue-100 text-sm font-medium">Capture directly from paper</p>
                                 </div>
                             </div>
@@ -191,9 +200,54 @@ export const RevisionLanding: React.FC<Props> = ({ onStartSession, onNavigate })
                     </div>
                 </motion.div>
 
+                {/* TEST PAPERS LIBRARY */}
+                <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                        <h3 className="font-bold text-slate-800 text-lg">Test Papers Library</h3>
+                        <div className="flex gap-2">
+                            <span className="text-[10px] bg-indigo-100 text-indigo-700 font-bold px-2 py-1 rounded-full uppercase">Uploaded by Teachers</span>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-3">
+                        {loadingQuizzes ? (
+                            <div className="py-10 text-center bg-white rounded-3xl border border-slate-100">
+                                <div className="animate-spin w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full mx-auto mb-2"></div>
+                                <p className="text-xs text-slate-400">Fetching papers...</p>
+                            </div>
+                        ) : availableQuizzes.length === 0 ? (
+                            <div className="py-10 text-center bg-white rounded-3xl border border-slate-100 italic text-slate-400 text-sm">
+                                No test papers available yet.
+                            </div>
+                        ) : (
+                            availableQuizzes.map((quiz) => (
+                                <button
+                                    key={quiz.id}
+                                    onClick={() => onStartSession(quiz, selectedMode)}
+                                    className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm hover:border-indigo-300 hover:shadow-md transition-all text-left flex items-center justify-between group"
+                                >
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-12 h-12 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition-colors">
+                                            <FileText className="w-6 h-6" />
+                                        </div>
+                                        <div>
+                                            <h4 className="font-bold text-slate-800 group-hover:text-indigo-700 transition-colors uppercase text-sm tracking-tight">{quiz.title}</h4>
+                                            <div className="flex gap-2 mt-1">
+                                                <span className="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">{quiz.subject}</span>
+                                                <span className="text-[10px] bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full">{quiz.className}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <ChevronRight className="w-5 h-5 text-slate-300 group-hover:text-indigo-500 group-hover:translate-x-1 transition-all" />
+                                </button>
+                            ))
+                        )}
+                    </div>
+                </div>
+
                 {/* Features List */}
                 <div className="space-y-4 pt-4">
-                    <h4 className="font-bold text-slate-400 text-xs uppercase tracking-widest text-center">Why use Revision Assistant?</h4>
+                    <h4 className="font-bold text-slate-400 text-xs uppercase tracking-widest text-center">Why use Candidate Prep?</h4>
                     <div className="grid grid-cols-2 gap-3">
                         <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex flex-col gap-2">
                             <Zap className="w-6 h-6 text-amber-500" />

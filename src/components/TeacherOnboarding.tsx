@@ -47,12 +47,18 @@ export const TeacherOnboarding: React.FC<TeacherOnboardingProps> = ({ onComplete
     };
 
     const handleFinish = async () => {
-        if (name && email && password && classes.length > 0 && subjects.length > 0) {
+        // Capture pending input if any
+        let finalSubjects = [...subjects];
+        if (currentInput.trim() && !subjects.includes(currentInput.trim())) {
+            finalSubjects.push(currentInput.trim());
+        }
+
+        if (name && email && password && classes.length > 0 && finalSubjects.length > 0) {
             setLoading(true);
-            const result = await registerTeacher(name, email, password, classes, subjects);
+            const result = await registerTeacher(name, email, password, classes, finalSubjects);
 
             if (result.success) {
-                onComplete({ name, classes, subjects });
+                onComplete({ id: 'new', name, classes, subjects: finalSubjects });
             } else {
                 // Handle Error
                 if (result.message && (result.message.includes("already registered") || result.message.includes("unique constrain"))) {
@@ -155,7 +161,6 @@ export const TeacherOnboarding: React.FC<TeacherOnboardingProps> = ({ onComplete
                                     placeholder="e.g. Grade 4, Form 2"
                                     className="flex-1 p-3 border rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
                                 />
-                                <button onClick={handleAddClass} className="bg-indigo-100 text-indigo-600 p-3 rounded-xl hover:bg-indigo-200"><Plus className="w-6 h-6" /></button>
                             </div>
 
                             <div className="flex flex-wrap gap-2 min-h-[100px]">
@@ -169,7 +174,19 @@ export const TeacherOnboarding: React.FC<TeacherOnboardingProps> = ({ onComplete
 
                             <div className="flex gap-3">
                                 <Button variant="secondary" onClick={() => setStep(1)} className="flex-1">Back</Button>
-                                <Button onClick={() => { setCurrentInput(""); setStep(3); }} disabled={classes.length === 0} className="flex-1">Next</Button>
+                                <Button
+                                    onClick={() => {
+                                        if (currentInput.trim()) {
+                                            setClasses([...classes, currentInput.trim()]);
+                                        }
+                                        setCurrentInput("");
+                                        setStep(3);
+                                    }}
+                                    disabled={classes.length === 0 && !currentInput.trim()}
+                                    className="flex-1"
+                                >
+                                    Next
+                                </Button>
                             </div>
                         </div>
                     )}
@@ -186,7 +203,6 @@ export const TeacherOnboarding: React.FC<TeacherOnboardingProps> = ({ onComplete
                                     placeholder="e.g. Mathematics, Science"
                                     className="flex-1 p-3 border rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
                                 />
-                                <button onClick={handleAddSubject} className="bg-indigo-100 text-indigo-600 p-3 rounded-xl hover:bg-indigo-200"><Plus className="w-6 h-6" /></button>
                             </div>
 
                             <div className="flex flex-wrap gap-2 min-h-[100px]">
@@ -200,7 +216,11 @@ export const TeacherOnboarding: React.FC<TeacherOnboardingProps> = ({ onComplete
 
                             <div className="flex gap-3">
                                 <Button variant="secondary" onClick={() => setStep(2)} className="flex-1">Back</Button>
-                                <Button onClick={handleFinish} disabled={subjects.length === 0 || loading} className="flex-1 bg-green-600 hover:bg-green-700">
+                                <Button
+                                    onClick={handleFinish}
+                                    disabled={(subjects.length === 0 && !currentInput.trim()) || loading}
+                                    className="flex-1 bg-green-600 hover:bg-green-700"
+                                >
                                     {loading ? "Creating Account..." : "Complete Setup"}
                                 </Button>
                             </div>

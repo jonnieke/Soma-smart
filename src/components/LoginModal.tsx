@@ -9,9 +9,10 @@ interface LoginModalProps {
     onClose: () => void;
     initialTab?: 'STUDENT' | 'TEACHER';
     onSwitchToRegister?: () => void;
+    onSuccess?: () => void;
 }
 
-export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, initialTab = 'STUDENT', onSwitchToRegister }) => {
+export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, initialTab = 'STUDENT', onSwitchToRegister, onSuccess }) => {
     const { login, loginTeacher, recoverStudentId, resetPassword } = useApp();
     const navigate = useNavigate();
 
@@ -62,7 +63,8 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, initial
         login(recentCode).then(success => {
             if (success) {
                 onClose();
-                navigate('/learner');
+                if (onSuccess) onSuccess();
+                else navigate('/learner');
             }
             else setError("Expired or Invalid ID");
         });
@@ -84,7 +86,8 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, initial
             const success = await login(code);
             if (success) {
                 onClose();
-                navigate('/learner');
+                if (onSuccess) onSuccess();
+                else navigate('/learner');
             } else {
                 setError("Invalid Student ID. Please check and try again.");
             }

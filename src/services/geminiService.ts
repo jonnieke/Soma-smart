@@ -1,5 +1,6 @@
 import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
 import { ExplanationResult, QuizData, TeacherNote, RevisionMode, TutoringStep, ExamQuestion, ExamAnalysis, TutorResponse, LessonResult } from "../types";
+import { speak as ttSpeak, stopSpeech as ttStop } from "./elevenLabsService";
 
 const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
 
@@ -51,10 +52,11 @@ export const explainImage = async (base64Image: string, mimeType: string, level:
 
   const prompt = `
     Analyze this image. It is likely a textbook page, homework, or notes.
-    1. Extract the main topic.
-    2. Explain the content in ${level === 'Simple' ? 'very simple language for a young student' : 'exam-ready academic language'}.
-    3. Provide 3-5 short bullet points summarizing the key takeaways.
-    4. Suggest 3 short related topics for further learning.
+    1. Extract the main topic and identify the subject.
+    2. LANGUAGE RULE: If the subject is "Kiswahili" or "Swahili", you MUST respond in Swahili. For ALL other subjects (Mathematics, Science, etc.), you MUST respond ONLY in English.
+    3. Explain the content in ${level === 'Simple' ? 'very simple language for a young student' : 'exam-ready academic language'}.
+    4. Provide 3-5 short bullet points summarizing the key takeaways.
+    5. Suggest 3 short related topics for further learning.
     
     Output JSON.
   `;
@@ -98,10 +100,11 @@ export const explainAudio = async (base64Audio: string, mimeType: string, level:
   const prompt = `
     Listen to this audio. It is likely a student asking a question or reading study material.
     1. Transcribe the audio to text.
-    2. Extract the main topic.
-    3. Explain the content or answer the question in ${level === 'Simple' ? 'very simple language for a young student' : 'exam-ready academic language'}.
-    4. Provide 3-5 short bullet points summarizing the key takeaways.
-    5. Suggest 3 short related topics for further learning.
+    2. Extract the main topic and identify the subject.
+    3. LANGUAGE RULE: If the subject is "Kiswahili" or "Swahili", you MUST respond in Swahili. For ALL other subjects, you MUST respond ONLY in English.
+    4. Explain the content or answer the question in ${level === 'Simple' ? 'very simple language for a young student' : 'exam-ready academic language'}.
+    5. Provide 3-5 short bullet points summarizing the key takeaways.
+    6. Suggest 3 short related topics for further learning.
     
     Output JSON.
   `;
@@ -159,10 +162,11 @@ export const explainTopic = async (topic: string, level: 'Simple' | 'Exam'): Pro
   const prompt = `
     ${contextInstruction}
 
-    Explain the topic "${topic}" in ${level === 'Simple' ? 'very simple language for a young student' : 'exam-ready academic language'}.
-    1. Provide a clear explanation.
-    2. Provide 3-5 short bullet points summarizing key takeaways.
-    3. Suggest 3 short related topics for further learning.
+    1. Identify the subject of the topic "${topic}".
+    2. LANGUAGE RULE: If the subject is "Kiswahili" or "Swahili", you MUST respond in Swahili. For ALL other subjects, you MUST respond ONLY in English.
+    3. Explain the topic in ${level === 'Simple' ? 'very simple language for a young student' : 'exam-ready academic language'}.
+    4. Provide 3-5 short bullet points summarizing key takeaways.
+    5. Suggest 3 short related topics for further learning.
     
     Output JSON.
   `;
@@ -215,8 +219,10 @@ export const generateQuiz = async (content: string, topic: string): Promise<Quiz
     Based on the following content about "${topic}":
     "${content.substring(0, 5000)}" 
     
-    Generate a quiz with:
-    - Exactly 3 Multiple Choice Questions (MCQ)
+    1. Identify the subject. 
+    2. LANGUAGE RULE: If the subject is "Kiswahili" or "Swahili", you MUST generate the quiz in Swahili. For ALL other subjects, generate the quiz ONLY in English.
+    3. Generate a quiz with:
+       - Exactly 3 Multiple Choice Questions (MCQ)
     
     For each question, provide the correct answer and a brief explanation of why.
     Output JSON.
@@ -286,34 +292,18 @@ export const generateQuickQuiz = async (content: string, topic: string): Promise
   }
 };
 
+// Redefine generateSpeech to use ElevenLabs
 export const generateSpeech = async (text: string): Promise<void> => {
-  // Use Browser Native TTS for robustness and zero cost/latency
-  return new Promise((resolve, reject) => {
-    try {
-      if (!window.speechSynthesis) {
-        reject(new Error("Browser does not support TTS"));
-        return;
-      }
+  return ttSpeak(text);
+};
 
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = 'en-US'; // Default to English, could be dynamic
-      utterance.rate = 1.0;
-      utterance.pitch = 1.0;
-
-      utterance.onend = () => resolve();
-      utterance.onerror = (e) => reject(e);
-
-      window.speechSynthesis.cancel(); // Cancel any current speech
-      window.speechSynthesis.speak(utterance);
-    } catch (e) {
-      reject(e);
-    }
-  });
+export const stopSpeech = () => {
+  ttStop();
 };
 
 // --- TEACHER FEATURES ---
 
-export const convertNotes = async (base64Data: string, mimeType: string): Promise<TeacherNote> => {
+export const convertNotes = async (base64Data: string, mimeType: string, subject?: string, className?: string): Promise<TeacherNote> => {
   const model = genAI.getGenerativeModel({
     model: MODEL_NAME,
     generationConfig: {
@@ -332,8 +322,10 @@ export const convertNotes = async (base64Data: string, mimeType: string): Promis
 
   const prompt = `
     Analyze this document. 
-    1. Create structured lesson notes (headings, key concepts, examples).
-    2. Create a simplified version suitable for students to study from directly.
+    1. CONTEXT: The teacher has indicated this is for ${subject || 'a school subject'} and the students are in ${className || 'a Kenyan classroom'}.
+    2. LANGUAGE RULE: If the subject is "Kiswahili" or "Swahili", you MUST respond in Swahili. For ALL other subjects, you MUST respond ONLY in English.
+    3. Create structured lesson notes (headings, key concepts, examples) targeted at the appropriate academic level for ${className || 'this grade'}.
+    4. Create a simplified version suitable for students to study from directly.
     
     Output JSON.
   `;
@@ -359,7 +351,7 @@ export const convertNotes = async (base64Data: string, mimeType: string): Promis
   }
 };
 
-export const processVoiceNote = async (audioBase64: string, mimeType: string = "audio/mp3"): Promise<TeacherNote> => {
+export const processVoiceNote = async (audioBase64: string, mimeType: string = "audio/mp3", subject?: string, className?: string): Promise<TeacherNote> => {
   const model = genAI.getGenerativeModel({
     model: MODEL_NAME,
     generationConfig: {
@@ -377,7 +369,7 @@ export const processVoiceNote = async (audioBase64: string, mimeType: string = "
   });
 
   const prompt = `
-        You are an expert Study Companion (like NotebookLM) for a Grade 2 classroom.
+        You are an expert Study Companion (like NotebookLM) for a Kenyan classroom.
         
         TASK 1: LISTEN & VERIFY
         - Listen to the audio.
@@ -389,11 +381,13 @@ export const processVoiceNote = async (audioBase64: string, mimeType: string = "
         
         TASK 2: TRANSCRIBE & SIMPLIFY (Only if speech is clear)
         - Transcribe the teacher's lesson.
-        - Create a "NotebookLM Style" Study Guide:
+        - CONTEXT: This lesson is about ${subject || 'a specific subject'} for students in ${className || 'a Kenyan classroom'}.
+        - LANGUAGE RULE: If the subject is "Kiswahili" or "Swahili", you MUST respond in Swahili. For ALL other subjects, you MUST respond ONLY in English.
+        - Create a "NotebookLM Style" Study Guide targeted at ${className || 'the students level'}:
           1. **Topic**: A fun, catchy title.
           2. **The Big Idea**: One simple sentence explaining what this is about.
-          3. **Key Points**: 3-4 bullet points using simple words (Grade 2 level).
-          4. **Fun Fact / Example**: A relatable example for a 7-year-old.
+          3. **Key Points**: 3-4 bullet points using simple words.
+          4. **Fun Fact / Example**: A relatable example.
         
         Format as JSON.
     `;
@@ -486,10 +480,12 @@ export const generateAdvancedTeacherQuiz = async (
     Source Material: Use the attached images as context.
     
     Requirements:
-    1. Generate EXACTLY ${count} questions.
-    2. Format: ${type === 'MCQ' ? 'Multiple Choice Questions (4 options)' : 'Short Answer / Structured Questions (No options)'}.
-    3. Standard: Align with Kenyan CBC standards (Scenario-based, Critical Thinking, Application).
-    4. Language: Academic and age-appropriate for ${grade}.
+    1. Subject identification: Identify the subject from the topic or content.
+    2. LANGUAGE RULE: If the subject is "Kiswahili" or "Swahili", you MUST generate the quiz in Swahili. For ALL other subjects, generate the quiz ONLY in English.
+    3. Generate EXACTLY ${count} questions.
+    4. Format: ${type === 'MCQ' ? 'Multiple Choice Questions (4 options)' : 'Short Answer / Structured Questions (No options)'}.
+    5. Standard: Align with Kenyan CBC standards (Scenario-based, Critical Thinking, Application).
+    6. Language: Academic and age-appropriate for ${grade}.
     
     Output JSON structure:
     {
@@ -528,7 +524,7 @@ export const askSoma = async (userQuery: string, chatHistory: { role: 'user' | '
   const model = genAI.getGenerativeModel({ model: MODEL_NAME });
 
   // Construct prompt with history manually
-  const systemInstruction = "You are Soma, a helpful, friendly, and encouraging AI learning assistant for the Soma Smart app. Your goal is to guide students, parents, and teachers.\\n\\nFEATURES & NAVIGATION:\\n1. **Scanning**: Tell them they can scan textbooks to get simple explanations.\\n2. **Voice Notes**: Explain how teachers can record notes to simplify them.\\n3. **Quizzes**: Mention that quizzes are auto-generated from their content.\\n4. **Student ID**: Remind them their ID is for login and parent tracking.\\n\\nIMPORTANT: You can direct users to specific features. Use these EXACT links:\\n- To go to Darasa Mode (Teacher recording): [Darasa Mode](/teacher/darasa)\\n- To go to Student Dashboard: [Student Dashboard](/learner)\\n- To go to Teacher Dashboard: [Teacher Dashboard](/teacher)\\n- To go to Revision Portal: [Revision Portal](/revision)\\n\\nKeep answers short (under 3 sentences) and fun. Use emojis! 🌟";
+  const systemInstruction = "You are Soma, a helpful AI assistant for the Soma Smart app. Your goal is to guide students, parents, and teachers.\\n\\nFEATURES & NAVIGATION:\\n1. **Scanning**: Tell them they can scan textbooks for simple explanations.\\n2. **Candidate Revision**: For students in final years (Grade 6, 9, Form 4), mention our high-impact Candidate Exam Prep for National Exams.\\n3. **Voice Notes**: Explain how teachers simplify notes via recordings.\\n\\nIMPORTANT: You can direct users to specific features. Use these EXACT links:\\n- To go to Candidate Exam Prep: [Candidate Revision](/revision)\\n- To go to Student Dashboard: [Student Dashboard](/learner)\\n- To go to Teacher Dashboard: [Teacher Dashboard](/teacher)\\n\\nKeep answers short (under 3 sentences) and fun. Use emojis! 🌟";
 
   const historyText = chatHistory.map(msg => `${msg.role === 'user' ? 'User' : 'Soma'}: ${msg.text}`).join('\\n');
   const fullPrompt = `${systemInstruction}\\n\\n${historyText}\\nUser: ${userQuery}\\nSoma:`;
@@ -643,10 +639,10 @@ export const getRevisionTutorResponse = async (
   });
 
   const systemInstruction = `
-    You are Soma Smart Revision Assist, an expert CBC/CBE-aligned learning coach for Kenyan learners.
-    Tone: Patient, Encouraging, Clear, Non-judgmental.
+    You are Soma Smart Candidate Coach, an expert national exam specialist for Kenyan Candidates (KCSE, KPSEA, KEPSEA).
+    Tone: Professional, High-Stakes Focused, Encouraging, and Strategic.
     
-    Your goal is to guide the learner through ONE question at a time using a strict 4-step pedagogical flow.
+    Your goal is to guide the candidate THROUGH one national exam question at a time using a strict pedagogical flow.
     
     Current Question: "${question.text}"
     Topic: ${question.topic}
@@ -656,11 +652,13 @@ export const getRevisionTutorResponse = async (
     Mode: ${mode}
     
     INSTRUCTIONS FOR CURRENT STEP:
+    1. Identify the subject from the topic or question text.
+    2. LANGUAGE RULE: If the subject is "Kiswahili" or "Swahili", you MUST respond in Swahili. For ALL other subjects, you MUST respond ONLY in English.
     
     IF STEP = 'A_UNDERSTAND':
       - Ask: "What is this question testing?"
       - Explain the competency and real-life importance.
-      - Rewrite visual quesiton in simple words if needed.
+      - Rewrite visual question in simple words if needed.
       - DO NOT GIVE THE ANSWER.
       
     IF STEP = 'B_THINKING':
@@ -670,7 +668,7 @@ export const getRevisionTutorResponse = async (
       - DO NOT GIVE THE ANSWER.
       
     IF STEP = 'C_SOLUTION':
-      - provide step-by-step solution in simple language.
+      - Provide step-by-step solution in simple language.
       - Number your steps.
       - Show formulas/reasoning clearly.
       
@@ -734,23 +732,25 @@ export const generateLessonRecap = async (inputBase64: string, mimeType: string,
 
   const learnerPrompt = `
     You are an expert tutor helping a student understand a live lesson they just attended.
-    1. Analyze the recording/notes.
-    2. Extract the Main Topic.
-    3. Write a fun, simple Summary (2-3 sentences).
-    4. List 5 Key Points (Bullet points).
-    5. Highlight 3 "Exam Tips" - things they must remember for tests.
-    6. define 3 key terms used.
+    1. Analyze the recording/notes and identify the subject.
+    2. LANGUAGE RULE: If the subject is "Kiswahili" or "Swahili", you MUST respond in Swahili. For ALL other subjects, you MUST respond ONLY in English.
+    3. Extract the Main Topic.
+    4. Write a fun, simple Summary (2-3 sentences).
+    5. List 5 Key Points (Bullet points).
+    6. Highlight 3 "Exam Tips" - things they must remember for tests.
+    7. Define 3 key terms used.
     
     Output JSON.
   `;
 
   const teacherPrompt = `
     You are a curriculum expert summarizing a lesson for a fellow teacher.
-    1. Analyze the recording/notes.
-    2. Extract Topic and Competencies covered.
-    3. Provide a professional Summary.
-    4. List Key Teaching Points.
-    5. Suggest 3 Follow-up assessment ideas.
+    1. Analyze the recording/notes and identify the subject.
+    2. LANGUAGE RULE: If the subject is "Kiswahili" or "Swahili", you MUST respond in Swahili. For ALL other subjects, you MUST respond ONLY in English.
+    3. Extract Topic and Competencies covered.
+    4. Provide a professional Summary.
+    5. List Key Teaching Points.
+    6. Suggest 3 Follow-up assessment ideas.
     
     Output JSON compatible with the schema, mapping 'teacherNotes' to specific pedagogy comments.
   `;
@@ -822,10 +822,11 @@ export const generateDarasaLesson = async (audioBase64: string, mimeType: string
     You are an expert Teaching Assistant for a Kenyan Classroom.
     
     TASK 1: ANALYZE RECORDING
-    Listen to this teacher's lesson recording carefully.
+    Listen to this teacher's lesson recording carefully. Identify the subject.
     
     TASK 2: COMPREHENSIVE NOTES
-    Create detailed, professional-grade teacher notes (not just a summary). 
+    Create detailed, professional-grade teacher notes.
+    - LANGUAGE RULE: If the subject is "Kiswahili" or "Swahili", you MUST respond in Swahili. For ALL other subjects, you MUST respond ONLY in English.
     - **Introduction**: Briefly introduce the topic.
     - **Core Concepts**: Explain 3-5 main concepts covered in depth.
     - **Examples**: Provide 2-3 real-world examples mentioned or relevant to the context.
@@ -910,11 +911,12 @@ export const generateDarasaRevision = async (imageBase64: string, mimeType: stri
 
   const prompt = `
     You are an expert Teaching Assistant for a Kenyan Classroom.
-    1. Analyze this image of lesson notes or a textbook page.
-    2. Extract the Main Topic.
-    3. Write a clear, simple Summary (2-3 sentences).
-    4. Create "Simplified Notes" broken into logical sections (Title + Content).
-    5. Generate a Quiz with 3-5 Multiple Choice Questions based DIRECTLY on the content.
+    1. Analyze this image of lesson notes or a textbook page. Identify the subject.
+    2. LANGUAGE RULE: If the subject is "Kiswahili" or "Swahili", you MUST respond in Swahili. For ALL other subjects, you MUST respond ONLY in English.
+    3. Extract the Main Topic.
+    4. Write a clear, simple Summary (2-3 sentences).
+    5. Create "Simplified Notes" broken into logical sections (Title + Content).
+    6. Generate a Quiz with 3-5 Multiple Choice Questions based DIRECTLY on the content.
 
     Output structured JSON matching this schema:
     {

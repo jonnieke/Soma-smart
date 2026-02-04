@@ -11,6 +11,7 @@ import { AskSoma } from './components/AskSoma';
 import { DarasaMode } from './features/darasa-mode/DarasaMode';
 import { ResetPassword } from './pages/ResetPassword';
 import { PricingPage } from './pages/PricingPage';
+import { ConnectivityBanner } from './components/ConnectivityBanner';
 
 const DarasaPage = () => {
     const navigate = useNavigate();
@@ -21,6 +22,7 @@ const App: React.FC = () => {
     return (
         <Router>
             <AppProvider>
+                <ConnectivityBanner />
                 <AskSoma />
                 <Routes>
                     <Route path="/" element={<LandingPage />} />

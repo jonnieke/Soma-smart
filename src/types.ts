@@ -59,6 +59,7 @@ export interface LearnerActivity {
   date: string;
   score?: number; // percentage
   details?: string;
+  pendingSync?: boolean;
 }
 
 export interface GeoLocation {
@@ -91,6 +92,7 @@ export interface TeacherActivity {
   subject: string;
   date: string;
   content: any; // The full Note or Quiz object
+  pendingSync?: boolean;
 }
 
 // --- REVISION ASSISTANT TYPES ---

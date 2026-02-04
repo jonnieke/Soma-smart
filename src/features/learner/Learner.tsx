@@ -9,7 +9,7 @@ import {
 import { useApp } from '../../context/AppContext';
 import { RevisionLanding } from '../revision/RevisionLanding';
 import { RevisionSession } from '../revision/RevisionSession';
-import { ExplanationResult, QuizData, RevisionMode, TutoringStep, ViewState, SubscriptionPlan, LearnerProfile, LearnerActivity } from '../../types';
+import { ExplanationResult, QuizData, RevisionMode, TutoringStep, ViewState, SubscriptionPlan, LearnerProfile, LearnerActivity, TeacherActivity } from '../../types';
 import { PricingPage } from '../subscription/PricingPage';
 import { PaymentFlow } from '../subscription/PaymentFlow';
 import { STUDENT_PLANS } from '../../data/pricing';
@@ -18,7 +18,7 @@ import { LoginModal } from '../../components/LoginModal'; // Assuming path
 import { MarkdownText, Button, Card } from '../../components/Shared';
 import {
   fileToGenerativePart, explainImage, explainAudio, explainTopic,
-  generateQuickQuiz, generateQuiz, generateSpeech, generateLessonRecap
+  generateQuickQuiz, generateQuiz, generateSpeech, stopSpeech, generateLessonRecap
 } from '../../services/geminiService';
 import confetti from 'canvas-confetti';
 import { calculateTotalXP, calculateLevel } from '../../services/gamificationService';
@@ -41,7 +41,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
     learnerHistory: history, saveActivity, deleteActivity, studentCode,
     usageCount, incrementUsage, isRegistered, studentProfile,
     isPromoActive, upgradeAccount, revisionUsageCount, incrementRevisionUsage,
-    logout, isPro, subscriptionPlan
+    logout, isPro, subscriptionPlan, isOnline
   } = useApp();
   const location = useLocation();
 
@@ -110,7 +110,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
   const [imageData, setImageData] = useState<{ base64: string, mimeType: string } | null>(null);
 
   // Revision State
-  const [revisionFile, setRevisionFile] = useState<File | null>(null);
+  const [revisionData, setRevisionData] = useState<File | TeacherActivity | null>(null);
   const [revisionMode, setRevisionMode] = useState<RevisionMode>(RevisionMode.LEARN);
 
   const [loading, setLoading] = useState(false);
@@ -131,6 +131,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
   const [showCamera, setShowCamera] = useState(false);
   const [scanStatus, setScanStatus] = useState<'idle' | 'scanning' | 'success' | 'STABILIZING' | 'CAPTURING' | 'LOOKING'>('idle');
   const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan | null>(null);
+  const [promptText, setPromptText] = useState("");
 
   // Refs
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -511,6 +512,13 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
     }
   };
 
+  const handlePromptSubmit = async () => {
+    if (!promptText.trim()) return;
+    const query = promptText.trim();
+    setPromptText("");
+    await handleTopicClick(query);
+  };
+
   const handleDownload = () => {
     if (!explanation) return;
     const textContent = `Topic: ${explanation.topic}
@@ -536,7 +544,7 @@ ${explanation.explanation}
     if (item.type === 'EXPLANATION' && item.details) {
       try {
         const details = JSON.parse(item.details);
-        if (details.explanation) {
+        if (details && details.explanation) {
           setExplanation(details.explanation);
           // Restore image if present
           if (details.imageBase64) {
@@ -615,8 +623,8 @@ ${explanation.explanation}
   };
 
   const handleTTS = async () => {
-    if (window.speechSynthesis.speaking) {
-      window.speechSynthesis.cancel();
+    if (isPlaying) {
+      stopSpeech();
       setIsPlaying(false);
       return;
     }
@@ -624,23 +632,18 @@ ${explanation.explanation}
     if (!explanation) return;
 
     setLoading(true);
-    setLoadingText("Generating voice...");
+    setLoadingText("Generating high-quality voice...");
     try {
       const textToRead = `${explanation.topic}. ${explanation.summaryPoints.join('. ')}. Here is the explanation: ${explanation.explanation}`;
 
       setIsPlaying(true);
       await generateSpeech(textToRead);
-      setIsPlaying(false);
     } catch (e: any) {
-      console.error("ElevenLabs Error:", e);
-      // Show audible or visual warning that we are falling back
-      alert(`Premium Voice Error: ${e.message || "Unknown"}. Using standard voice.`);
-
-      const textToRead = explanation.summaryPoints.join(". ") + ". " + explanation.explanation;
-      const u = new SpeechSynthesisUtterance(textToRead);
-      u.onend = () => setIsPlaying(false);
-      window.speechSynthesis.speak(u);
+      console.error("TTS Error:", e);
+      // generateSpeech already has a fallback to browser TTS inside, 
+      // but if even that fails, we stop loading.
     } finally {
+      setIsPlaying(false);
       setLoading(false);
     }
   };
@@ -779,7 +782,7 @@ ${explanation.explanation}
       if (h.type !== 'EXPLANATION') return false;
       try {
         const d = JSON.parse(h.details || '{}');
-        return d.source === 'audio';
+        return d?.source === 'audio';
       } catch { return false; }
     });
 
@@ -787,7 +790,7 @@ ${explanation.explanation}
       if (h.type !== 'EXPLANATION') return false;
       try {
         const d = JSON.parse(h.details || '{}');
-        return d.source === 'image';
+        return d?.source === 'image';
       } catch { return false; }
     });
 
@@ -914,6 +917,75 @@ ${explanation.explanation}
               {3 - usageCount} free scans remaining. <button onClick={() => setMode('PRICING' as any)} className="text-blue-600 font-bold hover:underline">Subscribe for Feb 27 Launch</button>
             </p>
           )}
+
+          {/* QUICK PROMPT FIELD */}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+            className={`mt-8 relative z-30 ${!isOnline ? 'opacity-50 grayscale-[0.5] pointer-events-none' : ''}`}
+          >
+            <div className="flex items-center gap-2 mb-3 pl-1">
+              <Sparkles className={`w-5 h-5 ${isOnline ? 'text-blue-600 animate-pulse' : 'text-slate-400'}`} />
+              <h2 className="text-xl font-extrabold text-slate-800 tracking-tight">
+                {isOnline ? "Ask Soma Anything!" : "Ask Soma (Offline)"}
+              </h2>
+              {!isOnline && <span className="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full font-bold uppercase">Internet Required</span>}
+            </div>
+
+            <div className="bg-white rounded-3xl shadow-2xl shadow-blue-200/60 border-2 border-blue-400/30 p-2 flex items-end gap-2 pr-4 focus-within:border-blue-500 transition-all">
+              <div className="flex gap-1 pl-2 mb-2">
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  className="p-2.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-2xl transition-all"
+                  title="Upload Image"
+                >
+                  <ImageIcon className="w-5 h-5" />
+                </button>
+                <button
+                  onClick={isRecording ? stopRecording : startRecording}
+                  className={`p-2.5 rounded-2xl transition-all ${isRecording ? 'text-red-500 bg-red-50' : 'text-slate-400 hover:text-purple-600 hover:bg-purple-50'}`}
+                  title="Record Audio"
+                >
+                  {isRecording ? <div className="w-4 h-4 bg-red-500 rounded-sm animate-pulse" /> : <Mic className="w-5 h-5" />}
+                </button>
+              </div>
+
+              <textarea
+                value={promptText}
+                onChange={(e) => setPromptText(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handlePromptSubmit();
+                  }
+                }}
+                placeholder="Ask Soma anything... (type, upload, or record)"
+                rows={1}
+                className="flex-1 bg-transparent border-0 focus:ring-0 text-slate-700 text-base font-medium py-3 px-2 min-h-[44px] max-h-32 resize-none"
+                style={{ height: 'auto' }}
+                onInput={(e) => {
+                  const target = e.target as HTMLTextAreaElement;
+                  target.style.height = 'auto';
+                  target.style.height = `${target.scrollHeight}px`;
+                }}
+              />
+
+              <button
+                onClick={handlePromptSubmit}
+                disabled={!promptText.trim() || loading}
+                className={`p-3 rounded-2xl transition-all mb-1 ${promptText.trim() ? 'bg-blue-600 text-white shadow-lg shadow-blue-300 scale-105 active:scale-95' : 'bg-slate-100 text-slate-300'}`}
+              >
+                <ArrowRight className="w-5 h-5" />
+              </button>
+            </div>
+            {isRecording && (
+              <div className="absolute -top-10 left-6 bg-red-500 text-white text-xs font-bold px-3 py-1 rounded-full animate-bounce shadow-lg flex items-center gap-2">
+                <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
+                Recording... {formatTime(recordingTime)}
+              </div>
+            )}
+          </motion.div>
         </div>
 
         {/* --- MAGIC TOOLS --- */}
@@ -988,96 +1060,108 @@ ${explanation.explanation}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {/* Camera Action */}
               <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={startCamera}
-                className="col-span-2 bg-gradient-to-br from-blue-500 to-blue-600 text-white p-5 rounded-2xl shadow-lg shadow-blue-200 flex items-center justify-between group overflow-hidden relative"
+                whileHover={isOnline ? { scale: 1.02 } : {}}
+                whileTap={isOnline ? { scale: 0.98 } : {}}
+                onClick={isOnline ? startCamera : undefined}
+                className={`col-span-2 p-5 rounded-2xl shadow-lg flex items-center justify-between group overflow-hidden relative transition-all ${isOnline ? 'bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-blue-200' : 'bg-slate-100 text-slate-400 cursor-not-allowed grayscale'}`}
               >
                 <div className="relative z-10 text-left">
-                  <div className="bg-white/20 w-10 h-10 rounded-full flex items-center justify-center mb-3">
-                    <Camera className="w-5 h-5 text-white" />
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center mb-3 ${isOnline ? 'bg-white/20' : 'bg-slate-200'}`}>
+                    <Camera className={`w-5 h-5 ${isOnline ? 'text-white' : 'text-slate-400'}`} />
                   </div>
                   <h3 className="text-xl font-bold">Scan Homework</h3>
-                  <p className="text-blue-100 text-xs">Snap a photo to understand instantly</p>
+                  <p className={`${isOnline ? 'text-blue-100' : 'text-slate-400'} text-xs`}>
+                    {isOnline ? "Snap a photo to understand instantly" : "Connect to internet to scan"}
+                  </p>
                 </div>
-                <div className="absolute right-[-20px] bottom-[-20px] opacity-20 transform rotate-12 group-hover:rotate-0 transition-transform duration-500">
-                  <ScanLine className="w-32 h-32" />
-                </div>
+                {isOnline && (
+                  <div className="absolute right-[-20px] bottom-[-20px] opacity-20 transform rotate-12 group-hover:rotate-0 transition-transform duration-500">
+                    <ScanLine className="w-32 h-32" />
+                  </div>
+                )}
               </motion.button>
 
               {/* Exam Revision Action */}
               <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={() => setMode('REVISION')}
-                className="col-span-2 bg-gradient-to-br from-amber-500 to-orange-600 text-white p-5 rounded-2xl shadow-lg shadow-orange-200 flex items-center justify-between group overflow-hidden relative"
+                whileHover={isOnline ? { scale: 1.02 } : {}}
+                whileTap={isOnline ? { scale: 0.98 } : {}}
+                onClick={isOnline ? () => setMode('REVISION') : undefined}
+                className={`col-span-2 p-5 rounded-2xl shadow-lg flex items-center justify-between group overflow-hidden relative transition-all ${isOnline ? 'bg-gradient-to-br from-amber-500 to-orange-600 text-white shadow-orange-200' : 'bg-slate-100 text-slate-400 cursor-not-allowed grayscale'}`}
               >
                 <div className="relative z-10 text-left">
-                  <div className="bg-white/20 w-10 h-10 rounded-full flex items-center justify-center mb-3">
-                    <Brain className="w-5 h-5 text-white" />
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center mb-3 ${isOnline ? 'bg-white/20' : 'bg-slate-200'}`}>
+                    <Brain className={`w-5 h-5 ${isOnline ? 'text-white' : 'text-slate-400'}`} />
                   </div>
                   <h3 className="text-xl font-bold">Exam Revision</h3>
-                  <p className="text-orange-100 text-xs">Upload past papers & get AI coaching</p>
+                  <p className={`${isOnline ? 'text-orange-100' : 'text-slate-400'} text-xs`}>
+                    {isOnline ? "Upload past papers & get AI coaching" : "Connect to internet for coaching"}
+                  </p>
                 </div>
-                <div className="absolute right-[-20px] bottom-[-20px] opacity-20 transform rotate-12 group-hover:rotate-0 transition-transform duration-500">
-                  <BookOpen className="w-32 h-32" />
-                </div>
+                {isOnline && (
+                  <div className="absolute right-[-20px] bottom-[-20px] opacity-20 transform rotate-12 group-hover:rotate-0 transition-transform duration-500">
+                    <BookOpen className="w-32 h-32" />
+                  </div>
+                )}
               </motion.button>
 
               {/* Lesson Recap Action (NEW) */}
               <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={() => document.getElementById('recap-upload')?.click()}
-                className="col-span-2 bg-gradient-to-br from-red-500 to-pink-600 text-white p-5 rounded-2xl shadow-lg shadow-pink-200 flex items-center justify-between group overflow-hidden relative"
+                whileHover={isOnline ? { scale: 1.02 } : {}}
+                whileTap={isOnline ? { scale: 0.98 } : {}}
+                onClick={isOnline ? () => document.getElementById('recap-upload')?.click() : undefined}
+                className={`col-span-2 p-5 rounded-2xl shadow-lg flex items-center justify-between group overflow-hidden relative transition-all ${isOnline ? 'bg-gradient-to-br from-red-500 to-pink-600 text-white shadow-pink-200' : 'bg-slate-100 text-slate-400 cursor-not-allowed grayscale'}`}
               >
                 <div className="relative z-10 text-left">
-                  <div className="bg-white/20 w-10 h-10 rounded-full flex items-center justify-center mb-3">
-                    <Mic className="w-5 h-5 text-white" />
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center mb-3 ${isOnline ? 'bg-white/20' : 'bg-slate-200'}`}>
+                    <Mic className={`w-5 h-5 ${isOnline ? 'text-white' : 'text-slate-400'}`} />
                   </div>
                   <div className="flex items-center gap-2">
                     <h3 className="text-xl font-bold">Lesson Recap</h3>
-                    <span className="bg-white text-red-600 text-[10px] font-bold px-2 py-0.5 rounded-full">TSC LIVE</span>
+                    {isOnline && <span className="bg-white text-red-600 text-[10px] font-bold px-2 py-0.5 rounded-full">TSC LIVE</span>}
                   </div>
-                  <p className="text-pink-100 text-xs">Record live stream & get simplified notes</p>
+                  <p className={`${isOnline ? 'text-pink-100' : 'text-slate-400'} text-xs`}>
+                    {isOnline ? "Record live stream & get simplified notes" : "Connect to internet for recap"}
+                  </p>
                 </div>
-                <div className="absolute right-[-20px] bottom-[-20px] opacity-20 transform rotate-12 group-hover:rotate-0 transition-transform duration-500">
-                  <Sparkles className="w-32 h-32" />
-                </div>
+                {isOnline && (
+                  <div className="absolute right-[-20px] bottom-[-20px] opacity-20 transform rotate-12 group-hover:rotate-0 transition-transform duration-500">
+                    <Sparkles className="w-32 h-32" />
+                  </div>
+                )}
               </motion.button>
 
               {/* Voice Action */}
               <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={isRecording ? stopRecording : startRecording}
-                className={`p-4 rounded-2xl shadow-sm border border-slate-100 flex flex-col items-center justify-center gap-3 transition-colors ${isRecording ? 'bg-red-50 border-red-200' : 'bg-slate-50 hover:bg-slate-100'}`}
+                whileHover={isOnline ? { scale: 1.02 } : {}}
+                whileTap={isOnline ? { scale: 0.98 } : {}}
+                onClick={isOnline ? (isRecording ? stopRecording : startRecording) : undefined}
+                className={`p-4 rounded-2xl shadow-sm border flex flex-col items-center justify-center gap-3 transition-colors ${!isOnline ? 'bg-slate-50 border-slate-100 text-slate-400 cursor-not-allowed grayscale' : isRecording ? 'bg-red-50 border-red-200' : 'bg-slate-50 border-slate-100 hover:bg-slate-100'}`}
               >
                 {isRecording ? (
                   <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center animate-pulse">
                     <div className="w-4 h-4 rounded-sm bg-red-600" />
                   </div>
                 ) : (
-                  <div className="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center text-purple-600">
+                  <div className={`w-12 h-12 rounded-full flex items-center justify-center ${isOnline ? 'bg-purple-100 text-purple-600' : 'bg-slate-200 text-slate-400'}`}>
                     <Mic className="w-6 h-6" />
                   </div>
                 )}
-                <span className={`font-bold text-sm ${isRecording ? 'text-red-600' : 'text-slate-700'}`}>
+                <span className={`font-bold text-sm ${isRecording ? 'text-red-600' : 'text-slate-700 opacity-70'}`}>
                   {isRecording ? formatTime(recordingTime) : "Ask Voice"}
                 </span>
               </motion.button>
 
               {/* Upload Action */}
               <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={() => fileInputRef.current?.click()}
-                className="p-4 rounded-2xl shadow-sm border border-slate-100 bg-slate-50 hover:bg-slate-100 flex flex-col items-center justify-center gap-3"
+                whileHover={isOnline ? { scale: 1.02 } : {}}
+                whileTap={isOnline ? { scale: 0.98 } : {}}
+                onClick={isOnline ? () => fileInputRef.current?.click() : undefined}
+                className={`p-4 rounded-2xl shadow-sm border flex flex-col items-center justify-center gap-3 transition-all ${isOnline ? 'bg-slate-50 border-slate-100 hover:bg-slate-100' : 'bg-slate-50 border-slate-100 text-slate-400 cursor-not-allowed grayscale'}`}
               >
-                <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600">
+                <div className={`w-12 h-12 rounded-full flex items-center justify-center ${isOnline ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-200 text-slate-400'}`}>
                   <Upload className="w-6 h-6" />
                 </div>
-                <span className="font-bold text-sm text-slate-700">Upload</span>
+                <span className="font-bold text-sm text-slate-700 opacity-70">Upload</span>
               </motion.button>
             </div>
           </div>
@@ -1100,9 +1184,12 @@ ${explanation.explanation}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {history.slice(0, 10).map((item, index) => {
                 let details: any = {};
-                try { details = JSON.parse(item.details || '{}'); } catch { }
+                try {
+                  const parsed = JSON.parse(item.details || '{}');
+                  details = (parsed && typeof parsed === 'object') ? parsed : {};
+                } catch { }
                 const isQuiz = item.type === 'QUIZ';
-                const isAudio = details.source === 'audio';
+                const isAudio = details?.source === 'audio';
 
                 return (
                   <motion.div
@@ -1190,13 +1277,13 @@ ${explanation.explanation}
   }
 
   if (mode === 'REVISION') {
-    if (revisionFile) {
+    if (revisionData) {
       return (
         <RevisionSession
-          file={revisionFile}
+          data={revisionData}
           mode={revisionMode}
           onExit={() => {
-            setRevisionFile(null);
+            setRevisionData(null);
             // Stay in REVISION mode but go back to landing basically
           }}
         />
@@ -1204,8 +1291,8 @@ ${explanation.explanation}
     }
     return (
       <RevisionLanding
-        onStartSession={(file, rMode) => {
-          setRevisionFile(file);
+        onStartSession={(data, rMode) => {
+          setRevisionData(data);
           setRevisionMode(rMode as RevisionMode);
         }}
         onNavigate={(view) => {
@@ -1413,24 +1500,24 @@ ${explanation.explanation}
       );
     }
 
-    if (revisionFile) {
+    if (revisionData) {
       return (
         <RevisionSession
-          file={revisionFile}
+          data={revisionData}
           mode={revisionMode}
-          onExit={() => setRevisionFile(null)}
+          onExit={() => setRevisionData(null)}
         />
       );
     }
     return (
       <RevisionLanding
-        onStartSession={(file, mode) => {
+        onStartSession={(data, mode) => {
           if (!isPro && !isPromoActive && revisionUsageCount >= 5) {
             setShowRevisionPaywall(true);
             return;
           }
           incrementRevisionUsage();
-          setRevisionFile(file);
+          setRevisionData(data);
           setRevisionMode(mode);
         }}
         onNavigate={(view) => {
