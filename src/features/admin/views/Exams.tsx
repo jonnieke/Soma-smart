@@ -120,14 +120,14 @@ export const ExamsView: React.FC = () => {
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h2 className="text-2xl font-bold text-slate-800">Exam Management</h2>
-                    <p className="text-slate-500 text-sm">Upload and manage official test papers for the platform.</p>
+                    <h2 className="text-2xl font-bold text-slate-800">Past Papers Library</h2>
+                    <p className="text-slate-500 text-sm">Upload and manage official past papers for the platform.</p>
                 </div>
                 <Button
                     onClick={() => setShowAdd(true)}
                     className="bg-indigo-600 hover:bg-indigo-700 text-white flex items-center gap-2"
                 >
-                    <Plus className="w-5 h-5" /> Add Official Exam
+                    <Plus className="w-5 h-5" /> Add Past Paper
                 </Button>
             </div>
 
@@ -137,14 +137,14 @@ export const ExamsView: React.FC = () => {
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
                     <input
                         type="text"
-                        placeholder="Search exams by title or subject..."
+                        placeholder="Search papers by title or subject..."
                         className="w-full pl-11 pr-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
                 </div>
                 <div className="bg-white px-6 py-3 rounded-xl border border-slate-200 flex items-center justify-between">
-                    <span className="text-slate-500 font-medium">Total Exams</span>
+                    <span className="text-slate-500 font-medium">Total Papers</span>
                     <span className="text-2xl font-black text-indigo-600">{exams.length}</span>
                 </div>
             </div>
@@ -154,19 +154,19 @@ export const ExamsView: React.FC = () => {
                 {loading ? (
                     <div className="py-20 text-center">
                         <Loader2 className="w-8 h-8 text-indigo-500 animate-spin mx-auto mb-2" />
-                        <p className="text-slate-400">Loading exam library...</p>
+                        <p className="text-slate-400">Loading paper library...</p>
                     </div>
                 ) : filtered.length === 0 ? (
                     <div className="py-20 text-center">
                         <FileText className="w-12 h-12 text-slate-200 mx-auto mb-4" />
-                        <p className="text-slate-500 font-medium">No exams found.</p>
-                        <p className="text-slate-400 text-sm">Try adding a new official exam above.</p>
+                        <p className="text-slate-500 font-medium">No papers found.</p>
+                        <p className="text-slate-400 text-sm">Try adding a new past paper above.</p>
                     </div>
                 ) : (
                     <table className="w-full text-left">
                         <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 text-xs uppercase tracking-wider">
                             <tr>
-                                <th className="px-6 py-4 font-bold text-slate-600">Exam Title</th>
+                                <th className="px-6 py-4 font-bold text-slate-600">Paper Title</th>
                                 <th className="px-6 py-4 font-bold text-slate-600">Subject</th>
                                 <th className="px-6 py-4 font-bold text-slate-600">Level/Grade</th>
                                 <th className="px-6 py-4 font-bold text-slate-600 text-right">Actions</th>
@@ -200,7 +200,7 @@ export const ExamsView: React.FC = () => {
                                         <button
                                             onClick={() => handleDelete(exam.id)}
                                             className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
-                                            title="Delete Exam"
+                                            title="Delete Paper"
                                         >
                                             <Trash2 className="w-5 h-5" />
                                         </button>
@@ -225,14 +225,14 @@ export const ExamsView: React.FC = () => {
                         >
                             <div className="p-8">
                                 <h3 className="text-2xl font-bold text-slate-900 mb-2 flex items-center gap-2">
-                                    <Plus className="w-6 h-6 text-indigo-600" /> Add Official Exam
+                                    <Plus className="w-6 h-6 text-indigo-600" /> Add Past Paper
                                 </h3>
-                                <p className="text-slate-500 mb-6">Create a new test paper that will appear across all student dashboards.</p>
+                                <p className="text-slate-500 mb-6">Create a new past paper that will appear across all student dashboards.</p>
 
                                 <form onSubmit={handleCreateExam} className="space-y-4">
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <div>
-                                            <label className="block text-sm font-bold text-slate-700 mb-1">Exam Title</label>
+                                            <label className="block text-sm font-bold text-slate-700 mb-1">Paper Title</label>
                                             <input
                                                 type="text"
                                                 required
@@ -274,7 +274,7 @@ export const ExamsView: React.FC = () => {
                                     </div>
 
                                     <div>
-                                        <label className="block text-sm font-bold text-slate-700 mb-1">Exam Content (JSON Array of Questions)</label>
+                                        <label className="block text-sm font-bold text-slate-700 mb-1">Paper Content (JSON Array of Questions)</label>
                                         <textarea
                                             required
                                             rows={8}
@@ -304,7 +304,7 @@ export const ExamsView: React.FC = () => {
                                             isLoading={saving}
                                             className="px-8 bg-indigo-600"
                                         >
-                                            Publish Exam
+                                            Publish Paper
                                         </Button>
                                     </div>
                                 </form>

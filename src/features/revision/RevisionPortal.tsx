@@ -71,7 +71,7 @@ export const RevisionPortal: React.FC = () => {
                     <button onClick={() => navigate('/')} className="p-2 -ml-2 hover:bg-slate-50 rounded-full text-slate-400 hover:text-slate-600 transition-colors">
                         <ArrowRight className="w-6 h-6 rotate-180" />
                     </button>
-                    <h1 className="font-bold text-lg text-slate-800">Candidate Exam Prep</h1>
+                    <h1 className="font-bold text-lg text-slate-800">Candidate Success Portal</h1>
                 </div>
                 {isRegistered && (
                     <button onClick={logout} className="p-2 hover:bg-red-50 text-slate-400 hover:text-red-500 rounded-full transition-colors" title="Logout">
@@ -98,10 +98,10 @@ export const RevisionPortal: React.FC = () => {
                             </div>
 
                             <div>
-                                <h1 className="text-3xl font-extrabold text-slate-900 mb-2">Candidate Revision Center</h1>
+                                <h1 className="text-3xl font-extrabold text-slate-900 mb-2">Candidate Success Center</h1>
                                 <p className="text-slate-600 text-lg">
                                     AI-powered coaching specialized for <b>KCSE, KPSEA & KEPSEA</b> candidates.
-                                    Analyze past papers and master your final exams.
+                                    Analyze past papers and master your final goals.
                                 </p>
                             </div>
 
@@ -224,7 +224,7 @@ export const RevisionPortal: React.FC = () => {
                                 disabled={!name || !school}
                                 className="mt-4 bg-orange-600 hover:bg-orange-700"
                             >
-                                Create My Revision Space
+                                Enter Success Portal
                             </Button>
                         </motion.div>
                     )}
@@ -247,7 +247,7 @@ export const RevisionPortal: React.FC = () => {
                             </div>
 
                             <div className="bg-slate-100 p-6 rounded-2xl border-2 border-dashed border-slate-300 relative group cursor-pointer" onClick={() => { navigator.clipboard.writeText(generatedCode || '') }}>
-                                <p className="text-xs text-slate-500 uppercase tracking-wider font-bold mb-1">Your Exam Code</p>
+                                <p className="text-xs text-slate-500 uppercase tracking-wider font-bold mb-1">Your Success Code</p>
                                 <p className="text-4xl font-mono font-black text-slate-800 tracking-widest">{generatedCode}</p>
                                 <div className="mt-2 text-xs text-blue-600 font-bold opacity-0 group-hover:opacity-100 transition-opacity">Click to Copy</div>
                             </div>
@@ -256,12 +256,12 @@ export const RevisionPortal: React.FC = () => {
                                 <Sparkles className="w-5 h-5 text-orange-500 shrink-0 mt-0.5" />
                                 <div>
                                     <p className="font-bold text-orange-800 text-sm">5 Free Scans Included</p>
-                                    <p className="text-xs text-orange-700">You are on the Freemium plan. Scan up to 5 exam papers for free.</p>
+                                    <p className="text-xs text-orange-700">You are on the Freemium plan. Scan up to 5 past papers for free.</p>
                                 </div>
                             </div>
 
                             <Button fullWidth onClick={handleStartRevision} className="py-4 text-lg">
-                                Start Revising Now
+                                Start Mastering Papers
                             </Button>
                         </motion.div>
                     )}

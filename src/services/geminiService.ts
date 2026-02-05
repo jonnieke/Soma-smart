@@ -524,7 +524,7 @@ export const askSoma = async (userQuery: string, chatHistory: { role: 'user' | '
   const model = genAI.getGenerativeModel({ model: MODEL_NAME });
 
   // Construct prompt with history manually
-  const systemInstruction = "You are Soma, a helpful AI assistant for the Soma Smart app. Your goal is to guide students, parents, and teachers.\\n\\nFEATURES & NAVIGATION:\\n1. **Scanning**: Tell them they can scan textbooks for simple explanations.\\n2. **Candidate Revision**: For students in final years (Grade 6, 9, Form 4), mention our high-impact Candidate Exam Prep for National Exams.\\n3. **Voice Notes**: Explain how teachers simplify notes via recordings.\\n\\nIMPORTANT: You can direct users to specific features. Use these EXACT links:\\n- To go to Candidate Exam Prep: [Candidate Revision](/revision)\\n- To go to Student Dashboard: [Student Dashboard](/learner)\\n- To go to Teacher Dashboard: [Teacher Dashboard](/teacher)\\n\\nKeep answers short (under 3 sentences) and fun. Use emojis! 🌟";
+  const systemInstruction = "You are Soma, a helpful AI assistant for the Soma Smart app. Your goal is to guide students, parents, and teachers.\\n\\nFEATURES & NAVIGATION:\\n1. **Scanning**: Tell them they can scan textbooks for simple explanations.\\n2. **Past Papers Specialist**: For candidates (Grade 6, 9, Form 4), mention our high-impact Past Paper Specialist which analyzes test papers for strategic success.\\n3. **Voice Notes**: Explain how teachers simplify notes via recordings.\\n\\nIMPORTANT: You can direct users to specific features. Use these EXACT links:\\n- To go to Past Paper Specialist: [Candidate Success Center](/revision)\\n- To go to Student Dashboard: [Student Dashboard](/learner)\\n- To go to Teacher Dashboard: [Teacher Dashboard](/teacher)\\n\\nKeep answers short (under 3 sentences) and fun. Use emojis! 🌟";
 
   const historyText = chatHistory.map(msg => `${msg.role === 'user' ? 'User' : 'Soma'}: ${msg.text}`).join('\\n');
   const fullPrompt = `${systemInstruction}\\n\\n${historyText}\\nUser: ${userQuery}\\nSoma:`;
@@ -639,8 +639,8 @@ export const getRevisionTutorResponse = async (
   });
 
   const systemInstruction = `
-    You are Soma Smart Candidate Coach, an expert national exam specialist for Kenyan Candidates (KCSE, KPSEA, KEPSEA).
-    Tone: Professional, High-Stakes Focused, Encouraging, and Strategic.
+    You are Soma Smart Candidate Specialist, an expert international-level exam strategist for Kenyan Candidates (KCSE, KPSEA, KEPSEA).
+    Tone: Highly Strategic, Professional, Evidence-Based, and Results-Oriented.
     
     Your goal is to guide the candidate THROUGH one national exam question at a time using a strict pedagogical flow.
     
@@ -700,6 +700,63 @@ export const getRevisionTutorResponse = async (
     throw error;
   }
 };
+
+export const getPaperGuidance = async (analysis: ExamAnalysis, query?: string): Promise<string> => {
+  const model = genAI.getGenerativeModel({ model: MODEL_NAME });
+
+  const paperContext = `
+        Subject: ${analysis.subject}
+        Grade: ${analysis.grade}
+        Questions:
+        ${analysis.questions.map(q => `- Q${q.number}: ${q.topic} (Competency: ${q.competency})`).join('\n')}
+    `;
+
+  const strategyPrompt = `
+        You are the Soma Smart Candidate Specialist. 
+        Analyze the structure of this past paper and provide a strategic guidance report for a student.
+        
+        Paper Overview:
+        ${paperContext}
+        
+        Your report MUST include:
+        1. **Paper Structure**: Briefly describe what this paper covers.
+        2. **Difficulty Hotspots**: Which questions appear most challenging based on the competencies?
+        3. **Strategic Tips**: How should a student allocate their time? (e.g. "Focus on Section B first...")
+        4. **Key Competencies**: What should the student master most to excel in this specific paper?
+        
+        Keep it concise, professional, and highly strategic. Use Markdown formatting.
+    `;
+
+  const queryPrompt = `
+        You are the Soma Smart Candidate Specialist. 
+        Answer the student's question specifically based on the analysis of this past paper.
+        
+        Paper Context:
+        ${paperContext}
+        
+        Student Question: "${query}"
+        
+        Provide a helpful, expert response grounded strictly in the paper's structure and content.
+    `;
+
+  const prompt = query ? queryPrompt : strategyPrompt;
+
+  const finalPrompt = `
+    ${prompt}
+    
+    LANGUAGE RULE: If the subject is "Kiswahili" or "Swahili", you MUST respond in Swahili. For ALL other subjects, you MUST respond ONLY in English.
+  `;
+
+  try {
+    const result = await model.generateContent(finalPrompt);
+    const text = result.response.text();
+    return text || "I couldn't analyze that for you right now.";
+  } catch (error) {
+    console.error("Error in paper guidance:", error);
+    return "Oops! I hit a snag while analyzing the paper strategy.";
+  }
+};
+
 // --- TSC LIVE & RECAP FEATURES ---
 
 import { LessonRecap } from "../types";

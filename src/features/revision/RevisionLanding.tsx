@@ -117,7 +117,7 @@ export const RevisionLanding: React.FC<Props> = ({ onStartSession, onNavigate })
                         Candidate <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-300 to-indigo-300">Specialist</span>
                     </h1>
                     <p className="text-blue-100/80 font-medium text-lg max-w-sm leading-relaxed">
-                        Your AI tutor for exam mastery. Scan any national past paper and get instant, step-by-step guidance.
+                        Your AI tutor for paper mastery. Scan any past paper and get instant, step-by-step guidance.
                     </p>
                 </div>
             </div>
@@ -160,7 +160,7 @@ export const RevisionLanding: React.FC<Props> = ({ onStartSession, onNavigate })
                                     <Camera className="w-8 h-8" />
                                 </div>
                                 <div className="text-left">
-                                    <h3 className="font-bold text-xl">Scan Candidate Paper</h3>
+                                    <h3 className="font-bold text-xl">Scan Past Paper</h3>
                                     <p className="text-blue-100 text-sm font-medium">Capture directly from paper</p>
                                 </div>
                             </div>
@@ -203,7 +203,7 @@ export const RevisionLanding: React.FC<Props> = ({ onStartSession, onNavigate })
                 {/* TEST PAPERS LIBRARY */}
                 <div className="space-y-4">
                     <div className="flex items-center justify-between">
-                        <h3 className="font-bold text-slate-800 text-lg">Test Papers Library</h3>
+                        <h3 className="font-bold text-slate-800 text-lg">Past Papers Library</h3>
                         <div className="flex gap-2">
                             <span className="text-[10px] bg-indigo-100 text-indigo-700 font-bold px-2 py-1 rounded-full uppercase">Uploaded by Teachers</span>
                         </div>
@@ -247,7 +247,7 @@ export const RevisionLanding: React.FC<Props> = ({ onStartSession, onNavigate })
 
                 {/* Features List */}
                 <div className="space-y-4 pt-4">
-                    <h4 className="font-bold text-slate-400 text-xs uppercase tracking-widest text-center">Why use Candidate Prep?</h4>
+                    <h4 className="font-bold text-slate-400 text-xs uppercase tracking-widest text-center">Why use Paper Specialist?</h4>
                     <div className="grid grid-cols-2 gap-3">
                         <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex flex-col gap-2">
                             <Zap className="w-6 h-6 text-amber-500" />

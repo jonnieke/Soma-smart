@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useApp } from '../../context/AppContext';
-import { MessageCircle, Volume2, ArrowRight, CheckCircle, HelpCircle, ChevronRight, ZoomIn, ZoomOut, X, FileText } from 'lucide-react';
+import { MessageCircle, Volume2, ArrowRight, CheckCircle, HelpCircle, ChevronRight, ZoomIn, ZoomOut, X, FileText, Sparkles } from 'lucide-react';
 import { ViewState, RevisionMode, ExamAnalysis, ExamQuestion, TutoringStep, TutorResponse, TeacherActivity, QuizData } from '../../types';
-import { analyzeExamPaper, getRevisionTutorResponse, fileToGenerativePart, generateSpeech, stopSpeech } from '../../services/geminiService';
+import { analyzeExamPaper, getRevisionTutorResponse, fileToGenerativePart, generateSpeech, stopSpeech, getPaperGuidance } from '../../services/geminiService';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Header } from '../../components/Shared';
 
@@ -32,6 +32,7 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, onExit }) => {
     const [imageZoom, setImageZoom] = useState(1);
     const [imageSrc, setImageSrc] = useState<string | null>(null);
     const [isPlaying, setIsPlaying] = useState(false);
+    const [isGuidanceLoading, setIsGuidanceLoading] = useState(false);
 
     // Refs
     const chatEndRef = useRef<HTMLDivElement>(null);
@@ -119,13 +120,47 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, onExit }) => {
 
             if (response.nextStep !== 'COMPLETE' && response.nextStep !== currentStep) {
                 setCurrentStep(response.nextStep as TutoringStep);
-                // Optionally trigger next step immediately if it's just a transition, 
-                // but usually we want user interaction first. 
-                // For now, we wait for user to respond unless the AI prompts specifically.
             }
         } catch (e) {
             console.error(e);
             addMessage('model', "I had a momentary brain freeze! Can you say that again?");
+        } finally {
+            setIsTyping(false);
+        }
+    };
+
+    const handleGetPaperGuidance = async () => {
+        if (!analysis) return;
+        setIsGuidanceLoading(true);
+        setIsTyping(true);
+        addMessage('user', "Soma, can you give me a strategic overview of this paper?");
+
+        try {
+            const guidance = await getPaperGuidance(analysis);
+            addMessage('model', guidance, 'GUIDANCE' as any);
+        } catch (e) {
+            console.error(e);
+            addMessage('model', "I'm sorry, I couldn't analyze the overall paper strategy right now.");
+        } finally {
+            setIsGuidanceLoading(false);
+            setIsTyping(false);
+        }
+    };
+
+    const handleGeneralChat = async () => {
+        if (!userInput.trim() || !analysis) return;
+
+        const userText = userInput;
+        setUserInput("");
+        addMessage('user', userText);
+        setIsTyping(true);
+
+        try {
+            const guidance = await getPaperGuidance(analysis, userText);
+            addMessage('model', guidance, 'GUIDANCE' as any);
+        } catch (e) {
+            console.error(e);
+            addMessage('model', "I hit a snag while analyzing that for you. Can you try again?");
         } finally {
             setIsTyping(false);
         }
@@ -214,9 +249,18 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, onExit }) => {
                             {mode === RevisionMode.EXAM ? 'Exam Mode' : 'Learn Mode'}
                         </p>
                     </div>
-                    <button onClick={onExit} className="p-2 hover:bg-slate-100 rounded-full">
-                        <X className="w-5 h-5 text-slate-400" />
-                    </button>
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={handleGetPaperGuidance}
+                            disabled={isGuidanceLoading || isTyping}
+                            className="text-xs font-bold bg-indigo-50 text-indigo-600 px-3 py-1.5 rounded-full hover:bg-indigo-100 flex items-center gap-1 border border-indigo-100 disabled:opacity-50"
+                        >
+                            <Sparkles className="w-3 h-3" /> Strategy
+                        </button>
+                        <button onClick={onExit} className="p-2 hover:bg-slate-100 rounded-full">
+                            <X className="w-5 h-5 text-slate-400" />
+                        </button>
+                    </div>
                 </div>
 
                 {/* Content Area */}
@@ -224,8 +268,54 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, onExit }) => {
 
                     {!activeQuestion ? (
                         /* Question Selection State */
-                        <div className="space-y-4">
-                            <h3 className="text-lg font-bold text-slate-800 mb-2">Select a Question to Start</h3>
+                        <div className="space-y-4 pb-20">
+                            {/* Paper Header / Notebook Style Greeting */}
+                            <div className="bg-gradient-to-br from-indigo-600 to-blue-700 p-6 rounded-3xl text-white shadow-xl mb-6 relative overflow-hidden">
+                                <div className="relative z-10">
+                                    <Sparkles className="w-8 h-8 mb-3 opacity-80" />
+                                    <h3 className="text-xl font-black mb-2 leading-tight">Paper Specialist Active</h3>
+                                    <p className="text-indigo-100 text-sm font-medium leading-relaxed opacity-90">
+                                        I've analyzed this paper. I can guide you through specific questions or provide a strategic overview of the entire test.
+                                    </p>
+                                    <div className="mt-4 flex gap-2">
+                                        <button
+                                            onClick={handleGetPaperGuidance}
+                                            disabled={isGuidanceLoading}
+                                            className="bg-white/20 hover:bg-white/30 backdrop-blur-md text-white text-xs font-bold px-4 py-2 rounded-full transition-all border border-white/10"
+                                        >
+                                            {isGuidanceLoading ? 'Analyzing...' : 'Get Strategic Overview'}
+                                        </button>
+                                    </div>
+                                </div>
+                                {/* Decorative elements */}
+                                <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-3xl -mr-16 -mt-16" />
+                            </div>
+
+                            {/* Chat Messages (For general guidance) */}
+                            {chatHistory.length > 0 && (
+                                <div className="space-y-4 mb-6">
+                                    {chatHistory.map((msg) => (
+                                        <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                                            <div className={`max-w-[85%] p-4 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap ${msg.role === 'user'
+                                                ? 'bg-indigo-600 text-white rounded-br-none shadow-md'
+                                                : 'bg-white text-slate-700 border border-slate-200 rounded-bl-none shadow-sm'
+                                                }`}>
+                                                {msg.role === 'model' && (
+                                                    <div className="flex gap-2 mb-2">
+                                                        <div className="w-6 h-6 rounded-full bg-indigo-100 flex items-center justify-center shrink-0">
+                                                            <MessageCircle className="w-3 h-3 text-indigo-600" />
+                                                        </div>
+                                                        <span className="text-xs font-bold text-indigo-500 uppercase tracking-widest mt-1">SPECIALIST</span>
+                                                    </div>
+                                                )}
+                                                {msg.text}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+
+                            <h3 className="text-lg font-bold text-slate-800 mb-2 px-1">Questions in this Paper</h3>
                             {analysis?.questions.map((q) => (
                                 <motion.button
                                     key={q.id}
@@ -300,12 +390,12 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, onExit }) => {
                     )}
                 </div>
 
-                {/* Input Area (Only when active question) */}
-                {activeQuestion && (
-                    <div className="p-4 bg-white border-t">
+                {/* Input Area */}
+                <div className="p-4 bg-white border-t">
 
-                        {/* Quick Actions / TTS */}
-                        <div className="flex justify-between items-center mb-3">
+                    {/* Quick Actions / TTS */}
+                    <div className="flex justify-between items-center mb-3">
+                        {activeQuestion ? (
                             <button
                                 onClick={() => handleReadAloud(activeQuestion.text + ". " + getLastModelMessage())}
                                 className={`flex items-center gap-2 text-xs font-bold px-3 py-1.5 rounded-full transition-colors ${isPlaying ? 'bg-indigo-100 text-indigo-600 animate-pulse' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
@@ -313,34 +403,49 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, onExit }) => {
                                 <Volume2 className="w-3 h-3" />
                                 {isPlaying ? 'Listening...' : 'Read Aloud'}
                             </button>
-
-                            {/* Hint button for Exam Mode */}
-                            {mode === RevisionMode.EXAM && (
-                                <button className="flex items-center gap-1 text-xs font-bold text-orange-500 hover:text-orange-600">
-                                    <HelpCircle className="w-3 h-3" /> Get Hint (-2 pts)
+                        ) : (
+                            <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
+                                <button
+                                    onClick={handleGetPaperGuidance}
+                                    className="shrink-0 text-[10px] font-bold bg-indigo-50 text-indigo-600 px-3 py-1 rounded-full border border-indigo-100"
+                                >
+                                    🎯 Paper Strategy
                                 </button>
-                            )}
-                        </div>
+                                <button
+                                    onClick={() => setUserInput("What is the most common topic in this paper?")}
+                                    className="shrink-0 text-[10px] font-bold bg-slate-50 text-slate-600 px-3 py-1 rounded-full border border-slate-200"
+                                >
+                                    📊 Common Topics
+                                </button>
+                            </div>
+                        )}
 
-                        <div className="flex gap-2">
-                            <input
-                                type="text"
-                                value={userInput}
-                                onChange={(e) => setUserInput(e.target.value)}
-                                onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
-                                placeholder="Type your answer..."
-                                className="flex-1 bg-slate-100 border-0 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
-                            />
-                            <button
-                                onClick={handleSendMessage}
-                                disabled={!userInput.trim() || isTyping}
-                                className="bg-indigo-600 text-white p-3 rounded-xl disabled:opacity-50 hover:bg-indigo-700 transition-colors"
-                            >
-                                <ArrowRight className="w-5 h-5" />
+                        {/* Hint button for Exam Mode */}
+                        {activeQuestion && mode === RevisionMode.EXAM && (
+                            <button className="flex items-center gap-1 text-xs font-bold text-orange-500 hover:text-orange-600">
+                                <HelpCircle className="w-3 h-3" /> Get Hint (-2 pts)
                             </button>
-                        </div>
+                        )}
                     </div>
-                )}
+
+                    <div className="flex gap-2">
+                        <input
+                            type="text"
+                            value={userInput}
+                            onChange={(e) => setUserInput(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && (activeQuestion ? handleSendMessage() : handleGeneralChat())}
+                            placeholder={activeQuestion ? "Type your answer..." : "Ask the Paper Specialist anything..."}
+                            className="flex-1 bg-slate-100 border-0 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                        />
+                        <button
+                            onClick={activeQuestion ? handleSendMessage : handleGeneralChat}
+                            disabled={!userInput.trim() || isTyping}
+                            className="bg-indigo-600 text-white p-3 rounded-xl disabled:opacity-50 hover:bg-indigo-700 transition-colors"
+                        >
+                            <ArrowRight className="w-5 h-5" />
+                        </button>
+                    </div>
+                </div>
 
             </div>
         </div>

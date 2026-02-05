@@ -33,8 +33,8 @@ export const RevisionDashboard: React.FC = () => {
                     <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
                         <Lock className="w-8 h-8 text-orange-600" />
                     </div>
-                    <h2 className="text-2xl font-bold text-slate-800 mb-2">Revision Limit Reached</h2>
-                    <p className="text-slate-500 mb-6">You have used your 5 free revision scans. Upgrade to continue excelling in your exams!</p>
+                    <h2 className="text-2xl font-bold text-slate-800 mb-2">Paper Analysis Limit</h2>
+                    <p className="text-slate-500 mb-6">You have used your 5 free paper analysis scans. Upgrade to continue mastering your national goals!</p>
 
                     <div className="space-y-3">
                         <Button fullWidth onClick={() => navigate('/pricing')} className="py-4 text-lg bg-slate-900 border-none">
