@@ -1,14 +1,100 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { PricingPage as PricingComponent } from '../features/subscription/PricingPage';
 import { Button } from '../components/Shared';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Loader2, CheckCircle2 } from 'lucide-react';
+import { useApp } from '../context/AppContext';
+import { pesapalService } from '../services/pesapalService';
 
 export const PricingPage: React.FC = () => {
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
+    const { isPro, upgradeAccount, userId, role } = useApp();
+    const [verifying, setVerifying] = React.useState(false);
+    const [verifyError, setVerifyError] = React.useState('');
+    const [verifySuccess, setVerifySuccess] = React.useState(false);
+
+    const status = searchParams.get('status');
+    const ref = searchParams.get('ref');
+
+    React.useEffect(() => {
+        if (status === 'verifying' && ref) {
+            handleVerification(ref);
+        }
+    }, [status, ref]);
+
+    // If user is already Pro and not currently verifying, they shouldn't be here
+    React.useEffect(() => {
+        if (isPro && !verifying && !verifySuccess && !status) {
+            const dashboard = role === 'TEACHER' ? '/teacher' : '/learner';
+            navigate(dashboard);
+        }
+    }, [isPro, verifying, navigate, role, status]);
+
+    const handleVerification = async (reference: string) => {
+        setVerifying(true);
+        try {
+            // 1. Poll or check status
+            const result = await pesapalService.checkTransactionStatus(reference);
+
+            if (result.status === 'COMPLETED' || result.payment_status_description === 'Completed') {
+                setVerifySuccess(true);
+                // 2. Refresh local state (upgradeAccount in service should have been called by webhook, 
+                // but we can trigger a sync/refresh if needed)
+                setTimeout(() => {
+                    const dashboard = role === 'TEACHER' ? '/teacher' : '/learner';
+                    window.location.href = dashboard; // Force reload to ensure state sync
+                }, 2000);
+            } else {
+                setVerifyError('Payment is still being processed. Please check back in a moment.');
+            }
+        } catch (err) {
+            console.error("Verification error:", err);
+            setVerifyError('Could not verify payment status automatically.');
+        } finally {
+            setVerifying(false);
+        }
+    };
 
     return (
-        <div className="relative">
+        <div className="relative min-h-screen">
+            {/* Status Overlays */}
+            {(verifying || verifySuccess || verifyError) && (
+                <div className="fixed inset-0 z-[100] bg-slate-900/80 backdrop-blur-md flex items-center justify-center p-6">
+                    <div className="bg-white rounded-[2.5rem] p-10 max-w-sm w-full text-center shadow-2xl">
+                        {verifying && (
+                            <>
+                                <Loader2 className="w-16 h-16 text-indigo-600 animate-spin mx-auto mb-6" />
+                                <h2 className="text-2xl font-black text-slate-900 mb-2">Verifying Payment</h2>
+                                <p className="text-slate-500 font-medium">Checking with Pesapal Secure Gateway...</p>
+                            </>
+                        )}
+                        {verifySuccess && (
+                            <>
+                                <CheckCircle2 className="w-16 h-16 text-green-500 mx-auto mb-6" />
+                                <h2 className="text-2xl font-black text-slate-900 mb-2">Payment Confirmed!</h2>
+                                <p className="text-slate-500 font-medium">Welcome to Soma Pro. Redirecting you to your dashboard...</p>
+                            </>
+                        )}
+                        {verifyError && (
+                            <>
+                                <div className="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-6">
+                                    <ArrowLeft className="w-8 h-8" />
+                                </div>
+                                <h2 className="text-2xl font-black text-slate-900 mb-2">Verification Pending</h2>
+                                <p className="text-slate-500 font-medium mb-6">{verifyError}</p>
+                                <Button
+                                    className="w-full bg-slate-900 text-white rounded-xl py-4"
+                                    onClick={() => setVerifyError('')}
+                                >
+                                    View Pricing Plans
+                                </Button>
+                            </>
+                        )}
+                    </div>
+                </div>
+            )}
+
             <div className="absolute top-6 left-6 z-50">
                 <Button
                     variant="outline"

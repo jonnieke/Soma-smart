@@ -89,8 +89,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const initSession = async () => {
       // 1. Check if we have an active Supabase session (Teacher/Student via Auth)
       const { data: { session } } = await supabase.auth.getSession();
+      let currentUserId = null;
 
       if (session) {
+        currentUserId = session.user.id;
         // Fetch profile
         const { data: profile } = await supabase
           .from('profiles')
@@ -105,25 +107,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             setIsRegistered(true);
             setRole(profile.role === 'REVISION' ? UserRole.REVISION : UserRole.LEARNER);
           } else if (profile.role === 'TEACHER') {
-            // Update teacher state
             setRole(UserRole.TEACHER);
-            // Fetch classes/subjects if they exist in profile
-            if (profile.classes || profile.subjects) {
-              setTeacherProfile({
-                id: profile.id,
-                name: profile.full_name,
-                email: profile.email,
-                classes: profile.classes || [],
-                subjects: profile.subjects || []
-              });
-            } else {
-              setTeacherProfile({
-                id: profile.id,
-                name: profile.full_name,
-                classes: [],
-                subjects: []
-              });
-            }
+            setTeacherProfile({
+              id: profile.id,
+              name: profile.full_name,
+              email: profile.email,
+              classes: profile.classes || [],
+              subjects: profile.subjects || []
+            });
           }
         }
       } else {
@@ -131,7 +122,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         const savedStudentCode = localStorage.getItem('soma_active_student');
         if (savedStudentCode) {
           console.log("Found persistent student session:", savedStudentCode);
-          // Verify/Fetch profile for this code
           const { data: profile } = await supabase
             .from('profiles')
             .select('*')
@@ -139,26 +129,27 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             .maybeSingle();
 
           if (profile) {
+            currentUserId = profile.id;
+            setUserId(profile.id);
             setStudentCode(profile.student_id);
             setStudentProfile({ id: profile.id, name: profile.full_name, grade: profile.grade, email: profile.email });
             setIsRegistered(true);
             setRole(profile.role === 'REVISION' ? UserRole.REVISION : UserRole.LEARNER);
           } else {
-            // Invalid code stored? Clear it.
             localStorage.removeItem('soma_active_student');
           }
         }
-
-        // 3. Check Subscription Access
-        if (session) {
-          const access = await checkSubscriptionAccess(session.user.id, 'STUDENT'); // Defaulting to student for unified check
-          setIsPro(access.isPro);
-          setSubscriptionPlan(access.tier);
-          setSubscriptionExpiry(access.expiry);
-        }
       }
 
-      // 3. Promo functionality is now disabled
+      // 3. Check Subscription Access if we have a user
+      if (currentUserId) {
+        const access = await checkSubscriptionAccess(currentUserId, 'STUDENT');
+        setIsPro(access.isPro);
+        setSubscriptionPlan(access.tier);
+        setSubscriptionExpiry(access.expiry);
+      }
+
+      // 4. Promo functionality is now disabled
       setIsPromoActive(false);
       setPromoEndDate(null);
     };
