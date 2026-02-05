@@ -31,6 +31,18 @@ export const PricingPage: React.FC = () => {
         }
     }, [isPro, verifying, navigate, role, status]);
 
+    // If user becomes Pro during polling (e.g. via background IPN), trigger success immediately
+    React.useEffect(() => {
+        if (isPro && verifying) {
+            setVerifySuccess(true);
+            setVerifying(false);
+            setTimeout(() => {
+                const dashboard = role === 'TEACHER' ? '/teacher' : '/learner';
+                window.location.href = dashboard;
+            }, 2000);
+        }
+    }, [isPro, verifying, role]);
+
     const handleVerification = async (reference: string) => {
         setVerifying(true);
         setVerifyError('');
@@ -40,6 +52,9 @@ export const PricingPage: React.FC = () => {
         const INTERVAL = 3500; // 3.5 seconds between checks
 
         const poll = async () => {
+            // Stop polling if we've already succeeded (e.g. via isPro effect)
+            if (verifySuccess) return;
+
             try {
                 const result = await pesapalService.checkTransactionStatus(reference);
 
@@ -47,21 +62,25 @@ export const PricingPage: React.FC = () => {
                     setVerifySuccess(true);
                     setVerifying(false);
 
-                    // Success! Redirect after a short delay
                     setTimeout(() => {
                         const dashboard = role === 'TEACHER' ? '/teacher' : '/learner';
-                        window.location.href = dashboard; // Force reload to sync all context state
+                        window.location.href = dashboard;
                     }, 2500);
                     return true;
                 }
 
-                // If not completed and under timeout, continue polling
                 if (Date.now() - startTime < TIMEOUT) {
                     setTimeout(poll, INTERVAL);
                     return false;
                 } else {
-                    setVerifyError('Verification is taking longer than expected. Your subscription will be active shortly once the background process completes.');
+                    // OPTIMISTIC FLOW: Instead of an error, show success and redirect.
+                    // The background IPN will catch up if it hasn't already.
+                    setVerifySuccess(true);
                     setVerifying(false);
+                    setTimeout(() => {
+                        const dashboard = role === 'TEACHER' ? '/teacher' : '/learner';
+                        window.location.href = dashboard;
+                    }, 3000);
                     return false;
                 }
             } catch (err) {
@@ -69,8 +88,13 @@ export const PricingPage: React.FC = () => {
                 if (Date.now() - startTime < TIMEOUT) {
                     setTimeout(poll, INTERVAL);
                 } else {
-                    setVerifyError('Lost connection to payment gateway. Please check your dashboard in a moment.');
+                    // Fallback to optimistic success even on network error after timeout
+                    setVerifySuccess(true);
                     setVerifying(false);
+                    setTimeout(() => {
+                        const dashboard = role === 'TEACHER' ? '/teacher' : '/learner';
+                        window.location.href = dashboard;
+                    }, 3000);
                 }
                 return false;
             }
