@@ -368,8 +368,8 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate }) => {
                         </motion.div>
 
                         <div className="flex gap-2">
-                            <button onClick={() => onNavigate(ViewState.DASHBOARD)} className="p-2 bg-white/10 hover:bg-white/20 rounded-xl backdrop-blur-md transition-colors group" title="Back to Home">
-                                <Home className="w-6 h-6 text-white" />
+                            <button onClick={() => onNavigate(ViewState.DASHBOARD)} className="flex items-center gap-2 px-3 py-2 bg-white/10 hover:bg-white/20 rounded-xl backdrop-blur-md transition-colors group text-xs font-bold text-white" title="Back to Home">
+                                <Home className="w-5 h-5" /> Home
                             </button>
                             <button onClick={() => navigate('/pricing')} className="p-2 bg-indigo-500/20 hover:bg-indigo-500/30 rounded-xl backdrop-blur-md transition-colors group" title="Pricing Plans">
                                 <CreditCard className="w-6 h-6 text-white" />

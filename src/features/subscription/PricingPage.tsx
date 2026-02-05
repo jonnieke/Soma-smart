@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Check, Zap, Star, ShieldCheck, Smartphone, Building2, UserCircle2, GraduationCap, ArrowRight, Timer, Clock } from 'lucide-react';
+import { Check, Zap, Star, ShieldCheck, Smartphone, Building2, UserCircle2, GraduationCap, ArrowRight, Timer, Clock, X } from 'lucide-react';
 import { STUDENT_PLANS, TEACHER_PLANS, SCHOOL_PLANS } from '../../data/pricing';
 import { SubscriptionPlan, UserSegment } from '../../types';
 
@@ -113,6 +113,24 @@ export const PricingPage: React.FC<Props> = ({ onSelectPlan, onClose, currentTie
         <div className="min-h-screen bg-slate-50 font-sans text-slate-800 pb-20">
             {/* Header */}
             <header className="bg-gradient-to-br from-indigo-900 to-slate-900 px-6 pt-12 pb-24 rounded-b-[3rem] text-white text-center relative overflow-hidden">
+                {/* Close Button for Dashboard Context */}
+                <button
+                    onClick={onClose}
+                    className="absolute top-6 right-6 z-50 p-2 bg-white/10 hover:bg-white/20 rounded-full backdrop-blur-md border border-white/20 transition-all active:scale-95"
+                    title="Close and Return"
+                >
+                    <X className="w-6 h-6" />
+                </button>
+
+                <div className="absolute top-6 left-6 z-50">
+                    <button
+                        onClick={onClose}
+                        className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-xl backdrop-blur-md border border-white/20 transition-all text-xs font-bold"
+                    >
+                        <ArrowRight className="w-4 h-4 rotate-180" /> Dashboard
+                    </button>
+                </div>
+
                 <div className="relative z-10 max-w-2xl mx-auto">
                     <h1 className="text-4xl font-black mb-3">Simple Pricing</h1>
                     <p className="text-indigo-100/80 font-medium">Choose a plan that fits your learning journey. Start small, grow big! 🚀</p>

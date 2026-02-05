@@ -577,37 +577,16 @@ ${explanation.explanation}
 
   // Sticky Quiz Logic
   const handleExitResult = async () => {
+    // If background generation finished, we can just leave or show a quick prompt
+    // But let's prioritize "No Confusion" and just go back if it's annoying
     if (stickyQuizTaken || !explanation) {
       setMode('MENU');
       return;
     }
 
-    // Sticky Quiz Interception
-    if (window.confirm("Wait! Before you leave, let's do a quick 3-question check to make sure you understood. Ready?")) {
-      // Check if background generation finished
-      if (stickyQuizData) {
-        setQuizData(stickyQuizData);
-        setStickyQuizTaken(true);
-        setMode('QUIZ');
-      } else {
-        // Fallback if not ready yet
-        setLoading(true);
-        setLoadingText("Generating quick check...");
-        try {
-          const stickyQuiz = await generateQuickQuiz(explanation.explanation, explanation.topic);
-          setQuizData(stickyQuiz);
-          setStickyQuizTaken(true);
-          setMode('QUIZ');
-        } catch (e) {
-          console.error(e);
-          setMode('MENU'); // If fail, just go back
-        } finally {
-          setLoading(false);
-        }
-      }
-    } else {
-      setMode('MENU');
-    }
+    // Optional: Only confirm if they haven't seen the result for long? 
+    // For now, let's keep it but make it clear it's a choice
+    setMode('MENU');
   };
 
   const handleTTS = async () => {
@@ -855,15 +834,22 @@ ${explanation.explanation}
               </motion.div>
             </div>
 
-            <button onClick={() => onNavigate(ViewState.DASHBOARD)} className="p-2 bg-slate-100 rounded-xl hover:bg-slate-200 transition-colors group" title="Back to Home">
-              <Home className="w-6 h-6 text-slate-500 group-hover:text-blue-600 transition-colors" />
-            </button>
-            <button onClick={() => setMode('PRICING' as any)} className="p-2 bg-indigo-100 rounded-xl hover:bg-indigo-200 transition-colors group" title="Pricing Plans">
-              <CreditCard className="w-6 h-6 text-indigo-600" />
-            </button>
-            <button onClick={() => { logout(); navigate('/'); }} className="ml-2 p-2 bg-slate-100 rounded-xl hover:bg-red-100 transition-colors group" title="Logout">
-              <LogOut className="w-6 h-6 text-slate-500 group-hover:text-red-500 transition-colors" />
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => onNavigate(ViewState.DASHBOARD)}
+                className="flex items-center gap-2 px-3 py-2 bg-slate-100 rounded-xl hover:bg-slate-200 transition-colors group text-xs font-bold text-slate-600"
+                title="Back to Landing Page"
+              >
+                <Home className="w-5 h-5 text-slate-500 group-hover:text-blue-600 transition-colors" />
+                Home
+              </button>
+              <button onClick={() => setMode('PRICING' as any)} className="p-2 bg-indigo-100 rounded-xl hover:bg-indigo-200 transition-colors group" title="Pricing Plans">
+                <CreditCard className="w-6 h-6 text-indigo-600" />
+              </button>
+              <button onClick={() => { logout(); navigate('/'); }} className="p-2 bg-slate-100 rounded-xl hover:bg-red-100 transition-colors group" title="Logout">
+                <LogOut className="w-6 h-6 text-slate-500 group-hover:text-red-500 transition-colors" />
+              </button>
+            </div>
           </div>
 
 
@@ -1289,8 +1275,9 @@ ${explanation.explanation}
           animate={{ y: 0, opacity: 1 }}
           className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-slate-200 px-4 py-3 flex items-center gap-3"
         >
-          <button onClick={handleExitResult} className="p-2 -ml-2 hover:bg-slate-100 rounded-full transition-colors">
-            <ArrowRight className="w-6 h-6 text-slate-500 rotate-180" />
+          <button onClick={handleExitResult} className="flex items-center gap-2 px-3 py-1.5 hover:bg-slate-100 rounded-xl transition-all group">
+            <ArrowRight className="w-5 h-5 text-slate-500 rotate-180 group-hover:text-blue-600" />
+            <span className="text-xs font-bold text-slate-500 group-hover:text-blue-600">Dashboard</span>
           </button>
           <h1 className="font-bold text-lg text-slate-900 truncate flex-1">{explanation.topic}</h1>
           <button onClick={handleDownload} className="p-2 text-blue-600 hover:bg-blue-50 rounded-full transition-colors">
