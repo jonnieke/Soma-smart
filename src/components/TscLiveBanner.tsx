@@ -4,7 +4,7 @@ import { X, Clock } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 export const TscLiveBanner: React.FC = () => {
-    const [isVisible, setIsVisible] = useState(true);
+    const [isVisible, setIsVisible] = useState(false);
     const [timeLeft, setTimeLeft] = useState<{ days: number; hours: number; minutes: number; seconds: number } | null>(null);
     const [endDate, setEndDate] = useState<number | null>(null);
 

@@ -158,17 +158,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         }
       }
 
-      // 3. Set Promo Settings (Hardcoded as per user request to start on Feb 27th)
-      const LAUNCH_DATE = new Date('2026-02-27T00:00:00+03:00');
-      const now = new Date();
-
-      if (LAUNCH_DATE > now) {
-        setIsPromoActive(true);
-        setPromoEndDate(LAUNCH_DATE);
-      } else {
-        setIsPromoActive(false);
-        setPromoEndDate(null);
-      }
+      // 3. Promo functionality is now disabled
+      setIsPromoActive(false);
+      setPromoEndDate(null);
     };
     initSession();
   }, []);
