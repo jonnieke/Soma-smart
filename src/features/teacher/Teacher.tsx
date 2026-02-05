@@ -114,6 +114,18 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate }) => {
         return `${mins}:${secs.toString().padStart(2, '0')}`;
     };
 
+    // Fix: Stop mic when component unmounts
+    useEffect(() => {
+        return () => {
+            if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+                mediaRecorderRef.current.stop();
+            }
+            if (mediaRecorderRef.current?.stream) {
+                mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
+            }
+        };
+    }, []);
+
     // Promo Timer Logic
     const [timeLeft, setTimeLeft] = useState("");
 

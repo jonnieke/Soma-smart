@@ -153,13 +153,22 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
   const streamRef = useRef<MediaStream | null>(null);
 
   const stopCameraStream = () => {
+    // 1. Stop tracks from the video element's srcObject
     if (videoRef.current && videoRef.current.srcObject) {
       const stream = videoRef.current.srcObject as MediaStream;
-      stream.getTracks().forEach(track => track.stop());
+      stream.getTracks().forEach(track => {
+        track.stop();
+        console.log("Stopped video track from videoRef");
+      });
       videoRef.current.srcObject = null;
     }
+
+    // 2. Stop tracks from the streamRef (most reliable if DOM is already gone)
     if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current.getTracks().forEach(track => {
+        track.stop();
+        console.log("Stopped video track from streamRef");
+      });
       streamRef.current = null;
     }
   };
@@ -181,12 +190,18 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
     }
   };
 
-  // Fix: Stop camera when component unmounts or scanner closes
+  // Fix: Stop camera and mic when component unmounts
   useEffect(() => {
     return () => {
-      if (videoRef.current && videoRef.current.srcObject) {
-        const stream = videoRef.current.srcObject as MediaStream;
-        stream.getTracks().forEach(track => track.stop());
+      // Cleanup Camera
+      stopCameraStream();
+
+      // Cleanup Microphone
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+        mediaRecorderRef.current.stop();
+      }
+      if (mediaRecorderRef.current?.stream) {
+        mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
       }
     };
   }, []);
