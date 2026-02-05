@@ -5,13 +5,17 @@ const LAUNCH_DATE = new Date('2026-02-27T00:00:00+03:00');
 
 export const checkSubscriptionAccess = async (userId: string, segment: UserSegment): Promise<{ isPro: boolean; tier: SubscriptionTier; expiry: string | null }> => {
     try {
-        const { data, error } = await supabase
+        const { data, error, status } = await supabase
             .from('profiles')
             .select('subscription_tier, subscription_expiry')
             .eq('id', userId)
             .maybeSingle();
 
+        // Graceful handling of missing columns (Status 400 usually indicates invalid column in Supabase/PostgREST)
         if (error || !data) {
+            if (status === 400) {
+                console.warn("Subscription columns likely missing in DB. Migration needed. Falling back to FREE tier.");
+            }
             return { isPro: false, tier: 'FREE', expiry: null };
         }
 
@@ -21,11 +25,11 @@ export const checkSubscriptionAccess = async (userId: string, segment: UserSegme
 
         return {
             isPro: isPreLaunch || (data.subscription_tier !== 'FREE' && !isExpired),
-            tier: data.subscription_tier as SubscriptionTier,
-            expiry: data.subscription_expiry
+            tier: (data.subscription_tier || 'FREE') as SubscriptionTier,
+            expiry: data.subscription_expiry || null
         };
     } catch (e) {
-        console.error("Access Check Error:", e);
+        console.error("Access Check Critical Error:", e);
         return { isPro: false, tier: 'FREE', expiry: null };
     }
 };
