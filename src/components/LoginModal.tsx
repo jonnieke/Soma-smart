@@ -493,7 +493,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, initial
                                         onClick={onSwitchToRegister}
                                         className="w-full py-2 text-sm text-blue-600 font-bold hover:bg-blue-50 rounded-lg transition-colors"
                                     >
-                                        Don't have an ID? Create Profile
+                                        New Student? Create Profile
                                     </button>
                                 )}
 
@@ -515,7 +515,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, initial
                                     onClick={onClose}
                                     className="w-full py-2 text-sm text-gray-400 font-medium hover:text-gray-600 transition-colors"
                                 >
-                                    Cancels
+                                    Cancel
                                 </button>
                             </div>
                         </form>

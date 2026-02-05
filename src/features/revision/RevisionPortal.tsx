@@ -136,6 +136,10 @@ export const RevisionPortal: React.FC = () => {
                                 isOpen={showLogin}
                                 onClose={() => setShowLogin(false)}
                                 initialTab="STUDENT"
+                                onSwitchToRegister={() => {
+                                    setShowLogin(false);
+                                    setStep('FORM');
+                                }}
                                 onSuccess={() => {
                                     setShowLogin(false);
                                     handleStartRevision();
