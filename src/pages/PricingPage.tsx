@@ -33,27 +33,50 @@ export const PricingPage: React.FC = () => {
 
     const handleVerification = async (reference: string) => {
         setVerifying(true);
-        try {
-            // 1. Poll or check status
-            const result = await pesapalService.checkTransactionStatus(reference);
+        setVerifyError('');
 
-            if (result.status === 'COMPLETED' || result.payment_status_description === 'Completed') {
-                setVerifySuccess(true);
-                // 2. Refresh local state (upgradeAccount in service should have been called by webhook, 
-                // but we can trigger a sync/refresh if needed)
-                setTimeout(() => {
-                    const dashboard = role === 'TEACHER' ? '/teacher' : '/learner';
-                    window.location.href = dashboard; // Force reload to ensure state sync
-                }, 2000);
-            } else {
-                setVerifyError('Payment is still being processed. Please check back in a moment.');
+        const startTime = Date.now();
+        const TIMEOUT = 45000; // 45 seconds polling
+        const INTERVAL = 3500; // 3.5 seconds between checks
+
+        const poll = async () => {
+            try {
+                const result = await pesapalService.checkTransactionStatus(reference);
+
+                if (result.status === 'COMPLETED' || result.payment_status_description === 'Completed') {
+                    setVerifySuccess(true);
+                    setVerifying(false);
+
+                    // Success! Redirect after a short delay
+                    setTimeout(() => {
+                        const dashboard = role === 'TEACHER' ? '/teacher' : '/learner';
+                        window.location.href = dashboard; // Force reload to sync all context state
+                    }, 2500);
+                    return true;
+                }
+
+                // If not completed and under timeout, continue polling
+                if (Date.now() - startTime < TIMEOUT) {
+                    setTimeout(poll, INTERVAL);
+                    return false;
+                } else {
+                    setVerifyError('Verification is taking longer than expected. Your subscription will be active shortly once the background process completes.');
+                    setVerifying(false);
+                    return false;
+                }
+            } catch (err) {
+                console.error("Polling error:", err);
+                if (Date.now() - startTime < TIMEOUT) {
+                    setTimeout(poll, INTERVAL);
+                } else {
+                    setVerifyError('Lost connection to payment gateway. Please check your dashboard in a moment.');
+                    setVerifying(false);
+                }
+                return false;
             }
-        } catch (err) {
-            console.error("Verification error:", err);
-            setVerifyError('Could not verify payment status automatically.');
-        } finally {
-            setVerifying(false);
-        }
+        };
+
+        poll();
     };
 
     return (

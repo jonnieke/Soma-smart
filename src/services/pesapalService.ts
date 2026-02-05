@@ -10,7 +10,8 @@ export const pesapalService = {
      * Initiates a payment and returns the redirect_url for the iframe
      */
     async initiatePayment(userId: string, plan: SubscriptionPlan, customer: { email: string, firstName: string, lastName: string, phone: string }) {
-        const reference = `SUB-${userId.slice(0, 5)}-${Date.now()}`;
+        // Encode duration in reference for Edge Function to parse
+        const reference = `SUB_${plan.duration}_${userId.slice(0, 5)}_${Date.now()}`;
 
         // 1. Record pending transaction in Supabase first
         await supabase.from('transactions').insert({

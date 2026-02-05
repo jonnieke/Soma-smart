@@ -75,9 +75,26 @@ serve(async (req) => {
                 const { data: tx } = await supabase.from('transactions').select('user_id, amount').eq('reference_code', merchant_reference).single()
 
                 if (tx) {
+                    // Parse Plan from reference (Format: SUB_DURATION_USERID_TIMESTAMP)
+                    const parts = merchant_reference.split('_')
+                    const duration = parts[1] || 'MONTHLY'
+
+                    const now = new Date()
+                    let expiryDate = new Date(now)
+
+                    // Simple mapping of durations
+                    switch (duration) {
+                        case 'DAILY': expiryDate.setDate(now.getDate() + 1); break;
+                        case 'WEEKLY': expiryDate.setDate(now.getDate() + 7); break;
+                        case 'MONTHLY': expiryDate.setMonth(now.getMonth() + 1); break;
+                        case 'TERMLY': expiryDate.setMonth(now.getMonth() + 3); break;
+                        case 'ANNUAL': expiryDate.setFullYear(now.getFullYear() + 1); break;
+                        default: expiryDate.setMonth(now.getMonth() + 1);
+                    }
+
                     await supabase.from('profiles').update({
-                        subscription_tier: 'PRO',
-                        subscription_expiry: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+                        subscription_tier: duration,
+                        subscription_expiry: expiryDate.toISOString()
                     }).eq('id', tx.user_id)
                 }
             }
