@@ -7,6 +7,7 @@ import { SubscriptionPlan, UserSegment } from '../../types';
 interface Props {
     onSelectPlan: (plan: any) => void;
     onClose: () => void;
+    currentTier?: string;
 }
 
 const PromoBanner = () => {
@@ -92,7 +93,7 @@ const PromoBanner = () => {
     );
 };
 
-export const PricingPage: React.FC<Props> = ({ onSelectPlan, onClose }) => {
+export const PricingPage: React.FC<Props> = ({ onSelectPlan, onClose, currentTier }) => {
     const [activeTab, setActiveTab] = useState<UserSegment>('STUDENT');
 
     const renderTabButton = (tab: UserSegment, icon: any, label: string) => (
@@ -147,6 +148,9 @@ export const PricingPage: React.FC<Props> = ({ onSelectPlan, onClose }) => {
                                         plan={plan}
                                         onSelect={() => onSelectPlan(plan)}
                                         popular={plan.duration === 'MONTHLY'}
+                                        isCurrent={currentTier === plan.duration}
+                                        currentTier={currentTier}
+                                        disabled={currentTier !== 'FREE' && currentTier !== plan.duration && plan.duration === 'DAILY'} // Example: can't downgrade to daily
                                     />
                                 ))}
                             </div>
@@ -160,6 +164,8 @@ export const PricingPage: React.FC<Props> = ({ onSelectPlan, onClose }) => {
                                         plan={plan}
                                         onSelect={() => onSelectPlan(plan)}
                                         popular={plan.duration === 'TERMLY'}
+                                        isCurrent={currentTier === plan.duration}
+                                        currentTier={currentTier}
                                     />
                                 ))}
                             </div>
@@ -172,6 +178,8 @@ export const PricingPage: React.FC<Props> = ({ onSelectPlan, onClose }) => {
                                         key={plan.id}
                                         plan={plan}
                                         onSelect={() => onSelectPlan(plan)}
+                                        isCurrent={currentTier === plan.id} // Schools might use ID
+                                        currentTier={currentTier}
                                     />
                                 ))}
                                 <div className="md:col-span-3 bg-indigo-600 rounded-3xl p-8 text-white flex flex-col md:flex-row items-center justify-between gap-6 shadow-xl shadow-indigo-200">
@@ -208,12 +216,17 @@ export const PricingPage: React.FC<Props> = ({ onSelectPlan, onClose }) => {
     );
 };
 
-const PricingCard = ({ plan, onSelect, popular }: { plan: SubscriptionPlan, onSelect: () => void, popular?: boolean }) => (
-    <div className={`bg-white rounded-[2.5rem] p-8 shadow-xl border-2 transition-all hover:scale-105 flex flex-col relative ${popular ? 'border-indigo-500' : 'border-slate-100'
-        }`}>
-        {popular && (
+const PricingCard = ({ plan, onSelect, popular, isCurrent, disabled, currentTier }: { plan: SubscriptionPlan, onSelect: () => void, popular?: boolean, isCurrent?: boolean, disabled?: boolean, currentTier?: string }) => (
+    <div className={`bg-white rounded-[2.5rem] p-8 shadow-xl border-2 transition-all group flex flex-col relative ${popular ? 'border-indigo-500' : 'border-slate-100'
+        } ${isCurrent ? 'ring-4 ring-green-500/20 border-green-500' : ''} ${!isCurrent && !disabled ? 'hover:scale-105' : ''}`}>
+        {popular && !isCurrent && (
             <div className="absolute top-0 right-12 -translate-y-1/2 bg-indigo-600 text-white px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg">
                 Most Popular
+            </div>
+        )}
+        {isCurrent && (
+            <div className="absolute top-0 right-12 -translate-y-1/2 bg-green-500 text-white px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg flex items-center gap-1">
+                <ShieldCheck className="w-3 h-3" /> Current Plan
             </div>
         )}
         <div className="mb-6">
@@ -237,19 +250,34 @@ const PricingCard = ({ plan, onSelect, popular }: { plan: SubscriptionPlan, onSe
             {plan.duration === 'ANNUAL' && <Feature item="Full Year Access" bold />}
         </div>
         <button
-            onClick={onSelect}
-            className={`w-full py-4 rounded-2xl font-black text-sm flex items-center justify-center gap-2 transition-all shadow-lg ${popular
-                ? 'bg-indigo-600 text-white shadow-indigo-200 hover:bg-indigo-700'
-                : 'bg-slate-900 text-white shadow-slate-200 hover:bg-slate-800'
+            onClick={!isCurrent && !disabled ? onSelect : undefined}
+            disabled={isCurrent || disabled}
+            className={`w-full py-4 rounded-2xl font-black text-sm flex items-center justify-center gap-2 transition-all shadow-lg ${isCurrent
+                ? 'bg-green-100 text-green-700 shadow-none cursor-default'
+                : disabled
+                    ? 'bg-slate-100 text-slate-400 cursor-not-allowed shadow-none'
+                    : popular
+                        ? 'bg-indigo-600 text-white shadow-indigo-200 hover:bg-indigo-700'
+                        : 'bg-slate-900 text-white shadow-slate-200 hover:bg-slate-800'
                 }`}
         >
-            Get Started <ArrowRight className="w-4 h-4" />
+            {isCurrent
+                ? 'Active Plan'
+                : (disabled
+                    ? 'Unavailable'
+                    : (currentTier && currentTier !== 'FREE' ? 'Upgrade Plan' : 'Get Started'))}
+            {!isCurrent && !disabled && <ArrowRight className="w-4 h-4" />}
         </button>
     </div>
 );
 
-const SchoolCard = ({ plan, onSelect }: { plan: any, onSelect: () => void }) => (
-    <div className="bg-white rounded-[2.5rem] p-8 shadow-xl border-2 border-slate-100 transition-all hover:scale-105 flex flex-col">
+const SchoolCard = ({ plan, onSelect, isCurrent, currentTier }: { plan: any, onSelect: () => void, isCurrent?: boolean, currentTier?: string }) => (
+    <div className={`bg-white rounded-[2.5rem] p-8 shadow-xl border-2 transition-all flex flex-col relative ${isCurrent ? 'border-green-500 ring-4 ring-green-100' : 'border-slate-100 hover:scale-105'}`}>
+        {isCurrent && (
+            <div className="absolute top-0 right-12 -translate-y-1/2 bg-green-500 text-white px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg">
+                Current Plan
+            </div>
+        )}
         <div className="mb-6">
             <h3 className="text-xl font-bold text-slate-800 mb-1">{plan.name}</h3>
             <span className="text-[10px] bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">
@@ -269,10 +297,11 @@ const SchoolCard = ({ plan, onSelect }: { plan: any, onSelect: () => void }) => 
             <Feature item="Priority Support" />
         </div>
         <button
-            onClick={onSelect}
-            className="w-full py-4 rounded-2xl font-black text-sm flex items-center justify-center gap-2 bg-slate-900 text-white shadow-xl shadow-slate-200 hover:bg-slate-800 transition-all"
+            onClick={!isCurrent ? onSelect : undefined}
+            disabled={isCurrent}
+            className={`w-full py-4 rounded-2xl font-black text-sm flex items-center justify-center gap-2 transition-all shadow-xl shadow-slate-200 ${isCurrent ? 'bg-green-100 text-green-700' : 'bg-slate-900 text-white hover:bg-slate-800'}`}
         >
-            Select Plan <ArrowRight className="w-4 h-4" />
+            {isCurrent ? 'Active Plan' : (currentTier && currentTier !== 'FREE' ? 'Upgrade Plan' : 'Select Plan')} {!isCurrent && <ArrowRight className="w-4 h-4" />}
         </button>
     </div>
 );

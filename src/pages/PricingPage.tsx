@@ -9,7 +9,7 @@ import { pesapalService } from '../services/pesapalService';
 export const PricingPage: React.FC = () => {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
-    const { isPro, upgradeAccount, userId, role } = useApp();
+    const { isPro, upgradeAccount, userId, role, subscriptionPlan } = useApp();
     const [verifying, setVerifying] = React.useState(false);
     const [verifyError, setVerifyError] = React.useState('');
     const [verifySuccess, setVerifySuccess] = React.useState(false);
@@ -31,76 +31,23 @@ export const PricingPage: React.FC = () => {
         }
     }, [isPro, verifying, navigate, role, status]);
 
-    // If user becomes Pro during polling (e.g. via background IPN), trigger success immediately
-    React.useEffect(() => {
-        if (isPro && verifying) {
-            setVerifySuccess(true);
-            setVerifying(false);
-            setTimeout(() => {
-                const dashboard = role === 'TEACHER' ? '/teacher' : '/learner';
-                window.location.href = dashboard;
-            }, 2000);
-        }
-    }, [isPro, verifying, role]);
-
     const handleVerification = async (reference: string) => {
-        setVerifying(true);
-        setVerifyError('');
+        // WORLD-CLASS PROCESS: Immediate Success UI & Redirect
+        // Pesapal 'verifying' status from redirect is enough to show success to the user
+        // While we sync the DB in the background.
+        setVerifySuccess(true);
+        setVerifying(false);
 
-        const startTime = Date.now();
-        const TIMEOUT = 45000; // 45 seconds polling
-        const INTERVAL = 3500; // 3.5 seconds between checks
+        // Background verification sync
+        pesapalService.checkTransactionStatus(reference).catch(err => {
+            console.error("Background verification sync failed - IPN should handle this:", err);
+        });
 
-        const poll = async () => {
-            // Stop polling if we've already succeeded (e.g. via isPro effect)
-            if (verifySuccess) return;
-
-            try {
-                const result = await pesapalService.checkTransactionStatus(reference);
-
-                if (result.status === 'COMPLETED' || result.payment_status_description === 'Completed') {
-                    setVerifySuccess(true);
-                    setVerifying(false);
-
-                    setTimeout(() => {
-                        const dashboard = role === 'TEACHER' ? '/teacher' : '/learner';
-                        window.location.href = dashboard;
-                    }, 2500);
-                    return true;
-                }
-
-                if (Date.now() - startTime < TIMEOUT) {
-                    setTimeout(poll, INTERVAL);
-                    return false;
-                } else {
-                    // OPTIMISTIC FLOW: Instead of an error, show success and redirect.
-                    // The background IPN will catch up if it hasn't already.
-                    setVerifySuccess(true);
-                    setVerifying(false);
-                    setTimeout(() => {
-                        const dashboard = role === 'TEACHER' ? '/teacher' : '/learner';
-                        window.location.href = dashboard;
-                    }, 3000);
-                    return false;
-                }
-            } catch (err) {
-                console.error("Polling error:", err);
-                if (Date.now() - startTime < TIMEOUT) {
-                    setTimeout(poll, INTERVAL);
-                } else {
-                    // Fallback to optimistic success even on network error after timeout
-                    setVerifySuccess(true);
-                    setVerifying(false);
-                    setTimeout(() => {
-                        const dashboard = role === 'TEACHER' ? '/teacher' : '/learner';
-                        window.location.href = dashboard;
-                    }, 3000);
-                }
-                return false;
-            }
-        };
-
-        poll();
+        // Instant Redirect
+        setTimeout(() => {
+            const dashboard = role === 'TEACHER' ? '/teacher' : '/learner';
+            window.location.href = dashboard;
+        }, 1500);
     };
 
     return (
@@ -153,6 +100,7 @@ export const PricingPage: React.FC = () => {
             </div>
 
             <PricingComponent
+                currentTier={subscriptionPlan}
                 onSelectPlan={(plan) => {
                     // Navigate to registration with plan intent
                     navigate('/', { state: { selectedPlan: plan, showRegistration: true } });
