@@ -40,7 +40,11 @@ export const pesapalService = {
             }
         });
 
-        if (error) throw error;
+        console.log("Pesapal Initiate Response Data:", data);
+        if (error) {
+            console.error("Supabase Function Error:", error);
+            throw error;
+        }
         return data; // contains redirect_url
     },
 

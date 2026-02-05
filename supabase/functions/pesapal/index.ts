@@ -21,7 +21,10 @@ serve(async (req) => {
         )
 
         const url = new URL(req.url)
-        const path = url.pathname.split('/').pop()
+        console.log(`Incoming request URL: ${req.url}`)
+        const path = url.pathname.toLowerCase()
+
+        console.log(`Request Method: ${method}, Lowercase Path: ${path}`)
 
         // Helper to get Auth Token
         const getAuthToken = async () => {
@@ -81,10 +84,13 @@ serve(async (req) => {
             return statusData
         }
 
-        // 1. AUTHENTICATION
-        if (path === 'authenticate') {
+        // 1. AUTHENTICATION & KEY TEST
+        if (path.endsWith('authenticate') || path.endsWith('test-keys')) {
             const key = Deno.env.get('PESAPAL_CONSUMER_KEY')
             const secret = Deno.env.get('PESAPAL_CONSUMER_SECRET')
+            const ipnId = Deno.env.get('PESAPAL_IPN_ID')
+
+            console.log(`Key Test: Key exists: ${!!key}, Secret exists: ${!!secret}, IPN ID exists: ${!!ipnId}`)
 
             const response = await fetch(`${PESAPAL_BASE_URL}/api/Auth/RequestToken`, {
                 method: 'POST',
@@ -97,14 +103,19 @@ serve(async (req) => {
 
             const data = await response.json()
             return new Response(JSON.stringify({
+                success: response.ok,
                 pesapal_response: data,
-                key_preview: `${key?.substring(0, 4)}...`,
-                env_vars: Object.keys(Deno.env.toObject()).filter(k => k.includes('PESAPAL'))
+                config_preview: {
+                    key_present: !!key,
+                    secret_present: !!secret,
+                    ipn_present: !!ipnId,
+                    is_sandbox: IS_SANDBOX
+                }
             }), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } })
         }
 
         // 2. REGISTER IPN
-        if (path === 'register-ipn') {
+        if (path.endsWith('register-ipn')) {
             const token = await getAuthToken()
             const supabaseUrl = Deno.env.get('SUPABASE_URL')
             if (!supabaseUrl) throw new Error("SUPABASE_URL not found in environment")
@@ -149,7 +160,7 @@ serve(async (req) => {
         }
 
         // 3. INITIATE ORDER
-        if (path === 'initiate-order') {
+        if (path.endsWith('initiate-order')) {
             const { amount, description, reference, callback_url, billing_address } = await req.json()
             const token = await getAuthToken()
 
@@ -170,11 +181,21 @@ serve(async (req) => {
                 })
             })
             const orderData = await orderRes.json()
+            console.log("Pesapal Order Response:", JSON.stringify(orderData))
+
+            if (!orderRes.ok) {
+                return new Response(JSON.stringify({
+                    error: "Pesapal Order Failed",
+                    status: orderRes.status,
+                    details: orderData
+                }), { status: 400, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } })
+            }
+
             return new Response(JSON.stringify(orderData), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } })
         }
 
         // 4. IPN HANDLER (GET or POST from Pesapal)
-        if (path === 'ipn-handler') {
+        if (path.endsWith('ipn-handler')) {
             console.log("IPN Received:", method)
             let trackingId = url.searchParams.get('OrderTrackingId')
             let merchantRef = url.searchParams.get('OrderMerchantReference')
@@ -205,13 +226,17 @@ serve(async (req) => {
         }
 
         // 5. MANUAL CHECK STATUS
-        if (path === 'check-status') {
+        if (path.endsWith('check-status')) {
             const { OrderTrackingId } = await req.json()
             const statusData = await updateTransactionStatus(OrderTrackingId)
             return new Response(JSON.stringify(statusData), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } })
         }
 
-        return new Response('Not Found', { status: 404 })
+        return new Response(JSON.stringify({
+            error: 'Not Found',
+            path,
+            message: 'Target action not matched in Edge Function. Use /test-keys to verify setup.'
+        }), { status: 404, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } })
 
     } catch (error) {
         return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } })

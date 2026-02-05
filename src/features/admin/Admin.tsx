@@ -6,6 +6,7 @@ import { UsersView } from './views/Users';
 import { FinancialsView } from './views/Financials';
 import { SettingsView } from './views/Settings';
 import { CurriculumView } from './views/Curriculum';
+import { ExamsView } from './views/Exams';
 import { Lock } from 'lucide-react';
 
 interface AdminProps {
@@ -65,6 +66,7 @@ export const AdminDashboard: React.FC<AdminProps> = ({ onNavigate }) => {
             {activeTab === 'USERS' && <UsersView />}
             {activeTab === 'FINANCE' && <FinancialsView />}
             {activeTab === 'CURRICULUM' && <CurriculumView />}
+            {activeTab === 'EXAMS' && <ExamsView />}
             {activeTab === 'SETTINGS' && <SettingsView />}
         </AdminLayout>
     );
