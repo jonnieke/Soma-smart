@@ -112,32 +112,52 @@ export const PricingPage: React.FC<Props> = ({ onSelectPlan, onClose, currentTie
     return (
         <div className="min-h-screen bg-slate-50 font-sans text-slate-800 pb-20">
             {/* Header */}
-            <header className="bg-gradient-to-br from-indigo-900 to-slate-900 px-6 pt-12 pb-24 rounded-b-[3rem] text-white text-center relative overflow-hidden">
-                {/* Close Button for Dashboard Context */}
-                <button
-                    onClick={onClose}
-                    className="absolute top-6 right-6 z-50 p-2 bg-white/10 hover:bg-white/20 rounded-full backdrop-blur-md border border-white/20 transition-all active:scale-95"
-                    title="Close and Return"
-                >
-                    <X className="w-6 h-6" />
-                </button>
+            <header className="bg-gradient-to-br from-indigo-950 via-slate-900 to-indigo-900 px-6 pt-20 pb-40 rounded-b-[4rem] text-white text-center relative overflow-hidden shadow-2xl shadow-indigo-200/50">
+                {/* Floating Orbs for Premium Feel */}
+                <motion.div
+                    animate={{ x: [0, 20, 0], y: [0, -20, 0] }}
+                    transition={{ repeat: Infinity, duration: 10, ease: "easeInOut" }}
+                    className="absolute -top-24 -left-24 w-96 h-96 bg-indigo-500/10 rounded-full blur-[100px]"
+                ></motion.div>
+                <motion.div
+                    animate={{ x: [0, -30, 0], y: [0, 20, 0] }}
+                    transition={{ repeat: Infinity, duration: 8, ease: "easeInOut" }}
+                    className="absolute -bottom-48 -right-24 w-96 h-96 bg-violet-600/10 rounded-full blur-[120px]"
+                ></motion.div>
 
-                <div className="absolute top-6 left-6 z-50">
+                {/* Navigation Buttons */}
+                <div className="absolute top-8 left-8 z-50">
                     <button
                         onClick={onClose}
-                        className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-xl backdrop-blur-md border border-white/20 transition-all text-xs font-bold"
+                        className="flex items-center gap-2.5 px-6 py-3 bg-white/5 hover:bg-white/10 rounded-2xl backdrop-blur-xl border border-white/10 transition-all text-xs font-black uppercase tracking-widest shadow-xl group"
                     >
-                        <ArrowRight className="w-4 h-4 rotate-180" /> Dashboard
+                        <ArrowRight className="w-4 h-4 rotate-180 group-hover:-translate-x-1 transition-transform" /> Dashboard
                     </button>
                 </div>
 
-                <div className="relative z-10 max-w-2xl mx-auto">
-                    <h1 className="text-4xl font-black mb-3">Simple Pricing</h1>
-                    <p className="text-indigo-100/80 font-medium">Choose a plan that fits your learning journey. Start small, grow big! 🚀</p>
+                <div className="absolute top-8 right-8 z-50">
+                    <button
+                        onClick={onClose}
+                        className="p-3 bg-white/5 hover:bg-white/10 rounded-2xl backdrop-blur-xl border border-white/10 transition-all shadow-xl text-white/50 hover:text-white"
+                        title="Close"
+                    >
+                        <X className="w-6 h-6" />
+                    </button>
                 </div>
-                {/* Decorative blobs */}
-                <div className="absolute -top-24 -left-24 w-64 h-64 bg-indigo-500/20 rounded-full blur-3xl"></div>
-                <div className="absolute -bottom-24 -right-24 w-64 h-64 bg-purple-500/20 rounded-full blur-3xl"></div>
+
+                <div className="relative z-10 max-w-3xl mx-auto px-4">
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                    >
+                        <h1 className="text-5xl md:text-7xl font-black mb-6 tracking-tighter leading-none bg-clip-text text-transparent bg-gradient-to-b from-white to-white/60">
+                            The Future of <br /> Learning is Soma.
+                        </h1>
+                        <p className="text-xl text-indigo-100/60 font-medium max-w-xl mx-auto leading-relaxed">
+                            Join thousands of students and teachers across Kenya. Simple, transparent pricing for every stage of your journey.
+                        </p>
+                    </motion.div>
+                </div>
             </header>
 
             <main className="max-w-4xl mx-auto px-6 -mt-12 relative z-20">
@@ -214,80 +234,125 @@ export const PricingPage: React.FC<Props> = ({ onSelectPlan, onClose, currentTie
                     </motion.div>
                 </AnimatePresence>
 
-                {/* Trust Signals */}
-                <div className="mt-16 grid grid-cols-2 md:grid-cols-4 gap-4">
-                    {[
-                        { icon: ShieldCheck, label: 'CBC Aligned', desc: 'Kenyan Curriculum' },
-                        { icon: Smartphone, label: 'M-Pesa First', desc: 'Secure & Instant' },
-                        { icon: Zap, label: 'Works Offline', desc: 'Save on Data' },
-                        { icon: Star, label: '5-Star AI', desc: 'Smart Learning' },
-                    ].map((item, i) => (
-                        <div key={i} className="bg-white p-4 rounded-2xl text-center border border-slate-100 shadow-sm">
-                            <item.icon className="w-8 h-8 text-indigo-600 mx-auto mb-2" />
-                            <h4 className="font-bold text-slate-800 text-sm">{item.label}</h4>
-                            <p className="text-[10px] text-slate-500">{item.desc}</p>
-                        </div>
-                    ))}
+                {/* Trust Signals & Payment Icons */}
+                <div className="mt-20">
+                    <div className="flex flex-wrap items-center justify-center gap-8 md:gap-16 opacity-40 grayscale hover:grayscale-0 transition-all duration-500 mb-12">
+                        {/* Placeholder for Trust Icons - Using styled text/simple svg shapes as logos */}
+                        <div className="flex items-center gap-2 font-black text-2xl tracking-tighter"><div className="w-8 h-8 bg-emerald-500 rounded-lg"></div> M-PESA</div>
+                        <div className="flex items-center gap-2 font-black text-2xl tracking-tighter italic text-blue-900">VISA</div>
+                        <div className="flex items-center gap-2 font-black text-2xl tracking-tighter text-red-600">Mastercard</div>
+                    </div>
+
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                        {[
+                            { icon: ShieldCheck, label: 'CBC Aligned', desc: 'Official Kenyan Curriculum', color: 'text-emerald-500' },
+                            { icon: Smartphone, label: 'Secure Payments', desc: 'SSL Encrypted Checkout', color: 'text-indigo-500' },
+                            { icon: Zap, label: 'AI Powered', desc: 'Personalized Tutoring', color: 'text-amber-500' },
+                            { icon: Star, label: '5-Star Support', desc: 'Always here to help', color: 'text-rose-500' },
+                        ].map((item, i) => (
+                            <div key={i} className="bg-white/50 backdrop-blur-sm p-6 rounded-[2rem] text-center border border-white shadow-sm hover:shadow-md transition-all">
+                                <item.icon className={`w-10 h-10 ${item.color} mx-auto mb-3`} />
+                                <h4 className="font-black text-slate-800 text-sm mb-1">{item.label}</h4>
+                                <p className="text-[11px] text-slate-500 font-medium leading-tight">{item.desc}</p>
+                            </div>
+                        ))}
+                    </div>
                 </div>
             </main>
         </div>
     );
 };
 
-const PricingCard = ({ plan, onSelect, popular, isCurrent, disabled, currentTier }: { plan: SubscriptionPlan, onSelect: () => void, popular?: boolean, isCurrent?: boolean, disabled?: boolean, currentTier?: string }) => (
-    <div className={`bg-white rounded-[2.5rem] p-8 shadow-xl border-2 transition-all group flex flex-col relative ${popular ? 'border-indigo-500' : 'border-slate-100'
-        } ${isCurrent ? 'ring-4 ring-green-500/20 border-green-500' : ''} ${!isCurrent && !disabled ? 'hover:scale-105' : ''}`}>
-        {popular && !isCurrent && (
-            <div className="absolute top-0 right-12 -translate-y-1/2 bg-indigo-600 text-white px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg">
-                Most Popular
-            </div>
-        )}
-        {isCurrent && (
-            <div className="absolute top-0 right-12 -translate-y-1/2 bg-green-500 text-white px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg flex items-center gap-1">
-                <ShieldCheck className="w-3 h-3" /> Current Plan
-            </div>
-        )}
-        <div className="mb-6">
-            <h3 className="text-xl font-bold text-slate-800 mb-1">{plan.name}</h3>
-            {plan.savings && (
-                <span className="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">
-                    {plan.savings}
-                </span>
+const PricingCard = ({ plan, onSelect, popular, isCurrent, disabled, currentTier }: { plan: SubscriptionPlan, onSelect: () => void, popular?: boolean, isCurrent?: boolean, disabled?: boolean, currentTier?: string }) => {
+    // Calculate cost per day for psychological advantage
+    const getCostPerDay = () => {
+        let days = 1;
+        if (plan.duration === 'WEEKLY') days = 7;
+        if (plan.duration === 'MONTHLY') days = 30;
+        if (plan.duration === 'TERMLY') days = 90;
+        if (plan.duration === 'ANNUAL') days = 365;
+        const perDay = plan.price / days;
+        return perDay < 1 ? '< KES 1' : `KES ${perDay.toFixed(1)}`;
+    };
+
+    return (
+        <div className={`bg-white rounded-[2.5rem] p-8 shadow-xl border-2 transition-all group flex flex-col relative overflow-hidden ${popular ? 'border-indigo-500 scale-105 z-10' : 'border-slate-100 shadow-slate-200/50'
+            } ${isCurrent ? 'ring-8 ring-indigo-500/10 border-indigo-500' : ''} ${!isCurrent && !disabled ? 'hover:scale-105 hover:shadow-2xl' : ''}`}>
+
+            {/* Glowing Effect for Popular Plan */}
+            {popular && (
+                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 via-violet-500 to-indigo-500 animate-gradient-x"></div>
             )}
-        </div>
-        <div className="mb-8">
-            <div className="flex items-baseline gap-1">
-                <span className="text-4xl font-black text-slate-900 leading-none">KES {plan.price}</span>
-                <span className="text-slate-400 font-bold text-sm">/{plan.duration.toLowerCase()}</span>
+
+            <div className="flex justify-between items-start mb-6">
+                <div>
+                    <h3 className="text-xl font-black text-slate-900 mb-1">{plan.name}</h3>
+                    {plan.savings ? (
+                        <motion.span
+                            animate={{ scale: [1, 1.05, 1] }}
+                            transition={{ repeat: Infinity, duration: 2 }}
+                            className="inline-block text-[10px] bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full font-black uppercase tracking-wider shadow-sm"
+                        >
+                            {plan.savings}
+                        </motion.span>
+                    ) : (
+                        <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest leading-none">Standard Plan</span>
+                    )}
+                </div>
+                {popular && !isCurrent && (
+                    <div className="bg-indigo-600 text-white px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest shadow-lg shadow-indigo-100">
+                        Best Value
+                    </div>
+                )}
+                {isCurrent && (
+                    <div className="bg-emerald-500 text-white p-1.5 rounded-full shadow-lg">
+                        <Check className="w-4 h-4" />
+                    </div>
+                )}
             </div>
+
+            <div className="mb-8">
+                <div className="flex items-baseline gap-1.5">
+                    <span className="text-4xl font-black text-slate-900 tracking-tighter">KES {plan.price}</span>
+                    <span className="text-slate-400 font-bold text-sm tracking-tight text-right">
+                        / {plan.duration.toLowerCase()}
+                    </span>
+                </div>
+                <div className="mt-1 text-[11px] font-black text-indigo-500 uppercase tracking-widest opacity-80">
+                    Just {getCostPerDay()} a day
+                </div>
+            </div>
+
+            <div className="space-y-4 mb-10 flex-1">
+                <Feature item="AI Homework & Exams" bold={popular} />
+                <Feature item="Step-by-Step Solutions" bold={popular} />
+                <Feature item="Offline Access" bold={popular} />
+                <div className="h-px bg-slate-50 mx-2"></div>
+                <Feature item="Candidate Specialists AI" />
+            </div>
+
+            <button
+                onClick={!isCurrent && !disabled ? onSelect : undefined}
+                disabled={isCurrent || disabled}
+                className={`w-full py-5 rounded-[1.5rem] font-black text-sm flex items-center justify-center gap-2 transition-all shadow-xl active:scale-95 ${isCurrent
+                    ? 'bg-emerald-50 text-emerald-600 shadow-none cursor-default border border-emerald-100'
+                    : disabled
+                        ? 'bg-slate-100 text-slate-400 cursor-not-allowed shadow-none'
+                        : popular
+                            ? 'bg-indigo-600 text-white shadow-indigo-300/40 hover:bg-indigo-700 hover:shadow-indigo-400/50'
+                            : 'bg-slate-900 text-white shadow-slate-300/40 hover:bg-slate-800'
+                    }`}
+            >
+                {isCurrent
+                    ? 'Your Active Plan'
+                    : (disabled
+                        ? 'Not Available'
+                        : (currentTier && currentTier !== 'FREE' ? 'Upgrade to Pro' : 'Unlock Access Now'))}
+                {!isCurrent && !disabled && <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />}
+            </button>
         </div>
-        <div className="space-y-4 mb-10 flex-1">
-            <Feature item="AI Homework Help" />
-            <Feature item="Unlimited Quizzes" />
-            <Feature item="CBC Study Guides" />
-            {plan.duration === 'ANNUAL' && <Feature item="Full Year Access" bold />}
-        </div>
-        <button
-            onClick={!isCurrent && !disabled ? onSelect : undefined}
-            disabled={isCurrent || disabled}
-            className={`w-full py-4 rounded-2xl font-black text-sm flex items-center justify-center gap-2 transition-all shadow-lg ${isCurrent
-                ? 'bg-green-100 text-green-700 shadow-none cursor-default'
-                : disabled
-                    ? 'bg-slate-100 text-slate-400 cursor-not-allowed shadow-none'
-                    : popular
-                        ? 'bg-indigo-600 text-white shadow-indigo-200 hover:bg-indigo-700'
-                        : 'bg-slate-900 text-white shadow-slate-200 hover:bg-slate-800'
-                }`}
-        >
-            {isCurrent
-                ? 'Active Plan'
-                : (disabled
-                    ? 'Unavailable'
-                    : (currentTier && currentTier !== 'FREE' ? 'Upgrade Plan' : 'Get Started'))}
-            {!isCurrent && !disabled && <ArrowRight className="w-4 h-4" />}
-        </button>
-    </div>
-);
+    );
+};
 
 const SchoolCard = ({ plan, onSelect, isCurrent, currentTier }: { plan: any, onSelect: () => void, isCurrent?: boolean, currentTier?: string }) => (
     <div className={`bg-white rounded-[2.5rem] p-8 shadow-xl border-2 transition-all flex flex-col relative ${isCurrent ? 'border-green-500 ring-4 ring-green-100' : 'border-slate-100 hover:scale-105'}`}>

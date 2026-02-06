@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ClipboardCheck, Plus, Trash2, Loader2, Search, FileText, CheckCircle, AlertCircle } from 'lucide-react';
+import { ClipboardCheck, Plus, Trash2, Loader2, Search, FileText, CheckCircle, AlertCircle, Upload, FileUp, Sparkles } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import { Button } from '../../../components/Shared';
+import { ingestPastPaper } from '../../../services/geminiService';
+import { ExamAnalysis } from '../../../types';
 
 interface Exam {
     id: string;
@@ -24,6 +26,11 @@ export const ExamsView: React.FC = () => {
     const [grade, setGrade] = useState("KCSE");
     const [content, setContent] = useState("");
     const [saving, setSaving] = useState(false);
+
+    // AI Ingestion State
+    const [uploading, setUploading] = useState(false);
+    const [analyzedData, setAnalyzedData] = useState<ExamAnalysis | null>(null);
+    const [file, setFile] = useState<File | null>(null);
 
     useEffect(() => {
         fetchExams();
@@ -56,18 +63,37 @@ export const ExamsView: React.FC = () => {
         }
     };
 
+    const handleIngestPaper = async () => {
+        if (!file) return;
+        setUploading(true);
+        try {
+            const result = await ingestPastPaper(file);
+            setAnalyzedData(result);
+            setTitle(file.name.replace(/\.[^/.]+$/, ""));
+            setSubject(result.subject || "Mathematics");
+            setGrade(result.grade || "KCSE");
+            setContent(JSON.stringify(result.questions));
+        } catch (e) {
+            console.error("Ingestion failed:", e);
+            alert("Soma couldn't read this paper. Please ensure it's a clear PDF or Image.");
+        } finally {
+            setUploading(false);
+        }
+    };
+
     const handleCreateExam = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!title || !content) return;
+        const finalContent = analyzedData ? JSON.stringify(analyzedData.questions) : content;
+        if (!title || !finalContent) return;
 
         setSaving(true);
         try {
             // Parse content to ensure valid JSON
             let parsedContent;
             try {
-                parsedContent = JSON.parse(content);
+                parsedContent = JSON.parse(finalContent);
             } catch {
-                alert("Invalid JSON format for Exam Content. Please check your structure.");
+                alert("Invalid format for Paper Content.");
                 setSaving(false);
                 return;
             }
@@ -90,10 +116,12 @@ export const ExamsView: React.FC = () => {
             setShowAdd(false);
             setTitle("");
             setContent("");
+            setAnalyzedData(null);
+            setFile(null);
             fetchExams();
         } catch (e) {
             console.error("Create failed:", e);
-            alert("Failed to create exam.");
+            alert("Failed to create paper.");
         } finally {
             setSaving(false);
         }
@@ -227,72 +255,108 @@ export const ExamsView: React.FC = () => {
                                 <h3 className="text-2xl font-bold text-slate-900 mb-2 flex items-center gap-2">
                                     <Plus className="w-6 h-6 text-indigo-600" /> Add Past Paper
                                 </h3>
-                                <p className="text-slate-500 mb-6">Create a new past paper that will appear across all student dashboards.</p>
+                                <p className="text-slate-500 mb-6">Upload a PDF or Image of a past paper. Soma will extract the content for you.</p>
 
-                                <form onSubmit={handleCreateExam} className="space-y-4">
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="block text-sm font-bold text-slate-700 mb-1">Paper Title</label>
+                                <div className="space-y-6">
+                                    {/* File Upload Section */}
+                                    {!analyzedData ? (
+                                        <div className="border-2 border-dashed border-slate-200 rounded-3xl p-10 text-center hover:border-indigo-400 transition-colors bg-slate-50/50">
                                             <input
-                                                type="text"
-                                                required
-                                                className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-indigo-500"
-                                                placeholder="e.g. KCSE Math Mock 2024"
-                                                value={title}
-                                                onChange={(e) => setTitle(e.target.value)}
+                                                type="file"
+                                                id="paper-upload"
+                                                className="hidden"
+                                                accept=".pdf,image/*"
+                                                onChange={(e) => setFile(e.target.files?.[0] || null)}
                                             />
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-bold text-slate-700 mb-1">Subject</label>
-                                            <select
-                                                className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-indigo-500"
-                                                value={subject}
-                                                onChange={(e) => setSubject(e.target.value)}
-                                            >
-                                                <option>Mathematics</option>
-                                                <option>English</option>
-                                                <option>Kiswahili</option>
-                                                <option>Biology</option>
-                                                <option>Chemistry</option>
-                                                <option>Physics</option>
-                                                <option>CRE</option>
-                                            </select>
-                                        </div>
-                                    </div>
+                                            <label htmlFor="paper-upload" className="cursor-pointer block">
+                                                <div className="w-16 h-16 bg-white rounded-2xl shadow-sm flex items-center justify-center mx-auto mb-4 border border-slate-100">
+                                                    <Upload className="w-8 h-8 text-indigo-500" />
+                                                </div>
+                                                <p className="font-bold text-slate-800 text-lg mb-1">
+                                                    {file ? file.name : "Choose Paper File"}
+                                                </p>
+                                                <p className="text-slate-500 text-sm mb-6">PDF or Images (JPG, PNG) supported</p>
+                                            </label>
 
-                                    <div>
-                                        <label className="block text-sm font-bold text-slate-700 mb-1">Level / Grade</label>
-                                        <select
-                                            className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-indigo-500"
-                                            value={grade}
-                                            onChange={(e) => setGrade(e.target.value)}
-                                        >
-                                            <option value="KCSE">KCSE (Form 4)</option>
-                                            <option value="KPSEA">KPSEA (Grade 6)</option>
-                                            <option value="KEPSEA">KEPSEA (Grade 9)</option>
-                                        </select>
-                                    </div>
+                                            {file && (
+                                                <Button
+                                                    onClick={handleIngestPaper}
+                                                    isLoading={uploading}
+                                                    className="bg-indigo-600 hover:bg-indigo-700 shadow-lg shadow-indigo-100 flex items-center gap-2 mx-auto"
+                                                >
+                                                    <Sparkles className="w-5 h-5" /> Analyze with Soma
+                                                </Button>
+                                            )}
+                                        </div>
+                                    ) : (
+                                        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
+                                            <div className="bg-green-50 border border-green-100 p-4 rounded-2xl flex items-center justify-between">
+                                                <div className="flex items-center gap-3">
+                                                    <CheckCircle className="w-5 h-5 text-green-600" />
+                                                    <span className="text-green-800 font-bold">Paper Analyzed Successfully</span>
+                                                </div>
+                                                <button
+                                                    onClick={() => { setAnalyzedData(null); setFile(null); }}
+                                                    className="text-xs font-bold text-slate-400 hover:text-slate-600 uppercase"
+                                                >
+                                                    Reset
+                                                </button>
+                                            </div>
 
-                                    <div>
-                                        <label className="block text-sm font-bold text-slate-700 mb-1">Paper Content (JSON Array of Questions)</label>
-                                        <textarea
-                                            required
-                                            rows={8}
-                                            className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-indigo-500 font-mono text-sm"
-                                            placeholder='[
-  { "id": "1", "text": "What is 2+2?", "type": "MCQ", "options": ["3", "4", "5"], "answer": "4" }
-]'
-                                            value={content}
-                                            onChange={(e) => setContent(e.target.value)}
-                                        ></textarea>
-                                        <p className="text-[10px] text-slate-400 mt-1 flex items-center gap-1">
-                                            <AlertCircle className="w-3 h-3" /> Ensure the content follows the standard Soma Quiz JSON format.
-                                        </p>
-                                    </div>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <div>
+                                                    <label className="block text-sm font-bold text-slate-700 mb-1">Paper Title</label>
+                                                    <input
+                                                        type="text"
+                                                        required
+                                                        className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-indigo-500"
+                                                        value={title}
+                                                        onChange={(e) => setTitle(e.target.value)}
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-sm font-bold text-slate-700 mb-1">Subject</label>
+                                                    <select
+                                                        className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-indigo-500"
+                                                        value={subject}
+                                                        onChange={(e) => setSubject(e.target.value)}
+                                                    >
+                                                        <option>Mathematics</option>
+                                                        <option>English</option>
+                                                        <option>Kiswahili</option>
+                                                        <option>Biology</option>
+                                                        <option>Chemistry</option>
+                                                        <option>Physics</option>
+                                                        <option>CRE</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+
+                                            <div className="bg-slate-50 border border-slate-200 rounded-2xl overflow-hidden">
+                                                <div className="px-4 py-2 bg-slate-100/50 border-b border-slate-200 flex justify-between items-center">
+                                                    <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Extracted Questions</span>
+                                                    <span className="text-xs font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full">
+                                                        {analyzedData.questions.length} Items
+                                                    </span>
+                                                </div>
+                                                <div className="max-h-48 overflow-y-auto p-2 space-y-2">
+                                                    {analyzedData.questions.map((q, idx) => (
+                                                        <div key={idx} className="bg-white p-3 rounded-xl border border-slate-100 text-sm">
+                                                            <div className="flex justify-between mb-1">
+                                                                <span className="font-bold text-slate-700">Q{q.number}</span>
+                                                                <span className="text-xs text-indigo-500 font-medium">{q.topic}</span>
+                                                            </div>
+                                                            <p className="text-slate-500 line-clamp-1">{q.text}</p>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        </motion.div>
+                                    )}
 
                                     <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
                                         <button
-                                            disabled={saving}
+                                            disabled={saving || uploading}
                                             type="button"
                                             onClick={() => setShowAdd(false)}
                                             className="px-6 py-2 rounded-xl text-slate-500 font-bold hover:bg-slate-50"
@@ -300,14 +364,15 @@ export const ExamsView: React.FC = () => {
                                             Cancel
                                         </button>
                                         <Button
-                                            type="submit"
+                                            onClick={handleCreateExam}
+                                            disabled={!analyzedData}
                                             isLoading={saving}
                                             className="px-8 bg-indigo-600"
                                         >
-                                            Publish Paper
+                                            Publish Paper Library
                                         </Button>
                                     </div>
-                                </form>
+                                </div>
                             </div>
                         </motion.div>
                     </div>

@@ -29,6 +29,15 @@ export const RevisionLanding: React.FC<Props> = ({ onStartSession, onNavigate })
     const videoRef = useRef<HTMLVideoElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
 
+    // Fix: Cleanup camera on unmount
+    React.useEffect(() => {
+        return () => {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+            }
+        };
+    }, [stream]);
+
     const handleDrag = (e: React.DragEvent) => {
         e.preventDefault(); e.stopPropagation();
         if (e.type === "dragenter" || e.type === "dragover") setDragActive(true);

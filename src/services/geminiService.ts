@@ -543,6 +543,74 @@ export const askSoma = async (userQuery: string, chatHistory: { role: 'user' | '
 
 // --- REVISION ASSISTANT FEATURES ---
 
+export const ingestPastPaper = async (file: File): Promise<ExamAnalysis> => {
+  const model = genAI.getGenerativeModel({
+    model: MODEL_NAME,
+    generationConfig: {
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: SchemaType.OBJECT,
+        properties: {
+          subject: { type: SchemaType.STRING },
+          grade: { type: SchemaType.STRING },
+          questions: {
+            type: SchemaType.ARRAY,
+            items: {
+              type: SchemaType.OBJECT,
+              properties: {
+                id: { type: SchemaType.INTEGER },
+                number: { type: SchemaType.STRING },
+                text: { type: SchemaType.STRING },
+                topic: { type: SchemaType.STRING },
+                subStrand: { type: SchemaType.STRING },
+                competency: { type: SchemaType.STRING },
+                marks: { type: SchemaType.INTEGER }
+              },
+              required: ["id", "number", "text", "topic", "competency"]
+            }
+          }
+        },
+        required: ["subject", "grade", "questions"]
+      }
+    }
+  });
+
+  const base64Data = await fileToGenerativePart(file);
+  const mimeType = file.type;
+
+  const prompt = `
+    You are an expert Educational Content Architect. 
+    Analyze this uploaded document, which is a past national examination paper (KCSE, KPSEA, or KEPSEA).
+    
+    1. Identify the Subject (e.g., Mathematics, English, Kiswahili).
+    2. Identify the Grade Level (e.g., Form 4, Grade 9, Grade 6).
+    3. Extract EVERY question from the paper.
+    4. For each question:
+       - Extract the question number (e.g., 1, 2a, 3).
+       - Extract the full text of the question.
+       - Identify the specific Topic and Sub-strand it belongs to (based on Kenyan CBC/844 curriculum).
+       - Identify the Competency being tested (e.g., Critical Thinking, Problem Solving, Literacy, Numeracy).
+       - Extract the Marks assigned to it (0 if not specified).
+    
+    Output JSON compatible with the ExamAnalysis interface.
+  `;
+
+  try {
+    const result = await model.generateContent([
+      prompt,
+      { inlineData: { data: base64Data, mimeType: mimeType } }
+    ]);
+
+    const text = result.response.text();
+    if (!text) throw new Error("No response from AI");
+
+    return JSON.parse(text) as ExamAnalysis;
+  } catch (error) {
+    console.error("Error ingesting exam:", error);
+    throw error;
+  }
+};
+
 export const analyzeExamPaper = async (base64Image: string, mimeType: string): Promise<ExamAnalysis> => {
   const model = genAI.getGenerativeModel({
     model: MODEL_NAME,

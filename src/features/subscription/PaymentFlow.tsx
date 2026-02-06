@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Smartphone, Loader2, CheckCircle2, XCircle, ArrowLeft, ShieldCheck, CreditCard, ExternalLink, ArrowRight } from 'lucide-react';
+import { Smartphone, Loader2, CheckCircle2, XCircle, ArrowLeft, ShieldCheck, CreditCard, ExternalLink, ArrowRight, Sparkles } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { pesapalService } from '../../services/pesapalService';
 import { UserRole } from '../../types';
@@ -23,29 +23,12 @@ export const PaymentFlow: React.FC<Props> = ({ plan, onSuccess, onCancel }) => {
 
     // Pre-fill profile data for registered users
     useEffect(() => {
-        // STRICT ROLE CHECKING: Prioritize the profile that matches the current active role
-        if (role === UserRole.TEACHER && teacherProfile) {
-            const names = teacherProfile.name.split(' ');
+        const profile = teacherProfile || studentProfile;
+        if (profile) {
+            const names = profile.name.split(' ');
             setFirstName(names[0] || '');
-            setLastName(names.slice(1).join(' ') || 'Teacher');
-            setEmail(teacherProfile.email || '');
-        } else if (role === UserRole.LEARNER && studentProfile) {
-            const names = studentProfile.name.split(' ');
-            setFirstName(names[0] || '');
-            setLastName(names.slice(1).join(' ') || 'Learner');
-            if (studentProfile.email) setEmail(studentProfile.email);
-        } else if (teacherProfile) {
-            // Fallback for teacher profile if role specifically isn't set yet but profile exists
-            const names = teacherProfile.name.split(' ');
-            setFirstName(names[0] || '');
-            setLastName(names.slice(1).join(' ') || 'Teacher');
-            setEmail(teacherProfile.email || '');
-        } else if (studentProfile) {
-            // Fallback for student profile
-            const names = studentProfile.name.split(' ');
-            setFirstName(names[0] || '');
-            setLastName(names.slice(1).join(' ') || 'Learner');
-            if (studentProfile.email) setEmail(studentProfile.email);
+            setLastName(names.slice(1).join(' ') || (role === UserRole.TEACHER ? 'Teacher' : 'Learner'));
+            if (profile.email) setEmail(profile.email);
         }
     }, [studentProfile, teacherProfile, role]);
 
@@ -190,8 +173,15 @@ export const PaymentFlow: React.FC<Props> = ({ plan, onSuccess, onCancel }) => {
                                     Proceed to Payment <ArrowRight className="w-6 h-6" />
                                 </button>
 
-                                <div className="flex items-center justify-center gap-2 text-slate-400 text-[10px] font-bold uppercase tracking-widest pt-4">
-                                    <ShieldCheck className="w-4 h-4" /> Secure SSL Encrypted Checkout
+                                <div className="flex flex-col items-center justify-center gap-3 pt-6">
+                                    <div className="flex items-center gap-2 text-slate-400 text-[10px] font-black uppercase tracking-widest">
+                                        <ShieldCheck className="w-4 h-4 text-emerald-500" /> Secure SSL Checkout
+                                    </div>
+                                    <div className="flex gap-4 opacity-50 grayscale scale-75">
+                                        <div className="w-10 h-6 bg-slate-200 rounded"></div>
+                                        <div className="w-10 h-6 bg-slate-200 rounded"></div>
+                                        <div className="w-10 h-6 bg-slate-200 rounded"></div>
+                                    </div>
                                 </div>
                             </div>
                         </motion.div>
@@ -204,12 +194,17 @@ export const PaymentFlow: React.FC<Props> = ({ plan, onSuccess, onCancel }) => {
                             animate={{ opacity: 1 }}
                             className="p-12 text-center"
                         >
-                            <div className="relative w-24 h-24 mx-auto mb-8">
-                                <Loader2 className="w-full h-full text-indigo-600 animate-spin" />
+                            <div className="relative w-32 h-32 mx-auto mb-8">
+                                <motion.div
+                                    animate={{ scale: [1, 1.2, 1], rotate: [0, 90, 0] }}
+                                    transition={{ repeat: Infinity, duration: 4 }}
+                                    className="absolute inset-0 bg-indigo-600/10 rounded-full blur-2xl"
+                                ></motion.div>
+                                <Sparkles className="w-full h-full text-indigo-600 animate-pulse" />
                             </div>
-                            <h2 className="text-2xl font-black text-slate-900 mb-2">Securing Connection</h2>
-                            <p className="text-slate-500 font-medium leading-relaxed">
-                                Please wait while we connect to Pesapal Secure Gateway...
+                            <h2 className="text-2xl font-black text-slate-900 mb-2 tracking-tight">Securing Connection</h2>
+                            <p className="text-slate-500 font-medium leading-relaxed px-4">
+                                Preparing your secure gateway to <br /><span className="text-indigo-600 font-black">Pesapal Africa</span>
                             </p>
                         </motion.div>
                     )}

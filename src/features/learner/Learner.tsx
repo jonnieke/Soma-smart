@@ -1070,7 +1070,7 @@ ${explanation.explanation}
                 )}
               </motion.button>
 
-              {/* Exam Revision Action */}
+              {/* Past Papers Action */}
               <motion.button
                 whileHover={isOnline ? { scale: 1.02 } : {}}
                 whileTap={isOnline ? { scale: 0.98 } : {}}
@@ -1081,7 +1081,7 @@ ${explanation.explanation}
                   <div className={`w-10 h-10 rounded-full flex items-center justify-center mb-3 ${isOnline ? 'bg-white/20' : 'bg-slate-200'}`}>
                     <Brain className={`w-5 h-5 ${isOnline ? 'text-white' : 'text-slate-400'}`} />
                   </div>
-                  <h3 className="text-xl font-bold">Exam Revision</h3>
+                  <h3 className="text-xl font-bold">Past Papers</h3>
                   <p className={`${isOnline ? 'text-orange-100' : 'text-slate-400'} text-xs`}>
                     {isOnline ? "Upload past papers & get AI coaching" : "Connect to internet for coaching"}
                   </p>
@@ -1508,8 +1508,9 @@ const QuizRunner: React.FC<{ data: QuizData; onComplete: (score: number) => void
     <div className="h-screen flex flex-col bg-slate-50 max-w-lg mx-auto shadow-2xl border-x border-slate-100">
       {/* Quiz Header */}
       <div className="bg-white px-4 py-3 shadow-sm z-10 flex items-center justify-between sticky top-0">
-        <button onClick={onExit} className="p-2 -ml-2 hover:bg-slate-100 rounded-full text-slate-400 hover:text-slate-600 transition-colors">
-          <X className="w-6 h-6" />
+        <button onClick={onExit} className="flex items-center gap-2 px-3 py-1.5 hover:bg-slate-100 rounded-xl transition-all group">
+          <X className="w-5 h-5 text-slate-400 group-hover:text-red-500 transition-colors" />
+          <span className="text-xs font-bold text-slate-400 group-hover:text-red-500">Dashboard</span>
         </button>
         <div className="flex-1 px-4">
           <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
