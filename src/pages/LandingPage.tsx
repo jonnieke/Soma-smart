@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import {
     GraduationCap, Users, Baby, ChevronRight, MessageSquare,
     ScanLine, CheckCircle, Menu, X, CheckSquare, Play, BookOpen, LogOut,
-    CreditCard
+    CreditCard, AlertCircle
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { UserRole } from '../types';
@@ -25,10 +25,18 @@ import { ContactModal } from '../components/ContactModal';
 import { LoginModal } from '../components/LoginModal';
 import { TscLiveBanner } from '../components/TscLiveBanner';
 
-export const LandingPage: React.FC = () => {
+interface LandingPageProps {
+    authError?: {
+        code: string;
+        description: string;
+    } | null;
+}
+
+export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuthError }) => {
     const navigate = useNavigate();
     const location = useLocation();
     const { setRole, role, logout, isRegistered, isPromoActive, isPro } = useApp();
+    const [authError, setAuthError] = useState<{ code: string, description: string } | null>(initialAuthError || null);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [showRegistration, setShowRegistration] = useState(false);
     const [showPrivacy, setShowPrivacy] = useState(false);
@@ -39,6 +47,24 @@ export const LandingPage: React.FC = () => {
 
     // Handle incoming plan selection from PricingPage
     React.useEffect(() => {
+        // Check for Auth Errors in Hash
+        const hash = window.location.hash;
+        if (hash && hash.includes('error=')) {
+            const params = new URLSearchParams(hash.substring(1));
+            const error = params.get('error');
+            const errorCode = params.get('error_code');
+            const errorDescription = params.get('error_description');
+
+            if (error || errorCode) {
+                setAuthError({
+                    code: errorCode || error || 'auth_error',
+                    description: errorDescription?.replace(/\+/g, ' ') || 'An authentication error occurred.'
+                });
+                // Clear hash to avoid showing error on refresh
+                window.history.replaceState(null, '', window.location.pathname);
+            }
+        }
+
         const state = location.state as { selectedPlan?: any; showRegistration?: boolean };
         if (state?.selectedPlan) {
             // If already pro, go straight to relative dashboard
@@ -115,6 +141,43 @@ export const LandingPage: React.FC = () => {
 
     return (
         <div className="min-h-screen bg-white font-sans text-gray-900 overflow-x-hidden">
+            {/* Global Auth Error Banner */}
+            <AnimatePresence>
+                {authError && (
+                    <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        className="bg-red-600 text-white overflow-hidden relative z-[60]"
+                    >
+                        <div className="max-w-7xl mx-auto px-4 py-3 sm:px-6 lg:px-8 flex items-center justify-between gap-4">
+                            <div className="flex items-center gap-3">
+                                <AlertCircle className="w-5 h-5 flex-shrink-0" />
+                                <p className="text-sm font-medium">
+                                    {authError.code === 'otp_expired'
+                                        ? "Your security link has expired. For your safety, please request a new password reset link."
+                                        : authError.description}
+                                </p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={() => {
+                                        setAuthError(null);
+                                        setShowLogin(true); // Assuming they want to try again
+                                    }}
+                                    className="px-3 py-1 bg-white/20 hover:bg-white/30 rounded-lg text-xs font-bold transition-colors whitespace-nowrap"
+                                >
+                                    Retry Login
+                                </button>
+                                <button onClick={() => setAuthError(null)} className="p-1 hover:bg-white/10 rounded-full transition-colors">
+                                    <X className="w-4 h-4" />
+                                </button>
+                            </div>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
             {/* --- HEADER --- */}
             <motion.header
                 initial={{ y: -20, opacity: 0 }}
