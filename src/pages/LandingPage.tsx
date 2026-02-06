@@ -125,10 +125,10 @@ export const LandingPage: React.FC = () => {
                     <div className="flex justify-between items-center h-20">
                         {/* Logo */}
                         <div className="flex items-center gap-3 cursor-pointer" onClick={() => window.scrollTo(0, 0)}>
-                            <img src={logoImg} alt="Soma Smart Logo" className="w-12 h-12 object-contain" />
+                            <img src={logoImg} alt="Soma Smart Logo - Kenya's Leading AI Study Assistant" className="w-12 h-12 object-contain" />
                             <div className="hidden sm:block">
                                 <h1 className="text-2xl font-bold text-blue-900 leading-none tracking-tight">Soma Smart</h1>
-                                <p className="text-[10px] text-blue-600 font-medium tracking-wide uppercase">Learning That Makes Sense</p>
+                                <p className="text-[10px] text-blue-600 font-medium tracking-wide uppercase">AI-Powered Learning for Kenya</p>
                             </div>
                         </div>
 
@@ -218,10 +218,10 @@ export const LandingPage: React.FC = () => {
                                 Join 10,000+ Students & Teachers
                             </div>
                             <h1 className="text-4xl md:text-5xl lg:text-7xl font-extrabold text-blue-900 tracking-tight mb-6 leading-[1.1]">
-                                From Textbooks to <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">Understanding</span>—Instantly.
+                                From Textbooks to <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">Understanding</span>—AI for Kenya.
                             </h1>
                             <p className="text-lg md:text-xl text-slate-600 mb-10 leading-relaxed max-w-xl">
-                                AI-powered learning that helps students understand lessons, teachers create smarter materials, and parents track real progress—all in one place.
+                                Kenya's #1 AI-powered learning platform. Helping CBC and KCSE students understand lessons, teachers create smarter materials, and parents track real progress.
                             </p>
 
                             <div className="flex flex-col sm:flex-row items-center gap-4 mb-10">
@@ -269,7 +269,7 @@ export const LandingPage: React.FC = () => {
                             className="relative"
                         >
                             <div className="relative z-10 rounded-2xl overflow-hidden shadow-2xl shadow-blue-200/50 border border-white/50 backdrop-blur-sm">
-                                <img src={heroBannerImg} alt="Soma Smart Learning" className="w-full h-auto" />
+                                <img src={heroBannerImg} alt="Soma Smart Learning - AI Study Assistant for Kenyan Students" className="w-full h-auto" />
                             </div>
 
                             {/* Floating Elements */}
@@ -354,7 +354,7 @@ export const LandingPage: React.FC = () => {
                                 <p className="text-white/80 font-medium italic text-sm">Understand. Practice. Excel.</p>
                             </div>
                             <div className="h-64 overflow-hidden bg-gray-50 relative">
-                                <img src={learnerImg} alt="Student" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                                <img src={learnerImg} alt="Kenyan Student using Soma Smart for CBC and KCSE revision" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
                                 <div className="absolute inset-0 bg-gradient-to-t from-white via-transparent to-transparent opacity-60"></div>
                             </div>
                             <div className="p-8 space-y-4 bg-white flex-1">
@@ -388,7 +388,7 @@ export const LandingPage: React.FC = () => {
                                 <p className="text-white/80 font-medium italic text-sm">Teach Better. Save Time.</p>
                             </div>
                             <div className="h-64 overflow-hidden bg-gray-50 relative">
-                                <img src={teacherImg} alt="Teacher" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                                <img src={teacherImg} alt="Kenyan Teacher creating lessons with Soma Smart AI" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
                                 <div className="absolute inset-0 bg-gradient-to-t from-white via-transparent to-transparent opacity-60"></div>
                             </div>
                             <div className="p-8 space-y-4 bg-white flex-1">
@@ -422,7 +422,7 @@ export const LandingPage: React.FC = () => {
                                 <p className="text-white/80 font-medium italic text-sm">Clear Learning. Real Progress.</p>
                             </div>
                             <div className="h-64 overflow-hidden bg-gray-50 relative">
-                                <img src={parentImg} alt="Parent" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                                <img src={parentImg} alt="Kenyan Parent tracking student progress on Soma Smart" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
                                 <div className="absolute inset-0 bg-gradient-to-t from-white via-transparent to-transparent opacity-60"></div>
                             </div>
                             <div className="p-8 space-y-4 bg-white flex-1">
@@ -477,7 +477,7 @@ export const LandingPage: React.FC = () => {
                                         {i + 1}
                                     </div>
                                     <div className="w-44 h-44 rounded-3xl bg-white flex items-center justify-center shadow-xl p-6 group-hover:scale-105 transition-all duration-300 border border-slate-100">
-                                        <img src={step.img} alt={step.title} className="w-full h-full object-contain" />
+                                        <img src={step.img} alt={`Soma Smart Step ${i + 1}: ${step.title}`} className="w-full h-full object-contain" />
                                     </div>
                                 </div>
 
