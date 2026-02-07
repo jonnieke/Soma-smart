@@ -11,12 +11,14 @@ interface AppContextType {
   studentCode: string;
   setStudentCode: (code: string) => void;
   isRegistered: boolean;
-  studentProfile: { id: string, name: string, grade: string, email?: string } | null;
+  studentProfile: { id: string, name: string, grade: string, email?: string, parentPhone?: string } | null;
+  updateStudentProfile: (updates: { name?: string, grade?: string, parentPhone?: string }) => Promise<{ success: boolean; message?: string }>;
   usageCount: number;
   incrementUsage: () => void;
-  registerStudent: (name: string, grade: string, pin: string) => Promise<{ success: boolean; message?: string; data?: string }>;
+  registerStudent: (name: string, grade: string, pin: string, parentPhone?: string) => Promise<{ success: boolean; message?: string; data?: string }>;
   registerTeacher: (name: string, email: string, password: string, classes: string[], subjects: string[]) => Promise<{ success: boolean; message?: string }>;
   login: (code: string) => Promise<boolean>;
+  loginParent: (code: string, phone: string) => Promise<{ success: boolean; message?: string }>;
   loginTeacher: (email: string, pass: string) => Promise<{ success: boolean; message?: string }>;
   resetPassword: (email: string) => Promise<boolean>;
   recoverStudentId: (name: string, pin: string) => Promise<string | null>;
@@ -60,7 +62,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [studentCode, setStudentCode] = useState<string>("");
   const [usageCount, setUsageCount] = useState<number>(0);
   const [isRegistered, setIsRegistered] = useState<boolean>(false);
-  const [studentProfile, setStudentProfile] = useState<{ id: string, name: string, grade: string, email?: string } | null>(null);
+  const [studentProfile, setStudentProfile] = useState<{ id: string, name: string, grade: string, email?: string, parentPhone?: string } | null>(null);
 
   // Teacher State
   const [teacherUsageCount, setTeacherUsageCount] = useState<number>(0);
@@ -103,7 +105,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         if (profile) {
           setUserId(session.user.id);
           if (profile.role === 'LEARNER' || profile.role === 'REVISION') {
-            setStudentProfile({ id: profile.id, name: profile.full_name, grade: profile.grade, email: profile.email });
+            setStudentProfile({
+              id: profile.id,
+              name: profile.full_name,
+              grade: profile.grade,
+              email: profile.email,
+              parentPhone: profile.parent_phone
+            });
             setIsRegistered(true);
             setRole(profile.role === 'REVISION' ? UserRole.REVISION : UserRole.LEARNER);
           } else if (profile.role === 'TEACHER') {
@@ -132,7 +140,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             currentUserId = profile.id;
             setUserId(profile.id);
             setStudentCode(profile.student_id);
-            setStudentProfile({ id: profile.id, name: profile.full_name, grade: profile.grade, email: profile.email });
+            setStudentProfile({
+              id: profile.id,
+              name: profile.full_name,
+              grade: profile.grade,
+              email: profile.email,
+              parentPhone: profile.parent_phone
+            });
             setIsRegistered(true);
             setRole(profile.role === 'REVISION' ? UserRole.REVISION : UserRole.LEARNER);
           } else {
@@ -162,7 +176,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   };
 
-  const registerStudent = async (name: string, grade: string, pin: string): Promise<{ success: boolean; message?: string; data?: string }> => {
+  const registerStudent = async (name: string, grade: string, pin: string, parentPhone?: string): Promise<{ success: boolean; message?: string; data?: string }> => {
     try {
       console.log("Attempting registration via signUp (Email/Pass)...");
       const dummyId = Math.random().toString(36).substring(7);
@@ -187,13 +201,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         full_name: name,
         grade: grade,
         student_id: newCode,
-        recovery_pin: pin
+        recovery_pin: pin,
+        parent_phone: parentPhone
       });
 
       if (dbError) throw dbError;
 
       setStudentCode(newCode);
-      setStudentProfile({ id: userId, name, grade });
+      setStudentProfile({ id: userId, name, grade, parentPhone });
       setIsRegistered(true);
       setRole(UserRole.LEARNER);
 
@@ -433,6 +448,67 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   };
 
+  const updateStudentProfile = async (updates: { name?: string, grade?: string, parentPhone?: string }): Promise<{ success: boolean; message?: string }> => {
+    try {
+      if (!studentProfile?.id) throw new Error("No active student session");
+
+      const { error } = await supabase.from('profiles').update({
+        full_name: updates.name,
+        grade: updates.grade,
+        parent_phone: updates.parentPhone
+      }).eq('id', studentProfile.id);
+
+      if (error) throw error;
+
+      // Update local state
+      setStudentProfile(prev => prev ? {
+        ...prev,
+        name: updates.name ?? prev.name,
+        grade: updates.grade ?? prev.grade,
+        parentPhone: updates.parentPhone ?? prev.parentPhone
+      } : null);
+
+      return { success: true };
+    } catch (e: any) {
+      console.error("Update Profile Error:", e);
+      return { success: false, message: e.message || "Failed to update profile" };
+    }
+  };
+
+  const loginParent = async (codeInput: string, phoneInput: string): Promise<{ success: boolean; message?: string }> => {
+    try {
+      const sanitizedCode = codeInput.trim().toUpperCase();
+      const sanitizedPhone = phoneInput.trim();
+
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('student_id', sanitizedCode)
+        .eq('parent_phone', sanitizedPhone)
+        .maybeSingle();
+
+      if (error) throw error;
+      if (!profile) return { success: false, message: "Invalid Student ID or Parent Phone Number." };
+
+      // Success! Set student context (Parent session mimics student view)
+      setStudentCode(profile.student_id);
+      setStudentProfile({
+        id: profile.id,
+        name: profile.full_name,
+        grade: profile.grade,
+        email: profile.email,
+        parentPhone: profile.parent_phone
+      });
+      setIsRegistered(true);
+      setRole(UserRole.PARENT);
+
+      return { success: true };
+    } catch (e: any) {
+      console.error("Parent Login Error:", e);
+      return { success: false, message: e.message || "An error occurred during login." };
+    }
+  };
+
   const login = async (codeInput: string): Promise<boolean> => {
     try {
       const sanitizedCode = codeInput.trim().toUpperCase(); // Force uppercase
@@ -447,7 +523,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
       // Found them! "Sign In"
       setStudentCode(profile.student_id);
-      setStudentProfile({ id: profile.id, name: profile.full_name, grade: profile.grade, email: profile.email });
+      setStudentProfile({
+        id: profile.id,
+        name: profile.full_name,
+        grade: profile.grade,
+        email: profile.email,
+        parentPhone: profile.parent_phone
+      });
       setIsRegistered(true);
       setRole(profile.role === 'REVISION' ? UserRole.REVISION : UserRole.LEARNER);
 
@@ -707,7 +789,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     <AppContext.Provider value={{
       role, setRole, learnerHistory, saveActivity, deleteActivity, studentCode, setStudentCode,
       isOnline,
-      usageCount, incrementUsage, isRegistered, studentProfile, registerStudent, login, recoverStudentId, registerTeacher, loginTeacher, resetPassword,
+      usageCount, incrementUsage, isRegistered, studentProfile, updateStudentProfile, registerStudent, login, loginParent, recoverStudentId, registerTeacher, loginTeacher, resetPassword,
       teacherUsageCount, incrementTeacherUsage, teacherProfile, updateTeacherProfile, teacherHistory, saveTeacherActivity, deleteTeacherActivity,
       revisionUsageCount, incrementRevisionUsage,
       isPro, subscriptionPlan, subscriptionExpiry, upgradeAccount,

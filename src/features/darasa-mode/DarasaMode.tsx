@@ -303,8 +303,19 @@ export const DarasaMode: React.FC<DarasaModeProps> = ({ onBack }) => {
             {/* Login Modal Enforcement */}
             <LoginModal
                 isOpen={showLogin}
-                onClose={() => setShowLogin(false)}
-                initialTab="TEACHER" // Corrected Enum case
+                onClose={() => {
+                    setShowLogin(false);
+                    reset();
+                    // Strict Enforcement: If still not a teacher after closing, send them back
+                    if (role !== UserRole.TEACHER) {
+                        onBack();
+                    }
+                }}
+                onSuccess={() => {
+                    // Keep them on Darasa Mode
+                    setShowLogin(false);
+                }}
+                initialTab="TEACHER"
             />
         </div>
     );

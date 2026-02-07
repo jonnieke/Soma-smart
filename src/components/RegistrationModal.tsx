@@ -16,6 +16,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
     const [name, setName] = useState("");
     const [grade, setGrade] = useState("");
     const [pin, setPin] = useState("");
+    const [parentPhone, setParentPhone] = useState("");
     const [step, setStep] = useState<'FORM' | 'SUCCESS'>('FORM');
     const [loading, setLoading] = useState(false);
 
@@ -26,6 +27,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
             setName("");
             setGrade("");
             setPin("");
+            setParentPhone("");
         }
     }, [isOpen]);
 
@@ -41,8 +43,8 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
         e.preventDefault();
         setLoading(true);
 
-        if (name && grade && pin.length >= 4) {
-            const result = await registerStudent(name, grade, pin);
+        if (name && grade && pin.length >= 4 && parentPhone) {
+            const result = await registerStudent(name, grade, pin, parentPhone);
 
             if (result.success) {
                 // Trigger Confetti
@@ -70,6 +72,8 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
             alert("Please create a 4-digit Secret PIN to protect your account.");
         } else if (!grade) {
             alert("Please select your Grade/Class.");
+        } else if (!parentPhone) {
+            alert("Please enter a Parent Phone Number for dashboard access.");
         }
         setLoading(false);
     };
@@ -155,6 +159,21 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
                                     />
                                     <p className="text-xs text-orange-600 mt-1 font-medium bg-orange-50 p-2 rounded">
                                         Write this down! You will need it if you forget your Student ID.
+                                    </p>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Parent Phone Number 📱</label>
+                                    <input
+                                        type="tel"
+                                        required
+                                        value={parentPhone}
+                                        onChange={(e) => setParentPhone(e.target.value)}
+                                        className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none"
+                                        placeholder="e.g. 0712345678"
+                                    />
+                                    <p className="text-[10px] text-gray-500 mt-1">
+                                        Parents will use this number to access your performance dashboard.
                                     </p>
                                 </div>
 

@@ -75,6 +75,7 @@ export interface LearnerProfile {
   subscriptionTier: SubscriptionTier;
   subscriptionExpiry: string | null;
   schoolId?: string;
+  parentPhone?: string;
 }
 
 export interface TeacherProfile {

@@ -10,20 +10,32 @@ interface ParentProps {
     onNavigate: (view: ViewState) => void;
     activityLog: LearnerActivity[];
     validStudentCode: string;
+    login: (code: string, phone: string) => Promise<{ success: boolean; message?: string }>;
 }
 
-export const ParentDashboard: React.FC<ParentProps> = ({ onNavigate, activityLog, validStudentCode }) => {
+export const ParentDashboard: React.FC<ParentProps> = ({ onNavigate, activityLog, validStudentCode, login }) => {
     const navigate = useNavigate();
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [inputCode, setInputCode] = useState('');
+    const [inputPhone, setInputPhone] = useState('');
+    const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
 
-    const handleLogin = () => {
-        if (inputCode.trim().toUpperCase() === validStudentCode.trim().toUpperCase()) {
+    const handleLogin = async () => {
+        if (!inputCode || !inputPhone) {
+            setError('Please enter both Student ID and Parent Phone Number.');
+            return;
+        }
+
+        setLoading(true);
+        setError('');
+        const result = await login(inputCode, inputPhone);
+        setLoading(false);
+
+        if (result.success) {
             setIsAuthenticated(true);
-            setError('');
         } else {
-            setError('Invalid Code. Please check the code on the Student dashboard.');
+            setError(result.message || 'Invalid credentials. Please check your Student ID and Phone Number.');
         }
     };
 
@@ -115,23 +127,34 @@ export const ParentDashboard: React.FC<ParentProps> = ({ onNavigate, activityLog
                                 />
                             </div>
 
+                            <div className="relative group">
+                                <Activity className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5 group-focus-within:text-indigo-500 transition-colors" />
+                                <input
+                                    type="tel"
+                                    placeholder="Parent Phone Number"
+                                    className="w-full pl-12 pr-4 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl text-lg font-bold focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-50 outline-none transition-all placeholder:text-slate-300"
+                                    value={inputPhone}
+                                    onChange={(e) => setInputPhone(e.target.value)}
+                                />
+                            </div>
+
                             {error && (
                                 <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} className="text-red-500 text-sm font-medium bg-red-50 p-3 rounded-xl flex items-center justify-center gap-2">
                                     <AlertCircle className="w-4 h-4" /> {error}
                                 </motion.div>
                             )}
 
-                            <Button fullWidth onClick={handleLogin} className="py-4 text-lg shadow-xl shadow-indigo-200">
-                                View Progress
+                            <Button fullWidth onClick={handleLogin} disabled={loading} className="py-4 text-lg shadow-xl shadow-indigo-200">
+                                {loading ? 'Checking...' : 'View Progress'}
                             </Button>
                         </div>
 
                         {validStudentCode ? (
                             <div className="mt-8 pt-6 border-t border-dashed border-slate-200">
-                                <p className="text-xs text-indigo-400 uppercase font-bold tracking-widest mb-3">Demo Credentials</p>
-                                <span className="px-4 py-2 bg-indigo-50 text-indigo-700 font-mono font-bold rounded-lg border border-indigo-100 select-all cursor-pointer hover:bg-indigo-100 transition-colors">
-                                    {validStudentCode}
-                                </span>
+                                <p className="text-xs text-indigo-400 uppercase font-bold tracking-widest mb-3">Login Help</p>
+                                <p className="text-[10px] text-slate-400">
+                                    Use the Student ID (SOMA-XXXX) and the Phone Number used during registration.
+                                </p>
                             </div>
                         ) : (
                             <div className="mt-8">

@@ -375,18 +375,18 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                     </div>
 
                     <div className="mt-20 flex flex-wrap justify-center gap-x-12 gap-y-6 text-sm font-bold text-slate-400 border-t border-slate-100 pt-10">
-                        <div className="flex items-center gap-2 hover:text-blue-600 transition-colors cursor-default">
-                            <ScanLine className="w-5 h-5" /> SCAN TEXTBOOKS
-                        </div>
-                        <div className="flex items-center gap-2 hover:text-orange-600 transition-colors cursor-default">
-                            <MessageSquare className="w-5 h-5" /> SIMPLE EXPLANATIONS
-                        </div>
-                        <div className="flex items-center gap-2 hover:text-green-600 transition-colors cursor-default">
-                            <CheckCircle className="w-5 h-5" /> NATIONAL EXAM PREP
-                        </div>
-                        <div className="flex items-center gap-2 hover:text-indigo-600 transition-colors cursor-default">
-                            <Play className="w-5 h-5" /> DARASA MODE
-                        </div>
+                        <button onClick={() => handleRoleSelect(UserRole.LEARNER)} className="flex items-center gap-2 hover:text-blue-600 transition-colors cursor-pointer group">
+                            <ScanLine className="w-5 h-5 group-hover:scale-110 transition-transform" /> SCAN TEXTBOOKS
+                        </button>
+                        <button onClick={() => document.getElementById('how-it-works')?.scrollIntoView({ behavior: 'smooth' })} className="flex items-center gap-2 hover:text-orange-600 transition-colors cursor-pointer group">
+                            <MessageSquare className="w-5 h-5 group-hover:scale-110 transition-transform" /> SIMPLE EXPLANATIONS
+                        </button>
+                        <button onClick={() => navigate('/revision')} className="flex items-center gap-2 hover:text-green-600 transition-colors cursor-pointer group">
+                            <CheckCircle className="w-5 h-5 group-hover:scale-110 transition-transform" /> NATIONAL EXAM PREP
+                        </button>
+                        <button onClick={() => navigate('/teacher/darasa')} className="flex items-center gap-2 hover:text-indigo-600 transition-colors cursor-pointer group">
+                            <Play className="w-5 h-5 group-hover:scale-110 transition-transform" /> DARASA MODE
+                        </button>
                     </div>
                 </div>
             </section>
@@ -511,7 +511,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
             </section>
 
             {/* --- HOW IT WORKS --- */}
-            <section className="py-24 bg-slate-50 relative overflow-hidden border-t border-slate-200">
+            <section id="how-it-works" className="py-24 bg-slate-50 relative overflow-hidden border-t border-slate-200">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
                     <div className="text-center mb-20">
                         <h2 className="text-3xl md:text-5xl font-bold text-blue-900 mb-6">Learning Made Simple</h2>

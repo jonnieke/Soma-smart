@@ -37,9 +37,9 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
   // We use useApp here to get usageCount and isRegistered centrally
   const {
     learnerHistory: history, saveActivity, deleteActivity, studentCode,
-    usageCount, incrementUsage, isRegistered, studentProfile,
+    usageCount, incrementUsage, isRegistered, studentProfile, updateStudentProfile,
     isPromoActive, upgradeAccount, revisionUsageCount, incrementRevisionUsage,
-    logout, isPro, subscriptionPlan, isOnline
+    logout, isPro, subscriptionPlan, subscriptionExpiry, isOnline
   } = useApp();
   const location = useLocation();
 
@@ -90,7 +90,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
     }
   }, [isRegistered, navigate]);
 
-  const [mode, setMode] = useState<'MENU' | 'SCAN' | 'RESULT' | 'QUIZ' | 'RECAP_RESULT'>('MENU');
+  const [mode, setMode] = useState<'MENU' | 'SCAN' | 'RESULT' | 'QUIZ' | 'RECAP_RESULT' | 'PROFILE'>('MENU');
   const [recapData, setRecapData] = useState<any>(null); // Store LessonRecap
 
   const [loading, setLoading] = useState(false);
@@ -861,6 +861,13 @@ ${explanation.explanation}
               <button onClick={() => setMode('PRICING' as any)} className="p-2 bg-indigo-100 rounded-xl hover:bg-indigo-200 transition-colors group" title="Pricing Plans">
                 <CreditCard className="w-6 h-6 text-indigo-600" />
               </button>
+              <button
+                onClick={() => setMode('PROFILE')}
+                className={`p-2 rounded-xl transition-colors group ${mode === 'PROFILE' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-500 hover:bg-blue-50 hover:text-blue-600'}`}
+                title="Your Profile"
+              >
+                <UserCircle className="w-6 h-6" />
+              </button>
               <button onClick={() => { logout(); navigate('/'); }} className="p-2 bg-slate-100 rounded-xl hover:bg-red-100 transition-colors group" title="Logout">
                 <LogOut className="w-6 h-6 text-slate-500 group-hover:text-red-500 transition-colors" />
               </button>
@@ -1265,6 +1272,165 @@ ${explanation.explanation}
     );
   }
 
+  if (mode === 'PROFILE') {
+    return (
+      <div className="bg-slate-50 min-h-screen pb-20 max-w-4xl mx-auto shadow-2xl border-x border-slate-100">
+        {/* Sticky Header */}
+        <motion.div
+          initial={{ y: -20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-slate-200 px-4 py-4 flex items-center justify-between"
+        >
+          <div className="flex items-center gap-3">
+            <button onClick={() => setMode('MENU')} className="p-2 hover:bg-slate-100 rounded-xl transition-all group">
+              <ArrowRight className="w-5 h-5 text-slate-500 rotate-180 group-hover:text-blue-600" />
+            </button>
+            <h1 className="font-bold text-xl text-slate-900">Your Profile</h1>
+          </div>
+          <button onClick={() => { logout(); navigate('/'); }} className="flex items-center gap-2 px-3 py-1.5 bg-red-50 text-red-600 rounded-xl hover:bg-red-100 transition-colors text-xs font-bold">
+            <LogOut className="w-4 h-4" />
+            Logout
+          </button>
+        </motion.div>
+
+        <div className="p-6 space-y-8 max-w-2xl mx-auto">
+          {/* Profile Card */}
+          <section>
+            <div className="flex items-center gap-4 mb-4">
+              <div className="w-12 h-12 bg-blue-100 rounded-2xl flex items-center justify-center">
+                <UserCircle className="w-8 h-8 text-blue-600" />
+              </div>
+              <h2 className="text-lg font-bold text-slate-800">Account Details</h2>
+            </div>
+
+            <Card className="p-6 space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Full Name</label>
+                  <p className="text-lg font-bold text-slate-800">{studentProfile?.name || '---'}</p>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Student ID</label>
+                  <p className="text-lg font-bold text-blue-600 font-mono tracking-wider">{studentCode || '---'}</p>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Grade Level</label>
+                  <p className="text-lg font-bold text-slate-800">{studentProfile?.grade || '---'}</p>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Account Email</label>
+                  <p className="text-sm font-medium text-slate-500 truncate">{studentProfile?.email || 'No email set'}</p>
+                </div>
+              </div>
+            </Card>
+          </section>
+
+          {/* Parent Contact Settings */}
+          <section>
+            <div className="flex items-center gap-4 mb-4">
+              <div className="w-12 h-12 bg-purple-100 rounded-2xl flex items-center justify-center">
+                <Sparkles className="w-7 h-7 text-purple-600" />
+              </div>
+              <div>
+                <h2 className="text-lg font-bold text-slate-800">Parent Dashboard Access</h2>
+                <p className="text-xs text-slate-400 font-medium">Allows parents to log in using their phone number</p>
+              </div>
+            </div>
+
+            <Card className="p-6">
+              <div className="space-y-4">
+                <div>
+                  <label htmlFor="parentPhone" className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Parent's Phone Number</label>
+                  <div className="relative">
+                    <input
+                      id="parentPhone"
+                      type="tel"
+                      defaultValue={studentProfile?.parentPhone || ''}
+                      placeholder="e.g. 0712345678"
+                      className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl px-5 py-3.5 text-lg font-bold text-slate-800 focus:border-purple-500 focus:ring-0 transition-all outline-none"
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        const btn = document.getElementById('save-profile-btn');
+                        if (btn) btn.style.display = 'block';
+                      }}
+                    />
+                  </div>
+                  <p className="mt-3 text-xs text-slate-500 leading-relaxed">
+                    Parents use this number + your Student ID to access performance reports and subscription management.
+                  </p>
+                </div>
+
+                <div id="save-profile-btn" style={{ display: 'none' }}>
+                  <Button
+                    fullWidth
+                    className="bg-purple-600 hover:bg-purple-700 text-white shadow-lg shadow-purple-200"
+                    onClick={async () => {
+                      const input = document.getElementById('parentPhone') as HTMLInputElement;
+                      setLoading(true);
+                      setLoadingText("Saving profile...");
+                      const { success, message } = await updateStudentProfile({ parentPhone: input.value });
+                      setLoading(false);
+                      if (success) {
+                        const btn = document.getElementById('save-profile-btn');
+                        if (btn) btn.style.display = 'none';
+                        // Optional: Toast success
+                      } else {
+                        alert(message || "Failed to save profile");
+                      }
+                    }}
+                  >
+                    Save Changes
+                  </Button>
+                </div>
+              </div>
+            </Card>
+          </section>
+
+          {/* Subscription Status */}
+          <section>
+            <div className="flex items-center gap-4 mb-4">
+              <div className="w-12 h-12 bg-amber-100 rounded-2xl flex items-center justify-center">
+                <CreditCard className="w-7 h-7 text-amber-600" />
+              </div>
+              <h2 className="text-lg font-bold text-slate-800">Subscription Status</h2>
+            </div>
+
+            <Card className={`p-6 border-2 ${isPro ? 'border-amber-200 bg-gradient-to-br from-white to-amber-50/30' : 'border-slate-100'}`}>
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className={`px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-widest ${isPro ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-500'}`}>
+                      {subscriptionPlan === 'FREE' ? 'Free Tier' : `${subscriptionPlan} Plan`}
+                    </span>
+                    {isPro && <span className="bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full text-[10px] font-bold">Active</span>}
+                  </div>
+                  <h3 className="text-2xl font-black text-slate-900 mb-1">
+                    {isPro ? 'Soma Smart Pro' : 'Limited Access'}
+                  </h3>
+                  {isPro && subscriptionExpiry && (
+                    <p className="text-xs text-slate-500 font-medium">Valid until {new Date(subscriptionExpiry).toLocaleDateString()}</p>
+                  )}
+                  {!isPro && (
+                    <p className="text-xs text-slate-500 font-medium">Scans remaining today: <span className="text-blue-600 font-bold">{3 - usageCount}</span></p>
+                  )}
+                </div>
+
+                <div className="shrink-0">
+                  <Button
+                    variant={isPro ? 'outline' : 'primary'}
+                    onClick={() => setMode('PRICING' as any)}
+                    className={!isPro ? 'bg-amber-500 hover:bg-amber-600 text-white border-0 px-8 py-3' : ''}
+                  >
+                    {isPro ? 'Extend Plan' : 'Go Pro Now'}
+                  </Button>
+                </div>
+              </div>
+            </Card>
+          </section>
+        </div>
+      </div>
+    );
+  }
 
   if (mode === 'SCAN' && loading) {
     return (

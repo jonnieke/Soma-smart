@@ -97,7 +97,8 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, initial
             setLoading(false);
             if (success) {
                 onClose();
-                navigate('/teacher');
+                if (onSuccess) onSuccess();
+                else navigate('/teacher');
             } else {
                 if (message && message.includes("Invalid login credentials")) {
                     setError("Account not found or password incorrect. If you are new, please Create Account below.");
