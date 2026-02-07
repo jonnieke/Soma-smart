@@ -9,6 +9,7 @@ import { useApp } from '../../context/AppContext';
 import { Button, Card, Header } from '../../components/Shared';
 import { ViewState, UserRole } from '../../types';
 import { LoginModal } from '../../components/LoginModal';
+import { LogoutModal } from '../../components/LogoutModal';
 import { supabase } from '../../lib/supabase';
 
 export const RevisionPortal: React.FC = () => {
@@ -28,6 +29,7 @@ export const RevisionPortal: React.FC = () => {
     // Usage Limit (Local for now or Context)
     const [usageCount, setUsageCount] = useState(0); // Mock for now
     const [showLogin, setShowLogin] = useState(false);
+    const [showLogoutModal, setShowLogoutModal] = useState(false);
 
     const handleGenerateCode = async () => {
         if (!name || !school) return;
@@ -74,10 +76,21 @@ export const RevisionPortal: React.FC = () => {
                     <h1 className="font-bold text-lg text-slate-800">Candidate Success Portal</h1>
                 </div>
                 {isRegistered && (
-                    <button onClick={logout} className="p-2 hover:bg-red-50 text-slate-400 hover:text-red-500 rounded-full transition-colors" title="Logout">
+                    <button onClick={() => setShowLogoutModal(true)} className="p-2 hover:bg-red-50 text-slate-400 hover:text-red-500 rounded-full transition-colors" title="Logout">
                         <LogOut className="w-5 h-5" />
                     </button>
                 )}
+
+                <LogoutModal
+                    isOpen={showLogoutModal}
+                    onClose={() => setShowLogoutModal(false)}
+                    onConfirm={() => {
+                        logout();
+                        navigate('/');
+                    }}
+                    title="Already Leaving? 📚"
+                    message="You've come this far in setting up your candidate success space! If you stay, you can finish your profile and unlock your 5 free scans. Are you sure you want to log out?"
+                />
             </div>
 
             <main className="max-w-4xl mx-auto p-6 md:pt-10">

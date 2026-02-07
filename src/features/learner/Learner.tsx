@@ -13,6 +13,7 @@ import { PaymentFlow } from '../subscription/PaymentFlow';
 import { STUDENT_PLANS } from '../../data/pricing';
 import { RegistrationModal } from '../../components/RegistrationModal'; // Assuming path
 import { LoginModal } from '../../components/LoginModal'; // Assuming path
+import { LogoutModal } from '../../components/LogoutModal';
 import { MarkdownText, Button, Card } from '../../components/Shared';
 import {
   fileToGenerativePart, explainImage, explainAudio, explainTopic,
@@ -109,6 +110,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
   const [stickyQuizTaken, setStickyQuizTaken] = useState(false);
   const [stickyQuizData, setStickyQuizData] = useState<QuizData | null>(null);
   const [quizData, setQuizData] = useState<QuizData | null>(null);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [qualityWarning, setQualityWarning] = useState<{ show: boolean, issues: string[], file: File | null } | null>(null);
   // Separate warning object to match usage if needed, or just simplify
   const [qualityCallback, setQualityCallback] = useState<(() => void) | null>(null); // For custom modal action maybe? Unused but keeping clean.
@@ -863,12 +865,12 @@ ${explanation.explanation}
               </button>
               <button
                 onClick={() => setMode('PROFILE')}
-                className={`p-2 rounded-xl transition-colors group ${mode === 'PROFILE' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-500 hover:bg-blue-50 hover:text-blue-600'}`}
+                className={`p-2 rounded-xl transition-colors group ${mode === ('PROFILE' as any) ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-500 hover:bg-blue-50 hover:text-blue-600'}`}
                 title="Your Profile"
               >
                 <UserCircle className="w-6 h-6" />
               </button>
-              <button onClick={() => { logout(); navigate('/'); }} className="p-2 bg-slate-100 rounded-xl hover:bg-red-100 transition-colors group" title="Logout">
+              <button onClick={() => setShowLogoutModal(true)} className="p-2 bg-slate-100 rounded-xl hover:bg-red-100 transition-colors group" title="Logout">
                 <LogOut className="w-6 h-6 text-slate-500 group-hover:text-red-500 transition-colors" />
               </button>
             </div>
@@ -1228,6 +1230,14 @@ ${explanation.explanation}
           onSwitchToLogin={() => { setShowRegistration(false); setShowLogin(true); }}
         />
         <LoginModal isOpen={showLogin} onClose={() => setShowLogin(false)} />
+        <LogoutModal
+          isOpen={showLogoutModal}
+          onClose={() => setShowLogoutModal(false)}
+          onConfirm={() => {
+            logout();
+            navigate('/');
+          }}
+        />
 
         {/* Quality Warning Modal Re-implementation at root level of component if needed, or keeping existing logic but ensuring z-index is high */}
         {qualityWarning && qualityWarning.show && (
@@ -1287,7 +1297,7 @@ ${explanation.explanation}
             </button>
             <h1 className="font-bold text-xl text-slate-900">Your Profile</h1>
           </div>
-          <button onClick={() => { logout(); navigate('/'); }} className="flex items-center gap-2 px-3 py-1.5 bg-red-50 text-red-600 rounded-xl hover:bg-red-100 transition-colors text-xs font-bold">
+          <button onClick={() => setShowLogoutModal(true)} className="flex items-center gap-2 px-3 py-1.5 bg-red-50 text-red-600 rounded-xl hover:bg-red-100 transition-colors text-xs font-bold">
             <LogOut className="w-4 h-4" />
             Logout
           </button>

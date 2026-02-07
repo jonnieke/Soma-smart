@@ -23,6 +23,7 @@ import { RegistrationModal } from '../components/RegistrationModal';
 import { LegalModal } from '../components/LegalModal';
 import { ContactModal } from '../components/ContactModal';
 import { LoginModal } from '../components/LoginModal';
+import { LogoutModal } from '../components/LogoutModal';
 import { TscLiveBanner } from '../components/TscLiveBanner';
 
 interface LandingPageProps {
@@ -43,6 +44,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
     const [showTerms, setShowTerms] = useState(false);
     const [showContact, setShowContact] = useState(false);
     const [showLogin, setShowLogin] = useState(false);
+    const [showLogoutModal, setShowLogoutModal] = useState(false);
     const [isClaimingOffer, setIsClaimingOffer] = useState(false);
 
     // Handle incoming plan selection from PricingPage
@@ -289,12 +291,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
 
                             <div className="flex flex-col sm:flex-row items-center gap-4 mb-10">
                                 <button
-                                    onClick={isRegistered ? logout : handleGetStarted}
+                                    onClick={isRegistered ? () => setShowLogoutModal(true) : handleGetStarted}
                                     className={`px-8 py-4 ${isRegistered ? 'bg-slate-700 hover:bg-slate-800' : 'bg-blue-600 hover:bg-blue-700'} text-white rounded-xl font-bold text-lg shadow-xl shadow-blue-200 transition-all hover:-translate-y-1 w-full sm:w-auto flex items-center justify-center gap-2`}
                                 >
                                     {isRegistered ? (
                                         <>
-                                            Logout <LogOut className="w-5 h-5" />
+                                            Logout <LogOut className="w-5 h-5" onClick={(e) => { e.stopPropagation(); setShowLogoutModal(true); }} />
                                         </>
                                     ) : (
                                         <>
@@ -624,6 +626,15 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                 onSwitchToRegister={() => {
                     setShowLogin(false);
                     setShowRegistration(true);
+                }}
+            />
+
+            <LogoutModal
+                isOpen={showLogoutModal}
+                onClose={() => setShowLogoutModal(false)}
+                onConfirm={() => {
+                    logout();
+                    setShowLogoutModal(false);
                 }}
             />
 

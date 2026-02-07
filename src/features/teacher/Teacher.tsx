@@ -5,6 +5,7 @@ import { Button, Card, Header, MarkdownText } from '../../components/Shared';
 import { TeacherPaywall } from '../../components/TeacherPaywall';
 import { TeacherOnboarding } from '../../components/TeacherOnboarding';
 import { LoginModal } from '../../components/LoginModal';
+import { LogoutModal } from '../../components/LogoutModal';
 import { useApp } from '../../context/AppContext';
 import { convertNotes, processVoiceNote, generateTeacherQuiz, generateAdvancedTeacherQuiz, fileToGenerativePart } from '../../services/geminiService';
 import { ViewState, TeacherNote, QuizData, TeacherActivity, SubscriptionPlan } from '../../types';
@@ -49,6 +50,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate }) => {
         }
     }, [location.state, isPro, navigate]);
     const [showLoginModal, setShowLoginModal] = useState(false);
+    const [showLogoutModal, setShowLogoutModal] = useState(false);
     const [activeTab, setActiveTab] = useState<'HOME' | 'CONVERT' | 'VOICE' | 'QUIZ' | 'LIBRARY'>('HOME');
     const [loading, setLoading] = useState(false);
 
@@ -333,6 +335,16 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate }) => {
                     onClose={() => setShowLoginModal(false)}
                     initialTab="TEACHER"
                 />
+                <LogoutModal
+                    isOpen={showLogoutModal}
+                    onClose={() => setShowLogoutModal(false)}
+                    onConfirm={() => {
+                        logout();
+                        onNavigate(ViewState.DASHBOARD);
+                    }}
+                    title="Already Leaving, Teacher? 🍎"
+                    message="You've been doing amazing work preparing lessons! If you stay, you can generate more quizzes or convert more documents. Are you sure you're ready to call it a day?"
+                />
             </>
         );
     }
@@ -386,7 +398,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate }) => {
                             <button onClick={() => navigate('/pricing')} className="p-2 bg-indigo-500/20 hover:bg-indigo-500/30 rounded-xl backdrop-blur-md transition-colors group" title="Pricing Plans">
                                 <CreditCard className="w-6 h-6 text-white" />
                             </button>
-                            <button onClick={() => { logout(); onNavigate(ViewState.DASHBOARD); }} className="p-2 bg-white/10 hover:bg-red-500/20 rounded-xl backdrop-blur-md transition-colors group" title="Logout">
+                            <button onClick={() => setShowLogoutModal(true)} className="p-2 bg-white/10 hover:bg-red-500/20 rounded-xl backdrop-blur-md transition-colors group" title="Logout">
                                 <LogOut className="w-6 h-6 text-white group-hover:text-red-200" />
                             </button>
                         </div>

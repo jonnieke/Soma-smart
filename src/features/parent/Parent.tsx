@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Header, Card, Button } from '../../components/Shared';
 import { ViewState, LearnerActivity } from '../../types';
 import { calculateTotalXP, calculateLevel } from '../../services/gamificationService';
+import { LogoutModal } from '../../components/LogoutModal';
 import { Book, CheckCircle, Clock, Lock, User, TrendingUp, Award, AlertCircle, ChevronRight, Activity, Calendar, Star, Zap, Home, X, LogOut, CreditCard } from 'lucide-react';
 
 interface ParentProps {
@@ -20,6 +21,7 @@ export const ParentDashboard: React.FC<ParentProps> = ({ onNavigate, activityLog
     const [inputPhone, setInputPhone] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+    const [showLogoutModal, setShowLogoutModal] = useState(false);
 
     const handleLogin = async () => {
         if (!inputCode || !inputPhone) {
@@ -191,11 +193,22 @@ export const ParentDashboard: React.FC<ParentProps> = ({ onNavigate, activityLog
                     <button onClick={() => navigate('/pricing')} className="p-2 bg-indigo-50 hover:bg-indigo-100 rounded-xl transition-colors group" title="Pricing Plans">
                         <CreditCard className="w-6 h-6 text-indigo-600" />
                     </button>
-                    <button onClick={() => { setIsAuthenticated(false); onNavigate(ViewState.DASHBOARD); }} className="p-2 bg-red-50 hover:bg-red-100 rounded-xl transition-colors group" title="Logout">
+                    <button onClick={() => setShowLogoutModal(true)} className="p-2 bg-red-50 hover:bg-red-100 rounded-xl transition-colors group" title="Logout">
                         <LogOut className="w-6 h-6 text-red-500 group-hover:text-red-600" />
                     </button>
                 </div>
             </header>
+
+            <LogoutModal
+                isOpen={showLogoutModal}
+                onClose={() => setShowLogoutModal(false)}
+                onConfirm={() => {
+                    setIsAuthenticated(false);
+                    onNavigate(ViewState.DASHBOARD);
+                }}
+                title="Leaving So Soon, Parent? 👋"
+                message="Your child's learning journey is always active! Staying logged in lets you see their most recent XP gains and exercise results instantly. Are you sure you want to log out?"
+            />
 
             <main className="p-6 space-y-8">
 

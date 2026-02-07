@@ -3,6 +3,7 @@ import { useApp } from '../../context/AppContext';
 import { Upload, BookOpen, Brain, TrendingUp, ArrowRight, ScanLine, X, Camera, Zap, CheckCircle, Smartphone, LogOut, Filter, FileText, ChevronRight } from 'lucide-react';
 import { ViewState, RevisionMode, TeacherActivity } from '../../types';
 import { motion, AnimatePresence } from 'framer-motion';
+import { LogoutModal } from '../../components/LogoutModal';
 
 interface Props {
     onStartSession: (data: File | TeacherActivity, mode: RevisionMode) => void;
@@ -14,6 +15,7 @@ export const RevisionLanding: React.FC<Props> = ({ onStartSession, onNavigate })
     const [dragActive, setDragActive] = useState(false);
     const [selectedMode, setSelectedMode] = useState<RevisionMode>(RevisionMode.LEARN);
     const [loadingQuizzes, setLoadingQuizzes] = useState(false);
+    const [showLogoutModal, setShowLogoutModal] = useState(false);
 
     // Fetch quizzes on mount
     React.useEffect(() => {
@@ -117,10 +119,21 @@ export const RevisionLanding: React.FC<Props> = ({ onStartSession, onNavigate })
                         <button onClick={() => onNavigate(ViewState.DASHBOARD)} className="text-blue-200 hover:text-white transition-colors flex items-center gap-2 font-bold text-sm bg-white/10 w-fit px-4 py-2 rounded-full backdrop-blur-md border border-white/10">
                             <ArrowRight className="w-4 h-4 rotate-180" /> Back to Dashboard
                         </button>
-                        <button onClick={() => { logout(); onNavigate(ViewState.DASHBOARD); }} className="text-blue-200 hover:text-red-200 transition-colors flex items-center gap-2 font-bold text-sm bg-white/10 w-fit px-4 py-2 rounded-full backdrop-blur-md border border-white/10 ml-auto">
+                        <button onClick={() => setShowLogoutModal(true)} className="text-blue-200 hover:text-red-200 transition-colors flex items-center gap-2 font-bold text-sm bg-white/10 w-fit px-4 py-2 rounded-full backdrop-blur-md border border-white/10 ml-auto">
                             <LogOut className="w-4 h-4" /> Logout
                         </button>
                     </div>
+
+                    <LogoutModal
+                        isOpen={showLogoutModal}
+                        onClose={() => setShowLogoutModal(false)}
+                        onConfirm={() => {
+                            logout();
+                            onNavigate(ViewState.DASHBOARD);
+                        }}
+                        title="Candidate, Don't Stop Now! ✍️"
+                        message="Consistency is the key to exam success! Every paper you scan gets you closer to your goals. Are you sure you want to take a break from your revision?"
+                    />
 
                     <h1 className="text-4xl font-black mb-3 tracking-tight leading-tight">
                         Candidate <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-300 to-indigo-300">Specialist</span>
