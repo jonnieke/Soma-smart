@@ -77,7 +77,8 @@ export interface LearnerProfile {
   subscriptionExpiry: string | null;
   schoolId?: string;
   parentPhone?: string;
-  sessionId?: string; // For single device login
+  sessionId?: string; // For backward compatibility? Or primary current session?
+  activeSessions?: string[]; // New: list of active session IDs (max 2)
 }
 
 export interface TeacherProfile {
@@ -87,6 +88,7 @@ export interface TeacherProfile {
   classes: string[]; // e.g. ["Grade 4", "Grade 5"]
   subjects: string[]; // e.g. ["Math", "Science"]
   sessionId?: string;
+  activeSessions?: string[];
 }
 
 export interface TeacherActivity {
@@ -109,6 +111,7 @@ export interface SchoolProfile {
   expiry: string;
   daysRemaining?: number;
   sessionId?: string;
+  activeSessions?: string[];
 }
 
 export interface SchoolStats {

@@ -52,6 +52,9 @@ interface AppContextType {
   schoolStats: SchoolStats | null;
   schoolTeachers: SchoolTeacher[];
   fetchSchoolStats: () => Promise<void>;
+  // Language
+  language: 'EN' | 'FR';
+  toggleLanguage: () => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -98,9 +101,28 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [subscriptionExpiry, setSubscriptionExpiry] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
 
+  // Language State
+  const [language, setLanguage] = useState<'EN' | 'FR'>(() => {
+    return (localStorage.getItem('soma_language') as 'EN' | 'FR') || 'EN';
+  });
+
+  const toggleLanguage = () => {
+    setLanguage(prev => {
+      const newLang = prev === 'EN' ? 'FR' : 'EN';
+      localStorage.setItem('soma_language', newLang);
+      return newLang;
+    });
+  };
+
   // Single Device Login Session ID
-  // Generate a unique ID for this browser tab session on load
-  const [browserSessionId] = useState(() => Math.random().toString(36).substring(2) + Date.now().toString(36));
+  // Generate a unique ID for this browser tab session on load, persist in sessionStorage to survive refresh
+  const [browserSessionId] = useState(() => {
+    const stored = sessionStorage.getItem('soma_tab_session_id');
+    if (stored) return stored;
+    const newId = Math.random().toString(36).substring(2) + Date.now().toString(36);
+    sessionStorage.setItem('soma_tab_session_id', newId);
+    return newId;
+  });
 
   const logout = async () => {
     await supabase.auth.signOut();
@@ -123,7 +145,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       try {
         const { data, error } = await supabase
           .from('profiles')
-          .select('session_id')
+          .select('session_id, active_sessions')
           .eq('id', userId)
           .maybeSingle();
 
@@ -132,10 +154,21 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           return;
         }
 
-        if (data && data.session_id && data.session_id !== browserSessionId) {
-          console.warn("Session mismatch! Logging out.");
-          alert("You have been logged out because your account was accessed from another device.");
-          await logout();
+        if (data) {
+          // New Multi-Device Logic
+          if (data.active_sessions && Array.isArray(data.active_sessions) && data.active_sessions.length > 0) {
+            if (!data.active_sessions.includes(browserSessionId)) {
+              console.warn("Session mismatch! Logging out. Active:", data.active_sessions, "Current:", browserSessionId);
+              alert("You have been logged out because your account was accessed from too many other devices.");
+              await logout();
+            }
+          }
+          // Fallback for migration/legacy
+          else if (data.session_id && data.session_id !== browserSessionId) {
+            console.warn("Session mismatch (legacy)! Logging out.");
+            alert("You have been logged out because your account was accessed from another device.");
+            await logout();
+          }
         }
       } catch (e) {
         console.error("Session check failed", e);
@@ -209,7 +242,21 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             });
           }
 
-          // If DB has no session_id (first time feature rollout), claim it.
+          // Multi-Device Sync on Init:
+          // If we are logged in, ensure this browserSessionId is in active_sessions
+          const activeSessions = (profile.active_sessions as string[]) || []; // Using profile from DB directly might be stale if we just fetched it? 
+          // We fetched profile above: const { data: profile } ...
+
+          if (!activeSessions.includes(browserSessionId)) {
+            console.log("Adding new tab to active sessions...");
+            const newSessions = [...activeSessions, browserSessionId].slice(-2);
+            await supabase.from('profiles').update({
+              session_id: browserSessionId,
+              active_sessions: newSessions
+            }).eq('id', profile.id);
+          }
+
+          // Backward compat
           if (!profile.session_id) {
             await supabase.from('profiles').update({ session_id: browserSessionId }).eq('id', profile.id);
           }
@@ -237,8 +284,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
               parentPhone: profile.parent_phone,
               sessionId: profile.session_id
             });
-            // Claim session if missing
-            if (!profile.session_id) {
+            // Claim session if missing OR if not in active_sessions
+            const activeSessions = (profile.active_sessions as string[]) || [];
+            if (!activeSessions.includes(browserSessionId)) {
+              const newSessions = [...activeSessions, browserSessionId].slice(-2);
+              await supabase.from('profiles').update({
+                session_id: browserSessionId,
+                active_sessions: newSessions
+              }).eq('id', profile.id);
+            } else if (!profile.session_id) {
               await supabase.from('profiles').update({ session_id: browserSessionId }).eq('id', profile.id);
             }
             setIsRegistered(true);
@@ -310,7 +364,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         grade: grade,
         student_id: newCode,
         recovery_pin: pin,
-        parent_phone: parentPhone
+        parent_phone: parentPhone,
+        session_id: browserSessionId,
+        active_sessions: [browserSessionId] // Init with current
       });
 
       if (dbError) throw dbError;
@@ -391,7 +447,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           });
           setRole(UserRole.TEACHER);
 
-          await supabase.from('profiles').update({ session_id: browserSessionId }).eq('id', data.user.id);
+          // Multi-Device Logic: Keep last 2 sessions
+          const currentSessions = (profile.active_sessions as string[]) || [];
+          const newSessions = [...currentSessions, browserSessionId].slice(-2); // Keep max 2
+
+          await supabase.from('profiles').update({
+            session_id: browserSessionId, // Update primary for legacy
+            active_sessions: newSessions
+          }).eq('id', data.user.id);
 
           // Clear Learner Session for clarity
           setStudentCode("");
@@ -462,7 +525,16 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             sessionId: browserSessionId
           });
           setRole(UserRole.SCHOOL);
-          await supabase.from('profiles').update({ session_id: browserSessionId }).eq('id', data.user.id);
+          setRole(UserRole.SCHOOL);
+
+          // Multi-Device Logic
+          const currentSessions = (profile.active_sessions as string[]) || [];
+          const newSessions = [...currentSessions, browserSessionId].slice(-2);
+
+          await supabase.from('profiles').update({
+            session_id: browserSessionId,
+            active_sessions: newSessions
+          }).eq('id', data.user.id);
 
           // Clear others
           setStudentCode("");
@@ -498,7 +570,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           email: email,
           teacher_limit: 20,
           subscription_status: 'TRIAL',
-          expiry: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString()
+          expiry: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
+          session_id: browserSessionId,
+          active_sessions: [browserSessionId]
         });
 
         setSchoolProfile({
@@ -734,7 +808,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       // Actually Parent role might not need strict session checks if it's read-only, but let's enforce cleanliness.
 
       // Claim session
-      await supabase.from('profiles').update({ session_id: browserSessionId }).eq('id', profile.id);
+      // Claim session
+      const currentSessions = (profile.active_sessions as string[]) || [];
+      const newSessions = [...currentSessions, browserSessionId].slice(-2);
+
+      await supabase.from('profiles').update({
+        session_id: browserSessionId,
+        active_sessions: newSessions
+      }).eq('id', profile.id);
 
       return { success: true };
     } catch (e: any) {
@@ -785,7 +866,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       // Update Session ID for Single Device Login
       // If profile has no session_id, we claim it.
       // If it has one, we overwrite it (taking over session like other logins)
-      await supabase.from('profiles').update({ session_id: browserSessionId }).eq('id', profile.id);
+
+      const currentSessions = (profile.active_sessions as string[]) || [];
+      const newSessions = [...currentSessions, browserSessionId].slice(-2);
+
+      await supabase.from('profiles').update({
+        session_id: browserSessionId,
+        active_sessions: newSessions
+      }).eq('id', profile.id);
 
       // Save to local history for recovery
       try {
@@ -1049,6 +1137,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       userId,
       schoolProfile, loginSchool, registerSchool,
       schoolStats, schoolTeachers, fetchSchoolStats,
+      language, toggleLanguage,
       logout,
       availableQuizzes,
       fetchAvailableQuizzes

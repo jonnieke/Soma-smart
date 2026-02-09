@@ -40,7 +40,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
     learnerHistory: history, saveActivity, deleteActivity, studentCode,
     usageCount, incrementUsage, isRegistered, studentProfile, updateStudentProfile,
     isPromoActive, upgradeAccount, revisionUsageCount, incrementRevisionUsage,
-    logout, isPro, subscriptionPlan, subscriptionExpiry, isOnline, role
+    logout, isPro, subscriptionPlan, subscriptionExpiry, isOnline, role, language
   } = useApp();
   const location = useLocation();
 
@@ -271,7 +271,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
       setImageData({ base64, mimeType: file.type });
       setAudioData(null); // Clear previous audio if any
 
-      const result = await explainImage(base64, file.type, level);
+      const result = await explainImage(base64, file.type, level, language);
       setExplanation(result);
       setStickyQuizTaken(false); // Reset sticky quiz status for new content
       setStickyQuizData(null); // Clear prefetched quiz
@@ -291,7 +291,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
       });
 
       // Trigger background quiz generation
-      generateQuickQuiz(result.explanation, result.topic)
+      generateQuickQuiz(result.explanation, result.topic, language)
         .then(data => setStickyQuizData(data))
         .catch(err => console.error("Background quiz gen failed", err));
 
@@ -406,7 +406,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
         setAudioData({ base64: base64Data, mimeType }); // Store for regeneration
         setImageData(null);
 
-        const result = await explainAudio(base64Data, mimeType, level);
+        const result = await explainAudio(base64Data, mimeType, level, language);
         setExplanation(result);
         setStickyQuizTaken(false); // Reset sticky quiz
         setStickyQuizData(null); // Clear prefetched quiz
@@ -427,7 +427,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
         setLoading(false);
 
         // Trigger background quiz generation
-        generateQuickQuiz(result.explanation, result.topic)
+        generateQuickQuiz(result.explanation, result.topic, language)
           .then(data => setStickyQuizData(data))
           .catch(err => console.error("Background quiz gen failed", err));
       };
@@ -452,12 +452,12 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
       let result: ExplanationResult | null = null;
 
       if (audioData) {
-        result = await explainAudio(audioData.base64, audioData.mimeType, newLevel);
+        result = await explainAudio(audioData.base64, audioData.mimeType, newLevel, language);
       } else if (imageData) {
-        result = await explainImage(imageData.base64, imageData.mimeType, newLevel);
+        result = await explainImage(imageData.base64, imageData.mimeType, newLevel, language);
       } else if (explanation?.topic) {
         // Fallback for topic based regeneration
-        result = await explainTopic(explanation.topic, newLevel);
+        result = await explainTopic(explanation.topic, newLevel, language);
       }
 
       if (result) {
@@ -468,7 +468,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
         setMode('RESULT');
 
         // Trigger background quiz generation
-        generateQuickQuiz(result.explanation, result.topic)
+        generateQuickQuiz(result.explanation, result.topic, language)
           .then(data => setStickyQuizData(data))
           .catch(err => console.error("Background quiz gen failed", err));
       }
@@ -494,7 +494,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
       setAudioData(null);
       setImageData(null);
 
-      const result = await explainTopic(topic, level);
+      const result = await explainTopic(topic, level, language);
       setExplanation(result);
       setStickyQuizTaken(false); // Reset sticky quiz
       setStickyQuizData(null);
@@ -512,7 +512,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
       });
 
       // Trigger background quiz generation
-      generateQuickQuiz(result.explanation, result.topic)
+      generateQuickQuiz(result.explanation, result.topic, language)
         .then(data => setStickyQuizData(data))
         .catch(err => console.error("Background quiz gen failed", err));
 
@@ -589,7 +589,7 @@ ${explanation.explanation}
     setLoading(true);
     setLoadingText("Creating your quiz...");
     try {
-      const quiz = await generateQuiz(explanation.explanation, explanation.topic);
+      const quiz = await generateQuiz(explanation.explanation, explanation.topic, language);
       setQuizData(quiz);
       setStickyQuizTaken(true); // Marked as taken so they aren't bugged on exit
       setMode('QUIZ');

@@ -4,7 +4,7 @@ import {
     GraduationCap, Users, Baby, ChevronRight, MessageSquare,
     ScanLine, CheckCircle, Menu, X, CheckSquare, Play, BookOpen, LogOut,
     CreditCard, AlertCircle, FileText, Clock, Award, ArrowRight, School,
-    Sparkles, Zap, Building2, TrendingUp, Quote
+    Sparkles, Zap, Building2, TrendingUp, Quote, Globe
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { UserRole } from '../types';
@@ -37,7 +37,7 @@ interface LandingPageProps {
 export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuthError }) => {
     const navigate = useNavigate();
     const location = useLocation();
-    const { setRole, role, logout, isRegistered, isPromoActive, isPro } = useApp();
+    const { setRole, role, logout, isRegistered, isPromoActive, isPro, language, toggleLanguage } = useApp();
     const [authError, setAuthError] = useState<{ code: string, description: string } | null>(initialAuthError || null);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [showRegistration, setShowRegistration] = useState(false);
@@ -260,6 +260,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                             <button onClick={() => handleRoleSelect(UserRole.PARENT)} className="flex items-center gap-2 text-gray-600 hover:text-blue-600 font-medium transition-colors">
                                 <Users className="w-5 h-5 text-gray-500" /> Parents
                             </button>
+                            <button onClick={toggleLanguage} className="flex items-center gap-2 text-gray-600 hover:text-blue-600 font-medium transition-colors">
+                                <Globe className="w-5 h-5 text-gray-400" />
+                                <span className={`text-xs font-bold px-1.5 py-0.5 rounded ${language === 'EN' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-500'}`}>EN</span>
+                                <span className="text-gray-300">/</span>
+                                <span className={`text-xs font-bold px-1.5 py-0.5 rounded ${language === 'FR' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-500'}`}>FR</span>
+                            </button>
                         </nav>
 
                         {/* Mobile Menu Button */}
@@ -304,6 +310,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                 <button onClick={() => { handleRoleSelect(UserRole.PARENT); setMobileMenuOpen(false); }} className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 text-slate-600 font-medium">
                                     <Users className="w-5 h-5" /> Parents
                                 </button>
+                                <button onClick={() => { toggleLanguage(); setMobileMenuOpen(false); }} className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 text-slate-600 font-medium">
+                                    <Globe className="w-5 h-5" /> Language: <span className="font-bold text-blue-600">{language === 'EN' ? 'English' : 'Français'}</span>
+                                </button>
                             </nav>
                         </motion.div>
                     )}
@@ -321,7 +330,16 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                             transition={{ duration: 0.8 }}
                             className="text-left"
                         >
-                            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-100 text-blue-700 text-sm font-bold mb-6">
+                            <div
+                                onClick={toggleLanguage}
+                                className={`cursor-pointer mb-6 inline-flex items-center gap-2 px-4 py-2 rounded-xl border transition-all duration-300 ${language === 'FR' ? 'bg-indigo-600 border-indigo-600 text-white shadow-lg shadow-indigo-200' : 'bg-indigo-50 border-indigo-100 text-indigo-700 hover:bg-indigo-100'}`}
+                            >
+                                <Globe className={`w-4 h-4 ${language === 'FR' ? 'text-white' : 'text-indigo-600'}`} />
+                                <span className="font-bold">New!</span>
+                                <span className="text-sm">Apprendre en Français? {language === 'FR' ? 'Mode Activé ✅' : 'Cliquez ici'} 🇫🇷</span>
+                            </div>
+
+                            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-100 text-blue-700 text-sm font-bold mb-6 ml-4">
                                 <span className="relative flex h-2 w-2">
                                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
                                     <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-600"></span>

@@ -21,6 +21,7 @@ interface ChatMessage {
 
 export const RevisionSession: React.FC<Props> = ({ data, mode, onExit }) => {
     // State
+    const { language } = useApp();
     const [analysis, setAnalysis] = useState<ExamAnalysis | null>(null);
     const [loading, setLoading] = useState(true);
     const [loadingText, setLoadingText] = useState("Scanning exam paper...");
@@ -88,7 +89,7 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, onExit }) => {
 
         // Initial AI Message for Step A
         try {
-            const response = await getRevisionTutorResponse(q, TutoringStep.A_UNDERSTAND, [], mode);
+            const response = await getRevisionTutorResponse(q, TutoringStep.A_UNDERSTAND, [], mode, language);
             addMessage('model', response.text, response.step);
         } catch (e) {
             console.error(e);
@@ -114,7 +115,7 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, onExit }) => {
             const apiHistory = chatHistory.map(m => ({ role: m.role, text: m.text }));
             apiHistory.push({ role: 'user', text: userText });
 
-            const response = await getRevisionTutorResponse(activeQuestion, currentStep, apiHistory, mode);
+            const response = await getRevisionTutorResponse(activeQuestion, currentStep, apiHistory, mode, language);
 
             addMessage('model', response.text, response.step);
 

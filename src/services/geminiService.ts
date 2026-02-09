@@ -32,7 +32,7 @@ export const fileToGenerativePart = async (file: File): Promise<string> => {
 
 // --- LEARNER FEATURES ---
 
-export const explainImage = async (base64Image: string, mimeType: string, level: 'Simple' | 'Exam'): Promise<ExplanationResult> => {
+export const explainImage = async (base64Image: string, mimeType: string, level: 'Simple' | 'Exam', language: 'EN' | 'FR' = 'EN'): Promise<ExplanationResult> => {
   const model = genAI.getGenerativeModel({
     model: MODEL_NAME,
     generationConfig: {
@@ -50,10 +50,14 @@ export const explainImage = async (base64Image: string, mimeType: string, level:
     }
   });
 
+  const langInstruction = language === 'FR'
+    ? "LANGUAGE RULE: You MUST respond in French (Français). Translate specific educational terms if needed, but keep the explanation natural in French."
+    : "LANGUAGE RULE: If the subject is 'Kiswahili' or 'Swahili', you MUST respond in Swahili. For ALL other subjects, you MUST respond ONLY in English.";
+
   const prompt = `
     Analyze this image. It is likely a textbook page, homework, or notes.
     1. Extract the main topic and identify the subject.
-    2. LANGUAGE RULE: If the subject is "Kiswahili" or "Swahili", you MUST respond in Swahili. For ALL other subjects (Mathematics, Science, etc.), you MUST respond ONLY in English.
+    2. ${langInstruction}
     3. **DIRECT ANSWER**: If this is a question, answer it DIRECTLY and IMMEDIATELY. Do NOT ask follow-up questions. Do NOT answer with a question.
     4. **FORMAT**: Use neat bullet points for steps, lists, or distinct ideas. Keep paragraphs short.
     5. Explain the content in ${level === 'Simple' ? 'very simple language for a young student' : 'exam-ready academic language'}.
@@ -79,7 +83,7 @@ export const explainImage = async (base64Image: string, mimeType: string, level:
   }
 };
 
-export const explainAudio = async (base64Audio: string, mimeType: string, level: 'Simple' | 'Exam'): Promise<ExplanationResult> => {
+export const explainAudio = async (base64Audio: string, mimeType: string, level: 'Simple' | 'Exam', language: 'EN' | 'FR' = 'EN'): Promise<ExplanationResult> => {
   const model = genAI.getGenerativeModel({
     model: MODEL_NAME,
     generationConfig: {
@@ -98,11 +102,15 @@ export const explainAudio = async (base64Audio: string, mimeType: string, level:
     }
   });
 
+  const langInstruction = language === 'FR'
+    ? "LANGUAGE RULE: You MUST respond in French (Français). Translate specific educational terms if needed, but keep the explanation natural in French."
+    : "LANGUAGE RULE: If the subject is 'Kiswahili' or 'Swahili', you MUST respond in Swahili. For ALL other subjects, you MUST respond ONLY in English.";
+
   const prompt = `
     Listen to this audio. It is likely a student asking a homework question or reading study material.
     1. Transcribe the audio to text.
     2. Extract the main topic and identify the subject.
-    3. LANGUAGE RULE: If the subject is "Kiswahili" or "Swahili", you MUST respond in Swahili. For ALL other subjects, you MUST respond ONLY in English.
+    3. ${langInstruction}
     4. **DIRECT ANSWER**: Answer the question DIRECTLY. Do NOT ask follow-up questions to the student.
     5. **FORMAT**: Use neat bullet points for the explanation/answer.
     6. Explain the content in ${level === 'Simple' ? 'very simple language for a young student' : 'exam-ready academic language'}.
@@ -130,7 +138,7 @@ export const explainAudio = async (base64Audio: string, mimeType: string, level:
 
 import { getContext } from './contextService';
 
-export const explainTopic = async (topic: string, level: 'Simple' | 'Exam'): Promise<ExplanationResult> => {
+export const explainTopic = async (topic: string, level: 'Simple' | 'Exam', language: 'EN' | 'FR' = 'EN'): Promise<ExplanationResult> => {
   const model = genAI.getGenerativeModel({
     model: MODEL_NAME,
     generationConfig: {
@@ -161,11 +169,15 @@ export const explainTopic = async (topic: string, level: 'Simple' | 'Exam'): Pro
     `;
   }
 
+  const langInstruction = language === 'FR'
+    ? "LANGUAGE RULE: You MUST respond in French (Français). Translate specific educational terms if needed, but keep the explanation natural in French."
+    : "LANGUAGE RULE: If the subject is 'Kiswahili' or 'Swahili', you MUST respond in Swahili. For ALL other subjects, you MUST respond ONLY in English.";
+
   const prompt = `
     ${contextInstruction}
 
     1. Identify the subject of the topic "${topic}".
-    2. LANGUAGE RULE: If the subject is "Kiswahili" or "Swahili", you MUST respond in Swahili. For ALL other subjects, you MUST respond ONLY in English.
+    2. ${langInstruction}
     3. Explain the topic in ${level === 'Simple' ? 'very simple language for a young student' : 'exam-ready academic language'}.
     4. Provide 3-5 short bullet points summarizing key takeaways.
     5. Suggest 3 short related topics for further learning.
@@ -187,7 +199,7 @@ export const explainTopic = async (topic: string, level: 'Simple' | 'Exam'): Pro
   }
 };
 
-export const generateQuiz = async (content: string, topic: string): Promise<QuizData> => {
+export const generateQuiz = async (content: string, topic: string, language: 'EN' | 'FR' = 'EN'): Promise<QuizData> => {
   const model = genAI.getGenerativeModel({
     model: MODEL_NAME,
     generationConfig: {
@@ -217,12 +229,16 @@ export const generateQuiz = async (content: string, topic: string): Promise<Quiz
     }
   });
 
+  const langInstruction = language === 'FR'
+    ? "LANGUAGE RULE: You MUST generate the quiz in French (Français)."
+    : "LANGUAGE RULE: If the subject is 'Kiswahili' or 'Swahili', you MUST generate the quiz in Swahili. For ALL other subjects, generate the quiz ONLY in English.";
+
   const prompt = `
     Based on the following content about "${topic}":
     "${content.substring(0, 5000)}" 
     
     1. Identify the subject. 
-    2. LANGUAGE RULE: If the subject is "Kiswahili" or "Swahili", you MUST generate the quiz in Swahili. For ALL other subjects, generate the quiz ONLY in English.
+    2. ${langInstruction}
     3. Generate a quiz with:
        - Exactly 3 Multiple Choice Questions (MCQ)
     
@@ -242,7 +258,7 @@ export const generateQuiz = async (content: string, topic: string): Promise<Quiz
   }
 };
 
-export const generateQuickQuiz = async (content: string, topic: string): Promise<QuizData> => {
+export const generateQuickQuiz = async (content: string, topic: string, language: 'EN' | 'FR' = 'EN'): Promise<QuizData> => {
   const model = genAI.getGenerativeModel({
     model: MODEL_NAME,
     generationConfig: {
@@ -272,9 +288,14 @@ export const generateQuickQuiz = async (content: string, topic: string): Promise
     }
   });
 
+  const langInstruction = language === 'FR'
+    ? "LANGUAGE RULE: You MUST generate the quiz in French (Français)."
+    : "LANGUAGE RULE: If the subject is 'Kiswahili' or 'Swahili', you MUST generate the quiz in Swahili. For ALL other subjects, generate the quiz ONLY in English.";
+
   const prompt = `
     Based on the explanation of "${topic}", generate a quick "Sticky Quiz" to test immediate retention.
     
+    ${langInstruction}
     Generate exactly 3 simple Multiple Choice Questions (MCQ).
     
     Content: "${content.substring(0, 3000)}"
@@ -305,7 +326,7 @@ export const stopSpeech = () => {
 
 // --- TEACHER FEATURES ---
 
-export const convertNotes = async (base64Data: string, mimeType: string, subject?: string, className?: string): Promise<TeacherNote> => {
+export const convertNotes = async (base64Data: string, mimeType: string, subject?: string, className?: string, language: 'EN' | 'FR' = 'EN'): Promise<TeacherNote> => {
   const model = genAI.getGenerativeModel({
     model: MODEL_NAME,
     generationConfig: {
@@ -322,10 +343,14 @@ export const convertNotes = async (base64Data: string, mimeType: string, subject
     }
   });
 
+  const langInstruction = language === 'FR'
+    ? "LANGUAGE RULE: You MUST respond in French (Français)."
+    : "LANGUAGE RULE: If the subject is 'Kiswahili' or 'Swahili', you MUST respond in Swahili. For ALL other subjects, you MUST respond ONLY in English.";
+
   const prompt = `
     Analyze this document. 
     1. CONTEXT: The teacher has indicated this is for ${subject || 'a school subject'} and the students are in ${className || 'a Kenyan classroom'}.
-    2. LANGUAGE RULE: If the subject is "Kiswahili" or "Swahili", you MUST respond in Swahili. For ALL other subjects, you MUST respond ONLY in English.
+    2. ${langInstruction}
     3. Create structured lesson notes (headings, key concepts, examples) targeted at the appropriate academic level for ${className || 'this grade'}.
     4. Create a simplified version suitable for students to study from directly.
     
@@ -353,7 +378,7 @@ export const convertNotes = async (base64Data: string, mimeType: string, subject
   }
 };
 
-export const processVoiceNote = async (audioBase64: string, mimeType: string = "audio/mp3", subject?: string, className?: string): Promise<TeacherNote> => {
+export const processVoiceNote = async (audioBase64: string, mimeType: string = "audio/mp3", subject?: string, className?: string, language: 'EN' | 'FR' = 'EN'): Promise<TeacherNote> => {
   const model = genAI.getGenerativeModel({
     model: MODEL_NAME,
     generationConfig: {
@@ -370,6 +395,10 @@ export const processVoiceNote = async (audioBase64: string, mimeType: string = "
     }
   });
 
+  const langInstruction = language === 'FR'
+    ? "LANGUAGE RULE: You MUST respond in French (Français)."
+    : "LANGUAGE RULE: If the subject is 'Kiswahili' or 'Swahili', you MUST respond in Swahili. For ALL other subjects, you MUST respond ONLY in English.";
+
   const prompt = `
         You are an expert Study Companion (like NotebookLM) for a Kenyan classroom.
         
@@ -384,7 +413,7 @@ export const processVoiceNote = async (audioBase64: string, mimeType: string = "
         TASK 2: TRANSCRIBE & SIMPLIFY (Only if speech is clear)
         - Transcribe the teacher's lesson.
         - CONTEXT: This lesson is about ${subject || 'a specific subject'} for students in ${className || 'a Kenyan classroom'}.
-        - LANGUAGE RULE: If the subject is "Kiswahili" or "Swahili", you MUST respond in Swahili. For ALL other subjects, you MUST respond ONLY in English.
+        - ${langInstruction}
         - Create a "NotebookLM Style" Study Guide targeted at ${className || 'the students level'}:
           1. **Topic**: A fun, catchy title.
           2. **The Big Idea**: One simple sentence explaining what this is about.
@@ -430,8 +459,8 @@ export const processVoiceNote = async (audioBase64: string, mimeType: string = "
   }
 }
 
-export const generateTeacherQuiz = async (topic: string): Promise<QuizData> => {
-  return generateQuiz("", topic);
+export const generateTeacherQuiz = async (topic: string, language: 'EN' | 'FR' = 'EN'): Promise<QuizData> => {
+  return generateQuiz("", topic, language);
 }
 
 export const generateAdvancedTeacherQuiz = async (
@@ -439,7 +468,8 @@ export const generateAdvancedTeacherQuiz = async (
   topic: string,
   grade: string,
   count: number,
-  type: 'MCQ' | 'OPEN'
+  type: 'MCQ' | 'OPEN',
+  language: 'EN' | 'FR' = 'EN'
 ): Promise<QuizData> => {
   const model = genAI.getGenerativeModel({
     model: MODEL_NAME,
@@ -474,6 +504,10 @@ export const generateAdvancedTeacherQuiz = async (
     inlineData: { mimeType: "image/jpeg", data: img }
   }));
 
+  const langInstruction = language === 'FR'
+    ? "LANGUAGE RULE: You MUST generate the quiz in French (Français)."
+    : "LANGUAGE RULE: If the subject is 'Kiswahili' or 'Swahili', you MUST generate the quiz in Swahili. For ALL other subjects, generate the quiz ONLY in English.";
+
   const prompt = `
     You are an expert Kenyan Competency-Based Curriculum (CBC) Developer.
     
@@ -483,7 +517,7 @@ export const generateAdvancedTeacherQuiz = async (
     
     Requirements:
     1. Subject identification: Identify the subject from the topic or content.
-    2. LANGUAGE RULE: If the subject is "Kiswahili" or "Swahili", you MUST generate the quiz in Swahili. For ALL other subjects, generate the quiz ONLY in English.
+    2. ${langInstruction}
     3. Generate EXACTLY ${count} questions.
     4. Format: ${type === 'MCQ' ? 'Multiple Choice Questions (4 options)' : 'Short Answer / Structured Questions (No options)'}.
     5. Standard: Align with Kenyan CBC standards (Scenario-based, Critical Thinking, Application).
@@ -708,7 +742,8 @@ export const getRevisionTutorResponse = async (
   question: ExamQuestion,
   currentStep: TutoringStep,
   history: { role: 'user' | 'model', text: string }[],
-  mode: RevisionMode
+  mode: RevisionMode,
+  language: 'EN' | 'FR' = 'EN'
 ): Promise<TutorResponse> => {
   const model = genAI.getGenerativeModel({
     model: MODEL_NAME,
@@ -727,6 +762,10 @@ export const getRevisionTutorResponse = async (
     }
   });
 
+  const langInstruction = language === 'FR'
+    ? "LANGUAGE RULE: Respond in French (Français). Translate educational concepts where appropriate."
+    : "LANGUAGE RULE: If the subject is 'Kiswahili' or 'Swahili', you MUST respond in Swahili. For ALL other subjects, you MUST respond ONLY in English.";
+
   const systemInstruction = `
     You are Soma Smart Candidate Specialist, an expert international-level exam strategist for Kenyan Candidates (KCSE, KPSEA, KEPSEA).
     Tone: Highly Strategic, Professional, Evidence-Based, and Results-Oriented.
@@ -742,7 +781,7 @@ export const getRevisionTutorResponse = async (
     
     INSTRUCTIONS FOR CURRENT STEP:
     1. Identify the subject from the topic or question text.
-    2. LANGUAGE RULE: If the subject is "Kiswahili" or "Swahili", you MUST respond in Swahili. For ALL other subjects, you MUST respond ONLY in English.
+    2. ${langInstruction}
     
     IF STEP = 'A_UNDERSTAND':
       - Ask: "What is this question testing?"

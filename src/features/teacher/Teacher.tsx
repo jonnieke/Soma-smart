@@ -25,7 +25,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
         updateTeacherProfile, teacherHistory, saveTeacherActivity,
         deleteTeacherActivity,
         logout, isPromoActive, promoEndDate, isPro, upgradeAccount,
-        isOnline
+        isOnline, language
     } = useApp();
     const [showPaywall, setShowPaywall] = useState(false);
     const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan | null>(null);
@@ -226,7 +226,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
         incrementTeacherUsage();
         try {
             const base64 = await fileToGenerativePart(file);
-            const result = await convertNotes(base64, file.type, selectedSubject, selectedClass);
+            const result = await convertNotes(base64, file.type, selectedSubject, selectedClass, language);
             setGeneratedNote(result);
             handleSaveToHistory('NOTE', result.topic, result);
             setActiveTab('CONVERT');
@@ -298,7 +298,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
             reader.onloadend = async () => {
                 const base64String = reader.result as string;
                 const base64Data = base64String.split(',')[1];
-                const result = await processVoiceNote(base64Data, blob.type, selectedSubject, selectedClass);
+                const result = await processVoiceNote(base64Data, blob.type, selectedSubject, selectedClass, language);
                 setGeneratedNote(result);
                 handleSaveToHistory('NOTE', result.topic, result);
                 setActiveTab('VOICE');
@@ -325,7 +325,8 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                 advTopic,
                 selectedClass,
                 advCount,
-                advType
+                advType,
+                language
             );
 
             setGeneratedQuiz(result);
