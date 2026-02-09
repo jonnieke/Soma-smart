@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { processLessonAudio, saveLessonToStorage, getLessonsFromStorage } from '../services/darasaService';
 import { LessonResult } from '../../../types';
-import { useEffect } from 'react';
+import { useApp } from '../../../context/AppContext';
 
 export type DarasaState = 'idle' | 'recording' | 'processing' | 'audio_review' | 'review' | 'error';
 
@@ -20,6 +20,7 @@ interface UseDarasaLessonReturn {
 }
 
 export const useDarasaLesson = (): UseDarasaLessonReturn => {
+    const { language } = useApp();
     const [state, setState] = useState<DarasaState>('idle');
     const [lesson, setLesson] = useState<LessonResult | null>(null);
     const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
@@ -39,7 +40,7 @@ export const useDarasaLesson = (): UseDarasaLessonReturn => {
             setError(null);
 
             // Call the existing service
-            const result = await processLessonAudio(audioBlob);
+            const result = await processLessonAudio(audioBlob, language);
 
             if (!result) {
                 throw new Error("No result generated.");

@@ -26,6 +26,7 @@ import { ContactModal } from '../components/ContactModal';
 import { LoginModal } from '../components/LoginModal';
 import { LogoutModal } from '../components/LogoutModal';
 import { TscLiveBanner } from '../components/TscLiveBanner';
+import { translations } from '../data/translations';
 
 interface LandingPageProps {
     authError?: {
@@ -37,7 +38,7 @@ interface LandingPageProps {
 export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuthError }) => {
     const navigate = useNavigate();
     const location = useLocation();
-    const { setRole, role, logout, isRegistered, isPromoActive, isPro, language, toggleLanguage } = useApp();
+    const { setRole, role, logout, isRegistered, isPromoActive, isPro, language, toggleLanguage, startGuestSession } = useApp();
     const [authError, setAuthError] = useState<{ code: string, description: string } | null>(initialAuthError || null);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [showRegistration, setShowRegistration] = useState(false);
@@ -48,6 +49,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
     const [showLogoutModal, setShowLogoutModal] = useState(false);
     const [isClaimingOffer, setIsClaimingOffer] = useState(false);
     const [loginTab, setLoginTab] = useState<'STUDENT' | 'TEACHER' | 'SCHOOL'>('STUDENT');
+
+    // Get translations
+    const t = translations[language];
     const [registrationRole, setRegistrationRole] = useState<'STUDENT' | 'SCHOOL'>('STUDENT');
     const [pendingRoute, setPendingRoute] = useState<string | null>(null);
 
@@ -97,8 +101,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                 setRole(UserRole.LEARNER);
                 navigate('/learner');
             } else {
-                setRole(UserRole.LEARNER); // Set context role
-                setShowLogin(true); // Show Login Form for ID entry
+                // FRICTIONLESS: Start Guest Session immediately
+                startGuestSession();
+                navigate('/learner');
             }
         }
         else if (selectedRole === UserRole.TEACHER) {
@@ -143,7 +148,16 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
         }
     };
 
-    const handleCardClick = (card: { route: string; role?: UserRole }) => {
+    const handleCardClick = (card: { route: string; role?: UserRole, cta?: string }) => {
+        if (card.cta === "Get Started" && card.route === "/learner") {
+            // Frictionless Entry: Guest Mode
+            if (!isRegistered && role === UserRole.NONE) {
+                startGuestSession();
+                navigate('/learner');
+                return;
+            }
+        }
+
         if (card.route === '/learner') {
             setLoginTab('STUDENT');
             handleRoleSelect(UserRole.LEARNER);
@@ -230,7 +244,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                     <div className="flex justify-between items-center py-4">
                         {/* Logo */}
                         <div className="flex items-center gap-4 cursor-pointer" onClick={() => window.scrollTo(0, 0)}>
-                            <img src={logoImg} alt="Soma Smart Logo - Kenya's Leading AI Study Assistant" className="w-24 h-24 object-contain" />
+                            <img src={logoImg} alt="Soma Smart Logo - Kenya's Leading Study Assistant" className="w-24 h-24 object-contain" />
                             <div className="hidden sm:block">
                                 <h1 className="text-3xl font-bold text-blue-900 leading-none tracking-tight">Soma Smart</h1>
                                 <p className="text-[11px] text-blue-600 font-bold tracking-wide uppercase mt-1">Teach Faster. Learn Smarter. Improve Results.</p>
@@ -244,9 +258,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                             </button>
                             <button onClick={() => handleRoleSelect(UserRole.TEACHER)} className="flex items-center gap-2 text-gray-600 hover:text-blue-600 font-medium transition-colors">
                                 <GraduationCap className="w-5 h-5 text-gray-500" /> Teachers
-                            </button>
-                            <button onClick={() => navigate('/revision')} className="flex items-center gap-2 text-gray-600 hover:text-orange-600 font-medium transition-colors">
-                                <BookOpen className="w-5 h-5 text-orange-500" /> Candidate Prep
                             </button>
                             <button onClick={() => handleRoleSelect(UserRole.SCHOOL)} className="flex items-center gap-2 text-gray-600 hover:text-emerald-600 font-medium transition-colors">
                                 <School className="w-5 h-5 text-emerald-500" /> Schools
@@ -284,6 +295,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                             initial={{ height: 0, opacity: 0 }}
                             animate={{ height: 'auto', opacity: 1 }}
                             exit={{ height: 0, opacity: 0 }}
+                            transition={{ duration: 0.2, ease: "easeOut" }}
                             className="md:hidden border-t border-slate-100 overflow-hidden bg-white"
                         >
                             <nav className="flex flex-col p-4 space-y-4">
@@ -292,9 +304,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                 </button>
                                 <button onClick={() => { handleRoleSelect(UserRole.TEACHER); setMobileMenuOpen(false); }} className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 text-slate-600 font-medium">
                                     <GraduationCap className="w-5 h-5" /> Teachers
-                                </button>
-                                <button onClick={() => { navigate('/revision'); setMobileMenuOpen(false); }} className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 text-slate-600 font-medium">
-                                    <BookOpen className="w-5 h-5" /> Candidate Prep
                                 </button>
                                 <button onClick={() => { handleRoleSelect(UserRole.SCHOOL); setMobileMenuOpen(false); }} className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 text-slate-600 font-medium">
                                     <School className="w-5 h-5 text-emerald-500" /> Schools
@@ -335,22 +344,31 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                 className={`cursor-pointer mb-6 inline-flex items-center gap-2 px-4 py-2 rounded-xl border transition-all duration-300 ${language === 'FR' ? 'bg-indigo-600 border-indigo-600 text-white shadow-lg shadow-indigo-200' : 'bg-indigo-50 border-indigo-100 text-indigo-700 hover:bg-indigo-100'}`}
                             >
                                 <Globe className={`w-4 h-4 ${language === 'FR' ? 'text-white' : 'text-indigo-600'}`} />
-                                <span className="font-bold">New!</span>
-                                <span className="text-sm">Apprendre en Français? {language === 'FR' ? 'Mode Activé ✅' : 'Cliquez ici'} 🇫🇷</span>
+                                <span className="font-bold">{t.language.frenchBadge}</span>
+                                <span className="text-sm">{t.language.invitePrefix} {language === 'FR' ? 'Mode Activé ✅' : t.language.frenchClick} 🇫🇷</span>
                             </div>
 
-                            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-100 text-blue-700 text-sm font-bold mb-6 ml-4">
-                                <span className="relative flex h-2 w-2">
-                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-                                    <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-600"></span>
-                                </span>
-                                Join 10,000+ Students & Teachers
+                            <div className="flex flex-wrap items-center gap-3 mb-6 ml-4">
+                                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-100 text-blue-700 text-sm font-bold">
+                                    <span className="relative flex h-2 w-2">
+                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                                        <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-600"></span>
+                                    </span>
+                                    {t.hero.pillStudents}
+                                </div>
+                                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-100 text-emerald-700 text-sm font-bold border border-emerald-200 shadow-sm">
+                                    <span className="relative flex h-2 w-2">
+                                        <span className="animate-pulse absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                        <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-600"></span>
+                                    </span>
+                                    {t.hero.pillTeachers}
+                                </div>
                             </div>
                             <h1 className="text-4xl md:text-5xl lg:text-7xl font-extrabold text-blue-900 tracking-tight mb-6 leading-[1.2] lg:leading-[1.1]">
-                                Teach Faster. <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">Learn Smarter.</span> Improve Results.
+                                {t.hero.headline} <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">{t.hero.gradient}</span>
                             </h1>
                             <p className="text-lg md:text-xl text-slate-600 mb-10 leading-relaxed max-w-xl">
-                                Tools for CBE teachers, students, and schools.
+                                {t.hero.subheadline}
                             </p>
 
                             <div className="flex flex-col sm:flex-row items-center gap-4 mb-10">
@@ -358,19 +376,19 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                     onClick={() => handleRoleSelect(UserRole.LEARNER)}
                                     className="px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 rounded-xl font-bold text-lg shadow-xl shadow-blue-200 transition-all hover:-translate-y-1 w-full sm:w-auto flex items-center justify-center gap-2 group"
                                 >
-                                    For Students <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                                    {t.hero.ctaStudents} <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                                 </button>
                                 <button
                                     onClick={() => handleRoleSelect(UserRole.TEACHER)}
                                     className="px-8 py-4 bg-gradient-to-r from-emerald-500 to-teal-600 text-white hover:from-emerald-600 hover:to-teal-700 rounded-xl font-bold text-lg shadow-xl shadow-emerald-100 transition-all hover:-translate-y-1 w-full sm:w-auto flex items-center justify-center gap-2 group border border-emerald-400/20"
                                 >
-                                    For Teachers <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                                    {t.hero.ctaTeachers} <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                                 </button>
                                 <button
                                     onClick={() => handleRoleSelect(UserRole.SCHOOL)}
                                     className="px-8 py-4 bg-slate-900 text-white hover:bg-slate-800 rounded-xl font-bold text-lg shadow-xl shadow-slate-200 transition-all hover:-translate-y-1 w-full sm:w-auto flex items-center justify-center gap-2 group border border-slate-700"
                                 >
-                                    For Schools <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                                    {t.hero.ctaSchools} <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                                 </button>
                             </div>
 
@@ -390,13 +408,20 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
 
                         {/* Right Column: Hero Banner */}
                         <motion.div
-                            initial={{ opacity: 0, scale: 0.9, rotate: 2 }}
-                            animate={{ opacity: 1, scale: 1, rotate: 0 }}
-                            transition={{ duration: 1, delay: 0.2 }}
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            transition={{ duration: 0.6, delay: 0.1 }}
                             className="relative"
                         >
-                            <div className="relative z-10 rounded-2xl overflow-hidden shadow-2xl shadow-blue-200/50 border border-white/50 backdrop-blur-sm">
-                                <img src={heroBannerImg} alt="Soma Smart Learning - AI Study Assistant for Kenyan Students" className="w-full h-full object-cover" fetchPriority="high" />
+                            <div className="relative z-10 rounded-2xl overflow-hidden shadow-2xl shadow-blue-200/50 border border-white/50 backdrop-blur-sm aspect-[4/3] md:aspect-video bg-slate-100">
+                                <img
+                                    src={heroBannerImg}
+                                    alt="Soma Smart Learning - Your Study Assistant for Kenyan Students"
+                                    className="w-full h-full object-cover"
+                                    fetchPriority="high"
+                                    width="800"
+                                    height="600"
+                                />
                             </div>
 
                             {/* Floating Elements */}
@@ -442,54 +467,54 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                     <div className="mt-0 relative z-10">
                         <div className="text-center mb-12">
                             <h2 className="text-3xl md:text-4xl font-black text-blue-900 mb-4 tracking-tighter">
-                                Dominate with <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">Productivity.</span>
+                                {t.efficiency.title} <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">{t.efficiency.gradient}</span>
                             </h2>
                             <p className="text-slate-500 font-medium max-w-2xl mx-auto leading-relaxed">
-                                Most platforms focus only on content. Soma Smart focuses on <span className="text-blue-600 font-bold">your time.</span> Tools designed for teacher speed and student results.
+                                {t.efficiency.subtitle}
                             </p>
                         </div>
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
                             {[
                                 {
-                                    title: "Darasa Mode",
-                                    desc: "Just press record. Soma captures your teaching magic.",
+                                    title: t.efficiency.darasa.title,
+                                    desc: t.efficiency.darasa.desc,
                                     icon: Play,
                                     color: "bg-indigo-50 text-indigo-600",
                                     route: "/teacher/darasa",
                                     cta: "Record Now"
                                 },
                                 {
-                                    title: "Smart Notes & Quizzes",
-                                    desc: "Teach your class. We'll handle the notes and quizzes.",
+                                    title: t.efficiency.notes.title,
+                                    desc: t.efficiency.notes.desc,
                                     icon: FileText,
                                     color: "bg-blue-50 text-blue-600",
                                     route: "/teacher/notes",
                                     cta: "Generate"
                                 },
                                 {
-                                    title: "Smart Homework",
-                                    desc: "Personalized homework for every student in seconds.",
-                                    icon: Clock,
-                                    color: "bg-orange-50 text-orange-600",
-                                    route: "/learner",
-                                    cta: "Get Started"
-                                },
-                                {
-                                    title: "Exam Generator",
-                                    desc: "Professional KCSE/CBE exams designed instantly.",
+                                    title: t.efficiency.exam.title,
+                                    desc: t.efficiency.exam.desc,
                                     icon: Award,
                                     color: "bg-emerald-50 text-emerald-600",
                                     route: "/revision",
                                     cta: "Setup Exam"
                                 },
                                 {
-                                    title: "Smart Marking",
-                                    desc: "Scan and mark instantly. Get your evenings back.",
+                                    title: t.efficiency.marking.title,
+                                    desc: t.efficiency.marking.desc,
                                     icon: ScanLine,
                                     color: "bg-purple-50 text-purple-600",
                                     route: "/teacher/marking",
                                     cta: "Start Marking"
+                                },
+                                {
+                                    title: t.efficiency.homework.title,
+                                    desc: t.efficiency.homework.desc,
+                                    icon: Clock,
+                                    color: "bg-orange-50 text-orange-600",
+                                    route: "/learner",
+                                    cta: "Get Started"
                                 }
                             ].map((card, idx) => (
                                 <motion.div
@@ -518,6 +543,134 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
             </section>
 
             <div className="w-full h-px bg-gradient-to-r from-transparent via-slate-100 to-transparent"></div>
+
+            {/* --- TEACHER'S POWER SUITE --- */}
+            <section className="py-20 bg-white relative overflow-hidden">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div className="grid lg:grid-cols-2 gap-16 items-center">
+                        <motion.div
+                            initial={{ opacity: 0, x: -30 }}
+                            whileInView={{ opacity: 1, x: 0 }}
+                            className="space-y-8"
+                        >
+                            <div>
+                                <span className="px-4 py-1.5 bg-blue-50 text-blue-700 text-xs font-black uppercase tracking-widest rounded-full mb-4 inline-block">
+                                    {t.powerSuite.badge}
+                                </span>
+                                <h2 className="text-3xl md:text-5xl font-black text-blue-900 leading-tight">
+                                    {t.powerSuite.title} <span className="text-blue-600">{t.powerSuite.gradient}</span>
+                                </h2>
+                            </div>
+
+                            <p className="text-lg text-slate-600 leading-relaxed">
+                                {t.powerSuite.desc}
+                            </p>
+
+                            <div className="space-y-6">
+                                {[
+                                    {
+                                        title: t.powerSuite.printables.title,
+                                        desc: t.powerSuite.printables.desc,
+                                        icon: FileText,
+                                        color: "text-blue-600",
+                                        bg: "bg-blue-50"
+                                    },
+                                    {
+                                        title: t.powerSuite.creator.title,
+                                        desc: t.powerSuite.creator.desc,
+                                        icon: TrendingUp,
+                                        color: "text-emerald-600",
+                                        bg: "bg-emerald-50"
+                                    },
+                                    {
+                                        title: t.powerSuite.marking.title,
+                                        desc: t.powerSuite.marking.desc,
+                                        icon: ScanLine,
+                                        color: "text-purple-600",
+                                        bg: "bg-purple-50"
+                                    }
+                                ].map((item, i) => (
+                                    <div key={i} className="flex gap-4">
+                                        <div className={`flex-shrink-0 w-12 h-12 ${item.bg} ${item.color} rounded-2xl flex items-center justify-center`}>
+                                            <item.icon className="w-6 h-6" />
+                                        </div>
+                                        <div>
+                                            <h4 className="font-bold text-slate-800 text-lg">{item.title}</h4>
+                                            <p className="text-slate-500 text-sm leading-relaxed">{item.desc}</p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </motion.div>
+
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.9 }}
+                            whileInView={{ opacity: 1, scale: 1 }}
+                            className="relative"
+                        >
+                            <div className="relative z-10 bg-white rounded-[3rem] p-8 border border-slate-100 shadow-2xl overflow-hidden aspect-square flex flex-col">
+                                <div className="mb-6 text-center">
+                                    <div className="inline-flex items-center gap-2 px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full text-[10px] font-black uppercase tracking-widest mb-2">
+                                        Efficiency Boost
+                                    </div>
+                                    <h3 className="text-xl font-black text-slate-800 tracking-tight">Weekly Workload</h3>
+                                </div>
+
+                                <div className="flex-1 relative flex items-end justify-center gap-12 px-4 pb-6">
+                                    {/* Traditional Bar */}
+                                    <div className="relative flex flex-col items-center gap-3 w-16">
+                                        <motion.div
+                                            initial={{ height: 0 }}
+                                            whileInView={{ height: '140px' }}
+                                            transition={{ duration: 1, ease: "easeOut" }}
+                                            className="w-full bg-slate-100 rounded-t-xl relative group border-x border-t border-slate-200"
+                                        >
+                                            <div className="absolute -top-6 left-1/2 -translate-x-1/2 text-[10px] font-bold text-slate-400">15+ Hrs</div>
+                                        </motion.div>
+                                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter text-center leading-tight">Manual<br />Work</span>
+                                    </div>
+
+                                    {/* Soma Smart Bar */}
+                                    <div className="relative flex flex-col items-center gap-3 w-16">
+                                        <motion.div
+                                            initial={{ height: 0 }}
+                                            whileInView={{ height: '40px' }}
+                                            transition={{ duration: 1, delay: 0.3, ease: "easeOut" }}
+                                            className="w-full bg-gradient-to-t from-blue-600 to-indigo-500 rounded-t-xl relative group shadow-lg shadow-blue-200"
+                                        >
+                                            <div className="absolute -top-6 left-1/2 -translate-x-1/2 text-[10px] font-bold text-blue-600">5 Hrs</div>
+                                            <div className="absolute -top-2 -right-2 w-4 h-4 bg-blue-100 rounded-full flex items-center justify-center">
+                                                <div className="w-1.5 h-1.5 bg-blue-600 rounded-full animate-ping"></div>
+                                            </div>
+                                        </motion.div>
+                                        <span className="text-[10px] font-black text-blue-600 uppercase tracking-tighter text-center leading-tight">Soma Smart<br />Mode</span>
+                                    </div>
+
+                                    {/* Centered Callout */}
+                                    <motion.div
+                                        initial={{ opacity: 0, scale: 0.5, y: 20 }}
+                                        whileInView={{ opacity: 1, scale: 1, y: 0 }}
+                                        transition={{ type: "spring", stiffness: 200, delay: 0.8 }}
+                                        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white border border-blue-50 p-4 rounded-3xl shadow-xl z-20 text-center min-w-[120px]"
+                                    >
+                                        <p className="text-3xl font-black text-blue-900 leading-none">{t.powerSuite.saveTime.hours}</p>
+                                        <p className="text-[8px] font-black text-blue-600 uppercase tracking-widest mt-1">{t.powerSuite.saveTime.label}</p>
+                                    </motion.div>
+                                </div>
+
+                                <button
+                                    onClick={() => handleRoleSelect(UserRole.TEACHER)}
+                                    className="w-full py-4 bg-blue-600 text-white rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-xl shadow-blue-200 hover:bg-blue-700 transition-all flex items-center justify-center gap-2 group"
+                                >
+                                    {t.powerSuite.saveTime.cta} <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
+                                </button>
+                            </div>
+                            <div className="absolute -top-10 -right-10 w-40 h-40 bg-blue-400/20 blur-[80px] rounded-full"></div>
+                            <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-indigo-400/20 blur-[80px] rounded-full"></div>
+                        </motion.div>
+                    </div>
+                </div>
+            </section>
 
             {/* --- PROMOTIONAL CTA --- */}
             <div className="w-full">
@@ -641,8 +794,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
             <section id="roles-section" className="py-0 bg-white relative">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
                     <div className="text-center mb-16">
-                        <h2 className="text-3xl md:text-5xl font-extrabold text-blue-900 mb-4 tracking-tight">Tailored for the Whole Classroom</h2>
-                        <p className="text-slate-500 text-lg md:text-xl max-w-2xl mx-auto leading-relaxed">Whether you&apos;re studying for exams, preparing lessons, or supporting your child&apos;s journey, we have tools for you.</p>
+                        <h2 className="text-3xl md:text-5xl font-extrabold text-blue-900 mb-4 tracking-tight">{t.roles.title} {t.roles.gradient}</h2>
+                        <p className="text-slate-500 text-lg md:text-xl max-w-2xl mx-auto leading-relaxed">{t.roles.subtitle}</p>
                     </div>
 
                     <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -654,28 +807,24 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                         >
                             <div className="bg-gradient-to-br from-orange-400 to-red-500 p-6 text-center text-white">
                                 <Baby className="w-10 h-10 mx-auto mb-3 opacity-90" />
-                                <h3 className="text-2xl font-bold">For Learners</h3>
-                                <p className="text-white/80 font-medium italic text-sm">Understand. Practice. Excel.</p>
+                                <h3 className="text-2xl font-bold">{t.roles.student.title}</h3>
+                                <p className="text-white/80 font-medium italic text-sm">{t.roles.student.desc}</p>
                             </div>
-                            <div className="h-64 overflow-hidden bg-gray-50 relative">
-                                <img src={learnerImg} alt="Kenyan Student using Soma Smart for CBC and KCSE revision" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" loading="lazy" decoding="async" />
+                            <div className="h-64 overflow-hidden bg-gray-50 relative aspect-[4/3]">
+                                <img src={learnerImg} alt="Kenyan Student using Soma Smart for CBC and KCSE revision" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" loading="lazy" decoding="async" width="400" height="300" />
                                 <div className="absolute inset-0 bg-gradient-to-t from-white via-transparent to-transparent opacity-60"></div>
                             </div>
                             <div className="p-8 space-y-4 bg-white flex-1">
-                                {[
-                                    { icon: ScanLine, text: "Scan & Learn Instantly", color: "text-orange-500" },
-                                    { icon: MessageSquare, text: "Simple AI Explanations", color: "text-orange-500" },
-                                    { icon: CheckSquare, text: "Unlimited Smart Quizzes", color: "text-orange-500" }
-                                ].map((item, idx) => (
+                                {t.roles.student.points.map((text, idx) => (
                                     <div key={idx} className="flex items-center gap-3 text-slate-700">
-                                        <div className={`p-1.5 rounded-lg bg-orange-50 ${item.color}`}>
-                                            <item.icon className="w-4 h-4" />
+                                        <div className="p-1.5 rounded-lg bg-orange-50 text-orange-500">
+                                            {idx === 0 ? <ScanLine className="w-4 h-4" /> : idx === 1 ? <MessageSquare className="w-4 h-4" /> : <CheckSquare className="w-4 h-4" />}
                                         </div>
-                                        <span className="font-bold text-sm tracking-tight">{item.text}</span>
+                                        <span className="font-bold text-sm tracking-tight">{text}</span>
                                     </div>
                                 ))}
                                 <button className="w-full mt-4 py-3 rounded-xl bg-orange-50 text-orange-600 font-bold group-hover:bg-orange-500 group-hover:text-white transition-all">
-                                    Start Learning
+                                    {t.roles.student.cta}
                                 </button>
                             </div>
                         </motion.div>
@@ -691,25 +840,25 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                 <h3 className="text-2xl font-bold">For Teachers</h3>
                                 <p className="text-white/80 font-medium italic text-sm">Teach Better. Save Time.</p>
                             </div>
-                            <div className="h-64 overflow-hidden bg-gray-50 relative">
-                                <img src={teacherImg} alt="Kenyan Teacher creating lessons with Soma Smart AI" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" loading="lazy" decoding="async" />
+                            <div className="h-64 overflow-hidden bg-gray-50 relative aspect-[4/3]">
+                                <img src={teacherImg} alt="Kenyan Teacher creating lessons with Soma Smart" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" loading="lazy" decoding="async" width="400" height="300" />
                                 <div className="absolute inset-0 bg-gradient-to-t from-white via-transparent to-transparent opacity-60"></div>
                             </div>
                             <div className="p-8 space-y-4 bg-white flex-1">
-                                {[
-                                    { icon: BookOpen, text: "Create Detailed Lessons", color: "text-blue-500" },
-                                    { icon: Play, text: "Darasa Mode Recording", color: "text-blue-500" },
-                                    { icon: CheckSquare, text: "Auto-Generate Quizzes", color: "text-blue-500" }
-                                ].map((item, idx) => (
+                                <div>
+                                    <h3 className="text-2xl font-black text-blue-900 mb-2">{t.roles.teacher.title}</h3>
+                                    <p className="text-slate-500 text-sm font-medium">{t.roles.teacher.desc}</p>
+                                </div>
+                                {[...t.roles.teacher.points].map((text, idx) => (
                                     <div key={idx} className="flex items-center gap-3 text-slate-700">
-                                        <div className={`p-1.5 rounded-lg bg-blue-50 ${item.color}`}>
-                                            <item.icon className="w-4 h-4" />
+                                        <div className="p-1.5 rounded-lg bg-blue-50 text-blue-500">
+                                            {idx === 0 ? <ScanLine className="w-4 h-4" /> : idx === 1 ? <FileText className="w-4 h-4" /> : <TrendingUp className="w-4 h-4" />}
                                         </div>
-                                        <span className="font-bold text-sm tracking-tight">{item.text}</span>
+                                        <span className="font-bold text-sm tracking-tight">{text}</span>
                                     </div>
                                 ))}
                                 <button className="w-full mt-4 py-3 rounded-xl bg-blue-50 text-blue-600 font-bold group-hover:bg-blue-600 group-hover:text-white transition-all">
-                                    Explore Tools
+                                    {t.roles.teacher.cta}
                                 </button>
                             </div>
                         </motion.div>
@@ -725,25 +874,24 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                 <h3 className="text-2xl font-bold">For Parents</h3>
                                 <p className="text-white/80 font-medium italic text-sm">Clear Learning. Real Progress.</p>
                             </div>
-                            <div className="h-64 overflow-hidden bg-gray-50 relative">
-                                <img src={parentImg} alt="Kenyan Parent tracking student progress on Soma Smart" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" loading="lazy" decoding="async" />
+                            <div className="h-64 overflow-hidden bg-gray-50 relative aspect-[4/3]">
+                                <img src={parentImg} alt="Kenyan Parent tracking student progress on Soma Smart" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" loading="lazy" decoding="async" width="400" height="300" />
                                 <div className="absolute inset-0 bg-gradient-to-t from-white via-transparent to-transparent opacity-60"></div>
                             </div>
                             <div className="p-8 space-y-4 bg-white flex-1">
-                                {[
-                                    { icon: CheckCircle, text: "Live Progress Tracking", color: "text-emerald-500" },
-                                    { icon: MessageSquare, text: "Daily Learning Insights", color: "text-emerald-500" },
-                                    { icon: GraduationCap, text: "Support Child Excellence", color: "text-emerald-500" }
-                                ].map((item, idx) => (
+                                {t.roles.parent.points.map((text, idx) => (
                                     <div key={idx} className="flex items-center gap-3 text-slate-700">
-                                        <div className={`p-1.5 rounded-lg bg-emerald-50 ${item.color}`}>
-                                            <item.icon className="w-4 h-4" />
+                                        <div className="p-1.5 rounded-lg bg-emerald-50 text-emerald-500">
+                                            {idx === 0 ? <CheckCircle className="w-4 h-4" /> : idx === 1 ? <MessageSquare className="w-4 h-4" /> : <GraduationCap className="w-4 h-4" />}
                                         </div>
-                                        <span className="font-bold text-sm tracking-tight">{item.text}</span>
+                                        <span className="font-bold text-sm tracking-tight">{text}</span>
                                     </div>
                                 ))}
-                                <button className="w-full mt-4 py-3 rounded-xl bg-emerald-50 text-emerald-600 font-bold group-hover:bg-emerald-500 group-hover:text-white transition-all">
-                                    Track Progress
+                                <button
+                                    onClick={() => handleRoleSelect(UserRole.PARENT)}
+                                    className="w-full mt-4 py-3 rounded-xl bg-emerald-50 text-emerald-600 font-bold group-hover:bg-emerald-500 group-hover:text-white transition-all"
+                                >
+                                    {t.roles.parent.cta}
                                 </button>
                             </div>
                         </motion.div>
@@ -757,20 +905,15 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
             <section id="how-it-works" className="py-6 bg-slate-50 relative overflow-hidden">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
                     <div className="text-center mb-20">
-                        <h2 className="text-3xl md:text-5xl font-extrabold text-blue-900 mb-6 tracking-tight">Learning Made Simple</h2>
-                        <p className="text-slate-600 text-lg md:text-xl max-w-2xl mx-auto leading-relaxed">Get from a confused student to a subject master in 4 easy steps.</p>
+                        <h2 className="text-3xl md:text-5xl font-extrabold text-blue-900 mb-6 tracking-tight">{t.howItWorks.title}</h2>
+                        <p className="text-slate-600 text-lg md:text-xl max-w-2xl mx-auto leading-relaxed">{t.howItWorks.subtitle}</p>
                     </div>
 
                     <div className="grid sm:grid-cols-2 md:grid-cols-4 gap-8 relative">
                         {/* Connecting Line (Desktop) */}
                         <div className="hidden md:block absolute top-[28%] left-[10%] right-[10%] h-0.5 bg-gradient-to-r from-blue-200 via-orange-200 to-green-200 -z-0"></div>
 
-                        {[
-                            { img: stepScanImg, title: "Scan or Upload", desc: "Snap a photo of your textbook, notes or homework.", color: "bg-blue-600" },
-                            { img: stepExplainImg, title: "Get Explanations", desc: "Our AI breaks it down into simple terms you understand.", color: "bg-orange-500" },
-                            { img: stepQuizImg, title: "Smart Quizzes", desc: "Test your knowledge with auto-generated practice questions.", color: "bg-green-600" },
-                            { img: stepAudioImg, title: "Listen & Revise", desc: "Listen to simplified lessons on the go to remember more.", color: "bg-indigo-600" }
-                        ].map((step, i) => (
+                        {t.howItWorks.steps.map((step, i) => (
                             <motion.div
                                 key={i}
                                 initial={{ opacity: 0, y: 20 }}
@@ -779,11 +922,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                 className="flex flex-col items-center text-center group relative z-10"
                             >
                                 <div className="relative mb-8">
-                                    <div className={`w-12 h-12 ${step.color} text-white rounded-2xl flex items-center justify-center font-bold text-xl absolute -top-3 -right-3 z-20 shadow-lg border-4 border-white transform group-hover:rotate-12 transition-transform`}>
+                                    <div className={`w-12 h-12 ${[stepScanImg, stepExplainImg, stepQuizImg, stepAudioImg][i] === stepScanImg ? 'bg-blue-600' : [stepScanImg, stepExplainImg, stepQuizImg, stepAudioImg][i] === stepExplainImg ? 'bg-orange-500' : [stepScanImg, stepExplainImg, stepQuizImg, stepAudioImg][i] === stepQuizImg ? 'bg-green-600' : 'bg-indigo-600'} text-white rounded-2xl flex items-center justify-center font-bold text-xl absolute -top-3 -right-3 z-20 shadow-lg border-4 border-white transform group-hover:rotate-12 transition-transform`}>
                                         {i + 1}
                                     </div>
-                                    <div className="w-44 h-44 rounded-3xl bg-white flex items-center justify-center shadow-xl p-6 group-hover:scale-105 transition-all duration-300 border border-slate-100">
-                                        <img src={step.img} alt={`Soma Smart Step ${i + 1}: ${step.title}`} className="w-full h-full object-contain" loading="lazy" decoding="async" />
+                                    <div className="w-44 h-44 rounded-3xl bg-white flex items-center justify-center shadow-xl p-6 group-hover:scale-105 transition-all duration-300 border border-slate-100 aspect-square">
+                                        <img src={[stepScanImg, stepExplainImg, stepQuizImg, stepAudioImg][i]} alt={`Soma Smart Step ${i + 1}: ${step.title}`} className="w-full h-full object-contain" loading="lazy" decoding="async" width="150" height="150" />
                                     </div>
                                 </div>
 
@@ -801,7 +944,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
             <section className="py-24 relative overflow-hidden bg-slate-50/50">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
                     <div className="text-center mb-16">
-                        <h2 className="text-3xl md:text-5xl font-extrabold text-blue-900 mb-4 tracking-tight">What the Community Says</h2>
+                        <h2 className="text-3xl md:text-5xl font-extrabold text-blue-900 mb-4 tracking-tight">{t.testimonials.title}</h2>
                         <div className="w-24 h-1.5 bg-gradient-to-r from-orange-400 to-red-500 mx-auto rounded-full"></div>
                     </div>
 
@@ -819,12 +962,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                     mk
                                 </div>
                                 <div>
-                                    <h4 className="font-bold text-slate-900">Mr. Kamau</h4>
+                                    <h4 className="font-bold text-slate-900">{t.testimonials.teacher.name}</h4>
                                     <p className="text-xs font-semibold text-blue-600 uppercase tracking-wider">Teacher</p>
                                 </div>
                             </div>
                             <p className="text-slate-600 italic leading-relaxed relative z-10">
-                                "Soma has saved me so much time in class! The automated lesson plans and darasa mode recording features are a game changer for my teaching workflow."
+                                "{t.testimonials.teacher.quote}"
                             </p>
                             <div className="mt-6 pt-6 border-t border-slate-50 flex items-center gap-2 text-xs font-bold text-slate-400">
                                 <School className="w-4 h-4" /> ABC Primary School

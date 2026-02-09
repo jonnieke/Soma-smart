@@ -52,9 +52,13 @@ interface AppContextType {
   schoolStats: SchoolStats | null;
   schoolTeachers: SchoolTeacher[];
   fetchSchoolStats: () => Promise<void>;
+  addTeacherToSchool: (email: string) => Promise<{ success: boolean; message?: string }>;
+  addStudentToSchool: (studentId: string) => Promise<{ success: boolean; message?: string }>;
+  removeUserFromSchool: (userId: string) => Promise<{ success: boolean; message?: string }>;
   // Language
   language: 'EN' | 'FR';
   toggleLanguage: () => void;
+  startGuestSession: () => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -318,11 +322,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     initSession();
   }, []);
 
-  const incrementUsage = () => {
-    if (!isRegistered) {
-      setUsageCount(prev => prev + 1);
-    }
-  };
+
 
   const registerStudent = async (name: string, grade: string, pin: string, parentPhone?: string): Promise<{ success: boolean; message?: string; data?: string }> => {
     try {
@@ -600,29 +600,120 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   const fetchSchoolStats = async () => {
-    // In a real app, this would fetch from Supabase based on the school ID
-    // For now, we'll mock it based on the current school profile
     if (!schoolProfile) return;
 
-    // Simulate network delay
-    await new Promise(resolve => setTimeout(resolve, 800));
+    try {
+      // 1. Fetch Teachers linked to this school
+      const { data: teachers, error: tError } = await supabase
+        .from('profiles')
+        .select('id, full_name, subjects')
+        .eq('school_id', schoolProfile.id)
+        .eq('role', 'TEACHER');
 
-    setSchoolStats({
-      teachers: 48,
-      students: 1240,
-      lessons: 8432,
-      storageUsed: 85,
-      teacherTrend: "+4 this week",
-      studentTrend: "+12% growth",
-      lessonTrend: "Top in District"
-    });
+      if (tError) throw tError;
 
-    setSchoolTeachers([
-      { id: '1', name: "Sarah Kamau", subject: "Mathematics", impact: "94.2%", lessons: 142 },
-      { id: '2', name: "John Maina", subject: "Science (CBE)", impact: "89.8%", lessons: 98 },
-      { id: '3', name: "Emily Wilson", subject: "English", impact: "88.5%", lessons: 124 },
-      { id: '4', name: "David Omondi", subject: "Social Studies", impact: "85.2%", lessons: 76 }
-    ]);
+      // 2. Fetch Students linked to this school
+      const { count: studentCount, error: sError } = await supabase
+        .from('profiles')
+        .select('*', { count: 'exact', head: true })
+        .eq('school_id', schoolProfile.id)
+        .eq('role', 'LEARNER');
+
+      if (sError) throw sError;
+
+      // 3. Fetch Lessons/Activities for linked teachers
+      // This is a bit complex for a single query, so we use a simple count for now
+      // ideally we'd join on activities where student_id in (teacher_ids)
+      const teacherIds = teachers.map(t => t.id);
+      let lessonCount = 0;
+      if (teacherIds.length > 0) {
+        const { count, error: lError } = await supabase
+          .from('activities')
+          .select('*', { count: 'exact', head: true })
+          .in('student_id', teacherIds);
+        if (!lError) lessonCount = count || 0;
+      }
+
+      setSchoolStats({
+        teachers: teachers.length,
+        students: studentCount || 0,
+        lessons: lessonCount,
+        storageUsed: Math.floor(Math.random() * 20) + 10, // Placeholder for storage
+        teacherTrend: teachers.length > 40 ? "Top Institution" : "+2 this month",
+        studentTrend: "+8% growth",
+        lessonTrend: "Highly Active"
+      });
+
+      setSchoolTeachers(teachers.map(t => ({
+        id: t.id,
+        name: t.full_name,
+        subject: t.subjects?.[0] || 'General',
+        impact: "High",
+        lessons: 0 // Fetching individual lesson counts would be too many queries right now
+      })));
+
+    } catch (e) {
+      console.error("Error fetching school stats:", e);
+    }
+  };
+
+  const addTeacherToSchool = async (email: string): Promise<{ success: boolean; message?: string }> => {
+    if (!schoolProfile) return { success: false, message: "Not logged in as School" };
+
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .update({ school_id: schoolProfile.id })
+        .eq('email', email)
+        .eq('role', 'TEACHER')
+        .select()
+        .maybeSingle();
+
+      if (error) throw error;
+      if (!data) return { success: false, message: "Teacher with this email not found." };
+
+      await fetchSchoolStats();
+      return { success: true };
+    } catch (e: any) {
+      return { success: false, message: e.message };
+    }
+  };
+
+  const addStudentToSchool = async (studentId: string): Promise<{ success: boolean; message?: string }> => {
+    if (!schoolProfile) return { success: false, message: "Not logged in as School" };
+
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .update({ school_id: schoolProfile.id })
+        .eq('student_id', studentId.toUpperCase())
+        .eq('role', 'LEARNER')
+        .select()
+        .maybeSingle();
+
+      if (error) throw error;
+      if (!data) return { success: false, message: "Student with this ID not found." };
+
+      await fetchSchoolStats();
+      return { success: true };
+    } catch (e: any) {
+      return { success: false, message: e.message };
+    }
+  };
+
+  const removeUserFromSchool = async (userId: string): Promise<{ success: boolean; message?: string }> => {
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ school_id: null })
+        .eq('id', userId);
+
+      if (error) throw error;
+      await fetchSchoolStats();
+      return { success: true };
+    } catch (e: any) {
+      return { success: false, message: e.message };
+    }
   };
 
   const resetPassword = async (email: string): Promise<boolean> => {
@@ -641,6 +732,22 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   const incrementTeacherUsage = () => setTeacherUsageCount(prev => prev + 1);
+
+  const startGuestSession = () => {
+    const saved = parseInt(localStorage.getItem('soma_guest_usage') || '0');
+    setUsageCount(saved);
+    setRole(UserRole.GUEST);
+  };
+
+  const incrementUsage = () => {
+    if (role === UserRole.GUEST) {
+      const newCount = usageCount + 1;
+      setUsageCount(newCount);
+      localStorage.setItem('soma_guest_usage', newCount.toString());
+    } else {
+      setUsageCount(prev => prev + 1);
+    }
+  };
 
   const registerTeacher = async (name: string, email: string, password: string, classes: string[], subjects: string[]): Promise<{ success: boolean; message?: string }> => {
     try {
@@ -1136,9 +1243,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       promoEndDate,
       userId,
       schoolProfile, loginSchool, registerSchool,
-      schoolStats, schoolTeachers, fetchSchoolStats,
+      schoolStats, schoolTeachers, fetchSchoolStats, addTeacherToSchool, addStudentToSchool, removeUserFromSchool,
       language, toggleLanguage,
       logout,
+      startGuestSession,
       availableQuizzes,
       fetchAvailableQuizzes
     }}>

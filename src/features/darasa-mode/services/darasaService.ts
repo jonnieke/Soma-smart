@@ -1,7 +1,7 @@
 import { LessonResult } from '../../../types';
 import { generateDarasaLesson, generateDarasaRevision } from '../../../services/geminiService';
 
-export const processLessonAudio = async (audioBlob: Blob): Promise<LessonResult> => {
+export const processLessonAudio = async (audioBlob: Blob, language: 'EN' | 'FR' = 'EN'): Promise<LessonResult> => {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.onloadend = async () => {
@@ -11,7 +11,7 @@ export const processLessonAudio = async (audioBlob: Blob): Promise<LessonResult>
                 const base64Data = base64String.split(',')[1];
                 const mimeType = audioBlob.type || 'audio/webm'; // Default to webm if missing
 
-                const result = await generateDarasaLesson(base64Data, mimeType);
+                const result = await generateDarasaLesson(base64Data, mimeType, language);
                 resolve(result);
             } catch (error) {
                 console.error("Error processing lesson audio:", error);
@@ -23,7 +23,7 @@ export const processLessonAudio = async (audioBlob: Blob): Promise<LessonResult>
     });
 };
 
-export const processRevisionFile = async (file: File): Promise<LessonResult> => {
+export const processRevisionFile = async (file: File, language: 'EN' | 'FR' = 'EN'): Promise<LessonResult> => {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.onloadend = async () => {
@@ -33,7 +33,7 @@ export const processRevisionFile = async (file: File): Promise<LessonResult> => 
                 const base64Data = base64String.split(',')[1];
                 const mimeType = file.type;
 
-                const result = await generateDarasaRevision(base64Data, mimeType);
+                const result = await generateDarasaRevision(base64Data, mimeType, language);
                 resolve(result);
             } catch (error) {
                 console.error("Error processing revision file:", error);

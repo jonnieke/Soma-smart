@@ -7,6 +7,7 @@ import { jsPDF } from 'jspdf';
 import { useApp } from '../../context/AppContext';
 import { LoginModal } from '../../components/LoginModal';
 import { UserRole } from '../../types';
+import { translations } from '../../data/translations';
 
 interface DarasaModeProps {
     onBack: () => void;
@@ -26,7 +27,8 @@ export const DarasaMode: React.FC<DarasaModeProps> = ({ onBack }) => {
     } = useDarasaLesson();
 
     // Features
-    const { role } = useApp();
+    const { role, language } = useApp();
+    const t = translations[language];
     const [showLogin, setShowLogin] = React.useState(false);
     const [isStudentPreview, setIsStudentPreview] = React.useState(false);
 
@@ -45,7 +47,7 @@ export const DarasaMode: React.FC<DarasaModeProps> = ({ onBack }) => {
         doc.text(lesson.topic, 10, 10);
 
         doc.setFontSize(12);
-        doc.text("Summary:", 10, 20);
+        doc.text(`${t.teacher.darasaMode.recordTitle}:`, 10, 20);
         const summaryLines = doc.splitTextToSize(lesson.summary, 190);
         doc.text(summaryLines, 10, 25);
 
@@ -92,7 +94,7 @@ export const DarasaMode: React.FC<DarasaModeProps> = ({ onBack }) => {
             return;
         }
 
-        const shareText = `📚 *Lesson: ${lesson.topic}*\n\n${lesson.summary}\n\nStart learning on Soma Smart!`;
+        const shareText = t.teacher.darasaMode.shareText.replace('{topic}', lesson.topic).replace('{summary}', lesson.summary);
 
         if (navigator.share) {
             try {
@@ -104,11 +106,11 @@ export const DarasaMode: React.FC<DarasaModeProps> = ({ onBack }) => {
             } catch (err) {
                 console.warn("Share API failed/cancelled, falling back to clipboard", err);
                 navigator.clipboard.writeText(shareText);
-                alert("Link copied to clipboard! (Share menu closed)");
+                alert(t.teacher.darasaMode.copyLinkManual);
             }
         } else {
             navigator.clipboard.writeText(shareText);
-            alert("Lesson details copied to clipboard!");
+            alert(t.teacher.darasaMode.lessonDetailsCopied);
         }
     };
 
@@ -118,7 +120,7 @@ export const DarasaMode: React.FC<DarasaModeProps> = ({ onBack }) => {
             return;
         }
         await saveCurrentLesson();
-        alert("Lesson Saved Successfully to your Teacher Account!");
+        alert(t.teacher.darasaMode.lessonSaved);
     };
 
     // Mode: Student Preview
@@ -127,16 +129,16 @@ export const DarasaMode: React.FC<DarasaModeProps> = ({ onBack }) => {
             <div className="bg-slate-50 min-h-screen pb-20 animate-in fade-in duration-300">
                 <div className="sticky top-0 bg-white z-20 border-b border-slate-200 px-4 py-3 flex items-center justify-between shadow-sm">
                     <button onClick={() => setIsStudentPreview(false)} className="flex items-center gap-2 text-slate-600 font-bold hover:text-indigo-600 transition-colors">
-                        <ArrowLeft className="w-5 h-5" /> Back to Editor
+                        <ArrowLeft className="w-5 h-5" /> {t.teacher.darasaMode.backToEditor}
                     </button>
                     <div className="text-sm font-bold text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full">
-                        Student View Preview
+                        {t.teacher.darasaMode.studentPreview}
                     </div>
                 </div>
 
                 <div className="max-w-2xl mx-auto px-4 py-8">
                     <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 mb-6">
-                        <span className="text-xs font-bold text-indigo-500 uppercase tracking-wider">Lesson Topic</span>
+                        <span className="text-xs font-bold text-indigo-500 uppercase tracking-wider">{t.teacher.darasaMode.lessonTopic}</span>
                         <h1 className="text-2xl font-bold text-slate-900 mt-1 mb-2">{lesson.topic}</h1>
                         <p className="text-slate-600 leading-relaxed text-sm">{lesson.summary}</p>
                     </div>
@@ -156,7 +158,7 @@ export const DarasaMode: React.FC<DarasaModeProps> = ({ onBack }) => {
 
                     <div className="mt-8">
                         <button className="w-full py-4 bg-indigo-600 text-white font-bold rounded-xl shadow-lg shadow-indigo-200 hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2">
-                            <BookOpen className="w-5 h-5" /> Take Quiz ({lesson.quiz.length} Questions)
+                            <BookOpen className="w-5 h-5" /> {t.teacher.darasaMode.takeQuiz.replace('{count}', lesson.quiz.length.toString())}
                         </button>
                     </div>
                 </div>
@@ -186,8 +188,8 @@ export const DarasaMode: React.FC<DarasaModeProps> = ({ onBack }) => {
         return (
             <div className="max-w-2xl mx-auto px-4 py-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
                 <div className="text-center mb-8">
-                    <h2 className="text-2xl font-bold text-slate-800 mb-2">Review Recording</h2>
-                    <p className="text-slate-500">Listen to verify clarity before we analyze it.</p>
+                    <h2 className="text-2xl font-bold text-slate-800 mb-2">{t.teacher.darasaMode.reviewTitle}</h2>
+                    <p className="text-slate-500">{t.teacher.darasaMode.reviewDesc}</p>
                 </div>
 
                 <div className="bg-white rounded-2xl shadow-xl border border-indigo-100 p-8">
@@ -200,13 +202,13 @@ export const DarasaMode: React.FC<DarasaModeProps> = ({ onBack }) => {
                             onClick={reset}
                             className="flex-1 py-3 px-4 rounded-xl border border-red-200 text-red-600 font-bold hover:bg-red-50 transition-colors flex items-center justify-center gap-2"
                         >
-                            <Trash2 className="w-5 h-5" /> Retake
+                            <Trash2 className="w-5 h-5" /> {t.teacher.darasaMode.retake}
                         </button>
                         <button
                             onClick={confirmProcessing}
                             className="flex-1 py-3 px-4 rounded-xl bg-indigo-600 text-white font-bold hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-200 flex items-center justify-center gap-2"
                         >
-                            <Check className="w-5 h-5" /> Analyze Lesson
+                            <Check className="w-5 h-5" /> {t.teacher.darasaMode.analyze}
                         </button>
                     </div>
                 </div>
@@ -222,9 +224,9 @@ export const DarasaMode: React.FC<DarasaModeProps> = ({ onBack }) => {
                     <div className="absolute inset-0 bg-indigo-500 blur-xl opacity-20 animate-pulse rounded-full" />
                     <Loader2 className="w-16 h-16 text-indigo-600 animate-spin relative z-10" />
                 </div>
-                <h3 className="mt-8 text-2xl font-bold text-slate-800">Generating Lesson...</h3>
+                <h3 className="mt-8 text-2xl font-bold text-slate-800">{t.teacher.darasaMode.generatingTitle}</h3>
                 <p className="text-slate-500 mt-2 text-center max-w-md">
-                    Our AI is analyzing the audio, creating notes, highlighting key terms, and generating quiz questions.
+                    {t.teacher.darasaMode.generatingDesc}
                 </p>
             </div>
         );
@@ -240,20 +242,20 @@ export const DarasaMode: React.FC<DarasaModeProps> = ({ onBack }) => {
                     className="flex items-center text-slate-500 hover:text-slate-800 transition-colors gap-2"
                 >
                     <ArrowLeft className="w-5 h-5" />
-                    Back to Dashboard
+                    {t.teacher.darasaMode.backToDashboard}
                 </button>
                 <div className="flex items-center gap-2 text-indigo-600 bg-indigo-50 px-4 py-2 rounded-full text-sm font-medium">
                     <BookOpen className="w-4 h-4" />
-                    Darasa AI Mode
+                    {t.teacher.darasaMode.title}
                 </div>
             </div>
 
             <div className="text-center mb-12">
                 <h1 className="text-4xl font-bold text-slate-900 mb-4 tracking-tight">
-                    Record Your Class
+                    {t.teacher.darasaMode.recordTitle}
                 </h1>
                 <p className="text-lg text-slate-600 max-w-2xl mx-auto">
-                    Capture the lesson in real-time. Soma will generate comprehensive notes, summaries, and quizzes automatically.
+                    {t.teacher.darasaMode.recordDesc}
                 </p>
             </div>
 
@@ -274,7 +276,7 @@ export const DarasaMode: React.FC<DarasaModeProps> = ({ onBack }) => {
                 <div className="mt-16 border-t border-slate-200 pt-8">
                     <h3 className="text-xl font-bold text-slate-800 mb-6 flex items-center gap-2">
                         <BookOpen className="w-5 h-5" />
-                        Recent Lessons
+                        {t.teacher.darasaMode.recentLessons}
                     </h3>
                     <div className="grid gap-4 md:grid-cols-2">
                         {history.map((h) => (
@@ -288,7 +290,7 @@ export const DarasaMode: React.FC<DarasaModeProps> = ({ onBack }) => {
                                         onClick={() => {
                                             const shareText = `📚 *${h.topic}*\n${h.summary}`;
                                             navigator.clipboard.writeText(shareText);
-                                            alert("Copied to clipboard");
+                                            alert(t.teacher.darasaMode.copiedToClipboard);
                                         }}
                                     >
                                         <Share2 className="w-4 h-4" />

@@ -22,6 +22,7 @@ import {
 import confetti from 'canvas-confetti';
 import { calculateTotalXP, calculateLevel } from '../../services/gamificationService';
 import { TscLiveBanner } from '../../components/TscLiveBanner';
+import { translations } from '../../data/translations';
 
 // Simple Button component if not imported (placeholder or real import)
 // const Button = ... (If it's a custom component, imply import. If standard HTML button is used in code, maybe it was styled component?)
@@ -42,6 +43,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
     isPromoActive, upgradeAccount, revisionUsageCount, incrementRevisionUsage,
     logout, isPro, subscriptionPlan, subscriptionExpiry, isOnline, role, language
   } = useApp();
+  const t = translations[language];
   const location = useLocation();
 
   // Check for subscription intent
@@ -94,7 +96,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
   }, [totalXP]);
 
   useEffect(() => {
-    // Only redirect to homepage if the user is truly NOT logged in at all
+    // Only redirect if NONE role (Guest is allowed)
     if (!isRegistered && role === UserRole.NONE) {
       navigate('/');
     }
@@ -249,6 +251,16 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
   const checkLimit = (): boolean => {
     // Promo or Pro = Unlimited Checks
     if (isPromoActive || isPro) return true;
+
+    // Guest Mode Limit (Max 3)
+    if (role === UserRole.GUEST) {
+      if (usageCount >= 3) {
+        setShowLogin(true); // Force login
+        return false;
+      }
+      incrementUsage();
+      return true;
+    }
 
     if (!isRegistered && usageCount >= 3) {
       setShowRegistration(true);
@@ -852,7 +864,7 @@ ${explanation.explanation}
                 transition={{ delay: 0.2 }}
                 className="text-slate-500 font-medium text-sm md:text-base"
               >
-                Ready to explore something new?
+                {t.learner.tagline}
               </motion.p>
 
               {/* GAMIFICATION PROGRESS */}
@@ -867,7 +879,7 @@ ${explanation.explanation}
                     <div className="w-5 h-5 bg-yellow-400 rounded-full flex items-center justify-center shadow-sm">
                       <Star className="w-3 h-3 text-yellow-900 fill-yellow-900" />
                     </div>
-                    Level {levelInfo.level}
+                    {t.learner.stats.level} {levelInfo.level}
                   </span>
                   <span className="text-[10px] font-bold text-slate-400">{Math.floor(levelInfo.progressPercent)}% to L{levelInfo.level + 1}</span>
                 </div>
@@ -881,7 +893,7 @@ ${explanation.explanation}
                   />
                 </div>
                 <div className="text-right mt-1">
-                  <span className="text-[10px] font-bold text-indigo-400">{totalXP} Total XP</span>
+                  <span className="text-[10px] font-bold text-indigo-400">{totalXP} {t.learner.stats.xp}</span>
                 </div>
               </motion.div>
             </div>
@@ -893,7 +905,7 @@ ${explanation.explanation}
                 title="Back to Landing Page"
               >
                 <Home className="w-5 h-5 text-slate-500 group-hover:text-blue-600 transition-colors" />
-                Home
+                {language === 'FR' ? 'Accueil' : 'Home'}
               </button>
               <button onClick={() => setMode('PRICING')} className="flex-1 md:flex-none flex justify-center items-center p-2 bg-indigo-100 rounded-xl hover:bg-indigo-200 transition-colors group" title="Pricing Plans">
                 <CreditCard className="w-6 h-6 text-indigo-600" />
@@ -961,7 +973,7 @@ ${explanation.explanation}
             <div className="flex items-center gap-2 mb-3 pl-1">
               <Sparkles className={`w-5 h-5 ${isOnline ? 'text-blue-600 animate-pulse' : 'text-slate-400'}`} />
               <h2 className="text-xl font-extrabold text-slate-800 tracking-tight">
-                {isOnline ? "Ask Soma Anything!" : "Ask Soma (Offline)"}
+                {isOnline ? t.learner.actions.topic : (language === 'FR' ? "Demander à Soma (Hors ligne)" : "Ask Soma (Offline)")}
               </h2>
               {!isOnline && <span className="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full font-bold uppercase">Internet Required</span>}
             </div>
@@ -1026,7 +1038,7 @@ ${explanation.explanation}
           <div className="bg-white rounded-3xl p-6 shadow-xl shadow-slate-100 border border-slate-100">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-amber-500 fill-amber-500" /> Magic Tools
+                <Sparkles className="w-5 h-5 text-amber-500 fill-amber-500" /> {language === 'FR' ? 'Outils Magiques' : 'Magic Tools'}
               </h2>
 
               {/* Level Toggle */}
@@ -1071,7 +1083,7 @@ ${explanation.explanation}
                   }
                   // Simple hack: assume video is audio for now or fails gracefully
                   const audience = 'LEARNER';
-                  const result = await generateLessonRecap(base64, file.type, audience);
+                  const result = await generateLessonRecap(base64, file.type, audience, language);
                   setRecapData(result);
                   setMode('RECAP_RESULT');
                   saveActivity({
@@ -1102,7 +1114,7 @@ ${explanation.explanation}
                   <div className={`w-10 h-10 rounded-full flex items-center justify-center mb-3 ${isOnline ? 'bg-white/20' : 'bg-slate-200'}`}>
                     <Camera className={`w-5 h-5 ${isOnline ? 'text-white' : 'text-slate-400'}`} />
                   </div>
-                  <h3 className="text-xl font-bold">Scan Homework</h3>
+                  <h3 className="text-xl font-bold">{t.learner.actions.scan}</h3>
                   <p className={`${isOnline ? 'text-blue-100' : 'text-slate-400'} text-xs`}>
                     {isOnline ? "Snap a photo to understand instantly" : "Connect to internet to scan"}
                   </p>
@@ -1125,7 +1137,7 @@ ${explanation.explanation}
                   <div className={`w-10 h-10 rounded-full flex items-center justify-center mb-3 ${isOnline ? 'bg-white/20' : 'bg-slate-200'}`}>
                     <Brain className={`w-5 h-5 ${isOnline ? 'text-white' : 'text-slate-400'}`} />
                   </div>
-                  <h3 className="text-xl font-bold">Past Papers</h3>
+                  <h3 className="text-xl font-bold">{t.learner.actions.pastPapers}</h3>
                   <p className={`${isOnline ? 'text-orange-100' : 'text-slate-400'} text-xs`}>
                     {isOnline ? "Upload past papers & get AI coaching" : "Connect to internet for coaching"}
                   </p>
@@ -1149,7 +1161,7 @@ ${explanation.explanation}
                     <Mic className={`w-5 h-5 ${isOnline ? 'text-white' : 'text-slate-400'}`} />
                   </div>
                   <div className="flex items-center gap-2">
-                    <h3 className="text-xl font-bold">Lesson Recap</h3>
+                    <h3 className="text-xl font-bold">{t.learner.actions.lessonRecap}</h3>
                     {isOnline && <span className="bg-white text-red-600 text-[10px] font-bold px-2 py-0.5 rounded-full">TSC LIVE</span>}
                   </div>
                   <p className={`${isOnline ? 'text-pink-100' : 'text-slate-400'} text-xs`}>
@@ -1180,7 +1192,7 @@ ${explanation.explanation}
                   </div>
                 )}
                 <span className={`font-bold text-sm ${isRecording ? 'text-red-600' : 'text-slate-700 opacity-70'}`}>
-                  {isRecording ? formatTime(recordingTime) : "Ask Voice"}
+                  {isRecording ? formatTime(recordingTime) : t.learner.actions.voice}
                 </span>
               </motion.button>
 

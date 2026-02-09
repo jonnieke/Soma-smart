@@ -4,6 +4,7 @@ export enum UserRole {
   PARENT = 'PARENT',
   REVISION = 'REVISION',
   SCHOOL = 'SCHOOL',
+  GUEST = 'GUEST',
   NONE = 'NONE'
 }
 

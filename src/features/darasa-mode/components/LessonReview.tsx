@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
-import { ArrowLeft, Save, Share2, FileText, HelpCircle, Check, Edit2, Eye } from 'lucide-react';
+import { ArrowLeft, Share2, FileText, HelpCircle, Check, Edit2 } from 'lucide-react';
 import { LessonResult } from '../../../types';
+import { useApp } from '../../../context/AppContext';
+import { translations } from '../../../data/translations';
 
 interface LessonReviewProps {
     lesson: LessonResult;
@@ -12,6 +14,8 @@ interface LessonReviewProps {
 }
 
 export const LessonReview: React.FC<LessonReviewProps> = ({ lesson, onBack, onSave, onDownload, onShare, onPreview }) => {
+    const { language } = useApp();
+    const t = translations[language];
     const [activeTab, setActiveTab] = useState<'NOTES' | 'QUIZ'>('NOTES');
     const [editedLesson, setEditedLesson] = useState<LessonResult>(lesson);
 
@@ -28,32 +32,32 @@ export const LessonReview: React.FC<LessonReviewProps> = ({ lesson, onBack, onSa
                 <button onClick={onBack} className="p-2 -ml-2 text-slate-500 hover:text-slate-800 rounded-full hover:bg-slate-100">
                     <ArrowLeft className="w-5 h-5" />
                 </button>
-                <h2 className="font-bold text-slate-800 text-lg">Review Lesson</h2>
+                <h2 className="font-bold text-slate-800 text-lg">{t.teacher.lessonReview.title}</h2>
 
                 <div className="flex gap-3">
                     <button
                         onClick={() => onDownload(editedLesson)}
                         className="px-4 py-2 bg-white text-slate-600 font-medium rounded-lg border border-slate-200 hover:bg-slate-50 transition-colors"
                     >
-                        Download Notes
+                        {t.teacher.lessonReview.exportPdf}
                     </button>
                     <button
                         onClick={onShare}
                         className="px-4 py-2 bg-white text-slate-600 font-medium rounded-lg border border-slate-200 hover:bg-slate-50 transition-colors flex items-center gap-2"
                     >
-                        <Share2 className="w-4 h-4" /> Share
+                        <Share2 className="w-4 h-4" /> {t.teacher.lessonReview.shareLesson}
                     </button>
                     <button
                         onClick={onPreview}
                         className="px-4 py-2 bg-indigo-100 text-indigo-700 font-medium rounded-lg hover:bg-indigo-200 transition-colors"
                     >
-                        Preview Student View
+                        {t.teacher.lessonReview.studentView}
                     </button>
                     <button
                         onClick={() => onSave(lesson)}
                         className="px-4 py-2 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 transition-colors"
                     >
-                        Save & Close
+                        {t.teacher.common.backToHome}
                     </button>
                 </div>
             </div>
@@ -61,7 +65,7 @@ export const LessonReview: React.FC<LessonReviewProps> = ({ lesson, onBack, onSa
             <div className="max-w-3xl mx-auto px-4 py-6">
                 {/* Topic Input */}
                 <div className="mb-6">
-                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Topic</label>
+                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">{t.teacher.darasaMode.lessonTopic}</label>
                     <input
                         value={editedLesson.topic}
                         onChange={(e) => setEditedLesson({ ...editedLesson, topic: e.target.value })}
@@ -77,13 +81,13 @@ export const LessonReview: React.FC<LessonReviewProps> = ({ lesson, onBack, onSa
                         onClick={() => setActiveTab('NOTES')}
                         className={`flex-1 py-2 rounded-md text-sm font-bold flex items-center justify-center gap-2 transition-all ${activeTab === 'NOTES' ? 'bg-white shadow text-slate-800' : 'text-slate-500 hover:text-slate-700'}`}
                     >
-                        <FileText className="w-4 h-4" /> Notes
+                        <FileText className="w-4 h-4" /> {t.teacher.lessonReview.notesTitle}
                     </button>
                     <button
                         onClick={() => setActiveTab('QUIZ')}
                         className={`flex-1 py-2 rounded-md text-sm font-bold flex items-center justify-center gap-2 transition-all ${activeTab === 'QUIZ' ? 'bg-white shadow text-slate-800' : 'text-slate-500 hover:text-slate-700'}`}
                     >
-                        <HelpCircle className="w-4 h-4" /> Quiz ({editedLesson.quiz.length})
+                        <HelpCircle className="w-4 h-4" /> {t.teacher.lessonReview.quizTitle} ({editedLesson.quiz.length})
                     </button>
                 </div>
 
@@ -93,7 +97,7 @@ export const LessonReview: React.FC<LessonReviewProps> = ({ lesson, onBack, onSa
                         <>
                             {/* Summary Card */}
                             <div className="bg-indigo-50 border border-indigo-100 p-4 rounded-xl">
-                                <h4 className="font-bold text-indigo-900 mb-2 flex items-center gap-2"><div className="w-1.5 h-1.5 bg-indigo-500 rounded-full" /> Summary</h4>
+                                <h4 className="font-bold text-indigo-900 mb-2 flex items-center gap-2"><div className="w-1.5 h-1.5 bg-indigo-500 rounded-full" /> {t.teacher.lessonReview.summary}</h4>
                                 <textarea
                                     value={editedLesson.summary}
                                     onChange={(e) => setEditedLesson({ ...editedLesson, summary: e.target.value })}
@@ -123,7 +127,7 @@ export const LessonReview: React.FC<LessonReviewProps> = ({ lesson, onBack, onSa
                             ))}
 
                             <button className="w-full py-3 border-2 border-dashed border-slate-300 rounded-xl text-slate-400 font-bold hover:border-slate-400 hover:text-slate-600 transition-all">
-                                + Add Note Section
+                                {language === 'EN' ? '+ Add Note Section' : '+ Ajouter une section de notes'}
                             </button>
                         </>
                     ) : (

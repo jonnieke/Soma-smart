@@ -11,6 +11,7 @@ import { convertNotes, processVoiceNote, generateTeacherQuiz, generateAdvancedTe
 import { ViewState, TeacherNote, QuizData, TeacherActivity, SubscriptionPlan } from '../../types';
 import { PdfPageSelector } from '../../components/PdfPageSelector';
 import { PaymentFlow } from '../subscription/PaymentFlow';
+import { translations } from '../../data/translations';
 
 interface TeacherProps {
     onNavigate: (view: ViewState) => void;
@@ -27,6 +28,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
         logout, isPromoActive, promoEndDate, isPro, upgradeAccount,
         isOnline, language
     } = useApp();
+    const t = translations[language];
     const [showPaywall, setShowPaywall] = useState(false);
     const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan | null>(null);
     const location = useLocation();
@@ -456,12 +458,12 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                                 <h2 className="text-white font-bold text-lg md:text-xl">{teacherProfile.name}</h2>
                                 {isPromoActive ? (
                                     <span className="text-emerald-300 text-xs flex items-center gap-1 font-bold bg-emerald-500/20 px-2 py-0.5 rounded-full border border-emerald-400/30 w-fit">
-                                        <Crown className="w-3 h-3" /> Unlimited Access (Ends in {timeLeft})
+                                        <Crown className="w-3 h-3" /> {t.teacher.stats.unlimited} ({t.teacher.stats.endsIn} {timeLeft})
                                     </span>
                                 ) : (
                                     teacherUsageCount < 5 && (
                                         <span className="text-indigo-200 text-xs flex items-center gap-1">
-                                            <Sparkles className="w-3 h-3" /> {5 - teacherUsageCount} free uses left
+                                            <Sparkles className="w-3 h-3" /> {5 - teacherUsageCount} {t.teacher.stats.free}
                                         </span>
                                     )
                                 )}
@@ -469,13 +471,13 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                         </motion.div>
 
                         <div className="flex gap-2 w-full md:w-auto">
-                            <button onClick={() => onNavigate(ViewState.DASHBOARD)} className="flex-1 md:flex-none flex items-center justify-center gap-2 px-3 py-2 bg-white/10 hover:bg-white/20 rounded-xl backdrop-blur-md transition-colors group text-xs font-bold text-white" title="Back to Home">
-                                <Home className="w-5 h-5" /> Home
+                            <button onClick={() => onNavigate(ViewState.DASHBOARD)} className="flex-1 md:flex-none flex items-center justify-center gap-2 px-3 py-2 bg-white/10 hover:bg-white/20 rounded-xl backdrop-blur-md transition-colors group text-xs font-bold text-white" title={t.teacher.common.backToHome}>
+                                <Home className="w-5 h-5" /> {t.teacher.sidebar.home}
                             </button>
-                            <button onClick={() => navigate('/pricing')} className="flex-1 md:flex-none flex justify-center items-center p-2 bg-indigo-500/20 hover:bg-indigo-500/30 rounded-xl backdrop-blur-md transition-colors group" title="Pricing Plans">
+                            <button onClick={() => navigate('/pricing')} className="flex-1 md:flex-none flex justify-center items-center p-2 bg-indigo-500/20 hover:bg-indigo-500/30 rounded-xl backdrop-blur-md transition-colors group" title={t.teacher.common.pricingPlans}>
                                 <CreditCard className="w-6 h-6 text-white" />
                             </button>
-                            <button onClick={() => setShowLogoutModal(true)} className="flex-1 md:flex-none flex justify-center items-center p-2 bg-white/10 hover:bg-red-500/20 rounded-xl backdrop-blur-md transition-colors group" title="Logout">
+                            <button onClick={() => setShowLogoutModal(true)} className="flex-1 md:flex-none flex justify-center items-center p-2 bg-white/10 hover:bg-red-500/20 rounded-xl backdrop-blur-md transition-colors group" title={t.teacher.common.logout}>
                                 <LogOut className="w-6 h-6 text-white group-hover:text-red-200" />
                             </button>
                         </div>
@@ -531,19 +533,19 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                             onClick={() => setActiveTab('HOME')}
                             className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl transition-all text-xs md:text-sm font-bold ${activeTab === 'HOME' ? 'bg-indigo-50 text-indigo-600' : 'text-slate-500 hover:bg-slate-50'}`}
                         >
-                            <Sparkles className="w-4 h-4 flex-shrink-0" /> Studio
+                            <Sparkles className="w-4 h-4 flex-shrink-0" /> {t.teacher.sidebar.studio}
                         </button>
                         <button
                             onClick={() => setActiveTab('LIBRARY')}
                             className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl transition-all text-xs md:text-sm font-bold ${activeTab === 'LIBRARY' ? 'bg-purple-50 text-purple-600' : 'text-slate-500 hover:bg-slate-50'}`}
                         >
-                            <Library className="w-4 h-4 flex-shrink-0" /> Library
+                            <Library className="w-4 h-4 flex-shrink-0" /> {t.teacher.sidebar.library}
                         </button>
                         <button
                             onClick={() => setActiveTab('MARKING')}
                             className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl transition-all text-xs md:text-sm font-bold ${activeTab === 'MARKING' ? 'bg-emerald-50 text-emerald-600' : 'text-slate-500 hover:bg-slate-50'}`}
                         >
-                            <ScanLine className="w-4 h-4 flex-shrink-0" /> Marking
+                            <ScanLine className="w-4 h-4 flex-shrink-0" /> {t.teacher.sidebar.marking}
                         </button>
                     </div>
                 )}
@@ -575,9 +577,9 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                                     </div>
                                     <div className="flex-1 text-white relative z-10">
                                         <h3 className="font-bold text-xl mb-1 flex items-center gap-2">
-                                            Darasa Mode <span className="text-[10px] bg-white/20 px-2 py-0.5 rounded-full font-mono uppercase tracking-wider">Live</span>
+                                            {t.teacher.tools.darasa.title} <span className="text-[10px] bg-white/20 px-2 py-0.5 rounded-full font-mono uppercase tracking-wider">Live</span>
                                         </h3>
-                                        <p className="text-orange-50 text-sm opacity-90">Launch interactive classroom presentation. Access history & saved lessons.</p>
+                                        <p className="text-orange-50 text-sm opacity-90">{t.teacher.tools.darasa.desc}</p>
                                     </div>
                                     <div className="bg-white/20 p-2 rounded-full backdrop-blur-sm group-hover:bg-white/30 transition-colors">
                                         <ArrowRight className="w-6 h-6 text-white" />
@@ -592,9 +594,9 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                                     <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-4 transition-transform ${isOnline ? 'bg-blue-50 group-hover:scale-110' : 'bg-slate-100'}`}>
                                         <FileText className={`w-8 h-8 ${isOnline ? 'text-blue-600' : 'text-slate-400'}`} />
                                     </div>
-                                    <h3 className="font-bold text-lg text-slate-800 mb-2">Textbook to Lesson</h3>
+                                    <h3 className="font-bold text-lg text-slate-800 mb-2">{t.teacher.tools.converter.title}</h3>
                                     <p className="text-sm text-slate-500 mb-6">
-                                        {isOnline ? `Upload a photo. Get a structured lesson plan for ${selectedClass}.` : "Internet required for conversion."}
+                                        {isOnline ? `${t.teacher.tools.converter.desc} ${selectedClass}.` : (language === 'FR' ? "Internet requis pour la conversion." : "Internet required for conversion.")}
                                     </p>
                                     <Button
                                         fullWidth
@@ -602,7 +604,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                                         onClick={isOnline ? () => document.getElementById('file-upload')?.click() : undefined}
                                         disabled={!isOnline}
                                     >
-                                        <Upload className="w-4 h-4 mr-2" /> {isOnline ? "Upload Photo" : "Disconnected"}
+                                        <Upload className="w-4 h-4 mr-2" /> {isOnline ? (language === 'FR' ? "Télécharger Photo" : "Upload Photo") : (language === 'FR' ? "Déconnecté" : "Disconnected")}
                                     </Button>
                                     <input type="file" id="file-upload" className="hidden" accept="image/*,.pdf" onChange={handleFileUpload} />
                                 </motion.div>
@@ -615,17 +617,17 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                                     <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-4 transition-transform ${isRecording ? 'bg-red-100 animate-pulse scale-110' : isOnline ? 'bg-purple-50 group-hover:scale-110' : 'bg-slate-100'}`}>
                                         <Mic className={`w-8 h-8 ${isRecording ? 'text-red-500' : isOnline ? 'text-purple-600' : 'text-slate-400'}`} />
                                     </div>
-                                    <h3 className="font-bold text-lg text-slate-800 mb-2">{isRecording ? "Recording..." : "Voice Lesson"}</h3>
+                                    <h3 className="font-bold text-lg text-slate-800 mb-2">{isRecording ? (language === 'FR' ? "Enregistrement..." : "Recording...") : t.teacher.tools.voice.title}</h3>
                                     <p className="text-sm text-slate-500 mb-6">
-                                        {isOnline ? `Dictate your thoughts. We'll format them for ${selectedSubject}.` : "Internet required for recording."}
+                                        {isOnline ? `${t.teacher.tools.voice.desc} ${selectedSubject}.` : (language === 'FR' ? "Internet requis pour l'enregistrement." : "Internet required for recording.")}
                                     </p>
                                     {isRecording ? (
                                         <Button fullWidth onClick={stopRecording} className="bg-red-500 hover:bg-red-600 text-white border-transparent">
-                                            <StopCircle className="w-4 h-4 mr-2" /> Stop & Process ({formatTime(recordingTime)})
+                                            <StopCircle className="w-4 h-4 mr-2" /> {language === 'FR' ? 'Arrêter et Traiter' : 'Stop & Process'} ({formatTime(recordingTime)})
                                         </Button>
                                     ) : (
                                         <Button fullWidth variant="outline" onClick={isOnline ? startRecording : undefined} disabled={!isOnline}>
-                                            <Mic className="w-4 h-4 mr-2" /> {isOnline ? "Start Recording" : "Disconnected"}
+                                            <Mic className="w-4 h-4 mr-2" /> {isOnline ? (language === 'FR' ? 'Démarrer Enregistrement' : "Start Recording") : (language === 'FR' ? "Déconnecté" : "Disconnected")}
                                         </Button>
                                     )}
                                 </motion.div>
@@ -643,14 +645,14 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                                                     <Brain className="w-5 h-5" />
                                                 </div>
                                                 <div>
-                                                    <h3 className="font-bold text-lg text-indigo-900">Exam Generator (CBE)</h3>
-                                                    <p className="text-xs text-indigo-600 font-medium bg-indigo-100 px-2 py-0.5 rounded-full inline-block">Kenyan Standard</p>
+                                                    <h3 className="font-bold text-lg text-indigo-900">{t.teacher.tools.exam.title}</h3>
+                                                    <p className="text-xs text-indigo-600 font-medium bg-indigo-100 px-2 py-0.5 rounded-full inline-block">{t.teacher.tools.exam.desc}</p>
                                                 </div>
                                             </div>
 
                                             <div className="space-y-4">
                                                 <div>
-                                                    <label className="text-xs font-bold text-indigo-900 uppercase tracking-wider mb-1 block">Quiz Topic</label>
+                                                    <label className="text-xs font-bold text-indigo-900 uppercase tracking-wider mb-1 block">{t.teacher.tools.exam.topicLabel}</label>
                                                     <input
                                                         type="text"
                                                         value={advTopic}
@@ -662,7 +664,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
 
                                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-left">
                                                     <div>
-                                                        <label className="text-xs font-bold text-indigo-900 uppercase tracking-wider mb-1 block">Questions</label>
+                                                        <label className="text-xs font-bold text-indigo-900 uppercase tracking-wider mb-1 block">{t.teacher.tools.exam.questionsLabel}</label>
                                                         <select
                                                             value={advCount}
                                                             onChange={(e) => setAdvCount(Number(e.target.value))}
@@ -674,7 +676,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                                                         </select>
                                                     </div>
                                                     <div>
-                                                        <label className="text-xs font-bold text-indigo-900 uppercase tracking-wider mb-1 block">Type</label>
+                                                        <label className="text-xs font-bold text-indigo-900 uppercase tracking-wider mb-1 block">{t.teacher.tools.exam.typeLabel}</label>
                                                         <select
                                                             value={advType}
                                                             onChange={(e) => setAdvType(e.target.value as 'MCQ' | 'OPEN')}
@@ -689,7 +691,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                                         </div>
 
                                         <div className="flex-1 border-t md:border-t-0 md:border-l border-indigo-100 md:pl-8 pt-6 md:pt-0">
-                                            <label className="text-xs font-bold text-indigo-900 uppercase tracking-wider mb-2 block">Source Material (Scans)</label>
+                                            <label className="text-xs font-bold text-indigo-900 uppercase tracking-wider mb-2 block">{t.teacher.tools.exam.sourceLabel}</label>
 
                                             <div className="border-2 border-dashed border-indigo-200 rounded-xl bg-indigo-50/50 p-6 text-center hover:bg-indigo-50 transition-colors relative">
                                                 <input
@@ -701,10 +703,10 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                                                 />
                                                 <Upload className="w-8 h-8 text-indigo-400 mx-auto mb-2" />
                                                 <p className="text-sm font-bold text-indigo-900">
-                                                    {advFiles.length > 0 ? `${advFiles.length} files selected` : "Upload Textbooks/Notes"}
+                                                    {advFiles.length > 0 ? t.teacher.tools.exam.uploadSelected.replace('{count}', advFiles.length.toString()) : t.teacher.tools.exam.uploadPrompt}
                                                 </p>
                                                 <p className="text-xs text-indigo-500 mt-1">
-                                                    {advFiles.length > 0 ? "Click to change" : "Images or PDF (Books)"}
+                                                    {advFiles.length > 0 ? t.teacher.tools.exam.uploadChange : t.teacher.tools.exam.uploadTypes}
                                                 </p>
                                             </div>
 
@@ -715,12 +717,12 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                                                     disabled={!isOnline || !advTopic || advFiles.length === 0}
                                                     className={`shadow-lg ${isOnline ? 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-indigo-200' : 'bg-slate-100 text-slate-400 grayscale'}`}
                                                 >
-                                                    <Sparkles className="w-4 h-4 mr-2" /> {isOnline ? "Generate Exam" : "Internet Required"}
+                                                    <Sparkles className="w-4 h-4 mr-2" /> {isOnline ? t.teacher.tools.exam.generateBtn : t.teacher.common.internetReq}
                                                 </Button>
                                                 {!isOnline ? (
-                                                    <p className="text-[10px] text-center text-slate-400 mt-2 font-bold uppercase tracking-wider">Connect to internet to use AI</p>
+                                                    <p className="text-[10px] text-center text-slate-400 mt-2 font-bold uppercase tracking-wider">{t.teacher.common.connectPrompt}</p>
                                                 ) : !advTopic && (
-                                                    <p className="text-[10px] text-center text-indigo-400 mt-2">Enter a topic and upload files to start.</p>
+                                                    <p className="text-[10px] text-center text-indigo-400 mt-2">{t.teacher.common.topicPrompt}</p>
                                                 )}
                                             </div>
                                         </div>
@@ -740,9 +742,9 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                                     </div>
                                     <div className="flex-1 text-white relative z-10">
                                         <h3 className="font-bold text-xl mb-1 flex items-center gap-2">
-                                            Automatic Marking <span className="text-[10px] bg-white/20 px-2 py-0.5 rounded-full font-mono uppercase tracking-wider">New</span>
+                                            {t.teacher.tools.marking.title} <span className="text-[10px] bg-white/20 px-2 py-0.5 rounded-full font-mono uppercase tracking-wider">{t.teacher.tools.marking.badge}</span>
                                         </h3>
-                                        <p className="text-emerald-50 text-sm opacity-90">Scan student scripts and get instant results. Perfect for CBE assessments.</p>
+                                        <p className="text-emerald-50 text-sm opacity-90">{t.teacher.tools.marking.desc}</p>
                                     </div>
                                     <div className="bg-white/20 p-2 rounded-full backdrop-blur-sm group-hover:bg-white/30 transition-colors">
                                         <ArrowRight className="w-6 h-6 text-white" />
@@ -755,7 +757,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                                 <div className="bg-white rounded-3xl shadow-sm border border-slate-200 p-6 min-h-[500px]">
                                     <div className="flex items-center gap-2 mb-6 pb-4 border-b">
                                         <Filter className="w-5 h-5 mx-auto text-slate-400" />
-                                        <h3 className="font-bold text-lg text-slate-700">Class Library</h3>
+                                        <h3 className="font-bold text-lg text-slate-700">{t.teacher.library.title}</h3>
                                         <span className="ml-auto text-sm text-slate-500 font-medium bg-slate-100 px-3 py-1 rounded-full">{selectedClass}</span>
                                         <span className="text-sm text-slate-500 font-medium bg-slate-100 px-3 py-1 rounded-full">{selectedSubject}</span>
                                     </div>
@@ -764,7 +766,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                                         {teacherHistory.filter(item => (!selectedClass || item.className === selectedClass) && (!selectedSubject || item.subject === selectedSubject)).length === 0 ? (
                                             <div className="text-center py-20 text-slate-400">
                                                 <Library className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                                                <p>No items found for this class & subject.</p>
+                                                <p>{t.teacher.library.noItems}</p>
                                             </div>
                                         ) : (
                                             teacherHistory
@@ -792,12 +794,12 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                                                             <button
                                                                 onClick={(e) => {
                                                                     e.stopPropagation();
-                                                                    if (window.confirm("Are you sure you want to delete this lesson?")) {
+                                                                    if (window.confirm(t.teacher.library.deleteConfirm)) {
                                                                         deleteTeacherActivity(item.id);
                                                                     }
                                                                 }}
                                                                 className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                                                                title="Delete Lesson"
+                                                                title={t.teacher.library.deleteLesson}
                                                             >
                                                                 <Trash2 className="w-4 h-4" />
                                                             </button>
@@ -816,24 +818,24 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                                     <div className="w-24 h-24 bg-emerald-50 text-emerald-600 rounded-3xl flex items-center justify-center mb-6 shadow-xl shadow-emerald-100 animate-pulse">
                                         <ScanLine className="w-12 h-12" />
                                     </div>
-                                    <h2 className="text-3xl font-black text-slate-800 mb-4 tracking-tight">Smart Marking is almost here!</h2>
+                                    <h2 className="text-3xl font-black text-slate-800 mb-4 tracking-tight">{t.teacher.tools.marking.almostHere}</h2>
                                     <p className="text-slate-500 max-w-md mx-auto mb-10 leading-relaxed">
-                                        We are currently training our system to recognize and grade local Kenyan student handwriting for <b>{selectedSubject}</b>.
+                                        {t.teacher.tools.marking.markingDesc.replace('{subject}', selectedSubject)}
                                     </p>
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full max-w-lg mb-8">
                                         <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 text-left">
-                                            <h4 className="font-bold text-slate-800 text-sm mb-1">OCR Processing</h4>
-                                            <p className="text-xs text-slate-500">Handwriting to text conversion.</p>
+                                            <h4 className="font-bold text-slate-800 text-sm mb-1">{t.teacher.tools.marking.ocrTitle}</h4>
+                                            <p className="text-xs text-slate-500">{t.teacher.tools.marking.ocrDesc}</p>
                                         </div>
                                         <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 text-left">
-                                            <h4 className="font-bold text-slate-800 text-sm mb-1">CBE Alignment</h4>
-                                            <p className="text-xs text-slate-500">Grading based on CBC rubrics.</p>
+                                            <h4 className="font-bold text-slate-800 text-sm mb-1">{t.teacher.tools.marking.cbeTitle}</h4>
+                                            <p className="text-xs text-slate-500">{t.teacher.tools.marking.cbeDesc}</p>
                                         </div>
                                     </div>
                                     <Button variant="primary" className="bg-emerald-600 hover:bg-emerald-700 text-white font-black px-10 py-4 rounded-xl shadow-xl shadow-emerald-200">
-                                        Join Waitlist for {selectedClass}
+                                        {t.teacher.tools.marking.waitlistBtn.replace('{class}', selectedClass)}
                                     </Button>
-                                    <p className="mt-6 text-[10px] text-slate-400 font-bold uppercase tracking-widest">Early access for Pro schools in March</p>
+                                    <p className="mt-6 text-[10px] text-slate-400 font-bold uppercase tracking-widest">{t.teacher.tools.marking.earlyAccess}</p>
                                 </div>
                             )
                         }
@@ -843,10 +845,10 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
                         <div className="flex items-center justify-between mb-2">
                             <Button variant="ghost" onClick={() => { setGeneratedNote(null); setGeneratedQuiz(null); setActiveTab('HOME'); }} icon={<ArrowRight className="w-4 h-4 rotate-180" />}>
-                                Back to Studio
+                                {t.teacher.results.backToStudio}
                             </Button>
                             <div className="flex gap-2">
-                                <Button variant="outline" onClick={() => window.print()} icon={<Download className="w-4 h-4" />}>Export PDF</Button>
+                                <Button variant="outline" onClick={() => window.print()} icon={<Download className="w-4 h-4" />}>{t.teacher.results.exportPdf}</Button>
                             </div>
                         </div>
 
@@ -860,7 +862,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                                             <span className="text-xs font-bold bg-slate-100 px-2 py-1 rounded text-slate-500 uppercase">{selectedSubject}</span>
                                         </div>
                                         <h1 className="text-3xl font-bold text-slate-900 mb-2">{generatedQuiz.topic}</h1>
-                                        <p className="text-slate-500 uppercase tracking-widest text-xs font-bold">Classroom Assessment</p>
+                                        <p className="text-slate-500 uppercase tracking-widest text-xs font-bold">{t.teacher.results.classroomAssessment}</p>
                                     </div>
                                     <div className="space-y-8">
                                         {generatedQuiz.questions.map((q, i) => (
@@ -886,7 +888,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                                     </div>
                                     <div className="mt-12 p-6 bg-slate-50 rounded-xl border border-slate-200 break-before-page">
                                         <h3 className="font-bold text-slate-900 mb-4 flex items-center gap-2">
-                                            <CheckCircle className="w-5 h-5 text-green-600" /> Answer Key & Explanations
+                                            <CheckCircle className="w-5 h-5 text-green-600" /> {t.teacher.results.answerKey}
                                         </h3>
                                         <ul className="space-y-3 text-sm">
                                             {generatedQuiz.questions.map((q, i) => (
@@ -919,7 +921,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                                     <div className="grid md:grid-cols-2 gap-8">
                                         <div>
                                             <h2 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
-                                                <span className="w-6 h-6 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-xs">A</span> Summary
+                                                <span className="w-6 h-6 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-xs">A</span> {t.teacher.results.summary}
                                             </h2>
                                             <div className="prose prose-sm prose-slate bg-blue-50/50 p-6 rounded-2xl border border-blue-100">
                                                 <MarkdownText content={generatedNote.simplifiedNotes} />
@@ -927,7 +929,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                                         </div>
                                         <div>
                                             <h2 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
-                                                <span className="w-6 h-6 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center text-xs">B</span> Teacher Notes
+                                                <span className="w-6 h-6 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center text-xs">B</span> {t.teacher.results.teacherNotes}
                                             </h2>
                                             <div className="prose prose-sm prose-slate">
                                                 <MarkdownText content={generatedNote.structuredNotes} />
@@ -957,10 +959,10 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
             <LogoutModal
                 isOpen={showLogoutModal}
                 onClose={() => setShowLogoutModal(false)}
-                title="End Teacher Session?"
-                message="Are you sure you want to log out? Any unsaved notes or marking will be preserved for next time."
-                cancelText="Keep working"
-                confirmText="Sign Out Securely"
+                title={t.teacher.logoutModal.title}
+                message={t.teacher.logoutModal.message}
+                cancelText={t.teacher.logoutModal.cancelText}
+                confirmText={t.teacher.logoutModal.confirmText}
                 onConfirm={() => {
                     logout();
                     setShowLogoutModal(false);

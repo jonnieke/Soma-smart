@@ -1,6 +1,8 @@
 import React from 'react';
 import { Mic, Square, Pause, Play, AlertCircle } from 'lucide-react';
 import { useAudioRecorder } from '../hooks/useAudioRecorder';
+import { useApp } from '../../../context/AppContext';
+import { translations } from '../../../data/translations';
 
 interface AudioRecorderProps {
     onCaptureComplete: (audioBlob: Blob) => void;
@@ -8,6 +10,8 @@ interface AudioRecorderProps {
 }
 
 export const AudioRecorder: React.FC<AudioRecorderProps> = ({ onCaptureComplete, onCancel }) => {
+    const { language } = useApp();
+    const t = translations[language];
     const {
         isRecording,
         isPaused,
@@ -34,15 +38,15 @@ export const AudioRecorder: React.FC<AudioRecorderProps> = ({ onCaptureComplete,
     return (
         <div className="bg-white rounded-2xl shadow-xl border border-indigo-100 p-8 max-w-xl w-full mx-auto animate-in fade-in zoom-in duration-300">
             <div className="text-center mb-8">
-                <h2 className="text-2xl font-bold text-slate-800 mb-2">Recording Lesson</h2>
-                <p className="text-slate-500">Speak clearly. We&apos;ll capture the key points.</p>
+                <h2 className="text-2xl font-bold text-slate-800 mb-2">{t.teacher.audioRecorder.recordingTitle}</h2>
+                <p className="text-slate-500">{t.teacher.audioRecorder.recordingDesc}</p>
             </div>
 
             {/* Visualizer Area */}
             <div className="h-32 bg-slate-50 rounded-lg mb-8 overflow-hidden relative flex items-center justify-center border border-slate-200">
                 {!isRecording && !isPaused && duration === 0 && (
                     <div className="absolute inset-0 flex items-center justify-center text-slate-400 gap-2">
-                        <Mic className="w-5 h-5" /> Ready to Record
+                        <Mic className="w-5 h-5" /> {t.teacher.audioRecorder.readyToRecord}
                     </div>
                 )}
                 {/* Canvas handled entirely by hook via ref */}
@@ -67,7 +71,7 @@ export const AudioRecorder: React.FC<AudioRecorderProps> = ({ onCaptureComplete,
                 {!isRecording ? (
                     <>
                         <button onClick={handleCancel} className="p-4 rounded-full text-slate-400 hover:bg-slate-50 hover:text-slate-600 transition-colors">
-                            Cancel
+                            {t.teacher.audioRecorder.cancel}
                         </button>
                         <button
                             onClick={startRecording}
@@ -82,7 +86,7 @@ export const AudioRecorder: React.FC<AudioRecorderProps> = ({ onCaptureComplete,
                         <button
                             onClick={togglePause}
                             className="p-4 rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors"
-                            title={isPaused ? "Resume" : "Pause"}
+                            title={isPaused ? t.teacher.audioRecorder.resume : t.teacher.audioRecorder.pause}
                         >
                             {isPaused ? <Play className="w-6 h-6 fill-current" /> : <Pause className="w-6 h-6 fill-current" />}
                         </button>

@@ -556,7 +556,7 @@ export const generateAdvancedTeacherQuiz = async (
 
 // --- ASK SOMA CHATBOT ---
 
-export const askSoma = async (userQuery: string, chatHistory: { role: 'user' | 'model', text: string }[]): Promise<string> => {
+export const askSoma = async (userQuery: string, chatHistory: { role: 'user' | 'model', text: string }[], language: 'EN' | 'FR' = 'EN'): Promise<string> => {
   const model = genAI.getGenerativeModel({ model: MODEL_NAME });
 
   // Construct prompt with history manually
@@ -579,6 +579,7 @@ USE THESE EXACT LINKS:
 - For Teachers: [Teacher Dashboard](/teacher)
 - For Exam Candidates: [Candidate Success Center](/revision)
 
+${language === 'FR' ? "LANGUAGE RULE: You MUST respond ONLY in French (Français). If the user asks in English, still respond in French." : ""}
 Keep answers short (1-3 sentences), warm, and very clear. Always be helpful! ❤️`;
 
   const historyText = chatHistory.map(msg => `${msg.role === 'user' ? 'User' : 'Soma'}: ${msg.text}`).join('\n');
@@ -829,7 +830,7 @@ export const getRevisionTutorResponse = async (
   }
 };
 
-export const getPaperGuidance = async (analysis: ExamAnalysis, query?: string): Promise<string> => {
+export const getPaperGuidance = async (analysis: ExamAnalysis, query?: string, language: 'EN' | 'FR' = 'EN'): Promise<string> => {
   const model = genAI.getGenerativeModel({ model: MODEL_NAME });
 
   const paperContext = `
@@ -872,7 +873,7 @@ export const getPaperGuidance = async (analysis: ExamAnalysis, query?: string): 
   const finalPrompt = `
     ${prompt}
     
-    LANGUAGE RULE: If the subject is "Kiswahili" or "Swahili", you MUST respond in Swahili. For ALL other subjects, you MUST respond ONLY in English.
+    ${language === 'FR' ? "LANGUAGE RULE: You MUST respond in French (Français)." : "LANGUAGE RULE: If the subject is 'Kiswahili' or 'Swahili', you MUST respond in Swahili. For ALL other subjects, you MUST respond ONLY in English."}
   `;
 
   try {
@@ -889,7 +890,7 @@ export const getPaperGuidance = async (analysis: ExamAnalysis, query?: string): 
 
 import { LessonRecap } from "../types";
 
-export const generateLessonRecap = async (inputBase64: string, mimeType: string, audience: 'LEARNER' | 'TEACHER'): Promise<LessonRecap> => {
+export const generateLessonRecap = async (inputBase64: string, mimeType: string, audience: 'LEARNER' | 'TEACHER', language: 'EN' | 'FR' = 'EN'): Promise<LessonRecap> => {
   const model = genAI.getGenerativeModel({
     model: MODEL_NAME,
     generationConfig: {
@@ -918,7 +919,7 @@ export const generateLessonRecap = async (inputBase64: string, mimeType: string,
   const learnerPrompt = `
     You are an expert tutor helping a student understand a live lesson they just attended.
     1. Analyze the recording/notes and identify the subject.
-    2. LANGUAGE RULE: If the subject is "Kiswahili" or "Swahili", you MUST respond in Swahili. For ALL other subjects, you MUST respond ONLY in English.
+    2. ${language === 'FR' ? "LANGUAGE RULE: You MUST respond in French (Français)." : "LANGUAGE RULE: If the subject is 'Kiswahili' or 'Swahili', you MUST respond in Swahili. For ALL other subjects, you MUST respond ONLY in English."}
     3. Extract the Main Topic.
     4. Write a fun, simple Summary (2-3 sentences).
     5. List 5 Key Points (Bullet points).
@@ -931,7 +932,7 @@ export const generateLessonRecap = async (inputBase64: string, mimeType: string,
   const teacherPrompt = `
     You are a curriculum expert summarizing a lesson for a fellow teacher.
     1. Analyze the recording/notes and identify the subject.
-    2. LANGUAGE RULE: If the subject is "Kiswahili" or "Swahili", you MUST respond in Swahili. For ALL other subjects, you MUST respond ONLY in English.
+    2. ${language === 'FR' ? "LANGUAGE RULE: You MUST respond in French (Français)." : "LANGUAGE RULE: If the subject is 'Kiswahili' or 'Swahili', you MUST respond in Swahili. For ALL other subjects, you MUST respond ONLY in English."}
     3. Extract Topic and Competencies covered.
     4. Provide a professional Summary.
     5. List Key Teaching Points.
@@ -961,7 +962,7 @@ export const generateLessonRecap = async (inputBase64: string, mimeType: string,
 
 // --- DARASA AI FEATURES ---
 
-export const generateDarasaLesson = async (audioBase64: string, mimeType: string = "audio/mp3"): Promise<LessonResult> => {
+export const generateDarasaLesson = async (audioBase64: string, mimeType: string = "audio/mp3", language: 'EN' | 'FR' = 'EN'): Promise<LessonResult> => {
   const model = genAI.getGenerativeModel({
     model: MODEL_NAME,
     generationConfig: {
@@ -1011,7 +1012,7 @@ export const generateDarasaLesson = async (audioBase64: string, mimeType: string
     
     TASK 2: COMPREHENSIVE NOTES
     Create detailed, professional-grade teacher notes.
-    - LANGUAGE RULE: If the subject is "Kiswahili" or "Swahili", you MUST respond in Swahili. For ALL other subjects, you MUST respond ONLY in English.
+    - ${language === 'FR' ? "LANGUAGE RULE: You MUST respond in French (Français)." : "LANGUAGE RULE: If the subject is 'Kiswahili' or 'Swahili', you MUST respond in Swahili. For ALL other subjects, you MUST respond ONLY in English."}
     - **Introduction**: Briefly introduce the topic.
     - **Core Concepts**: Explain 3-5 main concepts covered in depth.
     - **Examples**: Provide 2-3 real-world examples mentioned or relevant to the context.
@@ -1052,7 +1053,7 @@ export const generateDarasaLesson = async (audioBase64: string, mimeType: string
   }
 };
 
-export const generateDarasaRevision = async (imageBase64: string, mimeType: string): Promise<LessonResult> => {
+export const generateDarasaRevision = async (imageBase64: string, mimeType: string, language: 'EN' | 'FR' = 'EN'): Promise<LessonResult> => {
   const model = genAI.getGenerativeModel({
     model: MODEL_NAME,
     generationConfig: {
@@ -1095,9 +1096,9 @@ export const generateDarasaRevision = async (imageBase64: string, mimeType: stri
   });
 
   const prompt = `
-    You are an expert Teaching Assistant for a Kenyan Classroom.
+    TASK: REVISION FROM IMAGE
     1. Analyze this image of lesson notes or a textbook page. Identify the subject.
-    2. LANGUAGE RULE: If the subject is "Kiswahili" or "Swahili", you MUST respond in Swahili. For ALL other subjects, you MUST respond ONLY in English.
+    2. ${language === 'FR' ? "LANGUAGE RULE: You MUST respond in French (Français)." : "LANGUAGE RULE: If the subject is 'Kiswahili' or 'Swahili', you MUST respond in Swahili. For ALL other subjects, you MUST respond ONLY in English."}
     3. Extract the Main Topic.
     4. Write a clear, simple Summary (2-3 sentences).
     5. Create "Simplified Notes" broken into logical sections (Title + Content).
