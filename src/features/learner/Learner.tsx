@@ -7,7 +7,7 @@ import {
   ArrowRight, UserCircle, Download, ImageIcon, Trash2, AlertTriangle, LogOut
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
-import { ExplanationResult, QuizData, ViewState, SubscriptionPlan, LearnerProfile, LearnerActivity } from '../../types';
+import { ExplanationResult, QuizData, ViewState, SubscriptionPlan, LearnerProfile, LearnerActivity, UserRole } from '../../types';
 import { PricingPage } from '../subscription/PricingPage';
 import { PaymentFlow } from '../subscription/PaymentFlow';
 import { STUDENT_PLANS } from '../../data/pricing';
@@ -40,13 +40,21 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
     learnerHistory: history, saveActivity, deleteActivity, studentCode,
     usageCount, incrementUsage, isRegistered, studentProfile, updateStudentProfile,
     isPromoActive, upgradeAccount, revisionUsageCount, incrementRevisionUsage,
-    logout, isPro, subscriptionPlan, subscriptionExpiry, isOnline
+    logout, isPro, subscriptionPlan, subscriptionExpiry, isOnline, role
   } = useApp();
   const location = useLocation();
 
   // Check for subscription intent
   React.useEffect(() => {
-    const state = location.state as { selectedPlan?: SubscriptionPlan; openSubscription?: boolean };
+    const state = location.state as { selectedPlan?: SubscriptionPlan; openSubscription?: boolean, initiatePaymentFor?: SubscriptionPlan };
+
+    // New Direct Payment handling
+    if (state?.initiatePaymentFor) {
+      setSelectedPlan(state.initiatePaymentFor);
+      setMode('PAYMENT');
+      navigate(location.pathname, { replace: true, state: {} });
+      return;
+    }
 
     if (state?.selectedPlan) {
       if (isPro) {
@@ -54,12 +62,12 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
         navigate(location.pathname, { replace: true, state: {} });
       } else {
         setSelectedPlan(state.selectedPlan);
-        setMode('PAYMENT' as any);
+        setMode('PAYMENT');
         // Clear state to avoid re-triggering on refresh
         navigate(location.pathname, { replace: true, state: {} });
       }
     } else if (state?.openSubscription) {
-      setMode('PRICING' as any);
+      setMode('PRICING');
       // Clear state
       navigate(location.pathname, { replace: true, state: {} });
     }
@@ -86,12 +94,13 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
   }, [totalXP]);
 
   useEffect(() => {
-    if (!isRegistered) {
+    // Only redirect to homepage if the user is truly NOT logged in at all
+    if (!isRegistered && role === UserRole.NONE) {
       navigate('/');
     }
-  }, [isRegistered, navigate]);
+  }, [isRegistered, role, navigate]);
 
-  const [mode, setMode] = useState<'MENU' | 'SCAN' | 'RESULT' | 'QUIZ' | 'RECAP_RESULT' | 'PROFILE'>('MENU');
+  const [mode, setMode] = useState<'MENU' | 'SCAN' | 'RESULT' | 'QUIZ' | 'RECAP_RESULT' | 'PROFILE' | 'PRICING' | 'PAYMENT'>('MENU');
   const [recapData, setRecapData] = useState<any>(null); // Store LessonRecap
 
   const [loading, setLoading] = useState(false);
@@ -650,16 +659,16 @@ ${explanation.explanation}
 
           {/* Auto Capture Overlay */}
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <div className={`w-3/4 aspect-[3/4] border-2 rounded-2xl transition-all duration-300 relative ${scanStatus === 'STABILIZING' ? 'border-yellow-400 scale-105' :
+            <div className={`w-11/12 md:w-3/4 aspect-[3/4] border-2 rounded-3xl transition-all duration-300 relative ${scanStatus === 'STABILIZING' ? 'border-yellow-400 scale-105' :
               scanStatus === 'CAPTURING' ? 'border-green-500 bg-white/20 scale-100' :
                 'border-white/50'
               }`}>
-              <div className="absolute -top-10 left-0 right-0 text-center">
-                <span className={`px-3 py-1 rounded-full text-sm font-bold shadow-sm ${scanStatus === 'STABILIZING' ? 'bg-yellow-400 text-yellow-900' :
+              <div className="absolute -top-12 left-0 right-0 text-center">
+                <span className={`px-4 py-2 rounded-full text-sm font-bold shadow-lg backdrop-blur-md ${scanStatus === 'STABILIZING' ? 'bg-yellow-400 text-yellow-900' :
                   scanStatus === 'CAPTURING' ? 'bg-green-500 text-white' :
-                    'bg-black/50 text-white'
+                    'bg-black/60 text-white border border-white/20'
                   }`}>
-                  {scanStatus === 'LOOKING' && "Align text & Hold Steady"}
+                  {scanStatus === 'LOOKING' && "Fit whole question in box"}
                   {scanStatus === 'STABILIZING' && "Hold Steady..."}
                   {scanStatus === 'CAPTURING' && "Capturing!"}
                 </span>
@@ -672,17 +681,43 @@ ${explanation.explanation}
 
           <button
             onClick={() => setShowCamera(false)}
-            className="absolute top-4 right-4 bg-black/50 p-2 rounded-full text-white hover:bg-black/70 z-10"
+            className="absolute top-4 right-4 bg-black/40 backdrop-blur-md p-2 rounded-full text-white hover:bg-black/60 z-10 transition-colors border border-white/10"
           >
             <X className="w-6 h-6" />
           </button>
         </div>
-        <div className="bg-black/80 p-6 flex items-center justify-center gap-8 relative z-10">
+
+        {/* Controls */}
+        <div className="bg-black/90 p-8 flex items-center justify-around gap-8 relative z-10 pb-12 rounded-t-[2rem] border-t border-white/10">
+          {/* Audio Option */}
+          <button
+            onClick={() => {
+              setShowCamera(false);
+              setTimeout(() => startRecording(), 100); // Small delay to allow UI transition
+            }}
+            className="flex flex-col items-center gap-2 group"
+          >
+            <div className="w-12 h-12 rounded-full bg-slate-800 flex items-center justify-center group-hover:bg-slate-700 transition-colors border border-slate-700">
+              <Mic className="w-5 h-5 text-indigo-400" />
+            </div>
+            <span className="text-xs font-medium text-slate-400">Read Aloud</span>
+          </button>
+
           <button
             onClick={capturePhoto}
-            className="w-16 h-16 rounded-full border-4 border-white flex items-center justify-center hover:bg-white/20 transition-all active:scale-95"
+            className="w-20 h-20 rounded-full border-4 border-white flex items-center justify-center hover:bg-white/20 transition-all active:scale-95 shadow-xl shadow-white/10"
           >
-            <div className="w-12 h-12 bg-white rounded-full"></div>
+            <div className="w-16 h-16 bg-white rounded-full"></div>
+          </button>
+
+          {/* Placeholder for Gallery/Upload if needed later, currently just spacer or generic help */}
+          <button
+            className="flex flex-col items-center gap-2 group opacity-50 cursor-not-allowed"
+          >
+            <div className="w-12 h-12 rounded-full bg-slate-800 flex items-center justify-center border border-slate-700">
+              <ImageIcon className="w-5 h-5 text-slate-400" />
+            </div>
+            <span className="text-xs font-medium text-slate-400">Gallery</span>
           </button>
         </div>
       </div>
@@ -794,7 +829,7 @@ ${explanation.explanation}
             <TscLiveBanner />
           </div>
 
-          <div className="flex justify-between items-start relative z-10">
+          <div className="flex flex-col md:flex-row justify-between items-start relative z-10 gap-4">
             <div>
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
@@ -807,7 +842,7 @@ ${explanation.explanation}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.1 }}
-                className="text-3xl font-extrabold text-slate-900 tracking-tight"
+                className="text-2xl md:text-3xl font-extrabold text-slate-900 tracking-tight"
               >
                 {greeting} <span className="inline-block animate-bounce">👋</span>
               </motion.h1>
@@ -815,7 +850,7 @@ ${explanation.explanation}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.2 }}
-                className="text-slate-500 font-medium"
+                className="text-slate-500 font-medium text-sm md:text-base"
               >
                 Ready to explore something new?
               </motion.p>
@@ -851,26 +886,26 @@ ${explanation.explanation}
               </motion.div>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 w-full md:w-auto self-end md:self-start">
               <button
                 onClick={() => onNavigate(ViewState.DASHBOARD)}
-                className="flex items-center gap-2 px-3 py-2 bg-slate-100 rounded-xl hover:bg-slate-200 transition-colors group text-xs font-bold text-slate-600"
+                className="flex-1 md:flex-none flex items-center justify-center gap-2 px-3 py-2 bg-slate-100 rounded-xl hover:bg-slate-200 transition-colors group text-xs font-bold text-slate-600"
                 title="Back to Landing Page"
               >
                 <Home className="w-5 h-5 text-slate-500 group-hover:text-blue-600 transition-colors" />
                 Home
               </button>
-              <button onClick={() => setMode('PRICING' as any)} className="p-2 bg-indigo-100 rounded-xl hover:bg-indigo-200 transition-colors group" title="Pricing Plans">
+              <button onClick={() => setMode('PRICING')} className="flex-1 md:flex-none flex justify-center items-center p-2 bg-indigo-100 rounded-xl hover:bg-indigo-200 transition-colors group" title="Pricing Plans">
                 <CreditCard className="w-6 h-6 text-indigo-600" />
               </button>
               <button
                 onClick={() => setMode('PROFILE')}
-                className={`p-2 rounded-xl transition-colors group ${mode === ('PROFILE' as any) ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-500 hover:bg-blue-50 hover:text-blue-600'}`}
+                className={`flex-1 md:flex-none flex justify-center items-center p-2 rounded-xl transition-colors group ${mode === ('PROFILE' as any) ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-500 hover:bg-blue-50 hover:text-blue-600'}`}
                 title="Your Profile"
               >
                 <UserCircle className="w-6 h-6" />
               </button>
-              <button onClick={() => setShowLogoutModal(true)} className="p-2 bg-slate-100 rounded-xl hover:bg-red-100 transition-colors group" title="Logout">
+              <button onClick={() => setShowLogoutModal(true)} className="flex-1 md:flex-none flex justify-center items-center p-2 bg-slate-100 rounded-xl hover:bg-red-100 transition-colors group" title="Logout">
                 <LogOut className="w-6 h-6 text-slate-500 group-hover:text-red-500 transition-colors" />
               </button>
             </div>
@@ -1181,11 +1216,11 @@ ${explanation.explanation}
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {history.slice(0, 10).map((item, index) => {
-                let details: any = {};
+                let details: Record<string, any> = {};
                 try {
                   const parsed = JSON.parse(item.details || '{}');
                   details = (parsed && typeof parsed === 'object') ? parsed : {};
-                } catch { }
+                } catch (e) { /* ignore */ }
                 const isQuiz = item.type === 'QUIZ';
                 const isAudio = details?.source === 'audio';
 
@@ -1350,7 +1385,7 @@ ${explanation.explanation}
             <Card className="p-6">
               <div className="space-y-4">
                 <div>
-                  <label htmlFor="parentPhone" className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Parent's Phone Number</label>
+                  <label htmlFor="parentPhone" className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Parent&apos;s Phone Number</label>
                   <div className="relative">
                     <input
                       id="parentPhone"
@@ -1616,7 +1651,7 @@ ${explanation.explanation}
 
   // --- PRICING & PAYMENT ---
 
-  if (mode === ('PRICING' as any)) {
+  if (mode === 'PRICING') {
     return (
       <PricingPage
         onSelectPlan={(plan) => {
@@ -1628,7 +1663,7 @@ ${explanation.explanation}
     );
   }
 
-  if (mode === ('PAYMENT' as any) && selectedPlan) {
+  if (mode === 'PAYMENT' && selectedPlan) {
     return (
       <PaymentFlow
         plan={selectedPlan}

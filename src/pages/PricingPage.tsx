@@ -1,5 +1,5 @@
 import React from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { PricingPage as PricingComponent } from '../features/subscription/PricingPage';
 import { Button } from '../components/Shared';
 import { ArrowLeft, Loader2, CheckCircle2 } from 'lucide-react';
@@ -9,27 +9,13 @@ import { pesapalService } from '../services/pesapalService';
 export const PricingPage: React.FC = () => {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
-    const { isPro, upgradeAccount, userId, role, subscriptionPlan } = useApp();
+    const { isPro, role, subscriptionPlan } = useApp();
     const [verifying, setVerifying] = React.useState(false);
     const [verifyError, setVerifyError] = React.useState('');
     const [verifySuccess, setVerifySuccess] = React.useState(false);
 
     const status = searchParams.get('status');
     const ref = searchParams.get('ref');
-
-    React.useEffect(() => {
-        if (status === 'verifying' && ref) {
-            handleVerification(ref);
-        }
-    }, [status, ref]);
-
-    // If user is already Pro and not currently verifying, they shouldn't be here
-    React.useEffect(() => {
-        if (isPro && !verifying && !verifySuccess && !status) {
-            const dashboard = role === 'TEACHER' ? '/teacher' : '/learner';
-            navigate(dashboard);
-        }
-    }, [isPro, verifying, navigate, role, status]);
 
     const handleVerification = async (reference: string) => {
         // WORLD-CLASS PROCESS: Immediate Success UI & Redirect
@@ -49,6 +35,17 @@ export const PricingPage: React.FC = () => {
             window.location.href = dashboard;
         }, 1500);
     };
+
+    React.useEffect(() => {
+        if (status === 'verifying' && ref) {
+            handleVerification(ref);
+        }
+    }, [status, ref]);
+
+    const location = useLocation();
+    const state = location.state as { initialTab?: any } | null;
+
+    // Pro users can freely view the pricing plans now to see what they are paying for or to upgrade.
 
     return (
         <div className="relative min-h-screen">
@@ -101,8 +98,36 @@ export const PricingPage: React.FC = () => {
 
             <PricingComponent
                 currentTier={subscriptionPlan}
-                onSelectPlan={(plan) => {
-                    // Navigate to registration with plan intent
+                initialTab={state?.initialTab}
+                onSelectPlan={async (plan) => {
+                    // 1. If user is logged in, Initiate Payment Directly
+                    if (isPro) {
+                        // Already pro? maybe show toast or just return
+                        return;
+                    }
+
+                    // We need the user object to initiate payment, but useApp doesn't expose 'user' directly in the destructure above
+                    // Let's get it from context if available, or just rely on 'role' check implies logged in?
+                    // Actually, 'role' might be default 'LEARNER' even if guest? No, usually null or default.
+                    // Let's check session persistence. For now, we'll assume if we have a role that isn't null, we might be logged in?
+                    // Better to check specific 'user' object.
+
+                    // To keep it simple and safe for now: 
+                    // We will redirect to dashboard with a specific 'initiatePayment' state if logged in.
+
+                    // Actually, let's just do the payment here if we can access user details.
+                    // Since 'user' isn't destructured, let's assume we can get it or we drive them to dashboard to pay.
+                    // Driving to dashboard to pay is safer because dashboard has the context.
+
+                    if (role) {
+                        // User is logged in (presumably)
+                        // Navigate to their dashboard with payment intent
+                        const target = role === 'TEACHER' ? '/teacher' : '/learner';
+                        navigate(target, { state: { initiatePaymentFor: plan } });
+                        return;
+                    }
+
+                    // 2. If not logged in, go to registration
                     navigate('/', { state: { selectedPlan: plan, showRegistration: true } });
                 }}
                 onClose={() => navigate('/')}

@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Upload, Mic, FileText, Share2, StopCircle, Download, BookOpen, Crown, Brain, Sparkles, X, CheckCircle, Play, Pause, Trash2, ArrowRight, Library, Filter, Calendar, Home, LogOut, MonitorPlay, CreditCard } from 'lucide-react';
+import { Upload, Mic, FileText, Share2, StopCircle, Download, BookOpen, Crown, Brain, Sparkles, X, CheckCircle, Play, Pause, Trash2, ArrowRight, Library, Filter, Calendar, Home, LogOut, MonitorPlay, CreditCard, ScanLine, Plus } from 'lucide-react';
 import { Button, Card, Header, MarkdownText } from '../../components/Shared';
 import { TeacherPaywall } from '../../components/TeacherPaywall';
 import { TeacherOnboarding } from '../../components/TeacherOnboarding';
@@ -14,11 +14,12 @@ import { PaymentFlow } from '../subscription/PaymentFlow';
 
 interface TeacherProps {
     onNavigate: (view: ViewState) => void;
+    initialTab?: 'HOME' | 'CONVERT' | 'VOICE' | 'QUIZ' | 'LIBRARY' | 'MARKING';
 }
 
 import { useNavigate, useLocation } from 'react-router-dom';
 
-export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate }) => {
+export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTab }) => {
     const {
         teacherUsageCount, incrementTeacherUsage, teacherProfile,
         updateTeacherProfile, teacherHistory, saveTeacherActivity,
@@ -31,31 +32,73 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate }) => {
     const location = useLocation();
     const navigate = useNavigate();
 
-    // Check for subscription intent from Landing Page
+    // Check for subscription intent from Landing Page or Pricing Page
     useEffect(() => {
-        const state = location.state as { selectedPlan?: SubscriptionPlan; openSubscription?: boolean };
+        const state = location.state as { selectedPlan?: SubscriptionPlan; openSubscription?: boolean, initiatePaymentFor?: SubscriptionPlan };
 
-        if (state?.selectedPlan) {
+        if (state?.initiatePaymentFor) {
+            // Direct payment trigger for authenticated user
+            const plan = state.initiatePaymentFor;
+            if (teacherProfile) {
+                // We have profile, go ahead
+                const paymentDetails = {
+                    amount: plan.price,
+                    description: `Soma Smart ${plan.name} Subscription`,
+                    email: teacherProfile.email, // Ensure email is in profile or context
+                    phoneNumber: "", // Option to add phone if available
+                    firstName: teacherProfile.name.split(' ')[0],
+                    lastName: teacherProfile.name.split(' ').slice(1).join(' ') || '',
+                    callbackUrl: `${window.location.origin}/pricing` // Callback to pricing page checks status
+                };
+
+                // Trigger flow
+                // We can't easily call hook method outside.
+                // Best way? Create a temporary state to auto-click the payment button or show a specific modal.
+                // Or better: Render the PaymentFlow component directly in a modal state?
+
+                // Let's use a new state 'showDirectPayment'
+                setSelectedPlan(plan);
+                // We need to trigger the payment flow. 
+                // Since PaymentFlow is usually internal to components, let's open a modal that immediately starts it?
+                // Actually, existing PaymentFlow component handles UI. 
+                // We should show a modal with PaymentFlow.
+
+                // Re-using showPaywall logic might be tricky if it doesn't support direct payment start.
+                // Let's create a dedicated "Processing Payment" modal or reuse something.
+
+                // Simplest: Set selectedPlan and show a Payment Modal.
+                // We don't have a generic Payment Modal component in this file yet.
+                // Notes: TeacherPaywall -> leads to pricing -> leads back here.
+
+                // Let's add a state `paymentPlan` and if set, render `PaymentFlow` in a modal overlay.
+                setPaymentPlan(plan);
+            }
+            // Clear state
+            navigate(location.pathname, { replace: true, state: {} });
+        } else if (state?.selectedPlan) {
             if (isPro) {
                 // Already pro, just stay on dashboard and clear state
                 navigate(location.pathname, { replace: true, state: {} });
             } else {
                 setSelectedPlan(state.selectedPlan);
-                // Clear state to avoid re-triggering on refresh
+                // Clear state
                 navigate(location.pathname, { replace: true, state: {} });
             }
         } else if (state?.openSubscription) {
             setShowPaywall(true);
             navigate(location.pathname, { replace: true, state: {} });
         }
-    }, [location.state, isPro, navigate]);
+    }, [location.state, isPro, navigate, teacherProfile]);
+
+    const [paymentPlan, setPaymentPlan] = useState<SubscriptionPlan | null>(null);
     const [showLoginModal, setShowLoginModal] = useState(false);
     const [showLogoutModal, setShowLogoutModal] = useState(false);
-    const [activeTab, setActiveTab] = useState<'HOME' | 'CONVERT' | 'VOICE' | 'QUIZ' | 'LIBRARY'>('HOME');
+    const [activeTab, setActiveTab] = useState<'HOME' | 'CONVERT' | 'VOICE' | 'QUIZ' | 'LIBRARY' | 'MARKING'>(initialTab || 'HOME');
     const [loading, setLoading] = useState(false);
 
     // Selection State
     const [selectedClass, setSelectedClass] = useState<string>(teacherProfile?.classes[0] || "");
+    const [showOnboarding, setShowOnboarding] = useState(false);
     const [selectedSubject, setSelectedSubject] = useState<string>(teacherProfile?.subjects[0] || "");
 
     // Advanced Quiz State
@@ -352,6 +395,39 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate }) => {
     return (
         <div className="min-h-screen bg-slate-50 pb-20 font-sans text-slate-800 max-w-4xl mx-auto shadow-2xl border-x border-slate-100 relative">
             <TeacherPaywall isOpen={showPaywall} onClose={() => setShowPaywall(false)} />
+
+            {/* Direct Payment Modal */}
+            {paymentPlan && teacherProfile && (
+                <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm">
+                    <motion.div
+                        initial={{ scale: 0.9, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        className="bg-white rounded-[2rem] p-6 w-full max-w-lg shadow-2xl relative"
+                    >
+                        <button
+                            onClick={() => setPaymentPlan(null)}
+                            className="absolute top-4 right-4 p-2 bg-slate-100 rounded-full hover:bg-slate-200 transition-colors z-10"
+                        >
+                            <X className="w-5 h-5 text-slate-500" />
+                        </button>
+
+                        <div className="mb-4 text-center">
+                            <h2 className="text-xl font-bold text-slate-800">Complete Updgrade</h2>
+                            <p className="text-sm text-slate-500">Secure payment for {paymentPlan.name}</p>
+                        </div>
+
+                        <PaymentFlow
+                            plan={paymentPlan}
+                            onSuccess={() => {
+                                setPaymentPlan(null);
+                                alert("Payment Successful! Welcome to Pro.");
+                            }}
+                            onCancel={() => setPaymentPlan(null)}
+                        />
+                    </motion.div>
+                </div>
+            )}
+
             {pdfFile && (
                 <PdfPageSelector
                     file={pdfFile}
@@ -370,15 +446,15 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate }) => {
 
                 <div className="relative z-10">
                     {/* Top Bar */}
-                    <div className="flex justify-between items-start mb-6">
+                    <div className="flex flex-col md:flex-row justify-between items-start mb-6 gap-4">
                         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-2">
-                            <div className="w-10 h-10 bg-indigo-500/30 backdrop-blur rounded-full flex items-center justify-center text-indigo-50 font-bold border border-indigo-400/30">
+                            <div className="w-10 h-10 bg-indigo-500/30 backdrop-blur rounded-full flex items-center justify-center text-indigo-50 font-bold border border-indigo-400/30 flex-shrink-0">
                                 {teacherProfile.name.charAt(0)}
                             </div>
                             <div>
-                                <h2 className="text-white font-bold">{teacherProfile.name}</h2>
+                                <h2 className="text-white font-bold text-lg md:text-xl">{teacherProfile.name}</h2>
                                 {isPromoActive ? (
-                                    <span className="text-emerald-300 text-xs flex items-center gap-1 font-bold bg-emerald-500/20 px-2 py-0.5 rounded-full border border-emerald-400/30">
+                                    <span className="text-emerald-300 text-xs flex items-center gap-1 font-bold bg-emerald-500/20 px-2 py-0.5 rounded-full border border-emerald-400/30 w-fit">
                                         <Crown className="w-3 h-3" /> Unlimited Access (Ends in {timeLeft})
                                     </span>
                                 ) : (
@@ -391,14 +467,14 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate }) => {
                             </div>
                         </motion.div>
 
-                        <div className="flex gap-2">
-                            <button onClick={() => onNavigate(ViewState.DASHBOARD)} className="flex items-center gap-2 px-3 py-2 bg-white/10 hover:bg-white/20 rounded-xl backdrop-blur-md transition-colors group text-xs font-bold text-white" title="Back to Home">
+                        <div className="flex gap-2 w-full md:w-auto">
+                            <button onClick={() => onNavigate(ViewState.DASHBOARD)} className="flex-1 md:flex-none flex items-center justify-center gap-2 px-3 py-2 bg-white/10 hover:bg-white/20 rounded-xl backdrop-blur-md transition-colors group text-xs font-bold text-white" title="Back to Home">
                                 <Home className="w-5 h-5" /> Home
                             </button>
-                            <button onClick={() => navigate('/pricing')} className="p-2 bg-indigo-500/20 hover:bg-indigo-500/30 rounded-xl backdrop-blur-md transition-colors group" title="Pricing Plans">
+                            <button onClick={() => navigate('/pricing')} className="flex-1 md:flex-none flex justify-center items-center p-2 bg-indigo-500/20 hover:bg-indigo-500/30 rounded-xl backdrop-blur-md transition-colors group" title="Pricing Plans">
                                 <CreditCard className="w-6 h-6 text-white" />
                             </button>
-                            <button onClick={() => setShowLogoutModal(true)} className="p-2 bg-white/10 hover:bg-red-500/20 rounded-xl backdrop-blur-md transition-colors group" title="Logout">
+                            <button onClick={() => setShowLogoutModal(true)} className="flex-1 md:flex-none flex justify-center items-center p-2 bg-white/10 hover:bg-red-500/20 rounded-xl backdrop-blur-md transition-colors group" title="Logout">
                                 <LogOut className="w-6 h-6 text-white group-hover:text-red-200" />
                             </button>
                         </div>
@@ -429,6 +505,18 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate }) => {
                             ))}
                         </div>
                     </div>
+
+                    {/* Empty State / Add Classes Trigger */}
+                    {teacherProfile.classes.length === 0 && (
+                        <div className="mb-4">
+                            <button
+                                onClick={() => setShowOnboarding(true)}
+                                className="px-4 py-2 bg-white/20 hover:bg-white/30 text-white rounded-xl border border-white/20 backdrop-blur-md text-sm font-bold flex items-center gap-2 animate-pulse"
+                            >
+                                <Plus className="w-4 h-4" /> Setup My Classes
+                            </button>
+                        </div>
+                    )}
                 </div>
             </div>
 
@@ -437,18 +525,24 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate }) => {
 
                 {/* Navigation Tabs (Floating) */}
                 {!loading && !generatedNote && !generatedQuiz && (
-                    <div className="bg-white rounded-2xl shadow-sm p-2 mb-6 flex justify-between">
+                    <div className="bg-white rounded-2xl shadow-sm p-2 mb-6 flex justify-between gap-2">
                         <button
                             onClick={() => setActiveTab('HOME')}
-                            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl transition-all ${activeTab === 'HOME' ? 'bg-indigo-50 text-indigo-600 font-bold' : 'text-slate-500 hover:bg-slate-50'}`}
+                            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl transition-all text-xs md:text-sm font-bold ${activeTab === 'HOME' ? 'bg-indigo-50 text-indigo-600' : 'text-slate-500 hover:bg-slate-50'}`}
                         >
-                            <Sparkles className="w-4 h-4" /> Studio
+                            <Sparkles className="w-4 h-4 flex-shrink-0" /> Studio
                         </button>
                         <button
                             onClick={() => setActiveTab('LIBRARY')}
-                            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl transition-all ${activeTab === 'LIBRARY' ? 'bg-purple-50 text-purple-600 font-bold' : 'text-slate-500 hover:bg-slate-50'}`}
+                            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl transition-all text-xs md:text-sm font-bold ${activeTab === 'LIBRARY' ? 'bg-purple-50 text-purple-600' : 'text-slate-500 hover:bg-slate-50'}`}
                         >
-                            <Library className="w-4 h-4" /> Library
+                            <Library className="w-4 h-4 flex-shrink-0" /> Library
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('MARKING')}
+                            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl transition-all text-xs md:text-sm font-bold ${activeTab === 'MARKING' ? 'bg-emerald-50 text-emerald-600' : 'text-slate-500 hover:bg-slate-50'}`}
+                        >
+                            <ScanLine className="w-4 h-4 flex-shrink-0" /> Marking
                         </button>
                     </div>
                 )}
@@ -631,6 +725,28 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate }) => {
                                         </div>
                                     </div>
                                 </motion.div>
+
+                                {/* Tool 4: Automatic Marking */}
+                                <motion.div
+                                    whileHover={{ y: -5 }}
+                                    onClick={() => setActiveTab('MARKING')}
+                                    className="md:col-span-2 bg-gradient-to-r from-emerald-600 to-teal-600 p-6 rounded-3xl shadow-lg border border-emerald-500 flex flex-row items-center cursor-pointer group relative overflow-hidden"
+                                >
+                                    <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -mr-20 -mt-20"></div>
+
+                                    <div className="w-16 h-16 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center mr-6 shadow-inner border border-white/20 group-hover:scale-110 transition-transform">
+                                        <ScanLine className="w-8 h-8 text-white" />
+                                    </div>
+                                    <div className="flex-1 text-white relative z-10">
+                                        <h3 className="font-bold text-xl mb-1 flex items-center gap-2">
+                                            Automatic Marking <span className="text-[10px] bg-white/20 px-2 py-0.5 rounded-full font-mono uppercase tracking-wider">New</span>
+                                        </h3>
+                                        <p className="text-emerald-50 text-sm opacity-90">Scan student scripts and get instant results. Perfect for CBE assessments.</p>
+                                    </div>
+                                    <div className="bg-white/20 p-2 rounded-full backdrop-blur-sm group-hover:bg-white/30 transition-colors">
+                                        <ArrowRight className="w-6 h-6 text-white" />
+                                    </div>
+                                </motion.div>
                             </div>
                         )}
                         {
@@ -690,6 +806,33 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate }) => {
                                                 ))
                                         )}
                                     </div>
+                                </div>
+                            )
+                        }
+                        {
+                            activeTab === 'MARKING' && (
+                                <div className="bg-white rounded-3xl shadow-sm border border-slate-200 p-12 text-center min-h-[500px] flex flex-col items-center justify-center">
+                                    <div className="w-24 h-24 bg-emerald-50 text-emerald-600 rounded-3xl flex items-center justify-center mb-6 shadow-xl shadow-emerald-100 animate-pulse">
+                                        <ScanLine className="w-12 h-12" />
+                                    </div>
+                                    <h2 className="text-3xl font-black text-slate-800 mb-4 tracking-tight">Smart Marking is almost here!</h2>
+                                    <p className="text-slate-500 max-w-md mx-auto mb-10 leading-relaxed">
+                                        We are currently training our system to recognize and grade local Kenyan student handwriting for <b>{selectedSubject}</b>.
+                                    </p>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full max-w-lg mb-8">
+                                        <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 text-left">
+                                            <h4 className="font-bold text-slate-800 text-sm mb-1">OCR Processing</h4>
+                                            <p className="text-xs text-slate-500">Handwriting to text conversion.</p>
+                                        </div>
+                                        <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 text-left">
+                                            <h4 className="font-bold text-slate-800 text-sm mb-1">CBE Alignment</h4>
+                                            <p className="text-xs text-slate-500">Grading based on CBC rubrics.</p>
+                                        </div>
+                                    </div>
+                                    <Button variant="primary" className="bg-emerald-600 hover:bg-emerald-700 text-white font-black px-10 py-4 rounded-xl shadow-xl shadow-emerald-200">
+                                        Join Waitlist for {selectedClass}
+                                    </Button>
+                                    <p className="mt-6 text-[10px] text-slate-400 font-bold uppercase tracking-widest">Early access for Pro schools in March</p>
                                 </div>
                             )
                         }
@@ -807,6 +950,35 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate }) => {
                         setSelectedPlan(null);
                     }}
                     onCancel={() => setSelectedPlan(null)}
+                />
+            )}
+
+            <LogoutModal
+                isOpen={showLogoutModal}
+                onClose={() => setShowLogoutModal(false)}
+                title="End Teacher Session?"
+                message="Are you sure you want to log out? Any unsaved notes or marking will be preserved for next time."
+                cancelText="Keep working"
+                confirmText="Sign Out Securely"
+                onConfirm={() => {
+                    logout();
+                    setShowLogoutModal(false);
+                    navigate('/');
+                }}
+            />
+
+            {showOnboarding && (
+                <TeacherOnboarding
+                    initialStep={2}
+                    isEditing={true}
+                    onComplete={(updatedProfile) => {
+                        setShowOnboarding(false);
+                        // Force local update if needed, but context handles it
+                        if (updatedProfile.classes.length > 0) {
+                            setSelectedClass(updatedProfile.classes[0]);
+                        }
+                    }}
+                    onClose={() => setShowOnboarding(false)}
                 />
             )}
         </div>

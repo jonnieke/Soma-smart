@@ -9,6 +9,8 @@ interface LogoutModalProps {
     onConfirm: () => void;
     title?: string;
     message?: string;
+    cancelText?: string;
+    confirmText?: string;
 }
 
 export const LogoutModal: React.FC<LogoutModalProps> = ({
@@ -16,7 +18,9 @@ export const LogoutModal: React.FC<LogoutModalProps> = ({
     onClose,
     onConfirm,
     title = "Wait, don't go yet! 🥺",
-    message = "You're doing so well! If you stay, you can keep earning XP, level up, and use the Magic Scanner for your homework. Are you sure you want to log out?"
+    message = "You're doing so well! If you stay, you can keep earning XP, level up, and use the Magic Scanner for your homework. Are you sure you want to log out?",
+    cancelText = "Stay & Keep Learning! 🚀",
+    confirmText = "Logout anyway"
 }) => {
     return (
         <AnimatePresence>
@@ -95,13 +99,13 @@ export const LogoutModal: React.FC<LogoutModalProps> = ({
                                     onClick={onClose}
                                     className="py-4 bg-indigo-600 hover:bg-indigo-700 text-white shadow-xl shadow-indigo-200 text-lg rounded-2xl"
                                 >
-                                    Stay & Keep Learning! 🚀
+                                    {cancelText}
                                 </Button>
                                 <button
                                     onClick={onConfirm}
                                     className="py-3 text-slate-400 hover:text-red-500 font-bold text-sm transition-colors flex items-center justify-center gap-2"
                                 >
-                                    Logout anyway
+                                    {confirmText}
                                 </button>
                             </div>
                         </div>

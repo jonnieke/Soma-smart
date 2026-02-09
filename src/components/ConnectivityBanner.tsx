@@ -20,7 +20,7 @@ export const ConnectivityBanner: React.FC = () => {
                             <WifiOff className="w-5 h-5 text-red-500" />
                         </div>
                         <div className="flex-1">
-                            <p className="text-sm font-bold">You're Offline</p>
+                            <p className="text-sm font-bold">You&apos;re Offline</p>
                             <p className="text-[10px] text-slate-400 font-medium">Browsing saved lessons. AI features require internet.</p>
                         </div>
                         <div className="flex flex-col items-center">

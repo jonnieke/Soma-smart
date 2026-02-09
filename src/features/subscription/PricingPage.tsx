@@ -5,9 +5,10 @@ import { STUDENT_PLANS, TEACHER_PLANS, SCHOOL_PLANS } from '../../data/pricing';
 import { SubscriptionPlan, UserSegment } from '../../types';
 
 interface Props {
-    onSelectPlan: (plan: any) => void;
+    onSelectPlan: (plan: SubscriptionPlan) => void;
     onClose: () => void;
     currentTier?: string;
+    initialTab?: UserSegment;
 }
 
 const PromoBanner = () => {
@@ -93,8 +94,8 @@ const PromoBanner = () => {
     );
 };
 
-export const PricingPage: React.FC<Props> = ({ onSelectPlan, onClose, currentTier }) => {
-    const [activeTab, setActiveTab] = useState<UserSegment>('STUDENT');
+export const PricingPage: React.FC<Props> = ({ onSelectPlan, onClose, currentTier, initialTab = 'STUDENT' }) => {
+    const [activeTab, setActiveTab] = useState<UserSegment>(initialTab);
 
     const renderTabButton = (tab: UserSegment, icon: any, label: string) => (
         <button
@@ -223,7 +224,7 @@ export const PricingPage: React.FC<Props> = ({ onSelectPlan, onClose, currentTie
                                 <div className="md:col-span-3 bg-indigo-600 rounded-3xl p-8 text-white flex flex-col md:flex-row items-center justify-between gap-6 shadow-xl shadow-indigo-200">
                                     <div>
                                         <h3 className="text-2xl font-bold mb-2">Need a Custom Plan?</h3>
-                                        <p className="text-indigo-100">For more than 60 teachers, we offer custom enterprise solutions tailored to your school's needs.</p>
+                                        <p className="text-indigo-100">For more than 60 teachers, we offer custom enterprise solutions tailored to your school&apos;s needs.</p>
                                     </div>
                                     <button className="bg-white text-indigo-600 px-8 py-4 rounded-xl font-bold hover:bg-indigo-50 transition-colors shrink-0">
                                         Contact Sales

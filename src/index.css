@@ -5,8 +5,11 @@
 @tailwind utilities;
 
 :root {
-  font-family: 'Inter', sans-serif;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
   --primary: #4f46e5;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 h1,
@@ -17,10 +20,12 @@ h5,
 h6,
 .font-heading {
   font-family: 'Outfit', sans-serif;
+  letter-spacing: -0.02em;
 }
 
 body {
-  @apply bg-gray-50 text-gray-900;
+  @apply bg-gray-50 text-slate-900 antialiased;
+  text-rendering: optimizeLegibility;
 }
 
 /* Custom Scrollbar */

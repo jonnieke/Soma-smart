@@ -14,8 +14,8 @@ export const TEACHER_PLANS: SubscriptionPlan[] = [
     { id: 't_annual', segment: 'TEACHER', name: 'Pro Annual', price: 2500, duration: 'ANNUAL', savings: 'Save 30%' },
 ];
 
-export const SCHOOL_PLANS = [
-    { id: 'sch_small', name: 'Small School', teacherLimit: 10, price: 5000, duration: 'TERMLY' },
-    { id: 'sch_medium', name: 'Medium School', teacherLimit: 30, price: 10000, duration: 'TERMLY' },
-    { id: 'sch_large', name: 'Large School', teacherLimit: 60, price: 18000, duration: 'TERMLY' },
+export const SCHOOL_PLANS: SubscriptionPlan[] = [
+    { id: 'sch_small', segment: 'SCHOOL', name: 'Small School', price: 5000, duration: 'TERMLY' },
+    { id: 'sch_medium', segment: 'SCHOOL', name: 'Medium School', price: 10000, duration: 'TERMLY' },
+    { id: 'sch_large', segment: 'SCHOOL', name: 'Large School', price: 18000, duration: 'TERMLY' },
 ];

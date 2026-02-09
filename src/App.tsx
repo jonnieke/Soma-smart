@@ -12,6 +12,7 @@ import { AskSoma } from './components/AskSoma';
 import { DarasaMode } from './features/darasa-mode/DarasaMode';
 import { ResetPassword } from './pages/ResetPassword';
 import { PricingPage } from './pages/PricingPage';
+import { SchoolDashboard } from './features/school/SchoolDashboard';
 import { supabase } from './lib/supabase';
 import { ConnectivityBanner } from './components/ConnectivityBanner';
 
@@ -43,6 +44,9 @@ const App: React.FC = () => {
                 <Route path="/" element={<LandingPage />} />
                 <Route path="/learner" element={<LearnerPage />} />
                 <Route path="/teacher" element={<TeacherPage />} />
+                <Route path="/teacher/notes" element={<TeacherPage />} />
+                <Route path="/teacher/homework" element={<TeacherPage />} />
+                <Route path="/teacher/marking" element={<TeacherPage />} />
                 <Route path="/parent" element={<ParentPage />} />
                 <Route path="/admin" element={<AdminDashboard onNavigate={() => window.location.href = '/'} />} />
                 <Route path="/revision" element={<RevisionPortal />} />
@@ -50,6 +54,7 @@ const App: React.FC = () => {
                 <Route path="/teacher/darasa" element={<DarasaPage />} />
                 <Route path="/reset-password" element={<ResetPassword />} />
                 <Route path="/pricing" element={<PricingPage />} />
+                <Route path="/school" element={<SchoolDashboard />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
         </AppProvider>

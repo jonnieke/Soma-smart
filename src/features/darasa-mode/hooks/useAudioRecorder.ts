@@ -34,10 +34,6 @@ export const useAudioRecorder = (onCaptureComplete: (blob: Blob) => void): UseAu
     const sourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
     const destinationRef = useRef<MediaStreamAudioDestinationNode | null>(null);
 
-    useEffect(() => {
-        return () => stopCleanup();
-    }, []);
-
     const stopCleanup = () => {
         if (timerRef.current) clearInterval(timerRef.current);
         if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
@@ -59,7 +55,7 @@ export const useAudioRecorder = (onCaptureComplete: (blob: Blob) => void): UseAu
 
         // Stop the recorder if active
         if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
-            try { mediaRecorderRef.current.stop(); } catch (e) { }
+            try { mediaRecorderRef.current.stop(); } catch (e) { /* ignore */ }
         }
 
         // CRITICAL: Stop the actual microphone hardware stream
@@ -68,6 +64,10 @@ export const useAudioRecorder = (onCaptureComplete: (blob: Blob) => void): UseAu
             micStreamRef.current = null;
         }
     };
+
+    useEffect(() => {
+        return () => stopCleanup();
+    }, []);
 
     const visualize = useCallback(() => {
         if (!canvasRef.current || !analyserRef.current || !dataArrayRef.current) return;
@@ -88,7 +88,7 @@ export const useAudioRecorder = (onCaptureComplete: (blob: Blob) => void): UseAu
 
             animationFrameRef.current = requestAnimationFrame(draw);
             // Get Time Domain Data for Waveform
-            analyserRef.current.getByteTimeDomainData(dataArrayRef.current as any);
+            analyserRef.current.getByteTimeDomainData(dataArrayRef.current);
 
             // Calculate level for internal use if needed
             let sum = 0;

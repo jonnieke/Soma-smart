@@ -1,23 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Lock, LogIn, User, GraduationCap, X, Plus, CheckCircle, Eye, EyeOff } from 'lucide-react';
+import { Lock, LogIn, User, GraduationCap, X, Plus, CheckCircle, Eye, EyeOff, School as SchoolIcon } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 
 interface LoginModalProps {
     isOpen: boolean;
     onClose: () => void;
-    initialTab?: 'STUDENT' | 'TEACHER';
+    initialTab?: 'STUDENT' | 'TEACHER' | 'SCHOOL';
     onSwitchToRegister?: () => void;
     onSuccess?: () => void;
 }
 
 export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, initialTab = 'STUDENT', onSwitchToRegister, onSuccess }) => {
-    const { login, loginTeacher, recoverStudentId, resetPassword } = useApp();
+    const { login, loginTeacher, loginSchool, recoverStudentId, resetPassword } = useApp();
     const navigate = useNavigate();
 
     // Tab State
-    const [activeTab, setActiveTab] = useState<'STUDENT' | 'TEACHER'>(initialTab);
+    const [activeTab, setActiveTab] = useState<'STUDENT' | 'TEACHER' | 'SCHOOL'>(initialTab);
 
     // Student State
     const [code, setCode] = useState("");
@@ -45,7 +45,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, initial
     // Effect to reset/detect state when modal opens
     useEffect(() => {
         if (isOpen) {
-            setActiveTab(initialTab);
+            if (activeTab !== initialTab) setActiveTab(initialTab);
             try {
                 const h = JSON.parse(localStorage.getItem('soma_recent_login') || '[]');
                 setRecents(h);
@@ -91,7 +91,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, initial
             } else {
                 setError("Invalid Student ID. Please check and try again.");
             }
-        } else {
+        } else if (activeTab === 'TEACHER') {
             setLoading(true);
             const { success, message } = await loginTeacher(email, password);
             setLoading(false);
@@ -105,6 +105,17 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, initial
                 } else {
                     setError(message || "Login failed. Check your email and password.");
                 }
+            }
+        } else if (activeTab === 'SCHOOL') {
+            setLoading(true);
+            const { success, message } = await loginSchool(email, password);
+            setLoading(false);
+            if (success) {
+                onClose();
+                if (onSuccess) onSuccess();
+                else navigate('/school');
+            } else {
+                setError(message || "School login failed. Check your credentials.");
             }
         }
     };
@@ -150,7 +161,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, initial
                                         <CheckCircle className="w-8 h-8 text-green-600" />
                                     </motion.div>
                                     <p className="text-gray-900 font-bold mb-2">Check your inbox!</p>
-                                    <p className="text-gray-500 text-sm mb-6">We've sent a password reset link to <br /> <span className="font-bold text-indigo-600">{resetEmail}</span></p>
+                                    <p className="text-gray-500 text-sm mb-6">We&apos;ve sent a password reset link to <br /> <span className="font-bold text-indigo-600">{resetEmail}</span></p>
                                     <button
                                         onClick={() => { setShowReset(false); setResetSent(false); setResetEmail(""); }}
                                         className="w-full py-3 bg-indigo-600 text-white rounded-lg font-bold hover:bg-indigo-700 shadow-md transition-all"
@@ -162,7 +173,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, initial
                                 <form onSubmit={handleReset}>
                                     <div className="space-y-4">
                                         <p className="text-sm text-gray-500 mb-4">
-                                            Enter your email address and we'll send you a link to reset your password.
+                                            Enter your email address and we&apos;ll send you a link to reset your password.
                                         </p>
                                         <div>
                                             <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
@@ -373,22 +384,28 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, initial
                             className={`flex-1 py-4 font-bold text-sm ${activeTab === 'STUDENT' ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50/50' : 'text-gray-500 hover:bg-gray-50'}`}
                             onClick={() => { setActiveTab('STUDENT'); setError(""); }}
                         >
-                            Student Login
+                            Student
                         </button>
                         <button
                             className={`flex-1 py-4 font-bold text-sm ${activeTab === 'TEACHER' ? 'text-indigo-600 border-b-2 border-indigo-600 bg-indigo-50/50' : 'text-gray-500 hover:bg-gray-50'}`}
                             onClick={() => { setActiveTab('TEACHER'); setError(""); }}
                         >
-                            Teacher Login
+                            Teacher
+                        </button>
+                        <button
+                            className={`flex-1 py-4 font-bold text-sm ${activeTab === 'SCHOOL' ? 'text-blue-700 border-b-2 border-blue-700 bg-blue-50/50' : 'text-gray-500 hover:bg-gray-50'}`}
+                            onClick={() => { setActiveTab('SCHOOL'); setError(""); }}
+                        >
+                            School
                         </button>
                     </div>
 
                     <div className="p-8 overflow-y-auto">
                         <div className="text-center mb-6">
-                            <div className={`w-16 h-16 ${activeTab === 'STUDENT' ? 'bg-blue-100 text-blue-600' : 'bg-indigo-100 text-indigo-600'} rounded-full flex items-center justify-center mx-auto mb-4 transition-colors`}>
-                                {activeTab === 'STUDENT' ? <Lock className="w-8 h-8" /> : <GraduationCap className="w-8 h-8" />}
+                            <div className={`w-16 h-16 ${activeTab === 'STUDENT' ? 'bg-blue-100 text-blue-600' : activeTab === 'SCHOOL' ? 'bg-blue-900/10 text-blue-900' : 'bg-indigo-100 text-indigo-600'} rounded-full flex items-center justify-center mx-auto mb-4 transition-colors`}>
+                                {activeTab === 'STUDENT' ? <Lock className="w-8 h-8" /> : activeTab === 'SCHOOL' ? <SchoolIcon className="w-8 h-8" /> : <GraduationCap className="w-8 h-8" />}
                             </div>
-                            <h2 className="text-2xl font-bold text-gray-900">{activeTab === 'STUDENT' ? "Student Login" : "Teacher Login"}</h2>
+                            <h2 className="text-2xl font-bold text-gray-900">{activeTab === 'STUDENT' ? "Student Login" : activeTab === 'SCHOOL' ? "School Hub Login" : "Teacher Login"}</h2>
                             <p className="text-gray-500 mt-2">{activeTab === 'STUDENT' ? "Enter your Student ID to continue." : "Enter your email and password."}</p>
                         </div>
 
@@ -508,6 +525,18 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, initial
                                         className="w-full py-2 text-sm text-indigo-600 font-bold hover:bg-indigo-50 rounded-lg transition-colors"
                                     >
                                         New Teacher? Create Account
+                                    </button>
+                                )}
+
+                                {activeTab === 'SCHOOL' && (
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            alert("School registration is currently via demo. Please contact us to set up your school account.");
+                                        }}
+                                        className="w-full py-2 text-sm text-blue-900 font-bold hover:bg-blue-50 rounded-lg transition-colors"
+                                    >
+                                        Register Your School
                                     </button>
                                 )}
 

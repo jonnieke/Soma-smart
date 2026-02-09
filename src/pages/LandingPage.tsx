@@ -3,7 +3,8 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import {
     GraduationCap, Users, Baby, ChevronRight, MessageSquare,
     ScanLine, CheckCircle, Menu, X, CheckSquare, Play, BookOpen, LogOut,
-    CreditCard, AlertCircle
+    CreditCard, AlertCircle, FileText, Clock, Award, ArrowRight, School,
+    Sparkles, Zap, Building2, TrendingUp, Quote
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { UserRole } from '../types';
@@ -46,6 +47,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
     const [showLogin, setShowLogin] = useState(false);
     const [showLogoutModal, setShowLogoutModal] = useState(false);
     const [isClaimingOffer, setIsClaimingOffer] = useState(false);
+    const [loginTab, setLoginTab] = useState<'STUDENT' | 'TEACHER' | 'SCHOOL'>('STUDENT');
+    const [pendingRoute, setPendingRoute] = useState<string | null>(null);
 
     // Handle incoming plan selection from PricingPage
     React.useEffect(() => {
@@ -71,7 +74,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
         if (state?.selectedPlan) {
             // If already pro, go straight to relative dashboard
             if (isPro) {
-                const target = state.selectedPlan.segment === 'TEACHER' ? '/teacher' : '/learner';
+                const target = state.selectedPlan.segment === 'TEACHER' ? '/teacher' : (state.selectedPlan.segment === 'SCHOOL' ? '/school' : '/learner');
                 navigate(target, { replace: true });
                 return;
             }
@@ -81,7 +84,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                 setShowRegistration(true);
             } else {
                 // If registered but not pro, go to dashboard with plan intent
-                const target = state.selectedPlan.segment === 'TEACHER' ? '/teacher' : '/learner';
+                const target = state.selectedPlan.segment === 'TEACHER' ? '/teacher' : (state.selectedPlan.segment === 'SCHOOL' ? '/school' : '/learner');
                 navigate(target, { state: { selectedPlan: state.selectedPlan }, replace: true });
             }
         }
@@ -89,7 +92,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
 
     const handleRoleSelect = (selectedRole: UserRole) => {
         if (selectedRole === UserRole.LEARNER) {
-            if (isRegistered) {
+            if (isRegistered || role !== UserRole.NONE) {
                 setRole(UserRole.LEARNER);
                 navigate('/learner');
             } else {
@@ -105,6 +108,15 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
             setRole(selectedRole);
             navigate('/parent');
         }
+        else if (selectedRole === UserRole.SCHOOL) {
+            if (role === UserRole.SCHOOL) {
+                navigate('/school');
+            } else {
+                setRole(UserRole.SCHOOL);
+                setLoginTab('SCHOOL');
+                setShowLogin(true);
+            }
+        }
     };
 
     const handleGetStarted = () => {
@@ -114,13 +126,40 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
 
     const handleRegistrationSuccess = () => {
         setShowRegistration(false);
+        if (pendingRoute) {
+            navigate(pendingRoute);
+            setPendingRoute(null);
+            return;
+        }
         if (isClaimingOffer) {
             // Navigate to the appropriate dashboard with openSubscription flag
-            const target = role === UserRole.TEACHER ? '/teacher' : '/learner';
+            const target = role === UserRole.TEACHER ? '/teacher' : (role === UserRole.SCHOOL ? '/school' : '/learner');
             navigate(target, { state: { openSubscription: true } });
             setIsClaimingOffer(false);
         } else {
-            navigate('/learner');
+            const target = role === UserRole.TEACHER ? '/teacher' : (role === UserRole.SCHOOL ? '/school' : '/learner');
+            navigate(target);
+        }
+    };
+
+    const handleCardClick = (card: { route: string; role?: UserRole }) => {
+        if (card.route === '/learner') {
+            setLoginTab('STUDENT');
+            handleRoleSelect(UserRole.LEARNER);
+        } else if (card.route.startsWith('/teacher')) {
+            // If already logged in (any role), just go there
+            if (isRegistered || role !== UserRole.NONE) {
+                // If it's a teacher route, ensure role is TEACHER for the dashboard to work
+                if (role !== UserRole.TEACHER) setRole(UserRole.TEACHER);
+                navigate(card.route);
+            } else {
+                setRole(UserRole.TEACHER);
+                setLoginTab('TEACHER');
+                setPendingRoute(card.route);
+                setShowLogin(true);
+            }
+        } else {
+            navigate(card.route);
         }
     };
 
@@ -187,13 +226,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                 className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm shadow-sm"
             >
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex justify-between items-center h-20">
+                    <div className="flex justify-between items-center py-4">
                         {/* Logo */}
-                        <div className="flex items-center gap-3 cursor-pointer" onClick={() => window.scrollTo(0, 0)}>
-                            <img src={logoImg} alt="Soma Smart Logo - Kenya's Leading AI Study Assistant" className="w-12 h-12 object-contain" />
+                        <div className="flex items-center gap-4 cursor-pointer" onClick={() => window.scrollTo(0, 0)}>
+                            <img src={logoImg} alt="Soma Smart Logo - Kenya's Leading AI Study Assistant" className="w-24 h-24 object-contain" />
                             <div className="hidden sm:block">
-                                <h1 className="text-2xl font-bold text-blue-900 leading-none tracking-tight">Soma Smart</h1>
-                                <p className="text-[10px] text-blue-600 font-medium tracking-wide uppercase">AI-Powered Learning for Kenya</p>
+                                <h1 className="text-3xl font-bold text-blue-900 leading-none tracking-tight">Soma Smart</h1>
+                                <p className="text-[11px] text-blue-600 font-bold tracking-wide uppercase mt-1">Teach Faster. Learn Smarter. Improve Results.</p>
                             </div>
                         </div>
 
@@ -207,6 +246,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                             </button>
                             <button onClick={() => navigate('/revision')} className="flex items-center gap-2 text-gray-600 hover:text-orange-600 font-medium transition-colors">
                                 <BookOpen className="w-5 h-5 text-orange-500" /> Candidate Prep
+                            </button>
+                            <button onClick={() => handleRoleSelect(UserRole.SCHOOL)} className="flex items-center gap-2 text-gray-600 hover:text-emerald-600 font-medium transition-colors">
+                                <School className="w-5 h-5 text-emerald-500" /> Schools
                             </button>
                             <button onClick={() => navigate('/pricing')} className="flex items-center gap-2 text-gray-600 hover:text-indigo-600 font-medium transition-colors relative">
                                 <CreditCard className="w-5 h-5 text-indigo-500" /> Pricing
@@ -247,6 +289,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                 <button onClick={() => { navigate('/revision'); setMobileMenuOpen(false); }} className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 text-slate-600 font-medium">
                                     <BookOpen className="w-5 h-5" /> Candidate Prep
                                 </button>
+                                <button onClick={() => { handleRoleSelect(UserRole.SCHOOL); setMobileMenuOpen(false); }} className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 text-slate-600 font-medium">
+                                    <School className="w-5 h-5 text-emerald-500" /> Schools
+                                </button>
                                 <button onClick={() => { navigate('/pricing'); setMobileMenuOpen(false); }} className="flex items-center justify-between p-3 rounded-lg hover:bg-slate-50 text-slate-600 font-medium">
                                     <div className="flex items-center gap-3">
                                         <CreditCard className="w-5 h-5 text-indigo-500" /> Pricing
@@ -265,7 +310,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
             </motion.header>
 
             {/* --- HERO SECTION --- */}
-            <section className="relative pt-10 pb-12 lg:pt-16 lg:pb-20 overflow-hidden bg-gradient-to-br from-blue-50 via-white to-orange-50/30">
+            <section className="relative overflow-hidden bg-white py-0">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
                     <div className="grid lg:grid-cols-2 gap-12 items-center">
                         {/* Left Column: Text & CTA */}
@@ -282,33 +327,31 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                 </span>
                                 Join 10,000+ Students & Teachers
                             </div>
-                            <h1 className="text-4xl md:text-5xl lg:text-7xl font-extrabold text-blue-900 tracking-tight mb-6 leading-[1.1]">
-                                From Textbooks to <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">Understanding</span>—AI for Kenya.
+                            <h1 className="text-4xl md:text-5xl lg:text-7xl font-extrabold text-blue-900 tracking-tight mb-6 leading-[1.2] lg:leading-[1.1]">
+                                Teach Faster. <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">Learn Smarter.</span> Improve Results.
                             </h1>
                             <p className="text-lg md:text-xl text-slate-600 mb-10 leading-relaxed max-w-xl">
-                                Kenya's #1 AI-powered learning platform. Helping CBC and KCSE students understand lessons, teachers create smarter materials, and parents track real progress.
+                                Tools for CBE teachers, students, and schools.
                             </p>
 
                             <div className="flex flex-col sm:flex-row items-center gap-4 mb-10">
                                 <button
-                                    onClick={isRegistered ? () => setShowLogoutModal(true) : handleGetStarted}
-                                    className={`px-8 py-4 ${isRegistered ? 'bg-slate-700 hover:bg-slate-800' : 'bg-blue-600 hover:bg-blue-700'} text-white rounded-xl font-bold text-lg shadow-xl shadow-blue-200 transition-all hover:-translate-y-1 w-full sm:w-auto flex items-center justify-center gap-2`}
+                                    onClick={() => handleRoleSelect(UserRole.LEARNER)}
+                                    className="px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 rounded-xl font-bold text-lg shadow-xl shadow-blue-200 transition-all hover:-translate-y-1 w-full sm:w-auto flex items-center justify-center gap-2 group"
                                 >
-                                    {isRegistered ? (
-                                        <>
-                                            Logout <LogOut className="w-5 h-5" onClick={(e) => { e.stopPropagation(); setShowLogoutModal(true); }} />
-                                        </>
-                                    ) : (
-                                        <>
-                                            Get Started Free <ChevronRight className="w-5 h-5" />
-                                        </>
-                                    )}
+                                    For Students <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                                 </button>
                                 <button
                                     onClick={() => handleRoleSelect(UserRole.TEACHER)}
-                                    className="px-8 py-4 bg-white text-slate-700 border border-slate-200 rounded-xl font-bold text-lg hover:bg-slate-50 transition-all shadow-sm w-full sm:w-auto flex items-center justify-center gap-2"
+                                    className="px-8 py-4 bg-gradient-to-r from-emerald-500 to-teal-600 text-white hover:from-emerald-600 hover:to-teal-700 rounded-xl font-bold text-lg shadow-xl shadow-emerald-100 transition-all hover:-translate-y-1 w-full sm:w-auto flex items-center justify-center gap-2 group border border-emerald-400/20"
                                 >
-                                    For Teachers <ChevronRight className="w-5 h-5 text-slate-400" />
+                                    For Teachers <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                                </button>
+                                <button
+                                    onClick={() => handleRoleSelect(UserRole.SCHOOL)}
+                                    className="px-8 py-4 bg-slate-900 text-white hover:bg-slate-800 rounded-xl font-bold text-lg shadow-xl shadow-slate-200 transition-all hover:-translate-y-1 w-full sm:w-auto flex items-center justify-center gap-2 group border border-slate-700"
+                                >
+                                    For Schools <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                                 </button>
                             </div>
 
@@ -376,34 +419,211 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                         </motion.div>
                     </div>
 
-                    <div className="mt-20 flex flex-wrap justify-center gap-x-12 gap-y-6 text-sm font-bold text-slate-400 border-t border-slate-100 pt-10">
-                        <button onClick={() => handleRoleSelect(UserRole.LEARNER)} className="flex items-center gap-2 hover:text-blue-600 transition-colors cursor-pointer group">
-                            <ScanLine className="w-5 h-5 group-hover:scale-110 transition-transform" /> SCAN TEXTBOOKS
-                        </button>
-                        <button onClick={() => document.getElementById('how-it-works')?.scrollIntoView({ behavior: 'smooth' })} className="flex items-center gap-2 hover:text-orange-600 transition-colors cursor-pointer group">
-                            <MessageSquare className="w-5 h-5 group-hover:scale-110 transition-transform" /> SIMPLE EXPLANATIONS
-                        </button>
-                        <button onClick={() => navigate('/revision')} className="flex items-center gap-2 hover:text-green-600 transition-colors cursor-pointer group">
-                            <CheckCircle className="w-5 h-5 group-hover:scale-110 transition-transform" /> NATIONAL EXAM PREP
-                        </button>
-                        <button onClick={() => navigate('/teacher/darasa')} className="flex items-center gap-2 hover:text-indigo-600 transition-colors cursor-pointer group">
-                            <Play className="w-5 h-5 group-hover:scale-110 transition-transform" /> DARASA MODE
-                        </button>
+                    {/* --- STRATEGIC DOMINANCE SECTION --- */}
+                    <div className="mt-0 relative z-10">
+                        <div className="text-center mb-12">
+                            <h2 className="text-3xl md:text-4xl font-black text-blue-900 mb-4 tracking-tighter">
+                                Dominate with <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">Productivity.</span>
+                            </h2>
+                            <p className="text-slate-500 font-medium max-w-2xl mx-auto leading-relaxed">
+                                Most platforms focus only on content. Soma Smart focuses on <span className="text-blue-600 font-bold">your time.</span> Tools designed for teacher speed and student results.
+                            </p>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                            {[
+                                {
+                                    title: "Darasa Mode",
+                                    desc: "Just press record. Soma captures your teaching magic.",
+                                    icon: Play,
+                                    color: "bg-indigo-50 text-indigo-600",
+                                    route: "/teacher/darasa",
+                                    cta: "Record Now"
+                                },
+                                {
+                                    title: "Smart Notes & Quizzes",
+                                    desc: "Teach your class. We'll handle the notes and quizzes.",
+                                    icon: FileText,
+                                    color: "bg-blue-50 text-blue-600",
+                                    route: "/teacher/notes",
+                                    cta: "Generate"
+                                },
+                                {
+                                    title: "Smart Homework",
+                                    desc: "Personalized homework for every student in seconds.",
+                                    icon: Clock,
+                                    color: "bg-orange-50 text-orange-600",
+                                    route: "/learner",
+                                    cta: "Get Started"
+                                },
+                                {
+                                    title: "Exam Generator",
+                                    desc: "Professional KCSE/CBE exams designed instantly.",
+                                    icon: Award,
+                                    color: "bg-emerald-50 text-emerald-600",
+                                    route: "/revision",
+                                    cta: "Setup Exam"
+                                },
+                                {
+                                    title: "Smart Marking",
+                                    desc: "Scan and mark instantly. Get your evenings back.",
+                                    icon: ScanLine,
+                                    color: "bg-purple-50 text-purple-600",
+                                    route: "/teacher/marking",
+                                    cta: "Start Marking"
+                                }
+                            ].map((card, idx) => (
+                                <motion.div
+                                    key={idx}
+                                    whileHover={{ y: -8 }}
+                                    className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-xl shadow-slate-100/50 hover:shadow-2xl hover:shadow-blue-100 transition-all flex flex-col justify-between group cursor-pointer"
+                                    onClick={() => handleCardClick(card as any)}
+                                >
+                                    <div>
+                                        <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                            <card.icon className="w-6 h-6" />
+                                        </div>
+                                        <h3 className="font-extrabold text-slate-800 mb-2 tracking-tight text-lg">{card.title}</h3>
+                                        <p className="text-sm text-slate-500 font-medium leading-relaxed mb-4">
+                                            {card.desc}
+                                        </p>
+                                    </div>
+                                    <button className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-blue-600 group-hover:gap-3 transition-all">
+                                        {card.cta} <ArrowRight className="w-3 h-3" />
+                                    </button>
+                                </motion.div>
+                            ))}
+                        </div>
                     </div>
                 </div>
             </section>
+
+            <div className="w-full h-px bg-gradient-to-r from-transparent via-slate-100 to-transparent"></div>
 
             {/* --- PROMOTIONAL CTA --- */}
             <div className="w-full">
                 <TscLiveBanner />
             </div>
 
-            {/* --- ROLES SECTION --- */}
-            <section id="roles-section" className="py-24 bg-white relative">
+            <div className="w-full h-px bg-gradient-to-r from-transparent via-slate-100 to-transparent"></div>
+
+            {/* --- POPULAR PLANS CTA --- */}
+            <section className="pt-6 pb-0 relative overflow-hidden">
+                {/* Background Decor */}
+                <div className="absolute top-0 left-1/4 w-96 h-96 bg-blue-100/30 blur-[100px] rounded-full -z-10"></div>
+                <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-indigo-100/30 blur-[100px] rounded-full -z-10"></div>
+
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
                     <div className="text-center mb-16">
-                        <h2 className="text-3xl md:text-5xl font-bold text-blue-900 mb-4">Tailored for the Whole Classroom</h2>
-                        <p className="text-slate-500 text-lg max-w-2xl mx-auto">Whether you're studying for exams, preparing lessons, or supporting your child's journey, we have tools for you.</p>
+                        <span className="px-4 py-1.5 bg-indigo-50 text-indigo-600 text-xs font-black uppercase tracking-widest rounded-full mb-4 inline-block">
+                            Premium Access
+                        </span>
+                        <h2 className="text-3xl md:text-5xl font-black text-blue-900 mb-6 tracking-tight italic">
+                            Education that values <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">your vision.</span>
+                        </h2>
+                        <p className="text-slate-500 text-lg md:text-xl max-w-2xl mx-auto leading-relaxed">
+                            Join thousands who have reclaimed their time and boosted their results. No hidden fees, just pure impact.
+                        </p>
+                    </div>
+
+                    <div className="grid md:grid-cols-3 gap-8">
+                        {[
+                            {
+                                segment: "For Students",
+                                name: "Monthly Master",
+                                price: "150",
+                                period: "month",
+                                features: ["Unlimited Scanning", "Full CBC/KCSE Quizzes", "Priority Support"],
+                                icon: Sparkles,
+                                color: "from-blue-500 to-indigo-600",
+                                label: "Most Flexible",
+                                tab: "STUDENT"
+                            },
+                            {
+                                segment: "For Teachers",
+                                name: "Pro Termly",
+                                price: "800",
+                                period: "term",
+                                features: ["Auto-Marking (Unlimited)", "Darasa Mode Recording", "Exam Generator Access"],
+                                icon: Zap,
+                                color: "from-orange-500 to-red-600",
+                                label: "Best Value",
+                                popular: true,
+                                tab: "TEACHER"
+                            },
+                            {
+                                segment: "For Schools",
+                                name: "Medium School",
+                                price: "10,000",
+                                period: "term",
+                                features: ["Up to 1000 Students", "Performance Analytics", "Admin Dashboard"],
+                                icon: Building2,
+                                color: "from-emerald-500 to-teal-600",
+                                label: "Institutional",
+                                tab: "SCHOOL"
+                            }
+                        ].map((plan, idx) => (
+                            <motion.div
+                                key={idx}
+                                whileHover={{ y: -10 }}
+                                className={`relative bg-white/60 backdrop-blur-xl border ${plan.popular ? 'border-indigo-200' : 'border-slate-100'} p-8 rounded-[2.5rem] shadow-xl shadow-slate-100/50 flex flex-col justify-between overflow-hidden`}
+                            >
+                                {plan.popular && (
+                                    <div className="absolute top-0 right-0 px-6 py-1.5 bg-gradient-to-r from-indigo-600 to-blue-600 text-white text-[10px] font-black uppercase tracking-widest rounded-bl-2xl">
+                                        Popular Choice
+                                    </div>
+                                )}
+                                <div>
+                                    <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${plan.color} flex items-center justify-center text-white mb-6 shadow-lg shadow-blue-200`}>
+                                        <plan.icon className="w-8 h-8" />
+                                    </div>
+                                    <span className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1 block">{plan.segment}</span>
+                                    <h3 className="text-2xl font-black text-slate-900 mb-4">{plan.name}</h3>
+                                    <div className="flex items-baseline gap-1 mb-8">
+                                        <span className="text-4xl font-black text-slate-900">Kes {plan.price}</span>
+                                        <span className="text-slate-400 font-bold uppercase text-[10px]">/{plan.period}</span>
+                                    </div>
+                                    <ul className="space-y-4 mb-8">
+                                        {plan.features.map((feature, fIdx) => (
+                                            <li key={fIdx} className="flex items-center gap-3 text-slate-600 font-medium text-sm">
+                                                <CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0" />
+                                                {feature}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                                <button
+                                    onClick={() => navigate('/pricing', { state: { initialTab: plan.tab } })}
+                                    className={`w-full py-4 rounded-2xl font-black uppercase tracking-widest text-xs transition-all flex items-center justify-center gap-2 ${plan.popular
+                                        ? 'bg-blue-600 text-white hover:bg-blue-500 shadow-lg shadow-blue-200'
+                                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                        }`}
+                                >
+                                    Choose Plan <ArrowRight className="w-4 h-4" />
+                                </button>
+                            </motion.div>
+                        ))}
+                    </div>
+
+                    <div className="mt-16 text-center">
+                        <button
+                            onClick={() => navigate('/pricing')}
+                            className="inline-flex items-center gap-2 text-slate-400 hover:text-blue-600 font-bold text-sm transition-all group"
+                        >
+                            View All Specialized Plans <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <div className="w-full h-px bg-gradient-to-r from-transparent via-slate-100 to-transparent"></div>
+
+            {/* --- ROLES SECTION --- */}
+            <section id="roles-section" className="py-0 bg-white relative">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+                    <div className="text-center mb-16">
+                        <h2 className="text-3xl md:text-5xl font-extrabold text-blue-900 mb-4 tracking-tight">Tailored for the Whole Classroom</h2>
+                        <p className="text-slate-500 text-lg md:text-xl max-w-2xl mx-auto leading-relaxed">Whether you&apos;re studying for exams, preparing lessons, or supporting your child&apos;s journey, we have tools for you.</p>
                     </div>
 
                     <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -512,12 +732,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                 </div>
             </section>
 
+            <div className="w-full h-px bg-gradient-to-r from-transparent via-slate-100 to-transparent"></div>
+
             {/* --- HOW IT WORKS --- */}
-            <section id="how-it-works" className="py-24 bg-slate-50 relative overflow-hidden border-t border-slate-200">
+            <section id="how-it-works" className="py-6 bg-slate-50 relative overflow-hidden">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
                     <div className="text-center mb-20">
-                        <h2 className="text-3xl md:text-5xl font-bold text-blue-900 mb-6">Learning Made Simple</h2>
-                        <p className="text-slate-600 text-lg max-w-2xl mx-auto">Get from a confused student to a subject master in 4 easy steps.</p>
+                        <h2 className="text-3xl md:text-5xl font-extrabold text-blue-900 mb-6 tracking-tight">Learning Made Simple</h2>
+                        <p className="text-slate-600 text-lg md:text-xl max-w-2xl mx-auto leading-relaxed">Get from a confused student to a subject master in 4 easy steps.</p>
                     </div>
 
                     <div className="grid sm:grid-cols-2 md:grid-cols-4 gap-8 relative">
@@ -554,8 +776,97 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                 </div>
             </section>
 
+            <div className="w-full h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent opacity-20"></div>
+
+            {/* --- TESTIMONIALS SECTION --- */}
+            <section className="py-24 relative overflow-hidden bg-slate-50/50">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+                    <div className="text-center mb-16">
+                        <h2 className="text-3xl md:text-5xl font-extrabold text-blue-900 mb-4 tracking-tight">What the Community Says</h2>
+                        <div className="w-24 h-1.5 bg-gradient-to-r from-orange-400 to-red-500 mx-auto rounded-full"></div>
+                    </div>
+
+                    <div className="grid md:grid-cols-3 gap-8">
+                        {/* Teacher Testimonial */}
+                        <motion.div
+                            whileHover={{ y: -5 }}
+                            className="bg-white p-8 rounded-3xl shadow-xl shadow-slate-100 border border-slate-100 relative"
+                        >
+                            <div className="absolute top-8 right-8 text-blue-100">
+                                <Quote className="w-12 h-12" />
+                            </div>
+                            <div className="flex items-center gap-4 mb-6">
+                                <div className="w-14 h-14 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-xl border-2 border-white shadow-lg">
+                                    mk
+                                </div>
+                                <div>
+                                    <h4 className="font-bold text-slate-900">Mr. Kamau</h4>
+                                    <p className="text-xs font-semibold text-blue-600 uppercase tracking-wider">Teacher</p>
+                                </div>
+                            </div>
+                            <p className="text-slate-600 italic leading-relaxed relative z-10">
+                                "Soma has saved me so much time in class! The automated lesson plans and darasa mode recording features are a game changer for my teaching workflow."
+                            </p>
+                            <div className="mt-6 pt-6 border-t border-slate-50 flex items-center gap-2 text-xs font-bold text-slate-400">
+                                <School className="w-4 h-4" /> ABC Primary School
+                            </div>
+                        </motion.div>
+
+                        {/* School Testimonial */}
+                        <motion.div
+                            whileHover={{ y: -5 }}
+                            className="bg-white p-8 rounded-3xl shadow-xl shadow-slate-100 border border-slate-100 relative"
+                        >
+                            <div className="absolute top-8 right-8 text-emerald-100">
+                                <Quote className="w-12 h-12" />
+                            </div>
+                            <div className="flex items-center gap-4 mb-6">
+                                <div className="w-14 h-14 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 font-bold text-xl border-2 border-white shadow-lg">
+                                    PO
+                                </div>
+                                <div>
+                                    <h4 className="font-bold text-slate-900">Principal Omondi</h4>
+                                    <p className="text-xs font-semibold text-emerald-600 uppercase tracking-wider">School Admin</p>
+                                </div>
+                            </div>
+                            <p className="text-slate-600 italic leading-relaxed relative z-10">
+                                "The analytics provided by Soma have transformed how we track student performance across the entire school. It's an essential tool for modern education."
+                            </p>
+                            <div className="mt-6 pt-6 border-t border-slate-50 flex items-center gap-2 text-xs font-bold text-slate-400">
+                                <Building2 className="w-4 h-4" /> Nairobi High School
+                            </div>
+                        </motion.div>
+
+                        {/* Parent Testimonial */}
+                        <motion.div
+                            whileHover={{ y: -5 }}
+                            className="bg-white p-8 rounded-3xl shadow-xl shadow-slate-100 border border-slate-100 relative"
+                        >
+                            <div className="absolute top-8 right-8 text-orange-100">
+                                <Quote className="w-12 h-12" />
+                            </div>
+                            <div className="flex items-center gap-4 mb-6">
+                                <div className="w-14 h-14 rounded-full bg-orange-100 flex items-center justify-center text-orange-600 font-bold text-xl border-2 border-white shadow-lg">
+                                    MN
+                                </div>
+                                <div>
+                                    <h4 className="font-bold text-slate-900">Mrs. Njeri</h4>
+                                    <p className="text-xs font-semibold text-orange-600 uppercase tracking-wider">Parent</p>
+                                </div>
+                            </div>
+                            <p className="text-slate-600 italic leading-relaxed relative z-10">
+                                "My child's grades have improved significantly since we started using Soma. The detailed progress tracking helps me stay involved in their education."
+                            </p>
+                            <div className="mt-6 pt-6 border-t border-slate-50 flex items-center gap-2 text-xs font-bold text-slate-400">
+                                <Users className="w-4 h-4" /> Parent of Grade 4 Student
+                            </div>
+                        </motion.div>
+                    </div>
+                </div>
+            </section>
+
             {/* --- FOOTER CTA --- */}
-            <section className="bg-blue-900 py-32 text-center relative overflow-hidden">
+            <section className="bg-blue-900 py-6 text-center relative overflow-hidden">
                 {/* Decor */}
                 <div className="absolute top-0 right-0 w-96 h-96 bg-blue-800/50 blur-[120px] rounded-full -translate-y-1/2 translate-x-1/2"></div>
                 <div className="absolute bottom-0 left-0 w-96 h-96 bg-indigo-800/30 blur-[120px] rounded-full translate-y-1/2 -translate-x-1/2"></div>
@@ -622,7 +933,15 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
             <LoginModal
                 isOpen={showLogin}
                 onClose={() => setShowLogin(false)}
-                initialTab="STUDENT"
+                initialTab={loginTab}
+                onSuccess={() => {
+                    if (pendingRoute) {
+                        navigate(pendingRoute);
+                        setPendingRoute(null);
+                    } else {
+                        navigate(role === UserRole.TEACHER ? '/teacher' : '/learner');
+                    }
+                }}
                 onSwitchToRegister={() => {
                     setShowLogin(false);
                     setShowRegistration(true);

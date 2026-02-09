@@ -35,7 +35,7 @@ export const AudioRecorder: React.FC<AudioRecorderProps> = ({ onCaptureComplete,
         <div className="bg-white rounded-2xl shadow-xl border border-indigo-100 p-8 max-w-xl w-full mx-auto animate-in fade-in zoom-in duration-300">
             <div className="text-center mb-8">
                 <h2 className="text-2xl font-bold text-slate-800 mb-2">Recording Lesson</h2>
-                <p className="text-slate-500">Speak clearly. We'll capture the key points.</p>
+                <p className="text-slate-500">Speak clearly. We&apos;ll capture the key points.</p>
             </div>
 
             {/* Visualizer Area */}

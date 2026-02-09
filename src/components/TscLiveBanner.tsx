@@ -60,14 +60,17 @@ export const TscLiveBanner: React.FC = () => {
             }
         };
 
-        setTimeLeft(calculateTimeLeft());
+        const initialTime = calculateTimeLeft();
+        if (JSON.stringify(initialTime) !== JSON.stringify(timeLeft)) {
+            setTimeLeft(initialTime);
+        }
 
         const timer = setInterval(() => {
             setTimeLeft(calculateTimeLeft());
         }, 1000);
 
         return () => clearInterval(timer);
-    }, [endDate]);
+    }, [endDate, timeLeft]);
 
     if (!isVisible || !timeLeft) return null;
 

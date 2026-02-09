@@ -3,6 +3,7 @@ export enum UserRole {
   TEACHER = 'TEACHER',
   PARENT = 'PARENT',
   REVISION = 'REVISION',
+  SCHOOL = 'SCHOOL',
   NONE = 'NONE'
 }
 
@@ -76,6 +77,7 @@ export interface LearnerProfile {
   subscriptionExpiry: string | null;
   schoolId?: string;
   parentPhone?: string;
+  sessionId?: string; // For single device login
 }
 
 export interface TeacherProfile {
@@ -84,6 +86,7 @@ export interface TeacherProfile {
   email?: string;
   classes: string[]; // e.g. ["Grade 4", "Grade 5"]
   subjects: string[]; // e.g. ["Math", "Science"]
+  sessionId?: string;
 }
 
 export interface TeacherActivity {
@@ -95,6 +98,35 @@ export interface TeacherActivity {
   date: string;
   content: any; // The full Note or Quiz object
   pendingSync?: boolean;
+}
+
+export interface SchoolProfile {
+  id: string;
+  name: string;
+  email: string;
+  teacherLimit: number;
+  subscriptionStatus: 'ACTIVE' | 'EXPIRED' | 'TRIAL';
+  expiry: string;
+  daysRemaining?: number;
+  sessionId?: string;
+}
+
+export interface SchoolStats {
+  teachers: number;
+  students: number;
+  lessons: number;
+  storageUsed: number; // in GB
+  teacherTrend: string;
+  studentTrend: string;
+  lessonTrend: string;
+}
+
+export interface SchoolTeacher {
+  id: string;
+  name: string;
+  subject: string;
+  impact: string;
+  lessons: number;
 }
 
 // --- REVISION ASSISTANT TYPES ---

@@ -275,7 +275,7 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, onExit }) => {
                                     <Sparkles className="w-8 h-8 mb-3 opacity-80" />
                                     <h3 className="text-xl font-black mb-2 leading-tight">Paper Specialist Active</h3>
                                     <p className="text-indigo-100 text-sm font-medium leading-relaxed opacity-90">
-                                        I've analyzed this paper. I can guide you through specific questions or provide a strategic overview of the entire test.
+                                        I&apos;ve analyzed this paper. I can guide you through specific questions or provide a strategic overview of the entire test.
                                     </p>
                                     <div className="mt-4 flex gap-2">
                                         <button

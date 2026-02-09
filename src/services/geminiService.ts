@@ -54,9 +54,10 @@ export const explainImage = async (base64Image: string, mimeType: string, level:
     Analyze this image. It is likely a textbook page, homework, or notes.
     1. Extract the main topic and identify the subject.
     2. LANGUAGE RULE: If the subject is "Kiswahili" or "Swahili", you MUST respond in Swahili. For ALL other subjects (Mathematics, Science, etc.), you MUST respond ONLY in English.
-    3. Explain the content in ${level === 'Simple' ? 'very simple language for a young student' : 'exam-ready academic language'}.
-    4. Provide 3-5 short bullet points summarizing the key takeaways.
-    5. Suggest 3 short related topics for further learning.
+    3. **DIRECT ANSWER**: If this is a question, answer it DIRECTLY and IMMEDIATELY. Do NOT ask follow-up questions. Do NOT answer with a question.
+    4. **FORMAT**: Use neat bullet points for steps, lists, or distinct ideas. Keep paragraphs short.
+    5. Explain the content in ${level === 'Simple' ? 'very simple language for a young student' : 'exam-ready academic language'}.
+    6. Suggest 3 short related topics for further learning.
     
     Output JSON.
   `;
@@ -98,13 +99,14 @@ export const explainAudio = async (base64Audio: string, mimeType: string, level:
   });
 
   const prompt = `
-    Listen to this audio. It is likely a student asking a question or reading study material.
+    Listen to this audio. It is likely a student asking a homework question or reading study material.
     1. Transcribe the audio to text.
     2. Extract the main topic and identify the subject.
     3. LANGUAGE RULE: If the subject is "Kiswahili" or "Swahili", you MUST respond in Swahili. For ALL other subjects, you MUST respond ONLY in English.
-    4. Explain the content or answer the question in ${level === 'Simple' ? 'very simple language for a young student' : 'exam-ready academic language'}.
-    5. Provide 3-5 short bullet points summarizing the key takeaways.
-    6. Suggest 3 short related topics for further learning.
+    4. **DIRECT ANSWER**: Answer the question DIRECTLY. Do NOT ask follow-up questions to the student.
+    5. **FORMAT**: Use neat bullet points for the explanation/answer.
+    6. Explain the content in ${level === 'Simple' ? 'very simple language for a young student' : 'exam-ready academic language'}.
+    7. Suggest 3 short related topics for further learning.
     
     Output JSON.
   `;

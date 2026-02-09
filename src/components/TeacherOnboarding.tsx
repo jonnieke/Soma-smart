@@ -9,20 +9,22 @@ interface TeacherOnboardingProps {
     onComplete: (profile: TeacherProfile) => void;
     onClose: () => void;
     onLogin?: () => void;
+    initialStep?: number;
+    isEditing?: boolean;
 }
 
-export const TeacherOnboarding: React.FC<TeacherOnboardingProps> = ({ onComplete, onClose, onLogin }) => {
-    const { registerTeacher } = useApp();
-    const [step, setStep] = useState(1);
+export const TeacherOnboarding: React.FC<TeacherOnboardingProps> = ({ onComplete, onClose, onLogin, initialStep = 1, isEditing = false }) => {
+    const { registerTeacher, updateTeacherProfile, teacherProfile } = useApp();
+    const [step, setStep] = useState(initialStep);
 
     // Auth State
-    const [name, setName] = useState("");
-    const [email, setEmail] = useState("");
+    const [name, setName] = useState(teacherProfile?.name || "");
+    const [email, setEmail] = useState(teacherProfile?.email || "");
     const [password, setPassword] = useState("");
 
     // Profile State
-    const [classes, setClasses] = useState<string[]>([]);
-    const [subjects, setSubjects] = useState<string[]>([]);
+    const [classes, setClasses] = useState<string[]>(teacherProfile?.classes || []);
+    const [subjects, setSubjects] = useState<string[]>(teacherProfile?.subjects || []);
     const [currentInput, setCurrentInput] = useState("");
     const [loading, setLoading] = useState(false);
 
@@ -53,12 +55,29 @@ export const TeacherOnboarding: React.FC<TeacherOnboardingProps> = ({ onComplete
             finalSubjects.push(currentInput.trim());
         }
 
+        if (isEditing) {
+            setLoading(true);
+            // Verify we have a profile to update
+            if (teacherProfile) {
+                await updateTeacherProfile({
+                    ...teacherProfile,
+                    classes,
+                    subjects: finalSubjects
+                });
+                onComplete({ ...teacherProfile, classes, subjects: finalSubjects });
+            } else {
+                alert("Error: No active profile to update.");
+            }
+            setLoading(false);
+            return;
+        }
+
         if (name && email && password && classes.length > 0 && finalSubjects.length > 0) {
             setLoading(true);
             const result = await registerTeacher(name, email, password, classes, finalSubjects);
 
             if (result.success) {
-                onComplete({ id: 'new', name, classes, subjects: finalSubjects });
+                onComplete({ id: 'new', name, classes, subjects: finalSubjects, email });
             } else {
                 // Handle Error
                 if (result.message && (result.message.includes("already registered") || result.message.includes("unique constrain"))) {

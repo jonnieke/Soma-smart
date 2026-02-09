@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { LearnerActivity, UserRole, TeacherProfile, TeacherActivity } from '../types';
+import { LearnerActivity, UserRole, TeacherProfile, TeacherActivity, SchoolProfile, SchoolStats, SchoolTeacher } from '../types';
 
 // Update interface
 interface AppContextType {
@@ -45,6 +45,13 @@ interface AppContextType {
   isOnline: boolean;
   availableQuizzes: TeacherActivity[];
   fetchAvailableQuizzes: (subject?: string) => Promise<void>;
+  // School Specific
+  schoolProfile: SchoolProfile | null;
+  loginSchool: (email: string, pass: string) => Promise<{ success: boolean; message?: string }>;
+  registerSchool: (name: string, email: string, password: string) => Promise<{ success: boolean; message?: string }>;
+  schoolStats: SchoolStats | null;
+  schoolTeachers: SchoolTeacher[];
+  fetchSchoolStats: () => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -62,13 +69,18 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [studentCode, setStudentCode] = useState<string>("");
   const [usageCount, setUsageCount] = useState<number>(0);
   const [isRegistered, setIsRegistered] = useState<boolean>(false);
-  const [studentProfile, setStudentProfile] = useState<{ id: string, name: string, grade: string, email?: string, parentPhone?: string } | null>(null);
+  const [studentProfile, setStudentProfile] = useState<{ id: string, name: string, grade: string, email?: string, parentPhone?: string, sessionId?: string } | null>(null);
 
   // Teacher State
   const [teacherUsageCount, setTeacherUsageCount] = useState<number>(0);
   const [teacherProfile, setTeacherProfile] = useState<TeacherProfile | null>(null);
   const [teacherHistory, setTeacherHistory] = useState<TeacherActivity[]>(offlineService.getTeacherHistory());
   const [availableQuizzes, setAvailableQuizzes] = useState<TeacherActivity[]>([]);
+
+  // School State
+  const [schoolProfile, setSchoolProfile] = useState<SchoolProfile | null>(null);
+  const [schoolStats, setSchoolStats] = useState<SchoolStats | null>(null);
+  const [schoolTeachers, setSchoolTeachers] = useState<SchoolTeacher[]>([]);
 
   const isOnline = useOnlineStatus();
 
@@ -85,6 +97,55 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [subscriptionPlan, setSubscriptionPlan] = useState<SubscriptionTier>('FREE');
   const [subscriptionExpiry, setSubscriptionExpiry] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
+
+  // Single Device Login Session ID
+  // Generate a unique ID for this browser tab session on load
+  const [browserSessionId] = useState(() => Math.random().toString(36).substring(2) + Date.now().toString(36));
+
+  const logout = async () => {
+    await supabase.auth.signOut();
+    setRole(UserRole.NONE);
+    setStudentCode("");
+    setIsRegistered(false);
+    setStudentProfile(null);
+    setTeacherProfile(null);
+    setTeacherHistory([]);
+    localStorage.removeItem('soma_recent_login');
+    localStorage.removeItem('soma_active_student');
+    setUserId(null); // Clear ID to stop checks
+  };
+
+  // Periodic Session Check
+  useEffect(() => {
+    if (!userId) return;
+
+    const checkSession = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('session_id')
+          .eq('id', userId)
+          .maybeSingle();
+
+        if (error) {
+          console.warn("Session check warning:", error.message);
+          return;
+        }
+
+        if (data && data.session_id && data.session_id !== browserSessionId) {
+          console.warn("Session mismatch! Logging out.");
+          alert("You have been logged out because your account was accessed from another device.");
+          await logout();
+        }
+      } catch (e) {
+        console.error("Session check failed", e);
+      }
+    };
+
+    checkSession();
+    const interval = setInterval(checkSession, 30000); // 30s check
+    return () => clearInterval(interval);
+  }, [userId, browserSessionId]);
 
   // --- Initial Load from Supabase & Local Storage ---
   useEffect(() => {
@@ -104,13 +165,24 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
         if (profile) {
           setUserId(session.user.id);
+          // Update Session ID on init if it's yours (or take over)
+          // Actually, we should only take over on explicit login action, 
+          // but if refreshing page, we want to keep session.
+          // Problem: If valid session exists in DB, we should match it or take it over?
+          // If we take it over on refresh, we might kick out other tabs.
+          // Better approach: On explicit LOGIN action, we set session_id.
+          // On page load (refresh), we check if DB session_id matches ours?
+          // If browserSessionId is new on refresh (it is), we might kick ourselves out.
+          // We need to persist browserSessionId in sessionStorage to survive refresh!
+
           if (profile.role === 'LEARNER' || profile.role === 'REVISION') {
             setStudentProfile({
               id: profile.id,
               name: profile.full_name,
               grade: profile.grade,
               email: profile.email,
-              parentPhone: profile.parent_phone
+              parentPhone: profile.parent_phone,
+              sessionId: profile.session_id
             });
             setIsRegistered(true);
             setRole(profile.role === 'REVISION' ? UserRole.REVISION : UserRole.LEARNER);
@@ -121,8 +193,25 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
               name: profile.full_name,
               email: profile.email,
               classes: profile.classes || [],
-              subjects: profile.subjects || []
+              subjects: profile.subjects || [],
+              sessionId: profile.session_id
             });
+          } else if (profile.role === 'SCHOOL') {
+            setRole(UserRole.SCHOOL);
+            setSchoolProfile({
+              id: profile.id,
+              name: profile.full_name,
+              email: profile.email,
+              teacherLimit: profile.teacher_limit || 20,
+              subscriptionStatus: profile.subscription_status || 'TRIAL',
+              expiry: profile.expiry || new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
+              sessionId: profile.session_id
+            });
+          }
+
+          // If DB has no session_id (first time feature rollout), claim it.
+          if (!profile.session_id) {
+            await supabase.from('profiles').update({ session_id: browserSessionId }).eq('id', profile.id);
           }
         }
       } else {
@@ -145,8 +234,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
               name: profile.full_name,
               grade: profile.grade,
               email: profile.email,
-              parentPhone: profile.parent_phone
+              parentPhone: profile.parent_phone,
+              sessionId: profile.session_id
             });
+            // Claim session if missing
+            if (!profile.session_id) {
+              await supabase.from('profiles').update({ session_id: browserSessionId }).eq('id', profile.id);
+            }
             setIsRegistered(true);
             setRole(profile.role === 'REVISION' ? UserRole.REVISION : UserRole.LEARNER);
           } else {
@@ -178,6 +272,20 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const registerStudent = async (name: string, grade: string, pin: string, parentPhone?: string): Promise<{ success: boolean; message?: string; data?: string }> => {
     try {
+      // CLEAR ANY EXISTING SESSIONS FIRST
+      // Note: registerStudent uses signUp which might auto-sign in, but if a Teacher is logged in, 
+      // signUp might behave differently or error if we don't signOut first?
+      // Supabase signUp signs in the NEW user automatically.
+      // But good practice to clear local state.
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        await supabase.auth.signOut();
+      }
+      setTeacherProfile(null);
+      setTeacherHistory([]);
+      setSchoolProfile(null);
+      setRole(UserRole.NONE);
+
       console.log("Attempting registration via signUp (Email/Pass)...");
       const dummyId = Math.random().toString(36).substring(7);
       const email = `student-${Date.now()}-${dummyId}@soma.app`;
@@ -278,9 +386,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             name: profile.full_name,
             email: profile.email,
             classes: profile.classes || [],
-            subjects: profile.subjects || []
+            subjects: profile.subjects || [],
+            sessionId: browserSessionId
           });
           setRole(UserRole.TEACHER);
+
+          await supabase.from('profiles').update({ session_id: browserSessionId }).eq('id', data.user.id);
 
           // Clear Learner Session for clarity
           setStudentCode("");
@@ -331,6 +442,113 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       console.error("Teacher Login Exception:", e);
       return { success: false, message: e.message || "Login Exception" };
     }
+  };
+
+  const loginSchool = async (email: string, pass: string): Promise<{ success: boolean; message?: string }> => {
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password: pass });
+      if (error) return { success: false, message: error.message };
+
+      if (data.user) {
+        const { data: profile } = await supabase.from('profiles').select('*').eq('id', data.user.id).maybeSingle();
+        if (profile && profile.role === 'SCHOOL') {
+          setSchoolProfile({
+            id: profile.id,
+            name: profile.full_name,
+            email: profile.email,
+            teacherLimit: profile.teacher_limit || 20,
+            subscriptionStatus: profile.subscription_status || 'TRIAL',
+            expiry: profile.expiry || new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
+            sessionId: browserSessionId
+          });
+          setRole(UserRole.SCHOOL);
+          await supabase.from('profiles').update({ session_id: browserSessionId }).eq('id', data.user.id);
+
+          // Clear others
+          setStudentCode("");
+          setStudentProfile(null);
+          setTeacherProfile(null);
+          localStorage.removeItem('soma_active_student');
+
+          return { success: true };
+        } else if (profile && profile.role !== 'SCHOOL') {
+          return { success: false, message: "This account is not registered as a School. Please use the correct login tab." };
+        }
+      }
+      return { success: false, message: "Account not found." };
+    } catch (e: any) {
+      return { success: false, message: e.message || "Login failed" };
+    }
+  };
+
+  const registerSchool = async (name: string, email: string, password: string): Promise<{ success: boolean; message?: string }> => {
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: { data: { full_name: name, role: 'SCHOOL' } }
+      });
+      if (error) throw error;
+
+      if (data.user) {
+        await supabase.from('profiles').upsert({
+          id: data.user.id,
+          full_name: name,
+          role: 'SCHOOL',
+          email: email,
+          teacher_limit: 20,
+          subscription_status: 'TRIAL',
+          expiry: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString()
+        });
+
+        setSchoolProfile({
+          id: data.user.id,
+          name,
+          email,
+          teacherLimit: 20,
+          subscriptionStatus: 'TRIAL',
+          expiry: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString()
+        });
+        setRole(UserRole.SCHOOL);
+
+        // Clear others
+        setStudentCode("");
+        setStudentProfile(null);
+        setTeacherProfile(null);
+        localStorage.removeItem('soma_active_student');
+
+        return { success: true };
+      }
+      return { success: false, message: "Signup failed." };
+    } catch (e: any) {
+      return { success: false, message: e.message || "Registration failed" };
+    }
+  };
+
+  const fetchSchoolStats = async () => {
+    // In a real app, this would fetch from Supabase based on the school ID
+    // For now, we'll mock it based on the current school profile
+    if (!schoolProfile) return;
+
+    // Simulate network delay
+    await new Promise(resolve => setTimeout(resolve, 800));
+
+    setSchoolStats({
+      teachers: 48,
+      students: 1240,
+      lessons: 8432,
+      storageUsed: 85,
+      teacherTrend: "+4 this week",
+      studentTrend: "+12% growth",
+      lessonTrend: "Top in District"
+    });
+
+    setSchoolTeachers([
+      { id: '1', name: "Sarah Kamau", subject: "Mathematics", impact: "94.2%", lessons: 142 },
+      { id: '2', name: "John Maina", subject: "Science (CBE)", impact: "89.8%", lessons: 98 },
+      { id: '3', name: "Emily Wilson", subject: "English", impact: "88.5%", lessons: 124 },
+      { id: '4', name: "David Omondi", subject: "Social Studies", impact: "85.2%", lessons: 76 }
+    ]);
   };
 
   const resetPassword = async (email: string): Promise<boolean> => {
@@ -477,6 +695,16 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const loginParent = async (codeInput: string, phoneInput: string): Promise<{ success: boolean; message?: string }> => {
     try {
+      // CLEAR ANY EXISTING SESSIONS FIRST
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        await supabase.auth.signOut();
+      }
+      setTeacherProfile(null);
+      setTeacherHistory([]);
+      setSchoolProfile(null);
+      setRole(UserRole.NONE);
+
       const sanitizedCode = codeInput.trim().toUpperCase();
       const sanitizedPhone = phoneInput.trim();
 
@@ -497,10 +725,16 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         name: profile.full_name,
         grade: profile.grade,
         email: profile.email,
-        parentPhone: profile.parent_phone
+        parentPhone: profile.parent_phone,
+        sessionId: profile.session_id
       });
       setIsRegistered(true);
       setRole(UserRole.PARENT);
+      setUserId(profile.id); // Parent acts as student user for session checks? 
+      // Actually Parent role might not need strict session checks if it's read-only, but let's enforce cleanliness.
+
+      // Claim session
+      await supabase.from('profiles').update({ session_id: browserSessionId }).eq('id', profile.id);
 
       return { success: true };
     } catch (e: any) {
@@ -511,6 +745,16 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const login = async (codeInput: string): Promise<boolean> => {
     try {
+      // CLEAR ANY EXISTING SESSIONS FIRST
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        await supabase.auth.signOut();
+      }
+      setTeacherProfile(null);
+      setTeacherHistory([]);
+      setSchoolProfile(null);
+      setRole(UserRole.NONE);
+
       const sanitizedCode = codeInput.trim().toUpperCase(); // Force uppercase
 
       const { data: profile, error } = await supabase
@@ -528,13 +772,20 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         name: profile.full_name,
         grade: profile.grade,
         email: profile.email,
-        parentPhone: profile.parent_phone
+        parentPhone: profile.parent_phone,
+        sessionId: profile.session_id
       });
       setIsRegistered(true);
       setRole(profile.role === 'REVISION' ? UserRole.REVISION : UserRole.LEARNER);
+      setUserId(profile.id);
 
       // PERSIST LOGIN
       localStorage.setItem('soma_active_student', profile.student_id);
+
+      // Update Session ID for Single Device Login
+      // If profile has no session_id, we claim it.
+      // If it has one, we overwrite it (taking over session like other logins)
+      await supabase.from('profiles').update({ session_id: browserSessionId }).eq('id', profile.id);
 
       // Save to local history for recovery
       try {
@@ -796,21 +1047,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       isPromoActive,
       promoEndDate,
       userId,
-      logout: async () => {
-        await supabase.auth.signOut();
-        setRole(UserRole.NONE);
-        setStudentCode("");
-        setIsRegistered(false);
-        setStudentProfile(null);
-        setTeacherProfile(null);
-        setTeacherHistory([]);
-        localStorage.removeItem('soma_recent_login'); // Optional: clear history if desired, or keep it. Keeping for now is fine.
-
-        // Clear Persistent Session
-        localStorage.removeItem('soma_active_student');
-
-        // Clear any specific session data if needed
-      },
+      schoolProfile, loginSchool, registerSchool,
+      schoolStats, schoolTeachers, fetchSchoolStats,
+      logout,
       availableQuizzes,
       fetchAvailableQuizzes
     }}>

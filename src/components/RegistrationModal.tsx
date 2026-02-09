@@ -209,7 +209,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
                                 <div className="bg-white border-2 border-dashed border-blue-300 rounded-xl p-6 mb-6 shadow-sm">
                                     <p className="text-sm text-gray-500 uppercase font-bold tracking-wide mb-2">Your Student ID</p>
                                     <p className="text-4xl font-mono font-bold text-blue-600 tracking-wider copy select-all">{studentCode}</p>
-                                    <p className="text-xs text-blue-400 mt-2 font-medium">We'll remember you on this device!</p>
+                                    <p className="text-xs text-blue-400 mt-2 font-medium">We&apos;ll remember you on this device!</p>
                                 </div>
 
                                 <p className="text-sm text-yellow-800 bg-yellow-50 border border-yellow-200 p-4 rounded-lg mb-6">
@@ -220,7 +220,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
                                     onClick={onSuccess}
                                     className="w-full py-3.5 bg-green-600 text-white rounded-lg font-bold text-lg hover:bg-green-700 transition-all shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-[0.98]"
                                 >
-                                    Let's Start Learning! 🚀
+                                    Let&apos;s Start Learning! 🚀
                                 </button>
                             </div>
                         </div>
