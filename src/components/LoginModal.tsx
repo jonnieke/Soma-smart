@@ -8,7 +8,7 @@ interface LoginModalProps {
     isOpen: boolean;
     onClose: () => void;
     initialTab?: 'STUDENT' | 'TEACHER' | 'SCHOOL';
-    onSwitchToRegister?: () => void;
+    onSwitchToRegister?: (role?: 'STUDENT' | 'SCHOOL') => void;
     onSuccess?: () => void;
 }
 
@@ -508,7 +508,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, initial
                                 {activeTab === 'STUDENT' && onSwitchToRegister && (
                                     <button
                                         type="button"
-                                        onClick={onSwitchToRegister}
+                                        onClick={() => onSwitchToRegister && onSwitchToRegister('STUDENT')}
                                         className="w-full py-2 text-sm text-blue-600 font-bold hover:bg-blue-50 rounded-lg transition-colors"
                                     >
                                         New Student? Create Profile
@@ -532,7 +532,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, initial
                                     <button
                                         type="button"
                                         onClick={() => {
-                                            alert("School registration is currently via demo. Please contact us to set up your school account.");
+                                            if (onSwitchToRegister) onSwitchToRegister('SCHOOL');
                                         }}
                                         className="w-full py-2 text-sm text-blue-900 font-bold hover:bg-blue-50 rounded-lg transition-colors"
                                     >

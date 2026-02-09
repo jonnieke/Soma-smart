@@ -9,14 +9,24 @@ interface RegistrationModalProps {
     onClose: () => void;
     onSuccess: () => void;
     onSwitchToLogin: () => void;
+    initialRole?: 'STUDENT' | 'SCHOOL';
 }
 
-export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, onClose, onSuccess, onSwitchToLogin }) => {
-    const { registerStudent, studentCode } = useApp();
+export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, onClose, onSuccess, onSwitchToLogin, initialRole = 'STUDENT' }) => {
+    const { registerStudent, registerSchool, studentCode } = useApp();
+    const [role, setRole] = useState<'STUDENT' | 'SCHOOL'>(initialRole);
+    // Student State
     const [name, setName] = useState("");
     const [grade, setGrade] = useState("");
     const [pin, setPin] = useState("");
     const [parentPhone, setParentPhone] = useState("");
+
+    // School State
+    const [schoolName, setSchoolName] = useState("");
+    const [schoolEmail, setSchoolEmail] = useState("");
+    const [schoolPassword, setSchoolPassword] = useState("");
+    const [confirmPassword, setConfirmPassword] = useState("");
+
     const [step, setStep] = useState<'FORM' | 'SUCCESS'>('FORM');
     const [loading, setLoading] = useState(false);
 
@@ -24,12 +34,17 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
     React.useEffect(() => {
         if (isOpen) {
             setStep('FORM');
+            setRole(initialRole);
             setName("");
             setGrade("");
             setPin("");
             setParentPhone("");
+            setSchoolName("");
+            setSchoolEmail("");
+            setSchoolPassword("");
+            setConfirmPassword("");
         }
-    }, [isOpen]);
+    }, [isOpen, initialRole]);
 
     // Kenyan Grade Options (CBC System + PP)
     const gradeOptions = [
@@ -43,39 +58,62 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
         e.preventDefault();
         setLoading(true);
 
-        if (name && grade && pin.length >= 4 && parentPhone) {
-            const result = await registerStudent(name, grade, pin, parentPhone);
+        if (role === 'STUDENT') {
+            if (name && grade && pin.length >= 4 && parentPhone) {
+                const result = await registerStudent(name, grade, pin, parentPhone);
 
+                if (result.success) {
+                    triggerConfetti();
+                    setStep('SUCCESS');
+                } else {
+                    alert("Registration Error: " + result.message);
+                }
+            } else if (!pin || pin.length < 4) {
+                alert("Please create a 4-digit Secret PIN to protect your account.");
+            } else if (!grade) {
+                alert("Please select your Grade/Class.");
+            } else if (!parentPhone) {
+                alert("Please enter a Parent Phone Number for dashboard access.");
+            }
+        } else if (role === 'SCHOOL') {
+            if (schoolPassword !== confirmPassword) {
+                alert("Passwords do not match.");
+                setLoading(false);
+                return;
+            }
+            if (schoolPassword.length < 6) {
+                alert("Password must be at least 6 characters.");
+                setLoading(false);
+                return;
+            }
+
+            const result = await registerSchool(schoolName, schoolEmail, schoolPassword);
             if (result.success) {
-                // Trigger Confetti
-                const duration = 3 * 1000;
-                const animationEnd = Date.now() + duration;
-                const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 60 };
-
-                const interval: any = setInterval(function () {
-                    const timeLeft = animationEnd - Date.now();
-
-                    if (timeLeft <= 0) {
-                        return clearInterval(interval);
-                    }
-
-                    const particleCount = 50 * (timeLeft / duration);
-                    confetti({ ...defaults, particleCount, origin: { x: Math.random() * 0.2 + 0.1, y: Math.random() - 0.2 } });
-                    confetti({ ...defaults, particleCount, origin: { x: Math.random() * 0.2 + 0.7, y: Math.random() - 0.2 } });
-                }, 250);
-
+                triggerConfetti();
+                // Close and redirect is handled by onSuccess usually, but for school we might just want to show success message or auto-login
+                // registerSchool in AppContext handles auto-login and navigation usually? 
+                // Wait, AppContext registerSchool signs up and sets state. 
+                // We should show a success message then close.
                 setStep('SUCCESS');
             } else {
-                alert("Registration Error: " + result.message);
+                alert("Registration Failed: " + result.message);
             }
-        } else if (!pin || pin.length < 4) {
-            alert("Please create a 4-digit Secret PIN to protect your account.");
-        } else if (!grade) {
-            alert("Please select your Grade/Class.");
-        } else if (!parentPhone) {
-            alert("Please enter a Parent Phone Number for dashboard access.");
         }
         setLoading(false);
+    };
+
+    const triggerConfetti = () => {
+        const duration = 3 * 1000;
+        const animationEnd = Date.now() + duration;
+        const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 60 };
+
+        const interval: any = setInterval(function () {
+            const timeLeft = animationEnd - Date.now();
+            if (timeLeft <= 0) return clearInterval(interval);
+            const particleCount = 50 * (timeLeft / duration);
+            confetti({ ...defaults, particleCount, origin: { x: Math.random() * 0.2 + 0.1, y: Math.random() - 0.2 } });
+            confetti({ ...defaults, particleCount, origin: { x: Math.random() * 0.2 + 0.7, y: Math.random() - 0.2 } });
+        }, 250);
     };
 
     if (!isOpen) return null;
@@ -103,86 +141,137 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
                     {step === 'FORM' ? (
                         <div className="p-8">
                             <div className="text-center mb-6">
-                                <div className="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4 transition-colors">
+                                <div className={`w-16 h-16 ${role === 'SCHOOL' ? 'bg-blue-900/10 text-blue-900' : 'bg-blue-100 text-blue-600'} rounded-full flex items-center justify-center mx-auto mb-4 transition-colors`}>
                                     <User className="w-8 h-8" />
                                 </div>
                                 <h2 className="text-2xl font-bold text-gray-900">
-                                    Create Student Profile
+                                    {role === 'SCHOOL' ? 'Register Your School' : 'Create Student Profile'}
                                 </h2>
                                 <p className="text-gray-500 mt-2">
-                                    Register to start your personalized learning journey!
+                                    {role === 'SCHOOL' ? 'Join the Soma Smart network and empower your teachers.' : 'Register to start your personalized learning journey!'}
                                 </p>
                             </div>
 
                             <form onSubmit={handleSubmit} className="space-y-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Student Name</label>
-                                    <input
-                                        type="text"
-                                        required
-                                        value={name}
-                                        onChange={(e) => setName(e.target.value)}
-                                        className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none"
-                                        placeholder="e.g. John Doe"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Grade / Class</label>
-                                    <div className="relative">
-                                        <select
-                                            required
-                                            value={grade}
-                                            onChange={(e) => setGrade(e.target.value)}
-                                            className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none appearance-none bg-white cursor-pointer"
-                                        >
-                                            <option value="" disabled>Select your Grade</option>
-                                            {gradeOptions.map(g => (
-                                                <option key={g} value={g}>{g}</option>
-                                            ))}
-                                        </select>
-                                        <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">
-                                            ▼
+                                {role === 'STUDENT' ? (
+                                    <>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">Student Name</label>
+                                            <input
+                                                type="text"
+                                                required
+                                                value={name}
+                                                onChange={(e) => setName(e.target.value)}
+                                                className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none"
+                                                placeholder="e.g. John Doe"
+                                            />
                                         </div>
-                                    </div>
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Secret PIN (For Recovery) 🔐</label>
-                                    <input
-                                        type="text"
-                                        inputMode="numeric"
-                                        maxLength={4}
-                                        required
-                                        value={pin}
-                                        onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))}
-                                        className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none tracking-widest text-lg font-mono text-center"
-                                        placeholder="0000"
-                                    />
-                                    <p className="text-xs text-orange-600 mt-1 font-medium bg-orange-50 p-2 rounded">
-                                        Write this down! You will need it if you forget your Student ID.
-                                    </p>
-                                </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">Grade / Class</label>
+                                            <div className="relative">
+                                                <select
+                                                    required
+                                                    value={grade}
+                                                    onChange={(e) => setGrade(e.target.value)}
+                                                    className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none appearance-none bg-white cursor-pointer"
+                                                >
+                                                    <option value="" disabled>Select your Grade</option>
+                                                    {gradeOptions.map(g => (
+                                                        <option key={g} value={g}>{g}</option>
+                                                    ))}
+                                                </select>
+                                                <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">
+                                                    ▼
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">Secret PIN (For Recovery) 🔐</label>
+                                            <input
+                                                type="text"
+                                                inputMode="numeric"
+                                                maxLength={4}
+                                                required
+                                                value={pin}
+                                                onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))}
+                                                className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none tracking-widest text-lg font-mono text-center"
+                                                placeholder="0000"
+                                            />
+                                            <p className="text-xs text-orange-600 mt-1 font-medium bg-orange-50 p-2 rounded">
+                                                Write this down! You will need it if you forget your Student ID.
+                                            </p>
+                                        </div>
 
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Parent Phone Number 📱</label>
-                                    <input
-                                        type="tel"
-                                        required
-                                        value={parentPhone}
-                                        onChange={(e) => setParentPhone(e.target.value)}
-                                        className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none"
-                                        placeholder="e.g. 0712345678"
-                                    />
-                                    <p className="text-[10px] text-gray-500 mt-1">
-                                        Parents will use this number to access your performance dashboard.
-                                    </p>
-                                </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">Parent Phone Number 📱</label>
+                                            <input
+                                                type="tel"
+                                                required
+                                                value={parentPhone}
+                                                onChange={(e) => setParentPhone(e.target.value)}
+                                                className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none"
+                                                placeholder="e.g. 0712345678"
+                                            />
+                                            <p className="text-[10px] text-gray-500 mt-1">
+                                                Parents will use this number to access your performance dashboard.
+                                            </p>
+                                        </div>
+                                    </>
+                                ) : (
+                                    <>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">School Name</label>
+                                            <input
+                                                type="text"
+                                                required
+                                                value={schoolName}
+                                                onChange={(e) => setSchoolName(e.target.value)}
+                                                className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none"
+                                                placeholder="e.g. Nairobi Primary School"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">School Email (Admin)</label>
+                                            <input
+                                                type="email"
+                                                required
+                                                value={schoolEmail}
+                                                onChange={(e) => setSchoolEmail(e.target.value)}
+                                                className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none"
+                                                placeholder="admin@school.edu"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">Create Password</label>
+                                            <input
+                                                type="password"
+                                                required
+                                                value={schoolPassword}
+                                                onChange={(e) => setSchoolPassword(e.target.value)}
+                                                className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none"
+                                                placeholder="******"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">Confirm Password</label>
+                                            <input
+                                                type="password"
+                                                required
+                                                value={confirmPassword}
+                                                onChange={(e) => setConfirmPassword(e.target.value)}
+                                                className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none"
+                                                placeholder="******"
+                                            />
+                                        </div>
+                                    </>
+                                )}
 
                                 <button
                                     type="submit"
                                     disabled={loading}
                                     className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 shadow-blue-200 text-white rounded-lg font-bold text-lg transition-all shadow-lg mt-4 disabled:opacity-50 hover:scale-[1.02] active:scale-[0.98]"
                                 >
-                                    {loading ? 'Processing...' : 'Get My Student ID'}
+                                    {loading ? 'Processing...' : role === 'SCHOOL' ? 'Create School Account' : 'Get My Student ID'}
                                 </button>
                             </form>
 
@@ -203,24 +292,36 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
                                 <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6 shadow-green-200 shadow-lg">
                                     <CheckCircle className="w-10 h-10 text-green-600" />
                                 </div>
-                                <h2 className="text-2xl font-bold text-gray-900 mb-2">Registration Complete!</h2>
-                                <p className="text-gray-600 mb-6">Your unique Student ID has been generated.</p>
+                                {role === 'SCHOOL' ? (
+                                    <>
+                                        <h2 className="text-2xl font-bold text-gray-900 mb-2">School Registered!</h2>
+                                        <p className="text-gray-600 mb-6">Your school dashboard is ready.</p>
+                                        <p className="text-sm text-blue-800 bg-blue-50 border border-blue-200 p-4 rounded-lg mb-6">
+                                            ✅ You can now login using your email <strong>{schoolEmail}</strong>.
+                                        </p>
+                                    </>
+                                ) : (
+                                    <>
+                                        <h2 className="text-2xl font-bold text-gray-900 mb-2">Registration Complete!</h2>
+                                        <p className="text-gray-600 mb-6">Your unique Student ID has been generated.</p>
 
-                                <div className="bg-white border-2 border-dashed border-blue-300 rounded-xl p-6 mb-6 shadow-sm">
-                                    <p className="text-sm text-gray-500 uppercase font-bold tracking-wide mb-2">Your Student ID</p>
-                                    <p className="text-4xl font-mono font-bold text-blue-600 tracking-wider copy select-all">{studentCode}</p>
-                                    <p className="text-xs text-blue-400 mt-2 font-medium">We&apos;ll remember you on this device!</p>
-                                </div>
+                                        <div className="bg-white border-2 border-dashed border-blue-300 rounded-xl p-6 mb-6 shadow-sm">
+                                            <p className="text-sm text-gray-500 uppercase font-bold tracking-wide mb-2">Your Student ID</p>
+                                            <p className="text-4xl font-mono font-bold text-blue-600 tracking-wider copy select-all">{studentCode}</p>
+                                            <p className="text-xs text-blue-400 mt-2 font-medium">We&apos;ll remember you on this device!</p>
+                                        </div>
 
-                                <p className="text-sm text-yellow-800 bg-yellow-50 border border-yellow-200 p-4 rounded-lg mb-6">
-                                    ⚠️ Save this ID! You will need it to login later, and for your parents to track your progress.
-                                </p>
+                                        <p className="text-sm text-yellow-800 bg-yellow-50 border border-yellow-200 p-4 rounded-lg mb-6">
+                                            ⚠️ Save this ID! You will need it to login later, and for your parents to track your progress.
+                                        </p>
+                                    </>
+                                )}
 
                                 <button
                                     onClick={onSuccess}
                                     className="w-full py-3.5 bg-green-600 text-white rounded-lg font-bold text-lg hover:bg-green-700 transition-all shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-[0.98]"
                                 >
-                                    Let&apos;s Start Learning! 🚀
+                                    {role === 'SCHOOL' ? 'Go to School Dashboard 🏫' : "Let's Start Learning! 🚀"}
                                 </button>
                             </div>
                         </div>

@@ -48,6 +48,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
     const [showLogoutModal, setShowLogoutModal] = useState(false);
     const [isClaimingOffer, setIsClaimingOffer] = useState(false);
     const [loginTab, setLoginTab] = useState<'STUDENT' | 'TEACHER' | 'SCHOOL'>('STUDENT');
+    const [registrationRole, setRegistrationRole] = useState<'STUDENT' | 'SCHOOL'>('STUDENT');
     const [pendingRoute, setPendingRoute] = useState<string | null>(null);
 
     // Handle incoming plan selection from PricingPage
@@ -377,7 +378,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                             className="relative"
                         >
                             <div className="relative z-10 rounded-2xl overflow-hidden shadow-2xl shadow-blue-200/50 border border-white/50 backdrop-blur-sm">
-                                <img src={heroBannerImg} alt="Soma Smart Learning - AI Study Assistant for Kenyan Students" className="w-full h-auto" />
+                                <img src={heroBannerImg} alt="Soma Smart Learning - AI Study Assistant for Kenyan Students" className="w-full h-full object-cover" fetchPriority="high" />
                             </div>
 
                             {/* Floating Elements */}
@@ -639,7 +640,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                 <p className="text-white/80 font-medium italic text-sm">Understand. Practice. Excel.</p>
                             </div>
                             <div className="h-64 overflow-hidden bg-gray-50 relative">
-                                <img src={learnerImg} alt="Kenyan Student using Soma Smart for CBC and KCSE revision" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                                <img src={learnerImg} alt="Kenyan Student using Soma Smart for CBC and KCSE revision" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" loading="lazy" decoding="async" />
                                 <div className="absolute inset-0 bg-gradient-to-t from-white via-transparent to-transparent opacity-60"></div>
                             </div>
                             <div className="p-8 space-y-4 bg-white flex-1">
@@ -673,7 +674,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                 <p className="text-white/80 font-medium italic text-sm">Teach Better. Save Time.</p>
                             </div>
                             <div className="h-64 overflow-hidden bg-gray-50 relative">
-                                <img src={teacherImg} alt="Kenyan Teacher creating lessons with Soma Smart AI" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                                <img src={teacherImg} alt="Kenyan Teacher creating lessons with Soma Smart AI" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" loading="lazy" decoding="async" />
                                 <div className="absolute inset-0 bg-gradient-to-t from-white via-transparent to-transparent opacity-60"></div>
                             </div>
                             <div className="p-8 space-y-4 bg-white flex-1">
@@ -707,7 +708,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                 <p className="text-white/80 font-medium italic text-sm">Clear Learning. Real Progress.</p>
                             </div>
                             <div className="h-64 overflow-hidden bg-gray-50 relative">
-                                <img src={parentImg} alt="Kenyan Parent tracking student progress on Soma Smart" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                                <img src={parentImg} alt="Kenyan Parent tracking student progress on Soma Smart" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" loading="lazy" decoding="async" />
                                 <div className="absolute inset-0 bg-gradient-to-t from-white via-transparent to-transparent opacity-60"></div>
                             </div>
                             <div className="p-8 space-y-4 bg-white flex-1">
@@ -764,7 +765,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                         {i + 1}
                                     </div>
                                     <div className="w-44 h-44 rounded-3xl bg-white flex items-center justify-center shadow-xl p-6 group-hover:scale-105 transition-all duration-300 border border-slate-100">
-                                        <img src={step.img} alt={`Soma Smart Step ${i + 1}: ${step.title}`} className="w-full h-full object-contain" />
+                                        <img src={step.img} alt={`Soma Smart Step ${i + 1}: ${step.title}`} className="w-full h-full object-contain" loading="lazy" decoding="async" />
                                     </div>
                                 </div>
 
@@ -917,6 +918,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
             {/* --- MODALS --- */}
             <RegistrationModal
                 isOpen={showRegistration}
+                initialRole={registrationRole}
                 onClose={handleModalClose}
                 onSuccess={handleRegistrationSuccess}
                 onSwitchToLogin={() => {
@@ -942,8 +944,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                         navigate(role === UserRole.TEACHER ? '/teacher' : '/learner');
                     }
                 }}
-                onSwitchToRegister={() => {
+                onSwitchToRegister={(role) => {
                     setShowLogin(false);
+                    setRegistrationRole(role || 'STUDENT');
                     setShowRegistration(true);
                 }}
             />

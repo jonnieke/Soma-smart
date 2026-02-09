@@ -1,7 +1,7 @@
-
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Send, Phone, Mail, User, MessageSquare } from 'lucide-react';
+import { supabase } from '../lib/supabase';
 
 interface ContactModalProps {
     isOpen: boolean;
@@ -16,23 +16,32 @@ export const ContactModal: React.FC<ContactModalProps> = ({ isOpen, onClose }) =
     });
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isSent, setIsSent] = useState(false);
+    const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsSubmitting(true);
+        setErrorMessage(null);
 
-        // Simulate network request
-        await new Promise(resolve => setTimeout(resolve, 1500));
+        try {
+            const { error } = await supabase.functions.invoke('contact-form', {
+                body: formData
+            });
 
-        setIsSubmitting(false);
-        setIsSent(true);
+            if (error) throw error;
 
-        // Reset after showing success
-        setTimeout(() => {
-            setIsSent(false);
-            setFormData({ name: '', contact: '', message: '' });
-            onClose();
-        }, 2000);
+            setIsSent(true);
+            setTimeout(() => {
+                setIsSent(false);
+                setFormData({ name: '', contact: '', message: '' });
+                onClose();
+            }, 3000);
+        } catch (err: any) {
+            console.error('Contact Form Error:', err);
+            setErrorMessage("Failed to send message. Please try again or email us directly at info@somaai.co.ke");
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     if (!isOpen) return null;
@@ -138,6 +147,11 @@ export const ContactModal: React.FC<ContactModalProps> = ({ isOpen, onClose }) =
                                     )}
                                 </button>
                             </form>
+                        )}
+                        {errorMessage && (
+                            <p className="text-red-500 text-sm text-center mt-4 bg-red-50 p-2 rounded-lg border border-red-100">
+                                {errorMessage}
+                            </p>
                         )}
                     </div>
                 </motion.div>

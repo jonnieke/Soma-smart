@@ -402,8 +402,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         } else {
           console.warn("CRITICAL: Auth succeeded but NO PROFILE found. Attempting to auto-create profile...");
 
-          // Auto-repair: Create a basic profile
-          const { error: insertError } = await supabase.from('profiles').insert([
+          // Auto-repair: Create or fix a basic profile
+          const { error: insertError } = await supabase.from('profiles').upsert([
             {
               id: data.user.id,
               full_name: email.split('@')[0], // Fallback name from email
@@ -415,8 +415,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           ]);
 
           if (insertError) {
-            console.error("Auto-create profile failed:", insertError);
-            return { success: false, message: "Account exists but profile is corrupted. Please contact support." };
+            console.error("Auto-repair profile failed:", insertError);
+            return { success: false, message: "Account profile could not be repaired: " + insertError.message };
           }
 
           // Retry fetching profile
