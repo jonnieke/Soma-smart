@@ -364,9 +364,14 @@ const SchoolCard = ({ plan, onSelect, isCurrent, currentTier }: { plan: any, onS
         )}
         <div className="mb-6">
             <h3 className="text-xl font-bold text-slate-800 mb-1">{plan.name}</h3>
-            <span className="text-[10px] bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">
-                Up to {plan.teacherLimit} Teachers
-            </span>
+            <div className="flex flex-wrap gap-2">
+                <span className="text-[10px] bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">
+                    {plan.teacherLimit} Teachers
+                </span>
+                <span className="text-[10px] bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">
+                    {plan.studentLimit} Students
+                </span>
+            </div>
         </div>
         <div className="mb-8">
             <div className="flex items-baseline gap-1">
@@ -376,9 +381,9 @@ const SchoolCard = ({ plan, onSelect, isCurrent, currentTier }: { plan: any, onS
         </div>
         <div className="space-y-4 mb-10 flex-1">
             <Feature item={`${plan.teacherLimit} Teacher Accounts`} bold />
-            <Feature item="Bulk Student Reporting" />
-            <Feature item="Admin Revenue Dashboard" />
-            <Feature item="Priority Support" />
+            <Feature item={`${plan.studentLimit} Student Managed Accounts`} bold />
+            <Feature item="Bulk Reporting & Analytics" />
+            <Feature item="Priority School Support" />
         </div>
         <button
             onClick={!isCurrent ? onSelect : undefined}

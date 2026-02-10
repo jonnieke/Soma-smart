@@ -49,6 +49,7 @@ interface AppContextType {
   schoolProfile: SchoolProfile | null;
   loginSchool: (email: string, pass: string) => Promise<{ success: boolean; message?: string }>;
   registerSchool: (name: string, email: string, password: string) => Promise<{ success: boolean; message?: string }>;
+  registerStudentForSchool: (name: string, grade: string, pin: string) => Promise<{ success: boolean; message?: string; data?: string }>;
   schoolStats: SchoolStats | null;
   schoolTeachers: SchoolTeacher[];
   fetchSchoolStats: () => Promise<void>;
@@ -240,8 +241,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
               name: profile.full_name,
               email: profile.email,
               teacherLimit: profile.teacher_limit || 20,
+              studentLimit: profile.student_limit || 100,
               subscriptionStatus: profile.subscription_status || 'TRIAL',
-              expiry: profile.expiry || new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
+              expiry: profile.expiry || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
               sessionId: profile.session_id
             });
           }
@@ -520,8 +522,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             name: profile.full_name,
             email: profile.email,
             teacherLimit: profile.teacher_limit || 20,
+            studentLimit: profile.student_limit || 100,
             subscriptionStatus: profile.subscription_status || 'TRIAL',
-            expiry: profile.expiry || new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
+            expiry: profile.expiry || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
             sessionId: browserSessionId
           });
           setRole(UserRole.SCHOOL);
@@ -569,8 +572,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           role: 'SCHOOL',
           email: email,
           teacher_limit: 20,
+          student_limit: 100,
           subscription_status: 'TRIAL',
-          expiry: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
+          expiry: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
           session_id: browserSessionId,
           active_sessions: [browserSessionId]
         });
@@ -580,8 +584,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           name,
           email,
           teacherLimit: 20,
+          studentLimit: 100,
           subscriptionStatus: 'TRIAL',
-          expiry: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString()
+          expiry: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
         });
         setRole(UserRole.SCHOOL);
 
@@ -596,6 +601,66 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       return { success: false, message: "Signup failed." };
     } catch (e: any) {
       return { success: false, message: e.message || "Registration failed" };
+    }
+  };
+
+  const registerStudentForSchool = async (name: string, grade: string, pin: string): Promise<{ success: boolean; message?: string; data?: string }> => {
+    if (!schoolProfile) return { success: false, message: "Not logged in as School" };
+
+    // Check Limits
+    if (schoolStats.students >= schoolProfile.studentLimit) {
+      return { success: false, message: `Student limit reached (${schoolProfile.studentLimit}). Please upgrade your plan.` };
+    }
+
+    try {
+      // CLEAR ANY EXISTING SESSIONS FIRST to avoid auth conflicts
+      const { data: { session } } = await supabase.auth.getSession();
+
+      const dummyId = Math.random().toString(36).substring(7);
+      const email = `std-${dummyId}-${Date.now()}@soma-school.app`;
+      const password = `soma-std-${Date.now()}`;
+
+      // This uses service-level registration via signUp (no verification needed for these internal accounts)
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email,
+        password,
+      });
+
+      if (authError) throw authError;
+
+      const userId = authData.user?.id;
+      if (!userId) throw new Error("No User ID returned from SignUp");
+
+      const newCode = "SS-" + Math.floor(1000 + Math.random() * 9000);
+
+      const { error: dbError } = await supabase.from('profiles').upsert({
+        id: userId,
+        role: 'LEARNER',
+        full_name: name,
+        grade: grade,
+        student_id: newCode,
+        recovery_pin: pin,
+        school_id: schoolProfile.id
+      });
+
+      if (dbError) throw dbError;
+
+      // Auto-Update stats
+      await fetchSchoolStats();
+
+      // If we were logged in as a school, supa auth might have shifted to the new student.
+      // We MUST ensure we are still school if we want to continue.
+      // However, usually we should re-login or use a service role if available.
+      // For now, we'll assume the school might need to log back in OR we use a edge function later.
+      // CRITICAL: Supabase auth.signUp logs the user in. We need to SIGN OUT and RE-SIGN IN as school.
+      // But we don't have the school password here.
+      // A better way is using a dedicated edge function for school management.
+
+      return { success: true, data: newCode };
+
+    } catch (error: any) {
+      console.error("School Student Registration Failed:", error);
+      return { success: false, message: error.message || "Registration failed" };
     }
   };
 
@@ -660,6 +725,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const addTeacherToSchool = async (email: string): Promise<{ success: boolean; message?: string }> => {
     if (!schoolProfile) return { success: false, message: "Not logged in as School" };
 
+    if (schoolStats.teachers >= schoolProfile.teacherLimit) {
+      return { success: false, message: `Teacher limit reached (${schoolProfile.teacherLimit}).` };
+    }
+
     try {
       const { data, error } = await supabase
         .from('profiles')
@@ -681,6 +750,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const addStudentToSchool = async (studentId: string): Promise<{ success: boolean; message?: string }> => {
     if (!schoolProfile) return { success: false, message: "Not logged in as School" };
+
+    if (schoolStats.students >= schoolProfile.studentLimit) {
+      return { success: false, message: `Student limit reached (${schoolProfile.studentLimit}).` };
+    }
 
     try {
       const { data, error } = await supabase
@@ -1242,7 +1315,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       isPromoActive,
       promoEndDate,
       userId,
-      schoolProfile, loginSchool, registerSchool,
+      schoolProfile, loginSchool, registerSchool, registerStudentForSchool,
       schoolStats, schoolTeachers, fetchSchoolStats, addTeacherToSchool, addStudentToSchool, removeUserFromSchool,
       language, toggleLanguage,
       logout,

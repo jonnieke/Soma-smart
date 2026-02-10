@@ -20,6 +20,7 @@ import stepScanImg from '../assets/images/step_scan.png';
 import stepExplainImg from '../assets/images/step_explain.png';
 import stepQuizImg from '../assets/images/step_quiz.png';
 import stepAudioImg from '../assets/images/step_audio.png';
+import teacherWeaponImg from '../assets/images/teacher-weapon.png';
 import { RegistrationModal } from '../components/RegistrationModal';
 import { LegalModal } from '../components/LegalModal';
 import { ContactModal } from '../components/ContactModal';
@@ -364,10 +365,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                     {t.hero.pillTeachers}
                                 </div>
                             </div>
-                            <h1 className="text-4xl md:text-5xl lg:text-7xl font-extrabold text-blue-900 tracking-tight mb-6 leading-[1.2] lg:leading-[1.1]">
+                            <h1 className="text-3xl md:text-4xl lg:text-5xl font-extrabold text-blue-900 tracking-tight mb-6 leading-[1.2] lg:leading-[1.1]">
                                 {t.hero.headline} <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">{t.hero.gradient}</span>
                             </h1>
-                            <p className="text-lg md:text-xl text-slate-600 mb-10 leading-relaxed max-w-xl">
+                            <p className="text-base md:text-lg text-slate-600 mb-10 leading-relaxed max-w-xl">
                                 {t.hero.subheadline}
                             </p>
 
@@ -545,7 +546,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
             <div className="w-full h-px bg-gradient-to-r from-transparent via-slate-100 to-transparent"></div>
 
             {/* --- TEACHER'S POWER SUITE --- */}
-            <section className="py-20 bg-white relative overflow-hidden">
+            <section className="py-20 bg-white relative overflow-hidden mt-[-85px]">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="grid lg:grid-cols-2 gap-16 items-center">
                         <motion.div
@@ -604,69 +605,48 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                         </motion.div>
 
                         <motion.div
-                            initial={{ opacity: 0, scale: 0.9 }}
-                            whileInView={{ opacity: 1, scale: 1 }}
-                            className="relative"
+                            initial={{ opacity: 0, y: 20 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.8 }}
+                            className="relative group/card w-full max-w-4xl lg:w-[70%] mx-auto mt-[45px]"
                         >
-                            <div className="relative z-10 bg-white rounded-[3rem] p-8 border border-slate-100 shadow-2xl overflow-hidden aspect-square flex flex-col">
-                                <div className="mb-6 text-center">
-                                    <div className="inline-flex items-center gap-2 px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full text-[10px] font-black uppercase tracking-widest mb-2">
-                                        Efficiency Boost
-                                    </div>
-                                    <h3 className="text-xl font-black text-slate-800 tracking-tight">Weekly Workload</h3>
+                            <div className="relative z-10 bg-white rounded-[4rem] p-[30px] shadow-[0_32px_64px_-16px_rgba(0,0,0,0.1)] overflow-hidden border border-slate-100 flex flex-col items-center">
+                                {/* Illustration Container */}
+                                <div className="relative w-full aspect-[2/3] md:aspect-[3/4] rounded-[3rem] overflow-hidden mb-8 mx-auto">
+                                    <motion.img
+                                        src={teacherWeaponImg}
+                                        alt="The Teacher's Secret Weapon"
+                                        className="w-full h-full object-cover transform transition-transform duration-700 group-hover/card:scale-105"
+                                        initial={{ scale: 1.1, opacity: 0 }}
+                                        whileInView={{ scale: 1, opacity: 1 }}
+                                        transition={{ duration: 1, ease: "easeOut" }}
+                                    />
+                                    <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
                                 </div>
 
-                                <div className="flex-1 relative flex items-end justify-center gap-12 px-4 pb-6">
-                                    {/* Traditional Bar */}
-                                    <div className="relative flex flex-col items-center gap-3 w-16">
-                                        <motion.div
-                                            initial={{ height: 0 }}
-                                            whileInView={{ height: '140px' }}
-                                            transition={{ duration: 1, ease: "easeOut" }}
-                                            className="w-full bg-slate-100 rounded-t-xl relative group border-x border-t border-slate-200"
-                                        >
-                                            <div className="absolute -top-6 left-1/2 -translate-x-1/2 text-[10px] font-bold text-slate-400">15+ Hrs</div>
-                                        </motion.div>
-                                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter text-center leading-tight">Manual<br />Work</span>
-                                    </div>
-
-                                    {/* Soma Smart Bar */}
-                                    <div className="relative flex flex-col items-center gap-3 w-16">
-                                        <motion.div
-                                            initial={{ height: 0 }}
-                                            whileInView={{ height: '40px' }}
-                                            transition={{ duration: 1, delay: 0.3, ease: "easeOut" }}
-                                            className="w-full bg-gradient-to-t from-blue-600 to-indigo-500 rounded-t-xl relative group shadow-lg shadow-blue-200"
-                                        >
-                                            <div className="absolute -top-6 left-1/2 -translate-x-1/2 text-[10px] font-bold text-blue-600">5 Hrs</div>
-                                            <div className="absolute -top-2 -right-2 w-4 h-4 bg-blue-100 rounded-full flex items-center justify-center">
-                                                <div className="w-1.5 h-1.5 bg-blue-600 rounded-full animate-ping"></div>
-                                            </div>
-                                        </motion.div>
-                                        <span className="text-[10px] font-black text-blue-600 uppercase tracking-tighter text-center leading-tight">Soma Smart<br />Mode</span>
-                                    </div>
-
-                                    {/* Centered Callout */}
-                                    <motion.div
-                                        initial={{ opacity: 0, scale: 0.5, y: 20 }}
-                                        whileInView={{ opacity: 1, scale: 1, y: 0 }}
-                                        transition={{ type: "spring", stiffness: 200, delay: 0.8 }}
-                                        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white border border-blue-50 p-4 rounded-3xl shadow-xl z-20 text-center min-w-[120px]"
+                                {/* Floating Action Zone */}
+                                <div className="w-full px-4 text-center">
+                                    <motion.button
+                                        whileHover={{ scale: 1.02, y: -2 }}
+                                        whileTap={{ scale: 0.98 }}
+                                        onClick={() => handleRoleSelect(UserRole.TEACHER)}
+                                        className="w-full py-5 bg-slate-900 text-white rounded-3xl font-black uppercase tracking-[0.2em] text-xs shadow-2xl hover:bg-slate-800 transition-all flex items-center justify-center gap-3 relative z-10 group/btn"
                                     >
-                                        <p className="text-3xl font-black text-blue-900 leading-none">{t.powerSuite.saveTime.hours}</p>
-                                        <p className="text-[8px] font-black text-blue-600 uppercase tracking-widest mt-1">{t.powerSuite.saveTime.label}</p>
-                                    </motion.div>
+                                        {t.powerSuite.saveTime.cta}
+                                        <div className="w-6 h-6 bg-white/10 rounded-full flex items-center justify-center group-hover/btn:bg-white/20 transition-colors">
+                                            <ArrowRight className="w-3.5 h-3.5 group-hover/btn:translate-x-0.5 transition-transform" />
+                                        </div>
+                                    </motion.button>
+                                    <p className="mt-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center justify-center gap-2">
+                                        <Sparkles className="w-3 h-3 text-amber-500" />
+                                        Get Your Evenings Back!
+                                    </p>
                                 </div>
 
-                                <button
-                                    onClick={() => handleRoleSelect(UserRole.TEACHER)}
-                                    className="w-full py-4 bg-blue-600 text-white rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-xl shadow-blue-200 hover:bg-blue-700 transition-all flex items-center justify-center gap-2 group"
-                                >
-                                    {t.powerSuite.saveTime.cta} <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
-                                </button>
+                                {/* Background Accents */}
+                                <div className="absolute -top-10 -right-10 w-40 h-40 bg-indigo-500/10 blur-[80px] rounded-full"></div>
+                                <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-blue-500/10 blur-[80px] rounded-full"></div>
                             </div>
-                            <div className="absolute -top-10 -right-10 w-40 h-40 bg-blue-400/20 blur-[80px] rounded-full"></div>
-                            <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-indigo-400/20 blur-[80px] rounded-full"></div>
                         </motion.div>
                     </div>
                 </div>
@@ -703,7 +683,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                             {
                                 segment: "For Students",
                                 name: "Monthly Master",
-                                price: "150",
+                                price: "300",
                                 period: "month",
                                 features: ["Unlimited Scanning", "Full CBC/KCSE Quizzes", "Priority Support"],
                                 icon: Sparkles,
@@ -714,7 +694,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                             {
                                 segment: "For Teachers",
                                 name: "Pro Termly",
-                                price: "800",
+                                price: "1,600",
                                 period: "term",
                                 features: ["Auto-Marking (Unlimited)", "Darasa Mode Recording", "Exam Generator Access"],
                                 icon: Zap,
@@ -726,9 +706,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                             {
                                 segment: "For Schools",
                                 name: "Medium School",
-                                price: "10,000",
+                                price: "20,000",
                                 period: "term",
-                                features: ["Up to 1000 Students", "Performance Analytics", "Admin Dashboard"],
+                                features: ["Up to 100 Students", "Performance Analytics", "Admin Dashboard"],
                                 icon: Building2,
                                 color: "from-emerald-500 to-teal-600",
                                 label: "Institutional",
@@ -1207,6 +1187,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                     </div>
                 }
             />
-        </div>
+        </div >
     );
 };

@@ -108,13 +108,14 @@ export interface SchoolProfile {
   name: string;
   email: string;
   teacherLimit: number;
+  studentLimit: number;
   subscriptionStatus: 'ACTIVE' | 'EXPIRED' | 'TRIAL';
   expiry: string;
   daysRemaining?: number;
   sessionId?: string;
   activeSessions?: string[];
 }
-
+// --- School Types ---
 export interface SchoolStats {
   teachers: number;
   students: number;
@@ -213,4 +214,6 @@ export interface SubscriptionPlan {
   price: number;
   duration: SubscriptionTier;
   savings?: string;
+  teacherLimit?: number;
+  studentLimit?: number;
 }

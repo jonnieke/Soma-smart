@@ -22,10 +22,14 @@ import { SchoolTeacher, UserRole } from '../../types';
 import { supabase } from '../../lib/supabase';
 
 export const SchoolDashboard: React.FC = () => {
-    const { schoolProfile, logout, schoolStats, schoolTeachers, fetchSchoolStats, addTeacherToSchool, addStudentToSchool, removeUserFromSchool } = useApp();
+    const { schoolProfile, logout, schoolStats, schoolTeachers, fetchSchoolStats, addTeacherToSchool, addStudentToSchool, registerStudentForSchool, removeUserFromSchool } = useApp();
     const [activeTab, setActiveTab] = React.useState('Overview');
     const [isAddModalOpen, setIsAddModalOpen] = React.useState(false);
+    const [addMode, setAddMode] = React.useState<'LINK' | 'REGISTER'>('LINK'); // For students
     const [inviteTerm, setInviteTerm] = React.useState('');
+    const [regName, setRegName] = React.useState('');
+    const [regGrade, setRegGrade] = React.useState('Grade 4');
+    const [regPin, setRegPin] = React.useState('');
     const [isProcessing, setIsProcessing] = React.useState(false);
     const [schoolStudents, setSchoolStudents] = React.useState<any[]>([]);
 
@@ -48,17 +52,34 @@ export const SchoolDashboard: React.FC = () => {
 
     const handleAddUser = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!inviteTerm) return;
         setIsProcessing(true);
         try {
-            const result = activeTab === 'Teachers'
-                ? await addTeacherToSchool(inviteTerm)
-                : await addStudentToSchool(inviteTerm);
+            let result: { success: boolean, message?: string, data?: string };
+
+            if (activeTab === 'Teachers') {
+                if (!inviteTerm) return;
+                result = await addTeacherToSchool(inviteTerm);
+            } else {
+                // Students
+                if (addMode === 'LINK') {
+                    if (!inviteTerm) return;
+                    result = await addStudentToSchool(inviteTerm);
+                } else {
+                    // REGISTER
+                    if (!regName || !regGrade || !regPin) return;
+                    result = await registerStudentForSchool(regName, regGrade, regPin);
+                }
+            }
 
             if (result.success) {
                 setInviteTerm('');
+                setRegName('');
+                setRegPin('');
                 setIsAddModalOpen(false);
                 fetchStudents();
+                if (result.data) {
+                    alert(`Student registered successfully! SOMA-ID: ${result.data}`);
+                }
             } else {
                 alert(result.message);
             }
@@ -341,29 +362,90 @@ export const SchoolDashboard: React.FC = () => {
                             className="relative bg-white rounded-[2.5rem] shadow-2xl w-full max-w-md p-8 overflow-hidden"
                         >
                             <h2 className="text-2xl font-black text-slate-800 mb-2">
-                                {activeTab === 'Teachers' ? 'Link a Teacher' : 'Link a Student'}
+                                {activeTab === 'Teachers' ? 'Link a Teacher' : (addMode === 'LINK' ? 'Link a Student' : 'Register New Student')}
                             </h2>
                             <p className="text-slate-500 font-medium mb-6">
                                 {activeTab === 'Teachers'
                                     ? 'Enter the email address of a registered teacher to add them to your staff.'
-                                    : 'Enter the Student SOMA-ID to link them to your school.'}
+                                    : (addMode === 'LINK'
+                                        ? 'Enter the Student SOMA-ID to link them to your school.'
+                                        : 'Create a new student account managed by your school.')}
                             </p>
 
-                            <form onSubmit={handleAddUser} className="space-y-4">
-                                <div>
-                                    <label className="block text-xs font-black uppercase tracking-widest text-slate-400 mb-2">
-                                        {activeTab === 'Teachers' ? 'Teacher Email' : 'Student ID (e.g. SOMA-1234)'}
-                                    </label>
-                                    <input
-                                        type={activeTab === 'Teachers' ? 'email' : 'text'}
-                                        placeholder={activeTab === 'Teachers' ? 'teacher@example.com' : 'SOMA-XXXX'}
-                                        value={inviteTerm}
-                                        onChange={(e) => setInviteTerm(e.target.value)}
-                                        className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all font-medium text-slate-700 bg-slate-50"
-                                        autoFocus
-                                        required
-                                    />
+                            {activeTab === 'Students' && (
+                                <div className="flex bg-slate-100 p-1 rounded-xl mb-6">
+                                    <button
+                                        className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${addMode === 'LINK' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-500'}`}
+                                        onClick={() => setAddMode('LINK')}
+                                    >
+                                        Link Existing
+                                    </button>
+                                    <button
+                                        className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${addMode === 'REGISTER' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-500'}`}
+                                        onClick={() => setAddMode('REGISTER')}
+                                    >
+                                        Register New
+                                    </button>
                                 </div>
+                            )}
+
+                            <form onSubmit={handleAddUser} className="space-y-4">
+                                {activeTab === 'Teachers' || (activeTab === 'Students' && addMode === 'LINK') ? (
+                                    <div>
+                                        <label className="block text-xs font-black uppercase tracking-widest text-slate-400 mb-2">
+                                            {activeTab === 'Teachers' ? 'Teacher Email' : 'Student ID (e.g. SOMA-1234)'}
+                                        </label>
+                                        <input
+                                            type={activeTab === 'Teachers' ? 'email' : 'text'}
+                                            placeholder={activeTab === 'Teachers' ? 'teacher@example.com' : 'SOMA-XXXX'}
+                                            value={inviteTerm}
+                                            onChange={(e) => setInviteTerm(e.target.value)}
+                                            className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all font-medium text-slate-700 bg-slate-50"
+                                            autoFocus
+                                            required
+                                        />
+                                    </div>
+                                ) : (
+                                    <>
+                                        <div>
+                                            <label className="block text-xs font-black uppercase tracking-widest text-slate-400 mb-2">Student Full Name</label>
+                                            <input
+                                                type="text"
+                                                placeholder="e.g. John Doe"
+                                                value={regName}
+                                                onChange={(e) => setRegName(e.target.value)}
+                                                className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none font-medium bg-slate-50"
+                                                required
+                                            />
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="block text-xs font-black uppercase tracking-widest text-slate-400 mb-2">Grade</label>
+                                                <select
+                                                    value={regGrade}
+                                                    onChange={(e) => setRegGrade(e.target.value)}
+                                                    className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none font-medium bg-slate-50"
+                                                >
+                                                    {['Grade 4', 'Grade 5', 'Grade 6', 'Grade 7', 'Grade 8', 'Form 1', 'Form 2', 'Form 3', 'Form 4'].map(g => (
+                                                        <option key={g} value={g}>{g}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-black uppercase tracking-widest text-slate-400 mb-2">4-Digit PIN</label>
+                                                <input
+                                                    type="text"
+                                                    maxLength={4}
+                                                    placeholder="1234"
+                                                    value={regPin}
+                                                    onChange={(e) => setRegPin(e.target.value.replace(/\D/g, ''))}
+                                                    className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none font-medium bg-slate-50"
+                                                    required
+                                                />
+                                            </div>
+                                        </div>
+                                    </>
+                                )}
 
                                 <div className="flex gap-3 pt-2">
                                     <Button
@@ -380,7 +462,7 @@ export const SchoolDashboard: React.FC = () => {
                                         className="flex-1 bg-blue-600"
                                         disabled={isProcessing}
                                     >
-                                        {isProcessing ? 'Linking...' : 'Link to School'}
+                                        {isProcessing ? 'Processing...' : (activeTab === 'Teachers' || addMode === 'LINK' ? 'Link to School' : 'Register Student')}
                                     </Button>
                                 </div>
                             </form>
