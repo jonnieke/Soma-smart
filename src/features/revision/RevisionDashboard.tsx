@@ -11,7 +11,7 @@ import { Button } from '../../components/Shared';
 export const RevisionDashboard: React.FC = () => {
     const navigate = useNavigate();
     const {
-        isRegistered, studentProfile, logout, isPro, isPromoActive,
+        isRegistered, studentProfile, logout, isPro,
         revisionUsageCount, incrementRevisionUsage
     } = useApp();
 
@@ -94,7 +94,7 @@ export const RevisionDashboard: React.FC = () => {
     return (
         <RevisionLanding
             onStartSession={(data, mode) => {
-                if (!isPro && !isPromoActive && revisionUsageCount >= 5) {
+                if (!isPro && revisionUsageCount >= 5) {
                     setShowRevisionPaywall(true);
                     return;
                 }

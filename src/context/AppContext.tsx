@@ -39,8 +39,6 @@ interface AppContextType {
   subscriptionExpiry: string | null;
   upgradeAccount: (plan: SubscriptionPlan) => Promise<boolean>;
   logout: () => Promise<void>;
-  isPromoActive: boolean;
-  promoEndDate: Date | null;
   userId: string | null;
   isOnline: boolean;
   availableQuizzes: TeacherActivity[];
@@ -96,9 +94,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [revisionUsageCount, setRevisionUsageCount] = useState<number>(0);
   const incrementRevisionUsage = () => setRevisionUsageCount(prev => prev + 1);
 
-  // Promo State
-  const [isPromoActive, setIsPromoActive] = useState(false);
-  const [promoEndDate, setPromoEndDate] = useState<Date | null>(null);
 
   // Subscription State
   const [isPro, setIsPro] = useState(false);
@@ -317,9 +312,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         setSubscriptionExpiry(access.expiry);
       }
 
-      // 4. Promo functionality is now disabled
-      setIsPromoActive(false);
-      setPromoEndDate(null);
     };
     initSession();
   }, []);
@@ -1312,8 +1304,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       teacherUsageCount, incrementTeacherUsage, teacherProfile, updateTeacherProfile, teacherHistory, saveTeacherActivity, deleteTeacherActivity,
       revisionUsageCount, incrementRevisionUsage,
       isPro, subscriptionPlan, subscriptionExpiry, upgradeAccount,
-      isPromoActive,
-      promoEndDate,
       userId,
       schoolProfile, loginSchool, registerSchool, registerStudentForSchool,
       schoolStats, schoolTeachers, fetchSchoolStats, addTeacherToSchool, addStudentToSchool, removeUserFromSchool,

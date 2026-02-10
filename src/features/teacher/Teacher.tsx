@@ -25,7 +25,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
         teacherUsageCount, incrementTeacherUsage, teacherProfile,
         updateTeacherProfile, teacherHistory, saveTeacherActivity,
         deleteTeacherActivity,
-        logout, isPromoActive, promoEndDate, isPro, upgradeAccount,
+        logout, isPro, upgradeAccount,
         isOnline, language
     } = useApp();
     const t = translations[language];
@@ -131,8 +131,8 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
 
     // Check limits
     const checkLimit = () => {
-        // If Promo or Pro is active, no limits!
-        if (isPromoActive || isPro) return true;
+        // If Pro is active, no limits!
+        if (isPro) return true;
 
         if (teacherUsageCount >= 5) {
             setShowPaywall(true);
@@ -173,36 +173,6 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
         };
     }, []);
 
-    // Promo Timer Logic
-    const [timeLeft, setTimeLeft] = useState("");
-
-    useEffect(() => {
-        if (!isPromoActive || !promoEndDate) return;
-
-        const updateTimer = () => {
-            const now = new Date();
-            const end = new Date(promoEndDate);
-            const diff = end.getTime() - now.getTime();
-
-            if (diff <= 0) {
-                setTimeLeft("Ending soon");
-                return;
-            }
-
-            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-            const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-
-            if (days > 0) {
-                setTimeLeft(`${days}d ${hours}h left`);
-            } else {
-                setTimeLeft(`${hours}h left`);
-            }
-        };
-
-        updateTimer();
-        const interval = setInterval(updateTimer, 60000); // Update every minute
-        return () => clearInterval(interval);
-    }, [isPromoActive, promoEndDate]);
 
     // --- Handlers ---
 
@@ -456,16 +426,10 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                             </div>
                             <div>
                                 <h2 className="text-white font-bold text-lg md:text-xl">{teacherProfile.name}</h2>
-                                {isPromoActive ? (
-                                    <span className="text-emerald-300 text-xs flex items-center gap-1 font-bold bg-emerald-500/20 px-2 py-0.5 rounded-full border border-emerald-400/30 w-fit">
-                                        <Crown className="w-3 h-3" /> {t.teacher.stats.unlimited} ({t.teacher.stats.endsIn} {timeLeft})
+                                {teacherUsageCount < 5 && !isPro && (
+                                    <span className="text-indigo-200 text-xs flex items-center gap-1">
+                                        <Sparkles className="w-3 h-3" /> {5 - teacherUsageCount} {t.teacher.stats.free}
                                     </span>
-                                ) : (
-                                    teacherUsageCount < 5 && (
-                                        <span className="text-indigo-200 text-xs flex items-center gap-1">
-                                            <Sparkles className="w-3 h-3" /> {5 - teacherUsageCount} {t.teacher.stats.free}
-                                        </span>
-                                    )
                                 )}
                             </div>
                         </motion.div>

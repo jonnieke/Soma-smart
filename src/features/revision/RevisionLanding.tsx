@@ -108,46 +108,34 @@ export const RevisionLanding: React.FC<Props> = ({ onStartSession, onNavigate })
 
     return (
         <div className="min-h-screen bg-slate-50 font-sans text-slate-800 pb-20">
-            {/* Header with Premium Gradient */}
-            <div className="bg-gradient-to-br from-indigo-900 via-blue-900 to-slate-900 px-6 pt-12 pb-12 rounded-b-[3rem] shadow-2xl relative overflow-hidden text-white">
-                {/* Abstract Shapes */}
-                <div className="absolute top-[-20%] right-[-10%] w-80 h-80 bg-blue-500 rounded-full blur-[100px] opacity-20 animate-pulse"></div>
-                <div className="absolute bottom-[-10%] left-[-10%] w-60 h-60 bg-purple-500 rounded-full blur-[80px] opacity-20"></div>
+            {/* Header - Modernized & Neat */}
+            <div className="bg-white px-6 pt-12 pb-12 rounded-b-[3rem] shadow-sm relative overflow-hidden border-b border-indigo-50">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-50 rounded-full blur-3xl opacity-50 -mr-32 -mt-32"></div>
+                <div className="absolute bottom-0 left-0 w-48 h-48 bg-blue-50 rounded-full blur-3xl opacity-50 -ml-24 -mb-24"></div>
 
                 <div className="relative z-10 max-w-2xl mx-auto">
-                    <div className="flex justify-between items-center mb-6">
-                        <button onClick={() => onNavigate(ViewState.DASHBOARD)} className="text-blue-200 hover:text-white transition-colors flex items-center gap-2 font-bold text-sm bg-white/10 w-fit px-4 py-2 rounded-full backdrop-blur-md border border-white/10">
-                            <ArrowRight className="w-4 h-4 rotate-180" /> Back to Dashboard
+                    <div className="flex justify-between items-center mb-8">
+                        <button onClick={() => onNavigate(ViewState.DASHBOARD)} className="text-slate-500 hover:text-indigo-600 transition-colors flex items-center gap-2 font-bold text-xs bg-slate-50 px-4 py-2 rounded-xl border border-slate-100">
+                            <ArrowRight className="w-4 h-4 rotate-180" /> Back
                         </button>
-                        <button onClick={() => setShowLogoutModal(true)} className="text-blue-200 hover:text-red-200 transition-colors flex items-center gap-2 font-bold text-sm bg-white/10 w-fit px-4 py-2 rounded-full backdrop-blur-md border border-white/10 ml-auto">
+                        <button onClick={() => setShowLogoutModal(true)} className="text-slate-500 hover:text-red-600 transition-colors flex items-center gap-2 font-bold text-xs bg-slate-50 px-4 py-2 rounded-xl border border-slate-100 ml-auto">
                             <LogOut className="w-4 h-4" /> Logout
                         </button>
                     </div>
 
-                    <LogoutModal
-                        isOpen={showLogoutModal}
-                        onClose={() => setShowLogoutModal(false)}
-                        onConfirm={() => {
-                            logout();
-                            onNavigate(ViewState.DASHBOARD);
-                        }}
-                        title="Candidate, Don't Stop Now! ✍️"
-                        message="Consistency is the key to exam success! Every paper you scan gets you closer to your goals. Are you sure you want to take a break from your revision?"
-                    />
-
-                    <h1 className="text-4xl font-black mb-3 tracking-tight leading-tight">
-                        Candidate <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-300 to-indigo-300">Specialist</span>
+                    <h1 className="text-4xl font-black mb-3 text-slate-900 tracking-tight leading-tight">
+                        Candidate <span className="text-indigo-600">Specialist</span>
                     </h1>
-                    <p className="text-blue-100/80 font-medium text-lg max-w-sm leading-relaxed">
-                        Your AI tutor for paper mastery. Scan any past paper and get instant, step-by-step guidance.
+                    <p className="text-slate-500 font-medium text-lg max-w-sm leading-relaxed">
+                        Your AI tutor for paper mastery. Get instant, step-by-step guidance.
                     </p>
                 </div>
             </div>
 
             <main className="max-w-2xl mx-auto px-6 -mt-8 relative z-20 space-y-8">
 
-                {/* Mode Selection Cards */}
-                <div className="bg-white p-2 rounded-2xl shadow-xl shadow-slate-200/50 flex gap-2 overflow-x-auto no-scrollbar">
+                {/* Mode Selection Cards - Refined */}
+                <div className="bg-white p-1.5 rounded-2xl shadow-lg shadow-slate-200/40 flex gap-2 overflow-x-auto no-scrollbar border border-slate-100">
                     {[
                         { mode: RevisionMode.LEARN, icon: BookOpen, label: 'Learn', color: 'indigo' },
                         { mode: RevisionMode.EXAM, icon: Brain, label: 'Exam', color: 'orange' },
@@ -157,16 +145,16 @@ export const RevisionLanding: React.FC<Props> = ({ onStartSession, onNavigate })
                             key={item.mode}
                             onClick={() => setSelectedMode(item.mode)}
                             className={`flex-1 min-w-[100px] py-4 rounded-xl flex flex-col items-center gap-2 transition-all duration-300 ${selectedMode === item.mode
-                                ? `bg-${item.color}-50 text-${item.color}-700 ring-2 ring-${item.color}-500 ring-offset-2`
-                                : 'hover:bg-slate-50 text-slate-500'}`}
+                                ? `bg-${item.color}-50 text-${item.color}-700 ring-1 ring-${item.color}-200`
+                                : 'hover:bg-slate-50 text-slate-400 font-medium'}`}
                         >
-                            <item.icon className={`w-6 h-6 ${selectedMode === item.mode ? 'fill-current' : ''}`} />
-                            <span className="text-xs font-bold uppercase tracking-wider">{item.label}</span>
+                            <item.icon className={`w-5 h-5 ${selectedMode === item.mode ? 'fill-current' : ''}`} />
+                            <span className="text-[10px] font-bold uppercase tracking-widest">{item.label}</span>
                         </button>
                     ))}
                 </div>
 
-                {/* Primary Action: CAMERA */}
+                {/* Primary Action: CAMERA - Modernized */}
                 <motion.div
                     initial={{ scale: 0.95, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
@@ -174,29 +162,29 @@ export const RevisionLanding: React.FC<Props> = ({ onStartSession, onNavigate })
                 >
                     <button
                         onClick={startCamera}
-                        className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white p-1 rounded-3xl shadow-xl shadow-blue-200 transition-all transform hover:scale-[1.02] group"
+                        className="w-full bg-white border-2 border-indigo-100 hover:border-indigo-400 p-1 rounded-[2rem] shadow-sm hover:shadow-indigo-100 transition-all group"
                     >
-                        <div className="bg-white/10 border border-white/20 rounded-[1.3rem] p-6 flex items-center justify-between backdrop-blur-sm">
-                            <div className="flex items-center gap-4">
-                                <div className="w-14 h-14 bg-white/20 rounded-2xl flex items-center justify-center">
-                                    <Camera className="w-8 h-8" />
+                        <div className="bg-indigo-50/30 rounded-[1.7rem] p-6 flex items-center justify-between">
+                            <div className="flex items-center gap-5">
+                                <div className="w-14 h-14 bg-indigo-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-indigo-200 group-hover:scale-110 transition-transform">
+                                    <Camera className="w-7 h-7" />
                                 </div>
                                 <div className="text-left">
-                                    <h3 className="font-bold text-xl">Scan Past Paper</h3>
-                                    <p className="text-blue-100 text-sm font-medium">Capture directly from paper</p>
+                                    <h3 className="font-extrabold text-xl text-slate-900">Scan Past Paper</h3>
+                                    <p className="text-slate-500 text-sm font-medium">Capture directly from paper</p>
                                 </div>
                             </div>
-                            <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center group-hover:bg-white group-hover:text-blue-600 transition-colors">
+                            <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center group-hover:bg-indigo-600 group-hover:text-white transition-all">
                                 <ArrowRight className="w-5 h-5" />
                             </div>
                         </div>
                     </button>
 
-                    {/* Secondary Action: UPLOAD */}
+                    {/* Secondary Action: UPLOAD - Refined */}
                     <div
-                        className={`relative group cursor-pointer border-2 border-dashed rounded-3xl p-8 transition-all duration-300 ${dragActive
+                        className={`relative group cursor-pointer border-2 border-dashed rounded-[2rem] p-8 transition-all duration-300 ${dragActive
                             ? 'border-indigo-500 bg-indigo-50/50'
-                            : 'border-slate-200 hover:border-indigo-300 hover:bg-white bg-slate-50/50'}`}
+                            : 'border-slate-200 hover:border-indigo-300 bg-white'}`}
                         onDragEnter={handleDrag}
                         onDragLeave={handleDrag}
                         onDragOver={handleDrag}
@@ -210,12 +198,12 @@ export const RevisionLanding: React.FC<Props> = ({ onStartSession, onNavigate })
                             onChange={handleChange}
                             accept="image/*"
                         />
-                        <div className="text-center space-y-3">
-                            <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center mx-auto shadow-sm text-slate-400 group-hover:text-indigo-500 group-hover:scale-110 transition-all">
-                                <Upload className="w-6 h-6" />
+                        <div className="text-center space-y-4">
+                            <div className="w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center mx-auto border border-slate-100 text-slate-400 group-hover:text-indigo-500 group-hover:scale-110 group-hover:bg-indigo-50 transition-all">
+                                <Upload className="w-5 h-5" />
                             </div>
                             <div>
-                                <h4 className="font-bold text-slate-700 group-hover:text-indigo-700">Upload File</h4>
+                                <h4 className="font-bold text-slate-700">Upload History</h4>
                                 <p className="text-xs text-slate-400 font-medium mt-1">Images, PDF, or Scans</p>
                             </div>
                         </div>

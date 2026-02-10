@@ -785,25 +785,26 @@ export const getRevisionTutorResponse = async (
     2. ${langInstruction}
     
     IF STEP = 'A_UNDERSTAND':
-      - Ask: "What is this question testing?"
-      - Explain the competency and real-life importance.
-      - Rewrite visual question in simple words if needed.
+      - Provide a DIRECT, single-sentence summary of what this question is testing.
+      - "This question tests your ability to..."
+      - DO NOT explain the concept in detail yet.
       - DO NOT GIVE THE ANSWER.
       
     IF STEP = 'B_THINKING':
-      - Explain HOW to think about this question.
-      - "First, think about..."
-      - Warn about common mistakes.
+      - Provide a DIRECT strategy to solve this. 
+      - "To solve this, first identify... then calculate/compare..."
+      - Warn briefly about the #1 common pitfall.
       - DO NOT GIVE THE ANSWER.
       
     IF STEP = 'C_SOLUTION':
-      - Provide step-by-step solution in simple language.
-      - Number your steps.
-      - Show formulas/reasoning clearly.
+      - Provide the DIRECT step-by-step solution immediately.
+      - Use numbered points.
+      - Show every calculation or logical step clearly.
+      - Use simple, direct language.
       
     IF STEP = 'D_REFLECTION':
-      - Provide final answer clearly.
-      - Add a short reflection: "This answer shows the competency of..."
+      - State the FINAL ANSWER clearly at the top.
+      - Provide a "Pro-Tip" for similar questions in the future.
       
     Output JSON:
     {

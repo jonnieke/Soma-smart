@@ -64,17 +64,17 @@ export const translations = {
             subtitle: "Whether you're a student aiming for top grades or a teacher reclaiming your time, Soma Smart is built for you.",
             student: {
                 title: "For Learners",
-                desc: "Ace your exams with AI-powered study help.",
+                desc: "Ace your exams with your smart powered study companion.",
                 points: [
                     "Scan & Learn Instantly",
                     "Simple Soma Smart Explanations",
-                    "Unlimited KCSE/CBC Quizzes"
+                    "Unlimited CBC & KCSE Revision Quizzes"
                 ],
                 cta: "Start Learning"
             },
             teacher: {
                 title: "For Teachers",
-                desc: "Teach better, work less. Let AI handle the prep.",
+                desc: "Teach better, work less. Let Soma Smart handle the prep.",
                 points: [
                     "Auto-Mark Papers in Seconds",
                     "Printable Exams & Plans",
@@ -88,7 +88,7 @@ export const translations = {
                 points: [
                     "Daily Progress Reports",
                     "Identify Learning Gaps",
-                    "Safe, Kid-Friendly AI"
+                    "Safe, Kid-Friendly Helper"
                 ],
                 cta: "Monitor Success"
             }
@@ -105,7 +105,7 @@ export const translations = {
             steps: [
                 { title: "Scan or Upload", desc: "Snap a photo of your textbook, notes or homework." },
                 { title: "Get Explanations", desc: "Soma Smart breaks it down into simple terms you understand." },
-                { title: "Smart Quizzes", desc: "Test your knowledge with auto-generated practice questions." },
+                { title: "Smart Quizzes", desc: "Test your knowledge with your smart study companion's practice questions." },
                 { title: "Listen & Revise", desc: "Listen to simplified lessons on the go to remember more." }
             ]
         },
@@ -118,7 +118,7 @@ export const translations = {
         },
         learner: {
             greeting: "What are we learning today?",
-            tagline: "Your AI-powered study companion.",
+            tagline: "your smart powered study companion",
             stats: {
                 xp: "Total XP",
                 level: "Level",
@@ -129,7 +129,7 @@ export const translations = {
                 audio: "Listen to Lesson",
                 topic: "Ask Soma Smart",
                 library: "My Library",
-                pastPapers: "Past Papers",
+                pastPapers: "CBC & KCSE Revision",
                 lessonRecap: "Lesson Recap",
                 voice: "Ask Voice",
                 upload: "Upload File"
@@ -203,7 +203,7 @@ export const translations = {
                 pricingPlans: "Pricing Plans",
                 logout: "Logout",
                 internetReq: "Internet Required",
-                connectPrompt: "Connect to internet to use AI",
+                connectPrompt: "Connect to internet to use Soma Smart",
                 topicPrompt: "Enter a topic and upload files to start."
             },
             onboarding: {
@@ -229,11 +229,11 @@ export const translations = {
             },
             darasaMode: {
                 backToDashboard: "Back to Dashboard",
-                title: "Darasa AI Mode",
+                title: "Darasa Mode",
                 recordTitle: "Record Your Class",
                 recordDesc: "Capture the lesson in real-time. Soma will generate comprehensive notes, summaries, and quizzes automatically.",
                 generatingTitle: "Generating Lesson...",
-                generatingDesc: "Our AI is analyzing the audio, creating notes, highlighting key terms, and generating quiz questions.",
+                generatingDesc: "Soma Smart is analyzing the audio, creating notes, highlighting key terms, and generating quiz questions.",
                 reviewTitle: "Review Recording",
                 reviewDesc: "Listen to verify clarity before we analyze it.",
                 retake: "Retake",
@@ -259,7 +259,7 @@ export const translations = {
             },
             lessonReview: {
                 title: "Lesson Editor",
-                subtitle: "Your AI-generated lesson is ready. Review and polish it before sharing with students.",
+                subtitle: "Your lesson is ready. Review and polish it before sharing with students.",
                 saveCloud: "Save to Cloud",
                 exportPdf: "Export PDF",
                 shareLesson: "Share Lesson",
@@ -336,11 +336,11 @@ export const translations = {
             subtitle: "Que vous soyez un étudiant visant l'excellence ou un enseignant souhaitant gagner du temps, Soma Smart est fait pour vous.",
             student: {
                 title: "Pour les Apprenants",
-                desc: "Réussissez vos examens avec l'aide à l'étude alimentée par Soma Smart.",
+                desc: "Réussissez vos examens avec votre compagnon d'étude intelligent.",
                 points: [
                     "Scannez et apprenez instantanément",
                     "Explications simples Soma Smart",
-                    "Quiz KCSE/CBC illimités"
+                    "Quiz de révision CBC & KCSE illimités"
                 ],
                 cta: "Commencer à apprendre"
             },
@@ -360,7 +360,7 @@ export const translations = {
                 points: [
                     "Rapports de progrès quotidiens",
                     "Identifiez les lacunes d'apprentissage",
-                    "AI sécurisée et adaptée aux enfants"
+                    "Assistant sécurisé et adapté aux enfants"
                 ],
                 cta: "Suivre la réussite"
             }
@@ -377,7 +377,7 @@ export const translations = {
             steps: [
                 { title: "Scanner ou Télécharger", desc: "Prenez une photo de votre manuel, de vos notes ou de vos devoirs." },
                 { title: "Obtenir des explications", desc: "Soma Smart décompose le contenu en termes simples que vous comprenez." },
-                { title: "Quiz intelligents", desc: "Testez vos connaissances avec des questions d'entrainement générées automatiquement." },
+                { title: "Quiz intelligents", desc: "Testez vos connaissances avec les questions d'entraînement de votre compagnon d'étude." },
                 { title: "Écouter et réviser", desc: "Écoutez des leçons simplifiées lors de vos déplacements pour mieux mémoriser." }
             ]
         },
@@ -390,7 +390,7 @@ export const translations = {
         },
         learner: {
             greeting: "Qu'allons-nous apprendre aujourd'hui ?",
-            tagline: "Votre compagnon d'étude alimenté par Soma Smart.",
+            tagline: "votre compagnon d'étude intelligent",
             stats: {
                 xp: "XP Total",
                 level: "Niveau",
@@ -401,7 +401,7 @@ export const translations = {
                 audio: "Écouter Leçon",
                 topic: "Demander à Soma Smart",
                 library: "Ma Bibliothèque",
-                pastPapers: "Anciens Examens",
+                pastPapers: "Révision CBC & KCSE",
                 lessonRecap: "Résumé du Cours",
                 voice: "Demander par Voix",
                 upload: "Télécharger Fichier"
@@ -475,7 +475,7 @@ export const translations = {
                 pricingPlans: "Tarifs",
                 logout: "Déconnexion",
                 internetReq: "Internet Requis",
-                connectPrompt: "Connectez-vous à Internet pour utiliser l'IA",
+                connectPrompt: "Connectez-vous à Internet pour utiliser Soma Smart",
                 topicPrompt: "Entrez un sujet et téléchargez des fichiers pour commencer."
             },
             onboarding: {
@@ -501,11 +501,11 @@ export const translations = {
             },
             darasaMode: {
                 backToDashboard: "Retour au tableau de bord",
-                title: "Mode Darasa IA",
+                title: "Mode Darasa",
                 recordTitle: "Enregistrez votre cours",
                 recordDesc: "Capturez la leçon en temps réel. Soma générera automatiquement des notes complètes, des résumés et des quiz.",
                 generatingTitle: "Génération de la leçon...",
-                generatingDesc: "Notre IA analyse l'audio, crée des notes, souligne les termes clés et génére des questions de quiz.",
+                generatingDesc: "Soma Smart analyse l'audio, crée des notes, souligne les termes clés et génére des questions de quiz.",
                 reviewTitle: "Réviser l'enregistrement",
                 reviewDesc: "Écoutez pour vérifier la clarté avant l'analyse.",
                 retake: "Recommencer",
@@ -531,7 +531,7 @@ export const translations = {
             },
             lessonReview: {
                 title: "Éditeur de leçon",
-                subtitle: "Votre leçon générée par IA est prête. Révisez-la et peaufinez-la avant de la partager avec les élèves.",
+                subtitle: "Votre leçon est prête. Révisez-la et peaufinez-la avant de la partager avec les élèves.",
                 saveCloud: "Enregistrer sur le cloud",
                 exportPdf: "Exporter en PDF",
                 shareLesson: "Partager la leçon",

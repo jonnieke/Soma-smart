@@ -26,7 +26,6 @@ import { LegalModal } from '../components/LegalModal';
 import { ContactModal } from '../components/ContactModal';
 import { LoginModal } from '../components/LoginModal';
 import { LogoutModal } from '../components/LogoutModal';
-import { TscLiveBanner } from '../components/TscLiveBanner';
 import { translations } from '../data/translations';
 
 interface LandingPageProps {
@@ -39,7 +38,7 @@ interface LandingPageProps {
 export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuthError }) => {
     const navigate = useNavigate();
     const location = useLocation();
-    const { setRole, role, logout, isRegistered, isPromoActive, isPro, language, toggleLanguage, startGuestSession } = useApp();
+    const { setRole, role, logout, isRegistered, isPro, language, toggleLanguage, startGuestSession } = useApp();
     const [authError, setAuthError] = useState<{ code: string, description: string } | null>(initialAuthError || null);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [showRegistration, setShowRegistration] = useState(false);
@@ -265,9 +264,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                             </button>
                             <button onClick={() => navigate('/pricing')} className="flex items-center gap-2 text-gray-600 hover:text-indigo-600 font-medium transition-colors relative">
                                 <CreditCard className="w-5 h-5 text-indigo-500" /> Pricing
-                                {isPromoActive && (
-                                    <span className="absolute -top-3 -right-6 px-1.5 py-0.5 bg-emerald-500 text-white text-[8px] font-bold rounded-full animate-pulse shadow-sm">FREE</span>
-                                )}
                             </button>
                             <button onClick={() => handleRoleSelect(UserRole.PARENT)} className="flex items-center gap-2 text-gray-600 hover:text-blue-600 font-medium transition-colors">
                                 <Users className="w-5 h-5 text-gray-500" /> Parents
@@ -313,9 +309,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                     <div className="flex items-center gap-3">
                                         <CreditCard className="w-5 h-5 text-indigo-500" /> Pricing
                                     </div>
-                                    {isPromoActive && (
-                                        <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 text-[10px] font-bold rounded-full">FREE UNTIL FEB 27</span>
-                                    )}
                                 </button>
                                 <button onClick={() => { handleRoleSelect(UserRole.PARENT); setMobileMenuOpen(false); }} className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 text-slate-600 font-medium">
                                     <Users className="w-5 h-5" /> Parents
@@ -652,10 +645,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                 </div>
             </section>
 
-            {/* --- PROMOTIONAL CTA --- */}
-            <div className="w-full">
-                <TscLiveBanner />
-            </div>
 
             <div className="w-full h-px bg-gradient-to-r from-transparent via-slate-100 to-transparent"></div>
 
