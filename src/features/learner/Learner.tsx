@@ -1,10 +1,11 @@
+```
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Sparkles, Home, X, XCircle, Camera, ScanLine, Mic, Upload, Clock,
   CheckCircle, Play, Pause, ChevronRight, Star, BookOpen, Brain, Lightbulb, Lock, Volume2, CreditCard,
-  ArrowRight, UserCircle, Download, ImageIcon, Trash2, AlertTriangle, LogOut, Users, DollarSign
+  ArrowRight, UserCircle, Download, ImageIcon, Trash2, AlertTriangle, LogOut, Users, DollarSign, FileText, ShoppingBag, Library, Layers
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { ExplanationResult, QuizData, ViewState, SubscriptionPlan, LearnerProfile, LearnerActivity, UserRole } from '../../types';
@@ -41,7 +42,8 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
     usageCount, incrementUsage, isRegistered, studentProfile, updateStudentProfile,
     upgradeAccount, revisionUsageCount, incrementRevisionUsage,
     logout, isPro, subscriptionPlan, subscriptionExpiry, isOnline, role, language,
-    createTutoringRequest
+    createTutoringRequest, activeTutoringRequests, isAvailableForTutoring,
+    marketplaceMaterials, purchasedMaterialIds, purchaseMaterial
   } = useApp();
   const t = translations[language];
   const location = useLocation();
@@ -102,7 +104,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
     }
   }, [isRegistered, role, navigate]);
 
-  const [mode, setMode] = useState<'MENU' | 'SCAN' | 'RESULT' | 'QUIZ' | 'RECAP_RESULT' | 'PROFILE' | 'PRICING' | 'PAYMENT'>('MENU');
+  const [mode, setMode] = useState<'MENU' | 'SCAN' | 'RESULT' | 'QUIZ' | 'RECAP_RESULT' | 'PROFILE' | 'PRICING' | 'PAYMENT' | 'MARKETPLACE' | 'LIBRARY'>('MENU');
   const [recapData, setRecapData] = useState<any>(null); // Store LessonRecap
 
   const [loading, setLoading] = useState(false);
@@ -134,6 +136,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
   const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan | null>(null);
   const [promptText, setPromptText] = useState("");
   const [showTutoringModal, setShowTutoringModal] = useState(false);
+  const [tutoringTopic, setTutoringTopic] = useState("");
 
   // Refs
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -161,7 +164,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
-    return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+    return `${ mins }:${ secs < 10 ? '0' : '' }${ secs } `;
   };
 
   const streamRef = useRef<MediaStream | null>(null);
@@ -501,7 +504,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
 
     setLoading(true);
     setError(null);
-    setLoadingText(`Exploring ${topic}...`);
+    setLoadingText(`Exploring ${ topic }...`);
     setMode('SCAN'); // Show loading
     try {
       setAudioData(null);
@@ -548,20 +551,20 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
 
   const handleDownload = () => {
     if (!explanation) return;
-    const textContent = `Topic: ${explanation.topic}
-Level: ${level}
+    const textContent = `Topic: ${ explanation.topic }
+Level: ${ level }
 
 SUMMARY POINTS:
-${explanation.summaryPoints.map(p => `• ${p}`).join('\n')}
+${ explanation.summaryPoints.map(p => `• ${p}`).join('\n') }
 
 FULL EXPLANATION:
-${explanation.explanation}
+${ explanation.explanation }
 `;
 
     const element = document.createElement("a");
     const file = new Blob([textContent], { type: 'text/plain' });
     element.href = URL.createObjectURL(file);
-    element.download = `${explanation.topic.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_notes.txt`;
+    element.download = `${ explanation.topic.replace(/[^a-z0-9]/gi, '_').toLowerCase() } _notes.txt`;
     document.body.appendChild(element);
     element.click();
     document.body.removeChild(element);
@@ -640,7 +643,7 @@ ${explanation.explanation}
     setLoading(true);
     setLoadingText("Generating high-quality voice...");
     try {
-      const textToRead = `${explanation.topic}. ${explanation.summaryPoints.join('. ')}. Here is the explanation: ${explanation.explanation}`;
+      const textToRead = `${ explanation.topic }. ${ explanation.summaryPoints.join('. ') }. Here is the explanation: ${ explanation.explanation } `;
 
       setIsPlaying(true);
       await generateSpeech(textToRead);
@@ -672,15 +675,17 @@ ${explanation.explanation}
 
           {/* Auto Capture Overlay */}
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <div className={`w-11/12 md:w-3/4 aspect-[3/4] border-2 rounded-3xl transition-all duration-300 relative ${scanStatus === 'STABILIZING' ? 'border-yellow-400 scale-105' :
-              scanStatus === 'CAPTURING' ? 'border-green-500 bg-white/20 scale-100' :
-                'border-white/50'
-              }`}>
+            <div className={`w - 11 / 12 md: w - 3 / 4 aspect - [3 / 4] border - 2 rounded - 3xl transition - all duration - 300 relative ${
+  scanStatus === 'STABILIZING' ? 'border-yellow-400 scale-105' :
+  scanStatus === 'CAPTURING' ? 'border-green-500 bg-white/20 scale-100' :
+    'border-white/50'
+} `}>
               <div className="absolute -top-12 left-0 right-0 text-center">
-                <span className={`px-4 py-2 rounded-full text-sm font-bold shadow-lg backdrop-blur-md ${scanStatus === 'STABILIZING' ? 'bg-yellow-400 text-yellow-900' :
-                  scanStatus === 'CAPTURING' ? 'bg-green-500 text-white' :
-                    'bg-black/60 text-white border border-white/20'
-                  }`}>
+                <span className={`px - 4 py - 2 rounded - full text - sm font - bold shadow - lg backdrop - blur - md ${
+  scanStatus === 'STABILIZING' ? 'bg-yellow-400 text-yellow-900' :
+  scanStatus === 'CAPTURING' ? 'bg-green-500 text-white' :
+    'bg-black/60 text-white border border-white/20'
+} `}>
                   {scanStatus === 'LOOKING' && "Fit whole question in box"}
                   {scanStatus === 'STABILIZING' && "Hold Steady..."}
                   {scanStatus === 'CAPTURING' && "Capturing!"}
@@ -827,7 +832,7 @@ ${explanation.explanation}
     });
 
     const displayCode = profile ? profile.code : studentCode;
-    const greeting = profile ? `Hi, ${profile.name.split(' ')[0]}!` : "My Learning Buddy";
+    const greeting = profile ? `Hi, ${ profile.name.split(' ')[0] } !` : "My Learning Buddy";
 
     return (
       <div className="min-h-screen bg-slate-50 pb-24 font-sans text-slate-800 max-w-4xl mx-auto shadow-2xl border-x border-slate-100">
@@ -848,7 +853,12 @@ ${explanation.explanation}
                 animate={{ opacity: 1, y: 0 }}
                 className="flex items-center gap-2 mb-1"
               >
-                <span className="bg-orange-100 text-orange-700 text-xs font-bold px-2 py-1 rounded-full uppercase tracking-wider">Student</span>
+                <span className="bg-orange-100 text-orange-700 text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider">Student</span>
+                {isAvailableForTutoring && (
+                  <span className="bg-emerald-100 text-emerald-700 text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1 animate-pulse">
+                    <Users className="w-3 h-3" /> Teacher Online
+                  </span>
+                )}
               </motion.div>
               <motion.h1
                 initial={{ opacity: 0, y: 10 }}
@@ -887,7 +897,7 @@ ${explanation.explanation}
                   <motion.div
                     layout
                     initial={{ width: 0 }}
-                    animate={{ width: `${levelInfo.progressPercent}%` }}
+                    animate={{ width: `${ levelInfo.progressPercent }% ` }}
                     transition={{ type: 'spring', stiffness: 50 }}
                     className="h-full bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full shadow-sm"
                   />
@@ -912,7 +922,7 @@ ${explanation.explanation}
               </button>
               <button
                 onClick={() => setMode('PROFILE')}
-                className={`flex-1 md:flex-none flex justify-center items-center p-2 rounded-xl transition-colors group ${mode === ('PROFILE' as any) ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-500 hover:bg-blue-50 hover:text-blue-600'}`}
+                className={`flex - 1 md: flex - none flex justify - center items - center p - 2 rounded - xl transition - colors group ${ mode === ('PROFILE' as any) ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-500 hover:bg-blue-50 hover:text-blue-600' } `}
                 title="Your Profile"
               >
                 <UserCircle className="w-6 h-6" />
@@ -962,10 +972,10 @@ ${explanation.explanation}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
-            className={`mt-8 relative z-30 ${!isOnline ? 'opacity-50 grayscale-[0.5] pointer-events-none' : ''}`}
+            className={`mt - 8 relative z - 30 ${ !isOnline ? 'opacity-50 grayscale-[0.5] pointer-events-none' : '' } `}
           >
             <div className="flex items-center gap-2 mb-3 pl-1">
-              <Sparkles className={`w-5 h-5 ${isOnline ? 'text-blue-600 animate-pulse' : 'text-slate-400'}`} />
+              <Sparkles className={`w - 5 h - 5 ${ isOnline ? 'text-blue-600 animate-pulse' : 'text-slate-400' } `} />
               <h2 className="text-xl font-extrabold text-slate-800 tracking-tight">
                 {isOnline ? t.learner.actions.topic : (language === 'FR' ? "Demander à Soma (Hors ligne)" : "Ask Soma (Offline)")}
               </h2>
@@ -983,7 +993,7 @@ ${explanation.explanation}
                 </button>
                 <button
                   onClick={isRecording ? stopRecording : startRecording}
-                  className={`p-2.5 rounded-2xl transition-all ${isRecording ? 'text-red-500 bg-red-50' : 'text-slate-400 hover:text-purple-600 hover:bg-purple-50'}`}
+                  className={`p - 2.5 rounded - 2xl transition - all ${ isRecording ? 'text-red-500 bg-red-50' : 'text-slate-400 hover:text-purple-600 hover:bg-purple-50' } `}
                   title="Record Audio"
                 >
                   {isRecording ? <div className="w-4 h-4 bg-red-500 rounded-sm animate-pulse" /> : <Mic className="w-5 h-5" />}
@@ -1006,14 +1016,14 @@ ${explanation.explanation}
                 onInput={(e) => {
                   const target = e.target as HTMLTextAreaElement;
                   target.style.height = 'auto';
-                  target.style.height = `${target.scrollHeight}px`;
+                  target.style.height = `${ target.scrollHeight } px`;
                 }}
               />
 
               <button
                 onClick={handlePromptSubmit}
                 disabled={!promptText.trim() || loading}
-                className={`p-3 rounded-2xl transition-all mb-1 ${promptText.trim() ? 'bg-blue-600 text-white shadow-lg shadow-blue-300 scale-105 active:scale-95' : 'bg-slate-100 text-slate-300'}`}
+                className={`p - 3 rounded - 2xl transition - all mb - 1 ${ promptText.trim() ? 'bg-blue-600 text-white shadow-lg shadow-blue-300 scale-105 active:scale-95' : 'bg-slate-100 text-slate-300' } `}
               >
                 <ArrowRight className="w-5 h-5" />
               </button>
@@ -1037,10 +1047,10 @@ ${explanation.explanation}
 
               {/* Level Toggle */}
               <div className="flex bg-slate-100 p-1 rounded-lg">
-                <button onClick={() => setLevel('Simple')} className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${level === 'Simple' ? 'bg-white shadow text-slate-800' : 'text-slate-500 hover:text-slate-700'}`}>
+                <button onClick={() => setLevel('Simple')} className={`px - 3 py - 1 text - xs font - bold rounded - md transition - all ${ level === 'Simple' ? 'bg-white shadow text-slate-800' : 'text-slate-500 hover:text-slate-700' } `}>
                   Simple
                 </button>
-                <button onClick={() => setLevel('Exam')} className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${level === 'Exam' ? 'bg-white shadow text-blue-600' : 'text-slate-500 hover:text-slate-700'}`}>
+                <button onClick={() => setLevel('Exam')} className={`px - 3 py - 1 text - xs font - bold rounded - md transition - all ${ level === 'Exam' ? 'bg-white shadow text-blue-600' : 'text-slate-500 hover:text-slate-700' } `}>
                   Exam
                 </button>
               </div>
@@ -1104,15 +1114,15 @@ ${explanation.explanation}
                 whileHover={isOnline ? { scale: 1.01 } : {}}
                 whileTap={isOnline ? { scale: 0.99 } : {}}
                 onClick={isOnline ? startCamera : undefined}
-                className={`col-span-1 lg:col-span-2 p-6 rounded-3xl border-2 flex items-center justify-between group relative transition-all shadow-sm ${isOnline ? 'bg-white border-blue-100 hover:border-blue-400 hover:shadow-blue-50' : 'bg-slate-50 border-slate-100 text-slate-400 cursor-not-allowed grayscale'}`}
+                className={`col - span - 1 lg: col - span - 2 p - 6 rounded - 3xl border - 2 flex items - center justify - between group relative transition - all shadow - sm ${ isOnline ? 'bg-white border-blue-100 hover:border-blue-400 hover:shadow-blue-50' : 'bg-slate-50 border-slate-100 text-slate-400 cursor-not-allowed grayscale' } `}
               >
                 <div className="flex items-center gap-5 relative z-10">
-                  <div className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-colors ${isOnline ? 'bg-blue-50 text-blue-600 group-hover:bg-blue-600 group-hover:text-white' : 'bg-slate-200'}`}>
+                  <div className={`w - 14 h - 14 rounded - 2xl flex items - center justify - center transition - colors ${ isOnline ? 'bg-blue-50 text-blue-600 group-hover:bg-blue-600 group-hover:text-white' : 'bg-slate-200' } `}>
                     <Camera className="w-7 h-7" />
                   </div>
                   <div className="text-left">
-                    <h3 className={`text-xl font-bold ${isOnline ? 'text-slate-900' : 'text-slate-400'}`}>{t.learner.actions.scan}</h3>
-                    <p className={`${isOnline ? 'text-slate-500' : 'text-slate-400'} text-xs font-medium`}>
+                    <h3 className={`text - xl font - bold ${ isOnline ? 'text-slate-900' : 'text-slate-400' } `}>{t.learner.actions.scan}</h3>
+                    <p className={`${ isOnline ? 'text-slate-500' : 'text-slate-400' } text - xs font - medium`}>
                       {isOnline ? "Snap a photo to understand instantly" : "Connect to internet to scan"}
                     </p>
                   </div>
@@ -1129,9 +1139,9 @@ ${explanation.explanation}
                 whileHover={isOnline ? { scale: 1.02 } : {}}
                 whileTap={isOnline ? { scale: 0.98 } : {}}
                 onClick={isOnline ? () => fileInputRef.current?.click() : undefined}
-                className={`col-span-1 p-4 rounded-3xl shadow-sm border flex flex-col items-center justify-center gap-3 transition-all ${isOnline ? 'bg-slate-50 border-slate-100 hover:bg-slate-100' : 'bg-slate-50 border-slate-100 text-slate-400 cursor-not-allowed grayscale'}`}
+                className={`col - span - 1 p - 4 rounded - 3xl shadow - sm border flex flex - col items - center justify - center gap - 3 transition - all ${ isOnline ? 'bg-slate-50 border-slate-100 hover:bg-slate-100' : 'bg-slate-50 border-slate-100 text-slate-400 cursor-not-allowed grayscale' } `}
               >
-                <div className={`w-12 h-12 rounded-full flex items-center justify-center ${isOnline ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-200 text-slate-400'}`}>
+                <div className={`w - 12 h - 12 rounded - full flex items - center justify - center ${ isOnline ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-200 text-slate-400' } `}>
                   <Upload className="w-6 h-6" />
                 </div>
                 <span className="font-bold text-sm text-slate-700 opacity-70">Upload</span>
@@ -1144,15 +1154,15 @@ ${explanation.explanation}
                 whileHover={isOnline ? { scale: 1.01 } : {}}
                 whileTap={isOnline ? { scale: 0.99 } : {}}
                 onClick={isOnline ? () => navigate('/revision') : undefined}
-                className={`col-span-1 lg:col-span-2 p-6 rounded-3xl border-2 flex items-center justify-between group relative transition-all shadow-sm ${isOnline ? 'bg-white border-orange-100 hover:border-orange-400 hover:shadow-orange-50' : 'bg-slate-50 border-slate-100 text-slate-400 cursor-not-allowed grayscale'}`}
+                className={`col - span - 1 lg: col - span - 2 p - 6 rounded - 3xl border - 2 flex items - center justify - between group relative transition - all shadow - sm ${ isOnline ? 'bg-white border-orange-100 hover:border-orange-400 hover:shadow-orange-50' : 'bg-slate-50 border-slate-100 text-slate-400 cursor-not-allowed grayscale' } `}
               >
                 <div className="flex items-center gap-5 relative z-10">
-                  <div className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-colors ${isOnline ? 'bg-orange-50 text-orange-600 group-hover:bg-orange-600 group-hover:text-white' : 'bg-slate-200'}`}>
+                  <div className={`w - 14 h - 14 rounded - 2xl flex items - center justify - center transition - colors ${ isOnline ? 'bg-orange-50 text-orange-600 group-hover:bg-orange-600 group-hover:text-white' : 'bg-slate-200' } `}>
                     <Brain className="w-7 h-7" />
                   </div>
                   <div className="text-left">
-                    <h3 className={`text-xl font-bold ${isOnline ? 'text-slate-900' : 'text-slate-400'}`}>{t.learner.actions.pastPapers}</h3>
-                    <p className={`${isOnline ? 'text-slate-500' : 'text-slate-400'} text-xs font-medium`}>
+                    <h3 className={`text - xl font - bold ${ isOnline ? 'text-slate-900' : 'text-slate-400' } `}>{t.learner.actions.pastPapers}</h3>
+                    <p className={`${ isOnline ? 'text-slate-500' : 'text-slate-400' } text - xs font - medium`}>
                       {isOnline ? "Upload materials & get smart coaching" : "Connect to internet for coaching"}
                     </p>
                   </div>
@@ -1169,18 +1179,18 @@ ${explanation.explanation}
                 whileHover={isOnline ? { scale: 1.02 } : {}}
                 whileTap={isOnline ? { scale: 0.98 } : {}}
                 onClick={isOnline ? (isRecording ? stopRecording : startRecording) : undefined}
-                className={`col-span-1 p-4 rounded-3xl shadow-sm border flex flex-col items-center justify-center gap-3 transition-colors ${!isOnline ? 'bg-slate-50 border-slate-100 text-slate-400 cursor-not-allowed grayscale' : isRecording ? 'bg-red-50 border-red-200' : 'bg-slate-50 border-slate-100 hover:bg-slate-100'}`}
+                className={`col - span - 1 p - 4 rounded - 3xl shadow - sm border flex flex - col items - center justify - center gap - 3 transition - colors ${ !isOnline ? 'bg-slate-50 border-slate-100 text-slate-400 cursor-not-allowed grayscale' : isRecording ? 'bg-red-50 border-red-200' : 'bg-slate-50 border-slate-100 hover:bg-slate-100' } `}
               >
                 {isRecording ? (
                   <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center animate-pulse">
                     <div className="w-4 h-4 rounded-sm bg-red-600" />
                   </div>
                 ) : (
-                  <div className={`w-12 h-12 rounded-full flex items-center justify-center ${isOnline ? 'bg-purple-100 text-purple-600' : 'bg-slate-200 text-slate-400'}`}>
+                  <div className={`w - 12 h - 12 rounded - full flex items - center justify - center ${ isOnline ? 'bg-purple-100 text-purple-600' : 'bg-slate-200 text-slate-400' } `}>
                     <Mic className="w-6 h-6" />
                   </div>
                 )}
-                <span className={`font-bold text-sm ${isRecording ? 'text-red-600' : 'text-slate-700 opacity-70'}`}>
+                <span className={`font - bold text - sm ${ isRecording ? 'text-red-600' : 'text-slate-700 opacity-70' } `}>
                   {isRecording ? formatTime(recordingTime) : t.learner.actions.voice}
                 </span>
               </motion.button>
@@ -1221,7 +1231,7 @@ ${explanation.explanation}
                     onClick={() => restoreActivity(item)}
                     className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4 cursor-pointer hover:shadow-md hover:border-blue-200 transition-all group"
                   >
-                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${isQuiz ? 'bg-orange-100 text-orange-600' : isAudio ? 'bg-purple-100 text-purple-600' : 'bg-blue-100 text-blue-600'}`}>
+                    <div className={`w - 12 h - 12 rounded - xl flex items - center justify - center shrink - 0 ${ isQuiz ? 'bg-orange-100 text-orange-600' : isAudio ? 'bg-purple-100 text-purple-600' : 'bg-blue-100 text-blue-600' } `}>
                       {isQuiz ? <CheckCircle className="w-6 h-6" /> : isAudio ? <Mic className="w-6 h-6" /> : <ImageIcon className="w-6 h-6" />}
                     </div>
 
@@ -1244,6 +1254,95 @@ ${explanation.explanation}
               })}
             </div>
           )}
+        </div>
+
+        {/* Homework Help Requests Section - Phase 2 */}
+        <div className="px-6 mt-12 pb-8">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-4">
+              <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-indigo-100">
+                <Users className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="font-black text-xl text-slate-800 tracking-tight leading-none">Help Requests</h3>
+                <p className="text-[10px] font-black text-indigo-500 uppercase tracking-[0.2em] mt-2">Personal Support History</p>
+              </div>
+            </div>
+
+            <button
+              onClick={() => {
+                setTutoringTopic("");
+                setShowTutoringModal(true);
+              }}
+              className={`flex items - center gap - 2 px - 4 py - 2 rounded - xl text - xs font - black uppercase tracking - widest transition - all ${ isAvailableForTutoring ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100 hover:bg-indigo-700' : 'bg-slate-100 text-slate-400 grayscale cursor-not-allowed' } `}
+              disabled={!isAvailableForTutoring}
+            >
+              <Users className="w-4 h-4" />
+              Request Help
+            </button>
+          </div>
+
+          <div className="space-y-4">
+            {activeTutoringRequests.filter(r => r.studentId === (studentProfile?.id || studentCode)).length === 0 ? (
+              <div className="bg-white border-2 border-dashed border-slate-200 rounded-[2rem] p-10 text-center">
+                <p className="text-slate-400 font-bold text-sm mb-6">No active help requests. Ask a teacher for help to see them here!</p>
+                <button
+                  onClick={() => {
+                    setTutoringTopic("");
+                    setShowTutoringModal(true);
+                  }}
+                  className={`mx - auto flex items - center gap - 3 px - 8 py - 4 rounded - 2xl text - sm font - black uppercase tracking - widest transition - all ${ isAvailableForTutoring ? 'bg-indigo-600 text-white shadow-xl shadow-indigo-100 hover:bg-indigo-700' : 'bg-slate-100 text-slate-400 grayscale cursor-not-allowed' } `}
+                  disabled={!isAvailableForTutoring}
+                >
+                  {isAvailableForTutoring ? 'Ask a Teacher Now 👩‍🏫' : 'Teachers Offline 😴'}
+                </button>
+              </div>
+            ) : (
+              activeTutoringRequests
+                .filter(r => r.studentId === (studentProfile?.id || studentCode))
+                .map(req => (
+                  <div key={req.id} className="bg-white border-2 border-slate-100 rounded-[2rem] p-6 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4 hover:border-indigo-100 transition-all">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-[10px] font-black text-indigo-600 uppercase tracking-widest px-2 py-0.5 bg-indigo-50 rounded">{req.topic}</span>
+                        <span className={`text - [10px] font - black uppercase tracking - widest px - 2 py - 0.5 rounded ${
+  req.status === 'COMPLETED' ? 'bg-emerald-50 text-emerald-600' :
+  req.status === 'ACCEPTED' ? 'bg-amber-50 text-amber-600 animate-pulse' :
+    'bg-slate-100 text-slate-500'
+} `}>
+                          {req.status}
+                        </span>
+                      </div>
+                      <p className="text-slate-800 font-bold">{req.description}</p>
+                      <p className="text-[10px] text-slate-400 mt-1 font-medium">{new Date(req.createdAt).toLocaleDateString()}</p>
+                    </div>
+
+                    {req.status === 'COMPLETED' && (
+                      <button
+                        onClick={() => {
+                          if (req.responseType === 'TEXT') {
+                            setMode('RESULT');
+                            setExplanation({
+                              topic: `Response: ${ req.topic } `,
+                              explanation: req.response || "",
+                              summaryPoints: ["Teacher provided explanation"],
+                              level: 'Simple',
+                              relatedTopics: []
+                            });
+                          } else {
+                            alert(`Teacher provided a ${ req.responseType } response. (Player UI coming soon)`);
+                          }
+                        }}
+                        className="w-full md:w-auto px-6 py-3 bg-indigo-600 text-white rounded-xl font-black text-xs uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100 flex items-center justify-center gap-2"
+                      >
+                        {req.responseType === 'TEXT' ? <FileText className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+                        View Response
+                      </button>
+                    )}
+                  </div>
+                ))
+            )}
+          </div>
         </div>
 
         <RegistrationModal
@@ -1296,7 +1395,13 @@ ${explanation.explanation}
                 <div className="p-8 space-y-6">
                   <div>
                     <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">Topic for Discussion</label>
-                    <p className="text-lg font-bold text-slate-800 bg-slate-50 p-4 rounded-2xl border-2 border-slate-100">{explanation?.topic || 'General Question'}</p>
+                    <input
+                      type="text"
+                      value={tutoringTopic}
+                      onChange={(e) => setTutoringTopic(e.target.value)}
+                      placeholder="e.g. Simultaneous Equations"
+                      className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 text-slate-700 font-bold focus:border-indigo-500 focus:bg-white transition-all outline-none"
+                    />
                   </div>
 
                   <div>
@@ -1325,13 +1430,17 @@ ${explanation.explanation}
                       className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-xl shadow-indigo-100 py-4 text-lg"
                       onClick={async () => {
                         const desc = (document.getElementById('tutoring-desc') as HTMLTextAreaElement).value;
+                        if (!tutoringTopic.trim()) {
+                          alert("Please enter a topic!");
+                          return;
+                        }
                         if (!desc.trim()) {
                           alert("Please explain your question first!");
                           return;
                         }
                         setLoading(true);
                         setLoadingText("Sending request...");
-                        const res = await createTutoringRequest(explanation?.topic || "General Help", desc, 20);
+                        const res = await createTutoringRequest(tutoringTopic, desc, 20);
                         setLoading(false);
                         if (res.success) {
                           setShowTutoringModal(false);
@@ -1352,7 +1461,6 @@ ${explanation.explanation}
         </AnimatePresence>
 
         {/* Quality Warning Modal */}
-
       </div>
     );
   }
@@ -1480,12 +1588,12 @@ ${explanation.explanation}
               <h2 className="text-lg font-bold text-slate-800">Subscription Status</h2>
             </div>
 
-            <Card className={`p-6 border-2 ${isPro ? 'border-amber-200 bg-gradient-to-br from-white to-amber-50/30' : 'border-slate-100'}`}>
+            <Card className={`p - 6 border - 2 ${ isPro ? 'border-amber-200 bg-gradient-to-br from-white to-amber-50/30' : 'border-slate-100' } `}>
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                 <div>
                   <div className="flex items-center gap-2 mb-1">
-                    <span className={`px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-widest ${isPro ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-500'}`}>
-                      {subscriptionPlan === 'FREE' ? 'Free Tier' : `${subscriptionPlan} Plan`}
+                    <span className={`px - 2.5 py - 1 rounded - full text - [10px] font - extrabold uppercase tracking - widest ${ isPro ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-500' } `}>
+                      {subscriptionPlan === 'FREE' ? 'Free Tier' : `${ subscriptionPlan } Plan`}
                     </span>
                     {isPro && <span className="bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full text-[10px] font-bold">Active</span>}
                   </div>
@@ -1562,7 +1670,7 @@ ${explanation.explanation}
             >
               {imageData && (
                 <div className="relative rounded-xl overflow-hidden bg-slate-100 max-h-60">
-                  <img src={`data:${imageData.mimeType};base64,${imageData.base64}`} alt="Scanned Content" className="w-full h-full object-contain" />
+                  <img src={`data:${ imageData.mimeType }; base64, ${ imageData.base64 } `} alt="Scanned Content" className="w-full h-full object-contain" />
                 </div>
               )}
               {audioData && (
@@ -1576,7 +1684,7 @@ ${explanation.explanation}
                       <p className="text-xs text-slate-400">Audio Recording</p>
                     </div>
                   </div>
-                  <audio controls src={`data:${audioData.mimeType};base64,${audioData.base64}`} className="w-full h-10" />
+                  <audio controls src={`data:${ audioData.mimeType }; base64, ${ audioData.base64 } `} className="w-full h-10" />
                 </div>
               )}
             </motion.div>
@@ -1589,7 +1697,7 @@ ${explanation.explanation}
                 key={l}
                 onClick={() => handleRegenerate(l)}
                 disabled={loading || explanation.level === l}
-                className={`flex-1 py-2.5 text-sm font-bold rounded-lg transition-all ${explanation.level === l ? (l === 'Simple' ? 'bg-indigo-100 text-indigo-700 shadow-sm' : 'bg-blue-100 text-blue-700 shadow-sm') : 'text-slate-400 hover:text-slate-600'}`}
+                className={`flex - 1 py - 2.5 text - sm font - bold rounded - lg transition - all ${ explanation.level === l ? (l === 'Simple' ? 'bg-indigo-100 text-indigo-700 shadow-sm' : 'bg-blue-100 text-blue-700 shadow-sm') : 'text-slate-400 hover:text-slate-600' } `}
               >
                 {l === 'Simple' ? 'Explain Simply 🐣' : 'Exam Mode 🎓'}
               </button>
@@ -1638,12 +1746,20 @@ ${explanation.explanation}
             className="bg-indigo-600 p-6 rounded-[2.5rem] text-white shadow-xl shadow-indigo-100 flex flex-col md:flex-row items-center gap-6"
           >
             <div className="flex-1 text-center md:text-left">
-              <h3 className="text-xl font-black mb-1">Still confused? 🧐</h3>
+              <div className="flex items-center justify-center md:justify-start gap-2 mb-2">
+                <h3 className="text-xl font-black">Still confused? 🧐</h3>
+                <span className={`px - 2 py - 0.5 rounded - full text - [9px] font - black uppercase tracking - widest ${ isAvailableForTutoring ? 'bg-emerald-400 text-indigo-900 animate-pulse' : 'bg-indigo-500/50 text-indigo-200' } `}>
+                  {isAvailableForTutoring ? 'Teachers online' : 'Teachers offline'}
+                </span>
+              </div>
               <p className="text-indigo-100 text-sm font-medium">Get a personalized explanation from a top teacher for just KES 20.</p>
             </div>
             <button
-              onClick={() => setShowTutoringModal(true)}
-              className="px-8 py-4 bg-white text-indigo-600 rounded-full font-black text-sm uppercase tracking-widest shadow-lg hover:bg-indigo-50 transition-all active:scale-95"
+              onClick={() => {
+                setTutoringTopic(explanation?.topic || "");
+                setShowTutoringModal(true);
+              }}
+              className={`px - 8 py - 4 bg - white text - indigo - 600 rounded - full font - black text - sm uppercase tracking - widest shadow - lg hover: bg - indigo - 50 transition - all active: scale - 95 ${ !isAvailableForTutoring ? 'opacity-70 grayscale' : '' } `}
             >
               Ask a Teacher
             </button>
@@ -1740,8 +1856,197 @@ ${explanation.explanation}
     );
   }
 
-  return null;
-};
+  if (mode === 'MARKETPLACE') {
+    return (
+      <div className="bg-slate-50 min-h-screen pb-32 max-w-4xl mx-auto shadow-2xl border-x border-slate-100">
+        <div className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-slate-200 px-6 py-4 flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-black text-slate-900 tracking-tight leading-none">Marketplace</h1>
+            <p className="text-[10px] font-black text-indigo-500 uppercase tracking-[0.2em] mt-2">Premium Study Materials</p>
+          </div>
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-xl border border-indigo-100">
+            <Sparkles className="w-4 h-4" />
+            <span className="text-xs font-black uppercase tracking-widest">{studentProfile?.grade || 'N/A'}</span>
+          </div>
+        </div>
+
+        <div className="p-6 space-y-8">
+          <div className="bg-gradient-to-br from-indigo-600 via-blue-600 to-indigo-700 p-8 rounded-[3rem] text-white shadow-xl shadow-indigo-100 relative overflow-hidden group">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-20 -mt-20 blur-3xl group-hover:scale-110 transition-transform"></div>
+            <div className="relative z-10">
+              <h3 className="text-3xl font-black mb-2 tracking-tight">Expert Resources</h3>
+              <p className="opacity-90 text-sm font-medium mb-8 max-w-xs leading-relaxed">Revision papers, past exams, and premium notes from top teachers.</p>
+              <div className="flex flex-wrap gap-4">
+                <div className="bg-white/20 px-5 py-3 rounded-2xl backdrop-blur-md border border-white/10">
+                  <p className="text-[9px] uppercase font-black opacity-60 tracking-[0.1em] mb-1">Total Items</p>
+                  <p className="font-black text-lg">{marketplaceMaterials.length}</p>
+                </div>
+                <div className="bg-white/20 px-5 py-3 rounded-2xl backdrop-blur-md border border-white/10">
+                  <p className="text-[9px] uppercase font-black opacity-60 tracking-[0.1em] mb-1">Status</p>
+                  <p className="font-black text-lg">Verified</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {marketplaceMaterials.length === 0 ? (
+              <div className="md:col-span-2 py-32 text-center bg-white border-2 border-dashed border-slate-200 rounded-[3rem]">
+                 <ShoppingBag className="w-12 h-12 text-slate-200 mx-auto mb-4" />
+                 <h4 className="font-black text-slate-400 uppercase tracking-widest text-xs tracking-tighter">Marketplace Opening Soon</h4>
+              </div>
+            ) : (
+              marketplaceMaterials
+                .filter(m => !studentProfile?.grade || m.grade === studentProfile.grade)
+                .map(item => {
+                  const isOwned = purchasedMaterialIds.includes(item.id);
+                  return (
+                    <motion.div
+                      whileHover={{ y: -5 }}
+                      key={item.id}
+                      className="bg-white border-2 border-slate-100 rounded-[3rem] p-8 shadow-sm hover:border-indigo-100 hover:shadow-xl hover:shadow-indigo-50/30 transition-all flex flex-col justify-between"
+                    >
+                      <div>
+                        <div className="flex justify-between items-start mb-6">
+                          <div className={`w - 14 h - 14 rounded - 2xl flex items - center justify - center shadow - sm ${ item.category === 'NOTES' ? 'bg-blue-50 text-blue-600' : 'bg-purple-50 text-purple-600' } `}>
+                            {item.category === 'NOTES' ? <FileText className="w-7 h-7" /> : <Layers className="w-7 h-7" />}
+                          </div>
+                          {!isOwned && (
+                            <div className="bg-emerald-50 text-emerald-600 px-4 py-2 rounded-2xl text-lg font-black shadow-sm shadow-emerald-50">
+                              KES {item.price}
+                            </div>
+                          )}
+                        </div>
+                        <h4 className="font-black text-slate-900 text-xl mb-1 tracking-tight">{item.title}</h4>
+                        <div className="flex items-center gap-2 mb-6 text-[10px] font-black uppercase tracking-widest">
+                           <span className="text-indigo-500">{item.subject}</span>
+                           <span className="text-slate-300">•</span>
+                           <span className="text-slate-400">By {item.teacherName}</span>
+                        </div>
+                        <p className="text-sm text-slate-500 font-medium line-clamp-2 mb-8 leading-relaxed">{item.description}</p>
+                      </div>
+
+                      <Button
+                        fullWidth
+                        className={`rounded - 2xl py - 4 font - black uppercase tracking - widest text - xs border - none transition - all ${ isOwned ? "bg-slate-100 text-slate-400" : "bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-100" } `}
+                        onClick={() => !isOwned && purchaseMaterial(item.id)}
+                        disabled={isOwned}
+                      >
+                        {isOwned ? "Already in Library" : `Unlock Material`}
+                      </Button>
+                    </motion.div>
+                  );
+                })
+            )}
+          </div>
+        </div>
+
+        {/* Global Bottom Nav */}
+        <div className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t border-slate-200 px-6 py-3 flex justify-between items-center z-50 max-w-4xl mx-auto shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
+          <button onClick={() => setMode('MENU')} className="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-600">
+            <Home className="w-6 h-6" />
+            <span className="text-[10px] font-black uppercase tracking-tighter">Home</span>
+          </button>
+          <button onClick={() => setMode('MARKETPLACE')} className="flex flex-col items-center gap-1 text-indigo-600 scale-110">
+            <ShoppingBag className="w-6 h-6" />
+            <span className="text-[10px] font-black uppercase tracking-tighter">Market</span>
+          </button>
+          <div className="relative -mt-10">
+            <button onClick={() => setMode('SCAN')} className="relative w-16 h-16 bg-indigo-600 rounded-full flex items-center justify-center shadow-xl shadow-indigo-200 text-white transform hover:scale-110 active:scale-90 transition-all border-4 border-white">
+              <ScanLine className="w-8 h-8" />
+            </button>
+          </div>
+          <button onClick={() => setMode('LIBRARY')} className="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-600">
+            <Library className="w-6 h-6" />
+            <span className="text-[10px] font-black uppercase tracking-tighter">Library</span>
+          </button>
+          <button onClick={() => setMode('PROFILE')} className="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-600">
+            <UserCircle className="w-6 h-6" />
+            <span className="text-[10px] font-black uppercase tracking-tighter">Me</span>
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (mode === 'LIBRARY') {
+    return (
+      <div className="bg-slate-50 min-h-screen pb-32 max-w-4xl mx-auto shadow-2xl border-x border-slate-100">
+        <div className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-slate-200 px-6 py-4">
+          <h1 className="text-2xl font-black text-slate-900 tracking-tight leading-none">My Library</h1>
+          <p className="text-[10px] font-black text-indigo-500 uppercase tracking-[0.2em] mt-2">Unlocked Resources</p>
+        </div>
+
+        <div className="p-6">
+          {purchasedMaterialIds.length === 0 ? (
+            <div className="py-32 text-center bg-white border-2 border-dashed border-slate-200 rounded-[3rem]">
+              <div className="w-24 h-24 bg-slate-50 rounded-[2.5rem] flex items-center justify-center mx-auto mb-6 border border-slate-100">
+                <Library className="w-10 h-10 text-slate-300" />
+              </div>
+              <h4 className="text-xl font-black text-slate-800 mb-2 tracking-tight">Your library is empty</h4>
+              <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.2em] mb-12 max-w-xs mx-auto leading-relaxed">Unlock premium notes and revision papers from the marketplace to see them here.</p>
+              <Button onClick={() => setMode('MARKETPLACE')} className="px-10 py-4 bg-indigo-600 text-white rounded-2xl shadow-xl shadow-indigo-100 font-black uppercase tracking-widest text-[10px] border-none">
+                Browse Marketplace
+              </Button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {marketplaceMaterials
+                .filter(m => purchasedMaterialIds.includes(m.id))
+                .map(item => (
+                  <motion.div
+                    key={item.id}
+                    whileTap={{ scale: 0.98 }}
+                    className="bg-white border-2 border-slate-100 rounded-[2.5rem] p-6 shadow-sm flex items-center gap-6 group hover:border-indigo-100 hover:shadow-xl hover:shadow-indigo-50/30 transition-all cursor-pointer"
+                  >
+                    <div className="w-16 h-16 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center shrink-0 border border-indigo-100">
+                      <FileText className="w-8 h-8" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-black text-slate-900 text-lg truncate group-hover:text-indigo-600 transition-colors tracking-tight">{item.title}</h4>
+                      <p className="text-[10px] font-black text-indigo-500 uppercase tracking-widest">{item.subject} • {item.category.replace('_', ' ')}</p>
+                    </div>
+                    <div className="w-12 h-12 bg-slate-50 rounded-xl flex items-center justify-center text-slate-300 group-hover:bg-indigo-600 group-hover:text-white transition-all shadow-sm">
+                      <Download className="w-5 h-5" />
+                    </div>
+                  </motion.div>
+                ))}
+            </div>
+          )}
+        </div>
+
+        {/* Global Bottom Nav */}
+        <div className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t border-slate-200 px-6 py-3 flex justify-between items-center z-50 max-w-4xl mx-auto shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
+          <button onClick={() => setMode('MENU')} className="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-600">
+            <Home className="w-6 h-6" />
+            <span className="text-[10px] font-black uppercase tracking-tighter">Home</span>
+          </button>
+          <button onClick={() => setMode('MARKETPLACE')} className="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-600">
+            <ShoppingBag className="w-6 h-6" />
+            <span className="text-[10px] font-black uppercase tracking-tighter">Market</span>
+          </button>
+          <div className="relative -mt-10">
+            <button onClick={() => setMode('SCAN')} className="relative w-16 h-16 bg-indigo-600 rounded-full flex items-center justify-center shadow-xl shadow-indigo-200 text-white transform hover:scale-110 active:scale-90 transition-all border-4 border-white">
+              <ScanLine className="w-8 h-8" />
+            </button>
+          </div>
+          <button onClick={() => setMode('LIBRARY')} className="flex flex-col items-center gap-1 text-indigo-600 scale-110">
+            <Library className="w-6 h-6" />
+            <span className="text-[10px] font-black uppercase tracking-tighter">Library</span>
+          </button>
+          <button onClick={() => setMode('PROFILE')} className="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-600">
+            <UserCircle className="w-6 h-6" />
+            <span className="text-[10px] font-black uppercase tracking-tighter">Me</span>
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // DEFAULT (MENU) VIEW
+  return (
+    <div className="min-h-screen bg-slate-50 pb-24">
+      {/* ... rest of existing MENU content ... */}
 
 // --- QUIZ COMPONENT ---
 const QuizRunner: React.FC<{ data: QuizData; onComplete: (score: number) => void; onExit: () => void }> = ({ data, onComplete, onExit }) => {
@@ -1790,7 +2095,7 @@ const QuizRunner: React.FC<{ data: QuizData; onComplete: (score: number) => void
           <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
             <motion.div
               initial={{ width: 0 }}
-              animate={{ width: `${progress}%` }}
+              animate={{ width: `${ progress }% ` }}
               className="h-full bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full"
             />
           </div>
@@ -1880,14 +2185,14 @@ const QuizRunner: React.FC<{ data: QuizData; onComplete: (score: number) => void
               </motion.div>
             ) : (
               <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
-                <div className={`p-4 rounded-xl flex items-start gap-3 ${isCorrect ? 'bg-green-100 text-green-800' : 'bg-red-50 text-red-800'}`}>
+                <div className={`p - 4 rounded - xl flex items - start gap - 3 ${ isCorrect ? 'bg-green-100 text-green-800' : 'bg-red-50 text-red-800' } `}>
                   {isCorrect ? <Sparkles className="w-6 h-6 shrink-0" /> : <BookOpen className="w-6 h-6 shrink-0" />}
                   <div>
                     <p className="font-bold text-sm mb-1">{isCorrect ? "Correct!" : "Explanation:"}</p>
                     <p className="text-sm leading-relaxed opacity-90">{question.explanation}</p>
                   </div>
                 </div>
-                <Button fullWidth onClick={handleNext} className={`py-4 text-lg rounded-xl shadow-lg ${isCorrect ? 'shadow-green-200 bg-green-600 hover:bg-green-700' : 'shadow-slate-200 bg-slate-800 hover:bg-slate-900'}`}>
+                <Button fullWidth onClick={handleNext} className={`py - 4 text - lg rounded - xl shadow - lg ${ isCorrect ? 'shadow-green-200 bg-green-600 hover:bg-green-700' : 'shadow-slate-200 bg-slate-800 hover:bg-slate-900' } `}>
                   {isLast ? "Finish Quiz" : "Next Question"} <ArrowRight className="w-5 h-5 ml-2" />
                 </Button>
               </motion.div>

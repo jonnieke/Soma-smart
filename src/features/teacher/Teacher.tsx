@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     Upload, Mic, FileText, Share2, StopCircle, Download, BookOpen, Crown, Brain, Sparkles, X, CheckCircle, Play, Pause, Trash2, ArrowRight, Library, Filter, Calendar, Home, LogOut, MonitorPlay, CreditCard, ScanLine, Plus,
-    SquarePlus, ChevronRight, Type, Layers, ClipboardList, ClipboardCheck, Archive, History as HistoryIcon, MoreVertical, Check, Wallet, ToggleRight, ToggleLeft, Users, TrendingUp, DollarSign
+    SquarePlus, ChevronRight, Type, Layers, ClipboardList, ClipboardCheck, Archive, History as HistoryIcon, MoreVertical, Check, Wallet, ToggleRight, ToggleLeft, Users, TrendingUp, DollarSign, ShoppingBag, Store
 }
     from 'lucide-react';
 import { Button, Card, Header, MarkdownText } from '../../components/Shared';
@@ -32,7 +32,8 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
         logout, isPro, upgradeAccount,
         isOnline, language,
         teacherWallet, isAvailableForTutoring, toggleTutoringAvailability, fetchEarnings,
-        activeTutoringRequests, acceptTutoringRequest, submitTutoringResponse
+        activeTutoringRequests, acceptTutoringRequest, submitTutoringResponse,
+        marketplaceMaterials, listMaterial
     } = useApp();
     const t = translations[language];
     const [showPaywall, setShowPaywall] = useState(false);
@@ -101,7 +102,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
     const [paymentPlan, setPaymentPlan] = useState<SubscriptionPlan | null>(null);
     const [showLoginModal, setShowLoginModal] = useState(false);
     const [showLogoutModal, setShowLogoutModal] = useState(false);
-    const [activeTab, setActiveTab] = useState<'HOME' | 'CONVERT' | 'VOICE' | 'QUIZ' | 'LIBRARY' | 'MARKING' | 'EARNINGS'>(initialTab || 'HOME');
+    const [activeTab, setActiveTab] = useState<'HOME' | 'CONVERT' | 'VOICE' | 'QUIZ' | 'LIBRARY' | 'MARKING' | 'EARNINGS' | 'MARKETPLACE'>(initialTab || 'HOME');
     const [loading, setLoading] = useState(false);
 
     // Selection State
@@ -127,6 +128,12 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
     const [respondingTo, setRespondingTo] = useState<string | null>(null);
     const [responseType, setResponseType] = useState<'TEXT' | 'VOICE' | 'VIDEO'>('TEXT');
     const [responseText, setResponseText] = useState("");
+
+    // Phase 3: Marketplace Upload
+    const [listingTitle, setListingTitle] = useState("");
+    const [listingPrice, setListingPrice] = useState(50);
+    const [listingCategory, setListingCategory] = useState<'NOTES' | 'REVISION_PAPER' | 'MARKING_SCHEME' | 'RECORDED_LESSON'>('NOTES');
+    const [showUploadPortal, setShowUploadPortal] = useState(false);
 
     // Recording
     const [isRecording, setIsRecording] = useState(false);
@@ -547,6 +554,12 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                             className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl transition-all text-xs md:text-sm font-bold ${activeTab === 'EARNINGS' ? 'bg-amber-50 text-amber-600' : 'text-slate-500 hover:bg-slate-50'}`}
                         >
                             <Wallet className="w-4 h-4 flex-shrink-0" /> Earnings
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('MARKETPLACE')}
+                            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl transition-all text-xs md:text-sm font-bold ${activeTab === 'MARKETPLACE' ? 'bg-blue-50 text-blue-600' : 'text-slate-500 hover:bg-slate-50'}`}
+                        >
+                            <ShoppingBag className="w-4 h-4 flex-shrink-0" /> Shop
                         </button>
                     </div>
                 )}
@@ -1138,6 +1151,132 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                 )
             }
 
+            {/* Phase 3: Marketplace Upload Portal */}
+            <AnimatePresence>
+                {showUploadPortal && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-6 overflow-y-auto">
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                            className="bg-white rounded-[2.5rem] w-full max-w-lg shadow-2xl relative overflow-hidden"
+                        >
+                            <div className="bg-blue-600 p-8 text-white relative overflow-hidden">
+                                <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 blur-2xl"></div>
+                                <button
+                                    onClick={() => setShowUploadPortal(false)}
+                                    className="absolute top-4 right-4 p-2 hover:bg-white/20 rounded-full transition-colors"
+                                >
+                                    <X className="w-6 h-6" />
+                                </button>
+                                <div className="relative z-10 flex items-center gap-4 mb-2">
+                                    <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-md">
+                                        <Plus className="w-6 h-6" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-2xl font-black">List Material</h3>
+                                        <p className="text-blue-100 text-xs font-bold uppercase tracking-widest">Monetize your expertise</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="p-8 space-y-6">
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">Class/Grade</label>
+                                        <div className="bg-slate-50 p-4 rounded-2xl border-2 border-slate-100 font-bold text-slate-600 text-sm">
+                                            {selectedClass}
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">Subject</label>
+                                        <div className="bg-slate-50 p-4 rounded-2xl border-2 border-slate-100 font-bold text-slate-600 text-sm">
+                                            {selectedSubject}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">Material Title</label>
+                                    <input
+                                        type="text"
+                                        value={listingTitle}
+                                        onChange={(e) => setListingTitle(e.target.value)}
+                                        placeholder="e.g. Grade 4 Math Term 1 Revision Notes"
+                                        className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 text-slate-700 font-bold focus:border-blue-500 focus:bg-white transition-all outline-none"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">Category</label>
+                                    <select
+                                        value={listingCategory}
+                                        onChange={(e) => setListingCategory(e.target.value as any)}
+                                        className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 text-slate-700 font-bold focus:border-blue-500 focus:bg-white transition-all outline-none appearance-none"
+                                    >
+                                        <option value="NOTES">Lesson Notes</option>
+                                        <option value="REVISION_PAPER">Revision Paper</option>
+                                        <option value="MARKING_SCHEME">Marking Scheme</option>
+                                        <option value="RECORDED_LESSON">Recorded Lesson</option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">Price (KES)</label>
+                                    <input
+                                        type="range"
+                                        min="50"
+                                        max="500"
+                                        step="50"
+                                        value={listingPrice}
+                                        onChange={(e) => setListingPrice(parseInt(e.target.value))}
+                                        className="w-full h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                                    />
+                                    <div className="flex justify-between mt-2 font-black text-blue-600 text-lg">
+                                        <span>KES {listingPrice}</span>
+                                        <span className="text-slate-300 text-[10px] uppercase tracking-widest mt-1">Recommended for {listingCategory.replace('_', ' ')}</span>
+                                    </div>
+                                </div>
+
+                                <div className="pt-2">
+                                    <Button
+                                        fullWidth
+                                        className="bg-blue-600 hover:bg-blue-700 text-white shadow-xl shadow-blue-100 py-4 text-lg"
+                                        onClick={async () => {
+                                            if (!listingTitle.trim()) {
+                                                alert("Please enter a title!");
+                                                return;
+                                            }
+                                            setLoading(true);
+                                            const res = await listMaterial({
+                                                teacherId: teacherProfile?.id || "mock-teacher",
+                                                teacherName: teacherProfile?.name || "Teacher",
+                                                title: listingTitle,
+                                                description: `Premium ${listingCategory.toLowerCase()} for ${selectedClass} ${selectedSubject}.`,
+                                                price: listingPrice,
+                                                grade: selectedClass,
+                                                subject: selectedSubject,
+                                                category: listingCategory,
+                                                fileUrl: "https://example.com/mock-file.pdf"
+                                            });
+                                            setLoading(false);
+                                            if (res.success) {
+                                                setListingTitle("");
+                                                setShowUploadPortal(false);
+                                                alert("Material listed in the marketplace!");
+                                            }
+                                        }}
+                                    >
+                                        Create Listing
+                                    </Button>
+                                    <p className="text-center text-slate-400 text-[10px] mt-4 font-bold uppercase tracking-widest">This will be visible to all students in your grade</p>
+                                </div>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
             <LogoutModal
                 isOpen={showLogoutModal}
                 onClose={() => setShowLogoutModal(false)}
@@ -1151,6 +1290,132 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                     navigate('/');
                 }}
             />
+
+            {/* Tutoring Response Studio Overlay - Phase 2 */}
+            <AnimatePresence>
+                {respondingTo && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-6 overflow-y-auto">
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                            className="bg-white rounded-[2.5rem] w-full max-w-2xl shadow-2xl relative overflow-hidden flex flex-col max-h-[90vh]"
+                        >
+                            {/* Header */}
+                            <div className="bg-emerald-600 p-8 text-white relative shrink-0">
+                                <button
+                                    onClick={() => setRespondingTo(null)}
+                                    className="absolute top-4 right-4 p-2 hover:bg-white/20 rounded-full transition-colors"
+                                >
+                                    <X className="w-6 h-6" />
+                                </button>
+                                <div className="flex items-center gap-4">
+                                    <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-md">
+                                        <MonitorPlay className="w-6 h-6" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-2xl font-black">Response Studio</h3>
+                                        <p className="text-emerald-100 text-[10px] font-black uppercase tracking-widest">Helping students succeed</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Body */}
+                            <div className="p-8 space-y-8 overflow-y-auto">
+                                <div className="bg-slate-50 border-2 border-slate-100 rounded-3xl p-6">
+                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Student's Question:</p>
+                                    <p className="text-slate-800 font-bold text-lg italic">"{activeTutoringRequests.find(r => r.id === respondingTo)?.description}"</p>
+                                </div>
+
+                                <div>
+                                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Choose Response Type</label>
+                                    <div className="grid grid-cols-3 gap-4">
+                                        <button
+                                            onClick={() => setResponseType('TEXT')}
+                                            className={`p-4 rounded-2xl border-2 transition-all flex flex-col items-center gap-2 ${responseType === 'TEXT' ? 'border-emerald-600 bg-emerald-50 text-emerald-600 shadow-lg' : 'border-slate-100 text-slate-400 hover:border-emerald-200'}`}
+                                        >
+                                            <Type className="w-6 h-6" />
+                                            <span className="text-[10px] font-black uppercase tracking-widest">Text</span>
+                                        </button>
+                                        <button
+                                            onClick={() => setResponseType('VOICE')}
+                                            className={`p-4 rounded-2xl border-2 transition-all flex flex-col items-center gap-2 ${responseType === 'VOICE' ? 'border-emerald-600 bg-emerald-50 text-emerald-600 shadow-lg' : 'border-slate-100 text-slate-400 hover:border-emerald-200'}`}
+                                        >
+                                            <Mic className="w-6 h-6" />
+                                            <span className="text-[10px] font-black uppercase tracking-widest">Voice</span>
+                                        </button>
+                                        <button
+                                            onClick={() => setResponseType('VIDEO')}
+                                            className={`p-4 rounded-2xl border-2 transition-all flex flex-col items-center gap-2 ${responseType === 'VIDEO' ? 'border-emerald-600 bg-emerald-50 text-emerald-600 shadow-lg' : 'border-slate-100 text-slate-400 hover:border-emerald-200'}`}
+                                        >
+                                            <MonitorPlay className="w-6 h-6" />
+                                            <span className="text-[10px] font-black uppercase tracking-widest">Video</span>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {responseType === 'TEXT' ? (
+                                    <div className="space-y-4">
+                                        <textarea
+                                            placeholder="Type your explanation here..."
+                                            rows={6}
+                                            value={responseText}
+                                            onChange={(e) => setResponseText(e.target.value)}
+                                            className="w-full bg-slate-50 border-2 border-slate-100 rounded-3xl p-6 text-slate-800 font-medium focus:border-emerald-500 focus:bg-white transition-all outline-none resize-none"
+                                        />
+                                    </div>
+                                ) : (
+                                    <div className="bg-emerald-50 border-2 border-emerald-100 rounded-[2.5rem] p-12 text-center space-y-6">
+                                        <div className={`w-20 h-20 mx-auto rounded-full flex items-center justify-center transition-all ${isRecording ? 'bg-red-500 text-white animate-pulse' : 'bg-emerald-600 text-white'}`}>
+                                            {responseType === 'VOICE' ? <Mic className="w-10 h-10" /> : <MonitorPlay className="w-10 h-10" />}
+                                        </div>
+                                        <div>
+                                            <h4 className="text-xl font-black text-emerald-900">{isRecording ? 'Recording Live...' : `Ready to record ${responseType.toLowerCase()}`}</h4>
+                                            {isRecording && <p className="text-red-500 font-black text-2xl mt-2">{formatTime(recordingTime)}</p>}
+                                        </div>
+                                        <Button
+                                            variant={isRecording ? "outline" : "primary"}
+                                            className={`rounded-full px-12 py-4 font-black uppercase tracking-widest ${isRecording ? 'border-red-500 text-red-600' : 'bg-emerald-600'}`}
+                                            onClick={isRecording ? stopRecording : startRecording}
+                                        >
+                                            {isRecording ? 'Stop & Save' : `Start Recording`}
+                                        </Button>
+                                    </div>
+                                )}
+
+                                <div className="pt-4 border-t-2 border-slate-50 flex gap-4">
+                                    <Button
+                                        variant="outline"
+                                        className="flex-1 py-4 font-black uppercase tracking-widest rounded-2xl"
+                                        onClick={() => setRespondingTo(null)}
+                                    >
+                                        Cancel
+                                    </Button>
+                                    <Button
+                                        variant="primary"
+                                        className="flex-[2] bg-emerald-600 hover:bg-emerald-700 text-white shadow-xl shadow-emerald-100 py-4 font-black uppercase tracking-widest rounded-2xl"
+                                        disabled={isRecording || (responseType === 'TEXT' && !responseText.trim())}
+                                        onClick={async () => {
+                                            setLoading(true);
+                                            const res = await submitTutoringResponse(respondingTo!, responseText || "Explanation provided via media.", responseType);
+                                            setLoading(false);
+                                            if (res.success) {
+                                                setRespondingTo(null);
+                                                setResponseText("");
+                                                alert(res.message);
+                                            } else {
+                                                alert(res.message);
+                                            }
+                                        }}
+                                    >
+                                        Submit Response & Earn KES 30
+                                    </Button>
+                                </div>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
 
             {
                 showOnboarding && (

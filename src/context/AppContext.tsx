@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { LearnerActivity, UserRole, TeacherProfile, TeacherActivity, SchoolProfile, SchoolStats, SchoolTeacher, SchoolMaterial, TeacherWallet, TutoringRequest } from '../types';
+import { LearnerActivity, UserRole, TeacherProfile, TeacherActivity, SchoolProfile, SchoolStats, SchoolTeacher, SchoolMaterial, TeacherWallet, TutoringRequest, MaterialListing, SubscriptionPlan, SubscriptionTier } from '../types';
 
 // Update interface
 interface AppContextType {
@@ -43,6 +43,11 @@ interface AppContextType {
   createTutoringRequest: (topic: string, description: string, price: number) => Promise<{ success: boolean; message: string }>;
   acceptTutoringRequest: (requestId: string) => Promise<{ success: boolean; message: string }>;
   submitTutoringResponse: (requestId: string, response: string, type: 'TEXT' | 'VOICE' | 'VIDEO') => Promise<{ success: boolean; message: string }>;
+  // Marketplace
+  marketplaceMaterials: MaterialListing[];
+  purchasedMaterialIds: string[];
+  listMaterial: (listing: Omit<MaterialListing, 'id' | 'downloadCount' | 'rating' | 'createdAt'>) => Promise<{ success: boolean; message: string }>;
+  purchaseMaterial: (materialId: string) => Promise<{ success: boolean; message: string }>;
   // Revision
   revisionUsageCount: number;
   incrementRevisionUsage: () => void;
@@ -86,7 +91,6 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 
 import { supabase } from '../lib/supabase';
 import { checkSubscriptionAccess, updateSubscription } from '../services/subscriptionService';
-import { SubscriptionTier, SubscriptionPlan } from '../types';
 import { offlineService } from '../services/offlineService';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
 
@@ -108,8 +112,16 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [teacherHistory, setTeacherHistory] = useState<TeacherActivity[]>(offlineService.getTeacherHistory());
   const [availableQuizzes, setAvailableQuizzes] = useState<TeacherActivity[]>([]);
   const [teacherWallet, setTeacherWallet] = useState<TeacherWallet | null>(null);
-  const [isAvailableForTutoring, setIsAvailableForTutoring] = useState<boolean>(false);
-  const [activeTutoringRequests, setActiveTutoringRequests] = useState<TutoringRequest[]>([]);
+  const [isAvailableForTutoring, setIsAvailableForTutoring] = useState<boolean>(() => {
+    return localStorage.getItem('soma_tutoring_available') === 'true';
+  });
+  const [activeTutoringRequests, setActiveTutoringRequests] = useState<TutoringRequest[]>(() => {
+    try {
+      return JSON.parse(localStorage.getItem('soma_tutoring_requests') || '[]');
+    } catch {
+      return [];
+    }
+  });
 
   // School State
   const [schoolProfile, setSchoolProfile] = useState<SchoolProfile | null>(null);
@@ -132,6 +144,22 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const [language, setLanguage] = useState<'EN' | 'FR'>(() => {
     return (localStorage.getItem('soma_language') as 'EN' | 'FR') || 'EN';
+  });
+
+  // Marketplace State
+  const [marketplaceMaterials, setMarketplaceMaterials] = useState<MaterialListing[]>(() => {
+    try {
+      return JSON.parse(localStorage.getItem('soma_marketplace_materials') || '[]');
+    } catch {
+      return [];
+    }
+  });
+  const [purchasedMaterialIds, setPurchasedMaterialIds] = useState<string[]>(() => {
+    try {
+      return JSON.parse(localStorage.getItem('soma_purchased_materials') || '[]');
+    } catch {
+      return [];
+    }
   });
 
   const [sessionError, setSessionError] = useState<'MULTI_DEVICE' | 'SINGLE_DEVICE' | null>(null);
@@ -162,12 +190,20 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setStudentProfile(null);
     setTeacherHistory([]);
     setTeacherWallet(null);
-    setIsAvailableForTutoring(false);
-    localStorage.removeItem('soma_recent_login');
     localStorage.removeItem('soma_active_student');
     setUserId(null); // Clear ID to stop checks
-    setActiveTutoringRequests([]);
+    // NOTE: In Phase 2 mock mode, we don't clear tutoring requests on logout 
+    // to allow role switching between Learner and Teacher to see the same queue.
   };
+
+  // Persistence for Phase 2 Tutoring state
+  useEffect(() => {
+    localStorage.setItem('soma_tutoring_requests', JSON.stringify(activeTutoringRequests));
+  }, [activeTutoringRequests]);
+
+  useEffect(() => {
+    localStorage.setItem('soma_tutoring_available', isAvailableForTutoring.toString());
+  }, [isAvailableForTutoring]);
 
   // Periodic Session Check
   useEffect(() => {
@@ -1590,6 +1626,62 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     return { success: true, message: "Response sent! Earnings added to wallet." };
   };
 
+  const listMaterial = async (listing: Omit<MaterialListing, 'id' | 'downloadCount' | 'rating' | 'createdAt'>): Promise<{ success: boolean; message: string }> => {
+    if (!teacherProfile) return { success: false, message: "Login as teacher to list material" };
+
+    const newListing: MaterialListing = {
+      ...listing,
+      id: `mat-${Date.now()}`,
+      downloadCount: 0,
+      rating: 5,
+      createdAt: new Date().toISOString()
+    };
+
+    setMarketplaceMaterials(prev => [newListing, ...prev]);
+    return { success: true, message: "Material listed successfully!" };
+  };
+
+  const purchaseMaterial = async (materialId: string): Promise<{ success: boolean; message: string }> => {
+    if (!studentProfile) return { success: false, message: "Login as student to buy material" };
+    if (purchasedMaterialIds.includes(materialId)) return { success: false, message: "Already purchased" };
+
+    const material = marketplaceMaterials.find(m => m.id === materialId);
+    if (!material) return { success: false, message: "Material not found" };
+
+    // Update Learner logic (simulated deduction/check)
+    setPurchasedMaterialIds(prev => [...prev, materialId]);
+
+    // Update Teacher Wallet (Credit the seller)
+    const sellerWalletKey = `soma_teacher_wallet_${material.teacherId}`;
+    try {
+      const storedWallet = localStorage.getItem(sellerWalletKey);
+      let sellerWallet: TeacherWallet = storedWallet ? JSON.parse(storedWallet) : { balance: 0, currency: 'KES', transactions: [] };
+
+      const newTransaction = {
+        id: `t-${Date.now()}`,
+        type: 'EARNING' as const,
+        amount: material.price,
+        description: `Marketplace Sale: ${material.title}`,
+        date: new Date().toISOString().split('T')[0],
+        status: 'COMPLETED' as const
+      };
+
+      sellerWallet.balance += material.price;
+      sellerWallet.transactions = [newTransaction, ...sellerWallet.transactions];
+
+      localStorage.setItem(sellerWalletKey, JSON.stringify(sellerWallet));
+
+      // If the seller is the CURRENT teacher, update their live state too
+      if (teacherProfile?.id === material.teacherId) {
+        setTeacherWallet(sellerWallet);
+      }
+    } catch (e) {
+      console.error("Failed to credit seller wallet", e);
+    }
+
+    return { success: true, message: "Material purchased successfully! Check your library." };
+  };
+
   return (
     <AppContext.Provider value={{
       role, setRole, learnerHistory, saveActivity, deleteActivity, studentCode, setStudentCode,
@@ -1610,6 +1702,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       isPro, subscriptionPlan, subscriptionExpiry, upgradeAccount,
       userId,
       activeTutoringRequests, createTutoringRequest, acceptTutoringRequest, submitTutoringResponse,
+      // Marketplace
+      marketplaceMaterials, purchasedMaterialIds, listMaterial, purchaseMaterial,
       schoolProfile, loginSchool, registerSchool, registerStudentForSchool,
       schoolStats, schoolTeachers, fetchSchoolStats, addTeacherToSchool, addStudentToSchool, removeUserFromSchool,
       schoolMaterials, shareSchoolMaterial, deleteSchoolMaterial, fetchSchoolMaterials, updateSchoolProfile,
