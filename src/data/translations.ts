@@ -3,9 +3,9 @@ export const translations = {
         hero: {
             pillStudents: "Join 10,000+ Students & Teachers",
             pillTeachers: "🍎 Teachers: Save 2 hours/day",
-            headline: "Revise KCSE, CBC and exams faster with Soma Smart — ",
-            gradient: "in English or Kiswahili.",
-            subheadline: "The only app that helps students pass national exams while giving teachers powerful tools to mark assignments and generate printable exams instantly.",
+            headline: "Study Better. Teach Smarter - ",
+            gradient: "The Smart Learning Platform for Students and Teachers",
+            subheadline: "Soma helps students revise for exams and complete homework confidently, while teachers create notes, quizzes, and lesson materials in minutes.",
             ctaStudents: "For Students",
             ctaTeachers: "For Teachers",
             ctaSchools: "For Schools"
@@ -247,7 +247,12 @@ export const translations = {
                 lessonSaved: "Lesson Saved Successfully to your Teacher Account!",
                 shareText: "📚 *Lesson: {topic}*\n\n{summary}\n\nStart learning on Soma Smart!",
                 copyLinkManual: "Link copied to clipboard! (Share menu closed)",
-                lessonDetailsCopied: "Lesson details copied to clipboard!"
+                lessonDetailsCopied: "Lesson details copied to clipboard!",
+                limitReachedTitle: "Free Sessions Exhausted",
+                limitReachedDesc: "You've successfully generated 3 lessons using Darasa Mode! Upgrade to Soma Pro for Teachers to continue recording unlimited lessons.",
+                upgradeNow: "Upgrade to Soma Pro",
+                freeUses: "Free Lessons Left",
+                limitToast: "You have {count} free lessons remaining."
             },
             audioRecorder: {
                 recordingTitle: "Recording Lesson",
@@ -275,9 +280,9 @@ export const translations = {
         hero: {
             pillStudents: "Rejoignez 10 000+ Étudiants et Enseignants",
             pillTeachers: "🍎 Enseignants : Gagnez 2h/jour",
-            headline: "Révisez le KCSE, CBC et les examens plus vite avec Soma Smart — ",
-            gradient: "en anglais ou en kiswahili.",
-            subheadline: "La seule application qui aide les élèves à réussir les examens nationaux tout en offrant aux enseignants des outils puissants pour noter les devoirs et générer des examens imprimables instantanément.",
+            headline: "Étudiez Mieux. Enseignez Plus Intelligemment - ",
+            gradient: "La Plateforme d'Apprentissage Intelligente pour Étudiants et Enseignants",
+            subheadline: "Soma aide les élèves à réviser leurs examens et à faire leurs devoirs en toute confiance, tandis que les enseignants créent des notes, des quiz et du matériel pédagogique en quelques minutes.",
             ctaStudents: "Pour les Étudiants",
             ctaTeachers: "Pour les Enseignants",
             ctaSchools: "Pour les Écoles"
@@ -519,7 +524,12 @@ export const translations = {
                 lessonSaved: "Leçon enregistrée avec succès dans votre compte enseignant !",
                 shareText: "📚 *Leçon : {topic}*\n\n{summary}\n\nCommencez à apprendre sur Soma Smart !",
                 copyLinkManual: "Lien copié dans le presse-papiers ! (Menu de partage fermé)",
-                lessonDetailsCopied: "Détails de la leçon copiés dans le presse-papiers !"
+                lessonDetailsCopied: "Détails de la leçon copiés dans le presse-papiers !",
+                limitReachedTitle: "Sessions Gratuites Épuisées",
+                limitReachedDesc: "Vous avez généré avec succès 3 leçons en mode Darasa ! Passez à Soma Pro pour les Enseignants pour continuer à enregistrer des leçons illimitées.",
+                upgradeNow: "Passer à Soma Pro",
+                freeUses: "Leçons Gratuites Restantes",
+                limitToast: "Il vous reste {count} leçons gratuites."
             },
             audioRecorder: {
                 recordingTitle: "Enregistrement de la leçon",

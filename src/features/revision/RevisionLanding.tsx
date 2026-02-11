@@ -11,7 +11,7 @@ interface Props {
 }
 
 export const RevisionLanding: React.FC<Props> = ({ onStartSession, onNavigate }) => {
-    const { logout, availableQuizzes, fetchAvailableQuizzes, isOnline } = useApp();
+    const { logout, availableQuizzes, fetchAvailableQuizzes, isOnline, studentProfile } = useApp();
     const [dragActive, setDragActive] = useState(false);
     const [selectedMode, setSelectedMode] = useState<RevisionMode>(RevisionMode.LEARN);
     const [loadingQuizzes, setLoadingQuizzes] = useState(false);
@@ -123,11 +123,20 @@ export const RevisionLanding: React.FC<Props> = ({ onStartSession, onNavigate })
                         </button>
                     </div>
 
+                    <div className="flex items-center gap-3 mb-4">
+                        <div className="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 font-bold">
+                            {studentProfile?.name?.[0] || 'C'}
+                        </div>
+                        <div>
+                            <p className="text-xs font-bold text-indigo-600 uppercase tracking-widest">Candidate Profile</p>
+                            <p className="text-sm font-bold text-slate-700">{studentProfile?.schoolName || 'Kenyan Candidate'}</p>
+                        </div>
+                    </div>
                     <h1 className="text-4xl font-black mb-3 text-slate-900 tracking-tight leading-tight">
-                        Candidate <span className="text-indigo-600">Specialist</span>
+                        Welcome back, <span className="text-indigo-600">{studentProfile?.name?.split(' ')[0] || 'Candidate'}</span>
                     </h1>
                     <p className="text-slate-500 font-medium text-lg max-w-sm leading-relaxed">
-                        Your AI tutor for paper mastery. Get instant, step-by-step guidance.
+                        Ready to master your <span className="text-indigo-600 font-bold">{studentProfile?.grade || 'exams'}</span> today?
                     </p>
                 </div>
             </div>
@@ -255,17 +264,40 @@ export const RevisionLanding: React.FC<Props> = ({ onStartSession, onNavigate })
                     </div>
                 </div>
 
+                {/* Dynamic Strategy Cards - Fun & Useful */}
+                <div className="space-y-4">
+                    <h3 className="font-bold text-slate-800 text-lg flex items-center gap-2">
+                        <Zap className="w-5 h-5 text-amber-500" /> Quick Revision Paths
+                    </h3>
+                    <div className="grid grid-cols-2 gap-4">
+                        <button className="bg-gradient-to-br from-indigo-500 to-indigo-700 p-5 rounded-3xl text-white text-left shadow-lg shadow-indigo-100 group hover:scale-[1.02] transition-transform">
+                            <TrendingUp className="w-8 h-8 mb-3 opacity-80 group-hover:scale-110 transition-transform" />
+                            <h4 className="font-bold text-sm mb-1">Mock Sprint</h4>
+                            <p className="text-[10px] opacity-80 font-medium">Practice most common paper questions in 30 mins.</p>
+                        </button>
+                        <button className="bg-gradient-to-br from-emerald-500 to-emerald-700 p-5 rounded-3xl text-white text-left shadow-lg shadow-emerald-100 group hover:scale-[1.02] transition-transform">
+                            <CheckCircle className="w-8 h-8 mb-3 opacity-80 group-hover:scale-110 transition-transform" />
+                            <h4 className="font-bold text-sm mb-1">CAT Mastery</h4>
+                            <p className="text-[10px] opacity-80 font-medium">Focus on specific topics for your upcoming CAT.</p>
+                        </button>
+                    </div>
+                </div>
+
                 {/* Features List */}
-                <div className="space-y-4 pt-4">
-                    <h4 className="font-bold text-slate-400 text-xs uppercase tracking-widest text-center">Why use Paper Specialist?</h4>
+                <div className="space-y-4 pt-4 pb-10">
+                    <h4 className="font-bold text-slate-400 text-xs uppercase tracking-widest text-center">Your Candidate Toolbox</h4>
                     <div className="grid grid-cols-2 gap-3">
-                        <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex flex-col gap-2">
-                            <Zap className="w-6 h-6 text-amber-500" />
-                            <span className="text-xs font-bold text-slate-600">Instance Marking</span>
+                        <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-3">
+                            <div className="w-10 h-10 bg-amber-50 rounded-xl flex items-center justify-center text-amber-500">
+                                <Zap className="w-5 h-5" />
+                            </div>
+                            <span className="text-xs font-bold text-slate-600">Instant Answers</span>
                         </div>
-                        <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex flex-col gap-2">
-                            <Smartphone className="w-6 h-6 text-blue-500" />
-                            <span className="text-xs font-bold text-slate-600">Mobile Friendly</span>
+                        <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-3">
+                            <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center text-blue-500">
+                                <Smartphone className="w-5 h-5" />
+                            </div>
+                            <span className="text-xs font-bold text-slate-600">Revision App</span>
                         </div>
                     </div>
                 </div>

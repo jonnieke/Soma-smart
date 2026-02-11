@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Sparkles, Home, X, XCircle, Camera, ScanLine, Mic, Upload, Clock,
   CheckCircle, Play, Pause, ChevronRight, Star, BookOpen, Brain, Lightbulb, Lock, Volume2, CreditCard,
-  ArrowRight, UserCircle, Download, ImageIcon, Trash2, AlertTriangle, LogOut
+  ArrowRight, UserCircle, Download, ImageIcon, Trash2, AlertTriangle, LogOut, Users, DollarSign
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { ExplanationResult, QuizData, ViewState, SubscriptionPlan, LearnerProfile, LearnerActivity, UserRole } from '../../types';
@@ -40,7 +40,8 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
     learnerHistory: history, saveActivity, deleteActivity, studentCode,
     usageCount, incrementUsage, isRegistered, studentProfile, updateStudentProfile,
     upgradeAccount, revisionUsageCount, incrementRevisionUsage,
-    logout, isPro, subscriptionPlan, subscriptionExpiry, isOnline, role, language
+    logout, isPro, subscriptionPlan, subscriptionExpiry, isOnline, role, language,
+    createTutoringRequest
   } = useApp();
   const t = translations[language];
   const location = useLocation();
@@ -132,6 +133,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
   const [scanStatus, setScanStatus] = useState<'idle' | 'scanning' | 'success' | 'STABILIZING' | 'CAPTURING' | 'LOOKING'>('idle');
   const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan | null>(null);
   const [promptText, setPromptText] = useState("");
+  const [showTutoringModal, setShowTutoringModal] = useState(false);
 
   // Refs
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -954,11 +956,6 @@ ${explanation.explanation}
             </div>
           </motion.div>
 
-          {!profile && subscriptionPlan === 'FREE' && (
-            <p className="text-xs text-center mt-3 text-slate-400">
-              {5 - usageCount} free scans remaining. <button onClick={() => setMode('PRICING' as any)} className="text-blue-600 font-bold hover:underline">Get Unlimited Access</button>
-            </p>
-          )}
 
           {/* QUICK PROMPT FIELD */}
           <motion.div
@@ -1265,44 +1262,96 @@ ${explanation.explanation}
           }}
         />
 
-        {/* Quality Warning Modal Re-implementation at root level of component if needed, or keeping existing logic but ensuring z-index is high */}
-        {qualityWarning && qualityWarning.show && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-6">
-            <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl">
-              <div className="flex flex-col items-center text-center">
-                <div className="w-16 h-16 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mb-4">
-                  <AlertTriangle className="w-8 h-8" />
+        {/* Tutoring Request Modal - Phase 2 */}
+        <AnimatePresence>
+          {showTutoringModal && (
+            <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-6 overflow-y-auto">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                className="bg-white rounded-[2.5rem] w-full max-w-lg shadow-2xl relative overflow-hidden"
+              >
+                {/* Header */}
+                <div className="bg-indigo-600 p-8 text-white relative overflow-hidden">
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 blur-2xl"></div>
+                  <button
+                    onClick={() => setShowTutoringModal(false)}
+                    className="absolute top-4 right-4 p-2 hover:bg-white/20 rounded-full transition-colors"
+                  >
+                    <X className="w-6 h-6" />
+                  </button>
+                  <div className="relative z-10 flex items-center gap-4 mb-2">
+                    <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-md">
+                      <Users className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <h3 className="text-2xl font-black">Ask a Teacher</h3>
+                      <p className="text-indigo-100 text-xs font-bold uppercase tracking-widest">Connect with a real human</p>
+                    </div>
+                  </div>
                 </div>
-                <h3 className="text-xl font-bold text-slate-900 mb-2">Wait a sec...</h3>
-                <p className="text-slate-600 mb-6 text-sm">We spotted a few things that might make this hard to understand:</p>
 
-                <ul className="w-full text-left bg-amber-50 rounded-xl p-4 mb-6 space-y-2">
-                  {qualityWarning.issues.map((issue, i) => (
-                    <li key={i} className="flex items-start gap-2 text-xs font-bold text-amber-800">
-                      <span className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-1.5 shrink-0" /> {issue}
-                    </li>
-                  ))}
-                </ul>
+                {/* Body */}
+                <div className="p-8 space-y-6">
+                  <div>
+                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">Topic for Discussion</label>
+                    <p className="text-lg font-bold text-slate-800 bg-slate-50 p-4 rounded-2xl border-2 border-slate-100">{explanation?.topic || 'General Question'}</p>
+                  </div>
 
-                <div className="grid grid-cols-2 gap-3 w-full">
-                  <Button variant="outline" fullWidth onClick={() => {
-                    setQualityWarning(null);
-                    startCamera();
-                  }}>
-                    Try Again
-                  </Button>
-                  <Button fullWidth onClick={() => {
-                    const f = qualityWarning.file;
-                    setQualityWarning(null);
-                    if (f) processFile(f);
-                  }}>
-                    Use Anyway
-                  </Button>
+                  <div>
+                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">Explain what you need help with</label>
+                    <textarea
+                      placeholder="e.g. I don't understand how the second step works..."
+                      rows={4}
+                      className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 text-slate-700 font-medium focus:border-indigo-500 focus:bg-white transition-all outline-none resize-none"
+                      id="tutoring-desc"
+                    />
+                  </div>
+
+                  <div className="bg-amber-50 rounded-2xl p-4 border border-amber-100 flex items-center gap-4">
+                    <div className="w-10 h-10 bg-amber-400 rounded-full flex items-center justify-center shrink-0">
+                      <DollarSign className="w-5 h-5 text-amber-900" />
+                    </div>
+                    <div>
+                      <p className="text-amber-900 font-black text-sm">Cost: KES 20</p>
+                      <p className="text-amber-700 text-[10px] font-bold">This will be deducted from your wallet or added to your termly bill.</p>
+                    </div>
+                  </div>
+
+                  <div className="pt-2">
+                    <Button
+                      fullWidth
+                      className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-xl shadow-indigo-100 py-4 text-lg"
+                      onClick={async () => {
+                        const desc = (document.getElementById('tutoring-desc') as HTMLTextAreaElement).value;
+                        if (!desc.trim()) {
+                          alert("Please explain your question first!");
+                          return;
+                        }
+                        setLoading(true);
+                        setLoadingText("Sending request...");
+                        const res = await createTutoringRequest(explanation?.topic || "General Help", desc, 20);
+                        setLoading(false);
+                        if (res.success) {
+                          setShowTutoringModal(false);
+                          alert(res.message);
+                        } else {
+                          alert(res.message);
+                        }
+                      }}
+                    >
+                      Send Request
+                    </Button>
+                    <p className="text-center text-slate-400 text-[10px] mt-4 font-bold uppercase tracking-widest">A teacher will respond via voice or video</p>
+                  </div>
                 </div>
-              </div>
+              </motion.div>
             </div>
-          </div>
-        )}
+          )}
+        </AnimatePresence>
+
+        {/* Quality Warning Modal */}
 
       </div>
     );
@@ -1580,6 +1629,25 @@ ${explanation.explanation}
           >
             <MarkdownText content={explanation.explanation} />
           </motion.article>
+
+          {/* Need more help? - Phase 2 */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.25 }}
+            className="bg-indigo-600 p-6 rounded-[2.5rem] text-white shadow-xl shadow-indigo-100 flex flex-col md:flex-row items-center gap-6"
+          >
+            <div className="flex-1 text-center md:text-left">
+              <h3 className="text-xl font-black mb-1">Still confused? 🧐</h3>
+              <p className="text-indigo-100 text-sm font-medium">Get a personalized explanation from a top teacher for just KES 20.</p>
+            </div>
+            <button
+              onClick={() => setShowTutoringModal(true)}
+              className="px-8 py-4 bg-white text-indigo-600 rounded-full font-black text-sm uppercase tracking-widest shadow-lg hover:bg-indigo-50 transition-all active:scale-95"
+            >
+              Ask a Teacher
+            </button>
+          </motion.div>
 
           {/* Related Topics */}
           {explanation.relatedTopics && explanation.relatedTopics.length > 0 && (

@@ -14,7 +14,7 @@ import { supabase } from '../../lib/supabase';
 
 export const RevisionPortal: React.FC = () => {
     const navigate = useNavigate();
-    const { isRegistered, studentCode, setRole, setStudentCode, logout, studentProfile } = useApp();
+    const { isRegistered, studentCode, setRole, setStudentCode, logout, studentProfile, role } = useApp();
 
     // State for Onboarding
     const [step, setStep] = useState<'INTRO' | 'FORM' | 'CODE' | 'LIMIT'>('INTRO');
@@ -66,11 +66,41 @@ export const RevisionPortal: React.FC = () => {
     };
 
     return (
-        <div className="min-h-screen bg-slate-50 font-sans text-slate-900">
+        <div className="min-h-screen bg-slate-50 font-sans text-slate-900 relative overflow-hidden">
+            {/* Premium Background Elements */}
+            <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
+                <motion.div
+                    animate={{
+                        scale: [1, 1.2, 1],
+                        rotate: [0, 90, 0],
+                        x: [-100, 100, -100],
+                        y: [-50, 50, -50],
+                    }}
+                    transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+                    className="absolute -top-40 -left-40 w-[600px] h-[600px] bg-orange-100/40 rounded-full blur-[120px]"
+                />
+                <motion.div
+                    animate={{
+                        scale: [1.2, 1, 1.2],
+                        rotate: [90, 0, 90],
+                        x: [100, -100, 100],
+                        y: [50, -50, 50],
+                    }}
+                    transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
+                    className="absolute -bottom-40 -right-40 w-[600px] h-[600px] bg-indigo-100/40 rounded-full blur-[120px]"
+                />
+            </div>
+
             {/* Header */}
             <div className="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between sticky top-0 z-30">
                 <div className="flex items-center gap-4">
-                    <button onClick={() => navigate('/')} className="p-2 -ml-2 hover:bg-slate-50 rounded-full text-slate-400 hover:text-slate-600 transition-colors">
+                    <button
+                        onClick={() => {
+                            const target = role === UserRole.TEACHER ? '/teacher' : (role === UserRole.SCHOOL ? '/school' : '/learner');
+                            navigate(target);
+                        }}
+                        className="p-2 -ml-2 hover:bg-slate-50 rounded-full text-slate-400 hover:text-slate-600 transition-colors"
+                    >
                         <ArrowRight className="w-6 h-6 rotate-180" />
                     </button>
                     <h1 className="font-bold text-lg text-slate-800">Candidate Success Portal</h1>
@@ -100,64 +130,122 @@ export const RevisionPortal: React.FC = () => {
                     {step === 'INTRO' && (
                         <motion.div
                             key="intro"
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, x: -20 }}
-                            className="space-y-8 text-center"
+                            initial="hidden"
+                            animate="visible"
+                            exit="exit"
+                            variants={{
+                                hidden: { opacity: 0 },
+                                visible: {
+                                    opacity: 1,
+                                    transition: { staggerChildren: 0.15, delayChildren: 0.2 }
+                                },
+                                exit: { opacity: 0, x: -20, transition: { duration: 0.3 } }
+                            }}
+                            className="relative z-10"
                         >
-                            <div className="relative inline-block mt-4">
-                                <div className="absolute inset-0 bg-orange-200 blur-2xl opacity-50 rounded-full"></div>
-                                <BookOpen className="w-24 h-24 text-orange-600 relative z-10" />
-                            </div>
-
-                            <div>
-                                <h1 className="text-3xl font-extrabold text-slate-900 mb-2">Candidate Success Center</h1>
-                                <p className="text-slate-600 text-lg">
-                                    AI-powered coaching specialized for <b>KCSE, KPSEA & KEPSEA</b> candidates.
-                                    Analyze past papers and master your final goals.
-                                </p>
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-4 text-left">
-                                <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex flex-col gap-2">
-                                    <Brain className="w-8 h-8 text-blue-500" />
-                                    <span className="font-bold text-sm text-slate-700">Competency Based</span>
-                                </div>
-                                <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex flex-col gap-2">
-                                    <Sparkles className="w-8 h-8 text-amber-500" />
-                                    <span className="font-bold text-sm text-slate-700">Instant Answers</span>
-                                </div>
-                            </div>
-
-                            <Button
-                                fullWidth
-                                onClick={isRegistered ? handleStartRevision : () => setStep('FORM')}
-                                className="text-lg py-4 shadow-xl shadow-orange-100 bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 border-none"
+                            <motion.div
+                                variants={{
+                                    hidden: { opacity: 0, scale: 0.95, y: 20 },
+                                    visible: { opacity: 1, scale: 1, y: 0, transition: { type: "spring", damping: 25, stiffness: 100 } }
+                                }}
+                                className="bg-white/60 backdrop-blur-xl border border-white/80 rounded-[3rem] p-8 md:p-12 shadow-2xl shadow-slate-200/50 max-w-2xl mx-auto space-y-10"
                             >
-                                {isRegistered ? `Continue as Candidate ${studentProfile?.name?.split(' ')[0] || ''}` : 'Get Started'} <ArrowRight className="ml-2 w-5 h-5" />
-                            </Button>
+                                {/* Hero Icon */}
+                                <motion.div
+                                    variants={{
+                                        hidden: { opacity: 0, scale: 0.5, rotate: -15 },
+                                        visible: { opacity: 1, scale: 1, rotate: 0, transition: { type: "spring", damping: 15 } }
+                                    }}
+                                    className="flex justify-center"
+                                >
+                                    <div className="relative">
+                                        <div className="absolute inset-0 bg-orange-200 blur-3xl opacity-40 rounded-full scale-150 animate-pulse"></div>
+                                        <div className="bg-white w-24 h-24 rounded-3xl shadow-lg border border-orange-50 flex items-center justify-center relative z-10">
+                                            <BookOpen className="w-12 h-12 text-orange-500" />
+                                        </div>
+                                    </div>
+                                </motion.div>
 
-                            <p className="text-xs text-slate-400">
-                                {isRegistered ? (
-                                    <span>Using code <b>{studentCode}</b></span>
-                                ) : (
-                                    <>Already have a code? <button onClick={() => setShowLogin(true)} className="text-blue-600 font-bold hover:underline">Login here</button></>
-                                )}
-                            </p>
+                                {/* Title & Decription */}
+                                <motion.div
+                                    variants={{
+                                        hidden: { opacity: 0, y: 20 },
+                                        visible: { opacity: 1, y: 0 }
+                                    }}
+                                    className="space-y-4"
+                                >
+                                    <h1 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tight leading-tight">
+                                        Candidate <br />
+                                        <span className="bg-gradient-to-r from-orange-600 to-amber-600 bg-clip-text text-transparent">Success Center</span>
+                                    </h1>
+                                    <p className="text-slate-500 text-lg font-medium leading-relaxed max-w-sm mx-auto">
+                                        Professional Smart coaching for <span className="text-slate-900 font-bold">KCSE & KPSEA</span> candidates. Master your final papers with precision.
+                                    </p>
+                                </motion.div>
 
-                            <LoginModal
-                                isOpen={showLogin}
-                                onClose={() => setShowLogin(false)}
-                                initialTab="STUDENT"
-                                onSwitchToRegister={() => {
-                                    setShowLogin(false);
-                                    setStep('FORM');
-                                }}
-                                onSuccess={() => {
-                                    setShowLogin(false);
-                                    handleStartRevision();
-                                }}
-                            />
+                                {/* Feature Pills */}
+                                <motion.div
+                                    variants={{
+                                        hidden: { opacity: 0, y: 20 },
+                                        visible: { opacity: 1, y: 0 }
+                                    }}
+                                    className="grid grid-cols-2 gap-4"
+                                >
+                                    <div className="bg-white/80 p-5 rounded-2xl border border-white shadow-sm flex items-center gap-4 group hover:shadow-md transition-all">
+                                        <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600 group-hover:scale-110 transition-transform">
+                                            <Brain className="w-5 h-5" />
+                                        </div>
+                                        <div className="text-left">
+                                            <p className="text-xs font-black uppercase tracking-widest text-slate-400">Competency</p>
+                                            <p className="text-sm font-bold text-slate-700 leading-none mt-1">Syllabus Based</p>
+                                        </div>
+                                    </div>
+                                    <div className="bg-white/80 p-5 rounded-2xl border border-white shadow-sm flex items-center gap-4 group hover:shadow-md transition-all">
+                                        <div className="w-10 h-10 bg-amber-50 rounded-xl flex items-center justify-center text-amber-600 group-hover:scale-110 transition-transform">
+                                            <Sparkles className="w-5 h-5" />
+                                        </div>
+                                        <div className="text-left">
+                                            <p className="text-xs font-black uppercase tracking-widest text-slate-400">Feedback</p>
+                                            <p className="text-sm font-bold text-slate-700 leading-none mt-1">Instant Strategy</p>
+                                        </div>
+                                    </div>
+                                </motion.div>
+
+                                {/* CTA Area */}
+                                <motion.div
+                                    variants={{
+                                        hidden: { opacity: 0, y: 20 },
+                                        visible: { opacity: 1, y: 0 }
+                                    }}
+                                    className="space-y-6"
+                                >
+                                    <Button
+                                        fullWidth
+                                        onClick={isRegistered ? handleStartRevision : () => setStep('FORM')}
+                                        className="text-lg py-6 rounded-2xl shadow-xl shadow-orange-200/50 bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 border-none group"
+                                    >
+                                        <span className="flex items-center gap-4">
+                                            {isRegistered ? `Continue as ${studentProfile?.name?.split(' ')[0] || 'Candidate'}` : 'Open Success Center'}
+                                            <ArrowRight className="w-6 h-6 group-hover:translate-x-1 transition-transform" />
+                                        </span>
+                                    </Button>
+
+                                    {!isRegistered && (
+                                        <button
+                                            onClick={() => setShowLogin(true)}
+                                            className="text-slate-400 text-xs font-black uppercase tracking-[0.2em] hover:text-orange-600 transition-colors"
+                                        >
+                                            Already have a code? <span className="text-blue-600 border-b-2 border-blue-100">Login</span>
+                                        </button>
+                                    )}
+
+                                    {isRegistered && (
+                                        <p className="text-xs text-slate-400 font-mono">
+                                            Active Access Code: <span className="text-slate-900 font-black tracking-widest">{studentCode}</span>
+                                        </p>
+                                    )}
+                                </motion.div>
+                            </motion.div>
                         </motion.div>
                     )}
 
@@ -222,9 +310,13 @@ export const RevisionPortal: React.FC = () => {
                                             onChange={(e) => setExamType(e.target.value)}
                                             className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 focus:border-orange-500 focus:ring-2 focus:ring-orange-200 outline-none transition-all appearance-none bg-white"
                                         >
-                                            <option value="KCSE">KCSE (Form 4 Candidate)</option>
+                                            <option value="KCSE">KCSE (Standard National)</option>
+                                            <option value="KCSE_MOCK">KCSE Mocks (County/School)</option>
                                             <option value="KPSEA">KPSEA (Grade 9 Candidate)</option>
                                             <option value="KEPSEA">KEPSEA (Grade 6 Candidate)</option>
+                                            <option value="CAT">Continuous Assessment Test (CAT)</option>
+                                            <option value="TERM_EXAM">End of Term Examination</option>
+                                            <option value="INTERNAL">Internal Academic Test</option>
                                         </select>
                                     </div>
                                 </div>

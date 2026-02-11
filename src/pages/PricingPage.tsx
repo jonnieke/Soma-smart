@@ -31,7 +31,7 @@ export const PricingPage: React.FC = () => {
 
         // Instant Redirect
         setTimeout(() => {
-            const dashboard = role === 'TEACHER' ? '/teacher' : '/learner';
+            const dashboard = role === 'TEACHER' ? '/teacher' : (role === 'SCHOOL' ? '/school' : '/learner');
             window.location.href = dashboard;
         }, 1500);
     };
@@ -122,7 +122,7 @@ export const PricingPage: React.FC = () => {
                     if (role) {
                         // User is logged in (presumably)
                         // Navigate to their dashboard with payment intent
-                        const target = role === 'TEACHER' ? '/teacher' : '/learner';
+                        const target = role === 'TEACHER' ? '/teacher' : (role === 'SCHOOL' ? '/school' : '/learner');
                         navigate(target, { state: { initiatePaymentFor: plan } });
                         return;
                     }

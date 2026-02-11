@@ -11,88 +11,6 @@ interface Props {
     initialTab?: UserSegment;
 }
 
-const PromoBanner = () => {
-    const [timeLeft, setTimeLeft] = useState<{ days: number; hours: number; minutes: number; seconds: number } | null>(null);
-
-    React.useEffect(() => {
-        const LAUNCH_DATE = new Date('2026-02-27T00:00:00+03:00');
-
-        const calculateTimeLeft = () => {
-            const now = new Date();
-            const diff = LAUNCH_DATE.getTime() - now.getTime();
-
-            if (diff <= 0) return null;
-
-            return {
-                days: Math.floor(diff / (1000 * 60 * 60 * 24)),
-                hours: Math.floor((diff / (1000 * 60 * 60)) % 24),
-                minutes: Math.floor((diff / 1000 / 60) % 60),
-                seconds: Math.floor((diff / 1000) % 60)
-            };
-        };
-
-        setTimeLeft(calculateTimeLeft());
-        const timer = setInterval(() => {
-            const updated = calculateTimeLeft();
-            setTimeLeft(updated);
-        }, 1000);
-
-        return () => clearInterval(timer);
-    }, []);
-
-    if (!timeLeft) return null;
-
-    return (
-        <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="relative overflow-hidden group bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-700 rounded-[2.5rem] p-6 md:p-8 mb-10 text-white shadow-2xl shadow-blue-200"
-        >
-            {/* Background Decorations */}
-            <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl group-hover:bg-white/20 transition-all duration-700"></div>
-            <div className="absolute bottom-0 left-0 w-32 h-32 bg-orange-400/20 rounded-full translate-y-1/2 -translate-x-1/2 blur-2xl"></div>
-
-            <div className="relative z-10 flex flex-col lg:flex-row items-center justify-between gap-8">
-                <div className="flex-1 text-center lg:text-left">
-                    <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/20 backdrop-blur-md text-xs font-black uppercase tracking-widest mb-4 border border-white/20">
-                        <Star className="w-3.5 h-3.5 fill-current" />
-                        Early Bird Special! 🇰🇪
-                    </div>
-                    <h3 className="text-2xl md:text-3xl font-black mb-3 leading-tight">
-                        Unlimited Free Access <br className="hidden md:block" />
-                        <span className="text-orange-300">Until February 27th!</span>
-                    </h3>
-                    <p className="text-blue-50/80 text-sm md:text-base font-medium max-w-xl">
-                        Buy any plan today, and your subscription duration only starts counting after the launch. <b className="text-white">Hurry Now!</b>
-                    </p>
-                </div>
-
-                <div className="flex flex-col items-center gap-4 bg-white/10 backdrop-blur-xl p-6 rounded-3xl border border-white/20 shadow-inner w-full lg:w-auto min-w-[320px]">
-                    <div className="flex items-center gap-2 mb-2">
-                        <Timer className="w-5 h-5 text-orange-300 animate-pulse" />
-                        <span className="text-xs font-black uppercase tracking-widest opacity-80">Countdown to Launch</span>
-                    </div>
-
-                    <div className="flex gap-4">
-                        {[
-                            { label: 'Days', value: timeLeft.days },
-                            { label: 'Hrs', value: timeLeft.hours },
-                            { label: 'Min', value: timeLeft.minutes },
-                            { label: 'Sec', value: timeLeft.seconds },
-                        ].map((t, i) => (
-                            <div key={i} className="flex flex-col items-center">
-                                <div className="bg-white/10 w-14 h-14 rounded-2xl flex items-center justify-center text-2xl font-black mb-1 border border-white/10 shadow-lg">
-                                    {String(t.value).padStart(2, '0')}
-                                </div>
-                                <span className="text-[10px] font-bold uppercase tracking-tighter opacity-60">{t.label}</span>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            </div>
-        </motion.div>
-    );
-};
 
 export const PricingPage: React.FC<Props> = ({ onSelectPlan, onClose, currentTier, initialTab = 'STUDENT' }) => {
     const [activeTab, setActiveTab] = useState<UserSegment>(initialTab);
@@ -162,7 +80,6 @@ export const PricingPage: React.FC<Props> = ({ onSelectPlan, onClose, currentTie
             </header>
 
             <main className="max-w-4xl mx-auto px-6 -mt-12 relative z-20">
-                <PromoBanner />
 
                 {/* Tabs */}
                 <div className="bg-white rounded-2xl shadow-xl flex mb-8 overflow-hidden">

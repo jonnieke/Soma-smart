@@ -1,6 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Upload, Mic, FileText, Share2, StopCircle, Download, BookOpen, Crown, Brain, Sparkles, X, CheckCircle, Play, Pause, Trash2, ArrowRight, Library, Filter, Calendar, Home, LogOut, MonitorPlay, CreditCard, ScanLine, Plus } from 'lucide-react';
+import {
+    Upload, Mic, FileText, Share2, StopCircle, Download, BookOpen, Crown, Brain, Sparkles, X, CheckCircle, Play, Pause, Trash2, ArrowRight, Library, Filter, Calendar, Home, LogOut, MonitorPlay, CreditCard, ScanLine, Plus,
+    SquarePlus, ChevronRight, Type, Layers, ClipboardList, ClipboardCheck, Archive, History as HistoryIcon, MoreVertical, Check, Wallet, ToggleRight, ToggleLeft, Users, TrendingUp, DollarSign
+}
+    from 'lucide-react';
 import { Button, Card, Header, MarkdownText } from '../../components/Shared';
 import { TeacherPaywall } from '../../components/TeacherPaywall';
 import { TeacherOnboarding } from '../../components/TeacherOnboarding';
@@ -26,7 +30,9 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
         updateTeacherProfile, teacherHistory, saveTeacherActivity,
         deleteTeacherActivity,
         logout, isPro, upgradeAccount,
-        isOnline, language
+        isOnline, language,
+        teacherWallet, isAvailableForTutoring, toggleTutoringAvailability, fetchEarnings,
+        activeTutoringRequests, acceptTutoringRequest, submitTutoringResponse
     } = useApp();
     const t = translations[language];
     const [showPaywall, setShowPaywall] = useState(false);
@@ -95,13 +101,13 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
     const [paymentPlan, setPaymentPlan] = useState<SubscriptionPlan | null>(null);
     const [showLoginModal, setShowLoginModal] = useState(false);
     const [showLogoutModal, setShowLogoutModal] = useState(false);
-    const [activeTab, setActiveTab] = useState<'HOME' | 'CONVERT' | 'VOICE' | 'QUIZ' | 'LIBRARY' | 'MARKING'>(initialTab || 'HOME');
+    const [activeTab, setActiveTab] = useState<'HOME' | 'CONVERT' | 'VOICE' | 'QUIZ' | 'LIBRARY' | 'MARKING' | 'EARNINGS'>(initialTab || 'HOME');
     const [loading, setLoading] = useState(false);
 
     // Selection State
-    const [selectedClass, setSelectedClass] = useState<string>(teacherProfile?.classes[0] || "");
+    const [selectedClass, setSelectedClass] = useState<string>(teacherProfile?.classes?.[0] || (language === 'FR' ? "Département" : "Selected Department"));
     const [showOnboarding, setShowOnboarding] = useState(false);
-    const [selectedSubject, setSelectedSubject] = useState<string>(teacherProfile?.subjects[0] || "");
+    const [selectedSubject, setSelectedSubject] = useState<string>(teacherProfile?.subjects?.[0] || (language === 'FR' ? "Discipline" : "Active Discipline"));
 
     // Advanced Quiz State
     const [advMode, setAdvMode] = useState(false);
@@ -116,6 +122,11 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
     // Results
     const [generatedNote, setGeneratedNote] = useState<TeacherNote | null>(null);
     const [generatedQuiz, setGeneratedQuiz] = useState<QuizData | null>(null);
+
+    // Phase 2: Tutoring Response
+    const [respondingTo, setRespondingTo] = useState<string | null>(null);
+    const [responseType, setResponseType] = useState<'TEXT' | 'VOICE' | 'VIDEO'>('TEXT');
+    const [responseText, setResponseText] = useState("");
 
     // Recording
     const [isRecording, setIsRecording] = useState(false);
@@ -134,7 +145,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
         // If Pro is active, no limits!
         if (isPro) return true;
 
-        if (teacherUsageCount >= 5) {
+        if (teacherUsageCount >= 3) {
             setShowPaywall(true);
             return false;
         }
@@ -338,7 +349,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
 
     // --- Render ---
 
-    if (!teacherProfile) {
+    if (!teacherProfile && teacherUsageCount >= 3) {
         return (
             <>
                 <TeacherOnboarding
@@ -412,78 +423,98 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                 />
             )}
 
-            {/* Hero Header */}
-            <div className="bg-gradient-to-r from-indigo-900 to-purple-900 px-8 pt-6 pb-20 rounded-b-[3rem] shadow-lg relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl -mr-20 -mt-20"></div>
-                <div className="absolute bottom-0 left-0 w-40 h-40 bg-purple-500/20 rounded-full blur-3xl -ml-10 -mb-10"></div>
+            {/* Clean & Organized Hero Header (Academic Registry Style) */}
+            <div className="bg-slate-50 px-8 pt-10 pb-24 rounded-b-[4rem] shadow-sm relative overflow-hidden border-b-2 border-slate-200">
+                {/* Academic Decorative Elements - Subtly Lightened */}
+                <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-500/5 rounded-full blur-[100px] -mr-32 -mt-32"></div>
+                <div className="absolute top-1/2 left-0 w-64 h-64 bg-slate-200/40 rounded-full blur-[80px] -ml-20"></div>
+
+                {/* Background Pattern (Subtle grid/academic feel) */}
+                <div className="absolute inset-0 opacity-[0.4] pointer-events-none" style={{ backgroundImage: 'radial-gradient(#cbd5e1 1px, transparent 1px)', backgroundSize: '32px 32px' }}></div>
 
                 <div className="relative z-10">
-                    {/* Top Bar */}
-                    <div className="flex flex-col md:flex-row justify-between items-start mb-6 gap-4">
-                        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-2">
-                            <div className="w-10 h-10 bg-indigo-500/30 backdrop-blur rounded-full flex items-center justify-center text-indigo-50 font-bold border border-indigo-400/30 flex-shrink-0">
-                                {teacherProfile.name.charAt(0)}
+                    {/* Top navigation & Identity Card Look */}
+                    <div className="flex flex-col md:flex-row justify-between items-center mb-10 gap-6">
+                        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="flex items-center gap-5">
+                            <div className="relative">
+                                <div className="absolute inset-0 bg-indigo-500 blur-xl opacity-10 rounded-full animate-pulse"></div>
+                                <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center text-slate-900 text-2xl font-black shadow-lg border-2 border-slate-100 relative z-10">
+                                    {teacherProfile?.name.charAt(0) || "T"}
+                                </div>
                             </div>
-                            <div>
-                                <h2 className="text-white font-bold text-lg md:text-xl">{teacherProfile.name}</h2>
-                                {teacherUsageCount < 5 && !isPro && (
-                                    <span className="text-indigo-200 text-xs flex items-center gap-1">
-                                        <Sparkles className="w-3 h-3" /> {5 - teacherUsageCount} {t.teacher.stats.free}
-                                    </span>
-                                )}
+                            <div className="text-center md:text-left">
+                                <h2 className="text-slate-900 font-black text-2xl tracking-tight leading-none mb-1">{teacherProfile?.name || (language === 'FR' ? "Enseignant Invité" : "Guest Teacher")}</h2>
+                                <div className="flex items-center gap-3 justify-center md:justify-start">
+                                    <span className="px-2 py-0.5 bg-indigo-50 border border-indigo-100 rounded text-[10px] font-black text-indigo-600 uppercase tracking-widest">Certified Educator</span>
+                                    {teacherUsageCount < 3 && !isPro && (
+                                        <span className="text-amber-600 text-[10px] font-bold flex items-center gap-1 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
+                                            <Sparkles className="w-3 h-3" /> {3 - teacherUsageCount} {t.teacher.stats.free}
+                                        </span>
+                                    )}
+                                    {isAvailableForTutoring && (
+                                        <span className="text-emerald-600 text-[10px] font-bold flex items-center gap-1 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 animate-pulse">
+                                            <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></div> Available to Tutor
+                                        </span>
+                                    )}
+                                </div>
                             </div>
                         </motion.div>
 
-                        <div className="flex gap-2 w-full md:w-auto">
-                            <button onClick={() => onNavigate(ViewState.DASHBOARD)} className="flex-1 md:flex-none flex items-center justify-center gap-2 px-3 py-2 bg-white/10 hover:bg-white/20 rounded-xl backdrop-blur-md transition-colors group text-xs font-bold text-white" title={t.teacher.common.backToHome}>
-                                <Home className="w-5 h-5" /> {t.teacher.sidebar.home}
+                        <div className="flex bg-white p-1.5 rounded-2xl border border-slate-200 shadow-sm w-full md:w-auto">
+                            <button onClick={() => onNavigate(ViewState.DASHBOARD)} className="flex-1 md:flex-none flex items-center justify-center gap-2 px-5 py-2.5 hover:bg-slate-50 rounded-xl transition-all group text-xs font-black text-slate-600 uppercase tracking-widest">
+                                <Home className="w-4 h-4 text-indigo-500 group-hover:scale-110 transition-transform" /> {t.teacher.sidebar.home}
                             </button>
-                            <button onClick={() => navigate('/pricing')} className="flex-1 md:flex-none flex justify-center items-center p-2 bg-indigo-500/20 hover:bg-indigo-500/30 rounded-xl backdrop-blur-md transition-colors group" title={t.teacher.common.pricingPlans}>
-                                <CreditCard className="w-6 h-6 text-white" />
+                            <div className="w-px h-6 bg-slate-200 self-center mx-1"></div>
+                            <button onClick={() => navigate('/pricing')} className="flex-1 md:flex-none flex justify-center items-center px-4 py-2.5 hover:bg-slate-50 rounded-xl transition-all group" title={t.teacher.common.pricingPlans}>
+                                <CreditCard className="w-5 h-5 text-indigo-500 group-hover:scale-110 transition-transform" />
                             </button>
-                            <button onClick={() => setShowLogoutModal(true)} className="flex-1 md:flex-none flex justify-center items-center p-2 bg-white/10 hover:bg-red-500/20 rounded-xl backdrop-blur-md transition-colors group" title={t.teacher.common.logout}>
-                                <LogOut className="w-6 h-6 text-white group-hover:text-red-200" />
+                            <button onClick={() => setShowLogoutModal(true)} className="flex-1 md:flex-none flex justify-center items-center px-4 py-2.5 hover:bg-red-50 rounded-xl transition-all group" title={t.teacher.common.logout}>
+                                <LogOut className="w-5 h-5 text-slate-400 group-hover:text-red-500 group-hover:scale-110 transition-transform" />
                             </button>
                         </div>
                     </div>
 
-                    {/* Context Selectors */}
-                    <div className="flex gap-4 mb-2 overflow-x-auto pb-2 scrollbar-hide">
-                        <div className="bg-white/10 backdrop-blur-md rounded-xl p-1 flex border border-white/10">
-                            {teacherProfile.classes.map(c => (
-                                <button
-                                    key={c}
-                                    onClick={() => setSelectedClass(c)}
-                                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${selectedClass === c ? 'bg-white text-indigo-900 shadow-lg' : 'text-indigo-100 hover:bg-white/5'}`}
-                                >
-                                    {c}
-                                </button>
-                            ))}
+                    {/* Elite Context Selectors (Tabbed System) - Lightened */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-2 flex items-center gap-2">
+                                <SquarePlus className="w-3 h-3 text-indigo-500" /> Selected Department
+                            </label>
+                            <div className="bg-white/50 backdrop-blur-md rounded-[1.25rem] p-1.5 flex border-2 border-white shadow-sm ring-1 ring-slate-200">
+                                {(teacherProfile?.classes || []).map(c => (
+                                    <button
+                                        key={c}
+                                        onClick={() => setSelectedClass(c)}
+                                        className={`flex-1 px-4 py-3 rounded-xl text-xs font-black transition-all uppercase tracking-wider ${selectedClass === c ? 'bg-indigo-600 text-white shadow-lg scale-[1.02]' : 'text-slate-500 hover:text-indigo-600 hover:bg-white'}`}
+                                    >
+                                        {c}
+                                    </button>
+                                ))}
+                                {(!teacherProfile || teacherProfile.classes.length === 0) && (
+                                    <button onClick={() => setShowOnboarding(true)} className="w-full px-4 py-3 text-xs font-black text-indigo-600 hover:bg-white transition-colors flex items-center justify-center gap-2">
+                                        <Plus className="w-4 h-4" /> {teacherProfile ? "Initialize Class Registry" : "Unlock Full Registry"}
+                                    </button>
+                                )}
+                            </div>
                         </div>
-                        <div className="bg-white/10 backdrop-blur-md rounded-xl p-1 flex border border-white/10">
-                            {teacherProfile.subjects.map(s => (
-                                <button
-                                    key={s}
-                                    onClick={() => setSelectedSubject(s)}
-                                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${selectedSubject === s ? 'bg-white text-indigo-900 shadow-lg' : 'text-indigo-100 hover:bg-white/5'}`}
-                                >
-                                    {s}
-                                </button>
-                            ))}
+
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-2 flex items-center gap-2">
+                                <BookOpen className="w-3 h-3 text-purple-500" /> Active Discipline
+                            </label>
+                            <div className="bg-white/50 backdrop-blur-md rounded-[1.25rem] p-1.5 flex border-2 border-white shadow-sm ring-1 ring-slate-200">
+                                {(teacherProfile?.subjects || []).map(s => (
+                                    <button
+                                        key={s}
+                                        onClick={() => setSelectedSubject(s)}
+                                        className={`flex-1 px-4 py-3 rounded-xl text-xs font-black transition-all uppercase tracking-wider ${selectedSubject === s ? 'bg-purple-600 text-white shadow-lg scale-[1.02]' : 'text-slate-500 hover:text-purple-600 hover:bg-white'}`}
+                                    >
+                                        {s}
+                                    </button>
+                                ))}
+                            </div>
                         </div>
                     </div>
-
-                    {/* Empty State / Add Classes Trigger */}
-                    {teacherProfile.classes.length === 0 && (
-                        <div className="mb-4">
-                            <button
-                                onClick={() => setShowOnboarding(true)}
-                                className="px-4 py-2 bg-white/20 hover:bg-white/30 text-white rounded-xl border border-white/20 backdrop-blur-md text-sm font-bold flex items-center gap-2 animate-pulse"
-                            >
-                                <Plus className="w-4 h-4" /> Setup My Classes
-                            </button>
-                        </div>
-                    )}
                 </div>
             </div>
 
@@ -511,6 +542,12 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                         >
                             <ScanLine className="w-4 h-4 flex-shrink-0" /> {t.teacher.sidebar.marking}
                         </button>
+                        <button
+                            onClick={() => setActiveTab('EARNINGS')}
+                            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl transition-all text-xs md:text-sm font-bold ${activeTab === 'EARNINGS' ? 'bg-amber-50 text-amber-600' : 'text-slate-500 hover:bg-slate-50'}`}
+                        >
+                            <Wallet className="w-4 h-4 flex-shrink-0" /> Earnings
+                        </button>
                     </div>
                 )}
 
@@ -528,38 +565,38 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                     <>
                         {activeTab === 'HOME' && (
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pb-24">
-                                {/* New Tool: Darasa Mode (Full Width) */}
+                                {/* New Tool: Darasa Mode (Full Width) - Clean Light Style */}
                                 <motion.div
                                     whileHover={{ y: -5 }}
                                     onClick={() => navigate('/teacher/darasa')}
-                                    className="md:col-span-2 bg-gradient-to-r from-orange-500 to-amber-500 p-6 rounded-3xl shadow-lg border border-orange-400 flex flex-row items-center cursor-pointer group relative overflow-hidden"
+                                    className="md:col-span-2 bg-white p-6 rounded-[2.5rem] shadow-sm border-2 border-slate-100 flex flex-row items-center cursor-pointer group relative overflow-hidden active:scale-[0.98] transition-all"
                                 >
-                                    <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -mr-20 -mt-20"></div>
+                                    <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-50 rounded-full blur-3xl -mr-20 -mt-20 opacity-60"></div>
 
-                                    <div className="w-16 h-16 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center mr-6 shadow-inner border border-white/20 group-hover:scale-110 transition-transform">
-                                        <MonitorPlay className="w-8 h-8 text-white" />
+                                    <div className="w-16 h-16 bg-indigo-50 rounded-2xl flex items-center justify-center mr-6 group-hover:scale-110 transition-transform border border-indigo-100 shadow-sm shadow-indigo-100">
+                                        <MonitorPlay className="w-8 h-8 text-indigo-600" />
                                     </div>
-                                    <div className="flex-1 text-white relative z-10">
-                                        <h3 className="font-bold text-xl mb-1 flex items-center gap-2">
-                                            {t.teacher.tools.darasa.title} <span className="text-[10px] bg-white/20 px-2 py-0.5 rounded-full font-mono uppercase tracking-wider">Live</span>
+                                    <div className="flex-1 relative z-10">
+                                        <h3 className="font-black text-xl text-slate-900 mb-1 flex items-center gap-2">
+                                            {t.teacher.tools.darasa.title} <span className="text-[10px] bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full font-black uppercase tracking-wider shadow-sm border border-indigo-200">Live</span>
                                         </h3>
-                                        <p className="text-orange-50 text-sm opacity-90">{t.teacher.tools.darasa.desc}</p>
+                                        <p className="text-slate-500 text-sm font-medium">{t.teacher.tools.darasa.desc}</p>
                                     </div>
-                                    <div className="bg-white/20 p-2 rounded-full backdrop-blur-sm group-hover:bg-white/30 transition-colors">
-                                        <ArrowRight className="w-6 h-6 text-white" />
+                                    <div className="bg-slate-50 p-2 rounded-full group-hover:bg-indigo-600 group-hover:text-white transition-all border border-slate-200">
+                                        <ArrowRight className="w-6 h-6" />
                                     </div>
                                 </motion.div>
 
                                 {/* Tool 1: Notes Converter */}
                                 <motion.div
                                     whileHover={isOnline ? { y: -5 } : {}}
-                                    className={`bg-white p-6 rounded-3xl shadow-sm border border-slate-100 flex flex-col items-center text-center group transition-all ${isOnline ? 'cursor-pointer hover:border-indigo-200 hover:shadow-md' : 'opacity-60 grayscale cursor-not-allowed'}`}
+                                    className={`bg-white p-6 rounded-[2.5rem] shadow-sm border-2 border-slate-100 flex flex-col items-center text-center group transition-all ${isOnline ? 'cursor-pointer hover:border-indigo-200' : 'opacity-60 grayscale cursor-not-allowed'}`}
                                 >
-                                    <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-4 transition-transform ${isOnline ? 'bg-blue-50 group-hover:scale-110' : 'bg-slate-100'}`}>
-                                        <FileText className={`w-8 h-8 ${isOnline ? 'text-blue-600' : 'text-slate-400'}`} />
+                                    <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-4 transition-transform shadow-sm ${isOnline ? 'bg-indigo-50 group-hover:scale-110 border border-indigo-100' : 'bg-slate-100'}`}>
+                                        <FileText className={`w-8 h-8 ${isOnline ? 'text-indigo-600' : 'text-slate-400'}`} />
                                     </div>
-                                    <h3 className="font-bold text-lg text-slate-800 mb-2">{t.teacher.tools.converter.title}</h3>
-                                    <p className="text-sm text-slate-500 mb-6">
+                                    <h3 className="font-black text-lg text-slate-900 mb-2">{t.teacher.tools.converter.title}</h3>
+                                    <p className="text-sm text-slate-500 mb-6 font-medium">
                                         {isOnline ? `${t.teacher.tools.converter.desc} ${selectedClass}.` : (language === 'FR' ? "Internet requis pour la conversion." : "Internet required for conversion.")}
                                     </p>
                                     <Button
@@ -567,6 +604,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                                         variant="outline"
                                         onClick={isOnline ? () => document.getElementById('file-upload')?.click() : undefined}
                                         disabled={!isOnline}
+                                        className="rounded-xl border-2 hover:bg-slate-50 text-xs font-black uppercase tracking-widest"
                                     >
                                         <Upload className="w-4 h-4 mr-2" /> {isOnline ? (language === 'FR' ? "Télécharger Photo" : "Upload Photo") : (language === 'FR' ? "Déconnecté" : "Disconnected")}
                                     </Button>
@@ -576,161 +614,201 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                                 {/* Tool 2: Voice Notes */}
                                 <motion.div
                                     whileHover={isOnline ? { y: -5 } : {}}
-                                    className={`bg-white p-6 rounded-3xl shadow-sm border border-slate-100 flex flex-col items-center text-center group transition-all ${isOnline ? 'cursor-pointer hover:border-purple-200 hover:shadow-md' : 'opacity-60 grayscale cursor-not-allowed'}`}
+                                    className={`bg-white p-6 rounded-[2.5rem] shadow-sm border-2 border-slate-100 flex flex-col items-center text-center group transition-all ${isOnline ? 'cursor-pointer hover:border-purple-200' : 'opacity-60 grayscale cursor-not-allowed'}`}
                                 >
-                                    <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-4 transition-transform ${isRecording ? 'bg-red-100 animate-pulse scale-110' : isOnline ? 'bg-purple-50 group-hover:scale-110' : 'bg-slate-100'}`}>
+                                    <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-4 transition-transform shadow-sm ${isRecording ? 'bg-red-50 animate-pulse scale-110 border border-red-100' : isOnline ? 'bg-purple-50 group-hover:scale-110 border border-purple-100' : 'bg-slate-100'}`}>
                                         <Mic className={`w-8 h-8 ${isRecording ? 'text-red-500' : isOnline ? 'text-purple-600' : 'text-slate-400'}`} />
                                     </div>
-                                    <h3 className="font-bold text-lg text-slate-800 mb-2">{isRecording ? (language === 'FR' ? "Enregistrement..." : "Recording...") : t.teacher.tools.voice.title}</h3>
-                                    <p className="text-sm text-slate-500 mb-6">
-                                        {isOnline ? `${t.teacher.tools.voice.desc} ${selectedSubject}.` : (language === 'FR' ? "Internet requis pour l'enregistrement." : "Internet required for recording.")}
+                                    <h3 className="font-black text-lg text-slate-900 mb-2">{t.teacher.tools.voice.title}</h3>
+                                    <p className="text-sm text-slate-500 mb-6 font-medium">
+                                        {isOnline ? `${t.teacher.tools.voice.desc} ${selectedSubject}.` : (language === 'FR' ? "Internet requis pour l'audio." : "Internet required for audio.")}
                                     </p>
-                                    {isRecording ? (
-                                        <Button fullWidth onClick={stopRecording} className="bg-red-500 hover:bg-red-600 text-white border-transparent">
-                                            <StopCircle className="w-4 h-4 mr-2" /> {language === 'FR' ? 'Arrêter et Traiter' : 'Stop & Process'} ({formatTime(recordingTime)})
-                                        </Button>
-                                    ) : (
-                                        <Button fullWidth variant="outline" onClick={isOnline ? startRecording : undefined} disabled={!isOnline}>
-                                            <Mic className="w-4 h-4 mr-2" /> {isOnline ? (language === 'FR' ? 'Démarrer Enregistrement' : "Start Recording") : (language === 'FR' ? "Déconnecté" : "Disconnected")}
-                                        </Button>
-                                    )}
+                                    <Button
+                                        fullWidth
+                                        variant="outline"
+                                        onClick={isOnline ? (isRecording ? stopRecording : startRecording) : undefined}
+                                        disabled={!isOnline}
+                                        className={`rounded-xl border-2 text-xs font-black uppercase tracking-widest transition-all ${isRecording ? 'border-red-500 text-red-600 hover:bg-red-50' : ''}`}
+                                    >
+                                        <Mic className={`w-4 h-4 mr-2 ${isRecording ? 'animate-pulse' : ''}`} />
+                                        {isRecording ? (language === 'FR' ? "Arrêter l'enregistrement" : "Stop Recording") : (language === 'FR' ? "Lancer l'audio" : "Record Audio")}
+                                    </Button>
                                 </motion.div>
 
-                                {/* Tool 3: Advanced Quiz Gen */}
-                                <motion.div whileHover={{ y: -5 }} className="md:col-span-2 bg-gradient-to-br from-indigo-50 to-white p-6 rounded-3xl shadow-sm border border-indigo-100 relative overflow-hidden">
-                                    <div className="absolute top-0 right-0 p-4 opacity-10 pointer-events-none">
-                                        <Crown className="w-32 h-32 text-indigo-900" />
-                                    </div>
-
-                                    <div className="flex flex-col md:flex-row gap-8 relative z-10">
-                                        <div className="flex-1">
-                                            <div className="flex items-center gap-3 mb-4">
-                                                <div className="w-10 h-10 bg-indigo-600 text-white rounded-xl flex items-center justify-center shadow-lg shadow-indigo-200">
-                                                    <Brain className="w-5 h-5" />
+                                {/* Advanced Quiz Generator & Materials Hub - Fixed Visibility & Organization */}
+                                <motion.div
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    className="md:col-span-2 bg-white rounded-[3rem] shadow-sm border-2 border-slate-100 p-8 md:p-12 relative overflow-visible mt-4 mb-2"
+                                >
+                                    <div className="flex flex-col md:flex-row gap-12">
+                                        <div className="flex-[1.5] space-y-8">
+                                            <div className="flex items-center gap-4">
+                                                <div className="w-12 h-12 bg-indigo-600 text-white rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-100">
+                                                    <Brain className="w-6 h-6" />
                                                 </div>
                                                 <div>
-                                                    <h3 className="font-bold text-lg text-indigo-900">{t.teacher.tools.exam.title}</h3>
-                                                    <p className="text-xs text-indigo-600 font-medium bg-indigo-100 px-2 py-0.5 rounded-full inline-block">{t.teacher.tools.exam.desc}</p>
+                                                    <h3 className="text-2xl font-black text-slate-900 tracking-tight leading-none">{t.teacher.tools.exam.title}</h3>
+                                                    <p className="text-[10px] font-black text-indigo-500 uppercase tracking-[0.2em] mt-2">Professional Examination Prep</p>
                                                 </div>
                                             </div>
 
-                                            <div className="space-y-4">
-                                                <div>
-                                                    <label className="text-xs font-bold text-indigo-900 uppercase tracking-wider mb-1 block">{t.teacher.tools.exam.topicLabel}</label>
+                                            <div className="space-y-6">
+                                                <div className="space-y-2">
+                                                    <label className="text-xs font-black text-slate-900 uppercase tracking-[0.1em] flex items-center gap-2">
+                                                        <Type className="w-3 h-3 text-indigo-500" /> {t.teacher.tools.exam.topicLabel}
+                                                    </label>
                                                     <input
                                                         type="text"
                                                         value={advTopic}
                                                         onChange={(e) => setAdvTopic(e.target.value)}
-                                                        placeholder={`e.g. ${selectedSubject} End Term Exam`}
-                                                        className="w-full px-4 py-3 rounded-xl border border-indigo-200 focus:ring-2 focus:ring-indigo-500 outline-none text-sm bg-white"
+                                                        placeholder="e.g. Introduction to Calculus"
+                                                        className="w-full px-5 py-4 rounded-2xl border-2 border-slate-100 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none text-sm font-bold bg-slate-50/50 shadow-inner"
                                                     />
                                                 </div>
 
-                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-left">
-                                                    <div>
-                                                        <label className="text-xs font-bold text-indigo-900 uppercase tracking-wider mb-1 block">{t.teacher.tools.exam.questionsLabel}</label>
-                                                        <select
-                                                            value={advCount}
-                                                            onChange={(e) => setAdvCount(Number(e.target.value))}
-                                                            className="w-full px-4 py-3 rounded-xl border border-indigo-200 focus:ring-2 focus:ring-indigo-500 outline-none text-sm bg-white"
-                                                        >
-                                                            <option value={5}>5 Questions</option>
-                                                            <option value={10}>10 Questions</option>
-                                                            <option value={15}>15 Questions</option>
-                                                        </select>
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                                                    <div className="space-y-2">
+                                                        <label className="text-xs font-black text-slate-900 uppercase tracking-[0.1em] flex items-center gap-2">
+                                                            <Layers className="w-3 h-3 text-indigo-500" /> {t.teacher.tools.exam.questionsLabel}
+                                                        </label>
+                                                        <div className="relative">
+                                                            <select
+                                                                value={advCount}
+                                                                onChange={(e) => setAdvCount(Number(e.target.value))}
+                                                                className="w-full px-5 py-4 rounded-2xl border-2 border-slate-100 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none text-sm font-bold bg-slate-50/50 shadow-inner appearance-none cursor-pointer"
+                                                            >
+                                                                <option value={5}>5 Professional Items</option>
+                                                                <option value={10}>10 Professional Items</option>
+                                                                <option value={15}>15 Professional Items</option>
+                                                            </select>
+                                                            <div className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                                                                <ChevronRight className="w-4 h-4 rotate-90" />
+                                                            </div>
+                                                        </div>
                                                     </div>
-                                                    <div>
-                                                        <label className="text-xs font-bold text-indigo-900 uppercase tracking-wider mb-1 block">{t.teacher.tools.exam.typeLabel}</label>
-                                                        <select
-                                                            value={advType}
-                                                            onChange={(e) => setAdvType(e.target.value as 'MCQ' | 'OPEN')}
-                                                            className="w-full px-4 py-3 rounded-xl border border-indigo-200 focus:ring-2 focus:ring-indigo-500 outline-none text-sm bg-white"
-                                                        >
-                                                            <option value="MCQ">Multiple Choice</option>
-                                                            <option value="OPEN">Structured / Open</option>
-                                                        </select>
+                                                    <div className="space-y-2">
+                                                        <label className="text-xs font-black text-slate-900 uppercase tracking-[0.1em] flex items-center gap-2">
+                                                            <ClipboardList className="w-3 h-3 text-indigo-500" /> {t.teacher.tools.exam.typeLabel}
+                                                        </label>
+                                                        <div className="relative">
+                                                            <select
+                                                                value={advType}
+                                                                onChange={(e) => setAdvType(e.target.value as 'MCQ' | 'OPEN')}
+                                                                className="w-full px-5 py-4 rounded-2xl border-2 border-slate-100 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none text-sm font-bold bg-slate-50/50 shadow-inner appearance-none cursor-pointer"
+                                                            >
+                                                                <option value="MCQ">Objective (Multiple Choice)</option>
+                                                                <option value="OPEN">Subjective (Long-form)</option>
+                                                            </select>
+                                                            <div className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                                                                <ChevronRight className="w-4 h-4 rotate-90" />
+                                                            </div>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
                                         </div>
 
-                                        <div className="flex-1 border-t md:border-t-0 md:border-l border-indigo-100 md:pl-8 pt-6 md:pt-0">
-                                            <label className="text-xs font-bold text-indigo-900 uppercase tracking-wider mb-2 block">{t.teacher.tools.exam.sourceLabel}</label>
+                                        <div className="flex-1 border-t md:border-t-0 md:border-l-2 border-slate-100 md:pl-10 pt-8 md:pt-0 flex flex-col justify-between">
+                                            <div className="space-y-4">
+                                                <label className="text-xs font-black text-slate-900 uppercase tracking-[0.1em] mb-2 block">{t.teacher.tools.exam.sourceLabel}</label>
 
-                                            <div className="border-2 border-dashed border-indigo-200 rounded-xl bg-indigo-50/50 p-6 text-center hover:bg-indigo-50 transition-colors relative">
-                                                <input
-                                                    type="file"
-                                                    multiple
-                                                    accept="image/*,application/pdf"
-                                                    onChange={handleAdvFileUpload}
-                                                    className="absolute inset-0 opacity-0 cursor-pointer"
-                                                />
-                                                <Upload className="w-8 h-8 text-indigo-400 mx-auto mb-2" />
-                                                <p className="text-sm font-bold text-indigo-900">
-                                                    {advFiles.length > 0 ? t.teacher.tools.exam.uploadSelected.replace('{count}', advFiles.length.toString()) : t.teacher.tools.exam.uploadPrompt}
-                                                </p>
-                                                <p className="text-xs text-indigo-500 mt-1">
-                                                    {advFiles.length > 0 ? t.teacher.tools.exam.uploadChange : t.teacher.tools.exam.uploadTypes}
-                                                </p>
+                                                <div className="border-2 border-dashed border-slate-200 rounded-[2rem] bg-slate-50/50 p-8 text-center hover:bg-white hover:border-indigo-400 hover:shadow-xl hover:shadow-indigo-50 transition-all group relative cursor-pointer">
+                                                    <input
+                                                        type="file"
+                                                        multiple
+                                                        accept="image/*,application/pdf"
+                                                        onChange={handleAdvFileUpload}
+                                                        className="absolute inset-0 opacity-0 cursor-pointer z-10"
+                                                    />
+                                                    <div className="w-16 h-16 bg-white rounded-2xl shadow-md border border-slate-100 flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
+                                                        <Upload className="w-8 h-8 text-indigo-500" />
+                                                    </div>
+                                                    <p className="text-base font-black text-slate-900 mb-1">
+                                                        {advFiles.length > 0 ? t.teacher.tools.exam.uploadSelected.replace('{count}', advFiles.length.toString()) : "Import Source Materials"}
+                                                    </p>
+                                                    <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mt-1">
+                                                        {advFiles.length > 0 ? "Replace Documents" : "Upload PDFs or Images"}
+                                                    </p>
+                                                </div>
                                             </div>
 
-                                            <div className="mt-6">
+                                            <div className="mt-8">
                                                 <Button
                                                     fullWidth
+                                                    variant={isOnline && advTopic && advFiles.length > 0 ? "primary" : "outline"}
                                                     onClick={isOnline ? handleAdvancedQuizGen : undefined}
                                                     disabled={!isOnline || !advTopic || advFiles.length === 0}
-                                                    className={`shadow-lg ${isOnline ? 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-indigo-200' : 'bg-slate-100 text-slate-400 grayscale'}`}
+                                                    className={`py-5 text-base font-black rounded-2xl shadow-xl transition-all tracking-tight ${isOnline && advTopic && advFiles.length > 0 ? 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-indigo-200 scale-[1.02]' : 'bg-slate-50 text-black border-slate-100 cursor-not-allowed shadow-none'}`}
                                                 >
-                                                    <Sparkles className="w-4 h-4 mr-2" /> {isOnline ? t.teacher.tools.exam.generateBtn : t.teacher.common.internetReq}
+                                                    <Sparkles className="w-5 h-5 mr-3" /> {isOnline ? t.teacher.tools.exam.generateBtn : t.teacher.common.internetReq}
                                                 </Button>
                                                 {!isOnline ? (
-                                                    <p className="text-[10px] text-center text-slate-400 mt-2 font-bold uppercase tracking-wider">{t.teacher.common.connectPrompt}</p>
-                                                ) : !advTopic && (
-                                                    <p className="text-[10px] text-center text-indigo-400 mt-2">{t.teacher.common.topicPrompt}</p>
-                                                )}
+                                                    <p className="text-[10px] text-center text-slate-400 mt-3 font-black uppercase tracking-[0.2em]">{t.teacher.common.internetReq}</p>
+                                                ) : !advTopic ? (
+                                                    <p className="text-[10px] text-center text-indigo-500 mt-3 font-black uppercase tracking-[0.2em] animate-pulse">{t.teacher.common.topicPrompt}</p>
+                                                ) : null}
                                             </div>
                                         </div>
                                     </div>
                                 </motion.div>
 
-                                {/* Tool 4: Automatic Marking */}
+                                {/* Tool 4: Automatic Marking - Clean Style */}
                                 <motion.div
                                     whileHover={{ y: -5 }}
                                     onClick={() => setActiveTab('MARKING')}
-                                    className="md:col-span-2 bg-gradient-to-r from-emerald-600 to-teal-600 p-6 rounded-3xl shadow-lg border border-emerald-500 flex flex-row items-center cursor-pointer group relative overflow-hidden"
+                                    className="md:col-span-2 bg-white p-6 rounded-[2.5rem] shadow-sm border-2 border-slate-100 flex flex-row items-center cursor-pointer group relative overflow-hidden active:scale-[0.98] transition-all"
                                 >
-                                    <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -mr-20 -mt-20"></div>
+                                    <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-50 rounded-full blur-3xl -mr-20 -mt-20 opacity-60"></div>
 
-                                    <div className="w-16 h-16 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center mr-6 shadow-inner border border-white/20 group-hover:scale-110 transition-transform">
-                                        <ScanLine className="w-8 h-8 text-white" />
+                                    <div className="w-16 h-16 bg-emerald-50 rounded-2xl flex items-center justify-center mr-6 group-hover:scale-110 transition-transform border border-emerald-100 shadow-sm shadow-emerald-100">
+                                        <ScanLine className="w-8 h-8 text-emerald-600" />
                                     </div>
-                                    <div className="flex-1 text-white relative z-10">
-                                        <h3 className="font-bold text-xl mb-1 flex items-center gap-2">
-                                            {t.teacher.tools.marking.title} <span className="text-[10px] bg-white/20 px-2 py-0.5 rounded-full font-mono uppercase tracking-wider">{t.teacher.tools.marking.badge}</span>
+                                    <div className="flex-1 relative z-10">
+                                        <h3 className="font-black text-xl text-slate-900 mb-1 flex items-center gap-2">
+                                            {t.teacher.tools.marking.title} <span className="text-[10px] bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-black uppercase tracking-wider shadow-sm border border-emerald-200">{t.teacher.tools.marking.badge}</span>
                                         </h3>
-                                        <p className="text-emerald-50 text-sm opacity-90">{t.teacher.tools.marking.desc}</p>
+                                        <p className="text-slate-500 text-sm font-medium">{t.teacher.tools.marking.desc}</p>
                                     </div>
-                                    <div className="bg-white/20 p-2 rounded-full backdrop-blur-sm group-hover:bg-white/30 transition-colors">
-                                        <ArrowRight className="w-6 h-6 text-white" />
+                                    <div className="bg-slate-50 p-2 rounded-full group-hover:bg-emerald-600 group-hover:text-white transition-all border border-slate-200">
+                                        <ArrowRight className="w-6 h-6" />
                                     </div>
                                 </motion.div>
                             </div>
                         )}
-                        {
-                            activeTab === 'LIBRARY' && (
-                                <div className="bg-white rounded-3xl shadow-sm border border-slate-200 p-6 min-h-[500px]">
-                                    <div className="flex items-center gap-2 mb-6 pb-4 border-b">
-                                        <Filter className="w-5 h-5 mx-auto text-slate-400" />
-                                        <h3 className="font-bold text-lg text-slate-700">{t.teacher.library.title}</h3>
-                                        <span className="ml-auto text-sm text-slate-500 font-medium bg-slate-100 px-3 py-1 rounded-full">{selectedClass}</span>
-                                        <span className="text-sm text-slate-500 font-medium bg-slate-100 px-3 py-1 rounded-full">{selectedSubject}</span>
+                        {activeTab === 'LIBRARY' && (
+                            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-white rounded-[3rem] shadow-sm border-2 border-slate-100 overflow-hidden min-h-[500px]">
+                                <div className="bg-slate-50/50 px-8 md:px-12 py-8 border-b-2 border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-12 h-12 bg-indigo-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-indigo-100">
+                                            <Archive className="w-6 h-6" />
+                                        </div>
+                                        <div>
+                                            <h3 className="font-black text-2xl text-slate-900 tracking-tight leading-none">{t.teacher.library.title}</h3>
+                                            <p className="text-[10px] font-black text-indigo-500 uppercase tracking-[0.2em] mt-2">Resource Repository</p>
+                                        </div>
                                     </div>
+                                    <div className="flex flex-wrap gap-2">
+                                        <div className="flex items-center bg-white border-2 border-slate-100 px-4 py-2 rounded-xl shadow-sm">
+                                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mr-2">Class:</span>
+                                            <span className="text-xs font-black text-indigo-600">{selectedClass}</span>
+                                        </div>
+                                        <div className="flex items-center bg-white border-2 border-slate-100 px-4 py-2 rounded-xl shadow-sm">
+                                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mr-2">Subject:</span>
+                                            <span className="text-xs font-black text-slate-600">{selectedSubject}</span>
+                                        </div>
+                                    </div>
+                                </div>
 
+                                <div className="p-8 md:p-12">
                                     <div className="space-y-4">
                                         {teacherHistory.filter(item => (!selectedClass || item.className === selectedClass) && (!selectedSubject || item.subject === selectedSubject)).length === 0 ? (
-                                            <div className="text-center py-20 text-slate-400">
-                                                <Library className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                                                <p>{t.teacher.library.noItems}</p>
+                                            <div className="text-center py-32 group">
+                                                <div className="w-24 h-24 bg-slate-50 border-2 border-dashed border-slate-200 rounded-[2.5rem] flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform">
+                                                    <HistoryIcon className="w-10 h-10 text-slate-300" />
+                                                </div>
+                                                <h4 className="text-xl font-black text-slate-800 mb-2">{t.teacher.library.noItems}</h4>
+                                                <p className="text-sm text-slate-400 font-bold uppercase tracking-widest">Generate your first academic resource to begin.</p>
                                             </div>
                                         ) : (
                                             teacherHistory
@@ -738,23 +816,27 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                                                 .map((item) => (
                                                     <motion.div
                                                         key={item.id}
-                                                        initial={{ opacity: 0, y: 10 }}
-                                                        animate={{ opacity: 1, y: 0 }}
-                                                        className="p-4 border border-slate-100 rounded-xl hover:bg-slate-50 cursor-pointer flex items-center justify-between group transition-all"
+                                                        initial={{ opacity: 0, x: -10 }}
+                                                        animate={{ opacity: 1, x: 0 }}
+                                                        className="p-6 bg-white border-2 border-slate-50 rounded-[2rem] hover:border-indigo-100 hover:shadow-xl hover:shadow-indigo-50/50 cursor-pointer flex items-center justify-between group transition-all"
                                                         onClick={() => loadHistoryItem(item)}
                                                     >
-                                                        <div className="flex items-center gap-4">
-                                                            <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${item.type === 'NOTE' ? 'bg-blue-100 text-blue-600' : 'bg-indigo-100 text-indigo-600'}`}>
-                                                                {item.type === 'NOTE' ? <FileText className="w-5 h-5" /> : <Brain className="w-5 h-5" />}
+                                                        <div className="flex items-center gap-5">
+                                                            <div className={`w-12 h-12 rounded-xl flex items-center justify-center border-2 ${item.type === 'NOTE' ? 'bg-blue-50 border-blue-100 text-blue-600' : 'bg-indigo-50 border-indigo-100 text-indigo-600'}`}>
+                                                                {item.type === 'NOTE' ? <FileText className="w-6 h-6" /> : <Brain className="w-6 h-6" />}
                                                             </div>
                                                             <div>
-                                                                <h4 className="font-bold text-slate-800">{item.title}</h4>
-                                                                <p className="text-xs text-slate-500 flex items-center gap-2">
-                                                                    <Calendar className="w-3 h-3" /> {item.date}
-                                                                </p>
+                                                                <h4 className="font-black text-slate-800 text-lg group-hover:text-indigo-600 transition-colors tracking-tight">{item.title}</h4>
+                                                                <div className="flex items-center gap-4 mt-1">
+                                                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+                                                                        <Calendar className="w-3 h-3" /> {item.date}
+                                                                    </p>
+                                                                    <div className="w-1 h-1 bg-slate-200 rounded-full"></div>
+                                                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{item.type === 'NOTE' ? 'Notes' : 'Assessment'}</p>
+                                                                </div>
                                                             </div>
                                                         </div>
-                                                        <div className="flex items-center gap-2">
+                                                        <div className="flex items-center gap-3">
                                                             <button
                                                                 onClick={(e) => {
                                                                     e.stopPropagation();
@@ -762,61 +844,211 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                                                                         deleteTeacherActivity(item.id);
                                                                     }
                                                                 }}
-                                                                className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                                                                className="w-10 h-10 flex items-center justify-center text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
                                                                 title={t.teacher.library.deleteLesson}
                                                             >
                                                                 <Trash2 className="w-4 h-4" />
                                                             </button>
-                                                            <ArrowRight className="w-4 h-4 text-slate-300 group-hover:text-indigo-500" />
+                                                            <div className="w-10 h-10 flex items-center justify-center bg-slate-50 rounded-xl group-hover:bg-indigo-600 group-hover:text-white transition-all shadow-sm">
+                                                                <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+                                                            </div>
                                                         </div>
                                                     </motion.div>
                                                 ))
                                         )}
                                     </div>
                                 </div>
-                            )
-                        }
-                        {
-                            activeTab === 'MARKING' && (
-                                <div className="bg-white rounded-3xl shadow-sm border border-slate-200 p-12 text-center min-h-[500px] flex flex-col items-center justify-center">
-                                    <div className="w-24 h-24 bg-emerald-50 text-emerald-600 rounded-3xl flex items-center justify-center mb-6 shadow-xl shadow-emerald-100 animate-pulse">
+                            </motion.div>
+                        )}
+                        {activeTab === 'MARKING' && (
+                            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-white rounded-[3rem] shadow-sm border-2 border-slate-100 p-8 md:p-16 text-center min-h-[500px] flex flex-col items-center justify-center relative overflow-hidden">
+                                <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-50 rounded-full blur-[100px] -mr-32 -mt-32 opacity-40"></div>
+
+                                <div className="relative z-10 max-w-2xl mx-auto flex flex-col items-center">
+                                    <div className="w-24 h-24 bg-emerald-600 text-white rounded-[2.5rem] flex items-center justify-center mb-8 shadow-xl shadow-emerald-100">
                                         <ScanLine className="w-12 h-12" />
                                     </div>
-                                    <h2 className="text-3xl font-black text-slate-800 mb-4 tracking-tight">{t.teacher.tools.marking.almostHere}</h2>
-                                    <p className="text-slate-500 max-w-md mx-auto mb-10 leading-relaxed">
+                                    <h2 className="text-4xl md:text-5xl font-black text-slate-900 mb-6 tracking-tight leading-none">{t.teacher.tools.marking.almostHere}</h2>
+                                    <p className="text-slate-500 font-bold text-lg mb-12 leading-relaxed">
                                         {t.teacher.tools.marking.markingDesc.replace('{subject}', selectedSubject)}
                                     </p>
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full max-w-lg mb-8">
-                                        <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 text-left">
-                                            <h4 className="font-bold text-slate-800 text-sm mb-1">{t.teacher.tools.marking.ocrTitle}</h4>
-                                            <p className="text-xs text-slate-500">{t.teacher.tools.marking.ocrDesc}</p>
+
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 w-full mb-12">
+                                        <div className="p-8 bg-slate-50/50 rounded-[2.5rem] border-2 border-slate-100 text-left group hover:border-emerald-200 hover:bg-white hover:shadow-xl hover:shadow-emerald-50/50 transition-all">
+                                            <div className="w-12 h-12 bg-white rounded-2xl shadow-md border border-slate-100 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                                <ClipboardCheck className="w-6 h-6 text-emerald-600" />
+                                            </div>
+                                            <h4 className="font-black text-slate-900 text-md uppercase tracking-wider mb-2">{t.teacher.tools.marking.ocrTitle}</h4>
+                                            <p className="text-xs text-slate-500 font-bold tracking-tight leading-relaxed">{t.teacher.tools.marking.ocrDesc}</p>
                                         </div>
-                                        <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 text-left">
-                                            <h4 className="font-bold text-slate-800 text-sm mb-1">{t.teacher.tools.marking.cbeTitle}</h4>
-                                            <p className="text-xs text-slate-500">{t.teacher.tools.marking.cbeDesc}</p>
+                                        <div className="p-8 bg-slate-50/50 rounded-[2.5rem] border-2 border-slate-100 text-left group hover:border-emerald-200 hover:bg-white hover:shadow-xl hover:shadow-emerald-50/50 transition-all">
+                                            <div className="w-12 h-12 bg-white rounded-2xl shadow-md border border-slate-100 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                                <Sparkles className="w-6 h-6 text-emerald-600" />
+                                            </div>
+                                            <h4 className="font-black text-slate-900 text-md uppercase tracking-wider mb-2">{t.teacher.tools.marking.cbeTitle}</h4>
+                                            <p className="text-xs text-slate-500 font-bold tracking-tight leading-relaxed">{t.teacher.tools.marking.cbeDesc}</p>
                                         </div>
                                     </div>
-                                    <Button variant="primary" className="bg-emerald-600 hover:bg-emerald-700 text-white font-black px-10 py-4 rounded-xl shadow-xl shadow-emerald-200">
+
+                                    <Button variant="secondary" className="px-12 py-5 rounded-2xl transition-all scale-[1.05] border-none font-black">
                                         {t.teacher.tools.marking.waitlistBtn.replace('{class}', selectedClass)}
                                     </Button>
-                                    <p className="mt-6 text-[10px] text-slate-400 font-bold uppercase tracking-widest">{t.teacher.tools.marking.earlyAccess}</p>
+                                    <p className="mt-8 text-[10px] text-slate-400 font-black uppercase tracking-[0.3em]">{t.teacher.tools.marking.earlyAccess}</p>
                                 </div>
-                            )
-                        }
+                            </motion.div>
+                        )}
+                        {activeTab === 'EARNINGS' && (
+                            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6 pb-24">
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div className="bg-white p-6 rounded-[2.5rem] border-2 border-slate-100 shadow-sm flex flex-col justify-between">
+                                        <div className="flex justify-between items-start mb-4">
+                                            <div className="w-12 h-12 bg-amber-50 rounded-2xl flex items-center justify-center text-amber-600 border border-amber-100">
+                                                <Wallet className="w-6 h-6" />
+                                            </div>
+                                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-50 px-2 py-1 rounded">Wallet Balance</span>
+                                        </div>
+                                        <div>
+                                            <h4 className="text-3xl font-black text-slate-900 tracking-tight">{teacherWallet?.balance.toLocaleString()} <span className="text-lg text-slate-500">{teacherWallet?.currency}</span></h4>
+                                            <p className="text-xs text-slate-500 font-bold mt-1">Available for withdrawal</p>
+                                        </div>
+                                        <Button fullWidth className="mt-6 rounded-xl bg-slate-900 hover:bg-slate-800 text-xs font-black uppercase tracking-widest border-none py-4">Withdraw to M-Pesa</Button>
+                                    </div>
+
+                                    <div className="md:col-span-2 bg-white p-6 rounded-[2.5rem] border-2 border-slate-100 shadow-sm relative overflow-hidden flex flex-col md:flex-row items-center gap-6">
+                                        <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-50 rounded-full blur-3xl -mr-20 -mt-20 opacity-40"></div>
+                                        <div className={`w-20 h-20 rounded-3xl flex items-center justify-center transition-all ${isAvailableForTutoring ? 'bg-emerald-600 text-white shadow-xl shadow-emerald-100 animate-pulse' : 'bg-slate-100 text-slate-400'}`}>
+                                            <Users className="w-10 h-10" />
+                                        </div>
+                                        <div className="flex-1 relative z-10 text-center md:text-left">
+                                            <h3 className="font-black text-xl text-slate-900 mb-1">Homework Help Hub</h3>
+                                            <p className="text-slate-500 text-sm font-medium mb-4">When active, students can request real-time help. Earn KES 30 per session.</p>
+                                            <div className="flex items-center gap-4 justify-center md:justify-start">
+                                                <button
+                                                    onClick={() => toggleTutoringAvailability()}
+                                                    className={`flex items-center gap-2 px-6 py-3 rounded-full font-black text-xs uppercase tracking-widest transition-all ${isAvailableForTutoring ? 'bg-emerald-600 text-white shadow-lg' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}
+                                                >
+                                                    {isAvailableForTutoring ? <ToggleRight className="w-5 h-5" /> : <ToggleLeft className="w-5 h-5" />}
+                                                    {isAvailableForTutoring ? 'Active to Tutor' : 'Go Available'}
+                                                </button>
+                                                {isAvailableForTutoring && (
+                                                    <span className="flex h-3 w-3 relative">
+                                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                                        <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Active Tutoring Requests - Phase 2 */}
+                                {isAvailableForTutoring && (
+                                    <div className="bg-white rounded-[2.5rem] border-2 border-indigo-100 shadow-xl shadow-indigo-50/50 overflow-hidden">
+                                        <div className="p-6 bg-indigo-600 text-white flex justify-between items-center">
+                                            <h3 className="font-black text-lg flex items-center gap-2">
+                                                <Users className="w-5 h-5" /> Pending Tutoring Requests
+                                            </h3>
+                                            <span className="bg-white/20 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest backdrop-blur-sm">
+                                                {activeTutoringRequests.filter(r => r.status === 'PENDING').length} Active
+                                            </span>
+                                        </div>
+                                        <div className="divide-y divide-slate-50">
+                                            {activeTutoringRequests.filter(r => r.status === 'PENDING' || (r.status === 'ACCEPTED' && r.teacherId === teacherProfile?.id)).length === 0 ? (
+                                                <div className="p-12 text-center">
+                                                    <p className="text-slate-400 font-bold text-sm">No pending requests. New requests will appear here!</p>
+                                                </div>
+                                            ) : (
+                                                activeTutoringRequests
+                                                    .filter(r => r.status === 'PENDING' || (r.status === 'ACCEPTED' && r.teacherId === teacherProfile?.id))
+                                                    .map(req => (
+                                                        <div key={req.id} className="p-6 hover:bg-slate-50 transition-colors">
+                                                            <div className="flex justify-between items-start mb-4">
+                                                                <div>
+                                                                    <div className="flex items-center gap-2 mb-1">
+                                                                        <span className="text-[10px] font-black text-indigo-600 uppercase tracking-widest px-2 py-0.5 bg-indigo-50 rounded">{req.topic}</span>
+                                                                        {req.status === 'ACCEPTED' && <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest px-2 py-0.5 bg-emerald-50 rounded animate-pulse">Accepted</span>}
+                                                                    </div>
+                                                                    <p className="text-slate-800 font-bold text-lg leading-tight">{req.description}</p>
+                                                                </div>
+                                                                <div className="text-right">
+                                                                    <p className="text-sm font-black text-slate-900">KES {req.price}</p>
+                                                                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">Earnings</p>
+                                                                </div>
+                                                            </div>
+                                                            <div className="flex gap-3">
+                                                                {req.status === 'PENDING' ? (
+                                                                    <Button
+                                                                        variant="primary"
+                                                                        className="bg-indigo-600 text-xs py-2 px-6 h-auto"
+                                                                        onClick={() => acceptTutoringRequest(req.id)}
+                                                                    >
+                                                                        Accept & Respond
+                                                                    </Button>
+                                                                ) : (
+                                                                    <Button
+                                                                        variant="primary"
+                                                                        className="bg-emerald-600 text-xs py-2 px-6 h-auto"
+                                                                        onClick={() => setRespondingTo(req.id)}
+                                                                    >
+                                                                        Open Response Studio
+                                                                    </Button>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    ))
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+
+                                <div className="bg-white rounded-[2.5rem] border-2 border-slate-100 shadow-sm overflow-hidden">
+                                    <div className="p-6 border-b border-slate-100 flex justify-between items-center">
+                                        <h3 className="font-black text-lg text-slate-900 flex items-center gap-2">
+                                            <TrendingUp className="w-5 h-5 text-indigo-500" /> Recent Transactions
+                                        </h3>
+                                        <button className="text-[10px] font-black text-indigo-600 uppercase tracking-widest hover:underline">View All History</button>
+                                    </div>
+                                    <div className="divide-y divide-slate-50">
+                                        {teacherWallet?.transactions.map(t => (
+                                            <div key={t.id} className="p-5 flex items-center justify-between hover:bg-slate-50/50 transition-colors">
+                                                <div className="flex items-center gap-4">
+                                                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${t.type === 'EARNING' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>
+                                                        {t.type === 'EARNING' ? <DollarSign className="w-5 h-5" /> : <ArrowRight className="w-5 h-5 rotate-45" />}
+                                                    </div>
+                                                    <div>
+                                                        <p className="font-black text-slate-900 text-sm">{t.description}</p>
+                                                        <p className="text-[10px] font-bold text-slate-400 lowercase">{t.date}</p>
+                                                    </div>
+                                                </div>
+                                                <div className="text-right">
+                                                    <p className={`font-black text-sm ${t.type === 'EARNING' ? 'text-emerald-600' : 'text-slate-900'}`}>
+                                                        {t.type === 'EARNING' ? '+' : '-'}{t.amount} <span className="text-[10px] font-bold text-slate-400">KES</span>
+                                                    </p>
+                                                    <span className="text-[9px] font-black uppercase tracking-tighter text-slate-300">{t.status}</span>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </motion.div>
+                        )}
                     </>
                 ) : (
                     // RESULTS VIEW
-                    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
-                        <div className="flex items-center justify-between mb-2">
-                            <Button variant="ghost" onClick={() => { setGeneratedNote(null); setGeneratedQuiz(null); setActiveTab('HOME'); }} icon={<ArrowRight className="w-4 h-4 rotate-180" />}>
-                                {t.teacher.results.backToStudio}
+                    <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} className="space-y-8">
+                        <div className="flex items-center justify-between mb-2 px-4">
+                            <Button variant="ghost" onClick={() => { setGeneratedNote(null); setGeneratedQuiz(null); setActiveTab('HOME'); }} className="text-slate-500 font-black uppercase tracking-widest text-xs hover:text-indigo-600">
+                                <ArrowRight className="w-4 h-4 mr-2 rotate-180" /> {t.teacher.results.backToStudio}
                             </Button>
-                            <div className="flex gap-2">
-                                <Button variant="outline" onClick={() => window.print()} icon={<Download className="w-4 h-4" />}>{t.teacher.results.exportPdf}</Button>
+                            <div className="flex gap-3">
+                                <Button variant="outline" onClick={() => window.print()} className="rounded-xl border-2 font-black uppercase tracking-widest text-xs">
+                                    <Download className="w-4 h-4 mr-2" /> {t.teacher.results.exportPdf}
+                                </Button>
                             </div>
                         </div>
 
-                        <div className="bg-white p-8 md:p-12 rounded-3xl shadow-lg border border-slate-200 print:border-none print:shadow-none min-h-[500px]">
+                        <div className="bg-white p-8 md:p-16 rounded-[4rem] shadow-sm border-2 border-slate-100 print:border-none print:shadow-none min-h-[600px] relative overflow-hidden">
+                            <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-50/30 rounded-full blur-[100px] -mr-32 -mt-32 pointer-events-none"></div>
 
                             {generatedQuiz && (
                                 <div className="space-y-8">
@@ -828,40 +1060,24 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                                         <h1 className="text-3xl font-bold text-slate-900 mb-2">{generatedQuiz.topic}</h1>
                                         <p className="text-slate-500 uppercase tracking-widest text-xs font-bold">{t.teacher.results.classroomAssessment}</p>
                                     </div>
-                                    <div className="space-y-8">
-                                        {generatedQuiz.questions.map((q, i) => (
-                                            <div key={i} className="break-inside-avoid">
-                                                <p className="font-bold text-slate-800 text-lg mb-3 flex gap-2">
-                                                    <span className="text-indigo-600">{i + 1}.</span> {q.question}
-                                                </p>
-                                                {q.type === 'MCQ' && (
-                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pl-8">
-                                                        {q.options?.map((opt, idx) => (
-                                                            <div key={idx} className="flex items-center gap-3 p-3 rounded-lg border border-slate-100 bg-slate-50/50">
-                                                                <div className="w-4 h-4 border-2 border-slate-300 rounded-full"></div>
-                                                                <span className="text-slate-600 font-medium">{opt}</span>
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                )}
-                                                {q.type === 'SHORT' && (
-                                                    <div className="ml-8 mt-4 h-24 border rounded-xl bg-slate-50/50 border-slate-200 border-dashed w-full"></div>
-                                                )}
+                                    <div className="mt-12 p-8 bg-slate-50/50 rounded-[3rem] border-2 border-slate-100 break-before-page">
+                                        <h3 className="text-xl font-black text-slate-900 mb-6 flex items-center gap-3">
+                                            <div className="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center border border-emerald-100">
+                                                <CheckCircle className="w-6 h-6" />
                                             </div>
-                                        ))}
-                                    </div>
-                                    <div className="mt-12 p-6 bg-slate-50 rounded-xl border border-slate-200 break-before-page">
-                                        <h3 className="font-bold text-slate-900 mb-4 flex items-center gap-2">
-                                            <CheckCircle className="w-5 h-5 text-green-600" /> {t.teacher.results.answerKey}
+                                            {t.teacher.results.answerKey}
                                         </h3>
-                                        <ul className="space-y-3 text-sm">
+                                        <div className="space-y-4">
                                             {generatedQuiz.questions.map((q, i) => (
-                                                <li key={i} className="grid grid-cols-[auto_1fr] gap-2">
-                                                    <span className="font-bold text-slate-700">{i + 1}.</span>
-                                                    <span className="text-slate-600"><span className="font-bold text-green-700">{q.correctAnswer}</span> - {q.explanation}</span>
-                                                </li>
+                                                <div key={i} className="flex gap-4 p-4 rounded-2xl bg-white border border-slate-100 shadow-sm">
+                                                    <span className="font-black text-indigo-600 text-lg">{i + 1}.</span>
+                                                    <div className="space-y-1">
+                                                        <p className="text-slate-900 font-black">{q.correctAnswer}</p>
+                                                        <p className="text-xs text-slate-500 font-medium leading-relaxed">{q.explanation}</p>
+                                                    </div>
+                                                </div>
                                             ))}
-                                        </ul>
+                                        </div>
                                     </div>
                                 </div>
                             )}
@@ -882,20 +1098,20 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                                         </div>
                                     </div>
 
-                                    <div className="grid md:grid-cols-2 gap-8">
-                                        <div>
-                                            <h2 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
-                                                <span className="w-6 h-6 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-xs">A</span> {t.teacher.results.summary}
+                                    <div className="grid md:grid-cols-2 gap-10">
+                                        <div className="space-y-4">
+                                            <h2 className="text-xl font-black text-slate-900 flex items-center gap-3">
+                                                <span className="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center text-sm border border-blue-100">A</span> {t.teacher.results.summary}
                                             </h2>
-                                            <div className="prose prose-sm prose-slate bg-blue-50/50 p-6 rounded-2xl border border-blue-100">
+                                            <div className="prose prose-sm prose-slate bg-blue-50/30 p-8 rounded-[2.5rem] border-2 border-blue-50 shadow-inner">
                                                 <MarkdownText content={generatedNote.simplifiedNotes} />
                                             </div>
                                         </div>
-                                        <div>
-                                            <h2 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
-                                                <span className="w-6 h-6 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center text-xs">B</span> {t.teacher.results.teacherNotes}
+                                        <div className="space-y-4">
+                                            <h2 className="text-xl font-black text-slate-900 flex items-center gap-3">
+                                                <span className="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center text-sm border border-indigo-100">B</span> {t.teacher.results.teacherNotes}
                                             </h2>
-                                            <div className="prose prose-sm prose-slate">
+                                            <div className="prose prose-sm prose-slate p-2">
                                                 <MarkdownText content={generatedNote.structuredNotes} />
                                             </div>
                                         </div>
@@ -909,16 +1125,18 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
             </div>
 
             {/* Payment Flow Overlay */}
-            {selectedPlan && (
-                <PaymentFlow
-                    plan={selectedPlan}
-                    onSuccess={async () => {
-                        await upgradeAccount(selectedPlan);
-                        setSelectedPlan(null);
-                    }}
-                    onCancel={() => setSelectedPlan(null)}
-                />
-            )}
+            {
+                selectedPlan && (
+                    <PaymentFlow
+                        plan={selectedPlan}
+                        onSuccess={async () => {
+                            await upgradeAccount(selectedPlan);
+                            setSelectedPlan(null);
+                        }}
+                        onCancel={() => setSelectedPlan(null)}
+                    />
+                )
+            }
 
             <LogoutModal
                 isOpen={showLogoutModal}
@@ -934,20 +1152,22 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                 }}
             />
 
-            {showOnboarding && (
-                <TeacherOnboarding
-                    initialStep={2}
-                    isEditing={true}
-                    onComplete={(updatedProfile) => {
-                        setShowOnboarding(false);
-                        // Force local update if needed, but context handles it
-                        if (updatedProfile.classes.length > 0) {
-                            setSelectedClass(updatedProfile.classes[0]);
-                        }
-                    }}
-                    onClose={() => setShowOnboarding(false)}
-                />
-            )}
-        </div>
+            {
+                showOnboarding && (
+                    <TeacherOnboarding
+                        initialStep={2}
+                        isEditing={true}
+                        onComplete={(updatedProfile) => {
+                            setShowOnboarding(false);
+                            // Force local update if needed, but context handles it
+                            if (updatedProfile.classes.length > 0) {
+                                setSelectedClass(updatedProfile.classes[0]);
+                            }
+                        }}
+                        onClose={() => setShowOnboarding(false)}
+                    />
+                )
+            }
+        </div >
     );
 };

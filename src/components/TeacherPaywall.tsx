@@ -30,7 +30,7 @@ export const TeacherPaywall: React.FC<TeacherPaywallProps> = ({ isOpen, onClose 
 
                 <h2 className="text-3xl font-black text-slate-900 mb-3 tracking-tight">Pro Studio Limit</h2>
                 <p className="text-slate-500 font-medium mb-8 leading-relaxed">
-                    You&apos;ve reached your 5 free lessons this week. Upgrade to <span className="text-indigo-600 font-bold">Teacher Pro</span> to unlock unlimited studio tools and national distribution.
+                    You&apos;ve reached your 3 free lessons this week. Upgrade to <span className="text-indigo-600 font-bold">Teacher Pro</span> to unlock unlimited studio tools and national distribution.
                 </p>
 
                 <div className="space-y-4 mb-8 text-left">

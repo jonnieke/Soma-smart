@@ -1,8 +1,8 @@
 import React, { Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
-import { AppProvider } from './context/AppContext';
 import { ConnectivityBanner } from './components/ConnectivityBanner';
 import { AskSoma } from './components/AskSoma';
+import { SessionConflictModal } from './components/SessionConflictModal';
 import { supabase } from './lib/supabase';
 
 // Lazy Load Pages for Performance
@@ -49,9 +49,10 @@ const App: React.FC = () => {
     }, [navigate]);
 
     return (
-        <AppProvider>
+        <>
             <ConnectivityBanner />
             <AskSoma />
+            <SessionConflictModal />
             <Suspense fallback={<PageLoader />}>
                 <Routes>
                     <Route path="/" element={<LandingPage />} />
@@ -71,7 +72,7 @@ const App: React.FC = () => {
                     <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
             </Suspense>
-        </AppProvider>
+        </>
     );
 };
 

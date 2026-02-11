@@ -38,7 +38,7 @@ interface LandingPageProps {
 export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuthError }) => {
     const navigate = useNavigate();
     const location = useLocation();
-    const { setRole, role, logout, isRegistered, isPro, language, toggleLanguage, startGuestSession } = useApp();
+    const { setRole, role, logout, isRegistered, isPro, language, toggleLanguage, startGuestSession, teacherUsageCount } = useApp();
     const [authError, setAuthError] = useState<{ code: string, description: string } | null>(initialAuthError || null);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [showRegistration, setShowRegistration] = useState(false);
@@ -164,8 +164,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
         } else if (card.route.startsWith('/teacher')) {
             // If already logged in (any role), just go there
             if (isRegistered || role !== UserRole.NONE) {
-                // If it's a teacher route, ensure role is TEACHER for the dashboard to work
                 if (role !== UserRole.TEACHER) setRole(UserRole.TEACHER);
+                navigate(card.route);
+            } else if (teacherUsageCount < 3) {
+                // Allow guest teacher access for limited uses
+                setRole(UserRole.TEACHER);
                 navigate(card.route);
             } else {
                 setRole(UserRole.TEACHER);
@@ -342,22 +345,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                 <span className="text-sm">{t.language.invitePrefix} {language === 'FR' ? 'Mode Activé ✅' : t.language.frenchClick} 🇫🇷</span>
                             </div>
 
-                            <div className="flex flex-wrap items-center gap-3 mb-6 ml-4">
-                                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-100 text-blue-700 text-sm font-bold">
-                                    <span className="relative flex h-2 w-2">
-                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-                                        <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-600"></span>
-                                    </span>
-                                    {t.hero.pillStudents}
-                                </div>
-                                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-100 text-emerald-700 text-sm font-bold border border-emerald-200 shadow-sm">
-                                    <span className="relative flex h-2 w-2">
-                                        <span className="animate-pulse absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                                        <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-600"></span>
-                                    </span>
-                                    {t.hero.pillTeachers}
-                                </div>
-                            </div>
                             <h1 className="text-3xl md:text-4xl lg:text-5xl font-extrabold text-blue-900 tracking-tight mb-6 leading-[1.2] lg:leading-[1.1]">
                                 {t.hero.headline} <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">{t.hero.gradient}</span>
                             </h1>
@@ -1071,7 +1058,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                         navigate(pendingRoute);
                         setPendingRoute(null);
                     } else {
-                        navigate(role === UserRole.TEACHER ? '/teacher' : '/learner');
+                        const target = role === UserRole.TEACHER ? '/teacher' : (role === UserRole.SCHOOL ? '/school' : '/learner');
+                        navigate(target);
                     }
                 }}
                 onSwitchToRegister={(role) => {

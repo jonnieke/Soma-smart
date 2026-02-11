@@ -5,14 +5,14 @@ import { Lock, Sparkles, TrendingUp, ShieldCheck } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { RevisionLanding } from './RevisionLanding';
 import { RevisionSession } from './RevisionSession';
-import { RevisionMode, TeacherActivity, ViewState } from '../../types';
+import { RevisionMode, TeacherActivity, ViewState, UserRole } from '../../types';
 import { Button } from '../../components/Shared';
 
 export const RevisionDashboard: React.FC = () => {
     const navigate = useNavigate();
     const {
         isRegistered, studentProfile, logout, isPro,
-        revisionUsageCount, incrementRevisionUsage
+        revisionUsageCount, incrementRevisionUsage, role
     } = useApp();
 
     const [revisionData, setRevisionData] = useState<File | TeacherActivity | null>(null);
@@ -52,7 +52,7 @@ export const RevisionDashboard: React.FC = () => {
                         </div>
                         <div className="flex items-center gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-100">
                             <Sparkles className="w-5 h-5 text-amber-500" />
-                            <span className="text-sm font-bold text-slate-700">AI Specialist Strategy Tips</span>
+                            <span className="text-sm font-bold text-slate-700">Smart Specialist Strategy Tips</span>
                         </div>
                     </div>
 
@@ -103,7 +103,10 @@ export const RevisionDashboard: React.FC = () => {
                 setRevisionMode(mode);
             }}
             onNavigate={(view) => {
-                if (view === ViewState.DASHBOARD) navigate('/');
+                if (view === ViewState.DASHBOARD) {
+                    const target = role === UserRole.TEACHER ? '/teacher' : (role === UserRole.SCHOOL ? '/school' : '/learner');
+                    navigate(target);
+                }
             }}
         />
     );

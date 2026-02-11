@@ -88,8 +88,13 @@ export interface TeacherProfile {
   email?: string;
   classes: string[]; // e.g. ["Grade 4", "Grade 5"]
   subjects: string[]; // e.g. ["Math", "Science"]
+  schoolId?: string;
   sessionId?: string;
   activeSessions?: string[];
+  isAvailable?: boolean;
+  rating?: number;
+  verifiedBadge?: boolean;
+  walletBalance?: number;
 }
 
 export interface TeacherActivity {
@@ -132,6 +137,21 @@ export interface SchoolTeacher {
   subject: string;
   impact: string;
   lessons: number;
+}
+
+export interface SchoolMaterial {
+  id: string;
+  school_id: string;
+  teacher_id: string;
+  teacher_name?: string;
+  title: string;
+  description: string;
+  file_url: string;
+  category: 'NOTES' | 'EXAM' | 'ASSIGNMENT' | 'OTHER';
+  target_grade: string;
+  target_subject: string;
+  is_public: boolean;
+  created_at: string;
 }
 
 // --- REVISION ASSISTANT TYPES ---
@@ -216,4 +236,54 @@ export interface SubscriptionPlan {
   savings?: string;
   teacherLimit?: number;
   studentLimit?: number;
+}
+
+// --- MONETIZATION TYPES ---
+
+export interface TutoringRequest {
+  id: string;
+  studentId: string;
+  studentName?: string;
+  teacherId?: string;
+  topic: string;
+  description: string;
+  status: 'PENDING' | 'ACCEPTED' | 'COMPLETED' | 'CANCELLED';
+  price: number;
+  response?: string;
+  responseType?: 'TEXT' | 'VOICE' | 'VIDEO';
+  createdAt: string;
+  completedAt?: string;
+}
+
+export interface TeacherWallet {
+  balance: number;
+  currency: string;
+  lastWithdrawal?: string;
+  transactions: Transaction[];
+}
+
+export interface Transaction {
+  id: string;
+  type: 'EARNING' | 'WITHDRAWAL';
+  amount: number;
+  description: string;
+  date: string;
+  status: 'COMPLETED' | 'PENDING';
+}
+
+export interface MaterialListing {
+  id: string;
+  teacherId: string;
+  teacherName: string;
+  title: string;
+  description: string;
+  price: number;
+  grade: string;
+  subject: string;
+  category: 'NOTES' | 'REVISION_PAPER' | 'MARKING_SCHEME' | 'RECORDED_LESSON';
+  downloadCount: number;
+  rating: number;
+  fileUrl: string;
+  previewUrl?: string;
+  createdAt: string;
 }
