@@ -27,7 +27,7 @@ export const AdminDashboard: React.FC<AdminProps> = ({ onNavigate }) => {
                     <div className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg shadow-indigo-500/20">
                         <Lock className="w-8 h-8 text-white" />
                     </div>
-                    <h2 className="text-2xl font-bold text-white mb-2">Soma Admin</h2>
+                    <h2 className="text-2xl font-bold text-white mb-2">Somo Admin</h2>
                     <p className="text-slate-400 text-sm mb-6">Restricted Access Portal</p>
 
                     <input
@@ -37,11 +37,11 @@ export const AdminDashboard: React.FC<AdminProps> = ({ onNavigate }) => {
                         className="w-full bg-slate-900 border border-slate-600 rounded-xl p-4 text-white text-center text-lg font-mono mb-4 focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
                         value={pass}
                         onChange={(e) => setPass(e.target.value)}
-                        onKeyDown={(e) => e.key === 'Enter' && (pass === "Soma_Smart @2025" ? setUnlocked(true) : alert("Access Denied"))}
+                        onKeyDown={(e) => e.key === 'Enter' && (pass === "Somo_Smart @2025" ? setUnlocked(true) : alert("Access Denied"))}
                     />
 
                     <button
-                        onClick={() => pass === "Soma_Smart @2025" ? setUnlocked(true) : alert("Access Denied")}
+                        onClick={() => pass === "Somo_Smart @2025" ? setUnlocked(true) : alert("Access Denied")}
                         className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 rounded-xl transition-colors shadow-lg shadow-indigo-900/50"
                     >
                         Unlock Dashboard

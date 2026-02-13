@@ -11,6 +11,7 @@ export enum UserRole {
 export enum ViewState {
   DASHBOARD = 'DASHBOARD',
   SCAN_EXPLAIN = 'SCAN_EXPLAIN',
+  SCAN = 'SCAN',
   QUIZ = 'QUIZ',
   HISTORY = 'HISTORY',
   UPLOAD_CONVERT = 'UPLOAD_CONVERT',
@@ -18,7 +19,8 @@ export enum ViewState {
   QUIZ_GENERATOR = 'QUIZ_GENERATOR',
   PARENT_OVERVIEW = 'PARENT_OVERVIEW',
   REVISION = 'REVISION',
-  PRICING = 'PRICING'
+  PRICING = 'PRICING',
+  PROFILE = 'PROFILE'
 }
 
 export type SubscriptionTier = 'FREE' | 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'TERMLY' | 'ANNUAL';

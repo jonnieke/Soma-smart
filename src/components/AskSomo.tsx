@@ -2,17 +2,17 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MessageSquare, X, Send, Sparkles, User, Bot } from 'lucide-react';
-import { askSoma } from '../services/geminiService';
+import { askSomo } from '../services/geminiService';
 import { useApp } from '../context/AppContext';
 import ReactMarkdown from 'react-markdown';
 import { useNavigate } from 'react-router-dom';
 
-export const AskSoma: React.FC = () => {
+export const AskSomo: React.FC = () => {
     const navigate = useNavigate();
     const { language } = useApp();
     const [isOpen, setIsOpen] = useState(false);
     const [messages, setMessages] = useState<{ role: 'user' | 'model', text: string }[]>([
-        { role: 'model', text: language === 'FR' ? "Bonjour ! Je suis Soma. 👋 Comment puis-je t'aider à apprendre aujourd'hui ?" : "Hi! I'm Soma. 👋 How can I help you learn today?" }
+        { role: 'model', text: language === 'FR' ? "Bonjour ! Je suis Somo. 👋 Comment puis-je t'aider à apprendre aujourd'hui ?" : "Hi! I'm Somo. 👋 How can I help you learn today?" }
     ]);
     const [inputValue, setInputValue] = useState("");
     const [isTyping, setIsTyping] = useState(false);
@@ -35,7 +35,7 @@ export const AskSoma: React.FC = () => {
         setIsTyping(true);
 
         // Call Gemini
-        const responseText = await askSoma(text, messages, language);
+        const responseText = await askSomo(text, messages, language);
 
         setIsTyping(false);
         setMessages(prev => [...prev, { role: 'model', text: responseText }]);
@@ -92,7 +92,7 @@ export const AskSoma: React.FC = () => {
                 ) : (
                     <>
                         <MessageSquare className="w-6 h-6" />
-                        <span>{language === 'FR' ? 'Demander à Soma' : 'Ask Soma'}</span>
+                        <span>{language === 'FR' ? 'Demander à Somo' : 'Ask Somo'}</span>
                     </>
                 )}
             </motion.button>
@@ -112,7 +112,7 @@ export const AskSoma: React.FC = () => {
                                 <Sparkles className="w-6 h-6 text-white" />
                             </div>
                             <div>
-                                <h3 className="text-white font-bold text-lg">{language === 'FR' ? 'Demander à Soma' : 'Ask Soma'}</h3>
+                                <h3 className="text-white font-bold text-lg">{language === 'FR' ? 'Demander à Somo' : 'Ask Somo'}</h3>
                                 <p className="text-blue-100 text-xs">{language === 'FR' ? "Votre compagnon d'étude IA" : 'Your AI Learning Buddy'}</p>
                             </div>
                         </div>

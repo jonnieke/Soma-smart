@@ -1,7 +1,7 @@
 import { SubscriptionTier, UserSegment, SubscriptionPlan } from '../types';
 import { supabase } from '../lib/supabase';
 
-const LAUNCH_DATE = new Date('2026-02-27T00:00:00+03:00');
+const LAUNCH_DATE = new Date('2026-01-01T00:00:00+03:00');
 
 export const checkSubscriptionAccess = async (userId: string, segment: UserSegment): Promise<{ isPro: boolean; tier: SubscriptionTier; expiry: string | null }> => {
     try {

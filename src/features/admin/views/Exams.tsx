@@ -75,7 +75,7 @@ export const ExamsView: React.FC = () => {
             setContent(JSON.stringify(result.questions));
         } catch (e) {
             console.error("Ingestion failed:", e);
-            alert("Soma couldn't read this paper. Please ensure it's a clear PDF or Image.");
+            alert("Somo couldn't read this paper. Please ensure it's a clear PDF or Image.");
         } finally {
             setUploading(false);
         }
@@ -255,7 +255,7 @@ export const ExamsView: React.FC = () => {
                                 <h3 className="text-2xl font-bold text-slate-900 mb-2 flex items-center gap-2">
                                     <Plus className="w-6 h-6 text-indigo-600" /> Add Past Paper
                                 </h3>
-                                <p className="text-slate-500 mb-6">Upload a PDF or Image of a past paper. Soma will extract the content for you.</p>
+                                <p className="text-slate-500 mb-6">Upload a PDF or Image of a past paper. Somo will extract the content for you.</p>
 
                                 <div className="space-y-6">
                                     {/* File Upload Section */}
@@ -284,7 +284,7 @@ export const ExamsView: React.FC = () => {
                                                     isLoading={uploading}
                                                     className="bg-indigo-600 hover:bg-indigo-700 shadow-lg shadow-indigo-100 flex items-center gap-2 mx-auto"
                                                 >
-                                                    <Sparkles className="w-5 h-5" /> Analyze with Soma
+                                                    <Sparkles className="w-5 h-5" /> Analyze with Somo
                                                 </Button>
                                             )}
                                         </div>

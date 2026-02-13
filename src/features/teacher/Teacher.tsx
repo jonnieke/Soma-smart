@@ -31,7 +31,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
         deleteTeacherActivity,
         logout, isPro, upgradeAccount,
         isOnline, language,
-        teacherWallet, isAvailableForTutoring, toggleTutoringAvailability, fetchEarnings,
+        teacherWallet, teacherDarasaUsage, isAvailableForTutoring, toggleTutoringAvailability, fetchEarnings,
         activeTutoringRequests, acceptTutoringRequest, submitTutoringResponse,
         marketplaceMaterials, listMaterial
     } = useApp();
@@ -52,7 +52,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                 // We have profile, go ahead
                 const paymentDetails = {
                     amount: plan.price,
-                    description: `Soma Smart ${plan.name} Subscription`,
+                    description: `Somo Smart ${plan.name} Subscription`,
                     email: teacherProfile.email, // Ensure email is in profile or context
                     phoneNumber: "", // Option to add phone if available
                     firstName: teacherProfile.name.split(' ')[0],
@@ -110,8 +110,8 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
     const [showOnboarding, setShowOnboarding] = useState(false);
     const [selectedSubject, setSelectedSubject] = useState<string>(teacherProfile?.subjects?.[0] || (language === 'FR' ? "Discipline" : "Active Discipline"));
 
-    // Advanced Quiz State
-    const [advMode, setAdvMode] = useState(false);
+    // Exam Generator State
+    const [showExamGen, setShowExamGen] = useState(false);
     const [advFiles, setAdvFiles] = useState<File[]>([]);
     const [advTopic, setAdvTopic] = useState("");
     const [advCount, setAdvCount] = useState(5);
@@ -467,17 +467,31 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                             </div>
                         </motion.div>
 
-                        <div className="flex bg-white p-1.5 rounded-2xl border border-slate-200 shadow-sm w-full md:w-auto">
-                            <button onClick={() => onNavigate(ViewState.DASHBOARD)} className="flex-1 md:flex-none flex items-center justify-center gap-2 px-5 py-2.5 hover:bg-slate-50 rounded-xl transition-all group text-xs font-black text-slate-600 uppercase tracking-widest">
-                                <Home className="w-4 h-4 text-indigo-500 group-hover:scale-110 transition-transform" /> {t.teacher.sidebar.home}
-                            </button>
-                            <div className="w-px h-6 bg-slate-200 self-center mx-1"></div>
-                            <button onClick={() => navigate('/pricing')} className="flex-1 md:flex-none flex justify-center items-center px-4 py-2.5 hover:bg-slate-50 rounded-xl transition-all group" title={t.teacher.common.pricingPlans}>
-                                <CreditCard className="w-5 h-5 text-indigo-500 group-hover:scale-110 transition-transform" />
-                            </button>
-                            <button onClick={() => setShowLogoutModal(true)} className="flex-1 md:flex-none flex justify-center items-center px-4 py-2.5 hover:bg-red-50 rounded-xl transition-all group" title={t.teacher.common.logout}>
-                                <LogOut className="w-5 h-5 text-slate-400 group-hover:text-red-500 group-hover:scale-110 transition-transform" />
-                            </button>
+                        <div className="flex flex-col md:flex-row gap-4 w-full md:w-auto">
+                            <div className="flex bg-white/50 backdrop-blur-md p-1.5 rounded-2xl border border-white shadow-sm ring-1 ring-slate-200 items-center gap-4 px-4">
+                                <div className="text-center md:text-left">
+                                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Active Lessons</p>
+                                    <p className="text-sm font-black text-indigo-600">{teacherDarasaUsage || 0}</p>
+                                </div>
+                                <div className="w-px h-8 bg-slate-200"></div>
+                                <div className="text-center md:text-left">
+                                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Wallet Balance</p>
+                                    <p className="text-sm font-black text-emerald-600">KES {teacherWallet?.balance || 0}</p>
+                                </div>
+                            </div>
+
+                            <div className="flex bg-white p-1.5 rounded-2xl border border-slate-200 shadow-sm w-full md:w-auto">
+                                <button onClick={() => onNavigate(ViewState.DASHBOARD)} className="flex-1 md:flex-none flex items-center justify-center gap-2 px-5 py-2.5 hover:bg-slate-50 rounded-xl transition-all group text-xs font-black text-slate-600 uppercase tracking-widest">
+                                    <Home className="w-4 h-4 text-indigo-500 group-hover:scale-110 transition-transform" /> {t.teacher.sidebar.home}
+                                </button>
+                                <div className="w-px h-6 bg-slate-200 self-center mx-1"></div>
+                                <button onClick={() => navigate('/pricing')} className="flex-1 md:flex-none flex justify-center items-center px-4 py-2.5 hover:bg-slate-50 rounded-xl transition-all group" title={t.teacher.common.pricingPlans}>
+                                    <CreditCard className="w-5 h-5 text-indigo-500 group-hover:scale-110 transition-transform" />
+                                </button>
+                                <button onClick={() => setShowLogoutModal(true)} className="flex-1 md:flex-none flex justify-center items-center px-4 py-2.5 hover:bg-red-50 rounded-xl transition-all group" title={t.teacher.common.logout}>
+                                    <LogOut className="w-5 h-5 text-slate-400 group-hover:text-red-500 group-hover:scale-110 transition-transform" />
+                                </button>
+                            </div>
                         </div>
                     </div>
 
@@ -499,7 +513,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                                 ))}
                                 {(!teacherProfile || teacherProfile.classes.length === 0) && (
                                     <button onClick={() => setShowOnboarding(true)} className="w-full px-4 py-3 text-xs font-black text-indigo-600 hover:bg-white transition-colors flex items-center justify-center gap-2">
-                                        <Plus className="w-4 h-4" /> {teacherProfile ? "Initialize Class Registry" : "Unlock Full Registry"}
+                                        <Plus className="w-4 h-4" /> {teacherProfile ? "Initialize Class List" : "Unlock Full Classes"}
                                     </button>
                                 )}
                             </div>
@@ -559,7 +573,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                             onClick={() => setActiveTab('MARKETPLACE')}
                             className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl transition-all text-xs md:text-sm font-bold ${activeTab === 'MARKETPLACE' ? 'bg-blue-50 text-blue-600' : 'text-slate-500 hover:bg-slate-50'}`}
                         >
-                            <ShoppingBag className="w-4 h-4 flex-shrink-0" /> Shop
+                            <ShoppingBag className="w-4 h-4 flex-shrink-0" /> {t.teacher.sidebar.shop}
                         </button>
                     </div>
                 )}
@@ -577,218 +591,287 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                 ) : !generatedNote && !generatedQuiz ? (
                     <>
                         {activeTab === 'HOME' && (
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pb-24">
-                                {/* New Tool: Darasa Mode (Full Width) - Clean Light Style */}
-                                <motion.div
-                                    whileHover={{ y: -5 }}
-                                    onClick={() => navigate('/teacher/darasa')}
-                                    className="md:col-span-2 bg-white p-6 rounded-[2.5rem] shadow-sm border-2 border-slate-100 flex flex-row items-center cursor-pointer group relative overflow-hidden active:scale-[0.98] transition-all"
-                                >
-                                    <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-50 rounded-full blur-3xl -mr-20 -mt-20 opacity-60"></div>
-
-                                    <div className="w-16 h-16 bg-indigo-50 rounded-2xl flex items-center justify-center mr-6 group-hover:scale-110 transition-transform border border-indigo-100 shadow-sm shadow-indigo-100">
-                                        <MonitorPlay className="w-8 h-8 text-indigo-600" />
-                                    </div>
-                                    <div className="flex-1 relative z-10">
-                                        <h3 className="font-black text-xl text-slate-900 mb-1 flex items-center gap-2">
-                                            {t.teacher.tools.darasa.title} <span className="text-[10px] bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full font-black uppercase tracking-wider shadow-sm border border-indigo-200">Live</span>
-                                        </h3>
-                                        <p className="text-slate-500 text-sm font-medium">{t.teacher.tools.darasa.desc}</p>
-                                    </div>
-                                    <div className="bg-slate-50 p-2 rounded-full group-hover:bg-indigo-600 group-hover:text-white transition-all border border-slate-200">
-                                        <ArrowRight className="w-6 h-6" />
-                                    </div>
-                                </motion.div>
-
-                                {/* Tool 1: Notes Converter */}
-                                <motion.div
-                                    whileHover={isOnline ? { y: -5 } : {}}
-                                    className={`bg-white p-6 rounded-[2.5rem] shadow-sm border-2 border-slate-100 flex flex-col items-center text-center group transition-all ${isOnline ? 'cursor-pointer hover:border-indigo-200' : 'opacity-60 grayscale cursor-not-allowed'}`}
-                                >
-                                    <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-4 transition-transform shadow-sm ${isOnline ? 'bg-indigo-50 group-hover:scale-110 border border-indigo-100' : 'bg-slate-100'}`}>
-                                        <FileText className={`w-8 h-8 ${isOnline ? 'text-indigo-600' : 'text-slate-400'}`} />
-                                    </div>
-                                    <h3 className="font-black text-lg text-slate-900 mb-2">{t.teacher.tools.converter.title}</h3>
-                                    <p className="text-sm text-slate-500 mb-6 font-medium">
-                                        {isOnline ? `${t.teacher.tools.converter.desc} ${selectedClass}.` : (language === 'FR' ? "Internet requis pour la conversion." : "Internet required for conversion.")}
-                                    </p>
-                                    <Button
-                                        fullWidth
-                                        variant="outline"
-                                        onClick={isOnline ? () => document.getElementById('file-upload')?.click() : undefined}
-                                        disabled={!isOnline}
-                                        className="rounded-xl border-2 hover:bg-slate-50 text-xs font-black uppercase tracking-widest"
+                            <div className="space-y-4 pb-24">
+                                {/* Sub-tab Switcher for Home */}
+                                <div className="flex p-1.5 bg-slate-100 rounded-2xl w-fit mb-4">
+                                    <button
+                                        onClick={() => setShowExamGen(false)}
+                                        className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 ${!showExamGen ? 'bg-white text-indigo-600 shadow-md ring-1 ring-slate-200' : 'text-slate-500 hover:text-slate-700'}`}
                                     >
-                                        <Upload className="w-4 h-4 mr-2" /> {isOnline ? (language === 'FR' ? "Télécharger Photo" : "Upload Photo") : (language === 'FR' ? "Déconnecté" : "Disconnected")}
-                                    </Button>
-                                    <input type="file" id="file-upload" className="hidden" accept="image/*,.pdf" onChange={handleFileUpload} />
-                                </motion.div>
-
-                                {/* Tool 2: Voice Notes */}
-                                <motion.div
-                                    whileHover={isOnline ? { y: -5 } : {}}
-                                    className={`bg-white p-6 rounded-[2.5rem] shadow-sm border-2 border-slate-100 flex flex-col items-center text-center group transition-all ${isOnline ? 'cursor-pointer hover:border-purple-200' : 'opacity-60 grayscale cursor-not-allowed'}`}
-                                >
-                                    <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-4 transition-transform shadow-sm ${isRecording ? 'bg-red-50 animate-pulse scale-110 border border-red-100' : isOnline ? 'bg-purple-50 group-hover:scale-110 border border-purple-100' : 'bg-slate-100'}`}>
-                                        <Mic className={`w-8 h-8 ${isRecording ? 'text-red-500' : isOnline ? 'text-purple-600' : 'text-slate-400'}`} />
-                                    </div>
-                                    <h3 className="font-black text-lg text-slate-900 mb-2">{t.teacher.tools.voice.title}</h3>
-                                    <p className="text-sm text-slate-500 mb-6 font-medium">
-                                        {isOnline ? `${t.teacher.tools.voice.desc} ${selectedSubject}.` : (language === 'FR' ? "Internet requis pour l'audio." : "Internet required for audio.")}
-                                    </p>
-                                    <Button
-                                        fullWidth
-                                        variant="outline"
-                                        onClick={isOnline ? (isRecording ? stopRecording : startRecording) : undefined}
-                                        disabled={!isOnline}
-                                        className={`rounded-xl border-2 text-xs font-black uppercase tracking-widest transition-all ${isRecording ? 'border-red-500 text-red-600 hover:bg-red-50' : ''}`}
+                                        Magic Tools
+                                    </button>
+                                    <button
+                                        onClick={() => setShowExamGen(true)}
+                                        className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 ${showExamGen ? 'bg-white text-indigo-600 shadow-md ring-1 ring-slate-200' : 'text-slate-500 hover:text-slate-700'}`}
                                     >
-                                        <Mic className={`w-4 h-4 mr-2 ${isRecording ? 'animate-pulse' : ''}`} />
-                                        {isRecording ? (language === 'FR' ? "Arrêter l'enregistrement" : "Stop Recording") : (language === 'FR' ? "Lancer l'audio" : "Record Audio")}
-                                    </Button>
-                                </motion.div>
+                                        Exam Center
+                                    </button>
+                                </div>
 
-                                {/* Advanced Quiz Generator & Materials Hub - Fixed Visibility & Organization */}
-                                <motion.div
-                                    initial={{ opacity: 0, y: 20 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    className="md:col-span-2 bg-white rounded-[3rem] shadow-sm border-2 border-slate-100 p-8 md:p-12 relative overflow-visible mt-4 mb-2"
-                                >
-                                    <div className="flex flex-col md:flex-row gap-12">
-                                        <div className="flex-[1.5] space-y-8">
-                                            <div className="flex items-center gap-4">
-                                                <div className="w-12 h-12 bg-indigo-600 text-white rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-100">
-                                                    <Brain className="w-6 h-6" />
-                                                </div>
-                                                <div>
-                                                    <h3 className="text-2xl font-black text-slate-900 tracking-tight leading-none">{t.teacher.tools.exam.title}</h3>
-                                                    <p className="text-[10px] font-black text-indigo-500 uppercase tracking-[0.2em] mt-2">Professional Examination Prep</p>
-                                                </div>
+                                {!showExamGen ? (
+                                    <motion.div
+                                        initial="hidden"
+                                        animate="visible"
+                                        variants={{
+                                            hidden: { opacity: 0 },
+                                            visible: {
+                                                opacity: 1,
+                                                transition: {
+                                                    staggerChildren: 0.1
+                                                }
+                                            }
+                                        }}
+                                        className="grid grid-cols-1 md:grid-cols-2 gap-4"
+                                    >
+                                        {/* Tool: Darasa Mode (Full Width) */}
+                                        <motion.div
+                                            variants={{
+                                                hidden: { opacity: 0, y: 20 },
+                                                visible: { opacity: 1, y: 0 }
+                                            }}
+                                            whileHover={{ y: -5, scale: 1.01 }}
+                                            onClick={() => navigate('/teacher/darasa')}
+                                            className="md:col-span-2 bg-white p-6 rounded-[2.5rem] shadow-sm border-2 border-slate-100 flex flex-row items-center cursor-pointer group relative overflow-hidden active:scale-[0.98] transition-all"
+                                        >
+                                            <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-50 rounded-full blur-3xl -mr-20 -mt-20 opacity-60"></div>
+
+                                            <div className="w-16 h-16 bg-indigo-50 rounded-2xl flex items-center justify-center mr-6 group-hover:scale-110 transition-transform border border-indigo-100 shadow-sm shadow-indigo-100">
+                                                <MonitorPlay className="w-8 h-8 text-indigo-600" />
                                             </div>
+                                            <div className="flex-1 relative z-10">
+                                                <h3 className="font-black text-xl text-slate-900 mb-1 flex items-center gap-2">
+                                                    {t.teacher.tools.darasa.title} <span className="text-[10px] bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full font-black uppercase tracking-wider shadow-sm border border-indigo-200">Live</span>
+                                                </h3>
+                                                <p className="text-slate-500 text-sm font-medium">{t.teacher.tools.darasa.desc}</p>
+                                            </div>
+                                            <div className="bg-slate-50 p-2 rounded-full group-hover:bg-indigo-600 group-hover:text-white transition-all border border-slate-200">
+                                                <ArrowRight className="w-6 h-6" />
+                                            </div>
+                                        </motion.div>
 
-                                            <div className="space-y-6">
-                                                <div className="space-y-2">
-                                                    <label className="text-xs font-black text-slate-900 uppercase tracking-[0.1em] flex items-center gap-2">
-                                                        <Type className="w-3 h-3 text-indigo-500" /> {t.teacher.tools.exam.topicLabel}
-                                                    </label>
-                                                    <input
-                                                        type="text"
-                                                        value={advTopic}
-                                                        onChange={(e) => setAdvTopic(e.target.value)}
-                                                        placeholder="e.g. Introduction to Calculus"
-                                                        className="w-full px-5 py-4 rounded-2xl border-2 border-slate-100 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none text-sm font-bold bg-slate-50/50 shadow-inner"
-                                                    />
+                                        {/* Tool 1: Notes Converter */}
+                                        <motion.div
+                                            variants={{
+                                                hidden: { opacity: 0, y: 20 },
+                                                visible: { opacity: 1, y: 0 }
+                                            }}
+                                            whileHover={isOnline ? { y: -5, scale: 1.02 } : {}}
+                                            className={`bg-white p-6 rounded-[2.5rem] shadow-sm border-2 border-slate-100 flex flex-col items-center text-center group transition-all ${isOnline ? 'cursor-pointer hover:border-indigo-200' : 'opacity-60 grayscale cursor-not-allowed'}`}
+                                        >
+                                            <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-4 transition-transform shadow-sm ${isOnline ? 'bg-indigo-50 group-hover:scale-110 border border-indigo-100' : 'bg-slate-100'}`}>
+                                                <FileText className={`w-8 h-8 ${isOnline ? 'text-indigo-600' : 'text-slate-400'}`} />
+                                            </div>
+                                            <h3 className="font-black text-lg text-slate-900 mb-2">{t.teacher.tools.converter.title}</h3>
+                                            <p className="text-sm text-slate-500 mb-6 font-medium">
+                                                {isOnline ? `${t.teacher.tools.converter.desc} ${selectedClass}.` : (language === 'FR' ? "Internet requis pour la conversion." : "Internet required for conversion.")}
+                                            </p>
+                                            <Button
+                                                fullWidth
+                                                variant="outline"
+                                                onClick={isOnline ? () => document.getElementById('file-upload')?.click() : undefined}
+                                                disabled={!isOnline}
+                                                className="rounded-xl border-2 hover:bg-slate-50 text-xs font-black uppercase tracking-widest"
+                                            >
+                                                <Upload className="w-4 h-4 mr-2" /> {isOnline ? (language === 'FR' ? "Télécharger Photo" : "Upload Photo") : (language === 'FR' ? "Déconnecté" : "Disconnected")}
+                                            </Button>
+                                            <input type="file" id="file-upload" className="hidden" accept="image/*,.pdf" onChange={handleFileUpload} />
+                                        </motion.div>
+
+                                        {/* Tool 2: Voice Notes */}
+                                        <motion.div
+                                            variants={{
+                                                hidden: { opacity: 0, y: 20 },
+                                                visible: { opacity: 1, y: 0 }
+                                            }}
+                                            whileHover={isOnline ? { y: -5, scale: 1.02 } : {}}
+                                            className={`bg-white p-6 rounded-[2.5rem] shadow-sm border-2 border-slate-100 flex flex-col items-center text-center group transition-all ${isOnline ? 'cursor-pointer hover:border-purple-200' : 'opacity-60 grayscale cursor-not-allowed'}`}
+                                        >
+                                            <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-4 transition-transform shadow-sm ${isRecording ? 'bg-red-50 animate-pulse scale-110 border border-red-100' : isOnline ? 'bg-purple-50 group-hover:scale-110 border border-purple-100' : 'bg-slate-100'}`}>
+                                                <Mic className={`w-8 h-8 ${isRecording ? 'text-red-500' : isOnline ? 'text-purple-600' : 'text-slate-400'}`} />
+                                            </div>
+                                            <h3 className="font-black text-lg text-slate-900 mb-2">{t.teacher.tools.voice.title}</h3>
+                                            <p className="text-sm text-slate-500 mb-6 font-medium">
+                                                {isOnline ? `${t.teacher.tools.voice.desc} ${selectedSubject}.` : (language === 'FR' ? "Internet requis pour laudio." : "Internet required for audio.")}
+                                            </p>
+                                            <Button
+                                                fullWidth
+                                                variant="outline"
+                                                onClick={isOnline ? (isRecording ? stopRecording : startRecording) : undefined}
+                                                disabled={!isOnline}
+                                                className={`rounded-xl border-2 text-xs font-black uppercase tracking-widest transition-all ${isRecording ? 'border-red-500 text-red-600 hover:bg-red-50' : ''}`}
+                                            >
+                                                <Mic className={`w-4 h-4 mr-2 ${isRecording ? 'animate-pulse' : ''}`} />
+                                                {isRecording ? (language === 'FR' ? "Arrêter lenregistrement" : "Stop Recording") : (language === 'FR' ? "Lancer laudio" : "Record Audio")}
+                                            </Button>
+                                        </motion.div>
+
+                                        {/* Tool 4: Automatic Marking - Integrated in Magic Tools Grid */}
+                                        <motion.div
+                                            variants={{
+                                                hidden: { opacity: 0, y: 20 },
+                                                visible: { opacity: 1, y: 0 }
+                                            }}
+                                            whileHover={{ y: -5, scale: 1.01 }}
+                                            onClick={() => setActiveTab('MARKING')}
+                                            className="md:col-span-2 bg-white p-6 rounded-[2.5rem] shadow-sm border-2 border-slate-100 flex flex-row items-center cursor-pointer group relative overflow-hidden active:scale-[0.98] transition-all"
+                                        >
+                                            <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-50 rounded-full blur-3xl -mr-20 -mt-20 opacity-60"></div>
+
+                                            <div className="w-16 h-16 bg-emerald-50 rounded-2xl flex items-center justify-center mr-6 group-hover:scale-110 transition-transform border border-emerald-100 shadow-sm shadow-emerald-100">
+                                                <ScanLine className="w-8 h-8 text-emerald-600" />
+                                            </div>
+                                            <div className="flex-1 relative z-10">
+                                                <h3 className="font-black text-xl text-slate-900 mb-1 flex items-center gap-2">
+                                                    {t.teacher.tools.marking.title} <span className="text-[10px] bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-black uppercase tracking-wider shadow-sm border border-emerald-200">{t.teacher.tools.marking.badge}</span>
+                                                </h3>
+                                                <p className="text-slate-500 text-sm font-medium">{t.teacher.tools.marking.desc}</p>
+                                            </div>
+                                            <div className="bg-slate-50 p-2 rounded-full group-hover:bg-emerald-600 group-hover:text-white transition-all border border-slate-200">
+                                                <ArrowRight className="w-6 h-6" />
+                                            </div>
+                                        </motion.div>
+                                    </motion.div>
+                                ) : (
+                                    /* Advanced Quiz Generator (Exam Center) */
+                                    <motion.div
+                                        initial={{ opacity: 0, y: 20 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        className="bg-white rounded-[3rem] shadow-sm border-2 border-slate-100 p-8 md:p-12 relative overflow-visible"
+                                    >
+                                        <div className="flex flex-col md:flex-row gap-12">
+                                            <div className="flex-[1.5] space-y-8">
+                                                <div className="flex items-center gap-4">
+                                                    <div className="w-12 h-12 bg-indigo-600 text-white rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-100">
+                                                        <Brain className="w-6 h-6" />
+                                                    </div>
+                                                    <div>
+                                                        <h3 className="text-2xl font-black text-slate-900 tracking-tight leading-none">{t.teacher.tools.exam.title}</h3>
+                                                        <p className="text-[10px] font-black text-indigo-500 uppercase tracking-[0.2em] mt-2">Professional Examination Prep</p>
+                                                    </div>
                                                 </div>
 
-                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                                                <div className="space-y-6">
                                                     <div className="space-y-2">
                                                         <label className="text-xs font-black text-slate-900 uppercase tracking-[0.1em] flex items-center gap-2">
-                                                            <Layers className="w-3 h-3 text-indigo-500" /> {t.teacher.tools.exam.questionsLabel}
+                                                            <Type className="w-3 h-3 text-indigo-500" /> {t.teacher.tools.exam.topicLabel}
                                                         </label>
-                                                        <div className="relative">
-                                                            <select
-                                                                value={advCount}
-                                                                onChange={(e) => setAdvCount(Number(e.target.value))}
-                                                                className="w-full px-5 py-4 rounded-2xl border-2 border-slate-100 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none text-sm font-bold bg-slate-50/50 shadow-inner appearance-none cursor-pointer"
-                                                            >
-                                                                <option value={5}>5 Professional Items</option>
-                                                                <option value={10}>10 Professional Items</option>
-                                                                <option value={15}>15 Professional Items</option>
-                                                            </select>
-                                                            <div className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
-                                                                <ChevronRight className="w-4 h-4 rotate-90" />
+                                                        <input
+                                                            type="text"
+                                                            value={advTopic}
+                                                            onChange={(e) => setAdvTopic(e.target.value)}
+                                                            placeholder="e.g. Introduction to Calculus"
+                                                            className="w-full px-5 py-4 rounded-2xl border-2 border-slate-100 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none text-sm font-bold bg-slate-50/50 shadow-inner"
+                                                        />
+                                                    </div>
+
+                                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                                                        <div className="space-y-2">
+                                                            <label className="text-xs font-black text-slate-900 uppercase tracking-[0.1em] flex items-center gap-2">
+                                                                <Layers className="w-3 h-3 text-indigo-500" /> {t.teacher.tools.exam.questionsLabel}
+                                                            </label>
+                                                            <div className="relative">
+                                                                <select
+                                                                    value={advCount}
+                                                                    onChange={(e) => setAdvCount(Number(e.target.value))}
+                                                                    className="w-full px-5 py-4 rounded-2xl border-2 border-slate-100 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none text-sm font-bold bg-slate-50/50 shadow-inner appearance-none cursor-pointer"
+                                                                >
+                                                                    <option value={5}>5 Professional Items</option>
+                                                                    <option value={10}>10 Professional Items</option>
+                                                                    <option value={15}>15 Professional Items</option>
+                                                                </select>
+                                                                <div className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                                                                    <ChevronRight className="w-4 h-4 rotate-90" />
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div className="space-y-2">
+                                                            <label className="text-xs font-black text-slate-900 uppercase tracking-[0.1em] flex items-center gap-2">
+                                                                <ClipboardList className="w-3 h-3 text-indigo-500" /> {t.teacher.tools.exam.typeLabel}
+                                                            </label>
+                                                            <div className="relative">
+                                                                <select
+                                                                    value={advType}
+                                                                    onChange={(e) => setAdvType(e.target.value as 'MCQ' | 'OPEN')}
+                                                                    className="w-full px-5 py-4 rounded-2xl border-2 border-slate-100 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none text-sm font-bold bg-slate-50/50 shadow-inner appearance-none cursor-pointer"
+                                                                >
+                                                                    <option value="MCQ">Objective (Multiple Choice)</option>
+                                                                    <option value="OPEN">Subjective (Long-form)</option>
+                                                                </select>
+                                                                <div className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                                                                    <ChevronRight className="w-4 h-4 rotate-90" />
+                                                                </div>
                                                             </div>
                                                         </div>
                                                     </div>
-                                                    <div className="space-y-2">
-                                                        <label className="text-xs font-black text-slate-900 uppercase tracking-[0.1em] flex items-center gap-2">
-                                                            <ClipboardList className="w-3 h-3 text-indigo-500" /> {t.teacher.tools.exam.typeLabel}
-                                                        </label>
-                                                        <div className="relative">
-                                                            <select
-                                                                value={advType}
-                                                                onChange={(e) => setAdvType(e.target.value as 'MCQ' | 'OPEN')}
-                                                                className="w-full px-5 py-4 rounded-2xl border-2 border-slate-100 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none text-sm font-bold bg-slate-50/50 shadow-inner appearance-none cursor-pointer"
-                                                            >
-                                                                <option value="MCQ">Objective (Multiple Choice)</option>
-                                                                <option value="OPEN">Subjective (Long-form)</option>
-                                                            </select>
-                                                            <div className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
-                                                                <ChevronRight className="w-4 h-4 rotate-90" />
-                                                            </div>
+                                                </div>
+                                            </div>
+
+                                            <div className="flex-1 border-t md:border-t-0 md:border-l-2 border-slate-100 md:pl-10 pt-8 md:pt-0 flex flex-col justify-between">
+                                                <div className="space-y-4">
+                                                    <label className="text-xs font-black text-slate-900 uppercase tracking-[0.1em] mb-2 block">{t.teacher.tools.exam.sourceLabel}</label>
+
+                                                    <div className="border-2 border-dashed border-slate-200 rounded-[2rem] bg-slate-50/50 p-6 text-center hover:bg-white hover:border-indigo-400 hover:shadow-xl hover:shadow-indigo-50 transition-all group relative cursor-pointer">
+                                                        <input
+                                                            type="file"
+                                                            multiple
+                                                            accept="image/*,application/pdf"
+                                                            onChange={handleAdvFileUpload}
+                                                            className="absolute inset-0 opacity-0 cursor-pointer z-10"
+                                                        />
+                                                        <div className="w-12 h-12 bg-white rounded-xl shadow-md border border-slate-100 flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
+                                                            <Upload className="w-6 h-6 text-indigo-500" />
                                                         </div>
+                                                        <p className="text-sm font-black text-slate-900 mb-0.5">
+                                                            {advFiles.length > 0 ? t.teacher.tools.exam.uploadSelected.replace('{count}', advFiles.length.toString()) : "Import Source Materials"}
+                                                        </p>
+                                                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
+                                                            {advFiles.length > 0 ? "Add More Documents" : "Upload PDFs or Images"}
+                                                        </p>
                                                     </div>
+
+                                                    {advFiles.length > 0 && (
+                                                        <div className="space-y-2 max-h-40 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-slate-200">
+                                                            {advFiles.map((file, idx) => (
+                                                                <div key={idx} className="flex items-center justify-between bg-white p-3 rounded-xl border border-slate-100 shadow-sm">
+                                                                    <div className="flex items-center gap-3">
+                                                                        <div className="w-8 h-8 bg-indigo-50 rounded-lg flex items-center justify-center text-indigo-600">
+                                                                            <FileText className="w-4 h-4" />
+                                                                        </div>
+                                                                        <div className="text-left">
+                                                                            <p className="text-[10px] font-black text-slate-900 truncate max-w-[120px]">{file.name}</p>
+                                                                            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
+                                                                        </div>
+                                                                    </div>
+                                                                    <button
+                                                                        onClick={() => setAdvFiles(prev => prev.filter((_, i) => i !== idx))}
+                                                                        className="p-1.5 hover:bg-red-50 text-slate-300 hover:text-red-500 rounded-lg transition-colors"
+                                                                    >
+                                                                        <Trash2 className="w-4 h-4" />
+                                                                    </button>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                <div className="mt-8">
+                                                    <Button
+                                                        fullWidth
+                                                        variant={isOnline && advTopic && advFiles.length > 0 ? "primary" : "outline"}
+                                                        onClick={isOnline ? handleAdvancedQuizGen : undefined}
+                                                        disabled={!isOnline || !advTopic || advFiles.length === 0}
+                                                        className={`py-5 text-base font-black rounded-2xl shadow-xl transition-all tracking-tight ${isOnline && advTopic && advFiles.length > 0 ? 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-indigo-200 scale-[1.02]' : 'bg-slate-50 text-black border-slate-100 cursor-not-allowed shadow-none'}`}
+                                                    >
+                                                        <Sparkles className="w-5 h-5 mr-3" /> {isOnline ? t.teacher.tools.exam.generateBtn : t.teacher.common.internetReq}
+                                                    </Button>
                                                 </div>
                                             </div>
                                         </div>
-
-                                        <div className="flex-1 border-t md:border-t-0 md:border-l-2 border-slate-100 md:pl-10 pt-8 md:pt-0 flex flex-col justify-between">
-                                            <div className="space-y-4">
-                                                <label className="text-xs font-black text-slate-900 uppercase tracking-[0.1em] mb-2 block">{t.teacher.tools.exam.sourceLabel}</label>
-
-                                                <div className="border-2 border-dashed border-slate-200 rounded-[2rem] bg-slate-50/50 p-8 text-center hover:bg-white hover:border-indigo-400 hover:shadow-xl hover:shadow-indigo-50 transition-all group relative cursor-pointer">
-                                                    <input
-                                                        type="file"
-                                                        multiple
-                                                        accept="image/*,application/pdf"
-                                                        onChange={handleAdvFileUpload}
-                                                        className="absolute inset-0 opacity-0 cursor-pointer z-10"
-                                                    />
-                                                    <div className="w-16 h-16 bg-white rounded-2xl shadow-md border border-slate-100 flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
-                                                        <Upload className="w-8 h-8 text-indigo-500" />
-                                                    </div>
-                                                    <p className="text-base font-black text-slate-900 mb-1">
-                                                        {advFiles.length > 0 ? t.teacher.tools.exam.uploadSelected.replace('{count}', advFiles.length.toString()) : "Import Source Materials"}
-                                                    </p>
-                                                    <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mt-1">
-                                                        {advFiles.length > 0 ? "Replace Documents" : "Upload PDFs or Images"}
-                                                    </p>
-                                                </div>
-                                            </div>
-
-                                            <div className="mt-8">
-                                                <Button
-                                                    fullWidth
-                                                    variant={isOnline && advTopic && advFiles.length > 0 ? "primary" : "outline"}
-                                                    onClick={isOnline ? handleAdvancedQuizGen : undefined}
-                                                    disabled={!isOnline || !advTopic || advFiles.length === 0}
-                                                    className={`py-5 text-base font-black rounded-2xl shadow-xl transition-all tracking-tight ${isOnline && advTopic && advFiles.length > 0 ? 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-indigo-200 scale-[1.02]' : 'bg-slate-50 text-black border-slate-100 cursor-not-allowed shadow-none'}`}
-                                                >
-                                                    <Sparkles className="w-5 h-5 mr-3" /> {isOnline ? t.teacher.tools.exam.generateBtn : t.teacher.common.internetReq}
-                                                </Button>
-                                                {!isOnline ? (
-                                                    <p className="text-[10px] text-center text-slate-400 mt-3 font-black uppercase tracking-[0.2em]">{t.teacher.common.internetReq}</p>
-                                                ) : !advTopic ? (
-                                                    <p className="text-[10px] text-center text-indigo-500 mt-3 font-black uppercase tracking-[0.2em] animate-pulse">{t.teacher.common.topicPrompt}</p>
-                                                ) : null}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </motion.div>
-
-                                {/* Tool 4: Automatic Marking - Clean Style */}
-                                <motion.div
-                                    whileHover={{ y: -5 }}
-                                    onClick={() => setActiveTab('MARKING')}
-                                    className="md:col-span-2 bg-white p-6 rounded-[2.5rem] shadow-sm border-2 border-slate-100 flex flex-row items-center cursor-pointer group relative overflow-hidden active:scale-[0.98] transition-all"
-                                >
-                                    <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-50 rounded-full blur-3xl -mr-20 -mt-20 opacity-60"></div>
-
-                                    <div className="w-16 h-16 bg-emerald-50 rounded-2xl flex items-center justify-center mr-6 group-hover:scale-110 transition-transform border border-emerald-100 shadow-sm shadow-emerald-100">
-                                        <ScanLine className="w-8 h-8 text-emerald-600" />
-                                    </div>
-                                    <div className="flex-1 relative z-10">
-                                        <h3 className="font-black text-xl text-slate-900 mb-1 flex items-center gap-2">
-                                            {t.teacher.tools.marking.title} <span className="text-[10px] bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-black uppercase tracking-wider shadow-sm border border-emerald-200">{t.teacher.tools.marking.badge}</span>
-                                        </h3>
-                                        <p className="text-slate-500 text-sm font-medium">{t.teacher.tools.marking.desc}</p>
-                                    </div>
-                                    <div className="bg-slate-50 p-2 rounded-full group-hover:bg-emerald-600 group-hover:text-white transition-all border border-slate-200">
-                                        <ArrowRight className="w-6 h-6" />
-                                    </div>
-                                </motion.div>
+                                    </motion.div>
+                                )}
                             </div>
                         )}
+
                         {activeTab === 'LIBRARY' && (
                             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-white rounded-[3rem] shadow-sm border-2 border-slate-100 overflow-hidden min-h-[500px]">
                                 <div className="bg-slate-50/50 px-8 md:px-12 py-8 border-b-2 border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-6">
@@ -1045,6 +1128,98 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                                 </div>
                             </motion.div>
                         )}
+                        {activeTab === 'MARKETPLACE' && (
+                            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-8 pb-24">
+                                {/* Marketplace Header */}
+                                <div className="bg-gradient-to-br from-blue-600 to-indigo-700 p-8 rounded-[3rem] text-white shadow-xl shadow-blue-100 relative overflow-hidden group">
+                                    <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-20 -mt-20 blur-3xl transition-transform group-hover:scale-110"></div>
+                                    <div className="relative z-10">
+                                        <div className="flex justify-between items-start mb-6">
+                                            <div>
+                                                <h3 className="text-3xl font-black mb-2 tracking-tight">Marketplace Portal</h3>
+                                                <p className="opacity-90 text-sm font-medium max-w-xs leading-relaxed">Share your knowledge and earn from every student who unlocks your materials.</p>
+                                            </div>
+                                            <button
+                                                onClick={() => setShowUploadPortal(true)}
+                                                className="bg-white text-blue-600 px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg hover:bg-blue-50 transition-all active:scale-95 flex items-center gap-2"
+                                            >
+                                                <Plus className="w-5 h-5" /> List Material
+                                            </button>
+                                        </div>
+                                        <div className="flex flex-wrap gap-4">
+                                            <div className="bg-white/20 px-6 py-4 rounded-3xl backdrop-blur-md border border-white/10">
+                                                <p className="text-[10px] uppercase font-black opacity-60 tracking-widest mb-1">Your Listings</p>
+                                                <p className="font-black text-2xl">{marketplaceMaterials.filter(m => m.teacherId === teacherProfile?.id).length}</p>
+                                            </div>
+                                            <div className="bg-white/20 px-6 py-4 rounded-3xl backdrop-blur-md border border-white/10">
+                                                <p className="text-[10px] uppercase font-black opacity-60 tracking-widest mb-1">Market Reach</p>
+                                                <p className="font-black text-2xl">Verified</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* My Listings Grid */}
+                                <div className="space-y-6">
+                                    <div className="flex items-center justify-between px-2">
+                                        <h3 className="font-black text-xl text-slate-900 tracking-tight">Your Marketplace Items</h3>
+                                        <div className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                                            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                                            Live on Store
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        {marketplaceMaterials.filter(m => m.teacherId === teacherProfile?.id).length === 0 ? (
+                                            <div className="md:col-span-2 py-24 text-center bg-white border-2 border-dashed border-slate-200 rounded-[3rem] group">
+                                                <div className="w-20 h-20 bg-slate-50 rounded-[2rem] flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform">
+                                                    <ShoppingBag className="w-10 h-10 text-slate-200" />
+                                                </div>
+                                                <h4 className="font-black text-slate-400 uppercase tracking-widest text-xs mb-4">No materials listed yet</h4>
+                                                <Button
+                                                    onClick={() => setShowUploadPortal(true)}
+                                                    className="bg-indigo-600 text-white rounded-xl px-8 py-3 font-black text-[10px] uppercase tracking-widest border-none shadow-lg shadow-indigo-100"
+                                                >
+                                                    List First Item
+                                                </Button>
+                                            </div>
+                                        ) : (
+                                            marketplaceMaterials
+                                                .filter(m => m.teacherId === teacherProfile?.id)
+                                                .map(item => (
+                                                    <motion.div
+                                                        key={item.id}
+                                                        whileHover={{ y: -5 }}
+                                                        className="bg-white border-2 border-slate-100 rounded-[2.5rem] p-6 shadow-sm hover:border-blue-100 hover:shadow-xl hover:shadow-blue-50/30 transition-all"
+                                                    >
+                                                        <div className="flex justify-between items-start mb-6">
+                                                            <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center border border-blue-100">
+                                                                {item.category === 'NOTES' ? <FileText className="w-6 h-6" /> : <Layers className="w-6 h-6" />}
+                                                            </div>
+                                                            <div className="bg-emerald-50 text-emerald-600 px-3 py-1 rounded-lg text-sm font-black">
+                                                                KES {item.price}
+                                                            </div>
+                                                        </div>
+                                                        <h4 className="font-black text-slate-900 text-lg mb-1 tracking-tight">{item.title}</h4>
+                                                        <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest mb-4">{item.subject} • {item.grade}</p>
+                                                        <div className="flex items-center justify-between pt-4 border-t border-slate-50">
+                                                            <div className="flex items-center gap-2">
+                                                                <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center">
+                                                                    <Users className="w-4 h-4 text-slate-400" />
+                                                                </div>
+                                                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Active Listing</span>
+                                                            </div>
+                                                            <button className="text-slate-300 hover:text-red-500 transition-colors">
+                                                                <Trash2 className="w-4 h-4" />
+                                                            </button>
+                                                        </div>
+                                                    </motion.div>
+                                                ))
+                                        )}
+                                    </div>
+                                </div>
+                            </motion.div>
+                        )}
                     </>
                 ) : (
                     // RESULTS VIEW
@@ -1182,59 +1357,74 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
 
                             <div className="p-8 space-y-6">
                                 <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">Class/Grade</label>
-                                        <div className="bg-slate-50 p-4 rounded-2xl border-2 border-slate-100 font-bold text-slate-600 text-sm">
+                                    <div className="space-y-2">
+                                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Class/Grade</label>
+                                        <div className="bg-slate-50 p-4 rounded-2xl border-2 border-slate-100 font-bold text-slate-700 text-sm flex items-center gap-3">
+                                            <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center text-blue-600">
+                                                <Layers className="w-4 h-4" />
+                                            </div>
                                             {selectedClass}
                                         </div>
                                     </div>
-                                    <div>
-                                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">Subject</label>
-                                        <div className="bg-slate-50 p-4 rounded-2xl border-2 border-slate-100 font-bold text-slate-600 text-sm">
+                                    <div className="space-y-2">
+                                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Subject</label>
+                                        <div className="bg-slate-50 p-4 rounded-2xl border-2 border-slate-100 font-bold text-slate-700 text-sm flex items-center gap-3">
+                                            <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center text-blue-600">
+                                                <BookOpen className="w-4 h-4" />
+                                            </div>
                                             {selectedSubject}
                                         </div>
                                     </div>
                                 </div>
 
-                                <div>
-                                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">Material Title</label>
-                                    <input
-                                        type="text"
-                                        value={listingTitle}
-                                        onChange={(e) => setListingTitle(e.target.value)}
-                                        placeholder="e.g. Grade 4 Math Term 1 Revision Notes"
-                                        className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 text-slate-700 font-bold focus:border-blue-500 focus:bg-white transition-all outline-none"
-                                    />
+                                <div className="space-y-2">
+                                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Material Title</label>
+                                    <div className="relative">
+                                        <input
+                                            type="text"
+                                            value={listingTitle}
+                                            onChange={(e) => setListingTitle(e.target.value)}
+                                            placeholder="e.g. Grade 4 Math Term 1 Revision Notes"
+                                            className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 pl-12 text-slate-700 font-bold focus:border-blue-500 focus:bg-white transition-all outline-none"
+                                        />
+                                        <Type className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                                    </div>
                                 </div>
 
-                                <div>
-                                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">Category</label>
-                                    <select
-                                        value={listingCategory}
-                                        onChange={(e) => setListingCategory(e.target.value as any)}
-                                        className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 text-slate-700 font-bold focus:border-blue-500 focus:bg-white transition-all outline-none appearance-none"
-                                    >
-                                        <option value="NOTES">Lesson Notes</option>
-                                        <option value="REVISION_PAPER">Revision Paper</option>
-                                        <option value="MARKING_SCHEME">Marking Scheme</option>
-                                        <option value="RECORDED_LESSON">Recorded Lesson</option>
-                                    </select>
+                                <div className="space-y-2">
+                                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Category</label>
+                                    <div className="relative">
+                                        <select
+                                            value={listingCategory}
+                                            onChange={(e) => setListingCategory(e.target.value as any)}
+                                            className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 pl-12 text-slate-700 font-bold focus:border-blue-500 focus:bg-white transition-all outline-none appearance-none"
+                                        >
+                                            <option value="NOTES">Lesson Notes</option>
+                                            <option value="REVISION_PAPER">Revision Paper</option>
+                                            <option value="MARKING_SCHEME">Marking Scheme</option>
+                                            <option value="RECORDED_LESSON">Recorded Lesson</option>
+                                        </select>
+                                        <ClipboardList className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                                        <ChevronRight className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 rotate-90" />
+                                    </div>
                                 </div>
 
-                                <div>
-                                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">Price (KES)</label>
+                                <div className="space-y-2">
+                                    <div className="flex justify-between items-center bg-blue-50 px-4 py-2 rounded-xl border border-blue-100 mb-4">
+                                        <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest">Pricing</span>
+                                        <span className="text-sm font-black text-blue-700">KES {listingPrice}</span>
+                                    </div>
                                     <input
                                         type="range"
                                         min="50"
-                                        max="500"
+                                        max="1000"
                                         step="50"
                                         value={listingPrice}
                                         onChange={(e) => setListingPrice(parseInt(e.target.value))}
                                         className="w-full h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-blue-600"
                                     />
-                                    <div className="flex justify-between mt-2 font-black text-blue-600 text-lg">
-                                        <span>KES {listingPrice}</span>
-                                        <span className="text-slate-300 text-[10px] uppercase tracking-widest mt-1">Recommended for {listingCategory.replace('_', ' ')}</span>
+                                    <div className="flex justify-center mt-2">
+                                        <span className="text-slate-400 text-[10px] font-bold uppercase tracking-widest">Recommended: KES 150 - 300</span>
                                     </div>
                                 </div>
 
@@ -1433,6 +1623,6 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                     />
                 )
             }
-        </div >
+        </div>
     );
 };

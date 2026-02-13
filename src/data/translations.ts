@@ -5,7 +5,7 @@ export const translations = {
             pillTeachers: "🍎 Teachers: Save 2 hours/day",
             headline: "Study Better. Teach Smarter - ",
             gradient: "The Smart Learning Platform for Students and Teachers",
-            subheadline: "Soma helps students revise for exams and complete homework confidently, while teachers create notes, quizzes, and lesson materials in minutes.",
+            subheadline: "Somo helps students revise for exams and complete homework confidently, while teachers create notes, quizzes, and lesson materials in minutes.",
             ctaStudents: "For Students",
             ctaTeachers: "For Teachers",
             ctaSchools: "For Schools"
@@ -31,7 +31,7 @@ export const translations = {
                 desc: "Mark a whole class in minutes. Get your evenings back."
             },
             homework: {
-                title: "Soma Smart Homework",
+                title: "Somo Smart Homework",
                 desc: "Personalized homework for KCSE & CBC in seconds."
             }
         },
@@ -39,7 +39,7 @@ export const translations = {
             badge: "The Teacher's Secret Weapon",
             title: "A professional teaching assistant ",
             gradient: "in your pocket.",
-            desc: "Soma Smart isn't just about the technology; it's about professional leverage. We give you back your evenings by automating the most time-consuming parts of the job.",
+            desc: "Somo Smart isn't just about the technology; it's about professional leverage. We give you back your evenings by automating the most time-consuming parts of the job.",
             printables: {
                 title: "Printable Materials in Seconds",
                 desc: "Generate professional KCSE/CBC exams, schemes of work, and lesson plans as PDFs ready for the printer."
@@ -50,7 +50,7 @@ export const translations = {
             },
             marking: {
                 title: "Automated Marking",
-                desc: "Just scan a stack of assignments. Soma Smart marks them instantly based on your specific criteria."
+                desc: "Just scan a stack of assignments. Somo Smart marks them instantly based on your specific criteria."
             },
             saveTime: {
                 hours: "10+ Hours",
@@ -61,20 +61,20 @@ export const translations = {
         roles: {
             title: "Unlock Your ",
             gradient: "Potential.",
-            subtitle: "Whether you're a student aiming for top grades or a teacher reclaiming your time, Soma Smart is built for you.",
+            subtitle: "Whether you're a student aiming for top grades or a teacher reclaiming your time, Somo Smart is built for you.",
             student: {
                 title: "For Learners",
                 desc: "Ace your exams with your smart powered study companion.",
                 points: [
                     "Scan & Learn Instantly",
-                    "Simple Soma Smart Explanations",
+                    "Simple Somo Smart Explanations",
                     "Unlimited CBC & KCSE Revision Quizzes"
                 ],
                 cta: "Start Learning"
             },
             teacher: {
                 title: "For Teachers",
-                desc: "Teach better, work less. Let Soma Smart handle the prep.",
+                desc: "Teach better, work less. Let Somo Smart handle the prep.",
                 points: [
                     "Auto-Mark Papers in Seconds",
                     "Printable Exams & Plans",
@@ -104,7 +104,7 @@ export const translations = {
             subtitle: "Get from a confused student to a subject master in 4 easy steps.",
             steps: [
                 { title: "Scan or Upload", desc: "Snap a photo of your textbook, notes or homework." },
-                { title: "Get Explanations", desc: "Soma Smart breaks it down into simple terms you understand." },
+                { title: "Get Explanations", desc: "Somo Smart breaks it down into simple terms you understand." },
                 { title: "Smart Quizzes", desc: "Test your knowledge with your smart study companion's practice questions." },
                 { title: "Listen & Revise", desc: "Listen to simplified lessons on the go to remember more." }
             ]
@@ -112,7 +112,7 @@ export const translations = {
         testimonials: {
             title: "What the Community Says",
             teacher: {
-                quote: "Soma has saved me so much time in class! The automated lesson plans and darasa mode recording features are a game changer for my teaching workflow.",
+                quote: "Somo has saved me so much time in class! The automated lesson plans and darasa mode recording features are a game changer for my teaching workflow.",
                 name: "Mr. Kamau"
             }
         },
@@ -127,7 +127,7 @@ export const translations = {
             actions: {
                 scan: "Scan Homework",
                 audio: "Listen to Lesson",
-                topic: "Ask Soma Smart",
+                topic: "Ask Somo Smart",
                 library: "My Library",
                 pastPapers: "CBC & KCSE Revision",
                 lessonRecap: "Lesson Recap",
@@ -138,9 +138,10 @@ export const translations = {
         teacher: {
             sidebar: {
                 home: "Home",
-                studio: "Studio",
+                studio: "Magic Classroom",
                 library: "Library",
-                marking: "Marking"
+                marking: "Marking",
+                shop: "Teacher's Shop"
             },
             tools: {
                 darasa: { title: "Darasa Mode", desc: "Launch interactive classroom presentation. Access history & saved lessons." },
@@ -185,7 +186,7 @@ export const translations = {
                 deleteConfirm: "Are you sure you want to delete this lesson?"
             },
             results: {
-                backToStudio: "Back to Studio",
+                backToStudio: "Back to Magic Classroom",
                 exportPdf: "Export PDF",
                 classroomAssessment: "Classroom Assessment",
                 answerKey: "Answer Key & Explanations",
@@ -203,7 +204,7 @@ export const translations = {
                 pricingPlans: "Pricing Plans",
                 logout: "Logout",
                 internetReq: "Internet Required",
-                connectPrompt: "Connect to internet to use Soma Smart",
+                connectPrompt: "Connect to internet to use Somo Smart",
                 topicPrompt: "Enter a topic and upload files to start."
             },
             onboarding: {
@@ -231,9 +232,9 @@ export const translations = {
                 backToDashboard: "Back to Dashboard",
                 title: "Darasa Mode",
                 recordTitle: "Record Your Class",
-                recordDesc: "Capture the lesson in real-time. Soma will generate comprehensive notes, summaries, and quizzes automatically.",
+                recordDesc: "Capture the lesson in real-time. Somo will generate comprehensive notes, summaries, and quizzes automatically.",
                 generatingTitle: "Generating Lesson...",
-                generatingDesc: "Soma Smart is analyzing the audio, creating notes, highlighting key terms, and generating quiz questions.",
+                generatingDesc: "Somo Smart is analyzing the audio, creating notes, highlighting key terms, and generating quiz questions.",
                 reviewTitle: "Review Recording",
                 reviewDesc: "Listen to verify clarity before we analyze it.",
                 retake: "Retake",
@@ -245,12 +246,12 @@ export const translations = {
                 recentLessons: "Recent Lessons",
                 copiedToClipboard: "Copied to clipboard",
                 lessonSaved: "Lesson Saved Successfully to your Teacher Account!",
-                shareText: "📚 *Lesson: {topic}*\n\n{summary}\n\nStart learning on Soma Smart!",
+                shareText: "📚 *Lesson: {topic}*\n\n{summary}\n\nStart learning on Somo Smart!",
                 copyLinkManual: "Link copied to clipboard! (Share menu closed)",
                 lessonDetailsCopied: "Lesson details copied to clipboard!",
                 limitReachedTitle: "Free Sessions Exhausted",
-                limitReachedDesc: "You've successfully generated 3 lessons using Darasa Mode! Upgrade to Soma Pro for Teachers to continue recording unlimited lessons.",
-                upgradeNow: "Upgrade to Soma Pro",
+                limitReachedDesc: "You've successfully generated 3 lessons using Darasa Mode! Upgrade to Somo Pro for Teachers to continue recording unlimited lessons.",
+                upgradeNow: "Upgrade to Somo Pro",
                 freeUses: "Free Lessons Left",
                 limitToast: "You have {count} free lessons remaining."
             },
@@ -282,7 +283,7 @@ export const translations = {
             pillTeachers: "🍎 Enseignants : Gagnez 2h/jour",
             headline: "Étudiez Mieux. Enseignez Plus Intelligemment - ",
             gradient: "La Plateforme d'Apprentissage Intelligente pour Étudiants et Enseignants",
-            subheadline: "Soma aide les élèves à réviser leurs examens et à faire leurs devoirs en toute confiance, tandis que les enseignants créent des notes, des quiz et du matériel pédagogique en quelques minutes.",
+            subheadline: "Somo aide les élèves à réviser leurs examens et à faire leurs devoirs en toute confiance, tandis que les enseignants créent des notes, des quiz et du matériel pédagogique en quelques minutes.",
             ctaStudents: "Pour les Étudiants",
             ctaTeachers: "Pour les Enseignants",
             ctaSchools: "Pour les Écoles"
@@ -308,7 +309,7 @@ export const translations = {
                 desc: "Corrigez une classe entière en quelques minutes. Récupérez vos soirées."
             },
             homework: {
-                title: "Devoirs Soma Smart",
+                title: "Devoirs Somo Smart",
                 desc: "Devoirs personnalisés pour KCSE & CBC en quelques secondes."
             }
         },
@@ -316,7 +317,7 @@ export const translations = {
             badge: "L'arme secrète de l'enseignant",
             title: "Un assistant d'enseignement professionnel ",
             gradient: "dans votre poche.",
-            desc: "Soma Smart n'est pas seulement une question de technologie ; c'est un levier professionnel. Nous vous rendons vos soirées en automatisant les parties les plus chronophages de votre travail.",
+            desc: "Somo Smart n'est pas seulement une question de technologie ; c'est un levier professionnel. Nous vous rendons vos soirées en automatisant les parties les plus chronophages de votre travail.",
             printables: {
                 title: "Supports imprimables en quelques secondes",
                 desc: "Générez des examens KCSE/CBC professionnels, des plans de travail et des cours au format PDF prêts pour l'impression."
@@ -327,7 +328,7 @@ export const translations = {
             },
             marking: {
                 title: "Notation automatisée",
-                desc: "Scannez simplement une pile de devoirs. Soma Smart les note instantanément selon vos critères spécifiques."
+                desc: "Scannez simplement une pile de devoirs. Somo Smart les note instantanément selon vos critères spécifiques."
             },
             saveTime: {
                 hours: "10+ Heures",
@@ -338,20 +339,20 @@ export const translations = {
         roles: {
             title: "Libérez votre ",
             gradient: "Potentiel.",
-            subtitle: "Que vous soyez un étudiant visant l'excellence ou un enseignant souhaitant gagner du temps, Soma Smart est fait pour vous.",
+            subtitle: "Que vous soyez un étudiant visant l'excellence ou un enseignant souhaitant gagner du temps, Somo Smart est fait pour vous.",
             student: {
                 title: "Pour les Apprenants",
                 desc: "Réussissez vos examens avec votre compagnon d'étude intelligent.",
                 points: [
                     "Scannez et apprenez instantanément",
-                    "Explications simples Soma Smart",
+                    "Explications simples Somo Smart",
                     "Quiz de révision CBC & KCSE illimités"
                 ],
                 cta: "Commencer à apprendre"
             },
             teacher: {
                 title: "Pour les Enseignants",
-                desc: "Enseignez mieux, travaillez moins. Laissez Soma Smart gérer la préparation.",
+                desc: "Enseignez mieux, travaillez moins. Laissez Somo Smart gérer la préparation.",
                 points: [
                     "Correction automatique en quelques secondes",
                     "Examens et plans imprimables",
@@ -381,7 +382,7 @@ export const translations = {
             subtitle: "Passez d'un étudiant confus à un maître du sujet en 4 étapes simples.",
             steps: [
                 { title: "Scanner ou Télécharger", desc: "Prenez une photo de votre manuel, de vos notes ou de vos devoirs." },
-                { title: "Obtenir des explications", desc: "Soma Smart décompose le contenu en termes simples que vous comprenez." },
+                { title: "Obtenir des explications", desc: "Somo Smart décompose le contenu en termes simples que vous comprenez." },
                 { title: "Quiz intelligents", desc: "Testez vos connaissances avec les questions d'entraînement de votre compagnon d'étude." },
                 { title: "Écouter et réviser", desc: "Écoutez des leçons simplifiées lors de vos déplacements pour mieux mémoriser." }
             ]
@@ -389,7 +390,7 @@ export const translations = {
         testimonials: {
             title: "Ce que dit la communauté",
             teacher: {
-                quote: "Soma m'a fait gagner tellement de temps en classe ! Les plans de cours automatisés et les fonctions d'enregistrement en mode Darasa changent la donne pour mon flux de travail pédagogique.",
+                quote: "Somo m'a fait gagner tellement de temps en classe ! Les plans de cours automatisés et les fonctions d'enregistrement en mode Darasa changent la donne pour mon flux de travail pédagogique.",
                 name: "M. Kamau"
             }
         },
@@ -404,7 +405,7 @@ export const translations = {
             actions: {
                 scan: "Scanner Devoirs",
                 audio: "Écouter Leçon",
-                topic: "Demander à Soma Smart",
+                topic: "Demander à Somo Smart",
                 library: "Ma Bibliothèque",
                 pastPapers: "Révision CBC & KCSE",
                 lessonRecap: "Résumé du Cours",
@@ -415,9 +416,10 @@ export const translations = {
         teacher: {
             sidebar: {
                 home: "Accueil",
-                studio: "Studio",
+                studio: "Salle de Classe Magique",
                 library: "Bibliothèque",
-                marking: "Correction"
+                marking: "Correction",
+                shop: "Boutique Enseignant"
             },
             tools: {
                 darasa: { title: "Mode Darasa", desc: "Lancez une présentation interactive en classe. Accédez à l'historique et aux leçons sauvegardées." },
@@ -462,7 +464,7 @@ export const translations = {
                 deleteConfirm: "Êtes-vous sûr de vouloir supprimer cette leçon ?"
             },
             results: {
-                backToStudio: "Retour au Studio",
+                backToStudio: "Retour à la Salle de Classe Magique",
                 exportPdf: "Exporter en PDF",
                 classroomAssessment: "Évaluation en Classe",
                 answerKey: "Corrigé et Explications",
@@ -480,7 +482,7 @@ export const translations = {
                 pricingPlans: "Tarifs",
                 logout: "Déconnexion",
                 internetReq: "Internet Requis",
-                connectPrompt: "Connectez-vous à Internet pour utiliser Soma Smart",
+                connectPrompt: "Connectez-vous à Internet pour utiliser Somo Smart",
                 topicPrompt: "Entrez un sujet et téléchargez des fichiers pour commencer."
             },
             onboarding: {
@@ -508,9 +510,9 @@ export const translations = {
                 backToDashboard: "Retour au tableau de bord",
                 title: "Mode Darasa",
                 recordTitle: "Enregistrez votre cours",
-                recordDesc: "Capturez la leçon en temps réel. Soma générera automatiquement des notes complètes, des résumés et des quiz.",
+                recordDesc: "Capturez la leçon en temps réel. Somo générera automatiquement des notes complètes, des résumés et des quiz.",
                 generatingTitle: "Génération de la leçon...",
-                generatingDesc: "Soma Smart analyse l'audio, crée des notes, souligne les termes clés et génére des questions de quiz.",
+                generatingDesc: "Somo Smart analyse l'audio, crée des notes, souligne les termes clés et génére des questions de quiz.",
                 reviewTitle: "Réviser l'enregistrement",
                 reviewDesc: "Écoutez pour vérifier la clarté avant l'analyse.",
                 retake: "Recommencer",
@@ -522,12 +524,12 @@ export const translations = {
                 recentLessons: "Leçons récentes",
                 copiedToClipboard: "Copié dans le presse-papiers",
                 lessonSaved: "Leçon enregistrée avec succès dans votre compte enseignant !",
-                shareText: "📚 *Leçon : {topic}*\n\n{summary}\n\nCommencez à apprendre sur Soma Smart !",
+                shareText: "📚 *Leçon : {topic}*\n\n{summary}\n\nCommencez à apprendre sur Somo Smart !",
                 copyLinkManual: "Lien copié dans le presse-papiers ! (Menu de partage fermé)",
                 lessonDetailsCopied: "Détails de la leçon copiés dans le presse-papiers !",
                 limitReachedTitle: "Sessions Gratuites Épuisées",
-                limitReachedDesc: "Vous avez généré avec succès 3 leçons en mode Darasa ! Passez à Soma Pro pour les Enseignants pour continuer à enregistrer des leçons illimitées.",
-                upgradeNow: "Passer à Soma Pro",
+                limitReachedDesc: "Vous avez généré avec succès 3 leçons en mode Darasa ! Passez à Somo Pro pour les Enseignants pour continuer à enregistrer des leçons illimitées.",
+                upgradeNow: "Passer à Somo Pro",
                 freeUses: "Leçons Gratuites Restantes",
                 limitToast: "Il vous reste {count} leçons gratuites."
             },

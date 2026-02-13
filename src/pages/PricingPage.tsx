@@ -64,7 +64,7 @@ export const PricingPage: React.FC = () => {
                             <>
                                 <CheckCircle2 className="w-16 h-16 text-green-500 mx-auto mb-6" />
                                 <h2 className="text-2xl font-black text-slate-900 mb-2">Payment Confirmed!</h2>
-                                <p className="text-slate-500 font-medium">Welcome to Soma Pro. Redirecting you to your dashboard...</p>
+                                <p className="text-slate-500 font-medium">Welcome to Somo Pro. Redirecting you to your dashboard...</p>
                             </>
                         )}
                         {verifyError && (

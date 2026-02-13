@@ -148,7 +148,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
                                     {role === 'SCHOOL' ? 'Register Your School' : 'Create Student Profile'}
                                 </h2>
                                 <p className="text-gray-500 mt-2">
-                                    {role === 'SCHOOL' ? 'Join the Soma Smart network and empower your teachers.' : 'Register to start your personalized learning journey!'}
+                                    {role === 'SCHOOL' ? 'Join the Somo Smart network and empower your teachers.' : 'Register to start your personalized learning journey!'}
                                 </p>
                             </div>
 

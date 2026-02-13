@@ -1,7 +1,7 @@
 import React, { Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { ConnectivityBanner } from './components/ConnectivityBanner';
-import { AskSoma } from './components/AskSoma';
+import { AskSomo } from './components/AskSomo';
 import { SessionConflictModal } from './components/SessionConflictModal';
 import { supabase } from './lib/supabase';
 
@@ -11,6 +11,7 @@ const LearnerPage = React.lazy(() => import('./pages/LearnerPage').then(module =
 const TeacherPage = React.lazy(() => import('./pages/TeacherPage').then(module => ({ default: module.TeacherPage })));
 const ParentPage = React.lazy(() => import('./pages/ParentPage').then(module => ({ default: module.ParentPage })));
 const AdminDashboard = React.lazy(() => import('./features/admin/Admin').then(module => ({ default: module.AdminDashboard })));
+const AdminKnowledgeBase = React.lazy(() => import('./features/admin/KnowledgeBase').then(module => ({ default: module.AdminKnowledgeBase })));
 const RevisionPortal = React.lazy(() => import('./features/revision/RevisionPortal').then(module => ({ default: module.RevisionPortal })));
 const RevisionDashboard = React.lazy(() => import('./features/revision/RevisionDashboard').then(module => ({ default: module.RevisionDashboard })));
 const DarasaMode = React.lazy(() => import('./features/darasa-mode/DarasaMode').then(module => ({ default: module.DarasaMode })));
@@ -23,7 +24,7 @@ const PageLoader = () => (
     <div className="min-h-screen flex items-center justify-center bg-slate-50">
         <div className="flex flex-col items-center gap-4">
             <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-            <p className="text-slate-500 font-medium animate-pulse">Loading Soma Smart...</p>
+            <p className="text-slate-500 font-medium animate-pulse">Loading Somo Smart...</p>
         </div>
     </div>
 );
@@ -51,7 +52,7 @@ const App: React.FC = () => {
     return (
         <>
             <ConnectivityBanner />
-            <AskSoma />
+            <AskSomo />
             <SessionConflictModal />
             <Suspense fallback={<PageLoader />}>
                 <Routes>
@@ -63,6 +64,7 @@ const App: React.FC = () => {
                     <Route path="/teacher/marking" element={<TeacherPage />} />
                     <Route path="/parent" element={<ParentPage />} />
                     <Route path="/admin" element={<AdminDashboard onNavigate={() => window.location.href = '/'} />} />
+                    <Route path="/admin/knowledge" element={<AdminKnowledgeBase />} />
                     <Route path="/revision" element={<RevisionPortal />} />
                     <Route path="/revision/dashboard" element={<RevisionDashboard />} />
                     <Route path="/teacher/darasa" element={<DarasaPage />} />

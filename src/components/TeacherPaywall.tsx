@@ -58,7 +58,7 @@ export const TeacherPaywall: React.FC<TeacherPaywallProps> = ({ isOpen, onClose 
                         className="py-5 text-lg bg-indigo-600 hover:bg-indigo-700 shadow-xl shadow-indigo-100 border-none group"
                     >
                         <span className="flex items-center justify-center gap-2">
-                            Activate Soma Pro <ShieldCheck className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                            Activate Somo Pro <ShieldCheck className="w-5 h-5 group-hover:scale-110 transition-transform" />
                         </span>
                     </Button>
                     <button

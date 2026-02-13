@@ -19,6 +19,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children, activeTab, o
         { id: 'USERS', label: 'User Management', icon: <Users className="w-5 h-5" /> },
         { id: 'EXAMS', label: 'Past Papers', icon: <ClipboardCheck className="w-5 h-5" /> },
         { id: 'FINANCE', label: 'Financials', icon: <CreditCard className="w-5 h-5" /> },
+        { id: 'KNOWLEDGE', label: 'CBE Knowledge Base', icon: <BookOpen className="w-5 h-5 text-indigo-400" /> },
         { id: 'CURRICULUM', label: 'Curriculum & AI', icon: <BookOpen className="w-5 h-5" /> },
         { id: 'SETTINGS', label: 'System & Logs', icon: <Settings className="w-5 h-5" /> },
     ];
@@ -37,7 +38,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children, activeTab, o
                     </div>
                     {isSidebarOpen && (
                         <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="font-bold text-white text-lg tracking-tight">
-                            Soma Admin
+                            Somo Admin
                         </motion.span>
                     )}
                 </div>
@@ -46,7 +47,13 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children, activeTab, o
                     {navItems.map((item) => (
                         <button
                             key={item.id}
-                            onClick={() => onTabChange(item.id)}
+                            onClick={() => {
+                                if (item.id === 'KNOWLEDGE') {
+                                    window.location.href = '/admin/knowledge';
+                                } else {
+                                    onTabChange(item.id);
+                                }
+                            }}
                             className={`w - full flex items - center gap - 4 px - 4 py - 3 rounded - xl transition - all ${activeTab === item.id
                                 ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-900/50'
                                 : 'hover:bg-slate-800 hover:text-white'
@@ -104,7 +111,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children, activeTab, o
                                         A
                                     </div>
                                     <span className="font-bold text-white text-lg tracking-tight">
-                                        Soma Admin
+                                        Somo Admin
                                     </span>
                                 </div>
                                 <button onClick={() => setIsMobileMenuOpen(false)} className="p-1 text-slate-500 hover:text-white">

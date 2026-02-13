@@ -81,6 +81,9 @@ interface AppContextType {
   language: 'EN' | 'FR';
   toggleLanguage: () => void;
   startGuestSession: () => void;
+  // Resource Portal
+  resources: any[];
+  fetchResources: (grade?: string, subject?: string) => Promise<void>;
   // Session Conflict
   sessionError: 'MULTI_DEVICE' | 'SINGLE_DEVICE' | null;
   resolveSessionConflict: () => Promise<void>;
@@ -104,24 +107,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [studentProfile, setStudentProfile] = useState<{ id: string, name: string, grade: string, schoolId?: string, schoolName?: string, email?: string, parentPhone?: string, sessionId?: string } | null>(null);
 
   // Teacher State
-  const [teacherUsageCount, setTeacherUsageCount] = useState<number>(() => {
-    return parseInt(localStorage.getItem('soma_teacher_usage') || '0');
-  });
+  const [teacherUsageCount, setTeacherUsageCount] = useState<number>(0);
   const [teacherDarasaUsage, setTeacherDarasaUsage] = useState<number>(0);
   const [teacherProfile, setTeacherProfile] = useState<TeacherProfile | null>(null);
   const [teacherHistory, setTeacherHistory] = useState<TeacherActivity[]>(offlineService.getTeacherHistory());
   const [availableQuizzes, setAvailableQuizzes] = useState<TeacherActivity[]>([]);
   const [teacherWallet, setTeacherWallet] = useState<TeacherWallet | null>(null);
-  const [isAvailableForTutoring, setIsAvailableForTutoring] = useState<boolean>(() => {
-    return localStorage.getItem('soma_tutoring_available') === 'true';
-  });
-  const [activeTutoringRequests, setActiveTutoringRequests] = useState<TutoringRequest[]>(() => {
-    try {
-      return JSON.parse(localStorage.getItem('soma_tutoring_requests') || '[]');
-    } catch {
-      return [];
-    }
-  });
+  const [isAvailableForTutoring, setIsAvailableForTutoring] = useState<boolean>(false);
+  const [activeTutoringRequests, setActiveTutoringRequests] = useState<TutoringRequest[]>([]);
 
   // School State
   const [schoolProfile, setSchoolProfile] = useState<SchoolProfile | null>(null);
@@ -133,7 +126,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   // Revision State
   const [revisionUsageCount, setRevisionUsageCount] = useState<number>(0);
-  const incrementRevisionUsage = () => setRevisionUsageCount(prev => prev + 1);
 
 
   // Subscription State
@@ -147,20 +139,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   });
 
   // Marketplace State
-  const [marketplaceMaterials, setMarketplaceMaterials] = useState<MaterialListing[]>(() => {
-    try {
-      return JSON.parse(localStorage.getItem('soma_marketplace_materials') || '[]');
-    } catch {
-      return [];
-    }
-  });
-  const [purchasedMaterialIds, setPurchasedMaterialIds] = useState<string[]>(() => {
-    try {
-      return JSON.parse(localStorage.getItem('soma_purchased_materials') || '[]');
-    } catch {
-      return [];
-    }
-  });
+  const [marketplaceMaterials, setMarketplaceMaterials] = useState<MaterialListing[]>([]);
+  const [purchasedMaterialIds, setPurchasedMaterialIds] = useState<string[]>([]);
+  const [resources, setResources] = useState<any[]>([]);
 
   const [sessionError, setSessionError] = useState<'MULTI_DEVICE' | 'SINGLE_DEVICE' | null>(null);
 
@@ -196,14 +177,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     // to allow role switching between Learner and Teacher to see the same queue.
   };
 
-  // Persistence for Phase 2 Tutoring state
+  // Persistence for tutoring available (legacy fallback)
   useEffect(() => {
-    localStorage.setItem('soma_tutoring_requests', JSON.stringify(activeTutoringRequests));
-  }, [activeTutoringRequests]);
-
-  useEffect(() => {
-    localStorage.setItem('soma_tutoring_available', isAvailableForTutoring.toString());
-  }, [isAvailableForTutoring]);
+    if (userId && role === UserRole.TEACHER) {
+      supabase.from('profiles').update({ is_available: isAvailableForTutoring }).eq('id', userId);
+    }
+  }, [isAvailableForTutoring, userId, role]);
 
   // Periodic Session Check
   useEffect(() => {
@@ -325,9 +304,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
               classes: profile.classes || [],
               subjects: profile.subjects || [],
               schoolId: profile.school_id,
-              sessionId: profile.session_id
+              sessionId: profile.session_id,
+              isAvailable: profile.is_available
             });
+            setTeacherUsageCount(profile.usage_teacher || 0);
             setTeacherDarasaUsage(profile.usage_teacher_darasa || 0);
+            setIsAvailableForTutoring(!!profile.is_available);
           } else if (profile.role === 'SCHOOL') {
             setRole(UserRole.SCHOOL);
             setSchoolProfile({
@@ -746,7 +728,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         setStudentCode("");
         setStudentProfile(null);
         setTeacherProfile(null);
-        localStorage.removeItem('soma_active_student');
+        localStorage.removeItem('somo_active_student');
 
         return { success: true };
       }
@@ -769,8 +751,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       const { data: { session } } = await supabase.auth.getSession();
 
       const dummyId = Math.random().toString(36).substring(7);
-      const email = `std-${dummyId}-${Date.now()}@soma-school.app`;
-      const password = `soma-std-${Date.now()}`;
+      const email = `std-${dummyId}-${Date.now()}@somo-school.app`;
+      const password = `somo-std-${Date.now()}`;
 
       // This uses service-level registration via signUp (no verification needed for these internal accounts)
       const { data: authData, error: authError } = await supabase.auth.signUp({
@@ -1019,10 +1001,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   };
 
-  const incrementTeacherUsage = () => {
+  const incrementTeacherUsage = async () => {
     const newCount = teacherUsageCount + 1;
     setTeacherUsageCount(newCount);
-    localStorage.setItem('soma_teacher_usage', newCount.toString());
+    if (userId) {
+      await supabase.from('profiles').update({ usage_teacher: newCount }).eq('id', userId);
+    }
   };
 
   const incrementTeacherDarasaUsage = async () => {
@@ -1040,25 +1024,63 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   const fetchEarnings = async () => {
-    // Mock wallet data
-    setTeacherWallet({
-      balance: 1450,
-      currency: 'KES',
-      lastWithdrawal: '2026-02-05',
-      transactions: [
-        { id: 't1', type: 'EARNING', amount: 30, description: 'Homework Help: Algebra', date: '2026-02-12', status: 'COMPLETED' },
-        { id: 't2', type: 'EARNING', amount: 500, description: 'Material Sale: Grade 8 Math Notes', date: '2026-02-10', status: 'COMPLETED' },
-        { id: 't3', type: 'WITHDRAWAL', amount: 1000, description: 'M-Pesa Withdrawal', date: '2026-02-05', status: 'COMPLETED' },
-      ]
-    });
+    if (!userId) return;
+    try {
+      // 1. Fetch Wallet
+      const { data: wallet } = await supabase.from('teacher_wallets').select('*').eq('id', userId).maybeSingle();
+
+      // 2. Fetch Transactions
+      const { data: transactions } = await supabase.from('transactions').select('*').eq('teacher_id', userId).order('date', { ascending: false });
+
+      if (wallet) {
+        setTeacherWallet({
+          balance: wallet.balance,
+          currency: wallet.currency,
+          lastWithdrawal: wallet.last_withdrawal,
+          transactions: (transactions || []).map((t: any) => ({
+            id: t.id,
+            type: t.type,
+            amount: t.amount,
+            description: t.description,
+            date: new Date(t.date).toLocaleDateString(),
+            status: t.status
+          }))
+        });
+      } else {
+        // Auto-create wallet if missing
+        await supabase.from('teacher_wallets').insert([{ id: userId, balance: 0, currency: 'KES' }]);
+        setTeacherWallet({ balance: 0, currency: 'KES', transactions: [] });
+      }
+    } catch (e) {
+      console.error("Fetch Earnings Error:", e);
+    }
   };
 
   const requestWithdrawal = async (amount: number) => {
-    if (!teacherWallet || amount > teacherWallet.balance) {
+    if (!userId || !teacherWallet || amount > teacherWallet.balance) {
       return { success: false, message: "Insufficient balance" };
     }
-    // Mock success
-    return { success: true, message: "Withdrawal request submitted via M-Pesa" };
+
+    try {
+      // Insert withdrawal transaction
+      const { error } = await supabase.from('transactions').insert([{
+        teacher_id: userId,
+        type: 'WITHDRAWAL',
+        amount: amount,
+        description: 'M-Pesa Withdrawal Request',
+        status: 'PENDING'
+      }]);
+
+      if (error) throw error;
+
+      // Update wallet balance (In a real app, this should be a transaction/trigger)
+      await supabase.from('teacher_wallets').update({ balance: teacherWallet.balance - amount }).eq('id', userId);
+
+      fetchEarnings(); // Refresh
+      return { success: true, message: "Withdrawal request submitted via M-Pesa" };
+    } catch (e: any) {
+      return { success: false, message: e.message || "Withdrawal failed" };
+    }
   };
 
   useEffect(() => {
@@ -1068,8 +1090,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   }, [role, isRegistered]);
 
   const startGuestSession = () => {
-    const saved = parseInt(localStorage.getItem('soma_guest_usage') || '0');
+    const saved = parseInt(localStorage.getItem('somo_guest_usage_general') || '0');
+    const savedRevision = parseInt(localStorage.getItem('somo_guest_usage_revision') || '0');
     setUsageCount(saved);
+    setRevisionUsageCount(savedRevision);
     setRole(UserRole.GUEST);
   };
 
@@ -1077,9 +1101,34 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     if (role === UserRole.GUEST) {
       const newCount = usageCount + 1;
       setUsageCount(newCount);
-      localStorage.setItem('soma_guest_usage', newCount.toString());
+      localStorage.setItem('somo_guest_usage_general', newCount.toString());
     } else {
       setUsageCount(prev => prev + 1);
+    }
+  };
+
+  const incrementRevisionUsage = () => {
+    if (role === UserRole.GUEST) {
+      const newCount = revisionUsageCount + 1;
+      setRevisionUsageCount(newCount);
+      localStorage.setItem('soma_guest_usage_revision', newCount.toString());
+    } else {
+      setRevisionUsageCount(prev => prev + 1);
+    }
+  };
+
+  const fetchResources = async (grade?: string, subject?: string) => {
+    try {
+      let query = supabase.from('knowledge_base').select('*').order('created_at', { ascending: false });
+
+      if (grade) query = query.eq('grade', grade);
+      if (subject) query = query.eq('subject', subject);
+
+      const { data, error } = await query;
+      if (error) throw error;
+      setResources(data || []);
+    } catch (e) {
+      console.error("Error fetching resources:", e);
     }
   };
 
@@ -1566,121 +1615,209 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const createTutoringRequest = async (topic: string, description: string, price: number): Promise<{ success: boolean; message: string }> => {
     if (!studentProfile) return { success: false, message: "Login to request help" };
 
-    const newRequest: TutoringRequest = {
-      id: `req-${Date.now()}`,
-      studentId: studentProfile.id,
-      topic,
-      description,
-      status: 'PENDING',
-      price: price || 20,
-      createdAt: new Date().toISOString()
-    };
+    try {
+      const { error } = await supabase.from('tutoring_requests').insert({
+        student_id: studentProfile.id,
+        topic,
+        description,
+        price,
+        status: 'PENDING'
+      });
 
-    setActiveTutoringRequests(prev => [newRequest, ...prev]);
-    return { success: true, message: "Request sent to available teachers!" };
+      if (error) throw error;
+      fetchTutoringRequests();
+      return { success: true, message: "Request sent to available teachers!" };
+    } catch (e: any) {
+      return { success: false, message: e.message };
+    }
   };
 
   const acceptTutoringRequest = async (requestId: string): Promise<{ success: boolean; message: string }> => {
-    if (!teacherProfile) return { success: false, message: "Login as teacher to accept" };
+    if (!userId || role !== UserRole.TEACHER) return { success: false, message: "Login as teacher to accept" };
 
-    setActiveTutoringRequests(prev => prev.map(req =>
-      req.id === requestId ? { ...req, status: 'ACCEPTED', teacherId: teacherProfile.id } : req
-    ));
+    try {
+      const { error } = await supabase.from('tutoring_requests').update({
+        teacher_id: userId,
+        status: 'ACCEPTED'
+      }).eq('id', requestId);
 
-    return { success: true, message: "Request accepted! You can now respond." };
+      if (error) throw error;
+      fetchTutoringRequests();
+      return { success: true, message: "Request accepted! You can now respond." };
+    } catch (e: any) {
+      return { success: false, message: e.message };
+    }
   };
 
   const submitTutoringResponse = async (requestId: string, response: string, type: 'TEXT' | 'VOICE' | 'VIDEO'): Promise<{ success: boolean; message: string }> => {
-    const request = activeTutoringRequests.find(r => r.id === requestId);
-    if (!request) return { success: false, message: "Request not found" };
+    if (!userId) return { success: false, message: "Auth required" };
 
-    // Credit Teacher Wallet
-    if (teacherWallet) {
-      const newTransaction = {
-        id: `t-${Date.now()}`,
-        type: 'EARNING' as const,
-        amount: request.price,
-        description: `Homework Help: ${request.topic}`,
-        date: new Date().toISOString().split('T')[0],
-        status: 'COMPLETED' as const
-      };
+    try {
+      const request = activeTutoringRequests.find(r => r.id === requestId);
+      if (!request) return { success: false, message: "Request not found" };
 
-      setTeacherWallet({
-        ...teacherWallet,
-        balance: teacherWallet.balance + request.price,
-        transactions: [newTransaction, ...teacherWallet.transactions]
-      });
-    }
-
-    // Update Request Status
-    setActiveTutoringRequests(prev => prev.map(req =>
-      req.id === requestId ? {
-        ...req,
+      // 1. Update Request
+      const { error: reqError } = await supabase.from('tutoring_requests').update({
         status: 'COMPLETED',
         response,
-        responseType: type,
-        completedAt: new Date().toISOString()
-      } : req
-    ));
+        response_type: type,
+        completed_at: new Date().toISOString()
+      }).eq('id', requestId);
 
-    return { success: true, message: "Response sent! Earnings added to wallet." };
+      if (reqError) throw reqError;
+
+      // 2. Credit Wallet
+      const earnings = request.price;
+      const { data: wallet } = await supabase.from('teacher_wallets').select('balance').eq('id', userId).single();
+      const currentBalance = wallet?.balance || 0;
+
+      await supabase.from('teacher_wallets').update({ balance: currentBalance + earnings }).eq('id', userId);
+
+      // 3. Add Transaction
+      await supabase.from('transactions').insert({
+        teacher_id: userId,
+        type: 'EARNING',
+        amount: earnings,
+        description: `Homework Help: ${request.topic}`,
+        status: 'COMPLETED'
+      });
+
+      fetchEarnings();
+      fetchTutoringRequests();
+
+      return { success: true, message: "Response sent! Earnings added to wallet." };
+    } catch (e: any) {
+      return { success: false, message: e.message };
+    }
   };
 
   const listMaterial = async (listing: Omit<MaterialListing, 'id' | 'downloadCount' | 'rating' | 'createdAt'>): Promise<{ success: boolean; message: string }> => {
-    if (!teacherProfile) return { success: false, message: "Login as teacher to list material" };
+    if (!userId || !teacherProfile) return { success: false, message: "Login as teacher to list material" };
 
-    const newListing: MaterialListing = {
-      ...listing,
-      id: `mat-${Date.now()}`,
-      downloadCount: 0,
-      rating: 5,
-      createdAt: new Date().toISOString()
-    };
+    try {
+      const { error } = await supabase.from('marketplace_materials').insert({
+        teacher_id: userId,
+        teacher_name: teacherProfile.name,
+        title: listing.title,
+        description: listing.description,
+        price: listing.price,
+        grade: listing.grade,
+        subject: listing.subject,
+        category: listing.category,
+        file_url: listing.fileUrl,
+        preview_url: listing.previewUrl,
+        rating: 5.0,
+        download_count: 0
+      });
 
-    setMarketplaceMaterials(prev => [newListing, ...prev]);
-    return { success: true, message: "Material listed successfully!" };
+      if (error) throw error;
+      fetchMarketplaceMaterials();
+      return { success: true, message: "Material listed successfully!" };
+    } catch (e: any) {
+      return { success: false, message: e.message };
+    }
   };
 
   const purchaseMaterial = async (materialId: string): Promise<{ success: boolean; message: string }> => {
-    if (!studentProfile) return { success: false, message: "Login as student to buy material" };
+    if (!userId || !studentProfile) return { success: false, message: "Login as student to buy material" };
     if (purchasedMaterialIds.includes(materialId)) return { success: false, message: "Already purchased" };
 
-    const material = marketplaceMaterials.find(m => m.id === materialId);
-    if (!material) return { success: false, message: "Material not found" };
-
-    // Update Learner logic (simulated deduction/check)
-    setPurchasedMaterialIds(prev => [...prev, materialId]);
-
-    // Update Teacher Wallet (Credit the seller)
-    const sellerWalletKey = `soma_teacher_wallet_${material.teacherId}`;
     try {
-      const storedWallet = localStorage.getItem(sellerWalletKey);
-      let sellerWallet: TeacherWallet = storedWallet ? JSON.parse(storedWallet) : { balance: 0, currency: 'KES', transactions: [] };
+      const material = marketplaceMaterials.find(m => m.id === materialId);
+      if (!material) return { success: false, message: "Material not found" };
 
-      const newTransaction = {
-        id: `t-${Date.now()}`,
-        type: 'EARNING' as const,
+      // 1. Credit Seller Wallet
+      const { data: wallet } = await supabase.from('teacher_wallets').select('balance').eq('id', material.teacherId).single();
+      const currentBalance = wallet?.balance || 0;
+      await supabase.from('teacher_wallets').update({ balance: currentBalance + material.price }).eq('id', material.teacherId);
+
+      // 2. Add Transaction to Seller
+      await supabase.from('transactions').insert({
+        teacher_id: material.teacherId,
+        type: 'EARNING',
         amount: material.price,
         description: `Marketplace Sale: ${material.title}`,
-        date: new Date().toISOString().split('T')[0],
-        status: 'COMPLETED' as const
-      };
+        status: 'COMPLETED'
+      });
 
-      sellerWallet.balance += material.price;
-      sellerWallet.transactions = [newTransaction, ...sellerWallet.transactions];
+      // 3. Update Download Count
+      await supabase.from('marketplace_materials').update({ download_count: material.downloadCount + 1 }).eq('id', materialId);
 
-      localStorage.setItem(sellerWalletKey, JSON.stringify(sellerWallet));
+      // 4. Update Local State (In real app, we'd have a 'purchased_materials' table)
+      const newPurchased = [...purchasedMaterialIds, materialId];
+      setPurchasedMaterialIds(newPurchased);
+      localStorage.setItem('soma_purchased_materials', JSON.stringify(newPurchased));
 
-      // If the seller is the CURRENT teacher, update their live state too
-      if (teacherProfile?.id === material.teacherId) {
-        setTeacherWallet(sellerWallet);
+      return { success: true, message: "Material purchased! Check your Library." };
+    } catch (e: any) {
+      return { success: false, message: e.message };
+    }
+  };
+
+  const fetchMarketplaceMaterials = async () => {
+    try {
+      const { data, error } = await supabase.from('marketplace_materials').select('*').order('created_at', { ascending: false });
+      if (error) throw error;
+      if (data) {
+        setMarketplaceMaterials(data.map((m: any) => ({
+          id: m.id,
+          teacherId: m.teacher_id,
+          teacherName: m.teacher_name,
+          title: m.title,
+          description: m.description,
+          price: m.price,
+          grade: m.grade,
+          subject: m.subject,
+          category: m.category,
+          downloadCount: m.download_count,
+          rating: m.rating,
+          fileUrl: m.file_url,
+          previewUrl: m.preview_url,
+          createdAt: m.created_at
+        })));
       }
-    } catch (e) {
-      console.error("Failed to credit seller wallet", e);
+    } catch (e) { console.error("Fetch Marketplace Error:", e); }
+  };
+
+  const fetchTutoringRequests = async () => {
+    try {
+      const { data, error } = await supabase.from('tutoring_requests').select('*').order('created_at', { ascending: false });
+      if (error) throw error;
+      if (data) {
+        setActiveTutoringRequests(data.map((r: any) => ({
+          id: r.id,
+          studentId: r.student_id,
+          teacherId: r.teacher_id,
+          topic: r.topic,
+          description: r.description,
+          status: r.status,
+          price: r.price,
+          response: r.response,
+          responseType: r.response_type,
+          createdAt: r.created_at,
+          completedAt: r.completed_at
+        })));
+      }
+    } catch (e) { console.error("Fetch Tutoring Error:", e); }
+  };
+
+  useEffect(() => {
+    fetchMarketplaceMaterials();
+    fetchTutoringRequests();
+    if (role === UserRole.TEACHER && userId) {
+      fetchEarnings();
     }
 
-    return { success: true, message: "Material purchased successfully! Check your library." };
-  };
+    const interval = setInterval(() => {
+      fetchMarketplaceMaterials();
+      fetchTutoringRequests();
+      if (role === UserRole.TEACHER && userId) {
+        fetchEarnings();
+      }
+    }, 30000); // Poll every 30s
+    return () => clearInterval(interval);
+  }, [role, userId]);
+
 
   return (
     <AppContext.Provider value={{
@@ -1712,9 +1849,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       startGuestSession,
       availableQuizzes,
       fetchAvailableQuizzes,
+      resources,
+      fetchResources,
       sessionError,
-      setSessionError,
-      resolveSessionConflict
+      resolveSessionConflict,
+      setSessionError
     }}>
       {children}
     </AppContext.Provider>

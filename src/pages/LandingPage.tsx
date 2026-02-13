@@ -247,9 +247,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                     <div className="flex justify-between items-center py-4">
                         {/* Logo */}
                         <div className="flex items-center gap-4 cursor-pointer" onClick={() => window.scrollTo(0, 0)}>
-                            <img src={logoImg} alt="Soma Smart Logo - Kenya's Leading Study Assistant" className="w-24 h-24 object-contain" />
+                            <img src={logoImg} alt="Somo Smart Logo - Kenya's Leading Study Assistant" className="w-24 h-24 object-contain" />
                             <div className="hidden sm:block">
-                                <h1 className="text-3xl font-bold text-blue-900 leading-none tracking-tight">Soma Smart</h1>
+                                <h1 className="text-3xl font-bold text-blue-900 leading-none tracking-tight">Somo Smart</h1>
                                 <p className="text-[11px] text-blue-600 font-bold tracking-wide uppercase mt-1">Teach Faster. Learn Smarter. Improve Results.</p>
                             </div>
                         </div>
@@ -397,7 +397,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                             <div className="relative z-10 rounded-2xl overflow-hidden shadow-2xl shadow-blue-200/50 border border-white/50 backdrop-blur-sm aspect-[4/3] md:aspect-video bg-slate-100">
                                 <img
                                     src={heroBannerImg}
-                                    alt="Soma Smart Learning - Your Study Assistant for Kenyan Students"
+                                    alt="Somo Smart Learning - Your Study Assistant for Kenyan Students"
                                     className="w-full h-full object-cover"
                                     fetchPriority="high"
                                     width="800"
@@ -633,116 +633,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
             </section>
 
 
-            <div className="w-full h-px bg-gradient-to-r from-transparent via-slate-100 to-transparent"></div>
-
-            {/* --- POPULAR PLANS CTA --- */}
-            <section className="pt-6 pb-0 relative overflow-hidden">
-                {/* Background Decor */}
-                <div className="absolute top-0 left-1/4 w-96 h-96 bg-blue-100/30 blur-[100px] rounded-full -z-10"></div>
-                <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-indigo-100/30 blur-[100px] rounded-full -z-10"></div>
-
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-                    <div className="text-center mb-16">
-                        <span className="px-4 py-1.5 bg-indigo-50 text-indigo-600 text-xs font-black uppercase tracking-widest rounded-full mb-4 inline-block">
-                            Premium Access
-                        </span>
-                        <h2 className="text-3xl md:text-5xl font-black text-blue-900 mb-6 tracking-tight italic">
-                            Education that values <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">your vision.</span>
-                        </h2>
-                        <p className="text-slate-500 text-lg md:text-xl max-w-2xl mx-auto leading-relaxed">
-                            Join thousands who have reclaimed their time and boosted their results. No hidden fees, just pure impact.
-                        </p>
-                    </div>
-
-                    <div className="grid md:grid-cols-3 gap-8">
-                        {[
-                            {
-                                segment: "For Students",
-                                name: "Monthly Master",
-                                price: "300",
-                                period: "month",
-                                features: ["Unlimited Scanning", "Full CBC/KCSE Quizzes", "Priority Support"],
-                                icon: Sparkles,
-                                color: "from-blue-500 to-indigo-600",
-                                label: "Most Flexible",
-                                tab: "STUDENT"
-                            },
-                            {
-                                segment: "For Teachers",
-                                name: "Pro Termly",
-                                price: "1,600",
-                                period: "term",
-                                features: ["Auto-Marking (Unlimited)", "Darasa Mode Recording", "Exam Generator Access"],
-                                icon: Zap,
-                                color: "from-orange-500 to-red-600",
-                                label: "Best Value",
-                                popular: true,
-                                tab: "TEACHER"
-                            },
-                            {
-                                segment: "For Schools",
-                                name: "Medium School",
-                                price: "20,000",
-                                period: "term",
-                                features: ["Up to 100 Students", "Performance Analytics", "Admin Dashboard"],
-                                icon: Building2,
-                                color: "from-emerald-500 to-teal-600",
-                                label: "Institutional",
-                                tab: "SCHOOL"
-                            }
-                        ].map((plan, idx) => (
-                            <motion.div
-                                key={idx}
-                                whileHover={{ y: -10 }}
-                                className={`relative bg-white/60 backdrop-blur-xl border ${plan.popular ? 'border-indigo-200' : 'border-slate-100'} p-8 rounded-[2.5rem] shadow-xl shadow-slate-100/50 flex flex-col justify-between overflow-hidden`}
-                            >
-                                {plan.popular && (
-                                    <div className="absolute top-0 right-0 px-6 py-1.5 bg-gradient-to-r from-indigo-600 to-blue-600 text-white text-[10px] font-black uppercase tracking-widest rounded-bl-2xl">
-                                        Popular Choice
-                                    </div>
-                                )}
-                                <div>
-                                    <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${plan.color} flex items-center justify-center text-white mb-6 shadow-lg shadow-blue-200`}>
-                                        <plan.icon className="w-8 h-8" />
-                                    </div>
-                                    <span className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1 block">{plan.segment}</span>
-                                    <h3 className="text-2xl font-black text-slate-900 mb-4">{plan.name}</h3>
-                                    <div className="flex items-baseline gap-1 mb-8">
-                                        <span className="text-4xl font-black text-slate-900">Kes {plan.price}</span>
-                                        <span className="text-slate-400 font-bold uppercase text-[10px]">/{plan.period}</span>
-                                    </div>
-                                    <ul className="space-y-4 mb-8">
-                                        {plan.features.map((feature, fIdx) => (
-                                            <li key={fIdx} className="flex items-center gap-3 text-slate-600 font-medium text-sm">
-                                                <CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0" />
-                                                {feature}
-                                            </li>
-                                        ))}
-                                    </ul>
-                                </div>
-                                <button
-                                    onClick={() => navigate('/pricing', { state: { initialTab: plan.tab } })}
-                                    className={`w-full py-4 rounded-2xl font-black uppercase tracking-widest text-xs transition-all flex items-center justify-center gap-2 ${plan.popular
-                                        ? 'bg-blue-600 text-white hover:bg-blue-500 shadow-lg shadow-blue-200'
-                                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                                        }`}
-                                >
-                                    Choose Plan <ArrowRight className="w-4 h-4" />
-                                </button>
-                            </motion.div>
-                        ))}
-                    </div>
-
-                    <div className="mt-16 text-center">
-                        <button
-                            onClick={() => navigate('/pricing')}
-                            className="inline-flex items-center gap-2 text-slate-400 hover:text-blue-600 font-bold text-sm transition-all group"
-                        >
-                            View All Specialized Plans <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                        </button>
-                    </div>
-                </div>
-            </section>
 
             <div className="w-full h-px bg-gradient-to-r from-transparent via-slate-100 to-transparent"></div>
 
@@ -767,7 +657,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                 <p className="text-white/80 font-medium italic text-sm">{t.roles.student.desc}</p>
                             </div>
                             <div className="h-64 overflow-hidden bg-gray-50 relative aspect-[4/3]">
-                                <img src={learnerImg} alt="Kenyan Student using Soma Smart for CBC and KCSE revision" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" loading="lazy" decoding="async" width="400" height="300" />
+                                <img src={learnerImg} alt="Kenyan Student using Somo Smart for CBC and KCSE revision" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" loading="lazy" decoding="async" width="400" height="300" />
                                 <div className="absolute inset-0 bg-gradient-to-t from-white via-transparent to-transparent opacity-60"></div>
                             </div>
                             <div className="p-8 space-y-4 bg-white flex-1">
@@ -797,7 +687,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                 <p className="text-white/80 font-medium italic text-sm">Teach Better. Save Time.</p>
                             </div>
                             <div className="h-64 overflow-hidden bg-gray-50 relative aspect-[4/3]">
-                                <img src={teacherImg} alt="Kenyan Teacher creating lessons with Soma Smart" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" loading="lazy" decoding="async" width="400" height="300" />
+                                <img src={teacherImg} alt="Kenyan Teacher creating lessons with Somo Smart" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" loading="lazy" decoding="async" width="400" height="300" />
                                 <div className="absolute inset-0 bg-gradient-to-t from-white via-transparent to-transparent opacity-60"></div>
                             </div>
                             <div className="p-8 space-y-4 bg-white flex-1">
@@ -831,7 +721,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                 <p className="text-white/80 font-medium italic text-sm">Clear Learning. Real Progress.</p>
                             </div>
                             <div className="h-64 overflow-hidden bg-gray-50 relative aspect-[4/3]">
-                                <img src={parentImg} alt="Kenyan Parent tracking student progress on Soma Smart" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" loading="lazy" decoding="async" width="400" height="300" />
+                                <img src={parentImg} alt="Kenyan Parent tracking student progress on Somo Smart" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" loading="lazy" decoding="async" width="400" height="300" />
                                 <div className="absolute inset-0 bg-gradient-to-t from-white via-transparent to-transparent opacity-60"></div>
                             </div>
                             <div className="p-8 space-y-4 bg-white flex-1">
@@ -882,7 +772,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                         {i + 1}
                                     </div>
                                     <div className="w-44 h-44 rounded-3xl bg-white flex items-center justify-center shadow-xl p-6 group-hover:scale-105 transition-all duration-300 border border-slate-100 aspect-square">
-                                        <img src={[stepScanImg, stepExplainImg, stepQuizImg, stepAudioImg][i]} alt={`Soma Smart Step ${i + 1}: ${step.title}`} className="w-full h-full object-contain" loading="lazy" decoding="async" width="150" height="150" />
+                                        <img src={[stepScanImg, stepExplainImg, stepQuizImg, stepAudioImg][i]} alt={`Somo Smart Step ${i + 1}: ${step.title}`} className="w-full h-full object-contain" loading="lazy" decoding="async" width="150" height="150" />
                                     </div>
                                 </div>
 
@@ -948,7 +838,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                 </div>
                             </div>
                             <p className="text-slate-600 italic leading-relaxed relative z-10">
-                                "The analytics provided by Soma have transformed how we track student performance across the entire school. It's an essential tool for modern education."
+                                "The analytics provided by Somo have transformed how we track student performance across the entire school. It's an essential tool for modern education."
                             </p>
                             <div className="mt-6 pt-6 border-t border-slate-50 flex items-center gap-2 text-xs font-bold text-slate-400">
                                 <Building2 className="w-4 h-4" /> Nairobi High School
@@ -973,7 +863,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                 </div>
                             </div>
                             <p className="text-slate-600 italic leading-relaxed relative z-10">
-                                "My child's grades have improved significantly since we started using Soma. The detailed progress tracking helps me stay involved in their education."
+                                "My child's grades have improved significantly since we started using Somo. The detailed progress tracking helps me stay involved in their education."
                             </p>
                             <div className="mt-6 pt-6 border-t border-slate-50 flex items-center gap-2 text-xs font-bold text-slate-400">
                                 <Users className="w-4 h-4" /> Parent of Grade 4 Student
@@ -996,7 +886,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                         transition={{ duration: 0.6 }}
                     >
                         <h2 className="text-4xl md:text-6xl font-extrabold text-white mb-6 leading-tight">Ready to Master Any Subject?</h2>
-                        <p className="text-blue-100/80 mb-12 text-xl max-w-2xl mx-auto">Join the thousands of students already learning smarter with Soma Smart.</p>
+                        <p className="text-blue-100/80 mb-12 text-xl max-w-2xl mx-auto">Join the thousands of students already learning smarter with Somo Smart.</p>
 
                         <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
                             <button
@@ -1019,7 +909,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
             {/* --- BOTTOM FOOTER --- */}
             <footer className="bg-white py-8 border-t border-slate-100">
                 <div className="max-w-7xl mx-auto px-4 flex flex-col md:flex-row justify-center items-center gap-8 text-sm text-slate-500">
-                    <p>&copy; {new Date().getFullYear()} Soma Smart</p>
+                    <p>&copy; {new Date().getFullYear()} Somo Smart</p>
                     <div className="w-px h-4 bg-slate-300 hidden md:block"></div>
                     <button onClick={() => setShowPrivacy(true)} className="hover:text-blue-600 transition-colors">Privacy</button>
                     <div className="w-px h-4 bg-slate-300 hidden md:block"></div>
@@ -1118,7 +1008,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
 
                         <section>
                             <h3 className="text-lg font-bold text-slate-900 mb-2">4. Children&apos;s Privacy</h3>
-                            <p>Soma Smart is designed for students. We do not require email addresses or phone numbers from students under 13. Parent supervision is encouraged.</p>
+                            <p>Somo Smart is designed for students. We do not require email addresses or phone numbers from students under 13. Parent supervision is encouraged.</p>
                         </section>
                     </div>
                 }
@@ -1131,17 +1021,17 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                 content={
                     <div className="space-y-6 text-sm text-slate-600">
                         <div className="p-4 bg-orange-50 rounded-lg border border-orange-100 text-orange-800">
-                            <strong>Important:</strong> Soma Smart is an educational aid, not a substitute for professional schooling.
+                            <strong>Important:</strong> Somo Smart is an educational aid, not a substitute for professional schooling.
                         </div>
 
                         <section>
                             <h3 className="text-lg font-bold text-slate-900 mb-2">1. Acceptance of Terms</h3>
-                            <p>By accessing Soma Smart, you agree to be bound by these Terms of Service. If you do not agree, please do not use the platform.</p>
+                            <p>By accessing Somo Smart, you agree to be bound by these Terms of Service. If you do not agree, please do not use the platform.</p>
                         </section>
 
                         <section>
                             <h3 className="text-lg font-bold text-slate-900 mb-2">2. Educational Disclaimer</h3>
-                            <p>The content provided by Soma Smart is generated by Artificial Intelligence. While we strive for accuracy:</p>
+                            <p>The content provided by Somo Smart is generated by Artificial Intelligence. While we strive for accuracy:</p>
                             <ul className="list-disc pl-5 space-y-1 mt-2">
                                 <li>Information should be verified with official textbooks.</li>
                                 <li>We are not liable for any inaccuracies in exam preparation materials.</li>
@@ -1159,7 +1049,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
 
                         <section>
                             <h3 className="text-lg font-bold text-slate-900 mb-2">4. Subscription & Access</h3>
-                            <p>Soma Smart offers a limited free tier. Continued access to advanced features (Voice Notes, Unlimited Scanning) may require a premium subscription in the future.</p>
+                            <p>Somo Smart offers a limited free tier. Continued access to advanced features (Voice Notes, Unlimited Scanning) may require a premium subscription in the future.</p>
                         </section>
                     </div>
                 }

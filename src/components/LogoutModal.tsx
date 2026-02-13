@@ -113,7 +113,7 @@ export const LogoutModal: React.FC<LogoutModalProps> = ({
                         {/* Bottom Decoration */}
                         <div className="bg-slate-50 py-4 px-8 border-t border-slate-100 flex justify-center">
                             <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
-                                Soma Smart • Your Learning Buddy
+                                Somo Smart • Your Learning Buddy
                             </p>
                         </div>
                     </motion.div>

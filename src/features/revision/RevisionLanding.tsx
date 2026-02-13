@@ -11,19 +11,31 @@ interface Props {
 }
 
 export const RevisionLanding: React.FC<Props> = ({ onStartSession, onNavigate }) => {
-    const { logout, availableQuizzes, fetchAvailableQuizzes, isOnline, studentProfile } = useApp();
+    const { logout, availableQuizzes, fetchAvailableQuizzes, isOnline, studentProfile, resources, fetchResources } = useApp();
     const [dragActive, setDragActive] = useState(false);
     const [selectedMode, setSelectedMode] = useState<RevisionMode>(RevisionMode.LEARN);
     const [loadingQuizzes, setLoadingQuizzes] = useState(false);
     const [showLogoutModal, setShowLogoutModal] = useState(false);
+    const [activeSubject, setActiveSubject] = useState<string>('All');
 
-    // Fetch quizzes on mount
+    // Fetch quizzes & resources on mount
     React.useEffect(() => {
         if (isOnline) {
             setLoadingQuizzes(true);
-            fetchAvailableQuizzes().finally(() => setLoadingQuizzes(false));
+            Promise.all([
+                fetchAvailableQuizzes(),
+                fetchResources()
+            ]).finally(() => setLoadingQuizzes(false));
         }
     }, [isOnline]);
+
+    const subjects = ['All', ...new Set([
+        ...availableQuizzes.map(q => q.subject),
+        ...resources.map(r => r.subject)
+    ])];
+
+    const filteredQuizzes = availableQuizzes.filter(q => activeSubject === 'All' || q.subject === activeSubject);
+    const filteredResources = resources.filter(r => activeSubject === 'All' || r.subject === activeSubject);
 
     // Camera State
     const [showCamera, setShowCamera] = useState(false);
@@ -220,47 +232,93 @@ export const RevisionLanding: React.FC<Props> = ({ onStartSession, onNavigate })
                 </motion.div>
 
                 {/* TEST PAPERS LIBRARY */}
-                <div className="space-y-4">
+                <div className="space-y-6">
                     <div className="flex items-center justify-between">
-                        <h3 className="font-bold text-slate-800 text-lg">Past Papers Library</h3>
-                        <div className="flex gap-2">
-                            <span className="text-[10px] bg-indigo-100 text-indigo-700 font-bold px-2 py-1 rounded-full uppercase">Uploaded by Teachers</span>
+                        <h3 className="font-bold text-slate-800 text-lg">Resource Library</h3>
+                        <div className="flex gap-2 overflow-x-auto no-scrollbar max-w-[60%]">
+                            {subjects.map(s => (
+                                <button
+                                    key={s}
+                                    onClick={() => setActiveSubject(s)}
+                                    className={`shrink-0 text-[10px] font-bold px-3 py-1 rounded-full transition-all ${activeSubject === s ? 'bg-indigo-600 text-white shadow-md' : 'bg-white text-slate-500 border border-slate-200'}`}
+                                >
+                                    {s}
+                                </button>
+                            ))}
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-1 gap-3">
-                        {loadingQuizzes ? (
-                            <div className="py-10 text-center bg-white rounded-3xl border border-slate-100">
-                                <div className="animate-spin w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full mx-auto mb-2"></div>
-                                <p className="text-xs text-slate-400">Fetching papers...</p>
-                            </div>
-                        ) : availableQuizzes.length === 0 ? (
-                            <div className="py-10 text-center bg-white rounded-3xl border border-slate-100 italic text-slate-400 text-sm">
-                                No test papers available yet.
-                            </div>
-                        ) : (
-                            availableQuizzes.map((quiz) => (
-                                <button
-                                    key={quiz.id}
-                                    onClick={() => onStartSession(quiz, selectedMode)}
-                                    className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm hover:border-indigo-300 hover:shadow-md transition-all text-left flex items-center justify-between group"
-                                >
-                                    <div className="flex items-center gap-4">
-                                        <div className="w-12 h-12 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition-colors">
-                                            <FileText className="w-6 h-6" />
-                                        </div>
-                                        <div>
-                                            <h4 className="font-bold text-slate-800 group-hover:text-indigo-700 transition-colors uppercase text-sm tracking-tight">{quiz.title}</h4>
-                                            <div className="flex gap-2 mt-1">
-                                                <span className="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">{quiz.subject}</span>
-                                                <span className="text-[10px] bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full">{quiz.className}</span>
+                    <div className="space-y-6">
+                        {/* Official Resources */}
+                        {filteredResources.length > 0 && (
+                            <div className="space-y-3">
+                                <p className="text-[10px] font-bold text-indigo-500 uppercase tracking-widest px-1">Somo Smart Verified Materials</p>
+                                <div className="grid grid-cols-1 gap-3">
+                                    {filteredResources.map((res) => (
+                                        <button
+                                            key={res.id}
+                                            onClick={() => onStartSession(res, selectedMode)}
+                                            className="bg-white p-5 rounded-[2rem] border-2 border-indigo-50 shadow-sm hover:border-indigo-300 hover:shadow-md transition-all text-left flex items-center justify-between group relative overflow-hidden"
+                                        >
+                                            <div className="absolute top-0 right-0 bg-indigo-600 text-white text-[8px] font-black px-3 py-1 rounded-bl-xl shadow-sm">
+                                                VERIFIED
                                             </div>
-                                        </div>
-                                    </div>
-                                    <ChevronRight className="w-5 h-5 text-slate-300 group-hover:text-indigo-500 group-hover:translate-x-1 transition-all" />
-                                </button>
-                            ))
+                                            <div className="flex items-center gap-4">
+                                                <div className="w-12 h-12 bg-indigo-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-indigo-100">
+                                                    <Brain className="w-6 h-6" />
+                                                </div>
+                                                <div>
+                                                    <h4 className="font-extrabold text-slate-900 group-hover:text-indigo-700 transition-colors uppercase text-sm tracking-tight">{res.title}</h4>
+                                                    <div className="flex gap-2 mt-1">
+                                                        <span className="text-[10px] bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-full font-bold">{res.subject}</span>
+                                                        <span className="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">{res.grade}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <ChevronRight className="w-5 h-5 text-indigo-300 group-hover:text-indigo-600 group-hover:translate-x-1 transition-all" />
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
                         )}
+
+                        {/* Teacher Community */}
+                        <div className="space-y-3">
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-1">Teacher Community Contributions</p>
+                            <div className="grid grid-cols-1 gap-3">
+                                {loadingQuizzes ? (
+                                    <div className="py-10 text-center bg-white rounded-3xl border border-slate-100">
+                                        <div className="animate-spin w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full mx-auto mb-2"></div>
+                                        <p className="text-xs text-slate-400">Fetching community papers...</p>
+                                    </div>
+                                ) : filteredQuizzes.length === 0 ? (
+                                    <div className="py-8 text-center bg-white/50 rounded-3xl border border-dashed border-slate-200 italic text-slate-400 text-xs">
+                                        No community papers in this category.
+                                    </div>
+                                ) : (
+                                    filteredQuizzes.map((quiz) => (
+                                        <button
+                                            key={quiz.id}
+                                            onClick={() => onStartSession(quiz, selectedMode)}
+                                            className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm hover:border-slate-300 transition-all text-left flex items-center justify-between group"
+                                        >
+                                            <div className="flex items-center gap-4">
+                                                <div className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center text-slate-400 group-hover:bg-slate-100 group-hover:text-slate-600 transition-colors">
+                                                    <FileText className="w-5 h-5" />
+                                                </div>
+                                                <div>
+                                                    <h4 className="font-bold text-slate-800 group-hover:text-slate-900 transition-colors text-xs tracking-tight">{quiz.title}</h4>
+                                                    <div className="flex gap-2 mt-1">
+                                                        <span className="text-[9px] bg-slate-50 text-slate-500 px-2 py-0.5 rounded-full">{quiz.subject}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-slate-500 group-hover:translate-x-1 transition-all" />
+                                        </button>
+                                    ))
+                                )}
+                            </div>
+                        </div>
                     </div>
                 </div>
 

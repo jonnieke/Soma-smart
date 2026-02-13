@@ -1,11 +1,11 @@
-```
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Sparkles, Home, X, XCircle, Camera, ScanLine, Mic, Upload, Clock,
   CheckCircle, Play, Pause, ChevronRight, Star, BookOpen, Brain, Lightbulb, Lock, Volume2, CreditCard,
-  ArrowRight, UserCircle, Download, ImageIcon, Trash2, AlertTriangle, LogOut, Users, DollarSign, FileText, ShoppingBag, Library, Layers
+  ArrowRight, UserCircle, Download, ImageIcon, Trash2, AlertTriangle, LogOut, Users, DollarSign, FileText, ShoppingBag, Library, Layers,
+  Calculator, FlaskConical, Globe, Languages
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { ExplanationResult, QuizData, ViewState, SubscriptionPlan, LearnerProfile, LearnerActivity, UserRole } from '../../types';
@@ -18,10 +18,13 @@ import { LogoutModal } from '../../components/LogoutModal';
 import { MarkdownText, Button, Card } from '../../components/Shared';
 import {
   fileToGenerativePart, explainImage, explainAudio, explainTopic,
-  generateQuickQuiz, generateQuiz, generateSpeech, stopSpeech, generateLessonRecap
+  generateQuickQuiz, generateQuiz, generateSpeech, stopSpeech, generateLessonRecap, continueResearch
 } from '../../services/geminiService';
 import confetti from 'canvas-confetti';
-import { calculateTotalXP, calculateLevel } from '../../services/gamificationService';
+import {
+  calculateTotalXP, calculateLevel,
+  calculateStreak, calculateSubjectPerformance, getDailyChallenge
+} from '../../services/gamificationService';
 import { translations } from '../../data/translations';
 
 // Simple Button component if not imported (placeholder or real import)
@@ -43,7 +46,8 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
     upgradeAccount, revisionUsageCount, incrementRevisionUsage,
     logout, isPro, subscriptionPlan, subscriptionExpiry, isOnline, role, language,
     createTutoringRequest, activeTutoringRequests, isAvailableForTutoring,
-    marketplaceMaterials, purchasedMaterialIds, purchaseMaterial
+    marketplaceMaterials, purchasedMaterialIds, purchaseMaterial,
+    resources, fetchResources
   } = useApp();
   const t = translations[language];
   const location = useLocation();
@@ -80,6 +84,12 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
   // --- GAMIFICATION ENGINE ---
   const totalXP = React.useMemo(() => calculateTotalXP(history), [history]);
   const levelInfo = React.useMemo(() => calculateLevel(totalXP), [totalXP]);
+
+  // Real Gamification Stats
+  const streak = React.useMemo(() => calculateStreak(history), [history]);
+  const subjectPerformance = React.useMemo(() => calculateSubjectPerformance(history), [history]);
+  const dailyChallenge = React.useMemo(() => getDailyChallenge(), []);
+
   const prevXPRef = useRef(totalXP);
 
   useEffect(() => {
@@ -104,7 +114,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
     }
   }, [isRegistered, role, navigate]);
 
-  const [mode, setMode] = useState<'MENU' | 'SCAN' | 'RESULT' | 'QUIZ' | 'RECAP_RESULT' | 'PROFILE' | 'PRICING' | 'PAYMENT' | 'MARKETPLACE' | 'LIBRARY'>('MENU');
+  const [mode, setMode] = useState<'MENU' | 'SCAN' | 'RESULT' | 'QUIZ' | 'RECAP_RESULT' | 'PROFILE' | 'PRICING' | 'PAYMENT' | 'MARKETPLACE' | 'LIBRARY' | 'HISTORY' | 'SCAN_EXPLAIN'>('MENU');
   const [recapData, setRecapData] = useState<any>(null); // Store LessonRecap
 
   const [loading, setLoading] = useState(false);
@@ -137,14 +147,57 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
   const [promptText, setPromptText] = useState("");
   const [showTutoringModal, setShowTutoringModal] = useState(false);
   const [tutoringTopic, setTutoringTopic] = useState("");
+  const [materialCategory, setMaterialCategory] = useState<'ALL' | 'NOTES' | 'PAST_PAPER' | 'SYLLABUS'>('ALL');
+  const [subjectFilter, setSubjectFilter] = useState<string>('ALL');
 
   // Refs
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const audioInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const scanVideoRef = useRef<HTMLVideoElement>(null);
+  const scanAudioRef = useRef<HTMLAudioElement | null>(null);
+
+  useEffect(() => {
+    if (mode === 'MARKETPLACE') {
+      fetchResources();
+    }
+  }, [mode]);
+
+  const unifiedMaterials = React.useMemo(() => {
+    const verified = (resources || []).map((r: any) => ({
+      id: `v-${r.id}`,
+      realId: r.id,
+      title: r.title,
+      description: `Official ${r.subject} ${r.type.toLowerCase().replace('_', ' ')} aligned with CBC/KCSE.`,
+      teacherName: 'Somo Smart Verified',
+      isVerified: true,
+      price: r.type === 'SYLLABUS' ? 0 : 0, // In logic, if it's premium verified, we check Pro
+      grade: r.grade,
+      subject: r.subject,
+      category: r.type === 'PAST_PAPER' ? 'REVISION_PAPER' : r.type, // Map to marketplace types
+      fileUrl: r.file_url,
+      rating: 5.0,
+      downloadCount: 120,
+      isInternal: true
+    }));
+
+    const teacher = (marketplaceMaterials || []).map(m => ({ ...m, isVerified: false, isInternal: false }));
+
+    return [...verified, ...teacher];
+  }, [resources, marketplaceMaterials]);
+
+  const filteredMaterials = unifiedMaterials.filter(m => {
+    const gradeMatch = !studentProfile?.grade || m.grade === studentProfile.grade;
+    const catMatch = materialCategory === 'ALL' ||
+      (materialCategory === 'NOTES' && m.category === 'NOTES') ||
+      (materialCategory === 'PAST_PAPER' && (m.category === 'PAST_PAPER' || m.category === 'REVISION_PAPER')) ||
+      (materialCategory === 'SYLLABUS' && m.category === 'SYLLABUS');
+    const subMatch = subjectFilter === 'ALL' || m.subject === subjectFilter;
+    return gradeMatch && catMatch && subMatch;
+  });
+
+  const subjects = ['ALL', 'Mathematics', 'English', 'Kiswahili', 'Social Studies', 'Science', 'CRE', 'Home Science', 'Agriculture'];
 
   const checkImageQuality = (file: File): Promise<{ ok: boolean; warning?: string }> => {
     return new Promise((resolve) => {
@@ -164,20 +217,20 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
-    return `${ mins }:${ secs < 10 ? '0' : '' }${ secs } `;
+    return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
   };
 
   const streamRef = useRef<MediaStream | null>(null);
 
   const stopCameraStream = () => {
     // 1. Stop tracks from the video element's srcObject
-    if (videoRef.current && videoRef.current.srcObject) {
-      const stream = videoRef.current.srcObject as MediaStream;
+    if (scanVideoRef.current && scanVideoRef.current.srcObject) {
+      const stream = scanVideoRef.current.srcObject as MediaStream;
       stream.getTracks().forEach(track => {
         track.stop();
-        console.log("Stopped video track from videoRef");
+        console.log("Stopped video track from scanVideoRef");
       });
-      videoRef.current.srcObject = null;
+      scanVideoRef.current.srcObject = null;
     }
 
     // 2. Stop tracks from the streamRef (most reliable if DOM is already gone)
@@ -196,8 +249,8 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
       setShowCamera(true);
       const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
       streamRef.current = stream; // Save stream to ref for cleanup
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
+      if (scanVideoRef.current) {
+        scanVideoRef.current.srcObject = stream;
       }
       setLoading(false);
     } catch (err) {
@@ -230,11 +283,11 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
   }, [showCamera]);
 
   const capturePhoto = () => {
-    if (videoRef.current) {
+    if (scanVideoRef.current) {
       const canvas = document.createElement('canvas');
-      canvas.width = videoRef.current.videoWidth;
-      canvas.height = videoRef.current.videoHeight;
-      canvas.getContext('2d')?.drawImage(videoRef.current, 0, 0);
+      canvas.width = scanVideoRef.current.videoWidth;
+      canvas.height = scanVideoRef.current.videoHeight;
+      canvas.getContext('2d')?.drawImage(scanVideoRef.current, 0, 0);
       canvas.toBlob(blob => {
         if (blob) {
           const file = new File([blob], "camera_capture.jpg", { type: "image/jpeg" });
@@ -504,7 +557,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
 
     setLoading(true);
     setError(null);
-    setLoadingText(`Exploring ${ topic }...`);
+    setLoadingText(`Exploring ${topic}...`);
     setMode('SCAN'); // Show loading
     try {
       setAudioData(null);
@@ -551,20 +604,20 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
 
   const handleDownload = () => {
     if (!explanation) return;
-    const textContent = `Topic: ${ explanation.topic }
-Level: ${ level }
+    const textContent = `Topic: ${explanation.topic}
+Level: ${level}
 
 SUMMARY POINTS:
-${ explanation.summaryPoints.map(p => `• ${p}`).join('\n') }
+${explanation.summaryPoints.map(p => `• ${p}`).join('\n')}
 
 FULL EXPLANATION:
-${ explanation.explanation }
+${explanation.explanation}
 `;
 
     const element = document.createElement("a");
     const file = new Blob([textContent], { type: 'text/plain' });
     element.href = URL.createObjectURL(file);
-    element.download = `${ explanation.topic.replace(/[^a-z0-9]/gi, '_').toLowerCase() } _notes.txt`;
+    element.download = `${explanation.topic.replace(/[^a-z0-9]/gi, '_').toLowerCase()} _notes.txt`;
     document.body.appendChild(element);
     element.click();
     document.body.removeChild(element);
@@ -643,7 +696,7 @@ ${ explanation.explanation }
     setLoading(true);
     setLoadingText("Generating high-quality voice...");
     try {
-      const textToRead = `${ explanation.topic }. ${ explanation.summaryPoints.join('. ') }. Here is the explanation: ${ explanation.explanation } `;
+      const textToRead = `${explanation.topic}. ${explanation.summaryPoints.join('. ')}. Here is the explanation: ${explanation.explanation} `;
 
       setIsPlaying(true);
       await generateSpeech(textToRead);
@@ -667,7 +720,7 @@ ${ explanation.explanation }
       <div className="fixed inset-0 z-50 bg-black flex flex-col">
         <div className="flex-1 relative overflow-hidden flex items-center justify-center">
           <video
-            ref={videoRef}
+            ref={scanVideoRef}
             autoPlay
             playsInline
             className="w-full h-full object-cover"
@@ -675,17 +728,9 @@ ${ explanation.explanation }
 
           {/* Auto Capture Overlay */}
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <div className={`w - 11 / 12 md: w - 3 / 4 aspect - [3 / 4] border - 2 rounded - 3xl transition - all duration - 300 relative ${
-  scanStatus === 'STABILIZING' ? 'border-yellow-400 scale-105' :
-  scanStatus === 'CAPTURING' ? 'border-green-500 bg-white/20 scale-100' :
-    'border-white/50'
-} `}>
+            <div className={`w-11/12 md:w-3/4 aspect-[3/4] border-2 rounded-3xl transition-all duration-300 relative ${scanStatus === 'STABILIZING' ? 'border-yellow-400 scale-105' : scanStatus === 'CAPTURING' ? 'border-green-500 bg-white/20 scale-100' : 'border-white/50'}`}>
               <div className="absolute -top-12 left-0 right-0 text-center">
-                <span className={`px - 4 py - 2 rounded - full text - sm font - bold shadow - lg backdrop - blur - md ${
-  scanStatus === 'STABILIZING' ? 'bg-yellow-400 text-yellow-900' :
-  scanStatus === 'CAPTURING' ? 'bg-green-500 text-white' :
-    'bg-black/60 text-white border border-white/20'
-} `}>
+                <span className={`px-4 py-2 rounded-full text-sm font-bold shadow-lg backdrop-blur-md ${scanStatus === 'STABILIZING' ? 'bg-yellow-400 text-yellow-900' : scanStatus === 'CAPTURING' ? 'bg-green-500 text-white' : 'bg-black/60 text-white border border-white/20'}`}>
                   {scanStatus === 'LOOKING' && "Fit whole question in box"}
                   {scanStatus === 'STABILIZING' && "Hold Steady..."}
                   {scanStatus === 'CAPTURING' && "Capturing!"}
@@ -815,188 +860,104 @@ ${ explanation.explanation }
   }
 
   if (mode === 'MENU') {
-    const audioHistory = history.filter(h => {
-      if (h.type !== 'EXPLANATION') return false;
-      try {
-        const d = JSON.parse(h.details || '{}');
-        return d?.source === 'audio';
-      } catch { return false; }
-    });
-
-    const scanHistory = history.filter(h => {
-      if (h.type !== 'EXPLANATION') return false;
-      try {
-        const d = JSON.parse(h.details || '{}');
-        return d?.source === 'image';
-      } catch { return false; }
-    });
-
     const displayCode = profile ? profile.code : studentCode;
-    const greeting = profile ? `Hi, ${ profile.name.split(' ')[0] } !` : "My Learning Buddy";
+    const greeting = profile ? `Hi, ${profile.name.split(' ')[0]}` : "My Learning Buddy";
 
     return (
-      <div className="min-h-screen bg-slate-50 pb-24 font-sans text-slate-800 max-w-4xl mx-auto shadow-2xl border-x border-slate-100">
+      <div className="min-h-screen bg-slate-50 flex flex-col font-sans text-slate-800 max-w-4xl mx-auto shadow-2xl border-x border-slate-100 relative overflow-hidden">
 
-        {/* --- HERO HEADER --- */}
-        <div className="bg-white px-6 pt-8 pb-6 rounded-b-[3rem] shadow-sm relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-yellow-100 rounded-full blur-3xl opacity-50 -mr-16 -mt-16"></div>
-          <div className="absolute top-20 left-10 w-20 h-20 bg-blue-100 rounded-full blur-2xl opacity-50"></div>
-
-          {/* TSC LIVE BANNER */}
-
-          {/* Hero Content */}
-
-          <div className="flex flex-col md:flex-row justify-between items-start relative z-10 gap-4">
-            <div>
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="flex items-center gap-2 mb-1"
-              >
-                <span className="bg-orange-100 text-orange-700 text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider">Student</span>
-                {isAvailableForTutoring && (
-                  <span className="bg-emerald-100 text-emerald-700 text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1 animate-pulse">
-                    <Users className="w-3 h-3" /> Teacher Online
-                  </span>
-                )}
-              </motion.div>
-              <motion.h1
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.1 }}
-                className="text-2xl md:text-3xl font-extrabold text-slate-900 tracking-tight"
-              >
-                {greeting} <span className="inline-block animate-bounce">👋</span>
-              </motion.h1>
-              <motion.p
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.2 }}
-                className="text-slate-500 font-medium text-sm md:text-base"
-              >
-                your smart powered study companion
-              </motion.p>
-
-              {/* GAMIFICATION PROGRESS */}
-              <motion.div
-                initial={{ opacity: 0, width: 0 }}
-                animate={{ opacity: 1, width: '100%' }}
-                transition={{ delay: 0.4 }}
-                className="mt-5 w-full max-w-[240px]"
-              >
-                <div className="flex justify-between items-center mb-1">
-                  <span className="text-xs font-bold text-slate-800 flex items-center gap-1">
-                    <div className="w-5 h-5 bg-yellow-400 rounded-full flex items-center justify-center shadow-sm">
-                      <Star className="w-3 h-3 text-yellow-900 fill-yellow-900" />
-                    </div>
-                    {t.learner.stats.level} {levelInfo.level}
-                  </span>
-                  <span className="text-[10px] font-bold text-slate-400">{Math.floor(levelInfo.progressPercent)}% to L{levelInfo.level + 1}</span>
-                </div>
-                <div className="h-3 bg-slate-100 rounded-full overflow-hidden border border-slate-200 p-[2px]">
-                  <motion.div
-                    layout
-                    initial={{ width: 0 }}
-                    animate={{ width: `${ levelInfo.progressPercent }% ` }}
-                    transition={{ type: 'spring', stiffness: 50 }}
-                    className="h-full bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full shadow-sm"
-                  />
-                </div>
-                <div className="text-right mt-1">
-                  <span className="text-[10px] font-bold text-indigo-400">{totalXP} {t.learner.stats.xp}</span>
-                </div>
-              </motion.div>
-            </div>
-
-            <div className="flex items-center gap-2 w-full md:w-auto self-end md:self-start">
-              <button
-                onClick={() => onNavigate(ViewState.DASHBOARD)}
-                className="flex-1 md:flex-none flex items-center justify-center gap-2 px-3 py-2 bg-slate-100 rounded-xl hover:bg-slate-200 transition-colors group text-xs font-bold text-slate-600"
-                title="Back to Landing Page"
-              >
-                <Home className="w-5 h-5 text-slate-500 group-hover:text-blue-600 transition-colors" />
-                {language === 'FR' ? 'Accueil' : 'Home'}
-              </button>
-              <button onClick={() => setMode('PRICING')} className="flex-1 md:flex-none flex justify-center items-center p-2 bg-indigo-100 rounded-xl hover:bg-indigo-200 transition-colors group" title="Pricing Plans">
-                <CreditCard className="w-6 h-6 text-indigo-600" />
-              </button>
-              <button
-                onClick={() => setMode('PROFILE')}
-                className={`flex - 1 md: flex - none flex justify - center items - center p - 2 rounded - xl transition - colors group ${ mode === ('PROFILE' as any) ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-500 hover:bg-blue-50 hover:text-blue-600' } `}
-                title="Your Profile"
-              >
-                <UserCircle className="w-6 h-6" />
-              </button>
-              <button onClick={() => setShowLogoutModal(true)} className="flex-1 md:flex-none flex justify-center items-center p-2 bg-slate-100 rounded-xl hover:bg-red-100 transition-colors group" title="Logout">
-                <LogOut className="w-6 h-6 text-slate-500 group-hover:text-red-500 transition-colors" />
-              </button>
-            </div>
+        {/* --- TOP BAR --- */}
+        <div className="flex justify-between items-center px-6 py-4 relative z-20">
+          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pr-4">
+            <button onClick={() => setMode('HISTORY' as any)} className="flex items-center gap-2 px-3 py-2 hover:bg-slate-200 rounded-full transition-colors text-slate-500 hover:text-slate-800 shrink-0" title="View History">
+              <Clock className="w-5 h-5" />
+              <span className="text-sm font-bold border-r border-slate-300 pr-2">History</span>
+            </button>
+            <button onClick={() => setMode('MARKETPLACE')} className="flex items-center gap-2 px-3 py-2 bg-indigo-50 hover:bg-indigo-100 rounded-full transition-colors text-indigo-600 shrink-0" title="Unlock Materials">
+              <ShoppingBag className="w-5 h-5" />
+              <span className="text-sm font-bold">Study Materials</span>
+            </button>
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest shrink-0 ml-2">{isOnline ? 'Online' : 'Offline'}</span>
           </div>
 
-
-          {/* Student ID Card - Mini - Modernized */}
-          <motion.div
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ delay: 0.3 }}
-            className="mt-6 bg-white border border-slate-200 rounded-2xl p-4 text-slate-800 shadow-sm relative overflow-hidden group cursor-pointer hover:border-indigo-300 transition-all"
-            onClick={() => {
-              navigator.clipboard.writeText(displayCode);
-            }}
-          >
-            <div className="absolute left-0 top-0 bottom-0 w-1 bg-indigo-500"></div>
-
-            <div className="flex justify-between items-center relative z-10">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-indigo-50 rounded-full flex items-center justify-center">
-                  <UserCircle className="w-6 h-6 text-indigo-600" />
-                </div>
-                <div>
-                  <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest">Student ID</p>
-                  <p className="text-xl font-bold font-mono tracking-widest text-slate-900">{displayCode}</p>
-                </div>
-              </div>
-              {!profile && !displayCode ? (
-                <button onClick={(e) => { e.stopPropagation(); setShowLogin(true); }} className="px-3 py-1.5 bg-indigo-600 text-white text-xs font-bold rounded-lg shadow-sm hover:bg-indigo-700 transition-colors">
-                  Login
-                </button>
-              ) : (
-                <span className="text-slate-400 text-[10px] font-bold uppercase tracking-wider bg-slate-100 px-2 py-1 rounded">Tap to copy</span>
-              )}
+          <div className="flex items-center gap-2">
+            <div className="text-right hidden sm:block">
+              <p className="text-xs font-bold text-slate-900">{totalXP} XP</p>
+              <p className="text-[10px] text-slate-400 font-bold uppercase">Level {levelInfo.level}</p>
             </div>
+            <button onClick={() => setMode('PROFILE')} className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 font-bold border-2 border-white shadow-sm hover:scale-105 transition-transform">
+              <UserCircle className="w-6 h-6" />
+            </button>
+          </div>
+        </div>
+
+        {/* --- MAIN CENTER CONTENT --- */}
+        <div className="flex-1 flex flex-col items-center justify-center -mt-20 px-6 relative z-10">
+
+          {/* Logo/Greeting */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-center mb-8"
+          >
+            <div className="w-20 h-20 bg-white rounded-3xl mx-auto mb-4 flex items-center justify-center shadow-xl shadow-blue-100 border border-blue-50">
+              <Sparkles className="w-10 h-10 text-blue-500 fill-blue-500 animate-pulse" />
+            </div>
+            <h1 className="text-3xl md:text-4xl font-black text-slate-900 tracking-tight mb-2">
+              {greeting} <span className="text-slate-300 font-normal">|</span> Somo Smart
+            </h1>
+            <p className="text-blue-900 font-bold text-lg">What do you want to learn today?</p>
           </motion.div>
 
 
-          {/* QUICK PROMPT FIELD */}
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
-            className={`mt - 8 relative z - 30 ${ !isOnline ? 'opacity-50 grayscale-[0.5] pointer-events-none' : '' } `}
-          >
-            <div className="flex items-center gap-2 mb-3 pl-1">
-              <Sparkles className={`w - 5 h - 5 ${ isOnline ? 'text-blue-600 animate-pulse' : 'text-slate-400' } `} />
-              <h2 className="text-xl font-extrabold text-slate-800 tracking-tight">
-                {isOnline ? t.learner.actions.topic : (language === 'FR' ? "Demander à Soma (Hors ligne)" : "Ask Soma (Offline)")}
-              </h2>
-              {!isOnline && <span className="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full font-bold uppercase">Internet Required</span>}
-            </div>
+          {history.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="w-full max-w-sm mb-6 cursor-pointer group"
+              onClick={() => restoreActivity(history[history.length - 1])}
+            >
+              <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 flex items-center justify-between hover:border-blue-200 hover:shadow-md transition-all">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-600">
+                    <Play className="w-5 h-5 ml-0.5" />
+                  </div>
+                  <div>
+                    <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-0.5">Continue Learning</h3>
+                    <p className="font-bold text-slate-800 line-clamp-1">{history[history.length - 1].topic}</p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <span className="text-xs font-bold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-full group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                    Resume
+                  </span>
+                </div>
+              </div>
+            </motion.div>
+          )}
 
-            <div className="bg-white rounded-3xl shadow-2xl shadow-blue-200/60 border-2 border-blue-400/30 p-2 flex items-end gap-2 pr-4 focus-within:border-blue-500 transition-all">
+          {/* CHAT INPUT AREA */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.1 }}
+            className="w-full max-w-2xl relative z-30"
+          >
+            <div className="bg-white rounded-[2rem] shadow-2xl border-2 border-black p-2 flex items-end gap-2 pr-4 focus-within:ring-4 focus-within:ring-slate-200 transition-all hover:shadow-[0_20px_50px_rgba(0,0,0,0.2)]">
               <div className="flex gap-1 pl-2 mb-2">
                 <button
                   onClick={() => fileInputRef.current?.click()}
-                  className="p-2.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-2xl transition-all"
+                  className="p-3 text-slate-900 hover:bg-slate-100 rounded-2xl transition-all"
                   title="Upload Image"
                 >
-                  <ImageIcon className="w-5 h-5" />
+                  <ImageIcon className="w-6 h-6" />
                 </button>
                 <button
                   onClick={isRecording ? stopRecording : startRecording}
-                  className={`p - 2.5 rounded - 2xl transition - all ${ isRecording ? 'text-red-500 bg-red-50' : 'text-slate-400 hover:text-purple-600 hover:bg-purple-50' } `}
+                  className={`p-3 rounded-2xl transition-all ${isRecording ? 'text-red-600 bg-red-50' : 'text-slate-900 hover:bg-slate-100'}`}
                   title="Record Audio"
                 >
-                  {isRecording ? <div className="w-4 h-4 bg-red-500 rounded-sm animate-pulse" /> : <Mic className="w-5 h-5" />}
+                  {isRecording ? <div className="w-6 h-6 bg-red-600 rounded-sm animate-pulse" /> : <Mic className="w-6 h-6" />}
                 </button>
               </div>
 
@@ -1009,341 +970,177 @@ ${ explanation.explanation }
                     handlePromptSubmit();
                   }
                 }}
-                placeholder="Ask Soma anything... (type, upload, or record)"
+                placeholder="Ask anything... (math, science, history)"
                 rows={1}
-                className="flex-1 bg-transparent border-0 focus:ring-0 text-slate-700 text-base font-medium py-3 px-2 min-h-[44px] max-h-32 resize-none"
+                className="flex-1 bg-transparent border-0 focus:ring-0 text-black text-lg font-bold py-4 px-2 min-h-[56px] max-h-40 resize-none placeholder:text-slate-500"
                 style={{ height: 'auto' }}
                 onInput={(e) => {
                   const target = e.target as HTMLTextAreaElement;
                   target.style.height = 'auto';
-                  target.style.height = `${ target.scrollHeight } px`;
+                  target.style.height = `${target.scrollHeight}px`;
                 }}
               />
 
               <button
                 onClick={handlePromptSubmit}
                 disabled={!promptText.trim() || loading}
-                className={`p - 3 rounded - 2xl transition - all mb - 1 ${ promptText.trim() ? 'bg-blue-600 text-white shadow-lg shadow-blue-300 scale-105 active:scale-95' : 'bg-slate-100 text-slate-300' } `}
+                className={`p-4 rounded-2xl transition-all mb-1 ${promptText.trim() ? 'bg-black text-white shadow-lg shadow-slate-400 scale-105 active:scale-95 hover:bg-slate-800' : 'bg-slate-100 text-slate-300 cursor-not-allowed'}`}
               >
-                <ArrowRight className="w-5 h-5" />
+                <ArrowRight className="w-6 h-6" />
               </button>
             </div>
             {isRecording && (
-              <div className="absolute -top-10 left-6 bg-red-500 text-white text-xs font-bold px-3 py-1 rounded-full animate-bounce shadow-lg flex items-center gap-2">
+              <div className="absolute -top-12 left-1/2 -translate-x-1/2 bg-red-500 text-white text-xs font-bold px-4 py-2 rounded-full animate-bounce shadow-lg flex items-center gap-2">
                 <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
                 Recording... {formatTime(recordingTime)}
               </div>
             )}
           </motion.div>
-        </div>
 
-        {/* --- MAGIC TOOLS --- */}
-        <div className="px-6 -mt-4 relative z-20">
-          <div className="bg-white rounded-3xl p-6 shadow-xl shadow-slate-100 border border-slate-100">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-amber-500 fill-amber-500" /> {language === 'FR' ? 'Outils Magiques' : 'Magic Tools'}
-              </h2>
 
-              {/* Level Toggle */}
-              <div className="flex bg-slate-100 p-1 rounded-lg">
-                <button onClick={() => setLevel('Simple')} className={`px - 3 py - 1 text - xs font - bold rounded - md transition - all ${ level === 'Simple' ? 'bg-white shadow text-slate-800' : 'text-slate-500 hover:text-slate-700' } `}>
-                  Simple
-                </button>
-                <button onClick={() => setLevel('Exam')} className={`px - 3 py - 1 text - xs font - bold rounded - md transition - all ${ level === 'Exam' ? 'bg-white shadow text-blue-600' : 'text-slate-500 hover:text-slate-700' } `}>
-                  Exam
-                </button>
-              </div>
-            </div>
-
-            {/* Hidden Inputs */}
-            <input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handleFileUpload} />
-            <input type="file" accept="audio/*" className="hidden" ref={audioInputRef} onChange={handleAudioUpload} />
-
-            {/* Hidden Input for Recap */}
-            <input
-              type="file"
-              id="recap-upload"
-              className="hidden"
-              accept="audio/*,image/*"
-              onChange={async (e) => {
-                const file = e.target.files?.[0];
-                if (!file) return;
-
-                setLoading(true);
-                setLoadingText("Summarizing lesson...");
-                setMode('SCAN');
-
-                try {
-                  let base64 = "";
-                  if (file.type.startsWith('image')) {
-                    base64 = await fileToGenerativePart(file);
-                  } else {
-                    // For audio/video
-                    const reader = new FileReader();
-                    reader.readAsDataURL(file);
-                    await new Promise(resolve => reader.onloadend = resolve);
-                    base64 = (reader.result as string).split(',')[1];
-                  }
-                  // Simple hack: assume video is audio for now or fails gracefully
-                  const audience = 'LEARNER';
-                  const result = await generateLessonRecap(base64, file.type, audience, language);
-                  setRecapData(result);
-                  setMode('RECAP_RESULT');
-                  saveActivity({
-                    id: Date.now().toString(),
-                    type: 'EXPLANATION',
-                    topic: result.topic,
-                    date: new Date().toLocaleDateString(),
-                    details: JSON.stringify({ type: 'RECAP', data: result, source: file.type.startsWith('image') ? 'image' : 'audio' })
-                  } as any);
-                } catch (e) {
-                  alert("Recap failed. Please try again.");
-                  setMode('MENU');
-                } finally {
-                  setLoading(false);
-                }
-              }}
-            />
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {/* Row 1: Scan (2) + Upload (1) */}
-
-              {/* Camera Action - Modernized */}
-              <motion.button
-                whileHover={isOnline ? { scale: 1.01 } : {}}
-                whileTap={isOnline ? { scale: 0.99 } : {}}
-                onClick={isOnline ? startCamera : undefined}
-                className={`col - span - 1 lg: col - span - 2 p - 6 rounded - 3xl border - 2 flex items - center justify - between group relative transition - all shadow - sm ${ isOnline ? 'bg-white border-blue-100 hover:border-blue-400 hover:shadow-blue-50' : 'bg-slate-50 border-slate-100 text-slate-400 cursor-not-allowed grayscale' } `}
-              >
-                <div className="flex items-center gap-5 relative z-10">
-                  <div className={`w - 14 h - 14 rounded - 2xl flex items - center justify - center transition - colors ${ isOnline ? 'bg-blue-50 text-blue-600 group-hover:bg-blue-600 group-hover:text-white' : 'bg-slate-200' } `}>
-                    <Camera className="w-7 h-7" />
-                  </div>
-                  <div className="text-left">
-                    <h3 className={`text - xl font - bold ${ isOnline ? 'text-slate-900' : 'text-slate-400' } `}>{t.learner.actions.scan}</h3>
-                    <p className={`${ isOnline ? 'text-slate-500' : 'text-slate-400' } text - xs font - medium`}>
-                      {isOnline ? "Snap a photo to understand instantly" : "Connect to internet to scan"}
-                    </p>
-                  </div>
-                </div>
-                {isOnline && (
-                  <div className="hidden sm:flex w-10 h-10 rounded-full bg-slate-50 items-center justify-center group-hover:bg-blue-50 transition-colors">
-                    <ArrowRight className="w-5 h-5 text-blue-600" />
-                  </div>
-                )}
-              </motion.button>
-
-              {/* Upload Action */}
-              <motion.button
-                whileHover={isOnline ? { scale: 1.02 } : {}}
-                whileTap={isOnline ? { scale: 0.98 } : {}}
-                onClick={isOnline ? () => fileInputRef.current?.click() : undefined}
-                className={`col - span - 1 p - 4 rounded - 3xl shadow - sm border flex flex - col items - center justify - center gap - 3 transition - all ${ isOnline ? 'bg-slate-50 border-slate-100 hover:bg-slate-100' : 'bg-slate-50 border-slate-100 text-slate-400 cursor-not-allowed grayscale' } `}
-              >
-                <div className={`w - 12 h - 12 rounded - full flex items - center justify - center ${ isOnline ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-200 text-slate-400' } `}>
-                  <Upload className="w-6 h-6" />
-                </div>
-                <span className="font-bold text-sm text-slate-700 opacity-70">Upload</span>
-              </motion.button>
-
-              {/* Row 2: Revision (2) + Voice (1) */}
-
-              {/* Past Papers Action - Modernized */}
-              <motion.button
-                whileHover={isOnline ? { scale: 1.01 } : {}}
-                whileTap={isOnline ? { scale: 0.99 } : {}}
-                onClick={isOnline ? () => navigate('/revision') : undefined}
-                className={`col - span - 1 lg: col - span - 2 p - 6 rounded - 3xl border - 2 flex items - center justify - between group relative transition - all shadow - sm ${ isOnline ? 'bg-white border-orange-100 hover:border-orange-400 hover:shadow-orange-50' : 'bg-slate-50 border-slate-100 text-slate-400 cursor-not-allowed grayscale' } `}
-              >
-                <div className="flex items-center gap-5 relative z-10">
-                  <div className={`w - 14 h - 14 rounded - 2xl flex items - center justify - center transition - colors ${ isOnline ? 'bg-orange-50 text-orange-600 group-hover:bg-orange-600 group-hover:text-white' : 'bg-slate-200' } `}>
-                    <Brain className="w-7 h-7" />
-                  </div>
-                  <div className="text-left">
-                    <h3 className={`text - xl font - bold ${ isOnline ? 'text-slate-900' : 'text-slate-400' } `}>{t.learner.actions.pastPapers}</h3>
-                    <p className={`${ isOnline ? 'text-slate-500' : 'text-slate-400' } text - xs font - medium`}>
-                      {isOnline ? "Upload materials & get smart coaching" : "Connect to internet for coaching"}
-                    </p>
-                  </div>
-                </div>
-                {isOnline && (
-                  <div className="hidden sm:flex w-10 h-10 rounded-full bg-slate-50 items-center justify-center group-hover:bg-orange-50 transition-colors">
-                    <ArrowRight className="w-5 h-5 text-orange-600" />
-                  </div>
-                )}
-              </motion.button>
-
-              {/* Voice Action */}
-              <motion.button
-                whileHover={isOnline ? { scale: 1.02 } : {}}
-                whileTap={isOnline ? { scale: 0.98 } : {}}
-                onClick={isOnline ? (isRecording ? stopRecording : startRecording) : undefined}
-                className={`col - span - 1 p - 4 rounded - 3xl shadow - sm border flex flex - col items - center justify - center gap - 3 transition - colors ${ !isOnline ? 'bg-slate-50 border-slate-100 text-slate-400 cursor-not-allowed grayscale' : isRecording ? 'bg-red-50 border-red-200' : 'bg-slate-50 border-slate-100 hover:bg-slate-100' } `}
-              >
-                {isRecording ? (
-                  <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center animate-pulse">
-                    <div className="w-4 h-4 rounded-sm bg-red-600" />
-                  </div>
-                ) : (
-                  <div className={`w - 12 h - 12 rounded - full flex items - center justify - center ${ isOnline ? 'bg-purple-100 text-purple-600' : 'bg-slate-200 text-slate-400' } `}>
-                    <Mic className="w-6 h-6" />
-                  </div>
-                )}
-                <span className={`font - bold text - sm ${ isRecording ? 'text-red-600' : 'text-slate-700 opacity-70' } `}>
-                  {isRecording ? formatTime(recordingTime) : t.learner.actions.voice}
-                </span>
-              </motion.button>
-            </div>
-          </div>
-        </div>
-
-        {/* --- LEARNING JOURNEY --- */}
-        <div className="px-6 mt-8">
-          <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2">
-            <Clock className="w-5 h-5 text-slate-400" /> Recent Adventures
-          </h3>
-
-          {history.length === 0 ? (
-            <div className="text-center py-10 opacity-50">
-              <div className="w-20 h-20 bg-slate-100 rounded-full mx-auto mb-4 flex items-center justify-center">
-                <Sparkles className="w-8 h-8 text-slate-400" />
-              </div>
-              <p className="text-slate-500">No learning adventures yet!</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {history.slice(0, 10).map((item, index) => {
-                let details: Record<string, any> = {};
-                try {
-                  const parsed = JSON.parse(item.details || '{}');
-                  details = (parsed && typeof parsed === 'object') ? parsed : {};
-                } catch (e) { /* ignore */ }
-                const isQuiz = item.type === 'QUIZ';
-                const isAudio = details?.source === 'audio';
-
-                return (
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.05 }}
-                    key={item.id}
-                    onClick={() => restoreActivity(item)}
-                    className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4 cursor-pointer hover:shadow-md hover:border-blue-200 transition-all group"
-                  >
-                    <div className={`w - 12 h - 12 rounded - xl flex items - center justify - center shrink - 0 ${ isQuiz ? 'bg-orange-100 text-orange-600' : isAudio ? 'bg-purple-100 text-purple-600' : 'bg-blue-100 text-blue-600' } `}>
-                      {isQuiz ? <CheckCircle className="w-6 h-6" /> : isAudio ? <Mic className="w-6 h-6" /> : <ImageIcon className="w-6 h-6" />}
-                    </div>
-
-                    <div className="flex-1 min-w-0">
-                      <h4 className="font-bold text-slate-800 truncate">{item.topic}</h4>
-                      <p className="text-xs text-slate-500 flex items-center gap-2">
-                        {item.date}
-                        {isQuiz && <span className="text-orange-600 font-bold">• {item.score}% Score</span>}
-                      </p>
-                    </div>
-
-                    <button
-                      onClick={(e) => { e.stopPropagation(); deleteActivity(item.id); }}
-                      className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors opacity-0 group-hover:opacity-100"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </motion.div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-
-        {/* Homework Help Requests Section - Phase 2 */}
-        <div className="px-6 mt-12 pb-8">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-4">
-              <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-indigo-100">
-                <Users className="w-5 h-5" />
-              </div>
-              <div>
-                <h3 className="font-black text-xl text-slate-800 tracking-tight leading-none">Help Requests</h3>
-                <p className="text-[10px] font-black text-indigo-500 uppercase tracking-[0.2em] mt-2">Personal Support History</p>
-              </div>
-            </div>
-
-            <button
-              onClick={() => {
-                setTutoringTopic("");
-                setShowTutoringModal(true);
-              }}
-              className={`flex items - center gap - 2 px - 4 py - 2 rounded - xl text - xs font - black uppercase tracking - widest transition - all ${ isAvailableForTutoring ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100 hover:bg-indigo-700' : 'bg-slate-100 text-slate-400 grayscale cursor-not-allowed' } `}
-              disabled={!isAvailableForTutoring}
-            >
-              <Users className="w-4 h-4" />
-              Request Help
+          {/* SUBJECT SHORTCUTS (CBC ALIGNED) */}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.15 }}
+            className="mt-6 flex flex-wrap justify-center gap-2 max-w-3xl mx-auto"
+          >
+            <button onClick={() => { setPromptText("Help me learn Mathematics"); handlePromptSubmit(); }} className="flex items-center gap-1.5 px-4 py-2 bg-blue-50 text-blue-700 rounded-xl hover:bg-blue-100 hover:scale-105 transition-all font-bold text-sm border border-blue-100">
+              <Calculator className="w-4 h-4" /> Math
             </button>
-          </div>
+            <button onClick={() => { setPromptText("Help me learn English"); handlePromptSubmit(); }} className="flex items-center gap-1.5 px-4 py-2 bg-emerald-50 text-emerald-700 rounded-xl hover:bg-emerald-100 hover:scale-105 transition-all font-bold text-sm border border-emerald-100">
+              <BookOpen className="w-4 h-4" /> English
+            </button>
+            <button onClick={() => { setPromptText("Help me learn Kiswahili"); handlePromptSubmit(); }} className="flex items-center gap-1.5 px-4 py-2 bg-purple-50 text-purple-700 rounded-xl hover:bg-purple-100 hover:scale-105 transition-all font-bold text-sm border border-purple-100">
+              <Languages className="w-4 h-4" /> Kiswahili
+            </button>
+            <button onClick={() => { setPromptText("Help me learn Science"); handlePromptSubmit(); }} className="flex items-center gap-1.5 px-4 py-2 bg-amber-50 text-amber-700 rounded-xl hover:bg-amber-100 hover:scale-105 transition-all font-bold text-sm border border-amber-100">
+              <FlaskConical className="w-4 h-4" /> Science
+            </button>
+            <button onClick={() => { setPromptText("Help me learn Social Studies"); handlePromptSubmit(); }} className="flex items-center gap-1.5 px-4 py-2 bg-cyan-50 text-cyan-700 rounded-xl hover:bg-cyan-100 hover:scale-105 transition-all font-bold text-sm border border-cyan-100">
+              <Globe className="w-4 h-4" /> Social Studies
+            </button>
+          </motion.div>
 
-          <div className="space-y-4">
-            {activeTutoringRequests.filter(r => r.studentId === (studentProfile?.id || studentCode)).length === 0 ? (
-              <div className="bg-white border-2 border-dashed border-slate-200 rounded-[2rem] p-10 text-center">
-                <p className="text-slate-400 font-bold text-sm mb-6">No active help requests. Ask a teacher for help to see them here!</p>
-                <button
-                  onClick={() => {
-                    setTutoringTopic("");
-                    setShowTutoringModal(true);
-                  }}
-                  className={`mx - auto flex items - center gap - 3 px - 8 py - 4 rounded - 2xl text - sm font - black uppercase tracking - widest transition - all ${ isAvailableForTutoring ? 'bg-indigo-600 text-white shadow-xl shadow-indigo-100 hover:bg-indigo-700' : 'bg-slate-100 text-slate-400 grayscale cursor-not-allowed' } `}
-                  disabled={!isAvailableForTutoring}
-                >
-                  {isAvailableForTutoring ? 'Ask a Teacher Now 👩‍🏫' : 'Teachers Offline 😴'}
+          {/* FEATURE CHIPS / SUGGESTIONS */}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="mt-8 flex flex-wrap justify-center gap-3"
+          >
+            <button onClick={isOnline ? startCamera : undefined} className={`flex items-center gap-2 px-5 py-3 ${isOnline ? 'bg-white hover:bg-slate-50 text-slate-700' : 'bg-slate-100 text-slate-400'} rounded-2xl shadow-sm border border-slate-200 font-bold text-sm transition-all hover:-translate-y-0.5`}>
+              <Camera className="w-4 h-4 text-blue-500" />
+              Scan Homework
+            </button>
+            <button onClick={() => setMode('HISTORY' as any)} className={`flex items-center gap-2 px-5 py-3 bg-white hover:bg-slate-50 text-slate-700 rounded-2xl shadow-sm border border-slate-200 font-bold text-sm transition-all hover:-translate-y-0.5`}>
+              <Clock className="w-4 h-4 text-emerald-500" />
+              History
+            </button>
+            <button onClick={() => navigate('/revision')} className={`flex items-center gap-2 px-5 py-3 ${isOnline ? 'bg-white hover:bg-slate-50 text-slate-700' : 'bg-slate-100 text-slate-400'} rounded-2xl shadow-sm border border-slate-200 font-bold text-sm transition-all hover:-translate-y-0.5`}>
+              <Brain className="w-4 h-4 text-orange-500" />
+              Revision & Exams
+            </button>
+            <button onClick={() => setShowTutoringModal(true)} className={`flex items-center gap-2 px-5 py-3 ${isOnline ? 'bg-white hover:bg-slate-50 text-slate-700' : 'bg-slate-100 text-slate-400'} rounded-2xl shadow-sm border border-slate-200 font-bold text-sm transition-all hover:-translate-y-0.5`}>
+              <Users className="w-4 h-4 text-indigo-500" />
+              Ask Teacher
+            </button>
+            <label className={`flex items-center gap-2 px-5 py-3 bg-white hover:bg-slate-50 text-slate-700 rounded-2xl shadow-sm border border-slate-200 font-bold text-sm transition-all hover:-translate-y-0.5 cursor-pointer`}>
+              <Upload className="w-4 h-4 text-purple-500" />
+              Upload File
+              <button onClick={() => window.open('/revision', '_blank')} className={`flex items-center gap-2 px-5 py-3 ${isOnline ? 'bg-white hover:bg-slate-50 text-slate-700' : 'bg-slate-100 text-slate-400'} rounded-2xl shadow-sm border border-slate-200 font-bold text-sm transition-all hover:-translate-y-0.5`}>
+                <Library className="w-4 h-4 text-pink-500" />
+                Resources
+              </button>
+              <input type="file" accept="image/*, application/pdf" className="hidden" ref={fileInputRef} onChange={handleFileUpload} />
+            </label>
+          </motion.div>
+
+          {/* DAILY CHALLENGE CARD */}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="w-full max-w-2xl mb-6 mt-8 relative group cursor-pointer"
+            onClick={() => { setPromptText(`Generate a ${dailyChallenge.quiz}`); handlePromptSubmit(); }}
+          >
+            <div className="absolute inset-x-0 top-4 bottom-0 bg-orange-500/20 blur-xl rounded-[2rem] scale-95 translate-y-2" />
+            <div className="bg-white rounded-[2rem] p-6 shadow-xl border-b-4 border-slate-100 relative overflow-hidden hover:scale-[1.01] transition-transform active:scale-[0.99] hover:shadow-2xl hover:shadow-orange-500/10">
+              <div className="absolute top-0 right-0 p-8 w-64 h-64 bg-gradient-to-br from-orange-100 to-amber-50 rounded-full blur-3xl opacity-50 -translate-y-1/2 translate-x-1/2" />
+
+              <div className="relative flex items-center justify-between">
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-[10px] font-black uppercase tracking-wider">
+                      <span className="animate-pulse">🔥</span> {streak} Day Streak
+                    </span>
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-indigo-100 text-indigo-700 rounded-full text-[10px] font-black uppercase tracking-wider">
+                      +50 XP
+                    </span>
+                  </div>
+                  <h3 className="text-2xl font-black text-slate-900 mb-1">Daily Dash</h3>
+                  <p className="text-slate-500 font-bold">New: {dailyChallenge.quiz}</p>
+                </div>
+
+                <button className="bg-slate-900 text-white px-6 py-3 rounded-xl font-bold text-sm shadow-lg shadow-slate-200 hover:bg-slate-800 transition-colors flex items-center gap-2">
+                  Start Now <ArrowRight className="w-4 h-4" />
                 </button>
               </div>
-            ) : (
-              activeTutoringRequests
-                .filter(r => r.studentId === (studentProfile?.id || studentCode))
-                .map(req => (
-                  <div key={req.id} className="bg-white border-2 border-slate-100 rounded-[2rem] p-6 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4 hover:border-indigo-100 transition-all">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-[10px] font-black text-indigo-600 uppercase tracking-widest px-2 py-0.5 bg-indigo-50 rounded">{req.topic}</span>
-                        <span className={`text - [10px] font - black uppercase tracking - widest px - 2 py - 0.5 rounded ${
-  req.status === 'COMPLETED' ? 'bg-emerald-50 text-emerald-600' :
-  req.status === 'ACCEPTED' ? 'bg-amber-50 text-amber-600 animate-pulse' :
-    'bg-slate-100 text-slate-500'
-} `}>
-                          {req.status}
-                        </span>
-                      </div>
-                      <p className="text-slate-800 font-bold">{req.description}</p>
-                      <p className="text-[10px] text-slate-400 mt-1 font-medium">{new Date(req.createdAt).toLocaleDateString()}</p>
-                    </div>
+            </div>
+          </motion.div>
 
-                    {req.status === 'COMPLETED' && (
-                      <button
-                        onClick={() => {
-                          if (req.responseType === 'TEXT') {
-                            setMode('RESULT');
-                            setExplanation({
-                              topic: `Response: ${ req.topic } `,
-                              explanation: req.response || "",
-                              summaryPoints: ["Teacher provided explanation"],
-                              level: 'Simple',
-                              relatedTopics: []
-                            });
-                          } else {
-                            alert(`Teacher provided a ${ req.responseType } response. (Player UI coming soon)`);
-                          }
-                        }}
-                        className="w-full md:w-auto px-6 py-3 bg-indigo-600 text-white rounded-xl font-black text-xs uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100 flex items-center justify-center gap-2"
-                      >
-                        {req.responseType === 'TEXT' ? <FileText className="w-4 h-4" /> : <Play className="w-4 h-4" />}
-                        View Response
-                      </button>
-                    )}
+          {/* PERFORMANCE SNAPSHOT */}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="w-full max-w-2xl mb-8"
+          >
+            <div className="flex items-center justify-between mb-4 px-2">
+              <h3 className="font-black text-slate-900 text-lg flex items-center gap-2">
+                <span className="w-2 h-6 bg-indigo-500 rounded-full" />
+                This Week's Progress
+              </h3>
+              <button
+                onClick={() => setMode('HISTORY' as any)}
+                className="text-xs font-bold text-indigo-600 hover:text-indigo-700"
+              >
+                View Report
+              </button>
+            </div>
+
+            <div className="bg-white rounded-[2rem] p-6 shadow-sm border border-slate-100 space-y-5">
+              {subjectPerformance.map((item) => (
+                <div key={item.subject}>
+                  <div className="flex justify-between text-sm font-bold text-slate-700 mb-1.5">
+                    <span>{item.subject}</span>
+                    <span className="text-slate-900">{item.score}%</span>
                   </div>
-                ))
-            )}
-          </div>
+                  <div className={`h-3 w-full ${item.bg} rounded-full overflow-hidden`}>
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{ width: `${item.score}%` }}
+                      transition={{ duration: 1, delay: 0.2 }}
+                      className={`h-full ${item.color} rounded-full`}
+                    />
+                  </div>
+                </div>
+              ))}
+              {subjectPerformance.every(s => s.score === 0) && (
+                <p className="text-center text-xs text-slate-400 italic mt-2">
+                  Take quizzes to see your progress here!
+                </p>
+              )}
+            </div>
+          </motion.div>
+
+          {/* TUTORING MODAL TRIGGER (Hidden logic mostly, exposed via chip) */}
+          {/* The actual modal logic is shared */}
         </div>
+
+        {/* Hidden Inputs needed for shortcuts */}
+        <input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handleFileUpload} />
+        <input type="file" accept="audio/*" className="hidden" ref={audioInputRef} onChange={handleAudioUpload} />
+
 
         <RegistrationModal
           isOpen={showRegistration}
@@ -1361,108 +1158,70 @@ ${ explanation.explanation }
           }}
         />
 
-        {/* Tutoring Request Modal - Phase 2 */}
-        <AnimatePresence>
-          {showTutoringModal && (
-            <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-6 overflow-y-auto">
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9, y: 20 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                className="bg-white rounded-[2.5rem] w-full max-w-lg shadow-2xl relative overflow-hidden"
-              >
-                {/* Header */}
-                <div className="bg-indigo-600 p-8 text-white relative overflow-hidden">
-                  <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 blur-2xl"></div>
-                  <button
-                    onClick={() => setShowTutoringModal(false)}
-                    className="absolute top-4 right-4 p-2 hover:bg-white/20 rounded-full transition-colors"
-                  >
-                    <X className="w-6 h-6" />
-                  </button>
-                  <div className="relative z-10 flex items-center gap-4 mb-2">
-                    <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-md">
-                      <Users className="w-6 h-6" />
-                    </div>
-                    <div>
-                      <h3 className="text-2xl font-black">Ask a Teacher</h3>
-                      <p className="text-indigo-100 text-xs font-bold uppercase tracking-widest">Connect with a real human</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Body */}
-                <div className="p-8 space-y-6">
-                  <div>
-                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">Topic for Discussion</label>
-                    <input
-                      type="text"
-                      value={tutoringTopic}
-                      onChange={(e) => setTutoringTopic(e.target.value)}
-                      placeholder="e.g. Simultaneous Equations"
-                      className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 text-slate-700 font-bold focus:border-indigo-500 focus:bg-white transition-all outline-none"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">Explain what you need help with</label>
-                    <textarea
-                      placeholder="e.g. I don't understand how the second step works..."
-                      rows={4}
-                      className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 text-slate-700 font-medium focus:border-indigo-500 focus:bg-white transition-all outline-none resize-none"
-                      id="tutoring-desc"
-                    />
-                  </div>
-
-                  <div className="bg-amber-50 rounded-2xl p-4 border border-amber-100 flex items-center gap-4">
-                    <div className="w-10 h-10 bg-amber-400 rounded-full flex items-center justify-center shrink-0">
-                      <DollarSign className="w-5 h-5 text-amber-900" />
-                    </div>
-                    <div>
-                      <p className="text-amber-900 font-black text-sm">Cost: KES 20</p>
-                      <p className="text-amber-700 text-[10px] font-bold">This will be deducted from your wallet or added to your termly bill.</p>
-                    </div>
-                  </div>
-
-                  <div className="pt-2">
-                    <Button
-                      fullWidth
-                      className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-xl shadow-indigo-100 py-4 text-lg"
-                      onClick={async () => {
-                        const desc = (document.getElementById('tutoring-desc') as HTMLTextAreaElement).value;
-                        if (!tutoringTopic.trim()) {
-                          alert("Please enter a topic!");
-                          return;
-                        }
-                        if (!desc.trim()) {
-                          alert("Please explain your question first!");
-                          return;
-                        }
-                        setLoading(true);
-                        setLoadingText("Sending request...");
-                        const res = await createTutoringRequest(tutoringTopic, desc, 20);
-                        setLoading(false);
-                        if (res.success) {
-                          setShowTutoringModal(false);
-                          alert(res.message);
-                        } else {
-                          alert(res.message);
-                        }
-                      }}
-                    >
-                      Send Request
-                    </Button>
-                    <p className="text-center text-slate-400 text-[10px] mt-4 font-bold uppercase tracking-widest">A teacher will respond via voice or video</p>
-                  </div>
-                </div>
-              </motion.div>
+        {/* REUSE TUTORING MODAL & OTHERS */}
+        {/* We can just render them if state demands, but layout is clean now */}
+        {showTutoringModal && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-6 overflow-y-auto">
+            <div className="bg-white rounded-2xl p-8 max-w-md w-full relative">
+              <button onClick={() => setShowTutoringModal(false)} className="absolute top-4 right-4 p-2 hover:bg-slate-100 rounded-full"><X className="w-5 h-5" /></button>
+              <h2 className="text-xl font-bold mb-4">Ask a Teacher</h2>
+              {/* ... (simplified modal content reuse) ... */}
+              <p className="text-slate-500 mb-4">Describe your question below:</p>
+              <textarea
+                className="w-full border rounded-xl p-3 mb-4"
+                rows={4}
+                placeholder="I need help with..."
+                id="tutoring-desc-quick"
+              ></textarea>
+              <Button fullWidth onClick={async () => {
+                const desc = (document.getElementById('tutoring-desc-quick') as HTMLTextAreaElement).value;
+                if (!desc) return;
+                setLoading(true);
+                const res = await createTutoringRequest("General Help", desc, 20);
+                setLoading(false);
+                if (res.success) { setShowTutoringModal(false); alert("Request Sent!"); }
+              }}>Send Request</Button>
             </div>
-          )}
-        </AnimatePresence>
+          </div>
+        )}
 
-        {/* Quality Warning Modal */}
       </div>
     );
+  }
+
+  // --- HISTORY VIEW ---
+  if (mode === 'HISTORY' as any) {
+    return (
+      <div className="min-h-screen bg-white font-sans text-slate-800 max-w-4xl mx-auto border-x border-slate-100 flex flex-col">
+        <div className="p-4 border-b border-slate-100 flex items-center gap-3 sticky top-0 bg-white z-20">
+          <button onClick={() => setMode('MENU')} className="p-2 hover:bg-slate-100 rounded-full transition-colors"><ArrowRight className="w-6 h-6 rotate-180" /></button>
+          <h1 className="text-lg font-bold">Learning History</h1>
+        </div>
+
+        <div className="flex-1 p-6 overflow-y-auto">
+          {history.length === 0 ? (
+            <div className="text-center py-20 opacity-50">
+              <Clock className="w-12 h-12 mx-auto mb-4 text-slate-300" />
+              <p>No history yet. Start a chat!</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {history.slice().reverse().map((item) => (
+                <div key={item.id} onClick={() => restoreActivity(item)} className="p-4 rounded-2xl border border-slate-100 hover:border-blue-200 hover:bg-blue-50 transition-all cursor-pointer flex items-center gap-4">
+                  <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center border border-slate-100 shadow-sm text-lg">
+                    {item.type === 'QUIZ' ? '📝' : '💡'}
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-slate-800">{item.topic || "Untitled Session"}</h3>
+                    <p className="text-xs text-slate-500">{item.date}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    )
   }
 
   if (mode === 'PROFILE') {
@@ -1588,17 +1347,17 @@ ${ explanation.explanation }
               <h2 className="text-lg font-bold text-slate-800">Subscription Status</h2>
             </div>
 
-            <Card className={`p - 6 border - 2 ${ isPro ? 'border-amber-200 bg-gradient-to-br from-white to-amber-50/30' : 'border-slate-100' } `}>
+            <Card className={`p-6 border-2 ${isPro ? 'border-amber-200 bg-gradient-to-br from-white to-amber-50/30' : 'border-slate-100'}`}>
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                 <div>
                   <div className="flex items-center gap-2 mb-1">
-                    <span className={`px - 2.5 py - 1 rounded - full text - [10px] font - extrabold uppercase tracking - widest ${ isPro ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-500' } `}>
-                      {subscriptionPlan === 'FREE' ? 'Free Tier' : `${ subscriptionPlan } Plan`}
+                    <span className={`px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-widest ${isPro ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-500'}`}>
+                      {subscriptionPlan === 'FREE' ? 'Free Tier' : `${subscriptionPlan} Plan`}
                     </span>
                     {isPro && <span className="bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full text-[10px] font-bold">Active</span>}
                   </div>
                   <h3 className="text-2xl font-black text-slate-900 mb-1">
-                    {isPro ? 'Soma Smart Pro' : 'Limited Access'}
+                    {isPro ? 'Somo Smart Pro' : 'Limited Access'}
                   </h3>
                   {isPro && subscriptionExpiry && (
                     <p className="text-xs text-slate-500 font-medium">Valid until {new Date(subscriptionExpiry).toLocaleDateString()}</p>
@@ -1621,6 +1380,31 @@ ${ explanation.explanation }
             </Card>
           </section>
         </div>
+
+        {/* Global Bottom Nav */}
+        <div className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t border-slate-200 px-6 py-3 flex justify-between items-center z-50 max-w-4xl mx-auto shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
+          <button onClick={() => setMode('MENU')} className="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-600">
+            <Home className="w-6 h-6" />
+            <span className="text-[10px] font-black uppercase tracking-tighter">Home</span>
+          </button>
+          <button onClick={() => setMode('MARKETPLACE')} className="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-600">
+            <ShoppingBag className="w-6 h-6" />
+            <span className="text-[10px] font-black uppercase tracking-tighter">Materials</span>
+          </button>
+          <div className="relative -mt-10">
+            <button onClick={() => setMode('SCAN')} className="relative w-16 h-16 bg-indigo-600 rounded-full flex items-center justify-center shadow-xl shadow-indigo-200 text-white transform hover:scale-110 active:scale-90 transition-all border-4 border-white">
+              <ScanLine className="w-8 h-8" />
+            </button>
+          </div>
+          <button onClick={() => setMode('LIBRARY')} className="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-600">
+            <Library className="w-6 h-6" />
+            <span className="text-[10px] font-black uppercase tracking-tighter">Library</span>
+          </button>
+          <button onClick={() => setMode('PROFILE')} className="flex flex-col items-center gap-1 text-indigo-600 scale-110">
+            <UserCircle className="w-6 h-6" />
+            <span className="text-[10px] font-black uppercase tracking-tighter">Me</span>
+          </button>
+        </div>
       </div>
     );
   }
@@ -1635,7 +1419,7 @@ ${ explanation.explanation }
           </div>
         </div>
         <h2 className="text-2xl font-extrabold text-slate-900 mt-8 mb-2 animate-pulse">{loadingText}</h2>
-        <p className="text-slate-500 max-w-xs mx-auto text-lg">Soma is putting the pieces together...</p>
+        <p className="text-slate-500 max-w-xs mx-auto text-lg">Somo is putting the pieces together...</p>
       </div>
     );
   }
@@ -1670,7 +1454,7 @@ ${ explanation.explanation }
             >
               {imageData && (
                 <div className="relative rounded-xl overflow-hidden bg-slate-100 max-h-60">
-                  <img src={`data:${ imageData.mimeType }; base64, ${ imageData.base64 } `} alt="Scanned Content" className="w-full h-full object-contain" />
+                  <img src={`data:${imageData.mimeType}; base64, ${imageData.base64} `} alt="Scanned Content" className="w-full h-full object-contain" />
                 </div>
               )}
               {audioData && (
@@ -1684,7 +1468,7 @@ ${ explanation.explanation }
                       <p className="text-xs text-slate-400">Audio Recording</p>
                     </div>
                   </div>
-                  <audio controls src={`data:${ audioData.mimeType }; base64, ${ audioData.base64 } `} className="w-full h-10" />
+                  <audio controls src={`data:${audioData.mimeType}; base64, ${audioData.base64} `} className="w-full h-10" />
                 </div>
               )}
             </motion.div>
@@ -1697,7 +1481,7 @@ ${ explanation.explanation }
                 key={l}
                 onClick={() => handleRegenerate(l)}
                 disabled={loading || explanation.level === l}
-                className={`flex - 1 py - 2.5 text - sm font - bold rounded - lg transition - all ${ explanation.level === l ? (l === 'Simple' ? 'bg-indigo-100 text-indigo-700 shadow-sm' : 'bg-blue-100 text-blue-700 shadow-sm') : 'text-slate-400 hover:text-slate-600' } `}
+                className={`flex-1 py-2.5 text-sm font-bold rounded-lg transition-all ${explanation.level === l ? (l === 'Simple' ? 'bg-indigo-100 text-indigo-700 shadow-sm' : 'bg-blue-100 text-blue-700 shadow-sm') : 'text-slate-400 hover:text-slate-600'}`}
               >
                 {l === 'Simple' ? 'Explain Simply 🐣' : 'Exam Mode 🎓'}
               </button>
@@ -1736,9 +1520,98 @@ ${ explanation.explanation }
             className="bg-white p-6 rounded-3xl shadow-sm border border-slate-200 prose prose-slate max-w-none prose-p:text-slate-600 prose-headings:text-slate-800 prose-strong:text-slate-900"
           >
             <MarkdownText content={explanation.explanation} />
+            {/* ACTION FOOTER */}
+            <div className="mt-8 pt-6 border-t border-slate-100 flex flex-wrap gap-4">
+              <button
+                onClick={handleTTS}
+                className="flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm px-5 py-3 rounded-xl transition-colors"
+              >
+                {isPlaying ? <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" /> : <Volume2 className="w-4 h-4" />}
+                {isPlaying ? "Stop" : "Listen"}
+              </button>
+
+              <button
+                onClick={handleGenerateQuiz}
+                className="flex items-center gap-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-sm px-5 py-3 rounded-xl transition-colors border border-indigo-100"
+              >
+                <Clock className="w-4 h-4" />
+                Take Quiz
+              </button>
+            </div>
           </motion.article>
 
           {/* Need more help? - Phase 2 */}
+
+          {/* CONTINUE RESEARCHING */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="bg-slate-50 p-6 rounded-[2rem] border border-slate-200 mt-8"
+          >
+            <div className="flex items-center gap-2 mb-4">
+              <Sparkles className="w-5 h-5 text-indigo-500" />
+              <h3 className="font-bold text-slate-800">Continue Researching</h3>
+            </div>
+            <p className="text-xs text-slate-500 mb-4">Ask a follow-up question to refine this explanation.</p>
+
+            <div className="flex gap-2">
+              <input
+                type="text"
+                placeholder="e.g. Give me more examples..."
+                className="flex-1 p-4 rounded-xl border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none transition-all"
+                onKeyDown={async (e) => {
+                  if (e.key === 'Enter') {
+                    const target = e.target as HTMLInputElement;
+                    const query = target.value;
+                    if (!query.trim() || !explanation) return;
+
+                    target.value = '';
+                    setLoading(true);
+                    setLoadingText("Researching your question...");
+                    setMode('SCAN'); // Show loading
+
+                    try {
+                      const result = await continueResearch(explanation.topic, explanation.explanation, query, level, language);
+                      setExplanation(result);
+                      setMode('RESULT');
+                    } catch (err) {
+                      console.error(err);
+                      setError({ title: "Research Failed", message: "Could not update the explanation. Please try again." });
+                      setLoading(false);
+                      setMode('RESULT');
+                    }
+                  }
+                }}
+              />
+              <button
+                className="bg-indigo-600 text-white p-4 rounded-xl hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-100"
+                onClick={async (e) => {
+                  const input = e.currentTarget.previousElementSibling as HTMLInputElement;
+                  const query = input.value;
+                  if (!query.trim() || !explanation) return;
+
+                  input.value = '';
+                  setLoading(true);
+                  setLoadingText("Researching your question...");
+                  setMode('SCAN');
+
+                  try {
+                    const result = await continueResearch(explanation.topic, explanation.explanation, query, level, language);
+                    setExplanation(result);
+                    setMode('RESULT');
+                  } catch (err) {
+                    console.error(err);
+                    setError({ title: "Research Failed", message: "Could not update the explanation. Please try again." });
+                    setLoading(false);
+                    setMode('RESULT');
+                  }
+                }}
+              >
+                <ArrowRight className="w-5 h-5" />
+              </button>
+            </div>
+          </motion.div>
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -1748,7 +1621,7 @@ ${ explanation.explanation }
             <div className="flex-1 text-center md:text-left">
               <div className="flex items-center justify-center md:justify-start gap-2 mb-2">
                 <h3 className="text-xl font-black">Still confused? 🧐</h3>
-                <span className={`px - 2 py - 0.5 rounded - full text - [9px] font - black uppercase tracking - widest ${ isAvailableForTutoring ? 'bg-emerald-400 text-indigo-900 animate-pulse' : 'bg-indigo-500/50 text-indigo-200' } `}>
+                <span className={`px - 2 py - 0.5 rounded - full text - [9px] font - black uppercase tracking - widest ${isAvailableForTutoring ? 'bg-emerald-400 text-indigo-900 animate-pulse' : 'bg-indigo-500/50 text-indigo-200'} `}>
                   {isAvailableForTutoring ? 'Teachers online' : 'Teachers offline'}
                 </span>
               </div>
@@ -1759,7 +1632,7 @@ ${ explanation.explanation }
                 setTutoringTopic(explanation?.topic || "");
                 setShowTutoringModal(true);
               }}
-              className={`px - 8 py - 4 bg - white text - indigo - 600 rounded - full font - black text - sm uppercase tracking - widest shadow - lg hover: bg - indigo - 50 transition - all active: scale - 95 ${ !isAvailableForTutoring ? 'opacity-70 grayscale' : '' } `}
+              className={`px - 8 py - 4 bg - white text - indigo - 600 rounded - full font - black text - sm uppercase tracking - widest shadow - lg hover: bg - indigo - 50 transition - all active: scale - 95 ${!isAvailableForTutoring ? 'opacity-70 grayscale' : ''} `}
             >
               Ask a Teacher
             </button>
@@ -1791,24 +1664,30 @@ ${ explanation.explanation }
 
         </div>
 
-        {/* Floating Action Dock */}
-        <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 flex items-center gap-4 bg-slate-900/90 backdrop-blur-xl p-2 pl-4 pr-2 rounded-full shadow-2xl z-50 transition-all hover:scale-105">
-          <button
-            onClick={handleTTS}
-            className="flex items-center gap-2 text-white font-bold text-sm hover:text-blue-300 transition-colors"
-          >
-            {isPlaying ? <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" /> : <Volume2 className="w-5 h-5" />}
-            {isPlaying ? "Stop" : "Listen"}
+
+
+        {/* Global Bottom Nav */}
+        <div className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t border-slate-200 px-6 py-3 flex justify-between items-center z-50 max-w-4xl mx-auto shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
+          <button onClick={() => setMode('MENU')} className="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-600">
+            <Home className="w-6 h-6" />
+            <span className="text-[10px] font-black uppercase tracking-tighter">Home</span>
           </button>
-
-          <div className="w-px h-6 bg-white/20"></div>
-
-          <button
-            onClick={handleGenerateQuiz}
-            className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white px-6 py-3 rounded-full font-bold shadow-lg flex items-center gap-2 transition-all active:scale-95"
-          >
-            <Clock className="w-5 h-5" />
-            Take Quiz
+          <button onClick={() => setMode('MARKETPLACE')} className="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-600">
+            <ShoppingBag className="w-6 h-6" />
+            <span className="text-[10px] font-black uppercase tracking-tighter">Materials</span>
+          </button>
+          <div className="relative -mt-10">
+            <button onClick={() => setMode('SCAN')} className="relative w-16 h-16 bg-indigo-600 rounded-full flex items-center justify-center shadow-xl shadow-indigo-200 text-white transform hover:scale-110 active:scale-90 transition-all border-4 border-white">
+              <ScanLine className="w-8 h-8" />
+            </button>
+          </div>
+          <button onClick={() => setMode('LIBRARY')} className="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-600">
+            <Library className="w-6 h-6" />
+            <span className="text-[10px] font-black uppercase tracking-tighter">Library</span>
+          </button>
+          <button onClick={() => setMode('PROFILE')} className="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-600">
+            <UserCircle className="w-6 h-6" />
+            <span className="text-[10px] font-black uppercase tracking-tighter">Me</span>
           </button>
         </div>
       </div>
@@ -1833,6 +1712,8 @@ ${ explanation.explanation }
   if (mode === 'PRICING') {
     return (
       <PricingPage
+        currentTier={subscriptionPlan}
+        isPro={isPro}
         onSelectPlan={(plan) => {
           setSelectedPlan(plan);
           setMode('PAYMENT' as any);
@@ -1858,86 +1739,184 @@ ${ explanation.explanation }
 
   if (mode === 'MARKETPLACE') {
     return (
-      <div className="bg-slate-50 min-h-screen pb-32 max-w-4xl mx-auto shadow-2xl border-x border-slate-100">
-        <div className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-slate-200 px-6 py-4 flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-black text-slate-900 tracking-tight leading-none">Marketplace</h1>
-            <p className="text-[10px] font-black text-indigo-500 uppercase tracking-[0.2em] mt-2">Premium Study Materials</p>
+      <div className="bg-slate-50 min-h-screen pb-32 max-w-4xl mx-auto shadow-2xl border-x border-slate-100 flex flex-col">
+        {/* Header */}
+        <div className="sticky top-0 z-40 bg-white/90 backdrop-blur-xl border-b border-slate-200 px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <button onClick={() => setMode('MENU')} className="p-2 hover:bg-slate-100 rounded-full transition-colors"><ArrowRight className="w-5 h-5 rotate-180" /></button>
+            <div>
+              <h1 className="text-xl font-black text-slate-900 tracking-tight leading-none">Study Materials</h1>
+              <p className="text-[9px] font-black text-indigo-500 uppercase tracking-[0.2em] mt-1.5">Premium Resource Center</p>
+            </div>
           </div>
-          <div className="flex items-center gap-2 px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-xl border border-indigo-100">
-            <Sparkles className="w-4 h-4" />
-            <span className="text-xs font-black uppercase tracking-widest">{studentProfile?.grade || 'N/A'}</span>
+          <div className="flex items-center gap-2">
+            {!isPro && (
+              <button
+                onClick={() => setMode('PRICING')}
+                className="bg-amber-100 text-amber-700 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider border border-amber-200 shadow-sm"
+              >
+                Go Pro
+              </button>
+            )}
+            <div className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 font-bold border-2 border-white shadow-sm">
+              <Sparkles className="w-5 h-5" />
+            </div>
           </div>
         </div>
 
-        <div className="p-6 space-y-8">
-          <div className="bg-gradient-to-br from-indigo-600 via-blue-600 to-indigo-700 p-8 rounded-[3rem] text-white shadow-xl shadow-indigo-100 relative overflow-hidden group">
-            <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-20 -mt-20 blur-3xl group-hover:scale-110 transition-transform"></div>
-            <div className="relative z-10">
-              <h3 className="text-3xl font-black mb-2 tracking-tight">Expert Resources</h3>
-              <p className="opacity-90 text-sm font-medium mb-8 max-w-xs leading-relaxed">Revision papers, past exams, and premium notes from top teachers.</p>
-              <div className="flex flex-wrap gap-4">
-                <div className="bg-white/20 px-5 py-3 rounded-2xl backdrop-blur-md border border-white/10">
-                  <p className="text-[9px] uppercase font-black opacity-60 tracking-[0.1em] mb-1">Total Items</p>
-                  <p className="font-black text-lg">{marketplaceMaterials.length}</p>
+        <div className="flex-1 overflow-y-auto no-scrollbar">
+          {/* Premium Hero */}
+          <div className="p-6">
+            <div className="bg-gradient-to-br from-indigo-900 via-indigo-800 to-indigo-950 p-8 rounded-[2.5rem] text-white shadow-2xl shadow-indigo-200/50 relative overflow-hidden group">
+              <div className="absolute top-0 right-0 w-80 h-80 bg-white/5 rounded-full -mr-32 -mt-32 blur-3xl group-hover:scale-110 transition-transform duration-700"></div>
+              <div className="absolute bottom-0 left-0 w-64 h-64 bg-indigo-500/10 rounded-full -ml-32 -mb-32 blur-3xl"></div>
+
+              <div className="relative z-10">
+                <div className="flex items-center gap-2 mb-4">
+                  <span className="px-3 py-1 bg-white/10 backdrop-blur-md rounded-full text-[9px] font-black uppercase tracking-widest border border-white/5">CBC Aligned</span>
+                  <span className="px-3 py-1 bg-indigo-500/20 backdrop-blur-md rounded-full text-[9px] font-black uppercase tracking-widest border border-white/5">Verified Content</span>
                 </div>
-                <div className="bg-white/20 px-5 py-3 rounded-2xl backdrop-blur-md border border-white/10">
-                  <p className="text-[9px] uppercase font-black opacity-60 tracking-[0.1em] mb-1">Status</p>
-                  <p className="font-black text-lg">Verified</p>
+                <h3 className="text-4xl font-black mb-3 tracking-tight leading-tight">Elite Library.</h3>
+                <p className="opacity-80 text-sm font-medium mb-8 max-w-xs leading-relaxed">Access verified past papers, professional syllabus guides, and top-tier revision notes.</p>
+
+                <div className="flex items-center gap-4">
+                  <div className="bg-white/10 backdrop-blur-md px-4 py-3 rounded-2xl border border-white/5">
+                    <p className="text-[10px] font-black opacity-60 uppercase mb-0.5">Resources</p>
+                    <p className="text-xl font-black">{unifiedMaterials.length}</p>
+                  </div>
+                  <div className="bg-indigo-500/30 backdrop-blur-md px-4 py-3 rounded-2xl border border-white/5">
+                    <p className="text-[10px] font-black opacity-60 uppercase mb-0.5">Your Purchases</p>
+                    <p className="text-xl font-black">{purchasedMaterialIds.length}</p>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {marketplaceMaterials.length === 0 ? (
-              <div className="md:col-span-2 py-32 text-center bg-white border-2 border-dashed border-slate-200 rounded-[3rem]">
-                 <ShoppingBag className="w-12 h-12 text-slate-200 mx-auto mb-4" />
-                 <h4 className="font-black text-slate-400 uppercase tracking-widest text-xs tracking-tighter">Marketplace Opening Soon</h4>
-              </div>
-            ) : (
-              marketplaceMaterials
-                .filter(m => !studentProfile?.grade || m.grade === studentProfile.grade)
-                .map(item => {
+          {/* Advanced Filtering */}
+          <div className="px-6 space-y-4">
+            {/* Category Filter */}
+            <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-2">
+              {(['ALL', 'NOTES', 'PAST_PAPER', 'SYLLABUS'] as const).map(cat => (
+                <button
+                  key={cat}
+                  onClick={() => setMaterialCategory(cat)}
+                  className={`px-5 py-2.5 rounded-2xl text-xs font-black uppercase tracking-wider transition-all border-2 shrink-0 ${materialCategory === cat ? 'bg-indigo-600 border-indigo-600 text-white shadow-lg shadow-indigo-100 scale-105' : 'bg-white border-slate-100 text-slate-400 hover:border-indigo-100'}`}
+                >
+                  {cat.replace('_', ' ')}
+                </button>
+              ))}
+            </div>
+
+            {/* Subject Slider */}
+            <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-2">
+              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mr-2 shrink-0">Subject:</span>
+              {subjects.map(sub => (
+                <button
+                  key={sub}
+                  onClick={() => setSubjectFilter(sub)}
+                  className={`px-4 py-2 rounded-xl text-[10px] font-bold tracking-tight transition-all shrink-0 ${subjectFilter === sub ? 'bg-slate-900 text-white shadow-md' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}
+                >
+                  {sub}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Material Grid */}
+          <div className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {filteredMaterials.length === 0 ? (
+                <div className="md:col-span-2 py-32 text-center bg-white border-2 border-dashed border-slate-200 rounded-[2.5rem]">
+                  <ShoppingBag className="w-12 h-12 text-slate-200 mx-auto mb-4" />
+                  <h4 className="font-black text-slate-300 uppercase tracking-widest text-xs">No materials found in this category</h4>
+                  <button onClick={() => { setMaterialCategory('ALL'); setSubjectFilter('ALL'); }} className="mt-4 text-indigo-600 font-black uppercase text-[10px] tracking-widest hover:underline">Reset Filters</button>
+                </div>
+              ) : (
+                filteredMaterials.map(item => {
                   const isOwned = purchasedMaterialIds.includes(item.id);
+                  const isSyllabus = item.category === 'SYLLABUS';
+                  const isVerified = item.isVerified;
+
+                  // Monetization Logic
+                  let status = 'PURCHASE';
+                  if (isOwned) status = 'OWNED';
+                  else if (isSyllabus) status = 'FREE';
+                  else if (isVerified) status = isPro ? 'PRO_INCLUDED' : 'PRO_LOCKED';
+
                   return (
                     <motion.div
                       whileHover={{ y: -5 }}
                       key={item.id}
-                      className="bg-white border-2 border-slate-100 rounded-[3rem] p-8 shadow-sm hover:border-indigo-100 hover:shadow-xl hover:shadow-indigo-50/30 transition-all flex flex-col justify-between"
+                      className="bg-white border-2 border-slate-100 rounded-[2.5rem] p-6 shadow-sm hover:border-indigo-200 hover:shadow-2xl hover:shadow-indigo-50/50 transition-all flex flex-col justify-between group"
                     >
                       <div>
                         <div className="flex justify-between items-start mb-6">
-                          <div className={`w - 14 h - 14 rounded - 2xl flex items - center justify - center shadow - sm ${ item.category === 'NOTES' ? 'bg-blue-50 text-blue-600' : 'bg-purple-50 text-purple-600' } `}>
-                            {item.category === 'NOTES' ? <FileText className="w-7 h-7" /> : <Layers className="w-7 h-7" />}
+                          <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-sm ${isVerified ? 'bg-indigo-50 text-indigo-600' : 'bg-blue-50 text-blue-600'}`}>
+                            {item.category === 'NOTES' ? <FileText className="w-7 h-7" /> : isSyllabus ? <Library className="w-7 h-7" /> : <Layers className="w-7 h-7" />}
                           </div>
-                          {!isOwned && (
-                            <div className="bg-emerald-50 text-emerald-600 px-4 py-2 rounded-2xl text-lg font-black shadow-sm shadow-emerald-50">
-                              KES {item.price}
-                            </div>
+
+                          {/* Price / Status Tag */}
+                          <div className="flex flex-col items-end gap-1">
+                            {status === 'OWNED' ? (
+                              <span className="px-3 py-1 bg-green-50 text-green-600 rounded-full text-[9px] font-black uppercase tracking-widest">Library</span>
+                            ) : status === 'FREE' ? (
+                              <span className="px-3 py-1 bg-emerald-50 text-emerald-600 rounded-full text-[9px] font-black uppercase tracking-widest">Free</span>
+                            ) : status === 'PRO_INCLUDED' ? (
+                              <span className="px-3 py-1 bg-indigo-50 text-indigo-600 rounded-full text-[9px] font-black uppercase tracking-widest">Pro Benefit</span>
+                            ) : status === 'PRO_LOCKED' ? (
+                              <span className="px-3 py-1 bg-amber-50 text-amber-600 rounded-full text-[9px] font-black uppercase tracking-widest">Pro Locked</span>
+                            ) : (
+                              <span className="px-3 py-1 bg-slate-100 text-slate-900 rounded-full text-[10px] font-black">KES {item.price}</span>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 mb-1">
+                          {isVerified && (
+                            <span className="flex items-center gap-1 text-[8px] font-black text-indigo-600 uppercase tracking-widest bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-100">
+                              <CheckCircle className="w-2.5 h-2.5" /> Verified
+                            </span>
                           )}
+                          <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">{item.grade}</span>
                         </div>
-                        <h4 className="font-black text-slate-900 text-xl mb-1 tracking-tight">{item.title}</h4>
-                        <div className="flex items-center gap-2 mb-6 text-[10px] font-black uppercase tracking-widest">
-                           <span className="text-indigo-500">{item.subject}</span>
-                           <span className="text-slate-300">•</span>
-                           <span className="text-slate-400">By {item.teacherName}</span>
+
+                        <h4 className="font-black text-slate-900 text-xl mb-1 tracking-tight group-hover:text-indigo-600 transition-colors">{item.title}</h4>
+                        <div className="flex items-center gap-2 mb-6 text-[9px] font-black uppercase tracking-widest">
+                          <span className="text-slate-400">{item.subject}</span>
+                          <span className="text-slate-200">•</span>
+                          <span className="text-slate-400">{isVerified ? "Somo Smart" : item.teacherName}</span>
                         </div>
-                        <p className="text-sm text-slate-500 font-medium line-clamp-2 mb-8 leading-relaxed">{item.description}</p>
+                        <p className="text-xs text-slate-500 font-medium line-clamp-2 mb-8 leading-relaxed">{item.description}</p>
                       </div>
 
                       <Button
                         fullWidth
-                        className={`rounded - 2xl py - 4 font - black uppercase tracking - widest text - xs border - none transition - all ${ isOwned ? "bg-slate-100 text-slate-400" : "bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-100" } `}
-                        onClick={() => !isOwned && purchaseMaterial(item.id)}
-                        disabled={isOwned}
+                        className={`rounded-2xl py-4 font-black uppercase tracking-widest text-[10px] border-none transition-all ${status === 'OWNED' || status === 'PRO_INCLUDED' || status === 'FREE'
+                          ? "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                          : status === 'PRO_LOCKED'
+                            ? "bg-amber-500 hover:bg-amber-600 text-white shadow-lg shadow-amber-100"
+                            : "bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-100"
+                          }`}
+                        onClick={() => {
+                          if (status === 'OWNED' || status === 'PRO_INCLUDED' || status === 'FREE') {
+                            // Download / View logic
+                            if (item.fileUrl) window.open(item.fileUrl, '_blank');
+                          } else if (status === 'PRO_LOCKED') {
+                            setMode('PRICING');
+                          } else {
+                            purchaseMaterial(item.id);
+                          }
+                        }}
                       >
-                        {isOwned ? "Already in Library" : `Unlock Material`}
+                        {status === 'OWNED' || status === 'PRO_INCLUDED' || status === 'FREE' ? "Get Material" : status === 'PRO_LOCKED' ? "Unlock with Pro" : "Buy Material"}
+                        <ArrowRight className="w-3.5 h-3.5 ml-2" />
                       </Button>
                     </motion.div>
                   );
                 })
-            )}
+              )}
+            </div>
           </div>
         </div>
 
@@ -1949,7 +1928,7 @@ ${ explanation.explanation }
           </button>
           <button onClick={() => setMode('MARKETPLACE')} className="flex flex-col items-center gap-1 text-indigo-600 scale-110">
             <ShoppingBag className="w-6 h-6" />
-            <span className="text-[10px] font-black uppercase tracking-tighter">Market</span>
+            <span className="text-[10px] font-black uppercase tracking-tighter">Materials</span>
           </button>
           <div className="relative -mt-10">
             <button onClick={() => setMode('SCAN')} className="relative w-16 h-16 bg-indigo-600 rounded-full flex items-center justify-center shadow-xl shadow-indigo-200 text-white transform hover:scale-110 active:scale-90 transition-all border-4 border-white">
@@ -1970,15 +1949,25 @@ ${ explanation.explanation }
   }
 
   if (mode === 'LIBRARY') {
+    const ownedUnifiedMaterials = unifiedMaterials.filter(m => {
+      const isSyllabus = m.category === 'SYLLABUS';
+      const isOwned = purchasedMaterialIds.includes(m.id);
+      const isProBenefit = m.isVerified && isPro;
+      return isOwned || isSyllabus || isProBenefit;
+    });
+
     return (
-      <div className="bg-slate-50 min-h-screen pb-32 max-w-4xl mx-auto shadow-2xl border-x border-slate-100">
-        <div className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-slate-200 px-6 py-4">
-          <h1 className="text-2xl font-black text-slate-900 tracking-tight leading-none">My Library</h1>
-          <p className="text-[10px] font-black text-indigo-500 uppercase tracking-[0.2em] mt-2">Unlocked Resources</p>
+      <div className="bg-slate-50 min-h-screen pb-32 max-w-4xl mx-auto shadow-2xl border-x border-slate-100 flex flex-col">
+        <div className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-slate-200 px-6 py-4 flex items-center justify-between">
+          <div>
+            <h1 className="text-xl font-black text-slate-900 tracking-tight leading-none">My Library</h1>
+            <p className="text-[9px] font-black text-indigo-500 uppercase tracking-[0.2em] mt-1.5">Unlocked Resources</p>
+          </div>
+          <button onClick={() => setMode('MENU')} className="p-2 hover:bg-slate-100 rounded-full transition-colors"><X className="w-5 h-5" /></button>
         </div>
 
-        <div className="p-6">
-          {purchasedMaterialIds.length === 0 ? (
+        <div className="p-6 flex-1 overflow-y-auto no-scrollbar">
+          {ownedUnifiedMaterials.length === 0 ? (
             <div className="py-32 text-center bg-white border-2 border-dashed border-slate-200 rounded-[3rem]">
               <div className="w-24 h-24 bg-slate-50 rounded-[2.5rem] flex items-center justify-center mx-auto mb-6 border border-slate-100">
                 <Library className="w-10 h-10 text-slate-300" />
@@ -1986,31 +1975,34 @@ ${ explanation.explanation }
               <h4 className="text-xl font-black text-slate-800 mb-2 tracking-tight">Your library is empty</h4>
               <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.2em] mb-12 max-w-xs mx-auto leading-relaxed">Unlock premium notes and revision papers from the marketplace to see them here.</p>
               <Button onClick={() => setMode('MARKETPLACE')} className="px-10 py-4 bg-indigo-600 text-white rounded-2xl shadow-xl shadow-indigo-100 font-black uppercase tracking-widest text-[10px] border-none">
-                Browse Marketplace
+                Browse Materials
               </Button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {marketplaceMaterials
-                .filter(m => purchasedMaterialIds.includes(m.id))
-                .map(item => (
-                  <motion.div
-                    key={item.id}
-                    whileTap={{ scale: 0.98 }}
-                    className="bg-white border-2 border-slate-100 rounded-[2.5rem] p-6 shadow-sm flex items-center gap-6 group hover:border-indigo-100 hover:shadow-xl hover:shadow-indigo-50/30 transition-all cursor-pointer"
-                  >
-                    <div className="w-16 h-16 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center shrink-0 border border-indigo-100">
-                      <FileText className="w-8 h-8" />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-20">
+              {ownedUnifiedMaterials.map(item => (
+                <motion.div
+                  key={item.id}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => item.fileUrl && window.open(item.fileUrl, '_blank')}
+                  className="bg-white border-2 border-slate-100 rounded-[2.5rem] p-6 shadow-sm flex items-center gap-6 group hover:border-indigo-100 hover:shadow-xl hover:shadow-indigo-50/30 transition-all cursor-pointer relative overflow-hidden"
+                >
+                  <div className={`w-16 h-16 rounded-2xl flex items-center justify-center shrink-0 border border-slate-100 shadow-sm ${item.isVerified ? 'bg-indigo-50 text-indigo-600' : 'bg-blue-50 text-blue-600'}`}>
+                    {item.category === 'NOTES' ? <FileText className="w-8 h-8" /> : item.category === 'SYLLABUS' ? <Library className="w-8 h-8" /> : <Layers className="w-8 h-8" />}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-[8px] font-black text-indigo-500 uppercase tracking-widest">{item.subject}</span>
+                      {item.isVerified && <span className="bg-indigo-50 p-1 rounded-full"><Sparkles className="w-2 h-2 text-indigo-600" /></span>}
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <h4 className="font-black text-slate-900 text-lg truncate group-hover:text-indigo-600 transition-colors tracking-tight">{item.title}</h4>
-                      <p className="text-[10px] font-black text-indigo-500 uppercase tracking-widest">{item.subject} • {item.category.replace('_', ' ')}</p>
-                    </div>
-                    <div className="w-12 h-12 bg-slate-50 rounded-xl flex items-center justify-center text-slate-300 group-hover:bg-indigo-600 group-hover:text-white transition-all shadow-sm">
-                      <Download className="w-5 h-5" />
-                    </div>
-                  </motion.div>
-                ))}
+                    <h4 className="font-black text-slate-900 text-lg truncate group-hover:text-indigo-600 transition-colors tracking-tight">{item.title}</h4>
+                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{item.category.replace('_', ' ')} • {item.grade}</p>
+                  </div>
+                  <div className="w-12 h-12 bg-slate-50 rounded-xl flex items-center justify-center text-slate-300 group-hover:bg-indigo-600 group-hover:text-white transition-all shadow-sm">
+                    <Download className="w-5 h-5" />
+                  </div>
+                </motion.div>
+              ))}
             </div>
           )}
         </div>
@@ -2023,7 +2015,7 @@ ${ explanation.explanation }
           </button>
           <button onClick={() => setMode('MARKETPLACE')} className="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-600">
             <ShoppingBag className="w-6 h-6" />
-            <span className="text-[10px] font-black uppercase tracking-tighter">Market</span>
+            <span className="text-[10px] font-black uppercase tracking-tighter">Materials</span>
           </button>
           <div className="relative -mt-10">
             <button onClick={() => setMode('SCAN')} className="relative w-16 h-16 bg-indigo-600 rounded-full flex items-center justify-center shadow-xl shadow-indigo-200 text-white transform hover:scale-110 active:scale-90 transition-all border-4 border-white">
@@ -2043,10 +2035,79 @@ ${ explanation.explanation }
     );
   }
 
-  // DEFAULT (MENU) VIEW
-  return (
-    <div className="min-h-screen bg-slate-50 pb-24">
-      {/* ... rest of existing MENU content ... */}
+
+  if (mode === 'SCAN') {
+    return (
+      <div className="bg-slate-900 min-h-screen text-white flex flex-col items-center justify-center p-6 relative overflow-hidden">
+        {/* Background Effects */}
+        <div className="absolute inset-0 bg-indigo-900/20 backdrop-blur-3xl" />
+        <div className="absolute top-0 left-0 w-full h-1/2 bg-gradient-to-b from-black/50 to-transparent" />
+
+        <button
+          onClick={() => setMode('MENU')}
+          className="absolute top-6 left-6 z-50 w-12 h-12 bg-white/10 backdrop-blur-md rounded-full flex items-center justify-center hover:bg-white/20 transition-all border border-white/10"
+        >
+          <X className="w-6 h-6 text-white" />
+        </button>
+
+        <div className="relative z-10 text-center w-full max-w-md">
+          <div className="w-20 h-20 bg-indigo-600 rounded-3xl mx-auto mb-8 flex items-center justify-center shadow-lg shadow-indigo-500/30 animate-pulse">
+            <ScanLine className="w-10 h-10 text-white" />
+          </div>
+
+          <h2 className="text-3xl font-black mb-4 tracking-tight">Scan Homework</h2>
+          <p className="text-slate-300 font-medium mb-12 leading-relaxed">
+            Snap a photo of your question or worksheet. I'll explain it simply or help you solve it step-by-step.
+          </p>
+
+          <div className="space-y-4">
+            <button
+              onClick={startCamera}
+              className="w-full py-5 bg-white text-slate-900 rounded-2xl font-black text-lg shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-3"
+            >
+              <Camera className="w-6 h-6 text-indigo-600" />
+              Take Photo
+            </button>
+
+            <button
+              onClick={() => {
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = 'image/*';
+                input.onchange = (e) => {
+                  const file = (e.target as HTMLInputElement).files?.[0];
+                  if (file) {
+                    setLoading(true);
+                    setLoadingText("Analyzing...");
+                    setTimeout(() => {
+                      setLoading(false);
+                      const reader = new FileReader();
+                      reader.onloadend = () => {
+                        const base64 = (reader.result as string).split(',')[1];
+                        setImageData({ base64, mimeType: file.type });
+                        setMode('SCAN_EXPLAIN');
+                      };
+                      reader.readAsDataURL(file);
+                    }, 1500);
+                  }
+                };
+                input.click();
+              }}
+              className="w-full py-5 bg-white/10 backdrop-blur-md text-white rounded-2xl font-bold text-lg border border-white/20 hover:bg-white/20 transition-all flex items-center justify-center gap-3"
+            >
+              <ImageIcon className="w-6 h-6" />
+              Upload Image
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+
+
+  // End of LearnerDashboard
+};
 
 // --- QUIZ COMPONENT ---
 const QuizRunner: React.FC<{ data: QuizData; onComplete: (score: number) => void; onExit: () => void }> = ({ data, onComplete, onExit }) => {
@@ -2095,7 +2156,7 @@ const QuizRunner: React.FC<{ data: QuizData; onComplete: (score: number) => void
           <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
             <motion.div
               initial={{ width: 0 }}
-              animate={{ width: `${ progress }% ` }}
+              animate={{ width: `${progress}% ` }}
               className="h-full bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full"
             />
           </div>
@@ -2185,14 +2246,14 @@ const QuizRunner: React.FC<{ data: QuizData; onComplete: (score: number) => void
               </motion.div>
             ) : (
               <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
-                <div className={`p - 4 rounded - xl flex items - start gap - 3 ${ isCorrect ? 'bg-green-100 text-green-800' : 'bg-red-50 text-red-800' } `}>
+                <div className={`p - 4 rounded - xl flex items - start gap - 3 ${isCorrect ? 'bg-green-100 text-green-800' : 'bg-red-50 text-red-800'} `}>
                   {isCorrect ? <Sparkles className="w-6 h-6 shrink-0" /> : <BookOpen className="w-6 h-6 shrink-0" />}
                   <div>
                     <p className="font-bold text-sm mb-1">{isCorrect ? "Correct!" : "Explanation:"}</p>
                     <p className="text-sm leading-relaxed opacity-90">{question.explanation}</p>
                   </div>
                 </div>
-                <Button fullWidth onClick={handleNext} className={`py - 4 text - lg rounded - xl shadow - lg ${ isCorrect ? 'shadow-green-200 bg-green-600 hover:bg-green-700' : 'shadow-slate-200 bg-slate-800 hover:bg-slate-900' } `}>
+                <Button fullWidth onClick={handleNext} className={`py - 4 text - lg rounded - xl shadow - lg ${isCorrect ? 'shadow-green-200 bg-green-600 hover:bg-green-700' : 'shadow-slate-200 bg-slate-800 hover:bg-slate-900'} `}>
                   {isLast ? "Finish Quiz" : "Next Question"} <ArrowRight className="w-5 h-5 ml-2" />
                 </Button>
               </motion.div>

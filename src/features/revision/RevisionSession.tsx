@@ -21,7 +21,9 @@ interface ChatMessage {
 
 export const RevisionSession: React.FC<Props> = ({ data, mode, onExit }) => {
     // State
-    const { language } = useApp();
+    const { language, isPro, role } = useApp();
+    const isOfficial = !(data instanceof File) && 'file_path' in (data as any);
+    const isLimited = !isPro;
     const [analysis, setAnalysis] = useState<ExamAnalysis | null>(null);
     const [loading, setLoading] = useState(true);
     const [loadingText, setLoadingText] = useState("Scanning exam paper...");
@@ -49,6 +51,23 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, onExit }) => {
                     setLoadingText("Scanning exam paper...");
                     const result = await analyzeExamPaper(base64, data.type);
                     setAnalysis(result);
+                } else if (!(data instanceof File) && 'file_path' in (data as any)) {
+                    // Official Resource
+                    const res = data as any;
+                    setImageSrc(`${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/syllabus-docs/${res.file_path}`);
+
+                    setLoadingText("Analyzing professional material...");
+                    // For official resources, we might already have analysis or we scan it
+                    // For now, let's treat it as a scan to get full interactivity
+                    const base64 = ""; // We'd need to fetch the file and convert, but for now we'll mock the analysis from metadata
+                    const mappedAnalysis: ExamAnalysis = {
+                        subject: res.subject,
+                        grade: res.grade,
+                        questions: [
+                            { id: 1, number: "1", text: "Summary of " + res.title, topic: res.subject }
+                        ]
+                    };
+                    setAnalysis(mappedAnalysis);
                 } else {
                     const quiz = data.content as QuizData;
                     const mappedAnalysis: ExamAnalysis = {
@@ -99,7 +118,11 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, onExit }) => {
     };
 
     const addMessage = (role: 'user' | 'model', text: string, step?: TutoringStep) => {
-        setChatHistory(prev => [...prev, { id: Date.now().toString(), role, text, step }]);
+        let finalText = text;
+        if (role === 'model' && isLimited && text.length > 200) {
+            finalText = text.substring(0, Math.floor(text.length * 0.3)) + "... [ACCESS LIMITED] \n\nUpgrade to Somo Pro for full AI tutoring and complete explanations. 🚀";
+        }
+        setChatHistory(prev => [...prev, { id: Date.now().toString(), role, text: finalText, step }]);
     };
 
     const handleSendMessage = async () => {
@@ -134,10 +157,13 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, onExit }) => {
         if (!analysis) return;
         setIsGuidanceLoading(true);
         setIsTyping(true);
-        addMessage('user', "Soma, can you give me a strategic overview of this paper?");
+        addMessage('user', "Somo, can you give me a strategic overview of this paper?");
 
         try {
-            const guidance = await getPaperGuidance(analysis);
+            let guidance = await getPaperGuidance(analysis);
+            if (isLimited) {
+                guidance = guidance.substring(0, Math.floor(guidance.length * 0.3)) + "... \n\n⚠️ Strategic overview is limited for free users. Unlock Somo Pro for full exam analysis and scoring tips.";
+            }
             addMessage('model', guidance, 'GUIDANCE' as any);
         } catch (e) {
             console.error(e);
@@ -249,6 +275,12 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, onExit }) => {
                             <span className={`w-2 h-2 rounded-full ${mode === RevisionMode.EXAM ? 'bg-orange-500' : 'bg-green-500'}`} />
                             {mode === RevisionMode.EXAM ? 'Exam Mode' : 'Learn Mode'}
                         </p>
+                        {isOfficial && (
+                            <div className="flex items-center gap-1 mt-0.5">
+                                <Sparkles className="w-3 h-3 text-indigo-500 fill-current" />
+                                <span className="text-[10px] font-black text-indigo-600 uppercase tracking-tighter">Somo Smart Verified</span>
+                            </div>
+                        )}
                     </div>
                     <div className="flex items-center gap-2">
                         <button
@@ -423,8 +455,11 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, onExit }) => {
 
                         {/* Hint button for Exam Mode */}
                         {activeQuestion && mode === RevisionMode.EXAM && (
-                            <button className="flex items-center gap-1 text-xs font-bold text-orange-500 hover:text-orange-600">
-                                <HelpCircle className="w-3 h-3" /> Get Hint (-2 pts)
+                            <button
+                                onClick={() => isLimited ? alert("Hints are a Somo Pro feature. Upgrade to unlock.") : null}
+                                className="flex items-center gap-1 text-xs font-bold text-orange-500 hover:text-orange-600"
+                            >
+                                <HelpCircle className="w-3 h-3" /> Get Hint {isLimited ? '🔒' : '(-2 pts)'}
                             </button>
                         )}
                     </div>

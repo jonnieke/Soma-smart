@@ -160,7 +160,7 @@ export const SchoolDashboard: React.FC = () => {
                         <SchoolIcon className="w-7 h-7" />
                     </div>
                     <div>
-                        <h2 className="font-black text-slate-900 text-lg leading-tight tracking-tight">Soma Smart</h2>
+                        <h2 className="font-black text-slate-900 text-lg leading-tight tracking-tight">Somo Smart</h2>
                         <p className="text-[10px] text-blue-600 font-black tracking-widest uppercase">Institutional Hub</p>
                     </div>
                 </div>

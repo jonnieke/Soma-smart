@@ -63,7 +63,7 @@ export const RevisionDashboard: React.FC = () => {
                             className="py-5 text-lg bg-indigo-600 hover:bg-indigo-700 shadow-xl shadow-indigo-100 border-none group"
                         >
                             <span className="flex items-center justify-center gap-2">
-                                Upgrade to Soma Pro <ShieldCheck className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                                Upgrade to Somo Pro <ShieldCheck className="w-5 h-5 group-hover:scale-110 transition-transform" />
                             </span>
                         </Button>
                         <button
@@ -94,10 +94,18 @@ export const RevisionDashboard: React.FC = () => {
     return (
         <RevisionLanding
             onStartSession={(data, mode) => {
-                if (!isPro && revisionUsageCount >= 5) {
+                // 1. Enforce Guest Limit (1 Document)
+                if (role === UserRole.GUEST && revisionUsageCount >= 1) {
                     setShowRevisionPaywall(true);
                     return;
                 }
+
+                // 2. Enforce Registered Free Limit (5 Documents)
+                if (!isPro && role !== UserRole.GUEST && revisionUsageCount >= 5) {
+                    setShowRevisionPaywall(true);
+                    return;
+                }
+
                 incrementRevisionUsage();
                 setRevisionData(data);
                 setRevisionMode(mode);

@@ -28,7 +28,7 @@ export const pesapalService = {
         const { data, error } = await supabase.functions.invoke('pesapal/initiate-order', {
             body: {
                 amount: plan.price,
-                description: `Soma Smart ${plan.name} Subscription`,
+                description: `Somo Smart ${plan.name} Subscription`,
                 reference: reference,
                 callback_url: `${window.location.origin}/pricing?status=verifying&ref=${reference}`,
                 billing_address: {

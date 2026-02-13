@@ -8,11 +8,12 @@ interface Props {
     onSelectPlan: (plan: SubscriptionPlan) => void;
     onClose: () => void;
     currentTier?: string;
+    isPro?: boolean;
     initialTab?: UserSegment;
 }
 
 
-export const PricingPage: React.FC<Props> = ({ onSelectPlan, onClose, currentTier, initialTab = 'STUDENT' }) => {
+export const PricingPage: React.FC<Props> = ({ onSelectPlan, onClose, currentTier, isPro, initialTab = 'STUDENT' }) => {
     const [activeTab, setActiveTab] = useState<UserSegment>(initialTab);
 
     const renderTabButton = (tab: UserSegment, icon: any, label: string) => (
@@ -70,7 +71,7 @@ export const PricingPage: React.FC<Props> = ({ onSelectPlan, onClose, currentTie
                         animate={{ opacity: 1, y: 0 }}
                     >
                         <h1 className="text-5xl md:text-7xl font-black mb-6 tracking-tighter leading-none bg-clip-text text-transparent bg-gradient-to-b from-white to-white/60">
-                            The Future of <br /> Learning is Soma.
+                            The Future of <br /> Learning is Somo.
                         </h1>
                         <p className="text-xl text-indigo-100/60 font-medium max-w-xl mx-auto leading-relaxed">
                             Join thousands of students and teachers across Kenya. Simple, transparent pricing for every stage of your journey.
@@ -106,7 +107,7 @@ export const PricingPage: React.FC<Props> = ({ onSelectPlan, onClose, currentTie
                                         popular={plan.duration === 'MONTHLY'}
                                         isCurrent={currentTier === plan.duration}
                                         currentTier={currentTier}
-                                        disabled={currentTier !== 'FREE' && currentTier !== plan.duration && plan.duration === 'DAILY'} // Example: can't downgrade to daily
+                                        disabled={isPro && currentTier === plan.duration}
                                     />
                                 ))}
                             </div>

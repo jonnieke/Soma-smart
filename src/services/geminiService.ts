@@ -136,7 +136,39 @@ export const explainAudio = async (base64Audio: string, mimeType: string, level:
   }
 };
 
+import { supabase } from '../lib/supabase';
 import { getContext } from './contextService';
+
+// --- RAG HELPER ---
+const retrieveContext = async (query: string): Promise<string> => {
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    const token = session?.access_token;
+
+    if (!token) return "";
+
+    const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/search-knowledge`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ query })
+    });
+
+    if (!response.ok) return "";
+
+    const { chunks } = await response.json();
+    if (!chunks || chunks.length === 0) return "";
+
+    // Deduplicate and join chunks
+    const uniqueChunks = Array.from(new Set(chunks.map((c: any) => c.content)));
+    return uniqueChunks.join('\n\n---\n\n');
+  } catch (error) {
+    console.warn("RAG Retrieval failed:", error);
+    return "";
+  }
+};
 
 export const explainTopic = async (topic: string, level: 'Simple' | 'Exam', language: 'EN' | 'FR' = 'EN'): Promise<ExplanationResult> => {
   const model = genAI.getGenerativeModel({
@@ -156,16 +188,33 @@ export const explainTopic = async (topic: string, level: 'Simple' | 'Exam', lang
     }
   });
 
+  // 1. Convert File Context (if any)
   const context = getContext();
-
-  let contextInstruction = "";
+  let fileContextInstruction = "";
   if (context) {
-    contextInstruction = `
-    IMPORTANT: You have been provided with specific source material called "${context.name}".
-    You MUST answer the question using ONLY this source material. Do not use outside knowledge unless necessary to clarify terms.
+    fileContextInstruction = `
+      IMPORTANT: You have been provided with specific source material called "${context.name}".
+      You MUST answer the question using ONLY this source material. Do not use outside knowledge unless necessary to clarify terms.
+      
+      Source Material:
+      "${context.content.substring(0, 30000)}" 
+      `;
+  }
+
+  // 2. Retrieve RAG Context (CBE Knowledge Base)
+  const ragContext = await retrieveContext(topic);
+  let ragInstruction = "";
+  if (ragContext) {
+    ragInstruction = `
+    OFFICIAL CBE CONTEXT FOUND:
+    The following text is from the official Kenya Competency-Based Curriculum (Syllabus/Past Papers).
     
-    Source Material:
-    "${context.content.substring(0, 30000)}" 
+    "${ragContext.substring(0, 5000)}"
+    
+    INSTRUCTION: 
+    Prioritize the definitions, scope, and terminology from this Official Context. 
+    You may use your broader knowledge to explain concepts, but ensure they ALIGN with this grade-level standard. 
+    If the Official Context contradicts general knowledge, follow the Official Context (it is the exam standard).
     `;
   }
 
@@ -174,7 +223,8 @@ export const explainTopic = async (topic: string, level: 'Simple' | 'Exam', lang
     : "LANGUAGE RULE: If the subject is 'Kiswahili' or 'Swahili', you MUST respond in Swahili. For ALL other subjects, you MUST respond ONLY in English.";
 
   const prompt = `
-    ${contextInstruction}
+    ${fileContextInstruction}
+    ${ragInstruction}
 
     1. Identify the subject of the topic "${topic}".
     2. ${langInstruction}
@@ -195,6 +245,62 @@ export const explainTopic = async (topic: string, level: 'Simple' | 'Exam', lang
     return { ...json, level } as ExplanationResult;
   } catch (error) {
     console.error("Error explaining topic:", error);
+    throw error;
+  }
+};
+
+export const continueResearch = async (
+  currentTopic: string,
+  currentExplanation: string,
+  userQuery: string,
+  level: 'Simple' | 'Exam',
+  language: 'EN' | 'FR' = 'EN'
+): Promise<ExplanationResult> => {
+  const model = genAI.getGenerativeModel({
+    model: MODEL_NAME,
+    generationConfig: {
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: SchemaType.OBJECT,
+        properties: {
+          topic: { type: SchemaType.STRING },
+          explanation: { type: SchemaType.STRING, description: "Markdown formatted explanation" },
+          summaryPoints: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
+          relatedTopics: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } }
+        },
+        required: ["topic", "explanation", "summaryPoints", "relatedTopics"]
+      }
+    }
+  });
+
+  const langInstruction = language === 'FR'
+    ? "LANGUAGE RULE: You MUST respond in French (Français)."
+    : "LANGUAGE RULE: If the subject is 'Kiswahili' or 'Swahili', you MUST respond in Swahili. For ALL other subjects, you MUST respond ONLY in English.";
+
+  const prompt = `
+    CONTEXT: The student is learning about "${currentTopic}".
+    CURRENT EXPLANATION: "${currentExplanation.substring(0, 1000)}..."
+    
+    USER FOLLOW-UP: "${userQuery}"
+    
+    TASK:
+    1. Update the explanation to address the user's follow-up question. 
+    2. Keep the focus on "${currentTopic}" but pivot to answer the specific query.
+    3. ${langInstruction}
+    4. Explain in ${level === 'Simple' ? 'very simple language' : 'academic language'}.
+    5. Provide updated summary points and related topics.
+    
+    Output JSON.
+  `;
+
+  try {
+    const result = await model.generateContent(prompt);
+    const text = result.response.text();
+    if (!text) throw new Error("No response from AI");
+    const json = JSON.parse(text);
+    return { ...json, level } as ExplanationResult;
+  } catch (error) {
+    console.error("Error continuing research:", error);
     throw error;
   }
 };
@@ -555,12 +661,13 @@ export const generateAdvancedTeacherQuiz = async (
 };
 
 // --- ASK SOMA CHATBOT ---
+// --- ASK SOMO CHATBOT ---
 
-export const askSoma = async (userQuery: string, chatHistory: { role: 'user' | 'model', text: string }[], language: 'EN' | 'FR' = 'EN'): Promise<string> => {
+export const askSomo = async (userQuery: string, chatHistory: { role: 'user' | 'model', text: string }[], language: 'EN' | 'FR' = 'EN'): Promise<string> => {
   const model = genAI.getGenerativeModel({ model: MODEL_NAME });
 
   // Construct prompt with history manually
-  const systemInstruction = `You are Soma, a super friendly, caring, and easy-going AI Learning Buddy for children! 🌟 
+  const systemInstruction = `You are Somo, a super friendly, caring, and easy-going AI Learning Buddy for children! 🌟 
 
 YOUR PERSONALITY:
 - Be extremely encouraging and kind. Use phrases like "Great question!", "I'm so happy to help you!", and "Let's learn together!"
@@ -574,7 +681,7 @@ NAVIGATION & HELP:
 
 USE THESE EXACT LINKS:
 - Sign In/Dashboard: [Student Login](/learner)
-- See how Soma works: [How it Works](#how-it-works)
+- See how Somo works: [How it Works](#how-it-works)
 - For Parents: [Parent Dashboard](/parent)
 - For Teachers: [Teacher Dashboard](/teacher)
 - For Exam Candidates: [Candidate Success Center](/revision)
@@ -582,8 +689,8 @@ USE THESE EXACT LINKS:
 ${language === 'FR' ? "LANGUAGE RULE: You MUST respond ONLY in French (Français). If the user asks in English, still respond in French." : ""}
 Keep answers short (1-3 sentences), warm, and very clear. Always be helpful! ❤️`;
 
-  const historyText = chatHistory.map(msg => `${msg.role === 'user' ? 'User' : 'Soma'}: ${msg.text}`).join('\n');
-  const fullPrompt = `${systemInstruction}\n\n${historyText}\nUser: ${userQuery}\nSoma:`;
+  const historyText = chatHistory.map(msg => `${msg.role === 'user' ? 'User' : 'Somo'}: ${msg.text}`).join('\n');
+  const fullPrompt = `${systemInstruction}\n\n${historyText}\nUser: ${userQuery}\nSomo:`;
 
   try {
     const result = await model.generateContent(fullPrompt);
@@ -592,7 +699,7 @@ Keep answers short (1-3 sentences), warm, and very clear. Always be helpful! ❤
     if (!text) return "I'm thinking... but got stuck! 😅";
     return text;
   } catch (error) {
-    console.error("Error asking Soma:", error);
+    console.error("Error asking Somo:", error);
     return "Oops! My brain is a bit foggy right now. ☁️ Try again later!";
   }
 };
@@ -768,7 +875,7 @@ export const getRevisionTutorResponse = async (
     : "LANGUAGE RULE: If the subject is 'Kiswahili' or 'Swahili', you MUST respond in Swahili. For ALL other subjects, you MUST respond ONLY in English.";
 
   const systemInstruction = `
-    You are Soma Smart Candidate Specialist, an expert international-level exam strategist for Kenyan Candidates (KCSE, KPSEA, KEPSEA).
+    You are Somo Smart Candidate Specialist, an expert international-level exam strategist for Kenyan Candidates (KCSE, KPSEA, KEPSEA).
     Tone: Highly Strategic, Professional, Evidence-Based, and Results-Oriented.
     
     Your goal is to guide the candidate THROUGH one national exam question at a time using a strict pedagogical flow.
@@ -842,7 +949,7 @@ export const getPaperGuidance = async (analysis: ExamAnalysis, query?: string, l
     `;
 
   const strategyPrompt = `
-        You are the Soma Smart Candidate Specialist. 
+        You are the Somo Smart Candidate Specialist. 
         Analyze the structure of this past paper and provide a strategic guidance report for a student.
         
         Paper Overview:
@@ -858,7 +965,7 @@ export const getPaperGuidance = async (analysis: ExamAnalysis, query?: string, l
     `;
 
   const queryPrompt = `
-        You are the Soma Smart Candidate Specialist. 
+        You are the Somo Smart Candidate Specialist. 
         Answer the student's question specifically based on the analysis of this past paper.
         
         Paper Context:
@@ -1145,3 +1252,6 @@ export const generateDarasaRevision = async (imageBase64: string, mimeType: stri
     throw error;
   }
 };
+
+// Backward compatibility for cached files
+export const askSoma = askSomo;
