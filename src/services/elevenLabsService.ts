@@ -88,3 +88,93 @@ export const speak = async (text: string): Promise<void> => {
         window.speechSynthesis.speak(utterance);
     });
 };
+
+// --- PODCAST PLAYER ---
+
+let podcastController: AbortController | null = null;
+let podcastQueue: HTMLAudioElement[] = [];
+
+export const cancelPodcast = () => {
+    if (podcastController) {
+        podcastController.abort();
+        podcastController = null;
+    }
+    podcastQueue.forEach(audio => {
+        audio.pause();
+        audio.src = "";
+    });
+    podcastQueue = [];
+    stopSpeech();
+};
+
+export const playPodcast = async (script: Array<{ speaker: 'Host' | 'Guest', text: string }>, onProgress: (index: number) => void, onComplete: () => void) => {
+    cancelPodcast(); // Stop any existing playback
+    podcastController = new AbortController();
+    const signal = podcastController.signal;
+
+    const VOICES = {
+        Host: "21m00Tcm4TlvDq8ikWAM", // Rachel
+        Guest: "ErXwobaYiN019PkySvjV"  // Antoni
+    };
+
+    // Helper to fetch audio
+    const fetchAudio = async (text: string, voiceId: string): Promise<string> => {
+        if (!API_KEY) throw new Error("No ElevenLabs Key");
+        const response = await axios.post(
+            `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`,
+            {
+                text,
+                model_id: "eleven_multilingual_v2",
+                voice_settings: { stability: 0.5, similarity_boost: 0.75 },
+            },
+            {
+                headers: { 'xi-api-key': API_KEY, 'Content-Type': 'application/json' },
+                responseType: 'blob',
+            }
+        );
+        return URL.createObjectURL(response.data);
+    };
+
+    try {
+        // Pre-fetch first segment to start quickly
+        // Then stream the rest sequentially? Or fetch next while playing current?
+        // For simplicity and stability: Fetch one by one (or batch of 2) to manage cost/latency. 
+        // Better: Fetch next while playing current.
+
+        for (let i = 0; i < script.length; i++) {
+            if (signal.aborted) return;
+            onProgress(i);
+
+            const segment = script[i];
+            const voiceId = VOICES[segment.speaker];
+
+            // Fetch
+            const audioUrl = await fetchAudio(segment.text, voiceId);
+            if (signal.aborted) return;
+
+            const audio = new Audio(audioUrl);
+            podcastQueue.push(audio);
+            currentAudio = audio;
+
+            // Play and wait
+            await new Promise<void>((resolve, reject) => {
+                audio.onended = () => {
+                    URL.revokeObjectURL(audioUrl);
+                    resolve();
+                };
+                audio.onerror = reject;
+                audio.play().catch(reject);
+            });
+
+            // Remove from queue logic not strictly needed if we just clear all on cancel
+        }
+
+        if (!signal.aborted) {
+            onComplete();
+        }
+
+    } catch (e) {
+        console.error("Podcast Playback Error", e);
+        if (!signal.aborted) onComplete(); // Treat error as end or handle differently
+    }
+};

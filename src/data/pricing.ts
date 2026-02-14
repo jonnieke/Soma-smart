@@ -14,6 +14,14 @@ export const TEACHER_PLANS: SubscriptionPlan[] = [
     { id: 't_annual', segment: 'TEACHER', name: 'Pro Annual', price: 5000, duration: 'ANNUAL', savings: 'Save 30%' },
 ];
 
+export const DOWNLOAD_PASS: SubscriptionPlan = {
+    id: 'download_pack_5',
+    segment: 'STUDENT',
+    name: '5 Download Pack',
+    price: 20,
+    duration: 'DAILY', // Re-using DAILY for backend compatibility (same price point)
+};
+
 export const SCHOOL_PLANS: SubscriptionPlan[] = [
     { id: 'sch_small', segment: 'SCHOOL', name: 'Small School', price: 10000, duration: 'TERMLY', teacherLimit: 3, studentLimit: 50 },
     { id: 'sch_medium', segment: 'SCHOOL', name: 'Medium School', price: 20000, duration: 'TERMLY', teacherLimit: 10, studentLimit: 100 },

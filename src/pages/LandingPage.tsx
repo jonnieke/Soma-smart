@@ -455,7 +455,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                             </p>
                         </div>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                        <div className="flex flex-wrap justify-center gap-4">
                             {[
                                 {
                                     title: t.efficiency.darasa.title,
@@ -501,7 +501,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                 <motion.div
                                     key={idx}
                                     whileHover={{ y: -8 }}
-                                    className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-xl shadow-slate-100/50 hover:shadow-2xl hover:shadow-blue-100 transition-all flex flex-col justify-between group cursor-pointer"
+                                    className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-xl shadow-slate-100/50 hover:shadow-2xl hover:shadow-blue-100 transition-all flex flex-col justify-between group cursor-pointer w-full sm:w-[calc(50%-1rem)] lg:w-[calc(20%-1rem)] min-w-[200px]"
                                     onClick={() => handleCardClick(card as any)}
                                 >
                                     <div>
@@ -644,7 +644,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                         <p className="text-slate-500 text-lg md:text-xl max-w-2xl mx-auto leading-relaxed">{t.roles.subtitle}</p>
                     </div>
 
-                    <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-8">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                         {/* Learner Card */}
                         <motion.div
                             whileHover={{ y: -10 }}

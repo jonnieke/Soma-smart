@@ -58,6 +58,7 @@ interface AppContextType {
   subscriptionPlan: SubscriptionTier;
   subscriptionExpiry: string | null;
   upgradeAccount: (plan: SubscriptionPlan) => Promise<boolean>;
+  verifySubscription: () => Promise<void>;
   logout: () => Promise<void>;
   userId: string | null;
   isOnline: boolean;
@@ -93,12 +94,14 @@ interface AppContextType {
   refreshProfile: () => Promise<void>;
   downloadUsageCount: number;
   incrementDownloadUsage: () => void;
+  extraDownloads: number;
+  grantExtraDownloads: (amount: number) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 import { supabase } from '../lib/supabase';
-import { checkSubscriptionAccess, updateSubscription } from '../services/subscriptionService';
+import { checkSubscriptionAccess, updateSubscription, verifyAndFixSubscription } from '../services/subscriptionService';
 import { offlineService } from '../services/offlineService';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
 
@@ -151,6 +154,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       return 0;
     }
     return parseInt(saved || '0');
+  });
+  const [extraDownloads, setExtraDownloads] = useState<number>(() => {
+    return parseInt(localStorage.getItem('soma_extra_downloads') || '0');
   });
   const [userId, setUserId] = useState<string | null>(null);
 
@@ -271,12 +277,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setStudentCode("");
     setIsRegistered(false);
     setStudentProfile(null);
+    setTeacherProfile(null);
+    setSchoolProfile(null);
     setTeacherHistory([]);
     setTeacherWallet(null);
+    setIsPro(false);
+    setSubscriptionPlan('FREE');
+    setSubscriptionExpiry(null);
     localStorage.removeItem('soma_active_student');
-    setUserId(null); // Clear ID to stop checks
-    // NOTE: In Phase 2 mock mode, we don't clear tutoring requests on logout 
-    // to allow role switching between Learner and Teacher to see the same queue.
+    setUserId(null);
   };
 
   // Persistence for tutoring available (legacy fallback)
@@ -499,6 +508,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         setIsPro(access.isPro);
         setSubscriptionPlan(access.tier);
         setSubscriptionExpiry(access.expiry);
+      } else {
+        // RESET STATE if no user found (Prevents stale data leak)
+        setIsPro(false);
+        setSubscriptionPlan('FREE');
+        setSubscriptionExpiry(null);
       }
 
     };
@@ -1196,6 +1210,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const savedRevision = parseInt(localStorage.getItem('somo_guest_usage_revision') || '0');
     setUsageCount(saved);
     setRevisionUsageCount(savedRevision);
+
+    // Reset subscription state for guests
+    setIsPro(false);
+    setSubscriptionPlan('FREE');
+    setSubscriptionExpiry(null);
+
     setRole(UserRole.GUEST);
   };
 
@@ -1225,6 +1245,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     } else {
       setRevisionUsageCount(prev => prev + 1);
     }
+  };
+
+  const grantExtraDownloads = (amount: number) => {
+    const newValue = extraDownloads + amount;
+    setExtraDownloads(newValue);
+    localStorage.setItem('soma_extra_downloads', newValue.toString());
   };
 
   const fetchResources = async (grade?: string, subject?: string) => {
@@ -1928,6 +1954,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     return () => clearInterval(interval);
   }, [role, userId]);
 
+  const verifySubscription = async () => {
+    if (!userId) return;
+    await verifyAndFixSubscription(userId);
+    await refreshProfile();
+  };
 
   return (
     <AppContext.Provider value={{
@@ -1949,7 +1980,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       fetchEarnings,
       // Revision
       revisionUsageCount, incrementRevisionUsage,
-      isPro, subscriptionPlan, subscriptionExpiry, upgradeAccount,
+      isPro, subscriptionPlan, subscriptionExpiry, upgradeAccount, verifySubscription,
       userId,
       activeTutoringRequests, createTutoringRequest, acceptTutoringRequest, submitTutoringResponse,
       // Marketplace
@@ -1964,12 +1995,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       fetchAvailableQuizzes,
       resources,
       fetchResources,
+      downloadUsageCount,
+      incrementDownloadUsage,
+      extraDownloads,
+      grantExtraDownloads,
       sessionError,
       resolveSessionConflict,
       setSessionError,
-      refreshProfile,
-      downloadUsageCount,
-      incrementDownloadUsage
+      refreshProfile
     }}>
       {children}
     </AppContext.Provider>

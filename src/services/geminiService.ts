@@ -1405,5 +1405,63 @@ export const generateDarasaRevision = async (imageBase64: string, mimeType: stri
   }
 };
 
+// --- PODCAST FEATURE ---
+
+export const generatePodcastScript = async (content: string, topic: string): Promise<{ title: string, script: Array<{ speaker: 'Host' | 'Guest', text: string }> }> => {
+  const model = genAI.getGenerativeModel({
+    model: MODEL_NAME,
+    generationConfig: {
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: SchemaType.OBJECT,
+        properties: {
+          title: { type: SchemaType.STRING },
+          script: {
+            type: SchemaType.ARRAY,
+            items: {
+              type: SchemaType.OBJECT,
+              properties: {
+                speaker: { type: SchemaType.STRING, enum: ["Host", "Guest"] },
+                text: { type: SchemaType.STRING }
+              },
+              required: ["speaker", "text"]
+            }
+          }
+        },
+        required: ["title", "script"]
+      }
+    }
+  });
+
+  const prompt = `
+    You are the producer of a popular educational podcast called "Somo Smart Audio".
+    Your task is to convert the following educational content into a lively, engaging 2-minute podcast script between two hosts:
+    - **Host (Rachel)**: Enthusiastic, introduces the topic, asks guiding questions, and summarizes key points.
+    - **Guest (Expert)**: Knowledgeable but accessible, explains complex ideas with analogies and examples.
+
+    **Content to cover:**
+    Topic: "${topic}"
+    Material:
+    "${content.slice(0, 15000).replace(/"/g, "'")}"
+
+    **Rules:**
+    1. Start with a catchy intro (e.g., "Welcome back to Somo Smart Audio...").
+    2. Make it sound like a real conversation (use "Exactly!", "That's a great point", "Wait, so you mean...").
+    3. Keep explanations simple and use analogies.
+    4. End with a quick takeaway or study tip.
+    5. The script should be roughly 2 minutes long when spoken.
+  `;
+
+  try {
+    const result = await model.generateContent(prompt);
+    const text = result.response.text();
+    if (!text) throw new Error("No response from AI");
+    return JSON.parse(text);
+  } catch (error) {
+    console.error("Error generating podcast script:", error);
+    throw error;
+  }
+};
+
 // Backward compatibility for cached files
 export const askSoma = askSomo;

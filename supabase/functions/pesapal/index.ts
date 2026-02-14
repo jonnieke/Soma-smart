@@ -77,7 +77,18 @@ serve(async (req) => {
                 if (tx) {
                     // Parse Plan from reference (Format: SUB_DURATION_USERID_TIMESTAMP)
                     const parts = merchant_reference.split('_')
-                    const duration = parts[1] || 'MONTHLY'
+                    let duration = parts[1]
+
+                    // ROBUST FALLBACK: Infer Duration from Amount (Source of Truth)
+                    // This prevents "Default to Monthly" errors if reference parsing fails
+                    if (tx.amount === 20) duration = 'DAILY'
+                    else if (tx.amount === 100) duration = 'WEEKLY'
+                    else if (tx.amount === 300 || tx.amount === 600) duration = 'MONTHLY'
+                    else if (tx.amount === 700 || tx.amount === 1600) duration = 'TERMLY'
+                    else if (tx.amount === 2000 || tx.amount === 5000) duration = 'ANNUAL'
+
+                    // Final safety fallback
+                    if (!duration) duration = 'MONTHLY'
 
                     const now = new Date()
                     let expiryDate = new Date(now)

@@ -23,7 +23,7 @@ export enum ViewState {
   PROFILE = 'PROFILE'
 }
 
-export type SubscriptionTier = 'FREE' | 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'TERMLY' | 'ANNUAL';
+export type SubscriptionTier = 'FREE' | 'PRO' | 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'TERMLY' | 'ANNUAL';
 export type UserSegment = 'STUDENT' | 'TEACHER' | 'SCHOOL';
 
 export interface ExplanationResult {
@@ -288,4 +288,15 @@ export interface MaterialListing {
   fileUrl: string;
   previewUrl?: string;
   createdAt: string;
+}
+
+// Podcast Types
+export interface PodcastSegment {
+  speaker: 'Host' | 'Guest';
+  text: string;
+}
+
+export interface PodcastScript {
+  title: string;
+  script: PodcastSegment[];
 }

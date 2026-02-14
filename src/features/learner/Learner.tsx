@@ -5,13 +5,13 @@ import {
   Sparkles, Home, X, XCircle, Camera, ScanLine, Mic, Upload, Clock,
   CheckCircle, Play, Pause, ChevronRight, Star, BookOpen, Brain, Lightbulb, Lock, Volume2, CreditCard,
   ArrowRight, UserCircle, Download, ImageIcon, Trash2, AlertTriangle, LogOut, Users, DollarSign, FileText, ShoppingBag, Library, Layers,
-  Calculator, FlaskConical, Globe, Languages
+  Calculator, FlaskConical, Globe, Languages, Loader2, Headphones
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
-import { ExplanationResult, QuizData, ViewState, SubscriptionPlan, LearnerProfile, LearnerActivity, UserRole } from '../../types';
+import { ExplanationResult, QuizData, ViewState, SubscriptionPlan, LearnerProfile, LearnerActivity, UserRole, PodcastScript } from '../../types';
 import { PricingPage } from '../subscription/PricingPage';
 import { PaymentFlow } from '../subscription/PaymentFlow';
-import { STUDENT_PLANS } from '../../data/pricing';
+import { STUDENT_PLANS, TEACHER_PLANS, DOWNLOAD_PASS } from '../../data/pricing';
 import { RegistrationModal } from '../../components/RegistrationModal'; // Assuming path
 import { LoginModal } from '../../components/LoginModal'; // Assuming path
 import { LogoutModal } from '../../components/LogoutModal';
@@ -19,8 +19,9 @@ import { MarkdownText, Button, Card } from '../../components/Shared';
 import {
   fileToGenerativePart, explainImage, explainAudio, explainTopic,
   generateQuickQuiz, generateQuiz, generateSpeech, stopSpeech, generateLessonRecap, continueResearch,
-  summarizeDocument, generateRichLessonNotes
+  summarizeDocument, generateRichLessonNotes, generatePodcastScript
 } from '../../services/geminiService';
+import { speak, stopSpeech as stopSpeechElevenLabs, playPodcast, cancelPodcast } from '../../services/elevenLabsService';
 import confetti from 'canvas-confetti';
 import {
   calculateTotalXP, calculateLevel,
@@ -47,11 +48,20 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
     logout, isPro, subscriptionPlan, subscriptionExpiry, isOnline, role, language,
     createTutoringRequest, activeTutoringRequests, isAvailableForTutoring,
     marketplaceMaterials, purchasedMaterialIds, purchaseMaterial,
-    resources, fetchResources
+    resources, fetchResources,
+    extraDownloads, grantExtraDownloads,
+    verifySubscription
   } = useApp();
   const t = translations[language];
   const location = useLocation();
 
+  // Find active plan details
+  const activePlanDetails = React.useMemo(() => {
+    if (!isPro) return null;
+    const plans = role === UserRole.TEACHER ? TEACHER_PLANS : STUDENT_PLANS;
+    // @ts-ignore - Handle 'PRO' legacy tier or fuzzy matching
+    return plans.find(p => p.duration === subscriptionPlan) || (subscriptionPlan === 'PRO' ? plans.find(p => p.duration === 'MONTHLY') : null);
+  }, [isPro, role, subscriptionPlan]);
 
   // --- GAMIFICATION ENGINE ---
   const totalXP = React.useMemo(() => calculateTotalXP(history), [history]);
@@ -84,15 +94,32 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
     if (!isRegistered && role === UserRole.NONE) {
       navigate('/');
     }
-  }, [isRegistered, role, navigate]);
 
-  const [mode, setMode] = useState<'MENU' | 'SCAN' | 'RESULT' | 'QUIZ' | 'RECAP_RESULT' | 'PROFILE' | 'PRICING' | 'PAYMENT' | 'MARKETPLACE' | 'LIBRARY' | 'HISTORY' | 'SCAN_EXPLAIN' | 'STUDY'>('MARKETPLACE');
+    // Payment Success for Download Pass
+    const buyingPass = localStorage.getItem('soma_buying_pass');
+    const params = new URLSearchParams(location.search);
+    if (buyingPass === 'true' && params.get('payment_status') === 'COMPLETED') {
+      grantExtraDownloads(5);
+      localStorage.removeItem('soma_buying_pass');
+      // Clean URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+      alert("Success! 5 Extra Downloads Unlocked. 🚀");
+    }
+  }, [isRegistered, role, navigate, location]);
+
+  const [mode, setMode] = useState<'MENU' | 'SCAN' | 'RESULT' | 'QUIZ' | 'RECAP_RESULT' | 'PROFILE' | 'PRICING' | 'PAYMENT' | 'MARKETPLACE' | 'LIBRARY' | 'HISTORY' | 'SCAN_EXPLAIN' | 'STUDY'>('MENU');
   const [recapData, setRecapData] = useState<any>(null); // Store LessonRecap
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<{ title: string, message: string } | null>(null);
   const [loadingText, setLoadingText] = useState("Processing...");
   const [audioData, setAudioData] = useState<{ base64: string, mimeType: string } | null>(null);
+
+  // Podcast State
+  const [podcastScript, setPodcastScript] = useState<PodcastScript | null>(null);
+  const [isPodcastPlaying, setIsPodcastPlaying] = useState(false);
+  const [currentSegmentIndex, setCurrentSegmentIndex] = useState(-1);
+  const [podcastLoading, setPodcastLoading] = useState(false);
 
   const [showDownloadPayment, setShowDownloadPayment] = useState(false);
   const [pendingDownloadMaterial, setPendingDownloadMaterial] = useState<any>(null);
@@ -390,8 +417,9 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
       return;
     }
 
-    // 2. Daily Limit Check (5 downloads)
-    if (downloadUsageCount >= 5 && !bypassLimit) {
+    // 2. Daily Limit Check (5 + extra)
+    const effectiveLimit = 5 + extraDownloads;
+    if (downloadUsageCount >= effectiveLimit && !bypassLimit) {
       setPendingDownloadMaterial(material);
       setShowDownloadPayment(true);
       return;
@@ -402,7 +430,14 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
     setLoadingText("Preparing Rich Lesson Notes...");
 
     try {
-      const result = await generateRichLessonNotes(material.title, (material.realId || material.id).toString(), language, material.subject, material.grade);
+      // FIX: Detect grade from title as metadata might be unreliable (e.g. defaulting to Grade 1)
+      const detectGrade = (title: string, fallback: string) => {
+        const match = title.match(/Grade\s*(\d+)/i);
+        return match ? `Grade ${match[1]}` : fallback;
+      };
+      const effectiveGrade = detectGrade(material.title, material.grade);
+
+      const result = await generateRichLessonNotes(material.title, (material.realId || material.id).toString(), language, material.subject, effectiveGrade);
 
       // ... jspdf logic ...
       const doc = new jsPDF();
@@ -443,7 +478,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
       doc.setFontSize(10);
       doc.setFont("helvetica", "normal");
       doc.setTextColor(100, 116, 139); // Slate-500
-      doc.text(`Subject: ${material.subject} | Grade: ${material.grade} | Teacher: ${material.isVerified ? "Somo AI Specialist" : material.teacherName}`, margin, yPos);
+      doc.text(`Subject: ${material.subject} | Grade: ${effectiveGrade} | Teacher: ${material.isVerified ? "Somo AI Specialist" : material.teacherName}`, margin, yPos);
 
       yPos += 8;
       doc.setDrawColor(226, 232, 240); // Slate-200
@@ -557,6 +592,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
     const userMsg = { role: 'user' as const, text: query || (pendingMedia?.type === 'AUDIO' ? "Voice Message 🎤" : "Image Attachment 🖼️") };
     setStudyChat(prev => [...prev, userMsg]);
     setPromptText("");
+    setPendingMedia(null);
     setLoading(true);
     setLoadingText("Somo is thinking...");
 
@@ -674,6 +710,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
       if (mediaRecorderRef.current?.stream) {
         mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
       }
+      cancelPodcast(); // Stop any playing podcast
     };
   }, []);
 
@@ -710,9 +747,9 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
     // Pro = Unlimited Checks
     if (isPro) return true;
 
-    // Guest Mode Limit (Max 5)
+    // Guest Mode Limit (Max 3)
     if (role === UserRole.GUEST) {
-      if (usageCount >= 5) {
+      if (usageCount >= 3) {
         setShowLogin(true); // Force login
         return false;
       }
@@ -720,7 +757,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
       return true;
     }
 
-    if (!isRegistered && usageCount >= 5) {
+    if (!isRegistered && usageCount >= 3) {
       setShowRegistration(true);
       return false;
     }
@@ -745,6 +782,8 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
       setExplanation(result);
       setStickyQuizTaken(false); // Reset sticky quiz status for new content
       setStickyQuizData(null); // Clear prefetched quiz
+      setPodcastScript(null); // Clear podcast script
+      setIsPodcastPlaying(false); // Stop podcast
       setMode('RESULT');
       saveActivity({
         id: Date.now().toString(),
@@ -908,6 +947,8 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
         setExplanation(result);
         setStickyQuizTaken(false); // Reset sticky quiz
         setStickyQuizData(null); // Clear prefetched quiz
+        setPodcastScript(null); // Clear podcast script
+        setIsPodcastPlaying(false); // Stop podcast
         setMode('RESULT');
         saveActivity({
           id: Date.now().toString(),
@@ -964,6 +1005,8 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
         setLevel(newLevel);
         setStickyQuizTaken(false); // Reset since content changed/refreshed
         setStickyQuizData(null);
+        setPodcastScript(null); // Clear podcast script
+        setIsPodcastPlaying(false); // Stop podcast
         setMode('RESULT');
 
         // Trigger background quiz generation
@@ -1005,6 +1048,8 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
       setExplanation(result);
       setStickyQuizTaken(false); // Reset sticky quiz
       setStickyQuizData(null);
+      setPodcastScript(null); // Clear podcast script
+      setIsPodcastPlaying(false); // Stop podcast
       setMode('RESULT');
       saveActivity({
         id: Date.now().toString(),
@@ -1085,6 +1130,8 @@ ${explanation.explanation}
 
           setStickyQuizTaken(true); // Treat restored history as "done" so we don't nag them again immediately
           setStickyQuizData(null);
+          setPodcastScript(null); // Clear podcast script
+          setIsPodcastPlaying(false); // Stop podcast
           setMode('RESULT');
         }
       } catch (e) {
@@ -1150,8 +1197,41 @@ ${explanation.explanation}
     }
   };
 
+  const handlePodcastToggle = async () => {
+    if (isPodcastPlaying) {
+      cancelPodcast();
+      setIsPodcastPlaying(false);
+      return;
+    }
+
+    if (podcastScript) {
+      // Resume or Restart? For now, restart.
+      setIsPodcastPlaying(true);
+      playPodcast(podcastScript.script, (idx) => setCurrentSegmentIndex(idx), () => setIsPodcastPlaying(false));
+      return;
+    }
+
+    // Generate New
+    if (!explanation) return;
+    try {
+      setPodcastLoading(true);
+      const script = await generatePodcastScript(explanation.explanation, explanation.topic);
+      setPodcastScript(script);
+      setPodcastLoading(false);
+      setIsPodcastPlaying(true);
+
+      playPodcast(script.script, (idx) => setCurrentSegmentIndex(idx), () => setIsPodcastPlaying(false));
+
+    } catch (e) {
+      console.error(e);
+      setPodcastLoading(false);
+      setError({ title: "Podcast Error", message: "Failed to generate audio overview." });
+    }
+  };
+
   // Remove unused playBuffer helper
-  const playBuffer = () => { };
+  // eslint-disable-next-line @typescript-eslint/no-empty-function
+  const playBuffer = () => { /* No-op */ };
 
   // --- VIEWS ---
   const renderMode = () => {
@@ -1307,46 +1387,77 @@ ${explanation.explanation}
         <div className="min-h-screen bg-slate-50 flex flex-col font-sans text-slate-800 max-w-4xl mx-auto shadow-2xl border-x border-slate-100 relative overflow-hidden">
 
           {/* --- TOP BAR --- */}
-          <div className="flex justify-between items-center px-6 py-4 relative z-20">
-            <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pr-4">
-              <button onClick={() => setMode('HISTORY' as any)} className="flex items-center gap-2 px-3 py-2 hover:bg-slate-200 rounded-full transition-colors text-slate-500 hover:text-slate-800 shrink-0" title="View History">
-                <Clock className="w-5 h-5" />
-                <span className="text-sm font-bold border-r border-slate-300 pr-2">History</span>
-              </button>
-              <button onClick={() => setMode('MARKETPLACE')} className="flex items-center gap-2 px-3 py-2 bg-indigo-50 hover:bg-indigo-100 rounded-full transition-colors text-indigo-600 shrink-0" title="Unlock Materials">
-                <ShoppingBag className="w-5 h-5" />
-                <span className="text-sm font-bold">Study Materials</span>
-              </button>
-              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest shrink-0 ml-2">{isOnline ? 'Online' : 'Offline'}</span>
+          <div className="flex justify-between items-center px-6 py-4 relative z-20 bg-white/50 backdrop-blur-md sticky top-0 border-b border-slate-100">
+            <div className="flex items-center gap-6">
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-blue-600 fill-blue-600" />
+                <span className="font-black text-slate-900 tracking-tighter text-xl">Somo</span>
+              </div>
+              <nav className="hidden md:flex items-center gap-2">
+                <button onClick={() => setMode('HISTORY' as any)} className="flex items-center gap-2 px-4 py-2 hover:bg-slate-100 rounded-xl transition-all text-slate-500 hover:text-slate-900 font-bold text-sm">
+                  <Clock className="w-4 h-4" />
+                  History
+                </button>
+                <button onClick={() => setMode('MARKETPLACE')} className="flex items-center gap-2 px-4 py-2 hover:bg-slate-100 rounded-xl transition-all text-slate-500 hover:text-slate-900 font-bold text-sm">
+                  <ShoppingBag className="w-4 h-4" />
+                  Library
+                </button>
+              </nav>
             </div>
 
-            <div className="flex items-center gap-2">
-              <div className="text-right hidden sm:block">
-                <p className="text-xs font-bold text-slate-900">{totalXP} XP</p>
-                <p className="text-[10px] text-slate-400 font-bold uppercase">Level {levelInfo.level}</p>
+            <div className="flex items-center gap-3">
+              <div
+                onClick={() => setMode('PROFILE')}
+                className="flex items-center gap-3 pl-2 pr-4 py-1.5 bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-blue-200 transition-all cursor-pointer group"
+              >
+                <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center text-white font-black shadow-lg shadow-blue-100 group-hover:scale-105 transition-transform">
+                  {profile?.name.charAt(0) || 'L'}
+                </div>
+                <div className="hidden sm:block">
+                  <div className="flex items-center gap-1.5">
+                    <p className="text-sm font-black text-slate-900 leading-none">{profile?.name || 'Learner'}</p>
+                    {isPro && (
+                      <span className="bg-amber-400 text-amber-900 text-[8px] font-black px-1.5 py-0.5 rounded-md uppercase tracking-widest shadow-sm">
+                        PRO
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Level {levelInfo.level} • {totalXP} XP</p>
+                </div>
               </div>
-              <button onClick={() => setMode('PROFILE')} className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 font-bold border-2 border-white shadow-sm hover:scale-105 transition-transform">
-                <UserCircle className="w-6 h-6" />
-              </button>
             </div>
           </div>
 
           {/* --- MAIN CENTER CONTENT --- */}
-          <div className="flex-1 flex flex-col items-center justify-center -mt-20 px-6 relative z-10">
+          <div className="flex-1 flex flex-col items-center justify-center -mt-10 px-6 relative z-10 pb-20">
 
-            {/* Logo/Greeting */}
+            {/* Premium Greeting Section */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="text-center mb-8"
+              className="text-center mb-10 w-full max-w-2xl"
             >
-              <div className="w-20 h-20 bg-white rounded-3xl mx-auto mb-4 flex items-center justify-center shadow-xl shadow-blue-100 border border-blue-50">
-                <Sparkles className="w-10 h-10 text-blue-500 fill-blue-500 animate-pulse" />
+              <div className="inline-flex items-center gap-2 px-3 py-1 bg-white border border-slate-100 rounded-full shadow-sm mb-6 animate-in slide-in-from-top duration-500">
+                <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+                <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                  {isPro ? `${activePlanDetails?.name || subscriptionPlan} PLAN ACTIVE` : 'Somo Basic Enabled'}
+                </span>
+                {isPro && subscriptionExpiry && (
+                  <>
+                    <span className="text-slate-200">|</span>
+                    <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest">
+                      Valid until {new Date(subscriptionExpiry).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                    </span>
+                  </>
+                )}
               </div>
-              <h1 className="text-3xl md:text-4xl font-black text-slate-900 tracking-tight mb-2">
-                {greeting} <span className="text-slate-300 font-normal">|</span> Somo Smart
+
+              <h1 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tight mb-4 leading-tight">
+                {greeting} <span className="text-blue-600">!</span>
               </h1>
-              <p className="text-blue-900 font-bold text-lg">What do you want to learn today?</p>
+              <p className="text-slate-500 font-medium text-lg max-w-md mx-auto">
+                Ready to master your studies, or should we pick up where you left off?
+              </p>
             </motion.div>
 
 
@@ -1480,9 +1591,10 @@ ${explanation.explanation}
               <div className="bg-white rounded-[2rem] p-6 shadow-xl border-b-4 border-slate-100 relative overflow-hidden hover:scale-[1.01] transition-transform active:scale-[0.99] hover:shadow-2xl hover:shadow-orange-500/10">
                 <div className="absolute top-0 right-0 p-8 w-64 h-64 bg-gradient-to-br from-orange-100 to-amber-50 rounded-full blur-3xl opacity-50 -translate-y-1/2 translate-x-1/2" />
 
-                <div className="relative flex items-center justify-between">
+                <div className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <div>
                     <div className="flex items-center gap-2 mb-2">
+                      {/* ... */}
                       <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-[10px] font-black uppercase tracking-wider">
                         <span className="animate-pulse">🔥</span> {streak} Day Streak
                       </span>
@@ -1494,7 +1606,7 @@ ${explanation.explanation}
                     <p className="text-slate-500 font-bold">New: {dailyChallenge.quiz}</p>
                   </div>
 
-                  <button className="bg-slate-900 text-white px-6 py-3 rounded-xl font-bold text-sm shadow-lg shadow-slate-200 hover:bg-slate-800 transition-colors flex items-center gap-2">
+                  <button className="w-full sm:w-auto bg-slate-900 text-white px-6 py-3 rounded-xl font-bold text-sm shadow-lg shadow-slate-200 hover:bg-slate-800 transition-colors flex items-center justify-center gap-2">
                     Start Now <ArrowRight className="w-4 h-4" />
                   </button>
                 </div>
@@ -1591,6 +1703,25 @@ ${explanation.explanation}
     }
 
     if (mode === 'PROFILE') {
+      // PRO GUARD: If no student profile is active, redirect to menu or show login prompt
+      if (!isRegistered && role !== UserRole.LEARNER && role !== UserRole.REVISION) {
+        return (
+          <div className="flex flex-col items-center justify-center min-h-[60vh] p-6 text-center">
+            <div className="w-20 h-20 bg-slate-100 rounded-3xl flex items-center justify-center mb-6">
+              <Lock className="w-10 h-10 text-slate-400" />
+            </div>
+            <h2 className="text-2xl font-black text-slate-900 mb-2">Login Required</h2>
+            <p className="text-slate-500 mb-8 max-w-xs">Please log in or register as a student to view and manage your profile settings.</p>
+            <Button
+              onClick={() => navigate('/')}
+              className="bg-blue-600 hover:bg-blue-700 text-white rounded-2xl px-12"
+            >
+              Go to Home
+            </Button>
+          </div>
+        );
+      }
+
       return (
         <div className="bg-slate-50 min-h-screen pb-20 max-w-4xl mx-auto shadow-2xl border-x border-slate-100">
           {/* Sticky Header */}
@@ -1623,21 +1754,139 @@ ${explanation.explanation}
 
               <Card className="p-6 space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Full Name</label>
-                    <p className="text-lg font-bold text-slate-800">{studentProfile?.name || '---'}</p>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Full Name</label>
+                      <input
+                        id="studentName"
+                        type="text"
+                        defaultValue={studentProfile?.name || ''}
+                        className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl px-4 py-2.5 font-bold text-slate-800 focus:border-blue-500 outline-none transition-all"
+                        onChange={() => {
+                          const btn = document.getElementById('save-profile-btn');
+                          if (btn) btn.style.display = 'block';
+                        }}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Grade Level</label>
+                      <select
+                        id="studentGrade"
+                        defaultValue={studentProfile?.grade || ''}
+                        className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl px-4 py-2.5 font-bold text-slate-800 focus:border-blue-500 outline-none transition-all appearance-none"
+                        onChange={() => {
+                          const btn = document.getElementById('save-profile-btn');
+                          if (btn) btn.style.display = 'block';
+                        }}
+                      >
+                        <option value="">Select Grade</option>
+                        <option value="Grade 4">Grade 4</option>
+                        <option value="Grade 5">Grade 5</option>
+                        <option value="Grade 6">Grade 6</option>
+                        <option value="Grade 7">Grade 7</option>
+                        <option value="Grade 8">Grade 8</option>
+                        <option value="Form 1">Form 1</option>
+                        <option value="Form 2">Form 2</option>
+                        <option value="Form 3">Form 3</option>
+                        <option value="Form 4">Form 4</option>
+                      </select>
+                    </div>
                   </div>
-                  <div>
-                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Student ID</label>
-                    <p className="text-lg font-bold text-blue-600 font-mono tracking-wider">{studentCode || '---'}</p>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Student ID</label>
+                      <p className="text-lg font-bold text-blue-600 font-mono tracking-wider bg-blue-50 px-4 py-2 rounded-xl border border-blue-100">{studentCode || '---'}</p>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Account Email</label>
+                      <p className="text-sm font-medium text-slate-500 truncate bg-slate-50 px-4 py-2 rounded-xl border border-slate-100">{studentProfile?.email || 'No email set'}</p>
+                    </div>
                   </div>
-                  <div>
-                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Grade Level</label>
-                    <p className="text-lg font-bold text-slate-800">{studentProfile?.grade || '---'}</p>
+                </div>
+              </Card>
+            </section>
+
+            {/* Subscription Verification */}
+            <section>
+              <Card className="p-4 border-indigo-100 bg-indigo-50/30">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="bg-indigo-100 p-2 rounded-full"><CreditCard className="w-5 h-5 text-indigo-600" /></div>
+                    <div>
+                      <p className="text-sm font-bold text-slate-900">Missing a Purchase?</p>
+                      <p className="text-[10px] text-slate-500">Restore your subscription if it's not showing.</p>
+                    </div>
                   </div>
-                  <div>
-                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Account Email</label>
-                    <p className="text-sm font-medium text-slate-500 truncate">{studentProfile?.email || 'No email set'}</p>
+                  <Button
+                    variant="ghost"
+                    className="text-indigo-600 hover:bg-indigo-100 font-bold text-xs"
+                    onClick={async () => {
+                      if (confirm("Check for missing payments? This will scan your transaction history.")) {
+                        setLoading(true);
+                        setLoadingText("Verifying Transactions...");
+                        await verifySubscription();
+                        setLoading(false);
+                        alert("Verification Complete. If a valid payment was found, your subscription has been restored.");
+                      }
+                    }}
+                  >
+                    Restore
+                  </Button>
+                </div>
+              </Card>
+            </section>
+
+            {/* Subscription Snapshot */}
+            <section>
+              <div className="flex items-center gap-4 mb-4">
+                <div className="w-12 h-12 bg-amber-100 rounded-2xl flex items-center justify-center">
+                  <CreditCard className="w-7 h-7 text-amber-600" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-bold text-slate-800">Subscription Status</h2>
+                  <p className="text-xs text-slate-400 font-medium">Manage your plan and billing</p>
+                </div>
+              </div>
+
+              <Card className="p-6">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                  <div className="flex items-center gap-4">
+                    <div className="w-14 h-14 bg-amber-50 rounded-2xl flex items-center justify-center border border-amber-100">
+                      <Star className={`w-8 h-8 ${isPro ? 'text-amber-500 fill-amber-500' : 'text-slate-300'}`} />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-sm font-black text-slate-900 uppercase">
+                          {activePlanDetails?.name || subscriptionPlan || 'Somo Basic'}
+                        </span>
+                        {isPro && (
+                          <span className="bg-emerald-100 text-emerald-700 text-[8px] font-black px-1.5 py-0.5 rounded uppercase tracking-widest">
+                            Active Plan
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">
+                        {isPro && subscriptionExpiry
+                          ? `Valid until ${new Date(subscriptionExpiry).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}`
+                          : 'Free Access • 3 Queries/Day'}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-4 border-t md:border-t-0 md:border-l border-slate-100 pt-4 md:pt-0 md:pl-6">
+                    <div className="text-right">
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Paid</p>
+                      <p className="text-lg font-black text-slate-900">
+                        {isPro && activePlanDetails ? `${activePlanDetails.price} KES` : '0 KES'}
+                      </p>
+                    </div>
+                    <Button
+                      variant="outline"
+                      className="rounded-xl border-blue-200 text-blue-600 hover:bg-blue-50 font-black text-[10px] uppercase tracking-widest px-6 ml-2"
+                      onClick={() => setMode('PRICING')}
+                    >
+                      {isPro ? 'Upgrade Plan' : 'Get Pro Now'}
+                    </Button>
                   </div>
                 </div>
               </Card>
@@ -1667,7 +1916,6 @@ ${explanation.explanation}
                         placeholder="e.g. 0712345678"
                         className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl px-5 py-3.5 text-lg font-bold text-slate-800 focus:border-purple-500 focus:ring-0 transition-all outline-none"
                         onChange={(e) => {
-                          const val = e.target.value;
                           const btn = document.getElementById('save-profile-btn');
                           if (btn) btn.style.display = 'block';
                         }}
@@ -1683,15 +1931,23 @@ ${explanation.explanation}
                       fullWidth
                       className="bg-purple-600 hover:bg-purple-700 text-white shadow-lg shadow-purple-200"
                       onClick={async () => {
-                        const input = document.getElementById('parentPhone') as HTMLInputElement;
+                        const nameInput = document.getElementById('studentName') as HTMLInputElement;
+                        const gradeInput = document.getElementById('studentGrade') as HTMLSelectElement;
+                        const phoneInput = document.getElementById('parentPhone') as HTMLInputElement;
+
                         setLoading(true);
                         setLoadingText("Saving profile...");
-                        const { success, message } = await updateStudentProfile({ parentPhone: input.value });
+                        const { success, message } = await updateStudentProfile({
+                          name: nameInput.value,
+                          grade: gradeInput.value,
+                          parentPhone: phoneInput.value
+                        });
                         setLoading(false);
+
                         if (success) {
                           const btn = document.getElementById('save-profile-btn');
                           if (btn) btn.style.display = 'none';
-                          // Optional: Toast success
+                          // Show a success state or just rely on the UI updating
                         } else {
                           alert(message || "Failed to save profile");
                         }
@@ -1704,47 +1960,6 @@ ${explanation.explanation}
               </Card>
             </section>
 
-            {/* Subscription Status */}
-            <section>
-              <div className="flex items-center gap-4 mb-4">
-                <div className="w-12 h-12 bg-amber-100 rounded-2xl flex items-center justify-center">
-                  <CreditCard className="w-7 h-7 text-amber-600" />
-                </div>
-                <h2 className="text-lg font-bold text-slate-800">Subscription Status</h2>
-              </div>
-
-              <Card className={`p-6 border-2 ${isPro ? 'border-amber-200 bg-gradient-to-br from-white to-amber-50/30' : 'border-slate-100'}`}>
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-                  <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className={`px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-widest ${isPro ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-500'}`}>
-                        {subscriptionPlan === 'FREE' ? 'Free Tier' : `${subscriptionPlan} Plan`}
-                      </span>
-                      {isPro && <span className="bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full text-[10px] font-bold">Active</span>}
-                    </div>
-                    <h3 className="text-2xl font-black text-slate-900 mb-1">
-                      {isPro ? 'Somo Smart Pro' : 'Limited Access'}
-                    </h3>
-                    {isPro && subscriptionExpiry && (
-                      <p className="text-xs text-slate-500 font-medium">Valid until {new Date(subscriptionExpiry).toLocaleDateString()}</p>
-                    )}
-                    {!isPro && (
-                      <p className="text-xs text-slate-500 font-medium">Scans remaining today: <span className="text-blue-600 font-bold">{5 - usageCount}</span></p>
-                    )}
-                  </div>
-
-                  <div className="shrink-0">
-                    <Button
-                      variant={isPro ? 'outline' : 'primary'}
-                      onClick={() => setMode('PRICING' as any)}
-                      className={!isPro ? 'bg-amber-500 hover:bg-amber-600 text-white border-0 px-8 py-3' : ''}
-                    >
-                      {isPro ? 'Extend Plan' : 'Go Pro Now'}
-                    </Button>
-                  </div>
-                </div>
-              </Card>
-            </section>
           </div>
 
           {/* Global Bottom Nav */}
@@ -1771,7 +1986,7 @@ ${explanation.explanation}
               <span className="text-[10px] font-black uppercase tracking-tighter">Me</span>
             </button>
           </div>
-        </div>
+        </div >
       );
     }
 
@@ -2010,20 +2225,26 @@ ${explanation.explanation}
       return (
         <div className="bg-slate-50 min-h-screen pb-32 max-w-4xl mx-auto shadow-2xl border-x border-slate-100">
           {/* Sticky Glass Header */}
-          <motion.div
-            initial={{ y: -20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-slate-200 px-4 py-3 flex items-center gap-3"
-          >
-            <button onClick={handleExitResult} className="flex items-center gap-2 px-3 py-1.5 hover:bg-slate-100 rounded-xl transition-all group">
+          <div className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-slate-200 px-4 py-3 flex items-center gap-3">
+            <button onClick={() => { cancelPodcast(); handleExitResult(); }} className="flex items-center gap-2 px-3 py-1.5 hover:bg-slate-100 rounded-xl transition-all group">
               <ArrowRight className="w-5 h-5 text-slate-500 rotate-180 group-hover:text-blue-600" />
               <span className="text-xs font-bold text-slate-500 group-hover:text-blue-600">Dashboard</span>
             </button>
             <h1 className="font-bold text-lg text-slate-900 truncate flex-1">{explanation.topic}</h1>
+
+            <button
+              onClick={handlePodcastToggle}
+              disabled={podcastLoading}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-full transition-all ${isPodcastPlaying ? 'bg-indigo-100 text-indigo-700' : 'bg-slate-100 text-slate-600 hover:bg-indigo-50 hover:text-indigo-600'}`}
+            >
+              {podcastLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : (isPodcastPlaying ? <Volume2 className="w-4 h-4 animate-pulse" /> : <Headphones className="w-4 h-4" />)}
+              <span className="text-xs font-bold hidden sm:inline">{isPodcastPlaying ? "Playing..." : "Audio Overview"}</span>
+            </button>
+
             <button onClick={handleDownload} className="p-2 text-blue-600 hover:bg-blue-50 rounded-full transition-colors">
               <Download className="w-5 h-5" />
             </button>
-          </motion.div>
+          </div>
 
           <div className="p-4 space-y-6 max-w-2xl mx-auto">
 
@@ -2055,6 +2276,31 @@ ${explanation.explanation}
                 )}
               </motion.div>
             )}
+
+            {/* Podcast Player Overlay */}
+            <AnimatePresence>
+              {isPodcastPlaying && podcastScript && (
+                <motion.div
+                  initial={{ y: 100, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  exit={{ y: 100, opacity: 0 }}
+                  className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-slate-900/90 backdrop-blur-xl p-4 rounded-3xl shadow-2xl flex items-center gap-4 w-[90%] max-w-md z-50 border border-slate-700/50"
+                >
+                  <div className="w-12 h-12 bg-indigo-500 rounded-full flex items-center justify-center shrink-0">
+                    <Volume2 className="w-6 h-6 text-white animate-pulse" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-bold text-indigo-300 uppercase tracking-wider mb-0.5">Somo Smart Audio</p>
+                    <p className="text-white font-bold truncate text-sm">
+                      {currentSegmentIndex >= 0 ? `${podcastScript.script[currentSegmentIndex].speaker}: ${podcastScript.script[currentSegmentIndex].text}` : "Starting..."}
+                    </p>
+                  </div>
+                  <button onClick={handlePodcastToggle} className="p-2 bg-white/10 rounded-full hover:bg-white/20 text-white transition-colors">
+                    <Pause className="w-5 h-5" />
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             {/* Level Switcher */}
             <div className="flex bg-white p-1.5 rounded-xl shadow-sm border border-slate-200">
@@ -2503,12 +2749,12 @@ ${explanation.explanation}
 
                     <div className="mt-8 mx-auto max-w-sm p-4 bg-slate-50 rounded-2xl border border-slate-100 text-[8px] font-mono text-left space-y-2 overflow-auto max-h-60">
                       <p className="font-black text-slate-500 uppercase">Debug Visibility Dump:</p>
-                      <p>Student Grade (Normalized): "{normalizeGrade(studentProfile?.grade || "NONE")}"</p>
-                      <p>Total Materials in Memory: {unifiedMaterials.length}</p>
-                      <p>Total Grade Match: {gradeFilteredMaterials.length}</p>
+                      <p className="text-slate-500">Student Grade (Normalized): "{normalizeGrade(studentProfile?.grade || "NONE")}"</p>
+                      <p className="text-slate-500">Total Materials in Memory: {unifiedMaterials.length}</p>
+                      <p className="text-slate-500">Total Grade Match: {gradeFilteredMaterials.length}</p>
 
                       <div className="pt-2 border-t border-slate-200">
-                        <p className="font-bold mb-1">Raw Material Sample (First 5):</p>
+                        <p className="font-bold mb-1 text-slate-500">Raw Material Sample (First 5):</p>
                         {unifiedMaterials.slice(0, 5).map((m, i) => (
                           <div key={i} className="mb-1 p-1 bg-white rounded border border-slate-100">
                             ID: {m.id} | Grade: "{m.grade}" (Norm: "{normalizeGrade(m.grade)}") | Sub: {m.subject}

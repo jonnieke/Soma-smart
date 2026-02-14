@@ -36,10 +36,8 @@ export const PricingPage: React.FC = () => {
         // Instant Smooth Redirect
         setTimeout(() => {
             const dashboard = role === 'TEACHER' ? '/teacher' : (role === 'SCHOOL' ? '/school' : '/learner');
-            navigate(dashboard, {
-                replace: true,
-                state: { materialId }
-            });
+            // Ensure we break out of any iframes (like the Pesapal one)
+            window.top!.location.href = window.location.origin + dashboard;
         }, 1500);
     };
 
