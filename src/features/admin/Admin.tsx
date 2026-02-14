@@ -37,11 +37,21 @@ export const AdminDashboard: React.FC<AdminProps> = ({ onNavigate }) => {
                         className="w-full bg-slate-900 border border-slate-600 rounded-xl p-4 text-white text-center text-lg font-mono mb-4 focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
                         value={pass}
                         onChange={(e) => setPass(e.target.value)}
-                        onKeyDown={(e) => e.key === 'Enter' && (pass === "Somo_Smart @2025" ? setUnlocked(true) : alert("Access Denied"))}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                                const isValid = pass.trim().toLowerCase() === "somo_smart @2025".toLowerCase();
+                                if (isValid) setUnlocked(true);
+                                else alert("Access Denied");
+                            }
+                        }}
                     />
 
                     <button
-                        onClick={() => pass === "Somo_Smart @2025" ? setUnlocked(true) : alert("Access Denied")}
+                        onClick={() => {
+                            const isValid = pass.trim().toLowerCase() === "somo_smart @2025".toLowerCase();
+                            if (isValid) setUnlocked(true);
+                            else alert("Access Denied");
+                        }}
                         className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 rounded-xl transition-colors shadow-lg shadow-indigo-900/50"
                     >
                         Unlock Dashboard

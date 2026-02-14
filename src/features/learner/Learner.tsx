@@ -18,7 +18,8 @@ import { LogoutModal } from '../../components/LogoutModal';
 import { MarkdownText, Button, Card } from '../../components/Shared';
 import {
   fileToGenerativePart, explainImage, explainAudio, explainTopic,
-  generateQuickQuiz, generateQuiz, generateSpeech, stopSpeech, generateLessonRecap, continueResearch
+  generateQuickQuiz, generateQuiz, generateSpeech, stopSpeech, generateLessonRecap, continueResearch,
+  summarizeDocument
 } from '../../services/geminiService';
 import confetti from 'canvas-confetti';
 import {
@@ -26,11 +27,7 @@ import {
   calculateStreak, calculateSubjectPerformance, getDailyChallenge
 } from '../../services/gamificationService';
 import { translations } from '../../data/translations';
-
-// Simple Button component if not imported (placeholder or real import)
-// const Button = ... (If it's a custom component, imply import. If standard HTML button is used in code, maybe it was styled component?)
-// Checking the code usage: <Button ...>
-// I will assume it's a component.
+import { QuizRunner } from './QuizRunner';
 
 interface LearnerProps {
   onNavigate: (view: ViewState) => void;
@@ -44,6 +41,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
     learnerHistory: history, saveActivity, deleteActivity, studentCode,
     usageCount, incrementUsage, isRegistered, studentProfile, updateStudentProfile,
     upgradeAccount, revisionUsageCount, incrementRevisionUsage,
+    studyUsageCount, incrementStudyUsage,
     logout, isPro, subscriptionPlan, subscriptionExpiry, isOnline, role, language,
     createTutoringRequest, activeTutoringRequests, isAvailableForTutoring,
     marketplaceMaterials, purchasedMaterialIds, purchaseMaterial,
@@ -52,34 +50,6 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
   const t = translations[language];
   const location = useLocation();
 
-  // Check for subscription intent
-  React.useEffect(() => {
-    const state = location.state as { selectedPlan?: SubscriptionPlan; openSubscription?: boolean, initiatePaymentFor?: SubscriptionPlan };
-
-    // New Direct Payment handling
-    if (state?.initiatePaymentFor) {
-      setSelectedPlan(state.initiatePaymentFor);
-      setMode('PAYMENT');
-      navigate(location.pathname, { replace: true, state: {} });
-      return;
-    }
-
-    if (state?.selectedPlan) {
-      if (isPro) {
-        // Already pro, just stay on dashboard and clear state
-        navigate(location.pathname, { replace: true, state: {} });
-      } else {
-        setSelectedPlan(state.selectedPlan);
-        setMode('PAYMENT');
-        // Clear state to avoid re-triggering on refresh
-        navigate(location.pathname, { replace: true, state: {} });
-      }
-    } else if (state?.openSubscription) {
-      setMode('PRICING');
-      // Clear state
-      navigate(location.pathname, { replace: true, state: {} });
-    }
-  }, [location.state, isPro, navigate]);
 
   // --- GAMIFICATION ENGINE ---
   const totalXP = React.useMemo(() => calculateTotalXP(history), [history]);
@@ -114,7 +84,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
     }
   }, [isRegistered, role, navigate]);
 
-  const [mode, setMode] = useState<'MENU' | 'SCAN' | 'RESULT' | 'QUIZ' | 'RECAP_RESULT' | 'PROFILE' | 'PRICING' | 'PAYMENT' | 'MARKETPLACE' | 'LIBRARY' | 'HISTORY' | 'SCAN_EXPLAIN'>('MENU');
+  const [mode, setMode] = useState<'MENU' | 'SCAN' | 'RESULT' | 'QUIZ' | 'RECAP_RESULT' | 'PROFILE' | 'PRICING' | 'PAYMENT' | 'MARKETPLACE' | 'LIBRARY' | 'HISTORY' | 'SCAN_EXPLAIN' | 'STUDY'>('MARKETPLACE');
   const [recapData, setRecapData] = useState<any>(null); // Store LessonRecap
 
   const [loading, setLoading] = useState(false);
@@ -124,7 +94,6 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
 
   const [level, setLevel] = useState<'Simple' | 'Exam'>('Simple');
 
-  // ... (rest of state) ...
 
   // Image data state (renamed from image for clarity and type safety)
   const [imageData, setImageData] = useState<{ base64: string, mimeType: string } | null>(null);
@@ -149,6 +118,10 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
   const [tutoringTopic, setTutoringTopic] = useState("");
   const [materialCategory, setMaterialCategory] = useState<'ALL' | 'NOTES' | 'PAST_PAPER' | 'SYLLABUS'>('ALL');
   const [subjectFilter, setSubjectFilter] = useState<string>('ALL');
+  const [pendingMaterialId, setPendingMaterialId] = useState<string | null>(null);
+  const [currentDocument, setCurrentDocument] = useState<any>(null);
+  const [studyChat, setStudyChat] = useState<{ role: 'user' | 'model', text: string }[]>([]);
+  const [isSummarizing, setIsSummarizing] = useState(false);
 
   // Refs
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -161,6 +134,8 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
   useEffect(() => {
     if (mode === 'MARKETPLACE') {
       fetchResources();
+      setMaterialCategory('ALL');
+      setSubjectFilter('ALL');
     }
   }, [mode]);
 
@@ -187,17 +162,195 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
     return [...verified, ...teacher];
   }, [resources, marketplaceMaterials]);
 
-  const filteredMaterials = unifiedMaterials.filter(m => {
-    const gradeMatch = !studentProfile?.grade || m.grade === studentProfile.grade;
-    const catMatch = materialCategory === 'ALL' ||
-      (materialCategory === 'NOTES' && m.category === 'NOTES') ||
-      (materialCategory === 'PAST_PAPER' && (m.category === 'PAST_PAPER' || m.category === 'REVISION_PAPER')) ||
-      (materialCategory === 'SYLLABUS' && m.category === 'SYLLABUS');
-    const subMatch = subjectFilter === 'ALL' || m.subject === subjectFilter;
-    return gradeMatch && catMatch && subMatch;
-  });
+  const normalizeGrade = (g: any) => {
+    const str = String(g || "").toLowerCase();
+    return str.replace(/\s*grade\s*/g, '').replace(/\s*\(jss\)\s*/g, '').trim() || "";
+  };
 
-  const subjects = ['ALL', 'Mathematics', 'English', 'Kiswahili', 'Social Studies', 'Science', 'CRE', 'Home Science', 'Agriculture'];
+  const gradeFilteredMaterials = React.useMemo(() => {
+    const studentGrade = normalizeGrade(studentProfile?.grade || "");
+    const exactMatches = unifiedMaterials.filter(m => {
+      if (!studentGrade) return true;
+      return normalizeGrade(m.grade) === studentGrade;
+    });
+
+    // If we have exact matches for student's grade, show only those.
+    // If NOT, show everything as a fallback so the screen isn't empty.
+    const result = exactMatches.length > 0 ? exactMatches : unifiedMaterials;
+
+    console.log("DEBUG: gradeFilteredMaterials", {
+      count: result.length,
+      isFallback: exactMatches.length === 0,
+      studentGrade
+    });
+    return result;
+  }, [unifiedMaterials, studentProfile?.grade]);
+
+  const subjects = React.useMemo(() => {
+    const subs = new Set(['ALL']);
+    gradeFilteredMaterials.forEach(m => {
+      if (m.subject) subs.add(m.subject.trim());
+    });
+    const result = Array.from(subs);
+    console.log("DEBUG: subjects", result);
+    return result;
+  }, [gradeFilteredMaterials]);
+
+  const filteredMaterials = React.useMemo(() => {
+    const result = gradeFilteredMaterials.filter(m => {
+      const cat = (materialCategory || "").trim().toUpperCase();
+      const mCat = (m.category || "").trim().toUpperCase();
+      const catMatch = cat === 'ALL' ||
+        (cat === 'NOTES' && mCat === 'NOTES') ||
+        (cat === 'PAST_PAPER' && (mCat === 'PAST_PAPER' || mCat === 'REVISION_PAPER')) ||
+        (cat === 'SYLLABUS' && mCat === 'SYLLABUS');
+
+      const sub = (subjectFilter || "").trim().toUpperCase();
+      const mSub = (m.subject || "").trim().toUpperCase();
+      const subMatch = sub === 'ALL' || mSub === sub;
+
+      return catMatch && subMatch;
+    });
+    console.log("DEBUG: filteredMaterials", {
+      count: result.length,
+      category: materialCategory,
+      subject: subjectFilter,
+      items: result
+    });
+    return result;
+  }, [gradeFilteredMaterials, materialCategory, subjectFilter]);
+
+  // Check for subscription intent & Auto-open material intent
+  React.useEffect(() => {
+    const state = location.state as { selectedPlan?: SubscriptionPlan; openSubscription?: boolean, initiatePaymentFor?: SubscriptionPlan, materialId?: string };
+
+    // Handle auto-opening material after successful payment
+    if (state?.materialId) {
+      const material = unifiedMaterials.find(m => m.id === state.materialId || (m as any).realId === state.materialId);
+      if (material && material.fileUrl) {
+        window.open(material.fileUrl, '_blank');
+        // Clear state to avoid re-triggering
+        navigate(location.pathname, { replace: true, state: {} });
+        return;
+      }
+    }
+
+    // New Direct Payment handling
+    if (state?.initiatePaymentFor) {
+      setSelectedPlan(state.initiatePaymentFor);
+      setMode('PAYMENT');
+      navigate(location.pathname, { replace: true, state: {} });
+      return;
+    }
+
+    if (state?.selectedPlan) {
+      if (isPro) {
+        // Already pro, just stay on dashboard and clear state
+        navigate(location.pathname, { replace: true, state: {} });
+      } else {
+        setSelectedPlan(state.selectedPlan);
+        setMode('PAYMENT');
+        setPendingMaterialId(state.materialId || null); // Preserve materialId if available 
+        // Clear state to avoid re-triggering on refresh
+        navigate(location.pathname, { replace: true, state: {} });
+      }
+    } else if (state?.openSubscription) {
+      setMode('PRICING');
+      setPendingMaterialId(state.materialId || null); // Preserve materialId if available
+      // Clear state
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location.state, isPro, navigate, unifiedMaterials]);
+
+  // --- STUDY CENTER (NotebookLM) ---
+  const startStudySession = async (material: any) => {
+    // Paywall Check: 3 free usages
+    if (studyUsageCount >= 3) {
+      if (!isRegistered) {
+        setShowRegistration(true);
+        return;
+      }
+      if (!isPro) {
+        setMode('PRICING');
+        return;
+      }
+    }
+
+    // Increment usage
+    incrementStudyUsage();
+
+    setCurrentDocument(material);
+    setMode('STUDY');
+    setLoading(true);
+    setLoadingText("Preparing Your Study Guide...");
+    setIsSummarizing(true);
+    setStudyChat([]);
+
+    // Save Study Activity for History Tracking
+    saveActivity({
+      id: `study-${Date.now()}`,
+      type: 'STUDY',
+      topic: material.title,
+      date: new Date().toLocaleDateString(),
+      details: JSON.stringify({
+        materialId: material.id,
+        realId: material.realId,
+        subject: material.subject,
+        grade: material.grade,
+        teacherName: material.teacherName,
+        category: material.category,
+        isVerified: material.isVerified,
+        fileUrl: material.fileUrl
+      })
+    });
+
+    try {
+      const result = await summarizeDocument(material.title, (material.realId || material.id).toString(), language);
+      setExplanation(result);
+    } catch (err) {
+      console.error("Study Guide error:", err);
+      setError({ title: "Study Assistant Error", message: "I couldn't generate a study guide for this document right now." });
+    } finally {
+      setLoading(false);
+      setIsSummarizing(false);
+    }
+  };
+
+  const askStudyBuddy = async (query: string) => {
+    if (!query.trim() || !currentDocument) return;
+
+    const userMsg = { role: 'user' as const, text: query };
+    setStudyChat(prev => [...prev, userMsg]);
+    setPromptText("");
+    setLoading(true);
+    setLoadingText("Somo is thinking...");
+
+    try {
+      const result = await explainTopic(query, level, language, currentDocument.realId || currentDocument.id);
+      setStudyChat(prev => [...prev, { role: 'model' as const, text: result.explanation }]);
+    } catch (err) {
+      console.error("Study Buddy error:", err);
+      setStudyChat(prev => [...prev, { role: 'model' as const, text: "I'm sorry, I hit a snag while looking through this document. 😅" }]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const generatePracticeQuiz = async () => {
+    if (!currentDocument || !explanation) return;
+    setLoading(true);
+    setLoadingText("Creating an Expert Quiz...");
+    try {
+      const data = await generateQuiz(explanation.explanation, currentDocument.title, language);
+      setQuizData(data);
+      setMode('QUIZ');
+    } catch (err) {
+      console.error("Quiz error:", err);
+      setError({ title: "Quiz Failed", message: "I couldn't create a quiz for this material." });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const checkImageQuality = (file: File): Promise<{ ok: boolean; warning?: string }> => {
     return new Promise((resolve) => {
@@ -714,862 +867,980 @@ ${explanation.explanation}
   const playBuffer = () => { };
 
   // --- VIEWS ---
+  const renderMode = () => {
+    if (showCamera) {
+      return (
+        <div className="fixed inset-0 z-50 bg-black flex flex-col">
+          <div className="flex-1 relative overflow-hidden flex items-center justify-center">
+            <video
+              ref={scanVideoRef}
+              autoPlay
+              playsInline
+              className="w-full h-full object-cover"
+            />
 
-  if (showCamera) {
-    return (
-      <div className="fixed inset-0 z-50 bg-black flex flex-col">
-        <div className="flex-1 relative overflow-hidden flex items-center justify-center">
-          <video
-            ref={scanVideoRef}
-            autoPlay
-            playsInline
-            className="w-full h-full object-cover"
-          />
-
-          {/* Auto Capture Overlay */}
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <div className={`w-11/12 md:w-3/4 aspect-[3/4] border-2 rounded-3xl transition-all duration-300 relative ${scanStatus === 'STABILIZING' ? 'border-yellow-400 scale-105' : scanStatus === 'CAPTURING' ? 'border-green-500 bg-white/20 scale-100' : 'border-white/50'}`}>
-              <div className="absolute -top-12 left-0 right-0 text-center">
-                <span className={`px-4 py-2 rounded-full text-sm font-bold shadow-lg backdrop-blur-md ${scanStatus === 'STABILIZING' ? 'bg-yellow-400 text-yellow-900' : scanStatus === 'CAPTURING' ? 'bg-green-500 text-white' : 'bg-black/60 text-white border border-white/20'}`}>
-                  {scanStatus === 'LOOKING' && "Fit whole question in box"}
-                  {scanStatus === 'STABILIZING' && "Hold Steady..."}
-                  {scanStatus === 'CAPTURING' && "Capturing!"}
-                </span>
-              </div>
-              {scanStatus === 'LOOKING' && (
-                <ScanLine className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-white/50 w-full h-1 animate-pulse" />
-              )}
-            </div>
-          </div>
-
-          <button
-            onClick={() => setShowCamera(false)}
-            className="absolute top-4 right-4 bg-black/40 backdrop-blur-md p-2 rounded-full text-white hover:bg-black/60 z-10 transition-colors border border-white/10"
-          >
-            <X className="w-6 h-6" />
-          </button>
-        </div>
-
-        {/* Controls */}
-        <div className="bg-black/90 p-8 flex items-center justify-around gap-8 relative z-10 pb-12 rounded-t-[2rem] border-t border-white/10">
-          {/* Audio Option */}
-          <button
-            onClick={() => {
-              setShowCamera(false);
-              setTimeout(() => startRecording(), 100); // Small delay to allow UI transition
-            }}
-            className="flex flex-col items-center gap-2 group"
-          >
-            <div className="w-12 h-12 rounded-full bg-slate-800 flex items-center justify-center group-hover:bg-slate-700 transition-colors border border-slate-700">
-              <Mic className="w-5 h-5 text-indigo-400" />
-            </div>
-            <span className="text-xs font-medium text-slate-400">Read Aloud</span>
-          </button>
-
-          <button
-            onClick={capturePhoto}
-            className="w-20 h-20 rounded-full border-4 border-white flex items-center justify-center hover:bg-white/20 transition-all active:scale-95 shadow-xl shadow-white/10"
-          >
-            <div className="w-16 h-16 bg-white rounded-full"></div>
-          </button>
-
-          {/* Placeholder for Gallery/Upload if needed later, currently just spacer or generic help */}
-          <button
-            className="flex flex-col items-center gap-2 group opacity-50 cursor-not-allowed"
-          >
-            <div className="w-12 h-12 rounded-full bg-slate-800 flex items-center justify-center border border-slate-700">
-              <ImageIcon className="w-5 h-5 text-slate-400" />
-            </div>
-            <span className="text-xs font-medium text-slate-400">Gallery</span>
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  if (mode === 'RECAP_RESULT' && recapData) {
-    return (
-      <div className="min-h-screen bg-slate-50 pb-20 font-sans text-slate-800 max-w-4xl mx-auto shadow-2xl border-x border-slate-100">
-        <div className="bg-white p-6 sticky top-0 z-10 shadow-sm flex items-center gap-4">
-          <button onClick={() => setMode('MENU')}><ArrowRight className="w-6 h-6 rotate-180" /></button>
-          <h2 className="font-bold text-lg">Lesson Recap</h2>
-        </div>
-
-        <div className="p-6 space-y-6">
-          <div className="bg-gradient-to-br from-indigo-500 to-purple-600 p-6 rounded-3xl text-white shadow-lg relative overflow-hidden">
-            <h1 className="text-2xl font-bold mb-2">{recapData.topic}</h1>
-            <p className="opacity-90">{recapData.summary}</p>
-          </div>
-
-          <div>
-            <h3 className="font-bold text-slate-900 mb-3 flex items-center gap-2"><Star className="w-5 h-5 text-yellow-500" /> Key Points</h3>
-            <ul className="space-y-3">
-              {recapData.keyPoints.map((p: string, i: number) => (
-                <li key={i} className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm flex gap-3">
-                  <span className="w-6 h-6 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center font-bold text-xs flex-shrink-0">{i + 1}</span>
-                  <span className="text-sm">{p}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          <div>
-            <h3 className="font-bold text-slate-900 mb-3 flex items-center gap-2"><AlertTriangle className="w-5 h-5 text-red-500" /> Exam Tips</h3>
-            <div className="bg-red-50 border border-red-100 rounded-xl p-4 space-y-2">
-              {recapData.examTips.map((tip: string, i: number) => (
-                <p key={i} className="text-sm text-red-800 font-medium">• {tip}</p>
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <h3 className="font-bold text-slate-900 mb-3 flex items-center gap-2"><BookOpen className="w-5 h-5 text-blue-500" /> Definitions</h3>
-            <div className="space-y-2">
-              {recapData.definitions.map((def: any, i: number) => (
-                <div key={i} className="bg-blue-50 p-3 rounded-lg">
-                  <span className="font-bold text-blue-900">{def.term}: </span>
-                  <span className="text-blue-800 text-sm">{def.definition}</span>
+            {/* Auto Capture Overlay */}
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <div className={`w-11/12 md:w-3/4 aspect-[3/4] border-2 rounded-3xl transition-all duration-300 relative ${scanStatus === 'STABILIZING' ? 'border-yellow-400 scale-105' : scanStatus === 'CAPTURING' ? 'border-green-500 bg-white/20 scale-100' : 'border-white/50'}`}>
+                <div className="absolute -top-12 left-0 right-0 text-center">
+                  <span className={`px-4 py-2 rounded-full text-sm font-bold shadow-lg backdrop-blur-md ${scanStatus === 'STABILIZING' ? 'bg-yellow-400 text-yellow-900' : scanStatus === 'CAPTURING' ? 'bg-green-500 text-white' : 'bg-black/60 text-white border border-white/20'}`}>
+                    {scanStatus === 'LOOKING' && "Fit whole question in box"}
+                    {scanStatus === 'STABILIZING' && "Hold Steady..."}
+                    {scanStatus === 'CAPTURING' && "Capturing!"}
+                  </span>
                 </div>
-              ))}
+                {scanStatus === 'LOOKING' && (
+                  <ScanLine className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-white/50 w-full h-1 animate-pulse" />
+                )}
+              </div>
             </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
-  // Error View
-  if (error) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center max-w-md mx-auto">
-        <div className="bg-red-50 p-6 rounded-full mb-6 animate-in zoom-in duration-300">
-          <XCircle className="w-16 h-16 text-red-500" />
-        </div>
-        <h2 className="text-2xl font-bold text-gray-800 mb-2">{error.title}</h2>
-        <p className="text-gray-600 mb-8 leading-relaxed">{error.message}</p>
-        <div className="flex flex-col w-full gap-3">
-          <Button fullWidth onClick={() => { setError(null); setMode('MENU'); }}>
-            Go Home
-          </Button>
-          <Button variant="ghost" fullWidth onClick={() => setError(null)}>
-            Try Again
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
-  if (mode === 'MENU') {
-    const displayCode = profile ? profile.code : studentCode;
-    const greeting = profile ? `Hi, ${profile.name.split(' ')[0]}` : "My Learning Buddy";
-
-    return (
-      <div className="min-h-screen bg-slate-50 flex flex-col font-sans text-slate-800 max-w-4xl mx-auto shadow-2xl border-x border-slate-100 relative overflow-hidden">
-
-        {/* --- TOP BAR --- */}
-        <div className="flex justify-between items-center px-6 py-4 relative z-20">
-          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pr-4">
-            <button onClick={() => setMode('HISTORY' as any)} className="flex items-center gap-2 px-3 py-2 hover:bg-slate-200 rounded-full transition-colors text-slate-500 hover:text-slate-800 shrink-0" title="View History">
-              <Clock className="w-5 h-5" />
-              <span className="text-sm font-bold border-r border-slate-300 pr-2">History</span>
+            <button
+              onClick={() => setShowCamera(false)}
+              className="absolute top-4 right-4 bg-black/40 backdrop-blur-md p-2 rounded-full text-white hover:bg-black/60 z-10 transition-colors border border-white/10"
+            >
+              <X className="w-6 h-6" />
             </button>
-            <button onClick={() => setMode('MARKETPLACE')} className="flex items-center gap-2 px-3 py-2 bg-indigo-50 hover:bg-indigo-100 rounded-full transition-colors text-indigo-600 shrink-0" title="Unlock Materials">
-              <ShoppingBag className="w-5 h-5" />
-              <span className="text-sm font-bold">Study Materials</span>
-            </button>
-            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest shrink-0 ml-2">{isOnline ? 'Online' : 'Offline'}</span>
           </div>
 
-          <div className="flex items-center gap-2">
-            <div className="text-right hidden sm:block">
-              <p className="text-xs font-bold text-slate-900">{totalXP} XP</p>
-              <p className="text-[10px] text-slate-400 font-bold uppercase">Level {levelInfo.level}</p>
-            </div>
-            <button onClick={() => setMode('PROFILE')} className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 font-bold border-2 border-white shadow-sm hover:scale-105 transition-transform">
-              <UserCircle className="w-6 h-6" />
+          {/* Controls */}
+          <div className="bg-black/90 p-8 flex items-center justify-around gap-8 relative z-10 pb-12 rounded-t-[2rem] border-t border-white/10">
+            {/* Audio Option */}
+            <button
+              onClick={() => {
+                setShowCamera(false);
+                setTimeout(() => startRecording(), 100); // Small delay to allow UI transition
+              }}
+              className="flex flex-col items-center gap-2 group"
+            >
+              <div className="w-12 h-12 rounded-full bg-slate-800 flex items-center justify-center group-hover:bg-slate-700 transition-colors border border-slate-700">
+                <Mic className="w-5 h-5 text-indigo-400" />
+              </div>
+              <span className="text-xs font-medium text-slate-400">Read Aloud</span>
+            </button>
+
+            <button
+              onClick={capturePhoto}
+              className="w-20 h-20 rounded-full border-4 border-white flex items-center justify-center hover:bg-white/20 transition-all active:scale-95 shadow-xl shadow-white/10"
+            >
+              <div className="w-16 h-16 bg-white rounded-full"></div>
+            </button>
+
+            {/* Placeholder for Gallery/Upload if needed later, currently just spacer or generic help */}
+            <button
+              className="flex flex-col items-center gap-2 group opacity-50 cursor-not-allowed"
+            >
+              <div className="w-12 h-12 rounded-full bg-slate-800 flex items-center justify-center border border-slate-700">
+                <ImageIcon className="w-5 h-5 text-slate-400" />
+              </div>
+              <span className="text-xs font-medium text-slate-400">Gallery</span>
             </button>
           </div>
         </div>
+      );
+    }
 
-        {/* --- MAIN CENTER CONTENT --- */}
-        <div className="flex-1 flex flex-col items-center justify-center -mt-20 px-6 relative z-10">
+    if (mode === 'RECAP_RESULT' && recapData) {
+      return (
+        <div className="min-h-screen bg-slate-50 pb-20 font-sans text-slate-800 max-w-4xl mx-auto shadow-2xl border-x border-slate-100">
+          <div className="bg-white p-6 sticky top-0 z-10 shadow-sm flex items-center gap-4">
+            <button onClick={() => setMode('MENU')}><ArrowRight className="w-6 h-6 rotate-180" /></button>
+            <h2 className="font-bold text-lg">Lesson Recap</h2>
+          </div>
 
-          {/* Logo/Greeting */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-center mb-8"
-          >
-            <div className="w-20 h-20 bg-white rounded-3xl mx-auto mb-4 flex items-center justify-center shadow-xl shadow-blue-100 border border-blue-50">
-              <Sparkles className="w-10 h-10 text-blue-500 fill-blue-500 animate-pulse" />
+          <div className="p-6 space-y-6">
+            <div className="bg-gradient-to-br from-indigo-500 to-purple-600 p-6 rounded-3xl text-white shadow-lg relative overflow-hidden">
+              <h1 className="text-2xl font-bold mb-2">{recapData.topic}</h1>
+              <p className="opacity-90">{recapData.summary}</p>
             </div>
-            <h1 className="text-3xl md:text-4xl font-black text-slate-900 tracking-tight mb-2">
-              {greeting} <span className="text-slate-300 font-normal">|</span> Somo Smart
-            </h1>
-            <p className="text-blue-900 font-bold text-lg">What do you want to learn today?</p>
-          </motion.div>
+
+            <div>
+              <h3 className="font-bold text-slate-900 mb-3 flex items-center gap-2"><Star className="w-5 h-5 text-yellow-500" /> Key Points</h3>
+              <ul className="space-y-3">
+                {recapData.keyPoints.map((p: string, i: number) => (
+                  <li key={i} className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm flex gap-3">
+                    <span className="w-6 h-6 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center font-bold text-xs flex-shrink-0">{i + 1}</span>
+                    <span className="text-sm">{p}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div>
+              <h3 className="font-bold text-slate-900 mb-3 flex items-center gap-2"><AlertTriangle className="w-5 h-5 text-red-500" /> Exam Tips</h3>
+              <div className="bg-red-50 border border-red-100 rounded-xl p-4 space-y-2">
+                {recapData.examTips.map((tip: string, i: number) => (
+                  <p key={i} className="text-sm text-red-800 font-medium">• {tip}</p>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <h3 className="font-bold text-slate-900 mb-3 flex items-center gap-2"><BookOpen className="w-5 h-5 text-blue-500" /> Definitions</h3>
+              <div className="space-y-2">
+                {recapData.definitions.map((def: any, i: number) => (
+                  <div key={i} className="bg-blue-50 p-3 rounded-lg">
+                    <span className="font-bold text-blue-900">{def.term}: </span>
+                    <span className="text-blue-800 text-sm">{def.definition}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Error View
+    if (error) {
+      return (
+        <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center max-w-md mx-auto">
+          <div className="bg-red-50 p-6 rounded-full mb-6 animate-in zoom-in duration-300">
+            <XCircle className="w-16 h-16 text-red-500" />
+          </div>
+          <h2 className="text-2xl font-bold text-gray-800 mb-2">{error.title}</h2>
+          <p className="text-gray-600 mb-8 leading-relaxed">{error.message}</p>
+          <div className="flex flex-col w-full gap-3">
+            <Button fullWidth onClick={() => { setError(null); setMode('MENU'); }}>
+              Go Home
+            </Button>
+            <Button variant="ghost" fullWidth onClick={() => setError(null)}>
+              Try Again
+            </Button>
+          </div>
+        </div>
+      );
+    }
+
+    if (mode === 'MENU') {
+      const displayCode = profile ? profile.code : studentCode;
+      const greeting = profile ? `Hi, ${profile.name.split(' ')[0]}` : "My Learning Buddy";
+
+      return (
+        <div className="min-h-screen bg-slate-50 flex flex-col font-sans text-slate-800 max-w-4xl mx-auto shadow-2xl border-x border-slate-100 relative overflow-hidden">
+
+          {/* --- TOP BAR --- */}
+          <div className="flex justify-between items-center px-6 py-4 relative z-20">
+            <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pr-4">
+              <button onClick={() => setMode('HISTORY' as any)} className="flex items-center gap-2 px-3 py-2 hover:bg-slate-200 rounded-full transition-colors text-slate-500 hover:text-slate-800 shrink-0" title="View History">
+                <Clock className="w-5 h-5" />
+                <span className="text-sm font-bold border-r border-slate-300 pr-2">History</span>
+              </button>
+              <button onClick={() => setMode('MARKETPLACE')} className="flex items-center gap-2 px-3 py-2 bg-indigo-50 hover:bg-indigo-100 rounded-full transition-colors text-indigo-600 shrink-0" title="Unlock Materials">
+                <ShoppingBag className="w-5 h-5" />
+                <span className="text-sm font-bold">Study Materials</span>
+              </button>
+              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest shrink-0 ml-2">{isOnline ? 'Online' : 'Offline'}</span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <div className="text-right hidden sm:block">
+                <p className="text-xs font-bold text-slate-900">{totalXP} XP</p>
+                <p className="text-[10px] text-slate-400 font-bold uppercase">Level {levelInfo.level}</p>
+              </div>
+              <button onClick={() => setMode('PROFILE')} className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 font-bold border-2 border-white shadow-sm hover:scale-105 transition-transform">
+                <UserCircle className="w-6 h-6" />
+              </button>
+            </div>
+          </div>
+
+          {/* --- MAIN CENTER CONTENT --- */}
+          <div className="flex-1 flex flex-col items-center justify-center -mt-20 px-6 relative z-10">
+
+            {/* Logo/Greeting */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="text-center mb-8"
+            >
+              <div className="w-20 h-20 bg-white rounded-3xl mx-auto mb-4 flex items-center justify-center shadow-xl shadow-blue-100 border border-blue-50">
+                <Sparkles className="w-10 h-10 text-blue-500 fill-blue-500 animate-pulse" />
+              </div>
+              <h1 className="text-3xl md:text-4xl font-black text-slate-900 tracking-tight mb-2">
+                {greeting} <span className="text-slate-300 font-normal">|</span> Somo Smart
+              </h1>
+              <p className="text-blue-900 font-bold text-lg">What do you want to learn today?</p>
+            </motion.div>
 
 
-          {history.length > 0 && (
+            {/* "Let's Study!" Call to Action */}
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               className="w-full max-w-sm mb-6 cursor-pointer group"
-              onClick={() => restoreActivity(history[history.length - 1])}
+              onClick={() => setMode('MARKETPLACE')}
             >
-              <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 flex items-center justify-between hover:border-blue-200 hover:shadow-md transition-all">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-600">
-                    <Play className="w-5 h-5 ml-0.5" />
+              <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-[2rem] p-5 shadow-xl shadow-blue-100 flex items-center justify-between hover:scale-[1.02] transition-all border-4 border-white active:scale-95">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-2xl bg-white/20 flex items-center justify-center text-white backdrop-blur-md">
+                    <BookOpen className="w-6 h-6" />
                   </div>
                   <div>
-                    <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-0.5">Continue Learning</h3>
-                    <p className="font-bold text-slate-800 line-clamp-1">{history[history.length - 1].topic}</p>
+                    <h3 className="text-xs font-black text-blue-100 uppercase tracking-widest mb-0.5">Ready to excel?</h3>
+                    <p className="text-xl font-black text-white leading-tight">Let&apos;s Study!</p>
                   </div>
                 </div>
-                <div className="text-right">
-                  <span className="text-xs font-bold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-full group-hover:bg-blue-600 group-hover:text-white transition-colors">
-                    Resume
-                  </span>
+                <div className="bg-white/20 p-2 rounded-xl text-white backdrop-blur-md group-hover:bg-white group-hover:text-blue-600 transition-colors">
+                  <ArrowRight className="w-6 h-6" />
                 </div>
               </div>
             </motion.div>
-          )}
 
-          {/* CHAT INPUT AREA */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.1 }}
-            className="w-full max-w-2xl relative z-30"
-          >
-            <div className="bg-white rounded-[2rem] shadow-2xl border-2 border-black p-2 flex items-end gap-2 pr-4 focus-within:ring-4 focus-within:ring-slate-200 transition-all hover:shadow-[0_20px_50px_rgba(0,0,0,0.2)]">
-              <div className="flex gap-1 pl-2 mb-2">
-                <button
-                  onClick={() => fileInputRef.current?.click()}
-                  className="p-3 text-slate-900 hover:bg-slate-100 rounded-2xl transition-all"
-                  title="Upload Image"
-                >
-                  <ImageIcon className="w-6 h-6" />
-                </button>
-                <button
-                  onClick={isRecording ? stopRecording : startRecording}
-                  className={`p-3 rounded-2xl transition-all ${isRecording ? 'text-red-600 bg-red-50' : 'text-slate-900 hover:bg-slate-100'}`}
-                  title="Record Audio"
-                >
-                  {isRecording ? <div className="w-6 h-6 bg-red-600 rounded-sm animate-pulse" /> : <Mic className="w-6 h-6" />}
-                </button>
-              </div>
-
-              <textarea
-                value={promptText}
-                onChange={(e) => setPromptText(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    handlePromptSubmit();
-                  }
-                }}
-                placeholder="Ask anything... (math, science, history)"
-                rows={1}
-                className="flex-1 bg-transparent border-0 focus:ring-0 text-black text-lg font-bold py-4 px-2 min-h-[56px] max-h-40 resize-none placeholder:text-slate-500"
-                style={{ height: 'auto' }}
-                onInput={(e) => {
-                  const target = e.target as HTMLTextAreaElement;
-                  target.style.height = 'auto';
-                  target.style.height = `${target.scrollHeight}px`;
-                }}
-              />
-
-              <button
-                onClick={handlePromptSubmit}
-                disabled={!promptText.trim() || loading}
-                className={`p-4 rounded-2xl transition-all mb-1 ${promptText.trim() ? 'bg-black text-white shadow-lg shadow-slate-400 scale-105 active:scale-95 hover:bg-slate-800' : 'bg-slate-100 text-slate-300 cursor-not-allowed'}`}
-              >
-                <ArrowRight className="w-6 h-6" />
-              </button>
-            </div>
-            {isRecording && (
-              <div className="absolute -top-12 left-1/2 -translate-x-1/2 bg-red-500 text-white text-xs font-bold px-4 py-2 rounded-full animate-bounce shadow-lg flex items-center gap-2">
-                <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
-                Recording... {formatTime(recordingTime)}
-              </div>
-            )}
-          </motion.div>
-
-
-          {/* SUBJECT SHORTCUTS (CBC ALIGNED) */}
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.15 }}
-            className="mt-6 flex flex-wrap justify-center gap-2 max-w-3xl mx-auto"
-          >
-            <button onClick={() => { setPromptText("Help me learn Mathematics"); handlePromptSubmit(); }} className="flex items-center gap-1.5 px-4 py-2 bg-blue-50 text-blue-700 rounded-xl hover:bg-blue-100 hover:scale-105 transition-all font-bold text-sm border border-blue-100">
-              <Calculator className="w-4 h-4" /> Math
-            </button>
-            <button onClick={() => { setPromptText("Help me learn English"); handlePromptSubmit(); }} className="flex items-center gap-1.5 px-4 py-2 bg-emerald-50 text-emerald-700 rounded-xl hover:bg-emerald-100 hover:scale-105 transition-all font-bold text-sm border border-emerald-100">
-              <BookOpen className="w-4 h-4" /> English
-            </button>
-            <button onClick={() => { setPromptText("Help me learn Kiswahili"); handlePromptSubmit(); }} className="flex items-center gap-1.5 px-4 py-2 bg-purple-50 text-purple-700 rounded-xl hover:bg-purple-100 hover:scale-105 transition-all font-bold text-sm border border-purple-100">
-              <Languages className="w-4 h-4" /> Kiswahili
-            </button>
-            <button onClick={() => { setPromptText("Help me learn Science"); handlePromptSubmit(); }} className="flex items-center gap-1.5 px-4 py-2 bg-amber-50 text-amber-700 rounded-xl hover:bg-amber-100 hover:scale-105 transition-all font-bold text-sm border border-amber-100">
-              <FlaskConical className="w-4 h-4" /> Science
-            </button>
-            <button onClick={() => { setPromptText("Help me learn Social Studies"); handlePromptSubmit(); }} className="flex items-center gap-1.5 px-4 py-2 bg-cyan-50 text-cyan-700 rounded-xl hover:bg-cyan-100 hover:scale-105 transition-all font-bold text-sm border border-cyan-100">
-              <Globe className="w-4 h-4" /> Social Studies
-            </button>
-          </motion.div>
-
-          {/* FEATURE CHIPS / SUGGESTIONS */}
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="mt-8 flex flex-wrap justify-center gap-3"
-          >
-            <button onClick={isOnline ? startCamera : undefined} className={`flex items-center gap-2 px-5 py-3 ${isOnline ? 'bg-white hover:bg-slate-50 text-slate-700' : 'bg-slate-100 text-slate-400'} rounded-2xl shadow-sm border border-slate-200 font-bold text-sm transition-all hover:-translate-y-0.5`}>
-              <Camera className="w-4 h-4 text-blue-500" />
-              Scan Homework
-            </button>
-            <button onClick={() => setMode('HISTORY' as any)} className={`flex items-center gap-2 px-5 py-3 bg-white hover:bg-slate-50 text-slate-700 rounded-2xl shadow-sm border border-slate-200 font-bold text-sm transition-all hover:-translate-y-0.5`}>
-              <Clock className="w-4 h-4 text-emerald-500" />
-              History
-            </button>
-            <button onClick={() => navigate('/revision')} className={`flex items-center gap-2 px-5 py-3 ${isOnline ? 'bg-white hover:bg-slate-50 text-slate-700' : 'bg-slate-100 text-slate-400'} rounded-2xl shadow-sm border border-slate-200 font-bold text-sm transition-all hover:-translate-y-0.5`}>
-              <Brain className="w-4 h-4 text-orange-500" />
-              Revision & Exams
-            </button>
-            <button onClick={() => setShowTutoringModal(true)} className={`flex items-center gap-2 px-5 py-3 ${isOnline ? 'bg-white hover:bg-slate-50 text-slate-700' : 'bg-slate-100 text-slate-400'} rounded-2xl shadow-sm border border-slate-200 font-bold text-sm transition-all hover:-translate-y-0.5`}>
-              <Users className="w-4 h-4 text-indigo-500" />
-              Ask Teacher
-            </button>
-            <label className={`flex items-center gap-2 px-5 py-3 bg-white hover:bg-slate-50 text-slate-700 rounded-2xl shadow-sm border border-slate-200 font-bold text-sm transition-all hover:-translate-y-0.5 cursor-pointer`}>
-              <Upload className="w-4 h-4 text-purple-500" />
-              Upload File
-              <button onClick={() => window.open('/revision', '_blank')} className={`flex items-center gap-2 px-5 py-3 ${isOnline ? 'bg-white hover:bg-slate-50 text-slate-700' : 'bg-slate-100 text-slate-400'} rounded-2xl shadow-sm border border-slate-200 font-bold text-sm transition-all hover:-translate-y-0.5`}>
-                <Library className="w-4 h-4 text-pink-500" />
-                Resources
-              </button>
-              <input type="file" accept="image/*, application/pdf" className="hidden" ref={fileInputRef} onChange={handleFileUpload} />
-            </label>
-          </motion.div>
-
-          {/* DAILY CHALLENGE CARD */}
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="w-full max-w-2xl mb-6 mt-8 relative group cursor-pointer"
-            onClick={() => { setPromptText(`Generate a ${dailyChallenge.quiz}`); handlePromptSubmit(); }}
-          >
-            <div className="absolute inset-x-0 top-4 bottom-0 bg-orange-500/20 blur-xl rounded-[2rem] scale-95 translate-y-2" />
-            <div className="bg-white rounded-[2rem] p-6 shadow-xl border-b-4 border-slate-100 relative overflow-hidden hover:scale-[1.01] transition-transform active:scale-[0.99] hover:shadow-2xl hover:shadow-orange-500/10">
-              <div className="absolute top-0 right-0 p-8 w-64 h-64 bg-gradient-to-br from-orange-100 to-amber-50 rounded-full blur-3xl opacity-50 -translate-y-1/2 translate-x-1/2" />
-
-              <div className="relative flex items-center justify-between">
-                <div>
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-[10px] font-black uppercase tracking-wider">
-                      <span className="animate-pulse">🔥</span> {streak} Day Streak
-                    </span>
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-indigo-100 text-indigo-700 rounded-full text-[10px] font-black uppercase tracking-wider">
-                      +50 XP
-                    </span>
-                  </div>
-                  <h3 className="text-2xl font-black text-slate-900 mb-1">Daily Dash</h3>
-                  <p className="text-slate-500 font-bold">New: {dailyChallenge.quiz}</p>
-                </div>
-
-                <button className="bg-slate-900 text-white px-6 py-3 rounded-xl font-bold text-sm shadow-lg shadow-slate-200 hover:bg-slate-800 transition-colors flex items-center gap-2">
-                  Start Now <ArrowRight className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-          </motion.div>
-
-          {/* PERFORMANCE SNAPSHOT */}
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="w-full max-w-2xl mb-8"
-          >
-            <div className="flex items-center justify-between mb-4 px-2">
-              <h3 className="font-black text-slate-900 text-lg flex items-center gap-2">
-                <span className="w-2 h-6 bg-indigo-500 rounded-full" />
-                This Week's Progress
-              </h3>
-              <button
-                onClick={() => setMode('HISTORY' as any)}
-                className="text-xs font-bold text-indigo-600 hover:text-indigo-700"
-              >
-                View Report
-              </button>
-            </div>
-
-            <div className="bg-white rounded-[2rem] p-6 shadow-sm border border-slate-100 space-y-5">
-              {subjectPerformance.map((item) => (
-                <div key={item.subject}>
-                  <div className="flex justify-between text-sm font-bold text-slate-700 mb-1.5">
-                    <span>{item.subject}</span>
-                    <span className="text-slate-900">{item.score}%</span>
-                  </div>
-                  <div className={`h-3 w-full ${item.bg} rounded-full overflow-hidden`}>
-                    <motion.div
-                      initial={{ width: 0 }}
-                      animate={{ width: `${item.score}%` }}
-                      transition={{ duration: 1, delay: 0.2 }}
-                      className={`h-full ${item.color} rounded-full`}
-                    />
-                  </div>
-                </div>
-              ))}
-              {subjectPerformance.every(s => s.score === 0) && (
-                <p className="text-center text-xs text-slate-400 italic mt-2">
-                  Take quizzes to see your progress here!
-                </p>
-              )}
-            </div>
-          </motion.div>
-
-          {/* TUTORING MODAL TRIGGER (Hidden logic mostly, exposed via chip) */}
-          {/* The actual modal logic is shared */}
-        </div>
-
-        {/* Hidden Inputs needed for shortcuts */}
-        <input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handleFileUpload} />
-        <input type="file" accept="audio/*" className="hidden" ref={audioInputRef} onChange={handleAudioUpload} />
-
-
-        <RegistrationModal
-          isOpen={showRegistration}
-          onClose={() => setShowRegistration(false)}
-          onSuccess={() => setShowRegistration(false)}
-          onSwitchToLogin={() => { setShowRegistration(false); setShowLogin(true); }}
-        />
-        <LoginModal isOpen={showLogin} onClose={() => setShowLogin(false)} />
-        <LogoutModal
-          isOpen={showLogoutModal}
-          onClose={() => setShowLogoutModal(false)}
-          onConfirm={() => {
-            logout();
-            navigate('/');
-          }}
-        />
-
-        {/* REUSE TUTORING MODAL & OTHERS */}
-        {/* We can just render them if state demands, but layout is clean now */}
-        {showTutoringModal && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-6 overflow-y-auto">
-            <div className="bg-white rounded-2xl p-8 max-w-md w-full relative">
-              <button onClick={() => setShowTutoringModal(false)} className="absolute top-4 right-4 p-2 hover:bg-slate-100 rounded-full"><X className="w-5 h-5" /></button>
-              <h2 className="text-xl font-bold mb-4">Ask a Teacher</h2>
-              {/* ... (simplified modal content reuse) ... */}
-              <p className="text-slate-500 mb-4">Describe your question below:</p>
-              <textarea
-                className="w-full border rounded-xl p-3 mb-4"
-                rows={4}
-                placeholder="I need help with..."
-                id="tutoring-desc-quick"
-              ></textarea>
-              <Button fullWidth onClick={async () => {
-                const desc = (document.getElementById('tutoring-desc-quick') as HTMLTextAreaElement).value;
-                if (!desc) return;
-                setLoading(true);
-                const res = await createTutoringRequest("General Help", desc, 20);
-                setLoading(false);
-                if (res.success) { setShowTutoringModal(false); alert("Request Sent!"); }
-              }}>Send Request</Button>
-            </div>
-          </div>
-        )}
-
-      </div>
-    );
-  }
-
-  // --- HISTORY VIEW ---
-  if (mode === 'HISTORY' as any) {
-    return (
-      <div className="min-h-screen bg-white font-sans text-slate-800 max-w-4xl mx-auto border-x border-slate-100 flex flex-col">
-        <div className="p-4 border-b border-slate-100 flex items-center gap-3 sticky top-0 bg-white z-20">
-          <button onClick={() => setMode('MENU')} className="p-2 hover:bg-slate-100 rounded-full transition-colors"><ArrowRight className="w-6 h-6 rotate-180" /></button>
-          <h1 className="text-lg font-bold">Learning History</h1>
-        </div>
-
-        <div className="flex-1 p-6 overflow-y-auto">
-          {history.length === 0 ? (
-            <div className="text-center py-20 opacity-50">
-              <Clock className="w-12 h-12 mx-auto mb-4 text-slate-300" />
-              <p>No history yet. Start a chat!</p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {history.slice().reverse().map((item) => (
-                <div key={item.id} onClick={() => restoreActivity(item)} className="p-4 rounded-2xl border border-slate-100 hover:border-blue-200 hover:bg-blue-50 transition-all cursor-pointer flex items-center gap-4">
-                  <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center border border-slate-100 shadow-sm text-lg">
-                    {item.type === 'QUIZ' ? '📝' : '💡'}
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-slate-800">{item.topic || "Untitled Session"}</h3>
-                    <p className="text-xs text-slate-500">{item.date}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-    )
-  }
-
-  if (mode === 'PROFILE') {
-    return (
-      <div className="bg-slate-50 min-h-screen pb-20 max-w-4xl mx-auto shadow-2xl border-x border-slate-100">
-        {/* Sticky Header */}
-        <motion.div
-          initial={{ y: -20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-slate-200 px-4 py-4 flex items-center justify-between"
-        >
-          <div className="flex items-center gap-3">
-            <button onClick={() => setMode('MENU')} className="p-2 hover:bg-slate-100 rounded-xl transition-all group">
-              <ArrowRight className="w-5 h-5 text-slate-500 rotate-180 group-hover:text-blue-600" />
-            </button>
-            <h1 className="font-bold text-xl text-slate-900">Your Profile</h1>
-          </div>
-          <button onClick={() => setShowLogoutModal(true)} className="flex items-center gap-2 px-3 py-1.5 bg-red-50 text-red-600 rounded-xl hover:bg-red-100 transition-colors text-xs font-bold">
-            <LogOut className="w-4 h-4" />
-            Logout
-          </button>
-        </motion.div>
-
-        <div className="p-6 space-y-8 max-w-2xl mx-auto">
-          {/* Profile Card */}
-          <section>
-            <div className="flex items-center gap-4 mb-4">
-              <div className="w-12 h-12 bg-blue-100 rounded-2xl flex items-center justify-center">
-                <UserCircle className="w-8 h-8 text-blue-600" />
-              </div>
-              <h2 className="text-lg font-bold text-slate-800">Account Details</h2>
-            </div>
-
-            <Card className="p-6 space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Full Name</label>
-                  <p className="text-lg font-bold text-slate-800">{studentProfile?.name || '---'}</p>
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Student ID</label>
-                  <p className="text-lg font-bold text-blue-600 font-mono tracking-wider">{studentCode || '---'}</p>
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Grade Level</label>
-                  <p className="text-lg font-bold text-slate-800">{studentProfile?.grade || '---'}</p>
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Account Email</label>
-                  <p className="text-sm font-medium text-slate-500 truncate">{studentProfile?.email || 'No email set'}</p>
-                </div>
-              </div>
-            </Card>
-          </section>
-
-          {/* Parent Contact Settings */}
-          <section>
-            <div className="flex items-center gap-4 mb-4">
-              <div className="w-12 h-12 bg-purple-100 rounded-2xl flex items-center justify-center">
-                <Sparkles className="w-7 h-7 text-purple-600" />
-              </div>
-              <div>
-                <h2 className="text-lg font-bold text-slate-800">Parent Dashboard Access</h2>
-                <p className="text-xs text-slate-400 font-medium">Allows parents to log in using their phone number</p>
-              </div>
-            </div>
-
-            <Card className="p-6">
-              <div className="space-y-4">
-                <div>
-                  <label htmlFor="parentPhone" className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Parent&apos;s Phone Number</label>
-                  <div className="relative">
-                    <input
-                      id="parentPhone"
-                      type="tel"
-                      defaultValue={studentProfile?.parentPhone || ''}
-                      placeholder="e.g. 0712345678"
-                      className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl px-5 py-3.5 text-lg font-bold text-slate-800 focus:border-purple-500 focus:ring-0 transition-all outline-none"
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        const btn = document.getElementById('save-profile-btn');
-                        if (btn) btn.style.display = 'block';
-                      }}
-                    />
-                  </div>
-                  <p className="mt-3 text-xs text-slate-500 leading-relaxed">
-                    Parents use this number + your Student ID to access performance reports and subscription management.
-                  </p>
-                </div>
-
-                <div id="save-profile-btn" style={{ display: 'none' }}>
-                  <Button
-                    fullWidth
-                    className="bg-purple-600 hover:bg-purple-700 text-white shadow-lg shadow-purple-200"
-                    onClick={async () => {
-                      const input = document.getElementById('parentPhone') as HTMLInputElement;
-                      setLoading(true);
-                      setLoadingText("Saving profile...");
-                      const { success, message } = await updateStudentProfile({ parentPhone: input.value });
-                      setLoading(false);
-                      if (success) {
-                        const btn = document.getElementById('save-profile-btn');
-                        if (btn) btn.style.display = 'none';
-                        // Optional: Toast success
-                      } else {
-                        alert(message || "Failed to save profile");
-                      }
-                    }}
-                  >
-                    Save Changes
-                  </Button>
-                </div>
-              </div>
-            </Card>
-          </section>
-
-          {/* Subscription Status */}
-          <section>
-            <div className="flex items-center gap-4 mb-4">
-              <div className="w-12 h-12 bg-amber-100 rounded-2xl flex items-center justify-center">
-                <CreditCard className="w-7 h-7 text-amber-600" />
-              </div>
-              <h2 className="text-lg font-bold text-slate-800">Subscription Status</h2>
-            </div>
-
-            <Card className={`p-6 border-2 ${isPro ? 'border-amber-200 bg-gradient-to-br from-white to-amber-50/30' : 'border-slate-100'}`}>
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-                <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className={`px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-widest ${isPro ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-500'}`}>
-                      {subscriptionPlan === 'FREE' ? 'Free Tier' : `${subscriptionPlan} Plan`}
-                    </span>
-                    {isPro && <span className="bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full text-[10px] font-bold">Active</span>}
-                  </div>
-                  <h3 className="text-2xl font-black text-slate-900 mb-1">
-                    {isPro ? 'Somo Smart Pro' : 'Limited Access'}
-                  </h3>
-                  {isPro && subscriptionExpiry && (
-                    <p className="text-xs text-slate-500 font-medium">Valid until {new Date(subscriptionExpiry).toLocaleDateString()}</p>
-                  )}
-                  {!isPro && (
-                    <p className="text-xs text-slate-500 font-medium">Scans remaining today: <span className="text-blue-600 font-bold">{5 - usageCount}</span></p>
-                  )}
-                </div>
-
-                <div className="shrink-0">
-                  <Button
-                    variant={isPro ? 'outline' : 'primary'}
-                    onClick={() => setMode('PRICING' as any)}
-                    className={!isPro ? 'bg-amber-500 hover:bg-amber-600 text-white border-0 px-8 py-3' : ''}
-                  >
-                    {isPro ? 'Extend Plan' : 'Go Pro Now'}
-                  </Button>
-                </div>
-              </div>
-            </Card>
-          </section>
-        </div>
-
-        {/* Global Bottom Nav */}
-        <div className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t border-slate-200 px-6 py-3 flex justify-between items-center z-50 max-w-4xl mx-auto shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
-          <button onClick={() => setMode('MENU')} className="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-600">
-            <Home className="w-6 h-6" />
-            <span className="text-[10px] font-black uppercase tracking-tighter">Home</span>
-          </button>
-          <button onClick={() => setMode('MARKETPLACE')} className="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-600">
-            <ShoppingBag className="w-6 h-6" />
-            <span className="text-[10px] font-black uppercase tracking-tighter">Materials</span>
-          </button>
-          <div className="relative -mt-10">
-            <button onClick={() => setMode('SCAN')} className="relative w-16 h-16 bg-indigo-600 rounded-full flex items-center justify-center shadow-xl shadow-indigo-200 text-white transform hover:scale-110 active:scale-90 transition-all border-4 border-white">
-              <ScanLine className="w-8 h-8" />
-            </button>
-          </div>
-          <button onClick={() => setMode('LIBRARY')} className="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-600">
-            <Library className="w-6 h-6" />
-            <span className="text-[10px] font-black uppercase tracking-tighter">Library</span>
-          </button>
-          <button onClick={() => setMode('PROFILE')} className="flex flex-col items-center gap-1 text-indigo-600 scale-110">
-            <UserCircle className="w-6 h-6" />
-            <span className="text-[10px] font-black uppercase tracking-tighter">Me</span>
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  if (mode === 'SCAN' && loading) {
-    return (
-      <div className="h-screen flex flex-col items-center justify-center p-8 text-center bg-slate-50 max-w-4xl mx-auto shadow-2xl border-x border-slate-100">
-        <div className="relative">
-          <div className="absolute inset-0 bg-blue-100 rounded-full animate-ping opacity-75"></div>
-          <div className="relative bg-white p-6 rounded-full shadow-xl">
-            <Sparkles className="w-12 h-12 text-blue-600 animate-spin" />
-          </div>
-        </div>
-        <h2 className="text-2xl font-extrabold text-slate-900 mt-8 mb-2 animate-pulse">{loadingText}</h2>
-        <p className="text-slate-500 max-w-xs mx-auto text-lg">Somo is putting the pieces together...</p>
-      </div>
-    );
-  }
-
-  if (mode === 'RESULT' && explanation) {
-    return (
-      <div className="bg-slate-50 min-h-screen pb-32 max-w-4xl mx-auto shadow-2xl border-x border-slate-100">
-        {/* Sticky Glass Header */}
-        <motion.div
-          initial={{ y: -20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-slate-200 px-4 py-3 flex items-center gap-3"
-        >
-          <button onClick={handleExitResult} className="flex items-center gap-2 px-3 py-1.5 hover:bg-slate-100 rounded-xl transition-all group">
-            <ArrowRight className="w-5 h-5 text-slate-500 rotate-180 group-hover:text-blue-600" />
-            <span className="text-xs font-bold text-slate-500 group-hover:text-blue-600">Dashboard</span>
-          </button>
-          <h1 className="font-bold text-lg text-slate-900 truncate flex-1">{explanation.topic}</h1>
-          <button onClick={handleDownload} className="p-2 text-blue-600 hover:bg-blue-50 rounded-full transition-colors">
-            <Download className="w-5 h-5" />
-          </button>
-        </motion.div>
-
-        <div className="p-4 space-y-6 max-w-2xl mx-auto">
-
-          {/* Media Section */}
-          {(imageData || audioData) && (
+            {/* CHAT INPUT AREA */}
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="bg-white p-2 rounded-2xl shadow-sm border border-slate-200"
+              transition={{ delay: 0.1 }}
+              className="w-full max-w-2xl relative z-30"
             >
-              {imageData && (
-                <div className="relative rounded-xl overflow-hidden bg-slate-100 max-h-60">
-                  <img src={`data:${imageData.mimeType}; base64, ${imageData.base64} `} alt="Scanned Content" className="w-full h-full object-contain" />
+              <div className="bg-white rounded-[2rem] shadow-2xl border-2 border-black p-2 flex items-end gap-2 pr-4 focus-within:ring-4 focus-within:ring-slate-200 transition-all hover:shadow-[0_20px_50px_rgba(0,0,0,0.2)]">
+                <div className="flex gap-1 pl-2 mb-2">
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    className="p-3 text-slate-900 hover:bg-slate-100 rounded-2xl transition-all"
+                    title="Upload Image"
+                  >
+                    <ImageIcon className="w-6 h-6" />
+                  </button>
+                  <button
+                    onClick={isRecording ? stopRecording : startRecording}
+                    className={`p-3 rounded-2xl transition-all ${isRecording ? 'text-red-600 bg-red-50' : 'text-slate-900 hover:bg-slate-100'}`}
+                    title="Record Audio"
+                  >
+                    {isRecording ? <div className="w-6 h-6 bg-red-600 rounded-sm animate-pulse" /> : <Mic className="w-6 h-6" />}
+                  </button>
                 </div>
-              )}
-              {audioData && (
-                <div className="p-4">
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
-                      <Mic className="w-5 h-5 text-purple-600" />
-                    </div>
-                    <div>
-                      <p className="font-bold text-slate-700 text-sm">Your Question</p>
-                      <p className="text-xs text-slate-400">Audio Recording</p>
-                    </div>
-                  </div>
-                  <audio controls src={`data:${audioData.mimeType}; base64, ${audioData.base64} `} className="w-full h-10" />
+
+                <textarea
+                  value={promptText}
+                  onChange={(e) => setPromptText(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      handlePromptSubmit();
+                    }
+                  }}
+                  placeholder="Ask anything... (math, science, history)"
+                  rows={1}
+                  className="flex-1 bg-transparent border-0 focus:ring-0 text-black text-lg font-bold py-4 px-2 min-h-[56px] max-h-40 resize-none placeholder:text-slate-500"
+                  style={{ height: 'auto' }}
+                  onInput={(e) => {
+                    const target = e.target as HTMLTextAreaElement;
+                    target.style.height = 'auto';
+                    target.style.height = `${target.scrollHeight}px`;
+                  }}
+                />
+
+                <button
+                  onClick={handlePromptSubmit}
+                  disabled={!promptText.trim() || loading}
+                  className={`p-4 rounded-2xl transition-all mb-1 ${promptText.trim() ? 'bg-black text-white shadow-lg shadow-slate-400 scale-105 active:scale-95 hover:bg-slate-800' : 'bg-slate-100 text-slate-300 cursor-not-allowed'}`}
+                >
+                  <ArrowRight className="w-6 h-6" />
+                </button>
+              </div>
+              {isRecording && (
+                <div className="absolute -top-12 left-1/2 -translate-x-1/2 bg-red-500 text-white text-xs font-bold px-4 py-2 rounded-full animate-bounce shadow-lg flex items-center gap-2">
+                  <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
+                  Recording... {formatTime(recordingTime)}
                 </div>
               )}
             </motion.div>
-          )}
 
-          {/* Level Switcher */}
-          <div className="flex bg-white p-1.5 rounded-xl shadow-sm border border-slate-200">
-            {(['Simple', 'Exam'] as const).map((l) => (
-              <button
-                key={l}
-                onClick={() => handleRegenerate(l)}
-                disabled={loading || explanation.level === l}
-                className={`flex-1 py-2.5 text-sm font-bold rounded-lg transition-all ${explanation.level === l ? (l === 'Simple' ? 'bg-indigo-100 text-indigo-700 shadow-sm' : 'bg-blue-100 text-blue-700 shadow-sm') : 'text-slate-400 hover:text-slate-600'}`}
-              >
-                {l === 'Simple' ? 'Explain Simply 🐣' : 'Exam Mode 🎓'}
+
+            {/* SUBJECT SHORTCUTS (CBC ALIGNED) */}
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.15 }}
+              className="mt-6 flex flex-wrap justify-center gap-2 max-w-3xl mx-auto"
+            >
+              <button onClick={() => { setPromptText("Help me learn Mathematics"); handlePromptSubmit(); }} className="flex items-center gap-1.5 px-4 py-2 bg-blue-50 text-blue-700 rounded-xl hover:bg-blue-100 hover:scale-105 transition-all font-bold text-sm border border-blue-100">
+                <Calculator className="w-4 h-4" /> Math
               </button>
-            ))}
+              <button onClick={() => { setPromptText("Help me learn English"); handlePromptSubmit(); }} className="flex items-center gap-1.5 px-4 py-2 bg-emerald-50 text-emerald-700 rounded-xl hover:bg-emerald-100 hover:scale-105 transition-all font-bold text-sm border border-emerald-100">
+                <BookOpen className="w-4 h-4" /> English
+              </button>
+              <button onClick={() => { setPromptText("Help me learn Kiswahili"); handlePromptSubmit(); }} className="flex items-center gap-1.5 px-4 py-2 bg-purple-50 text-purple-700 rounded-xl hover:bg-purple-100 hover:scale-105 transition-all font-bold text-sm border border-purple-100">
+                <Languages className="w-4 h-4" /> Kiswahili
+              </button>
+              <button onClick={() => { setPromptText("Help me learn Science"); handlePromptSubmit(); }} className="flex items-center gap-1.5 px-4 py-2 bg-amber-50 text-amber-700 rounded-xl hover:bg-amber-100 hover:scale-105 transition-all font-bold text-sm border border-amber-100">
+                <FlaskConical className="w-4 h-4" /> Science
+              </button>
+              <button onClick={() => { setPromptText("Help me learn Social Studies"); handlePromptSubmit(); }} className="flex items-center gap-1.5 px-4 py-2 bg-cyan-50 text-cyan-700 rounded-xl hover:bg-cyan-100 hover:scale-105 transition-all font-bold text-sm border border-cyan-100">
+                <Globe className="w-4 h-4" /> Social Studies
+              </button>
+            </motion.div>
+
+            {/* FEATURE CHIPS / SUGGESTIONS */}
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className="mt-8 flex flex-wrap justify-center gap-3"
+            >
+              <button onClick={isOnline ? startCamera : undefined} className={`flex items-center gap-2 px-5 py-3 ${isOnline ? 'bg-white hover:bg-slate-50 text-slate-700' : 'bg-slate-100 text-slate-400'} rounded-2xl shadow-sm border border-slate-200 font-bold text-sm transition-all hover:-translate-y-0.5`}>
+                <Camera className="w-4 h-4 text-blue-500" />
+                Scan Homework
+              </button>
+              <button onClick={() => setMode('HISTORY' as any)} className={`flex items-center gap-2 px-5 py-3 bg-white hover:bg-slate-50 text-slate-700 rounded-2xl shadow-sm border border-slate-200 font-bold text-sm transition-all hover:-translate-y-0.5`}>
+                <Clock className="w-4 h-4 text-emerald-500" />
+                History
+              </button>
+              <button onClick={() => navigate('/revision')} className={`flex items-center gap-2 px-5 py-3 ${isOnline ? 'bg-white hover:bg-slate-50 text-slate-700' : 'bg-slate-100 text-slate-400'} rounded-2xl shadow-sm border border-slate-200 font-bold text-sm transition-all hover:-translate-y-0.5`}>
+                <Brain className="w-4 h-4 text-orange-500" />
+                Revision & Exams
+              </button>
+              <button onClick={() => setShowTutoringModal(true)} className={`flex items-center gap-2 px-5 py-3 ${isOnline ? 'bg-white hover:bg-slate-50 text-slate-700' : 'bg-slate-100 text-slate-400'} rounded-2xl shadow-sm border border-slate-200 font-bold text-sm transition-all hover:-translate-y-0.5`}>
+                <Users className="w-4 h-4 text-indigo-500" />
+                Ask Teacher
+              </button>
+              <label className={`flex items-center gap-2 px-5 py-3 bg-white hover:bg-slate-50 text-slate-700 rounded-2xl shadow-sm border border-slate-200 font-bold text-sm transition-all hover:-translate-y-0.5 cursor-pointer`}>
+                <Upload className="w-4 h-4 text-purple-500" />
+                Upload File
+                <button onClick={() => window.open('/revision', '_blank')} className={`flex items-center gap-2 px-5 py-3 ${isOnline ? 'bg-white hover:bg-slate-50 text-slate-700' : 'bg-slate-100 text-slate-400'} rounded-2xl shadow-sm border border-slate-200 font-bold text-sm transition-all hover:-translate-y-0.5`}>
+                  <Library className="w-4 h-4 text-pink-500" />
+                  Resources
+                </button>
+                <input type="file" accept="image/*, application/pdf" className="hidden" ref={fileInputRef} onChange={handleFileUpload} />
+              </label>
+            </motion.div>
+
+            {/* DAILY CHALLENGE CARD */}
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="w-full max-w-2xl mb-6 mt-8 relative group cursor-pointer"
+              onClick={() => { setPromptText(`Generate a ${dailyChallenge.quiz}`); handlePromptSubmit(); }}
+            >
+              <div className="absolute inset-x-0 top-4 bottom-0 bg-orange-500/20 blur-xl rounded-[2rem] scale-95 translate-y-2" />
+              <div className="bg-white rounded-[2rem] p-6 shadow-xl border-b-4 border-slate-100 relative overflow-hidden hover:scale-[1.01] transition-transform active:scale-[0.99] hover:shadow-2xl hover:shadow-orange-500/10">
+                <div className="absolute top-0 right-0 p-8 w-64 h-64 bg-gradient-to-br from-orange-100 to-amber-50 rounded-full blur-3xl opacity-50 -translate-y-1/2 translate-x-1/2" />
+
+                <div className="relative flex items-center justify-between">
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-[10px] font-black uppercase tracking-wider">
+                        <span className="animate-pulse">🔥</span> {streak} Day Streak
+                      </span>
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-indigo-100 text-indigo-700 rounded-full text-[10px] font-black uppercase tracking-wider">
+                        +50 XP
+                      </span>
+                    </div>
+                    <h3 className="text-2xl font-black text-slate-900 mb-1">Daily Dash</h3>
+                    <p className="text-slate-500 font-bold">New: {dailyChallenge.quiz}</p>
+                  </div>
+
+                  <button className="bg-slate-900 text-white px-6 py-3 rounded-xl font-bold text-sm shadow-lg shadow-slate-200 hover:bg-slate-800 transition-colors flex items-center gap-2">
+                    Start Now <ArrowRight className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+
+            {/* PERFORMANCE SNAPSHOT */}
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+              className="w-full max-w-2xl mb-8"
+            >
+              <div className="flex items-center justify-between mb-4 px-2">
+                <h3 className="font-black text-slate-900 text-lg flex items-center gap-2">
+                  <span className="w-2 h-6 bg-indigo-500 rounded-full" />
+                  This Week's Progress
+                </h3>
+                <button
+                  onClick={() => setMode('HISTORY' as any)}
+                  className="text-xs font-bold text-indigo-600 hover:text-indigo-700"
+                >
+                  View Report
+                </button>
+              </div>
+
+              <div className="bg-white rounded-[2rem] p-6 shadow-sm border border-slate-100 space-y-5">
+                {subjectPerformance.map((item) => (
+                  <div key={item.subject}>
+                    <div className="flex justify-between text-sm font-bold text-slate-700 mb-1.5">
+                      <span>{item.subject}</span>
+                      <span className="text-slate-900">{item.score}%</span>
+                    </div>
+                    <div className={`h-3 w-full ${item.bg} rounded-full overflow-hidden`}>
+                      <motion.div
+                        initial={{ width: 0 }}
+                        animate={{ width: `${item.score}%` }}
+                        transition={{ duration: 1, delay: 0.2 }}
+                        className={`h-full ${item.color} rounded-full`}
+                      />
+                    </div>
+                  </div>
+                ))}
+                {subjectPerformance.every(s => s.score === 0) && (
+                  <p className="text-center text-xs text-slate-400 italic mt-2">
+                    Take quizzes to see your progress here!
+                  </p>
+                )}
+              </div>
+            </motion.div>
+
+            {/* TUTORING MODAL TRIGGER (Hidden logic mostly, exposed via chip) */}
+            {/* The actual modal logic is shared */}
           </div>
 
-          {/* Key Points - Modernized */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm relative overflow-hidden"
-          >
-            <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-amber-400"></div>
-            <h3 className="font-bold text-slate-900 mb-6 flex items-center gap-3 text-lg">
-              <div className="w-8 h-8 rounded-lg bg-amber-50 flex items-center justify-center">
-                <BookOpen className="w-5 h-5 text-amber-600" />
+
+        </div>
+      );
+    }
+
+    // --- HISTORY VIEW ---
+    if (mode === 'HISTORY' as any) {
+      return (
+        <div className="min-h-screen bg-white font-sans text-slate-800 max-w-4xl mx-auto border-x border-slate-100 flex flex-col">
+          <div className="p-4 border-b border-slate-100 flex items-center gap-3 sticky top-0 bg-white z-20">
+            <button onClick={() => setMode('MENU')} className="p-2 hover:bg-slate-100 rounded-full transition-colors"><ArrowRight className="w-6 h-6 rotate-180" /></button>
+            <h1 className="text-lg font-bold">Learning History</h1>
+          </div>
+
+          <div className="flex-1 p-6 overflow-y-auto">
+            {history.length === 0 ? (
+              <div className="text-center py-20 opacity-50">
+                <Clock className="w-12 h-12 mx-auto mb-4 text-slate-300" />
+                <p>No history yet. Start a chat!</p>
               </div>
-              Key Takeaways
-            </h3>
-            <ul className="space-y-4">
-              {explanation.summaryPoints.map((point, i) => (
-                <li key={i} className="flex gap-4 text-slate-600 leading-relaxed font-medium">
-                  <div className="w-6 h-6 rounded-full bg-slate-50 text-slate-400 border border-slate-100 flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5">{i + 1}</div>
-                  <span className="text-sm md:text-base">{point}</span>
-                </li>
-              ))}
-            </ul>
+            ) : (
+              <div className="space-y-4">
+                {history.slice().reverse().map((item) => (
+                  <div key={item.id} onClick={() => restoreActivity(item)} className="p-4 rounded-2xl border border-slate-100 hover:border-blue-200 hover:bg-blue-50 transition-all cursor-pointer flex items-center gap-4">
+                    <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center border border-slate-100 shadow-sm text-lg">
+                      {item.type === 'QUIZ' ? '📝' : '💡'}
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-slate-800">{item.topic || "Untitled Session"}</h3>
+                      <p className="text-xs text-slate-500">{item.date}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )
+    }
+
+    if (mode === 'PROFILE') {
+      return (
+        <div className="bg-slate-50 min-h-screen pb-20 max-w-4xl mx-auto shadow-2xl border-x border-slate-100">
+          {/* Sticky Header */}
+          <motion.div
+            initial={{ y: -20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-slate-200 px-4 py-4 flex items-center justify-between"
+          >
+            <div className="flex items-center gap-3">
+              <button onClick={() => setMode('MENU')} className="p-2 hover:bg-slate-100 rounded-xl transition-all group">
+                <ArrowRight className="w-5 h-5 text-slate-500 rotate-180 group-hover:text-blue-600" />
+              </button>
+              <h1 className="font-bold text-xl text-slate-900">Your Profile</h1>
+            </div>
+            <button onClick={() => setShowLogoutModal(true)} className="flex items-center gap-2 px-3 py-1.5 bg-red-50 text-red-600 rounded-xl hover:bg-red-100 transition-colors text-xs font-bold">
+              <LogOut className="w-4 h-4" />
+              Logout
+            </button>
           </motion.div>
 
-          {/* Detailed Explanation */}
-          <motion.article
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="bg-white p-6 rounded-3xl shadow-sm border border-slate-200 prose prose-slate max-w-none prose-p:text-slate-600 prose-headings:text-slate-800 prose-strong:text-slate-900"
-          >
-            <MarkdownText content={explanation.explanation} />
-            {/* ACTION FOOTER */}
-            <div className="mt-8 pt-6 border-t border-slate-100 flex flex-wrap gap-4">
-              <button
-                onClick={handleTTS}
-                className="flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm px-5 py-3 rounded-xl transition-colors"
-              >
-                {isPlaying ? <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" /> : <Volume2 className="w-4 h-4" />}
-                {isPlaying ? "Stop" : "Listen"}
-              </button>
+          <div className="p-6 space-y-8 max-w-2xl mx-auto">
+            {/* Profile Card */}
+            <section>
+              <div className="flex items-center gap-4 mb-4">
+                <div className="w-12 h-12 bg-blue-100 rounded-2xl flex items-center justify-center">
+                  <UserCircle className="w-8 h-8 text-blue-600" />
+                </div>
+                <h2 className="text-lg font-bold text-slate-800">Account Details</h2>
+              </div>
 
-              <button
-                onClick={handleGenerateQuiz}
-                className="flex items-center gap-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-sm px-5 py-3 rounded-xl transition-colors border border-indigo-100"
-              >
-                <Clock className="w-4 h-4" />
-                Take Quiz
+              <Card className="p-6 space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Full Name</label>
+                    <p className="text-lg font-bold text-slate-800">{studentProfile?.name || '---'}</p>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Student ID</label>
+                    <p className="text-lg font-bold text-blue-600 font-mono tracking-wider">{studentCode || '---'}</p>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Grade Level</label>
+                    <p className="text-lg font-bold text-slate-800">{studentProfile?.grade || '---'}</p>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Account Email</label>
+                    <p className="text-sm font-medium text-slate-500 truncate">{studentProfile?.email || 'No email set'}</p>
+                  </div>
+                </div>
+              </Card>
+            </section>
+
+            {/* Parent Contact Settings */}
+            <section>
+              <div className="flex items-center gap-4 mb-4">
+                <div className="w-12 h-12 bg-purple-100 rounded-2xl flex items-center justify-center">
+                  <Sparkles className="w-7 h-7 text-purple-600" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-bold text-slate-800">Parent Dashboard Access</h2>
+                  <p className="text-xs text-slate-400 font-medium">Allows parents to log in using their phone number</p>
+                </div>
+              </div>
+
+              <Card className="p-6">
+                <div className="space-y-4">
+                  <div>
+                    <label htmlFor="parentPhone" className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Parent&apos;s Phone Number</label>
+                    <div className="relative">
+                      <input
+                        id="parentPhone"
+                        type="tel"
+                        defaultValue={studentProfile?.parentPhone || ''}
+                        placeholder="e.g. 0712345678"
+                        className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl px-5 py-3.5 text-lg font-bold text-slate-800 focus:border-purple-500 focus:ring-0 transition-all outline-none"
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          const btn = document.getElementById('save-profile-btn');
+                          if (btn) btn.style.display = 'block';
+                        }}
+                      />
+                    </div>
+                    <p className="mt-3 text-xs text-slate-500 leading-relaxed">
+                      Parents use this number + your Student ID to access performance reports and subscription management.
+                    </p>
+                  </div>
+
+                  <div id="save-profile-btn" style={{ display: 'none' }}>
+                    <Button
+                      fullWidth
+                      className="bg-purple-600 hover:bg-purple-700 text-white shadow-lg shadow-purple-200"
+                      onClick={async () => {
+                        const input = document.getElementById('parentPhone') as HTMLInputElement;
+                        setLoading(true);
+                        setLoadingText("Saving profile...");
+                        const { success, message } = await updateStudentProfile({ parentPhone: input.value });
+                        setLoading(false);
+                        if (success) {
+                          const btn = document.getElementById('save-profile-btn');
+                          if (btn) btn.style.display = 'none';
+                          // Optional: Toast success
+                        } else {
+                          alert(message || "Failed to save profile");
+                        }
+                      }}
+                    >
+                      Save Changes
+                    </Button>
+                  </div>
+                </div>
+              </Card>
+            </section>
+
+            {/* Subscription Status */}
+            <section>
+              <div className="flex items-center gap-4 mb-4">
+                <div className="w-12 h-12 bg-amber-100 rounded-2xl flex items-center justify-center">
+                  <CreditCard className="w-7 h-7 text-amber-600" />
+                </div>
+                <h2 className="text-lg font-bold text-slate-800">Subscription Status</h2>
+              </div>
+
+              <Card className={`p-6 border-2 ${isPro ? 'border-amber-200 bg-gradient-to-br from-white to-amber-50/30' : 'border-slate-100'}`}>
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className={`px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-widest ${isPro ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-500'}`}>
+                        {subscriptionPlan === 'FREE' ? 'Free Tier' : `${subscriptionPlan} Plan`}
+                      </span>
+                      {isPro && <span className="bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full text-[10px] font-bold">Active</span>}
+                    </div>
+                    <h3 className="text-2xl font-black text-slate-900 mb-1">
+                      {isPro ? 'Somo Smart Pro' : 'Limited Access'}
+                    </h3>
+                    {isPro && subscriptionExpiry && (
+                      <p className="text-xs text-slate-500 font-medium">Valid until {new Date(subscriptionExpiry).toLocaleDateString()}</p>
+                    )}
+                    {!isPro && (
+                      <p className="text-xs text-slate-500 font-medium">Scans remaining today: <span className="text-blue-600 font-bold">{5 - usageCount}</span></p>
+                    )}
+                  </div>
+
+                  <div className="shrink-0">
+                    <Button
+                      variant={isPro ? 'outline' : 'primary'}
+                      onClick={() => setMode('PRICING' as any)}
+                      className={!isPro ? 'bg-amber-500 hover:bg-amber-600 text-white border-0 px-8 py-3' : ''}
+                    >
+                      {isPro ? 'Extend Plan' : 'Go Pro Now'}
+                    </Button>
+                  </div>
+                </div>
+              </Card>
+            </section>
+          </div>
+
+          {/* Global Bottom Nav */}
+          <div className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t border-slate-200 px-6 py-3 flex justify-between items-center z-50 max-w-4xl mx-auto shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
+            <button onClick={() => setMode('MENU')} className="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-600">
+              <Home className="w-6 h-6" />
+              <span className="text-[10px] font-black uppercase tracking-tighter">Home</span>
+            </button>
+            <button onClick={() => setMode('MARKETPLACE')} className="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-600">
+              <ShoppingBag className="w-6 h-6" />
+              <span className="text-[10px] font-black uppercase tracking-tighter">Materials</span>
+            </button>
+            <div className="relative -mt-10">
+              <button onClick={() => setMode('SCAN')} className="relative w-16 h-16 bg-indigo-600 rounded-full flex items-center justify-center shadow-xl shadow-indigo-200 text-white transform hover:scale-110 active:scale-90 transition-all border-4 border-white">
+                <ScanLine className="w-8 h-8" />
               </button>
             </div>
-          </motion.article>
+            <button onClick={() => setMode('LIBRARY')} className="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-600">
+              <Library className="w-6 h-6" />
+              <span className="text-[10px] font-black uppercase tracking-tighter">Library</span>
+            </button>
+            <button onClick={() => setMode('PROFILE')} className="flex flex-col items-center gap-1 text-indigo-600 scale-110">
+              <UserCircle className="w-6 h-6" />
+              <span className="text-[10px] font-black uppercase tracking-tighter">Me</span>
+            </button>
+          </div>
+        </div>
+      );
+    }
 
-          {/* Need more help? - Phase 2 */}
+    if (mode === 'SCAN' && loading) {
+      return (
+        <div className="h-screen flex flex-col items-center justify-center p-8 text-center bg-slate-50 max-w-4xl mx-auto shadow-2xl border-x border-slate-100">
+          <div className="relative">
+            <div className="absolute inset-0 bg-blue-100 rounded-full animate-ping opacity-75"></div>
+            <div className="relative bg-white p-6 rounded-full shadow-xl">
+              <Sparkles className="w-12 h-12 text-blue-600 animate-spin" />
+            </div>
+          </div>
+          <h2 className="text-2xl font-extrabold text-slate-900 mt-8 mb-2 animate-pulse">{loadingText}</h2>
+          <p className="text-slate-500 max-w-xs mx-auto text-lg">Somo is putting the pieces together...</p>
+        </div>
+      );
+    }
 
-          {/* CONTINUE RESEARCHING */}
+    if (mode === 'STUDY' && currentDocument) {
+      return (
+        <div className="bg-slate-50 min-h-screen flex flex-col md:flex-row max-w-[1440px] mx-auto shadow-2xl border-x border-slate-100 overflow-hidden">
+          {/* Sidebar: Study Guide & Document Info */}
+          <div className="w-full md:w-1/3 bg-white border-r border-slate-200 flex flex-col h-[50vh] md:h-screen">
+            <div className="p-6 border-b border-slate-100 bg-indigo-900 text-white">
+              <button onClick={() => setMode('MARKETPLACE')} className="flex items-center gap-2 mb-6 text-indigo-200 hover:text-white transition-colors">
+                <ArrowRight className="w-4 h-4 rotate-180" />
+                <span className="text-[10px] font-black uppercase tracking-widest">Exit Study Center</span>
+              </button>
+              <h1 className="text-2xl font-black mb-2 tracking-tight line-clamp-2">{currentDocument.title}</h1>
+              <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-indigo-300">
+                <span>{currentDocument.grade}</span>
+                <span>•</span>
+                <span>{currentDocument.subject}</span>
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-6 space-y-8 no-scrollbar">
+              {/* Study Guide Content */}
+              {isSummarizing ? (
+                <div className="space-y-4 animate-pulse">
+                  <div className="h-4 bg-slate-100 rounded w-3/4"></div>
+                  <div className="h-4 bg-slate-100 rounded w-full"></div>
+                  <div className="h-4 bg-slate-100 rounded w-5/6"></div>
+                </div>
+              ) : explanation && (
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="prose prose-slate prose-sm max-w-none">
+                  <h3 className="text-slate-900 font-black uppercase text-xs tracking-widest mb-4 flex items-center gap-2">
+                    <BookOpen className="w-4 h-4 text-indigo-600" /> Somo Smart Study Guide
+                  </h3>
+                  <MarkdownText content={explanation.explanation} />
+
+                  <div className="mt-8">
+                    <h4 className="text-slate-900 font-black uppercase text-[10px] tracking-widest mb-4">Key Takeaways</h4>
+                    <ul className="space-y-3">
+                      {explanation.summaryPoints.map((point, i) => (
+                        <li key={i} className="flex gap-3 text-slate-600 items-start">
+                          <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
+                          <span className="text-sm font-medium">{point}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  <div className="mt-8 pt-6 border-t border-slate-100">
+                    <div className="bg-emerald-50 rounded-2xl p-4 mb-4 border border-emerald-100">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Sparkles className="w-3 h-3 text-emerald-600" />
+                        <span className="text-[10px] font-black text-emerald-700 uppercase tracking-widest">Stickiness Boost</span>
+                      </div>
+                      <p className="text-[10px] text-emerald-600 font-medium italic">Did you know? Taking a 2-minute quiz now increases your retention by up to 80%!</p>
+                    </div>
+                    <Button
+                      fullWidth
+                      className="rounded-2xl py-4 bg-indigo-600 text-white shadow-xl shadow-indigo-100 font-black uppercase tracking-widest text-[10px] hover:bg-indigo-700 hover:scale-[1.02] transition-all"
+                      onClick={generatePracticeQuiz}
+                      icon={<Clock className="w-4 h-4" />}
+                    >
+                      Take Practice Quiz
+                    </Button>
+                  </div>
+                </motion.div>
+              )}
+            </div>
+          </div>
+
+          {/* Main Content: Chat Interface */}
+          <div className="flex-1 flex flex-col bg-slate-50 relative h-[50vh] md:h-screen">
+            <div className="sticky top-0 z-10 p-6 flex items-center justify-between bg-white/80 backdrop-blur-md border-b border-slate-100">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-indigo-100 rounded-2xl flex items-center justify-center">
+                  <Sparkles className="w-6 h-6 text-indigo-600" />
+                </div>
+                <div>
+                  <h2 className="font-black text-slate-800 tracking-tight">Study Buddy</h2>
+                  <p className="text-[9px] font-black text-emerald-500 uppercase tracking-widest">Document-Locked Chat</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="px-3 py-1 bg-slate-100 rounded-full text-[9px] font-black text-slate-500 uppercase tracking-widest">Soma v1.5</span>
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-6 space-y-6 no-scrollbar pb-32">
+              {studyChat.length === 0 ? (
+                <div className="h-full flex flex-col items-center justify-center text-center max-w-sm mx-auto opacity-40">
+                  <div className="w-20 h-20 bg-slate-200 rounded-full flex items-center justify-center mb-6">
+                    <Sparkles className="w-10 h-10 text-slate-400" />
+                  </div>
+                  <h3 className="text-xl font-black text-slate-600 mb-2">Ready to study with Somo?</h3>
+                  <p className="text-sm font-medium text-slate-500">I'm ready to help you master this material. Ask me for examples, easy summaries, or anything else you're curious about!</p>
+                </div>
+              ) : (
+                studyChat.map((msg, i) => (
+                  <motion.div
+                    key={i}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                  >
+                    <div className={`max-w-[85%] p-4 rounded-3xl ${msg.role === 'user' ? 'bg-indigo-600 text-white rounded-tr-none' : 'bg-white text-slate-800 shadow-sm border border-slate-100 rounded-tl-none'}`}>
+                      <MarkdownText content={msg.text} />
+                    </div>
+                  </motion.div>
+                ))
+              )}
+              {loading && (
+                <div className="flex justify-start">
+                  <div className="bg-white p-4 rounded-3xl rounded-tl-none shadow-sm border border-slate-100 flex items-center gap-2">
+                    <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce"></div>
+                    <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce delay-100"></div>
+                    <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce delay-200"></div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Input Area */}
+            <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-slate-50 via-slate-50 to-transparent">
+              <div className="max-w-3xl mx-auto flex gap-3 p-2 bg-white rounded-[2rem] shadow-2xl border border-slate-200">
+                <input
+                  type="text"
+                  value={promptText}
+                  onChange={(e) => setPromptText(e.target.value)}
+                  placeholder="learn more about the subject"
+                  className="flex-1 px-6 py-4 outline-none text-slate-700 bg-transparent font-medium"
+                  onKeyDown={(e) => e.key === 'Enter' && askStudyBuddy(promptText)}
+                />
+                <button
+                  onClick={() => askStudyBuddy(promptText)}
+                  disabled={loading || !promptText.trim()}
+                  className="w-14 h-14 bg-indigo-600 rounded-full flex items-center justify-center text-white shadow-lg shadow-indigo-100 hover:scale-105 active:scale-95 transition-all disabled:opacity-50"
+                >
+                  <ArrowRight className="w-6 h-6" />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    if (mode === 'RESULT' && explanation) {
+      return (
+        <div className="bg-slate-50 min-h-screen pb-32 max-w-4xl mx-auto shadow-2xl border-x border-slate-100">
+          {/* Sticky Glass Header */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="bg-slate-50 p-6 rounded-[2rem] border border-slate-200 mt-8"
+            initial={{ y: -20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-slate-200 px-4 py-3 flex items-center gap-3"
           >
-            <div className="flex items-center gap-2 mb-4">
-              <Sparkles className="w-5 h-5 text-indigo-500" />
-              <h3 className="font-bold text-slate-800">Continue Researching</h3>
-            </div>
-            <p className="text-xs text-slate-500 mb-4">Ask a follow-up question to refine this explanation.</p>
+            <button onClick={handleExitResult} className="flex items-center gap-2 px-3 py-1.5 hover:bg-slate-100 rounded-xl transition-all group">
+              <ArrowRight className="w-5 h-5 text-slate-500 rotate-180 group-hover:text-blue-600" />
+              <span className="text-xs font-bold text-slate-500 group-hover:text-blue-600">Dashboard</span>
+            </button>
+            <h1 className="font-bold text-lg text-slate-900 truncate flex-1">{explanation.topic}</h1>
+            <button onClick={handleDownload} className="p-2 text-blue-600 hover:bg-blue-50 rounded-full transition-colors">
+              <Download className="w-5 h-5" />
+            </button>
+          </motion.div>
 
-            <div className="flex gap-2">
-              <input
-                type="text"
-                placeholder="e.g. Give me more examples..."
-                className="flex-1 p-4 rounded-xl border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none transition-all"
-                onKeyDown={async (e) => {
-                  if (e.key === 'Enter') {
-                    const target = e.target as HTMLInputElement;
-                    const query = target.value;
+          <div className="p-4 space-y-6 max-w-2xl mx-auto">
+
+            {/* Media Section */}
+            {(imageData || audioData) && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="bg-white p-2 rounded-2xl shadow-sm border border-slate-200"
+              >
+                {imageData && (
+                  <div className="relative rounded-xl overflow-hidden bg-slate-100 max-h-60">
+                    <img src={`data:${imageData.mimeType};base64,${imageData.base64}`} alt="Scanned Content" className="w-full h-full object-contain" />
+                  </div>
+                )}
+                {audioData && (
+                  <div className="p-4">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
+                        <Mic className="w-5 h-5 text-purple-600" />
+                      </div>
+                      <div>
+                        <p className="font-bold text-slate-700 text-sm">Your Question</p>
+                        <p className="text-xs text-slate-400">Audio Recording</p>
+                      </div>
+                    </div>
+                    <audio controls src={`data:${audioData.mimeType};base64,${audioData.base64}`} className="w-full h-10" />
+                  </div>
+                )}
+              </motion.div>
+            )}
+
+            {/* Level Switcher */}
+            <div className="flex bg-white p-1.5 rounded-xl shadow-sm border border-slate-200">
+              {(['Simple', 'Exam'] as const).map((l) => (
+                <button
+                  key={l}
+                  onClick={() => handleRegenerate(l)}
+                  disabled={loading || explanation.level === l}
+                  className={`flex-1 py-2.5 text-sm font-bold rounded-lg transition-all ${explanation.level === l ? (l === 'Simple' ? 'bg-indigo-100 text-indigo-700 shadow-sm' : 'bg-blue-100 text-blue-700 shadow-sm') : 'text-slate-400 hover:text-slate-600'}`}
+                >
+                  {l === 'Simple' ? 'Explain Simply 🐣' : 'Exam Mode 🎓'}
+                </button>
+              ))}
+            </div>
+
+            {/* Key Points - Modernized */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+              className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm relative overflow-hidden"
+            >
+              <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-amber-400"></div>
+              <h3 className="font-bold text-slate-900 mb-6 flex items-center gap-3 text-lg">
+                <div className="w-8 h-8 rounded-lg bg-amber-50 flex items-center justify-center">
+                  <BookOpen className="w-5 h-5 text-amber-600" />
+                </div>
+                Key Takeaways
+              </h3>
+              <ul className="space-y-4">
+                {explanation.summaryPoints.map((point, i) => (
+                  <li key={i} className="flex gap-4 text-slate-600 leading-relaxed font-medium">
+                    <div className="w-6 h-6 rounded-full bg-slate-50 text-slate-400 border border-slate-100 flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5">{i + 1}</div>
+                    <span className="text-sm md:text-base">{point}</span>
+                  </li>
+                ))}
+              </ul>
+            </motion.div>
+
+            {/* Detailed Explanation */}
+            <motion.article
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className="bg-white p-6 rounded-3xl shadow-sm border border-slate-200 prose prose-slate max-w-none prose-p:text-slate-600 prose-headings:text-slate-800 prose-strong:text-slate-900"
+            >
+              <MarkdownText content={explanation.explanation} />
+              {/* ACTION FOOTER */}
+              <div className="mt-8 pt-6 border-t border-slate-100 flex flex-wrap gap-4">
+                <button
+                  onClick={handleTTS}
+                  className="flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm px-5 py-3 rounded-xl transition-colors"
+                >
+                  {isPlaying ? <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" /> : <Volume2 className="w-4 h-4" />}
+                  {isPlaying ? "Stop" : "Listen"}
+                </button>
+
+                <button
+                  onClick={handleGenerateQuiz}
+                  className="flex items-center gap-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-sm px-5 py-3 rounded-xl transition-colors border border-indigo-100"
+                >
+                  <Clock className="w-4 h-4" />
+                  Take Quiz
+                </button>
+              </div>
+            </motion.article>
+
+            {/* Need more help? - Phase 2 */}
+
+            {/* CONTINUE RESEARCHING */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              className="bg-slate-50 p-6 rounded-[2rem] border border-slate-200 mt-8"
+            >
+              <div className="flex items-center gap-2 mb-4">
+                <Sparkles className="w-5 h-5 text-indigo-500" />
+                <h3 className="font-bold text-slate-800">Continue Researching</h3>
+              </div>
+              <p className="text-xs text-slate-500 mb-4">Ask a follow-up question to refine this explanation.</p>
+
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  placeholder="e.g. Give me more examples..."
+                  className="flex-1 p-4 rounded-xl border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none transition-all"
+                  onKeyDown={async (e) => {
+                    if (e.key === 'Enter') {
+                      const target = e.target as HTMLInputElement;
+                      const query = target.value;
+                      if (!query.trim() || !explanation) return;
+
+                      target.value = '';
+                      setLoading(true);
+                      setLoadingText("Researching your question...");
+                      setMode('SCAN'); // Show loading
+
+                      try {
+                        const result = await continueResearch(explanation.topic, explanation.explanation, query, level, language);
+                        setExplanation(result);
+                        setMode('RESULT');
+                      } catch (err) {
+                        console.error(err);
+                        setError({ title: "Research Failed", message: "Could not update the explanation. Please try again." });
+                        setLoading(false);
+                        setMode('RESULT');
+                      }
+                    }
+                  }}
+                />
+                <button
+                  className="bg-indigo-600 text-white p-4 rounded-xl hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-100"
+                  onClick={async (e) => {
+                    const input = e.currentTarget.previousElementSibling as HTMLInputElement;
+                    const query = input.value;
                     if (!query.trim() || !explanation) return;
 
-                    target.value = '';
+                    input.value = '';
                     setLoading(true);
                     setLoadingText("Researching your question...");
-                    setMode('SCAN'); // Show loading
+                    setMode('SCAN');
 
                     try {
                       const result = await continueResearch(explanation.topic, explanation.explanation, query, level, language);
@@ -1581,686 +1852,653 @@ ${explanation.explanation}
                       setLoading(false);
                       setMode('RESULT');
                     }
-                  }
-                }}
-              />
+                  }}
+                >
+                  <ArrowRight className="w-5 h-5" />
+                </button>
+              </div>
+            </motion.div>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.25 }}
+              className="bg-indigo-600 p-6 rounded-[2.5rem] text-white shadow-xl shadow-indigo-100 flex flex-col md:flex-row items-center gap-6"
+            >
+              <div className="flex-1 text-center md:text-left">
+                <div className="flex items-center justify-center md:justify-start gap-2 mb-2">
+                  <h3 className="text-xl font-black">Still confused? 🧐</h3>
+                  <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest ${isAvailableForTutoring ? 'bg-emerald-400 text-indigo-900 animate-pulse' : 'bg-indigo-500/50 text-indigo-200'}`}>
+                    {isAvailableForTutoring ? 'Teachers online' : 'Teachers offline'}
+                  </span>
+                </div>
+                <p className="text-indigo-100 text-sm font-medium">Get a personalized explanation from a top teacher for just KES 20.</p>
+              </div>
               <button
-                className="bg-indigo-600 text-white p-4 rounded-xl hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-100"
-                onClick={async (e) => {
-                  const input = e.currentTarget.previousElementSibling as HTMLInputElement;
-                  const query = input.value;
-                  if (!query.trim() || !explanation) return;
-
-                  input.value = '';
-                  setLoading(true);
-                  setLoadingText("Researching your question...");
-                  setMode('SCAN');
-
-                  try {
-                    const result = await continueResearch(explanation.topic, explanation.explanation, query, level, language);
-                    setExplanation(result);
-                    setMode('RESULT');
-                  } catch (err) {
-                    console.error(err);
-                    setError({ title: "Research Failed", message: "Could not update the explanation. Please try again." });
-                    setLoading(false);
-                    setMode('RESULT');
-                  }
+                onClick={() => {
+                  setTutoringTopic(explanation?.topic || "");
+                  setShowTutoringModal(true);
                 }}
+                className={`px-8 py-4 bg-white text-indigo-600 rounded-full font-black text-sm uppercase tracking-widest shadow-lg hover:bg-indigo-50 transition-all active:scale-95 ${!isAvailableForTutoring ? 'opacity-70 grayscale' : ''}`}
               >
-                <ArrowRight className="w-5 h-5" />
+                Ask a Teacher
+              </button>
+            </motion.div>
+
+            {/* Related Topics */}
+            {explanation.relatedTopics && explanation.relatedTopics.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.3 }}
+              >
+                <h4 className="font-bold text-slate-800 mb-3 px-2 flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-purple-500" /> Keep Exploring
+                </h4>
+                <div className="flex flex-wrap gap-2">
+                  {explanation.relatedTopics.map((topic, i) => (
+                    <button
+                      key={i}
+                      onClick={() => handleTopicClick(topic)}
+                      className="bg-white border border-slate-200 px-4 py-2 rounded-full text-sm font-medium text-slate-600 hover:border-purple-300 hover:text-purple-600 hover:bg-purple-50 transition-all active:scale-95 shadow-sm"
+                    >
+                      {topic}
+                    </button>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+
+          </div>
+
+
+
+          {/* Global Bottom Nav */}
+          <div className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t border-slate-200 px-6 py-3 flex justify-between items-center z-50 max-w-4xl mx-auto shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
+            <button onClick={() => setMode('MENU')} className="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-600">
+              <Home className="w-6 h-6" />
+              <span className="text-[10px] font-black uppercase tracking-tighter">Home</span>
+            </button>
+            <button onClick={() => setMode('MARKETPLACE')} className="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-600">
+              <ShoppingBag className="w-6 h-6" />
+              <span className="text-[10px] font-black uppercase tracking-tighter">Materials</span>
+            </button>
+            <div className="relative -mt-10">
+              <button onClick={() => setMode('SCAN')} className="relative w-16 h-16 bg-indigo-600 rounded-full flex items-center justify-center shadow-xl shadow-indigo-200 text-white transform hover:scale-110 active:scale-90 transition-all border-4 border-white">
+                <ScanLine className="w-8 h-8" />
               </button>
             </div>
-          </motion.div>
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.25 }}
-            className="bg-indigo-600 p-6 rounded-[2.5rem] text-white shadow-xl shadow-indigo-100 flex flex-col md:flex-row items-center gap-6"
-          >
-            <div className="flex-1 text-center md:text-left">
-              <div className="flex items-center justify-center md:justify-start gap-2 mb-2">
-                <h3 className="text-xl font-black">Still confused? 🧐</h3>
-                <span className={`px - 2 py - 0.5 rounded - full text - [9px] font - black uppercase tracking - widest ${isAvailableForTutoring ? 'bg-emerald-400 text-indigo-900 animate-pulse' : 'bg-indigo-500/50 text-indigo-200'} `}>
-                  {isAvailableForTutoring ? 'Teachers online' : 'Teachers offline'}
-                </span>
-              </div>
-              <p className="text-indigo-100 text-sm font-medium">Get a personalized explanation from a top teacher for just KES 20.</p>
-            </div>
-            <button
-              onClick={() => {
-                setTutoringTopic(explanation?.topic || "");
-                setShowTutoringModal(true);
-              }}
-              className={`px - 8 py - 4 bg - white text - indigo - 600 rounded - full font - black text - sm uppercase tracking - widest shadow - lg hover: bg - indigo - 50 transition - all active: scale - 95 ${!isAvailableForTutoring ? 'opacity-70 grayscale' : ''} `}
-            >
-              Ask a Teacher
+            <button onClick={() => setMode('LIBRARY')} className="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-600">
+              <Library className="w-6 h-6" />
+              <span className="text-[10px] font-black uppercase tracking-tighter">Library</span>
             </button>
-          </motion.div>
+            <button onClick={() => setMode('PROFILE')} className="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-600">
+              <UserCircle className="w-6 h-6" />
+              <span className="text-[10px] font-black uppercase tracking-tighter">Me</span>
+            </button>
+          </div>
+        </div>
+      );
+    }
 
-          {/* Related Topics */}
-          {explanation.relatedTopics && explanation.relatedTopics.length > 0 && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.3 }}
-            >
-              <h4 className="font-bold text-slate-800 mb-3 px-2 flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-purple-500" /> Keep Exploring
-              </h4>
-              <div className="flex flex-wrap gap-2">
-                {explanation.relatedTopics.map((topic, i) => (
+    if (mode === 'QUIZ' && quizData) {
+      return <QuizRunner data={quizData} onComplete={(score) => {
+        // Enrich topic with subject for better gamification tracking
+        const subjectPrefix = currentDocument?.subject ? `${currentDocument.subject} - ` : "";
+
+        saveActivity({
+          id: Date.now().toString(),
+          type: 'QUIZ',
+          topic: `${subjectPrefix}${quizData.topic}`,
+          date: new Date().toLocaleDateString(),
+          score
+        });
+
+        // Return to marketplace/materials after study quiz
+        setMode('MARKETPLACE');
+      }} onExit={() => setMode('RESULT')} />;
+    }
+
+    // --- PRICING & PAYMENT ---
+
+    if (mode === 'PRICING') {
+      return (
+        <PricingPage
+          currentTier={subscriptionPlan}
+          isPro={isPro}
+          onSelectPlan={(plan) => {
+            setSelectedPlan(plan);
+            setMode('PAYMENT' as any);
+          }}
+          onClose={() => setMode('MENU')}
+        />
+      );
+    }
+
+    if (mode === 'PAYMENT' && selectedPlan) {
+      return (
+        <PaymentFlow
+          plan={selectedPlan}
+          materialId={pendingMaterialId || undefined}
+          onSuccess={async () => {
+            await upgradeAccount(selectedPlan);
+            setMode('MENU');
+            setSelectedPlan(null);
+            // Auto-open if we have a pending material
+            if (pendingMaterialId) {
+              const material = unifiedMaterials.find(m => m.id === pendingMaterialId || (m as any).realId === pendingMaterialId);
+              if (material?.fileUrl) window.open(material.fileUrl, '_blank');
+              setPendingMaterialId(null);
+            }
+          }}
+          onCancel={() => setMode('PRICING' as any)}
+        />
+      );
+    }
+
+    if (mode === 'MARKETPLACE') {
+      return (
+        <div className="bg-slate-50 min-h-screen pb-32 max-w-4xl mx-auto shadow-2xl border-x border-slate-100 flex flex-col">
+          {/* Header */}
+          <div className="sticky top-0 z-40 bg-white/90 backdrop-blur-xl border-b border-slate-200 px-6 py-4 flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <button onClick={() => setMode('MENU')} className="p-2 hover:bg-slate-100 rounded-full transition-colors"><ArrowRight className="w-5 h-5 rotate-180" /></button>
+              <div>
+                <h1 className="text-xl font-black text-slate-900 tracking-tight leading-none">Study Materials</h1>
+                <p className="text-[9px] font-black text-indigo-500 uppercase tracking-[0.2em] mt-1.5">Premium Resource Center</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              {!isPro && (
+                <div className="flex items-center gap-2">
+                  <div className="hidden sm:flex flex-col items-end mr-2">
+                    <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Free Sessions</p>
+                    <p className="text-[10px] font-black text-indigo-600">{Math.max(0, 3 - studyUsageCount)} / 3 Left</p>
+                  </div>
                   <button
-                    key={i}
-                    onClick={() => handleTopicClick(topic)}
-                    className="bg-white border border-slate-200 px-4 py-2 rounded-full text-sm font-medium text-slate-600 hover:border-purple-300 hover:text-purple-600 hover:bg-purple-50 transition-all active:scale-95 shadow-sm"
+                    onClick={() => setMode('PRICING')}
+                    className="bg-amber-100 text-amber-700 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider border border-amber-200 shadow-sm"
                   >
-                    {topic}
+                    Go Pro
+                  </button>
+                </div>
+              )}
+              <div className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 font-bold border-2 border-white shadow-sm">
+                <Sparkles className="w-5 h-5" />
+              </div>
+            </div>
+          </div>
+
+          <div className="flex-1 overflow-y-auto no-scrollbar">
+            {/* Premium Hero */}
+            <div className="p-6">
+              <div className="bg-gradient-to-br from-indigo-900 via-indigo-800 to-indigo-950 p-8 rounded-[2.5rem] text-white shadow-2xl shadow-indigo-200/50 relative overflow-hidden group">
+                <div className="absolute top-0 right-0 w-80 h-80 bg-white/5 rounded-full -mr-32 -mt-32 blur-3xl group-hover:scale-110 transition-transform duration-700"></div>
+                <div className="absolute bottom-0 left-0 w-64 h-64 bg-indigo-500/10 rounded-full -ml-32 -mb-32 blur-3xl"></div>
+
+                <div className="relative z-10">
+                  <div className="flex items-center gap-2 mb-4">
+                    <span className="px-3 py-1 bg-white/10 backdrop-blur-md rounded-full text-[9px] font-black uppercase tracking-widest border border-white/5">CBC Aligned</span>
+                    <span className="px-3 py-1 bg-indigo-500/20 backdrop-blur-md rounded-full text-[9px] font-black uppercase tracking-widest border border-white/5">Verified Content</span>
+                  </div>
+                  <h3 className="text-4xl font-black mb-3 tracking-tight leading-tight">Elite Library.</h3>
+                  <p className="opacity-80 text-sm font-medium mb-8 max-w-xs leading-relaxed">Access verified past papers, professional syllabus guides, and top-tier revision notes.</p>
+
+                  <div className="flex items-center gap-4">
+                    <div className="bg-white/10 backdrop-blur-md px-4 py-3 rounded-2xl border border-white/5">
+                      <p className="text-[10px] font-black opacity-60 uppercase mb-0.5">Resources</p>
+                      <p className="text-xl font-black">{gradeFilteredMaterials.length}</p>
+                    </div>
+                    <div className="bg-indigo-500/30 backdrop-blur-md px-4 py-3 rounded-2xl border border-white/5">
+                      <p className="text-[10px] font-black opacity-60 uppercase mb-0.5">Your Purchases</p>
+                      <p className="text-xl font-black">{purchasedMaterialIds.length}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Recently Studied - Only if history exists */}
+            {history.filter(h => h.type === 'STUDY').length > 0 && (
+              <div className="px-6 mb-8 mt-2">
+                <div className="flex items-center justify-between mb-4">
+                  <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                    <Clock className="w-3 h-3" />
+                    Recently Studied
+                  </h4>
+                </div>
+                <div className="flex gap-4 overflow-x-auto no-scrollbar pb-4 -mx-2 px-2">
+                  {(() => {
+                    const recentSessions = [];
+                    const seenIds = new Set();
+                    const studyHistory = [...history].filter(h => h.type === 'STUDY').reverse();
+
+                    for (const session of studyHistory) {
+                      try {
+                        const details = JSON.parse(session.details || '{}');
+                        const mId = details.materialId || details.realId;
+                        if (mId && !seenIds.has(mId)) {
+                          seenIds.add(mId);
+                          recentSessions.push({ ...details, id: mId, title: session.topic });
+                        }
+                      } catch (e) { }
+                      if (recentSessions.length >= 5) break;
+                    }
+
+                    return recentSessions.map((material, idx) => (
+                      <motion.div
+                        key={idx}
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: idx * 0.1 }}
+                        onClick={() => startStudySession(material)}
+                        className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 min-w-[180px] group cursor-pointer hover:border-indigo-200 hover:shadow-md transition-all active:scale-95"
+                      >
+                        <div className="w-8 h-8 bg-indigo-50 rounded-lg flex items-center justify-center mb-3 group-hover:bg-indigo-600 group-hover:text-white transition-colors">
+                          <BookOpen className="w-4 h-4" />
+                        </div>
+                        <h5 className="text-xs font-black text-slate-800 line-clamp-2 leading-tight h-8 mb-2 group-hover:text-indigo-600">
+                          {material.title}
+                        </h5>
+                        <div className="flex items-center gap-1.5 mt-auto">
+                          <span className="text-[8px] font-black uppercase text-indigo-500 bg-indigo-50/50 px-1.5 py-0.5 rounded-md">
+                            {material.subject}
+                          </span>
+                        </div>
+                      </motion.div>
+                    ));
+                  })()}
+                </div>
+              </div>
+            )}
+            <div className="px-6 space-y-4">
+              {/* Category Filter */}
+              <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-2">
+                {(['ALL', 'NOTES', 'PAST_PAPER', 'SYLLABUS'] as const).map(cat => (
+                  <button
+                    key={cat}
+                    onClick={() => setMaterialCategory(cat)}
+                    className={`px-5 py-2.5 rounded-2xl text-xs font-black uppercase tracking-wider transition-all border-2 shrink-0 ${materialCategory === cat ? 'bg-indigo-600 border-indigo-600 text-white shadow-lg shadow-indigo-100 scale-105' : 'bg-white border-slate-100 text-slate-400 hover:border-indigo-100'}`}
+                  >
+                    {cat.replace('_', ' ')}
                   </button>
                 ))}
               </div>
-            </motion.div>
-          )}
 
-        </div>
-
-
-
-        {/* Global Bottom Nav */}
-        <div className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t border-slate-200 px-6 py-3 flex justify-between items-center z-50 max-w-4xl mx-auto shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
-          <button onClick={() => setMode('MENU')} className="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-600">
-            <Home className="w-6 h-6" />
-            <span className="text-[10px] font-black uppercase tracking-tighter">Home</span>
-          </button>
-          <button onClick={() => setMode('MARKETPLACE')} className="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-600">
-            <ShoppingBag className="w-6 h-6" />
-            <span className="text-[10px] font-black uppercase tracking-tighter">Materials</span>
-          </button>
-          <div className="relative -mt-10">
-            <button onClick={() => setMode('SCAN')} className="relative w-16 h-16 bg-indigo-600 rounded-full flex items-center justify-center shadow-xl shadow-indigo-200 text-white transform hover:scale-110 active:scale-90 transition-all border-4 border-white">
-              <ScanLine className="w-8 h-8" />
-            </button>
-          </div>
-          <button onClick={() => setMode('LIBRARY')} className="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-600">
-            <Library className="w-6 h-6" />
-            <span className="text-[10px] font-black uppercase tracking-tighter">Library</span>
-          </button>
-          <button onClick={() => setMode('PROFILE')} className="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-600">
-            <UserCircle className="w-6 h-6" />
-            <span className="text-[10px] font-black uppercase tracking-tighter">Me</span>
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  if (mode === 'QUIZ' && quizData) {
-    return <QuizRunner data={quizData} onComplete={(score) => {
-      saveActivity({
-        id: Date.now().toString(),
-        type: 'QUIZ',
-        topic: quizData.topic,
-        date: new Date().toLocaleDateString(),
-        score
-      });
-      setMode('MENU');
-    }} onExit={() => setMode('RESULT')} />;
-  }
-
-  // --- PRICING & PAYMENT ---
-
-  if (mode === 'PRICING') {
-    return (
-      <PricingPage
-        currentTier={subscriptionPlan}
-        isPro={isPro}
-        onSelectPlan={(plan) => {
-          setSelectedPlan(plan);
-          setMode('PAYMENT' as any);
-        }}
-        onClose={() => setMode('MENU')}
-      />
-    );
-  }
-
-  if (mode === 'PAYMENT' && selectedPlan) {
-    return (
-      <PaymentFlow
-        plan={selectedPlan}
-        onSuccess={async () => {
-          await upgradeAccount(selectedPlan);
-          setMode('MENU');
-          setSelectedPlan(null);
-        }}
-        onCancel={() => setMode('PRICING' as any)}
-      />
-    );
-  }
-
-  if (mode === 'MARKETPLACE') {
-    return (
-      <div className="bg-slate-50 min-h-screen pb-32 max-w-4xl mx-auto shadow-2xl border-x border-slate-100 flex flex-col">
-        {/* Header */}
-        <div className="sticky top-0 z-40 bg-white/90 backdrop-blur-xl border-b border-slate-200 px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <button onClick={() => setMode('MENU')} className="p-2 hover:bg-slate-100 rounded-full transition-colors"><ArrowRight className="w-5 h-5 rotate-180" /></button>
-            <div>
-              <h1 className="text-xl font-black text-slate-900 tracking-tight leading-none">Study Materials</h1>
-              <p className="text-[9px] font-black text-indigo-500 uppercase tracking-[0.2em] mt-1.5">Premium Resource Center</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            {!isPro && (
-              <button
-                onClick={() => setMode('PRICING')}
-                className="bg-amber-100 text-amber-700 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider border border-amber-200 shadow-sm"
-              >
-                Go Pro
-              </button>
-            )}
-            <div className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 font-bold border-2 border-white shadow-sm">
-              <Sparkles className="w-5 h-5" />
-            </div>
-          </div>
-        </div>
-
-        <div className="flex-1 overflow-y-auto no-scrollbar">
-          {/* Premium Hero */}
-          <div className="p-6">
-            <div className="bg-gradient-to-br from-indigo-900 via-indigo-800 to-indigo-950 p-8 rounded-[2.5rem] text-white shadow-2xl shadow-indigo-200/50 relative overflow-hidden group">
-              <div className="absolute top-0 right-0 w-80 h-80 bg-white/5 rounded-full -mr-32 -mt-32 blur-3xl group-hover:scale-110 transition-transform duration-700"></div>
-              <div className="absolute bottom-0 left-0 w-64 h-64 bg-indigo-500/10 rounded-full -ml-32 -mb-32 blur-3xl"></div>
-
-              <div className="relative z-10">
-                <div className="flex items-center gap-2 mb-4">
-                  <span className="px-3 py-1 bg-white/10 backdrop-blur-md rounded-full text-[9px] font-black uppercase tracking-widest border border-white/5">CBC Aligned</span>
-                  <span className="px-3 py-1 bg-indigo-500/20 backdrop-blur-md rounded-full text-[9px] font-black uppercase tracking-widest border border-white/5">Verified Content</span>
-                </div>
-                <h3 className="text-4xl font-black mb-3 tracking-tight leading-tight">Elite Library.</h3>
-                <p className="opacity-80 text-sm font-medium mb-8 max-w-xs leading-relaxed">Access verified past papers, professional syllabus guides, and top-tier revision notes.</p>
-
-                <div className="flex items-center gap-4">
-                  <div className="bg-white/10 backdrop-blur-md px-4 py-3 rounded-2xl border border-white/5">
-                    <p className="text-[10px] font-black opacity-60 uppercase mb-0.5">Resources</p>
-                    <p className="text-xl font-black">{unifiedMaterials.length}</p>
-                  </div>
-                  <div className="bg-indigo-500/30 backdrop-blur-md px-4 py-3 rounded-2xl border border-white/5">
-                    <p className="text-[10px] font-black opacity-60 uppercase mb-0.5">Your Purchases</p>
-                    <p className="text-xl font-black">{purchasedMaterialIds.length}</p>
-                  </div>
-                </div>
+              {/* Subject Slider */}
+              <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-2">
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mr-2 shrink-0">Subject:</span>
+                {subjects.map(sub => (
+                  <button
+                    key={sub}
+                    onClick={() => setSubjectFilter(sub)}
+                    className={`px-4 py-2 rounded-xl text-[10px] font-bold tracking-tight transition-all shrink-0 ${subjectFilter === sub ? 'bg-slate-900 text-white shadow-md' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}
+                  >
+                    {sub}
+                  </button>
+                ))}
               </div>
             </div>
-          </div>
 
-          {/* Advanced Filtering */}
-          <div className="px-6 space-y-4">
-            {/* Category Filter */}
-            <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-2">
-              {(['ALL', 'NOTES', 'PAST_PAPER', 'SYLLABUS'] as const).map(cat => (
-                <button
-                  key={cat}
-                  onClick={() => setMaterialCategory(cat)}
-                  className={`px-5 py-2.5 rounded-2xl text-xs font-black uppercase tracking-wider transition-all border-2 shrink-0 ${materialCategory === cat ? 'bg-indigo-600 border-indigo-600 text-white shadow-lg shadow-indigo-100 scale-105' : 'bg-white border-slate-100 text-slate-400 hover:border-indigo-100'}`}
-                >
-                  {cat.replace('_', ' ')}
-                </button>
-              ))}
-            </div>
+            {/* Material Grid */}
+            <div className="p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {filteredMaterials.length === 0 ? (
+                  <div className="md:col-span-2 py-32 text-center bg-white border-2 border-dashed border-slate-200 rounded-[2.5rem]">
+                    <ShoppingBag className="w-12 h-12 text-slate-200 mx-auto mb-4" />
+                    <h4 className="font-black text-slate-300 uppercase tracking-widest text-xs">No materials found in this category</h4>
+                    <button onClick={() => { setMaterialCategory('ALL'); setSubjectFilter('ALL'); }} className="mt-4 text-indigo-600 font-black uppercase text-[10px] tracking-widest hover:underline">Reset Filters</button>
 
-            {/* Subject Slider */}
-            <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-2">
-              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mr-2 shrink-0">Subject:</span>
-              {subjects.map(sub => (
-                <button
-                  key={sub}
-                  onClick={() => setSubjectFilter(sub)}
-                  className={`px-4 py-2 rounded-xl text-[10px] font-bold tracking-tight transition-all shrink-0 ${subjectFilter === sub ? 'bg-slate-900 text-white shadow-md' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}
-                >
-                  {sub}
-                </button>
-              ))}
-            </div>
-          </div>
+                    <div className="mt-8 mx-auto max-w-sm p-4 bg-slate-50 rounded-2xl border border-slate-100 text-[8px] font-mono text-left space-y-2 overflow-auto max-h-60">
+                      <p className="font-black text-slate-500 uppercase">Debug Visibility Dump:</p>
+                      <p>Student Grade (Normalized): "{normalizeGrade(studentProfile?.grade || "NONE")}"</p>
+                      <p>Total Materials in Memory: {unifiedMaterials.length}</p>
+                      <p>Total Grade Match: {gradeFilteredMaterials.length}</p>
 
-          {/* Material Grid */}
-          <div className="p-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {filteredMaterials.length === 0 ? (
-                <div className="md:col-span-2 py-32 text-center bg-white border-2 border-dashed border-slate-200 rounded-[2.5rem]">
-                  <ShoppingBag className="w-12 h-12 text-slate-200 mx-auto mb-4" />
-                  <h4 className="font-black text-slate-300 uppercase tracking-widest text-xs">No materials found in this category</h4>
-                  <button onClick={() => { setMaterialCategory('ALL'); setSubjectFilter('ALL'); }} className="mt-4 text-indigo-600 font-black uppercase text-[10px] tracking-widest hover:underline">Reset Filters</button>
-                </div>
-              ) : (
-                filteredMaterials.map(item => {
-                  const isOwned = purchasedMaterialIds.includes(item.id);
-                  const isSyllabus = item.category === 'SYLLABUS';
-                  const isVerified = item.isVerified;
-
-                  // Monetization Logic
-                  let status = 'PURCHASE';
-                  if (isOwned) status = 'OWNED';
-                  else if (isSyllabus) status = 'FREE';
-                  else if (isVerified) status = isPro ? 'PRO_INCLUDED' : 'PRO_LOCKED';
-
-                  return (
-                    <motion.div
-                      whileHover={{ y: -5 }}
-                      key={item.id}
-                      className="bg-white border-2 border-slate-100 rounded-[2.5rem] p-6 shadow-sm hover:border-indigo-200 hover:shadow-2xl hover:shadow-indigo-50/50 transition-all flex flex-col justify-between group"
-                    >
-                      <div>
-                        <div className="flex justify-between items-start mb-6">
-                          <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-sm ${isVerified ? 'bg-indigo-50 text-indigo-600' : 'bg-blue-50 text-blue-600'}`}>
-                            {item.category === 'NOTES' ? <FileText className="w-7 h-7" /> : isSyllabus ? <Library className="w-7 h-7" /> : <Layers className="w-7 h-7" />}
+                      <div className="pt-2 border-t border-slate-200">
+                        <p className="font-bold mb-1">Raw Material Sample (First 5):</p>
+                        {unifiedMaterials.slice(0, 5).map((m, i) => (
+                          <div key={i} className="mb-1 p-1 bg-white rounded border border-slate-100">
+                            ID: {m.id} | Grade: "{m.grade}" (Norm: "{normalizeGrade(m.grade)}") | Sub: {m.subject}
                           </div>
-
-                          {/* Price / Status Tag */}
-                          <div className="flex flex-col items-end gap-1">
-                            {status === 'OWNED' ? (
-                              <span className="px-3 py-1 bg-green-50 text-green-600 rounded-full text-[9px] font-black uppercase tracking-widest">Library</span>
-                            ) : status === 'FREE' ? (
-                              <span className="px-3 py-1 bg-emerald-50 text-emerald-600 rounded-full text-[9px] font-black uppercase tracking-widest">Free</span>
-                            ) : status === 'PRO_INCLUDED' ? (
-                              <span className="px-3 py-1 bg-indigo-50 text-indigo-600 rounded-full text-[9px] font-black uppercase tracking-widest">Pro Benefit</span>
-                            ) : status === 'PRO_LOCKED' ? (
-                              <span className="px-3 py-1 bg-amber-50 text-amber-600 rounded-full text-[9px] font-black uppercase tracking-widest">Pro Locked</span>
-                            ) : (
-                              <span className="px-3 py-1 bg-slate-100 text-slate-900 rounded-full text-[10px] font-black">KES {item.price}</span>
-                            )}
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-2 mb-1">
-                          {isVerified && (
-                            <span className="flex items-center gap-1 text-[8px] font-black text-indigo-600 uppercase tracking-widest bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-100">
-                              <CheckCircle className="w-2.5 h-2.5" /> Verified
-                            </span>
-                          )}
-                          <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">{item.grade}</span>
-                        </div>
-
-                        <h4 className="font-black text-slate-900 text-xl mb-1 tracking-tight group-hover:text-indigo-600 transition-colors">{item.title}</h4>
-                        <div className="flex items-center gap-2 mb-6 text-[9px] font-black uppercase tracking-widest">
-                          <span className="text-slate-400">{item.subject}</span>
-                          <span className="text-slate-200">•</span>
-                          <span className="text-slate-400">{isVerified ? "Somo Smart" : item.teacherName}</span>
-                        </div>
-                        <p className="text-xs text-slate-500 font-medium line-clamp-2 mb-8 leading-relaxed">{item.description}</p>
+                        ))}
                       </div>
-
-                      <Button
-                        fullWidth
-                        className={`rounded-2xl py-4 font-black uppercase tracking-widest text-[10px] border-none transition-all ${status === 'OWNED' || status === 'PRO_INCLUDED' || status === 'FREE'
-                          ? "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                          : status === 'PRO_LOCKED'
-                            ? "bg-amber-500 hover:bg-amber-600 text-white shadow-lg shadow-amber-100"
-                            : "bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-100"
-                          }`}
-                        onClick={() => {
-                          if (status === 'OWNED' || status === 'PRO_INCLUDED' || status === 'FREE') {
-                            // Download / View logic
-                            if (item.fileUrl) window.open(item.fileUrl, '_blank');
-                          } else if (status === 'PRO_LOCKED') {
-                            setMode('PRICING');
-                          } else {
-                            purchaseMaterial(item.id);
-                          }
-                        }}
-                      >
-                        {status === 'OWNED' || status === 'PRO_INCLUDED' || status === 'FREE' ? "Get Material" : status === 'PRO_LOCKED' ? "Unlock with Pro" : "Buy Material"}
-                        <ArrowRight className="w-3.5 h-3.5 ml-2" />
-                      </Button>
-                    </motion.div>
-                  );
-                })
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Global Bottom Nav */}
-        <div className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t border-slate-200 px-6 py-3 flex justify-between items-center z-50 max-w-4xl mx-auto shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
-          <button onClick={() => setMode('MENU')} className="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-600">
-            <Home className="w-6 h-6" />
-            <span className="text-[10px] font-black uppercase tracking-tighter">Home</span>
-          </button>
-          <button onClick={() => setMode('MARKETPLACE')} className="flex flex-col items-center gap-1 text-indigo-600 scale-110">
-            <ShoppingBag className="w-6 h-6" />
-            <span className="text-[10px] font-black uppercase tracking-tighter">Materials</span>
-          </button>
-          <div className="relative -mt-10">
-            <button onClick={() => setMode('SCAN')} className="relative w-16 h-16 bg-indigo-600 rounded-full flex items-center justify-center shadow-xl shadow-indigo-200 text-white transform hover:scale-110 active:scale-90 transition-all border-4 border-white">
-              <ScanLine className="w-8 h-8" />
-            </button>
-          </div>
-          <button onClick={() => setMode('LIBRARY')} className="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-600">
-            <Library className="w-6 h-6" />
-            <span className="text-[10px] font-black uppercase tracking-tighter">Library</span>
-          </button>
-          <button onClick={() => setMode('PROFILE')} className="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-600">
-            <UserCircle className="w-6 h-6" />
-            <span className="text-[10px] font-black uppercase tracking-tighter">Me</span>
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  if (mode === 'LIBRARY') {
-    const ownedUnifiedMaterials = unifiedMaterials.filter(m => {
-      const isSyllabus = m.category === 'SYLLABUS';
-      const isOwned = purchasedMaterialIds.includes(m.id);
-      const isProBenefit = m.isVerified && isPro;
-      return isOwned || isSyllabus || isProBenefit;
-    });
-
-    return (
-      <div className="bg-slate-50 min-h-screen pb-32 max-w-4xl mx-auto shadow-2xl border-x border-slate-100 flex flex-col">
-        <div className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-slate-200 px-6 py-4 flex items-center justify-between">
-          <div>
-            <h1 className="text-xl font-black text-slate-900 tracking-tight leading-none">My Library</h1>
-            <p className="text-[9px] font-black text-indigo-500 uppercase tracking-[0.2em] mt-1.5">Unlocked Resources</p>
-          </div>
-          <button onClick={() => setMode('MENU')} className="p-2 hover:bg-slate-100 rounded-full transition-colors"><X className="w-5 h-5" /></button>
-        </div>
-
-        <div className="p-6 flex-1 overflow-y-auto no-scrollbar">
-          {ownedUnifiedMaterials.length === 0 ? (
-            <div className="py-32 text-center bg-white border-2 border-dashed border-slate-200 rounded-[3rem]">
-              <div className="w-24 h-24 bg-slate-50 rounded-[2.5rem] flex items-center justify-center mx-auto mb-6 border border-slate-100">
-                <Library className="w-10 h-10 text-slate-300" />
-              </div>
-              <h4 className="text-xl font-black text-slate-800 mb-2 tracking-tight">Your library is empty</h4>
-              <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.2em] mb-12 max-w-xs mx-auto leading-relaxed">Unlock premium notes and revision papers from the marketplace to see them here.</p>
-              <Button onClick={() => setMode('MARKETPLACE')} className="px-10 py-4 bg-indigo-600 text-white rounded-2xl shadow-xl shadow-indigo-100 font-black uppercase tracking-widest text-[10px] border-none">
-                Browse Materials
-              </Button>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-20">
-              {ownedUnifiedMaterials.map(item => (
-                <motion.div
-                  key={item.id}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => item.fileUrl && window.open(item.fileUrl, '_blank')}
-                  className="bg-white border-2 border-slate-100 rounded-[2.5rem] p-6 shadow-sm flex items-center gap-6 group hover:border-indigo-100 hover:shadow-xl hover:shadow-indigo-50/30 transition-all cursor-pointer relative overflow-hidden"
-                >
-                  <div className={`w-16 h-16 rounded-2xl flex items-center justify-center shrink-0 border border-slate-100 shadow-sm ${item.isVerified ? 'bg-indigo-50 text-indigo-600' : 'bg-blue-50 text-blue-600'}`}>
-                    {item.category === 'NOTES' ? <FileText className="w-8 h-8" /> : item.category === 'SYLLABUS' ? <Library className="w-8 h-8" /> : <Layers className="w-8 h-8" />}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-[8px] font-black text-indigo-500 uppercase tracking-widest">{item.subject}</span>
-                      {item.isVerified && <span className="bg-indigo-50 p-1 rounded-full"><Sparkles className="w-2 h-2 text-indigo-600" /></span>}
                     </div>
-                    <h4 className="font-black text-slate-900 text-lg truncate group-hover:text-indigo-600 transition-colors tracking-tight">{item.title}</h4>
-                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{item.category.replace('_', ' ')} • {item.grade}</p>
                   </div>
-                  <div className="w-12 h-12 bg-slate-50 rounded-xl flex items-center justify-center text-slate-300 group-hover:bg-indigo-600 group-hover:text-white transition-all shadow-sm">
-                    <Download className="w-5 h-5" />
-                  </div>
-                </motion.div>
-              ))}
+                ) : (
+                  filteredMaterials.map(item => {
+                    const isOwned = purchasedMaterialIds.includes(item.id);
+                    const isSyllabus = item.category === 'SYLLABUS';
+                    const isVerified = item.isVerified;
+
+                    // Monetization Logic
+                    let status = 'PURCHASE';
+                    if (isOwned) status = 'OWNED';
+                    else if (isSyllabus) status = 'FREE';
+                    else if (isVerified) status = isPro ? 'PRO_INCLUDED' : 'PRO_LOCKED';
+
+                    return (
+                      <motion.div
+                        whileHover={{ y: -5 }}
+                        key={item.id}
+                        className="bg-white border-2 border-slate-100 rounded-[2.5rem] p-6 shadow-sm hover:border-indigo-200 hover:shadow-2xl hover:shadow-indigo-50/50 transition-all flex flex-col justify-between group"
+                      >
+                        <div>
+                          <div className="flex justify-between items-start mb-6">
+                            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-sm ${isVerified ? 'bg-indigo-50 text-indigo-600' : 'bg-blue-50 text-blue-600'}`}>
+                              {item.category === 'NOTES' ? <FileText className="w-7 h-7" /> : isSyllabus ? <Library className="w-7 h-7" /> : <Layers className="w-7 h-7" />}
+                            </div>
+
+                            {/* Price / Status Tag */}
+                            <div className="flex flex-col items-end gap-1">
+                              {status === 'OWNED' ? (
+                                <span className="px-3 py-1 bg-green-50 text-green-600 rounded-full text-[9px] font-black uppercase tracking-widest">Library</span>
+                              ) : status === 'FREE' ? (
+                                <span className="px-3 py-1 bg-emerald-50 text-emerald-600 rounded-full text-[9px] font-black uppercase tracking-widest">Free</span>
+                              ) : status === 'PRO_INCLUDED' ? (
+                                <span className="px-3 py-1 bg-indigo-50 text-indigo-600 rounded-full text-[9px] font-black uppercase tracking-widest">Pro Benefit</span>
+                              ) : status === 'PRO_LOCKED' ? (
+                                <span className="px-3 py-1 bg-amber-50 text-amber-600 rounded-full text-[9px] font-black uppercase tracking-widest">Pro Locked</span>
+                              ) : (
+                                <span className="px-3 py-1 bg-slate-100 text-slate-900 rounded-full text-[10px] font-black">KES {item.price}</span>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2 mb-1">
+                            {isVerified && (
+                              <span className="flex items-center gap-1 text-[8px] font-black text-indigo-600 uppercase tracking-widest bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-100">
+                                <CheckCircle className="w-2.5 h-2.5" /> Verified
+                              </span>
+                            )}
+                            <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">{item.grade}</span>
+                          </div>
+
+                          <h4 className="font-black text-slate-900 text-xl mb-1 tracking-tight group-hover:text-indigo-600 transition-colors">{item.title}</h4>
+                          <div className="flex items-center gap-2 mb-6 text-[9px] font-black uppercase tracking-widest">
+                            <span className="text-slate-400">{item.subject}</span>
+                            <span className="text-slate-200">•</span>
+                            <span className="text-slate-400">{isVerified ? "Somo Smart" : item.teacherName}</span>
+                          </div>
+                          <p className="text-xs text-slate-500 font-medium line-clamp-2 mb-8 leading-relaxed">{item.description}</p>
+                        </div>
+
+                        <div className="flex gap-2">
+                          <Button
+                            fullWidth
+                            className={`rounded-2xl py-4 font-black uppercase tracking-widest text-[9px] transition-all border-2 ${studyUsageCount >= 3 && !isPro
+                              ? 'bg-amber-50 text-amber-600 border-amber-200 shadow-none hover:bg-amber-100'
+                              : 'bg-indigo-600 text-white border-indigo-600 shadow-lg shadow-indigo-100 hover:bg-indigo-700 hover:scale-[1.02]'
+                              }`}
+                            onClick={() => startStudySession(item)}
+                            icon={studyUsageCount >= 3 && !isPro ? <Lock className="w-4 h-4" /> : <Sparkles className="w-4 h-4" />}
+                          >
+                            {studyUsageCount >= 3 && !isPro ? 'Limit Reached - Go Pro' : 'Study with Somo Smart'}
+                          </Button>
+                          <Button
+                            className="rounded-2xl p-4 bg-slate-100 text-slate-600 hover:bg-slate-200"
+                            onClick={() => {
+                              if (status === 'OWNED' || status === 'PRO_INCLUDED' || status === 'FREE') {
+                                if (item.fileUrl) window.open(item.fileUrl, '_blank');
+                              } else if (status === 'PRO_LOCKED') {
+                                setPendingMaterialId(item.id);
+                                if (!isRegistered) setShowLogin(true);
+                                else setMode('PRICING');
+                              } else {
+                                purchaseMaterial(item.id);
+                              }
+                            }}
+                            icon={<Download className="w-4 h-4" />}
+                          />
+                        </div>
+                      </motion.div>
+                    );
+                  })
+                )}
+              </div>
             </div>
-          )}
-        </div>
-
-        {/* Global Bottom Nav */}
-        <div className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t border-slate-200 px-6 py-3 flex justify-between items-center z-50 max-w-4xl mx-auto shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
-          <button onClick={() => setMode('MENU')} className="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-600">
-            <Home className="w-6 h-6" />
-            <span className="text-[10px] font-black uppercase tracking-tighter">Home</span>
-          </button>
-          <button onClick={() => setMode('MARKETPLACE')} className="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-600">
-            <ShoppingBag className="w-6 h-6" />
-            <span className="text-[10px] font-black uppercase tracking-tighter">Materials</span>
-          </button>
-          <div className="relative -mt-10">
-            <button onClick={() => setMode('SCAN')} className="relative w-16 h-16 bg-indigo-600 rounded-full flex items-center justify-center shadow-xl shadow-indigo-200 text-white transform hover:scale-110 active:scale-90 transition-all border-4 border-white">
-              <ScanLine className="w-8 h-8" />
-            </button>
-          </div>
-          <button onClick={() => setMode('LIBRARY')} className="flex flex-col items-center gap-1 text-indigo-600 scale-110">
-            <Library className="w-6 h-6" />
-            <span className="text-[10px] font-black uppercase tracking-tighter">Library</span>
-          </button>
-          <button onClick={() => setMode('PROFILE')} className="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-600">
-            <UserCircle className="w-6 h-6" />
-            <span className="text-[10px] font-black uppercase tracking-tighter">Me</span>
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-
-  if (mode === 'SCAN') {
-    return (
-      <div className="bg-slate-900 min-h-screen text-white flex flex-col items-center justify-center p-6 relative overflow-hidden">
-        {/* Background Effects */}
-        <div className="absolute inset-0 bg-indigo-900/20 backdrop-blur-3xl" />
-        <div className="absolute top-0 left-0 w-full h-1/2 bg-gradient-to-b from-black/50 to-transparent" />
-
-        <button
-          onClick={() => setMode('MENU')}
-          className="absolute top-6 left-6 z-50 w-12 h-12 bg-white/10 backdrop-blur-md rounded-full flex items-center justify-center hover:bg-white/20 transition-all border border-white/10"
-        >
-          <X className="w-6 h-6 text-white" />
-        </button>
-
-        <div className="relative z-10 text-center w-full max-w-md">
-          <div className="w-20 h-20 bg-indigo-600 rounded-3xl mx-auto mb-8 flex items-center justify-center shadow-lg shadow-indigo-500/30 animate-pulse">
-            <ScanLine className="w-10 h-10 text-white" />
           </div>
 
-          <h2 className="text-3xl font-black mb-4 tracking-tight">Scan Homework</h2>
-          <p className="text-slate-300 font-medium mb-12 leading-relaxed">
-            Snap a photo of your question or worksheet. I'll explain it simply or help you solve it step-by-step.
-          </p>
-
-          <div className="space-y-4">
-            <button
-              onClick={startCamera}
-              className="w-full py-5 bg-white text-slate-900 rounded-2xl font-black text-lg shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-3"
-            >
-              <Camera className="w-6 h-6 text-indigo-600" />
-              Take Photo
+          {/* Global Bottom Nav */}
+          <div className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t border-slate-200 px-6 py-3 flex justify-between items-center z-50 max-w-4xl mx-auto shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
+            <button onClick={() => setMode('MENU')} className="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-600">
+              <Home className="w-6 h-6" />
+              <span className="text-[10px] font-black uppercase tracking-tighter">Home</span>
             </button>
-
-            <button
-              onClick={() => {
-                const input = document.createElement('input');
-                input.type = 'file';
-                input.accept = 'image/*';
-                input.onchange = (e) => {
-                  const file = (e.target as HTMLInputElement).files?.[0];
-                  if (file) {
-                    setLoading(true);
-                    setLoadingText("Analyzing...");
-                    setTimeout(() => {
-                      setLoading(false);
-                      const reader = new FileReader();
-                      reader.onloadend = () => {
-                        const base64 = (reader.result as string).split(',')[1];
-                        setImageData({ base64, mimeType: file.type });
-                        setMode('SCAN_EXPLAIN');
-                      };
-                      reader.readAsDataURL(file);
-                    }, 1500);
-                  }
-                };
-                input.click();
-              }}
-              className="w-full py-5 bg-white/10 backdrop-blur-md text-white rounded-2xl font-bold text-lg border border-white/20 hover:bg-white/20 transition-all flex items-center justify-center gap-3"
-            >
-              <ImageIcon className="w-6 h-6" />
-              Upload Image
+            <button onClick={() => setMode('MARKETPLACE')} className="flex flex-col items-center gap-1 text-indigo-600 scale-110">
+              <ShoppingBag className="w-6 h-6" />
+              <span className="text-[10px] font-black uppercase tracking-tighter">Materials</span>
+            </button>
+            <div className="relative -mt-10">
+              <button onClick={() => setMode('SCAN')} className="relative w-16 h-16 bg-indigo-600 rounded-full flex items-center justify-center shadow-xl shadow-indigo-200 text-white transform hover:scale-110 active:scale-90 transition-all border-4 border-white">
+                <ScanLine className="w-8 h-8" />
+              </button>
+            </div>
+            <button onClick={() => setMode('LIBRARY')} className="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-600">
+              <Library className="w-6 h-6" />
+              <span className="text-[10px] font-black uppercase tracking-tighter">Library</span>
+            </button>
+            <button onClick={() => setMode('PROFILE')} className="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-600">
+              <UserCircle className="w-6 h-6" />
+              <span className="text-[10px] font-black uppercase tracking-tighter">Me</span>
             </button>
           </div>
         </div>
-      </div>
-    );
-  }
-
-
-
-  // End of LearnerDashboard
-};
-
-// --- QUIZ COMPONENT ---
-const QuizRunner: React.FC<{ data: QuizData; onComplete: (score: number) => void; onExit: () => void }> = ({ data, onComplete, onExit }) => {
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [selectedAnswer, setSelectedAnswer] = useState<string>("");
-  const [showResult, setShowResult] = useState(false);
-  const [score, setScore] = useState(0);
-  const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
-
-  const question = data.questions[currentIndex];
-  const isLast = currentIndex === data.questions.length - 1;
-  const progress = ((currentIndex + 1) / data.questions.length) * 100;
-
-  const handleAnswer = (ans: string) => {
-    if (showResult) return;
-    setSelectedAnswer(ans);
-  };
-
-  const handleCheck = () => {
-    setShowResult(true);
-    const correct = selectedAnswer.toLowerCase().trim() === String(question.correctAnswer).toLowerCase().trim();
-    setIsCorrect(correct);
-    if (correct) setScore(s => s + 1);
-  };
-
-  const handleNext = () => {
-    if (isLast) {
-      onComplete(Math.round((score / data.questions.length) * 100));
-    } else {
-      setCurrentIndex(prev => prev + 1);
-      setSelectedAnswer("");
-      setShowResult(false);
-      setIsCorrect(null);
+      );
     }
+
+    if (mode === 'LIBRARY') {
+      const ownedUnifiedMaterials = unifiedMaterials.filter(m => {
+        const isSyllabus = m.category === 'SYLLABUS';
+        const isOwned = purchasedMaterialIds.includes(m.id);
+        const isProBenefit = m.isVerified && isPro;
+        return isOwned || isSyllabus || isProBenefit;
+      });
+
+      return (
+        <div className="bg-slate-50 min-h-screen pb-32 max-w-4xl mx-auto shadow-2xl border-x border-slate-100 flex flex-col">
+          <div className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-slate-200 px-6 py-4 flex items-center justify-between">
+            <div>
+              <h1 className="text-xl font-black text-slate-900 tracking-tight leading-none">My Library</h1>
+              <p className="text-[9px] font-black text-indigo-500 uppercase tracking-[0.2em] mt-1.5">Unlocked Resources</p>
+            </div>
+            <button onClick={() => setMode('MENU')} className="p-2 hover:bg-slate-100 rounded-full transition-colors"><X className="w-5 h-5" /></button>
+          </div>
+
+          <div className="p-6 flex-1 overflow-y-auto no-scrollbar">
+            {ownedUnifiedMaterials.length === 0 ? (
+              <div className="py-32 text-center bg-white border-2 border-dashed border-slate-200 rounded-[3rem]">
+                <div className="w-24 h-24 bg-slate-50 rounded-[2.5rem] flex items-center justify-center mx-auto mb-6 border border-slate-100">
+                  <Library className="w-10 h-10 text-slate-300" />
+                </div>
+                <h4 className="text-xl font-black text-slate-800 mb-2 tracking-tight">Your library is empty</h4>
+                <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.2em] mb-12 max-w-xs mx-auto leading-relaxed">Unlock premium notes and revision papers from the marketplace to see them here.</p>
+                <Button onClick={() => setMode('MARKETPLACE')} className="px-10 py-4 bg-indigo-600 text-white rounded-2xl shadow-xl shadow-indigo-100 font-black uppercase tracking-widest text-[10px] border-none">
+                  Browse Materials
+                </Button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-20">
+                {ownedUnifiedMaterials.map(item => (
+                  <motion.div
+                    key={item.id}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => item.fileUrl && window.open(item.fileUrl, '_blank')}
+                    className="bg-white border-2 border-slate-100 rounded-[2.5rem] p-6 shadow-sm flex items-center gap-6 group hover:border-indigo-100 hover:shadow-xl hover:shadow-indigo-50/30 transition-all cursor-pointer relative overflow-hidden"
+                  >
+                    <div className={`w-16 h-16 rounded-2xl flex items-center justify-center shrink-0 border border-slate-100 shadow-sm ${item.isVerified ? 'bg-indigo-50 text-indigo-600' : 'bg-blue-50 text-blue-600'}`}>
+                      {item.category === 'NOTES' ? <FileText className="w-8 h-8" /> : item.category === 'SYLLABUS' ? <Library className="w-8 h-8" /> : <Layers className="w-8 h-8" />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-[8px] font-black text-indigo-500 uppercase tracking-widest">{item.subject}</span>
+                        {item.isVerified && <span className="bg-indigo-50 p-1 rounded-full"><Sparkles className="w-2 h-2 text-indigo-600" /></span>}
+                      </div>
+                      <h4 className="font-black text-slate-900 text-lg truncate group-hover:text-indigo-600 transition-colors tracking-tight">{item.title}</h4>
+                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{item.category.replace('_', ' ')} • {item.grade}</p>
+                    </div>
+                    <div className="w-12 h-12 bg-slate-50 rounded-xl flex items-center justify-center text-slate-300 group-hover:bg-indigo-600 group-hover:text-white transition-all shadow-sm">
+                      <Download className="w-5 h-5" />
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Global Bottom Nav */}
+          <div className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t border-slate-200 px-6 py-3 flex justify-between items-center z-50 max-w-4xl mx-auto shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
+            <button onClick={() => setMode('MENU')} className="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-600">
+              <Home className="w-6 h-6" />
+              <span className="text-[10px] font-black uppercase tracking-tighter">Home</span>
+            </button>
+            <button onClick={() => setMode('MARKETPLACE')} className="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-600">
+              <ShoppingBag className="w-6 h-6" />
+              <span className="text-[10px] font-black uppercase tracking-tighter">Materials</span>
+            </button>
+            <div className="relative -mt-10">
+              <button onClick={() => setMode('SCAN')} className="relative w-16 h-16 bg-indigo-600 rounded-full flex items-center justify-center shadow-xl shadow-indigo-200 text-white transform hover:scale-110 active:scale-90 transition-all border-4 border-white">
+                <ScanLine className="w-8 h-8" />
+              </button>
+            </div>
+            <button onClick={() => setMode('LIBRARY')} className="flex flex-col items-center gap-1 text-indigo-600 scale-110">
+              <Library className="w-6 h-6" />
+              <span className="text-[10px] font-black uppercase tracking-tighter">Library</span>
+            </button>
+            <button onClick={() => setMode('PROFILE')} className="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-600">
+              <UserCircle className="w-6 h-6" />
+              <span className="text-[10px] font-black uppercase tracking-tighter">Me</span>
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+
+    if (mode === 'SCAN') {
+      return (
+        <div className="bg-slate-900 min-h-screen text-white flex flex-col items-center justify-center p-6 relative overflow-hidden">
+          {/* Background Effects */}
+          <div className="absolute inset-0 bg-indigo-900/20 backdrop-blur-3xl" />
+          <div className="absolute top-0 left-0 w-full h-1/2 bg-gradient-to-b from-black/50 to-transparent" />
+
+          <button
+            onClick={() => setMode('MENU')}
+            className="absolute top-6 left-6 z-50 w-12 h-12 bg-white/10 backdrop-blur-md rounded-full flex items-center justify-center hover:bg-white/20 transition-all border border-white/10"
+          >
+            <X className="w-6 h-6 text-white" />
+          </button>
+
+          <div className="relative z-10 text-center w-full max-w-md">
+            <div className="w-20 h-20 bg-indigo-600 rounded-3xl mx-auto mb-8 flex items-center justify-center shadow-lg shadow-indigo-500/30 animate-pulse">
+              <ScanLine className="w-10 h-10 text-white" />
+            </div>
+
+            <h2 className="text-3xl font-black mb-4 tracking-tight">Scan Homework</h2>
+            <p className="text-slate-300 font-medium mb-12 leading-relaxed">
+              Snap a photo of your question or worksheet. I'll explain it simply or help you solve it step-by-step.
+            </p>
+
+            <div className="space-y-4">
+              <button
+                onClick={startCamera}
+                className="w-full py-5 bg-white text-slate-900 rounded-2xl font-black text-lg shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-3"
+              >
+                <Camera className="w-6 h-6 text-indigo-600" />
+                Take Photo
+              </button>
+
+              <button
+                onClick={() => {
+                  const input = document.createElement('input');
+                  input.type = 'file';
+                  input.accept = 'image/*';
+                  input.onchange = (e) => {
+                    const file = (e.target as HTMLInputElement).files?.[0];
+                    if (file) {
+                      setLoading(true);
+                      setLoadingText("Analyzing...");
+                      setTimeout(() => {
+                        setLoading(false);
+                        const reader = new FileReader();
+                        reader.onloadend = () => {
+                          const base64 = (reader.result as string).split(',')[1];
+                          setImageData({ base64, mimeType: file.type });
+                          setMode('SCAN_EXPLAIN');
+                        };
+                        reader.readAsDataURL(file);
+                      }, 1500);
+                    }
+                  };
+                  input.click();
+                }}
+                className="w-full py-5 bg-white/10 backdrop-blur-md text-white rounded-2xl font-bold text-lg border border-white/20 hover:bg-white/20 transition-all flex items-center justify-center gap-3"
+              >
+                <ImageIcon className="w-6 h-6" />
+                Upload Image
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+    return null;
   };
 
   return (
-    <div className="h-screen flex flex-col bg-slate-50 max-w-lg mx-auto shadow-2xl border-x border-slate-100">
-      {/* Quiz Header */}
-      <div className="bg-white px-4 py-3 shadow-sm z-10 flex items-center justify-between sticky top-0">
-        <button onClick={onExit} className="flex items-center gap-2 px-3 py-1.5 hover:bg-slate-100 rounded-xl transition-all group">
-          <X className="w-5 h-5 text-slate-400 group-hover:text-red-500 transition-colors" />
-          <span className="text-xs font-bold text-slate-400 group-hover:text-red-500">Dashboard</span>
-        </button>
-        <div className="flex-1 px-4">
-          <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
-            <motion.div
-              initial={{ width: 0 }}
-              animate={{ width: `${progress}% ` }}
-              className="h-full bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full"
-            />
+    <div className="relative">
+      {renderMode()}
+
+      {/* Global Modals - Available in ALL modes */}
+      <RegistrationModal
+        isOpen={showRegistration}
+        onClose={() => setShowRegistration(false)}
+        onSuccess={() => setShowRegistration(false)}
+        onSwitchToLogin={() => { setShowRegistration(false); setShowLogin(true); }}
+      />
+      <LoginModal
+        isOpen={showLogin}
+        onClose={() => setShowLogin(false)}
+        onSwitchToRegister={(role) => {
+          setShowLogin(false);
+          setShowRegistration(true);
+        }}
+      />
+      <LogoutModal
+        isOpen={showLogoutModal}
+        onClose={() => setShowLogoutModal(false)}
+        onConfirm={() => {
+          logout();
+          navigate('/');
+        }}
+      />
+
+      {showTutoringModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-6 overflow-y-auto">
+          <div className="bg-white rounded-2xl p-8 max-w-md w-full relative">
+            <button onClick={() => setShowTutoringModal(false)} className="absolute top-4 right-4 p-2 hover:bg-slate-100 rounded-full"><X className="w-5 h-5" /></button>
+            <h2 className="text-xl font-bold mb-4">Ask a Teacher</h2>
+            <p className="text-slate-500 mb-4">Describe your question below:</p>
+            <textarea
+              className="w-full border rounded-xl p-3 mb-4"
+              rows={4}
+              placeholder="I need help with..."
+              id="tutoring-desc-quick"
+            ></textarea>
+            <Button fullWidth onClick={async () => {
+              const desc = (document.getElementById('tutoring-desc-quick') as HTMLTextAreaElement).value;
+              if (!desc) return;
+              setLoading(true);
+              const res = await createTutoringRequest("General Help", desc, 20);
+              setLoading(false);
+              if (res.success) { setShowTutoringModal(false); alert("Request Sent!"); }
+            }}>Send Request</Button>
           </div>
         </div>
-        <div className="font-bold text-slate-700 text-sm">{currentIndex + 1}/{data.questions.length}</div>
-      </div>
+      )}
 
-      <div className="flex-1 overflow-y-auto p-6">
-        <motion.div
-          key={currentIndex}
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: -20 }}
-          className="space-y-6"
-        >
-          <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-200">
-            <h3 className="text-xl font-bold text-slate-800 leading-snug">{question.question}</h3>
-          </div>
-
-          {question.type === 'MCQ' && question.options && (
-            <div className="grid gap-3">
-              {question.options.map((opt, idx) => {
-                let itemClass = "w-full p-4 rounded-2xl text-left border-2 transition-all font-medium relative overflow-hidden ";
-
-                if (showResult) {
-                  if (opt === question.correctAnswer) itemClass += "border-green-500 bg-green-50 text-green-900 shadow-md";
-                  else if (opt === selectedAnswer) itemClass += "border-red-500 bg-red-50 text-red-900";
-                  else itemClass += "border-slate-100 text-slate-400 opacity-50";
-                } else {
-                  if (selectedAnswer === opt) itemClass += "border-blue-500 bg-blue-50 text-blue-900 shadow-md transform scale-[1.02]";
-                  else itemClass += "border-slate-200 bg-white hover:border-blue-200 hover:shadow-sm";
-                }
-
-                return (
-                  <motion.button
-                    whileTap={{ scale: 0.98 }}
-                    key={idx}
-                    className={itemClass}
-                    onClick={() => handleAnswer(opt)}
-                    disabled={showResult}
-                  >
-                    <div className="flex items-center justify-between relative z-10">
-                      <span>{opt}</span>
-                      {showResult && opt === question.correctAnswer && <CheckCircle className="w-5 h-5 text-green-600" />}
-                      {showResult && opt === selectedAnswer && opt !== question.correctAnswer && <XCircle className="w-5 h-5 text-red-600" />}
-                    </div>
-                  </motion.button>
-                )
-              })}
-            </div>
-          )}
-
-          {question.type === 'SHORT' && (
-            <div className="space-y-4">
-              <textarea
-                className="w-full p-5 rounded-2xl border-2 border-slate-200 focus:border-blue-500 focus:ring-0 outline-none text-lg bg-white shadow-sm"
-                placeholder="Type your answer here..."
-                rows={4}
-                value={selectedAnswer}
-                onChange={(e) => handleAnswer(e.target.value)}
-                disabled={showResult}
-              />
-              {showResult && (
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="p-5 bg-green-50 rounded-2xl border border-green-200"
-                >
-                  <p className="font-bold text-green-800 text-sm uppercase tracking-wide mb-1">Correct Answer</p>
-                  <p className="text-green-900 font-medium text-lg">{question.correctAnswer}</p>
-                </motion.div>
-              )}
-            </div>
-          )}
-        </motion.div>
-      </div>
-
-      {/* Footer Controls */}
-      <div className="p-4 bg-white border-t border-slate-200 z-50">
-        <div className="w-full">
-          <AnimatePresence mode="wait">
-            {!showResult ? (
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                <Button fullWidth onClick={handleCheck} disabled={!selectedAnswer} className="py-4 text-lg rounded-xl shadow-lg shadow-blue-200">
-                  Check Answer
-                </Button>
-              </motion.div>
-            ) : (
-              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
-                <div className={`p - 4 rounded - xl flex items - start gap - 3 ${isCorrect ? 'bg-green-100 text-green-800' : 'bg-red-50 text-red-800'} `}>
-                  {isCorrect ? <Sparkles className="w-6 h-6 shrink-0" /> : <BookOpen className="w-6 h-6 shrink-0" />}
-                  <div>
-                    <p className="font-bold text-sm mb-1">{isCorrect ? "Correct!" : "Explanation:"}</p>
-                    <p className="text-sm leading-relaxed opacity-90">{question.explanation}</p>
-                  </div>
-                </div>
-                <Button fullWidth onClick={handleNext} className={`py - 4 text - lg rounded - xl shadow - lg ${isCorrect ? 'shadow-green-200 bg-green-600 hover:bg-green-700' : 'shadow-slate-200 bg-slate-800 hover:bg-slate-900'} `}>
-                  {isLast ? "Finish Quiz" : "Next Question"} <ArrowRight className="w-5 h-5 ml-2" />
-                </Button>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-      </div>
+      {/* Hidden Global Inputs */}
+      <input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handleFileUpload} />
+      <input type="file" accept="audio/*" className="hidden" ref={audioInputRef} onChange={handleAudioUpload} />
     </div>
-  )
+  );
 };

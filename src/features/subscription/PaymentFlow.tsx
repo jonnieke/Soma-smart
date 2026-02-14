@@ -7,11 +7,12 @@ import { UserRole } from '../../types';
 
 interface Props {
     plan: any;
+    materialId?: string;
     onSuccess: () => void;
     onCancel: () => void;
 }
 
-export const PaymentFlow: React.FC<Props> = ({ plan, onSuccess, onCancel }) => {
+export const PaymentFlow: React.FC<Props> = ({ plan, materialId, onSuccess, onCancel }) => {
     const { userId, studentProfile, teacherProfile, role } = useApp();
     const [step, setStep] = useState<'INPUT' | 'IFRAME' | 'PROCESSING' | 'SUCCESS' | 'ERROR'>('INPUT');
     const [phone, setPhone] = useState('');
@@ -29,6 +30,13 @@ export const PaymentFlow: React.FC<Props> = ({ plan, onSuccess, onCancel }) => {
             setFirstName(names[0] || '');
             setLastName(names.slice(1).join(' ') || (role === UserRole.TEACHER ? 'Teacher' : 'Learner'));
             if (profile.email) setEmail(profile.email);
+
+            // Pre-fill phone if available (parentPhone for students)
+            const profilePhone = (profile as any).parentPhone || '';
+            if (profilePhone) {
+                // Sanitize: strip 254 or +254 to fit the 7XX... format
+                setPhone(profilePhone.replace(/^\+?254/, '0').replace(/^0/, ''));
+            }
         }
     }, [studentProfile, teacherProfile, role]);
 
@@ -57,7 +65,7 @@ export const PaymentFlow: React.FC<Props> = ({ plan, onSuccess, onCancel }) => {
                 firstName: firstName || (role === 'TEACHER' ? 'Teacher' : 'Learner'),
                 lastName: lastName || 'User',
                 phone: `254${phone.replace(/^0/, '')}`
-            });
+            }, materialId);
 
             if (response.redirect_url) {
                 setIframeUrl(response.redirect_url);
@@ -142,6 +150,7 @@ export const PaymentFlow: React.FC<Props> = ({ plan, onSuccess, onCancel }) => {
                                     <div className="bg-indigo-50/50 p-4 rounded-2xl border border-indigo-100 mb-2">
                                         <p className="text-[10px] font-black uppercase text-indigo-400 tracking-widest mb-1">Paying as</p>
                                         <p className="font-bold text-slate-700">{firstName} {lastName}</p>
+                                        <p className="text-[10px] text-slate-400 truncate">{email}</p>
                                         <div className="hidden">
                                             <input type="text" value={firstName} readOnly />
                                             <input type="text" value={lastName} readOnly />

@@ -140,7 +140,7 @@ import { supabase } from '../lib/supabase';
 import { getContext } from './contextService';
 
 // --- RAG HELPER ---
-const retrieveContext = async (query: string): Promise<string> => {
+const retrieveContext = async (query: string, documentId?: string): Promise<string> => {
   try {
     const { data: { session } } = await supabase.auth.getSession();
     const token = session?.access_token;
@@ -153,7 +153,7 @@ const retrieveContext = async (query: string): Promise<string> => {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`
       },
-      body: JSON.stringify({ query })
+      body: JSON.stringify({ query, document_id: documentId })
     });
 
     if (!response.ok) return "";
@@ -170,7 +170,7 @@ const retrieveContext = async (query: string): Promise<string> => {
   }
 };
 
-export const explainTopic = async (topic: string, level: 'Simple' | 'Exam', language: 'EN' | 'FR' = 'EN'): Promise<ExplanationResult> => {
+export const explainTopic = async (topic: string, level: 'Simple' | 'Exam', language: 'EN' | 'FR' = 'EN', documentId?: string): Promise<ExplanationResult> => {
   const model = genAI.getGenerativeModel({
     model: MODEL_NAME,
     generationConfig: {
@@ -202,7 +202,7 @@ export const explainTopic = async (topic: string, level: 'Simple' | 'Exam', lang
   }
 
   // 2. Retrieve RAG Context (CBE Knowledge Base)
-  const ragContext = await retrieveContext(topic);
+  const ragContext = await retrieveContext(topic, documentId);
   let ragInstruction = "";
   if (ragContext) {
     ragInstruction = `
@@ -228,9 +228,11 @@ export const explainTopic = async (topic: string, level: 'Simple' | 'Exam', lang
 
     1. Identify the subject of the topic "${topic}".
     2. ${langInstruction}
-    3. Explain the topic in ${level === 'Simple' ? 'very simple language for a young student' : 'exam-ready academic language'}.
-    4. Provide 3-5 short bullet points summarizing key takeaways.
-    5. Suggest 3 short related topics for further learning.
+    3. Explain the topic in ${level === 'Simple' ? 'very simple language for a young student' : 'academic language suitable for exams'}.
+    4. **FORMAT**: Structure the explanation as "Easy-to-Read Notes" using summarized bullet points. Avoid long paragraphs.
+    5. Provide 3-5 short bullet points summarizing the most critical takeaways for "stickiness".
+    6. Suggest 3 short related topics for further learning.
+    7. **ENGAGEMENT**: Briefly mention that a practice quiz is available to help the student test their knowledge.
     
     Output JSON.
   `;
@@ -245,6 +247,57 @@ export const explainTopic = async (topic: string, level: 'Simple' | 'Exam', lang
     return { ...json, level } as ExplanationResult;
   } catch (error) {
     console.error("Error explaining topic:", error);
+    throw error;
+  }
+};
+
+export const summarizeDocument = async (title: string, documentId: string, language: 'EN' | 'FR' = 'EN'): Promise<ExplanationResult> => {
+  // We use search-knowledge to get a broad overview of the document
+  const ragContext = await retrieveContext("Explain the main content and purpose of this document", documentId);
+
+  const model = genAI.getGenerativeModel({
+    model: MODEL_NAME,
+    generationConfig: {
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: SchemaType.OBJECT,
+        properties: {
+          topic: { type: SchemaType.STRING },
+          explanation: { type: SchemaType.STRING, description: "Markdown formatted study guide" },
+          summaryPoints: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
+          relatedTopics: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } }
+        },
+        required: ["topic", "explanation", "summaryPoints", "relatedTopics"]
+      }
+    }
+  });
+
+  const prompt = `
+    You are an expert AI Study Companion (NotebookLM style).
+    A student wants to study the document: "${title}".
+    
+    Source Content Snippets:
+    "${ragContext.substring(0, 10000)}"
+    
+    TASK:
+    1. Create a "Study Guide" summary for this document.
+    2. **FORMAT**: Use a summarized bullet style that is easy to read. Structure it with "Study Notes" using clear headers and bullet points. Avoid long-form text.
+    3. Include a "The Big Idea" section and "Key Learnings" (in bullets).
+    4. Use ${language === 'FR' ? 'French' : 'English'}.
+    5. Provide 3-5 summary points optimized for better retention (stickiness).
+    6. Suggest 3 related study topics.
+    7. **STIMULATE**: Mention that the student should take the practice quiz after reading to help the information stick.
+    
+    Output JSON.
+  `;
+
+  try {
+    const result = await model.generateContent(prompt);
+    const text = result.response.text();
+    if (!text) throw new Error("No response");
+    return JSON.parse(text) as ExplanationResult;
+  } catch (error) {
+    console.error("Error summarizing document:", error);
     throw error;
   }
 };

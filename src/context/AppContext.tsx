@@ -15,6 +15,8 @@ interface AppContextType {
   updateStudentProfile: (updates: { name?: string, grade?: string, parentPhone?: string }) => Promise<{ success: boolean; message?: string }>;
   usageCount: number;
   incrementUsage: () => void;
+  studyUsageCount: number;
+  incrementStudyUsage: () => void;
   registerStudent: (name: string, grade: string, pin: string, parentPhone?: string) => Promise<{ success: boolean; message?: string; data?: string }>;
   registerTeacher: (name: string, email: string, password: string, classes: string[], subjects: string[]) => Promise<{ success: boolean; message?: string }>;
   login: (code: string) => Promise<boolean>;
@@ -88,6 +90,7 @@ interface AppContextType {
   sessionError: 'MULTI_DEVICE' | 'SINGLE_DEVICE' | null;
   resolveSessionConflict: () => Promise<void>;
   setSessionError: (error: 'MULTI_DEVICE' | 'SINGLE_DEVICE' | null) => void;
+  refreshProfile: () => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -103,6 +106,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [learnerHistory, setLearnerHistory] = useState<LearnerActivity[]>(offlineService.getLearnerHistory());
   const [studentCode, setStudentCode] = useState<string>("");
   const [usageCount, setUsageCount] = useState<number>(0);
+  const [studyUsageCount, setStudyUsageCount] = useState<number>(() => {
+    return parseInt(localStorage.getItem('soma_study_usage') || '0');
+  });
   const [isRegistered, setIsRegistered] = useState<boolean>(false);
   const [studentProfile, setStudentProfile] = useState<{ id: string, name: string, grade: string, schoolId?: string, schoolName?: string, email?: string, parentPhone?: string, sessionId?: string } | null>(null);
 
@@ -144,6 +150,79 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [resources, setResources] = useState<any[]>([]);
 
   const [sessionError, setSessionError] = useState<'MULTI_DEVICE' | 'SINGLE_DEVICE' | null>(null);
+
+  const refreshProfile = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    let currentUserId = session?.user?.id;
+
+    // If no auth session, check local storage for student code
+    if (!currentUserId) {
+      const savedStudentCode = localStorage.getItem('soma_active_student');
+      if (savedStudentCode) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('student_id', savedStudentCode)
+          .maybeSingle();
+        if (profile) currentUserId = profile.id;
+      }
+    }
+
+    if (currentUserId) {
+      // Fetch latest profile
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', currentUserId)
+        .maybeSingle();
+
+      if (profile) {
+        if (profile.role === 'LEARNER' || profile.role === 'REVISION') {
+          setStudentProfile({
+            id: profile.id,
+            name: profile.full_name,
+            grade: profile.grade,
+            schoolName: profile.school_name,
+            email: profile.email,
+            parentPhone: profile.parent_phone,
+            sessionId: profile.session_id
+          });
+          setIsRegistered(true);
+          setRole(profile.role === 'REVISION' ? UserRole.REVISION : UserRole.LEARNER);
+        } else if (profile.role === 'TEACHER') {
+          setRole(UserRole.TEACHER);
+          setTeacherProfile({
+            id: profile.id,
+            name: profile.full_name,
+            email: profile.email,
+            classes: profile.classes || [],
+            subjects: profile.subjects || [],
+            schoolId: profile.school_id,
+            sessionId: profile.session_id,
+            isAvailable: profile.is_available
+          });
+        } else if (profile.role === 'SCHOOL') {
+          setRole(UserRole.SCHOOL);
+          setSchoolProfile({
+            id: profile.id,
+            name: profile.full_name,
+            email: profile.email,
+            teacherLimit: profile.teacher_limit || 20,
+            studentLimit: profile.student_limit || 100,
+            subscriptionStatus: profile.subscription_status || 'TRIAL',
+            expiry: profile.expiry || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+            sessionId: profile.session_id
+          });
+        }
+
+        // Check subscription
+        const access = await checkSubscriptionAccess(currentUserId, profile.role === 'TEACHER' ? 'TEACHER' : 'STUDENT');
+        setIsPro(access.isPro);
+        setSubscriptionPlan(access.tier);
+        setSubscriptionExpiry(access.expiry);
+      }
+    }
+  };
 
   const toggleLanguage = () => {
     setLanguage(prev => {
@@ -1107,6 +1186,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   };
 
+  const incrementStudyUsage = () => {
+    setStudyUsageCount(prev => {
+      const next = prev + 1;
+      localStorage.setItem('soma_study_usage', next.toString());
+      return next;
+    });
+  };
+
   const incrementRevisionUsage = () => {
     if (role === UserRole.GUEST) {
       const newCount = revisionUsageCount + 1;
@@ -1823,7 +1910,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     <AppContext.Provider value={{
       role, setRole, learnerHistory, saveActivity, deleteActivity, studentCode, setStudentCode,
       isOnline,
-      usageCount, incrementUsage, isRegistered, studentProfile, updateStudentProfile, registerStudent, login, loginParent, recoverStudentId, registerTeacher, loginTeacher, resetPassword,
+      usageCount, incrementUsage, isRegistered, studentProfile, updateStudentProfile,
+      studyUsageCount,
+      incrementStudyUsage,
+      registerStudent, login, loginParent, recoverStudentId, registerTeacher, loginTeacher, resetPassword,
       teacherUsageCount, incrementTeacherUsage,
       teacherDarasaUsage, incrementTeacherDarasaUsage,
       teacherProfile, updateTeacherProfile, teacherHistory,
@@ -1853,7 +1943,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       fetchResources,
       sessionError,
       resolveSessionConflict,
-      setSessionError
+      setSessionError,
+      refreshProfile
     }}>
       {children}
     </AppContext.Provider>

@@ -12,7 +12,7 @@ serve(async (req) => {
     }
 
     try {
-        const { query } = await req.json()
+        const { query, document_id } = await req.json()
 
         if (!query) {
             return new Response(JSON.stringify({ error: 'No query provided' }), { headers: corsHeaders })
@@ -28,7 +28,7 @@ serve(async (req) => {
             throw new Error('GEMINI_API_KEY is not set')
         }
 
-        // 1. Generate Embedding for Query using Gemini REST API
+        // 1. Generate Embedding for Query
         const embeddingResponse = await fetch(
             `https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key=${GEMINI_API_KEY}`,
             {
@@ -48,10 +48,12 @@ serve(async (req) => {
         const embedding = result.embedding.values
 
         // 2. Search Database using the match_documents RPC
+        // Note: document_id is passed to allow filtering by the specific material
         const { data: chunks, error } = await supabase.rpc('match_documents', {
             query_embedding: embedding,
-            match_threshold: 0.5, // Lowered threshold for broader matching
-            match_count: 5
+            match_threshold: 0.5,
+            match_count: 5,
+            filter_document_id: document_id || null
         })
 
         if (error) throw error

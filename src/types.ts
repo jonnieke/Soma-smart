@@ -59,7 +59,7 @@ export interface TeacherNote {
 
 export interface LearnerActivity {
   id: string;
-  type: 'EXPLANATION' | 'QUIZ';
+  type: 'EXPLANATION' | 'QUIZ' | 'STUDY';
   topic: string;
   date: string;
   score?: number; // percentage

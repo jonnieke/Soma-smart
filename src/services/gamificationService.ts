@@ -23,8 +23,8 @@ export const calculateTotalXP = (activities: LearnerActivity[]): number => {
             if ((activity.score || 0) >= 100) {
                 xp += XP_RULES.PERFECT_SCORE_BONUS;
             }
-        } else if (activity.type === 'EXPLANATION') {
-            xp += XP_RULES.TOPIC_STUDY;
+        } else if (activity.type === 'EXPLANATION' || activity.type === 'STUDY') {
+            xp += activity.type === 'STUDY' ? 30 : XP_RULES.TOPIC_STUDY;
         }
 
         return total + xp;

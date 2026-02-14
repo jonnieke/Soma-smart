@@ -5,10 +5,12 @@ import { MessageSquare, X, Send, Sparkles, User, Bot } from 'lucide-react';
 import { askSomo } from '../services/geminiService';
 import { useApp } from '../context/AppContext';
 import ReactMarkdown from 'react-markdown';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 export const AskSomo: React.FC = () => {
     const navigate = useNavigate();
+    const location = useLocation();
+
     const { language } = useApp();
     const [isOpen, setIsOpen] = useState(false);
     const [messages, setMessages] = useState<{ role: 'user' | 'model', text: string }[]>([
@@ -18,6 +20,11 @@ export const AskSomo: React.FC = () => {
     const [isTyping, setIsTyping] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
+    // Hide assistant in learning environments to avoid distractions
+    // Moved below hooks to avoid "Rendered fewer hooks than expected" error
+    const restrictedPaths = ['/learner', '/teacher', '/revision'];
+    const shouldHide = restrictedPaths.some(path => location.pathname.startsWith(path));
+
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     };
@@ -25,6 +32,8 @@ export const AskSomo: React.FC = () => {
     useEffect(() => {
         scrollToBottom();
     }, [messages, isOpen]);
+
+    if (shouldHide) return null;
 
     const handleSend = async (text: string) => {
         if (!text.trim()) return;

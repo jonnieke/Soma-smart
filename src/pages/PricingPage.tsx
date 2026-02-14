@@ -9,7 +9,7 @@ import { pesapalService } from '../services/pesapalService';
 export const PricingPage: React.FC = () => {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
-    const { isPro, role, subscriptionPlan } = useApp();
+    const { isPro, role, subscriptionPlan, refreshProfile } = useApp();
     const [verifying, setVerifying] = React.useState(false);
     const [verifyError, setVerifyError] = React.useState('');
     const [verifySuccess, setVerifySuccess] = React.useState(false);
@@ -18,21 +18,28 @@ export const PricingPage: React.FC = () => {
     const ref = searchParams.get('ref');
 
     const handleVerification = async (reference: string) => {
-        // WORLD-CLASS PROCESS: Immediate Success UI & Redirect
-        // Pesapal 'verifying' status from redirect is enough to show success to the user
-        // While we sync the DB in the background.
+        // WORLD-CLASS PROCESS: Success UI
         setVerifySuccess(true);
         setVerifying(false);
 
-        // Background verification sync
-        pesapalService.checkTransactionStatus(reference).catch(err => {
-            console.error("Background verification sync failed - IPN should handle this:", err);
-        });
+        // Explicit sync with DB and refresh profile
+        try {
+            await pesapalService.checkTransactionStatus(reference);
+            await refreshProfile();
+        } catch (err) {
+            console.error("Verification sync failed:", err);
+        }
 
-        // Instant Redirect
+        // Check for material intent
+        const materialId = searchParams.get('materialId');
+
+        // Instant Smooth Redirect
         setTimeout(() => {
             const dashboard = role === 'TEACHER' ? '/teacher' : (role === 'SCHOOL' ? '/school' : '/learner');
-            window.location.href = dashboard;
+            navigate(dashboard, {
+                replace: true,
+                state: { materialId }
+            });
         }, 1500);
     };
 
