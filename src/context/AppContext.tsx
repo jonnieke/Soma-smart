@@ -91,6 +91,8 @@ interface AppContextType {
   resolveSessionConflict: () => Promise<void>;
   setSessionError: (error: 'MULTI_DEVICE' | 'SINGLE_DEVICE' | null) => void;
   refreshProfile: () => Promise<void>;
+  downloadUsageCount: number;
+  incrementDownloadUsage: () => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -138,6 +140,18 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [isPro, setIsPro] = useState(false);
   const [subscriptionPlan, setSubscriptionPlan] = useState<SubscriptionTier>('FREE');
   const [subscriptionExpiry, setSubscriptionExpiry] = useState<string | null>(null);
+  const [downloadUsageCount, setDownloadUsageCount] = useState<number>(() => {
+    const saved = localStorage.getItem('soma_download_usage');
+    const lastDate = localStorage.getItem('soma_download_date');
+    const today = new Date().toLocaleDateString();
+
+    if (lastDate !== today) {
+      localStorage.setItem('soma_download_date', today);
+      localStorage.setItem('soma_download_usage', '0');
+      return 0;
+    }
+    return parseInt(saved || '0');
+  });
   const [userId, setUserId] = useState<string | null>(null);
 
   const [language, setLanguage] = useState<'EN' | 'FR'>(() => {
@@ -222,6 +236,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         setSubscriptionExpiry(access.expiry);
       }
     }
+  };
+
+  const incrementDownloadUsage = () => {
+    setDownloadUsageCount(prev => {
+      const newVal = prev + 1;
+      localStorage.setItem('soma_download_usage', newVal.toString());
+      localStorage.setItem('soma_download_date', new Date().toLocaleDateString());
+      return newVal;
+    });
   };
 
   const toggleLanguage = () => {
@@ -1944,7 +1967,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       sessionError,
       resolveSessionConflict,
       setSessionError,
-      refreshProfile
+      refreshProfile,
+      downloadUsageCount,
+      incrementDownloadUsage
     }}>
       {children}
     </AppContext.Provider>

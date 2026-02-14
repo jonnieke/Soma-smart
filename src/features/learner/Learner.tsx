@@ -19,7 +19,7 @@ import { MarkdownText, Button, Card } from '../../components/Shared';
 import {
   fileToGenerativePart, explainImage, explainAudio, explainTopic,
   generateQuickQuiz, generateQuiz, generateSpeech, stopSpeech, generateLessonRecap, continueResearch,
-  summarizeDocument
+  summarizeDocument, generateRichLessonNotes
 } from '../../services/geminiService';
 import confetti from 'canvas-confetti';
 import {
@@ -28,6 +28,7 @@ import {
 } from '../../services/gamificationService';
 import { translations } from '../../data/translations';
 import { QuizRunner } from './QuizRunner';
+import { jsPDF } from 'jspdf';
 
 interface LearnerProps {
   onNavigate: (view: ViewState) => void;
@@ -42,6 +43,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
     usageCount, incrementUsage, isRegistered, studentProfile, updateStudentProfile,
     upgradeAccount, revisionUsageCount, incrementRevisionUsage,
     studyUsageCount, incrementStudyUsage,
+    downloadUsageCount, incrementDownloadUsage,
     logout, isPro, subscriptionPlan, subscriptionExpiry, isOnline, role, language,
     createTutoringRequest, activeTutoringRequests, isAvailableForTutoring,
     marketplaceMaterials, purchasedMaterialIds, purchaseMaterial,
@@ -92,6 +94,30 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
   const [loadingText, setLoadingText] = useState("Processing...");
   const [audioData, setAudioData] = useState<{ base64: string, mimeType: string } | null>(null);
 
+  const [showDownloadPayment, setShowDownloadPayment] = useState(false);
+  const [pendingDownloadMaterial, setPendingDownloadMaterial] = useState<any>(null);
+
+  const SINGLE_DOWNLOAD_PLAN = {
+    id: 'single_download',
+    name: 'Single Premium Download',
+    price: 20,
+    segment: 'STUDENT',
+    duration: 'ONCE'
+  };
+
+  // --- OFFLINE CACHE & MULTIMEDIA ---
+  const [explanationCache, setExplanationCache] = useState<Record<string, ExplanationResult>>(() => {
+    const saved = localStorage.getItem('somo_explanation_cache');
+    return saved ? JSON.parse(saved) : {};
+  });
+
+  useEffect(() => {
+    localStorage.setItem('somo_explanation_cache', JSON.stringify(explanationCache));
+  }, [explanationCache]);
+
+  const [pendingMedia, setPendingMedia] = useState<{ data: string, mimeType: string, type: 'IMAGE' | 'AUDIO' | 'FILE' } | null>(null);
+  const studyFileInputRef = useRef<HTMLInputElement>(null);
+
   const [level, setLevel] = useState<'Simple' | 'Exam'>('Simple');
 
 
@@ -130,6 +156,18 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
   const fileInputRef = useRef<HTMLInputElement>(null);
   const scanVideoRef = useRef<HTMLVideoElement>(null);
   const scanAudioRef = useRef<HTMLAudioElement | null>(null);
+
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (isRecording) {
+      interval = setInterval(() => {
+        setRecordingTime(prev => prev + 1);
+      }, 1000);
+    } else {
+      setRecordingTime(0);
+    }
+    return () => clearInterval(interval);
+  }, [isRecording]);
 
   useEffect(() => {
     if (mode === 'MARKETPLACE') {
@@ -305,32 +343,242 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
     });
 
     try {
-      const result = await summarizeDocument(material.title, (material.realId || material.id).toString(), language);
+      // Check Cache or Offline
+      const cacheKey = `${material.id}-${language}`;
+      if (explanationCache[cacheKey]) {
+        setExplanation(explanationCache[cacheKey]);
+        setLoading(false);
+        setIsSummarizing(false);
+        return;
+      }
+
+      if (!isOnline) {
+        setLoading(false);
+        setIsSummarizing(false);
+        setError({
+          title: "Study Assistant Offline",
+          message: "You are offline, check your internet. I couldn't generate a study guide for this document right now."
+        });
+        return;
+      }
+
+      const result = await summarizeDocument(material.title, (material.id || material.realId).toString(), language, material.subject, material.grade);
       setExplanation(result);
-    } catch (err) {
+      setExplanationCache(prev => ({ ...prev, [cacheKey]: result }));
+    } catch (err: any) {
       console.error("Study Guide error:", err);
-      setError({ title: "Study Assistant Error", message: "I couldn't generate a study guide for this document right now." });
+      // Even if isOnline was true at start, the request might fail due to network drop
+      if (!isOnline || !navigator.onLine || err.message?.includes('network') || err.message?.includes('Failed to fetch')) {
+        setError({
+          title: "Study Assistant Offline",
+          message: "You are offline, check your internet. I couldn't generate a study guide for this document right now."
+        });
+      } else {
+        setError({ title: "Study Assistant Error", message: "I couldn't generate a study guide for this document right now." });
+      }
     } finally {
       setLoading(false);
       setIsSummarizing(false);
     }
   };
 
-  const askStudyBuddy = async (query: string) => {
-    if (!query.trim() || !currentDocument) return;
+  const handleDownloadAIRevisionNotes = async (material: any, bypassLimit = false) => {
+    // 1. Strict Subscription Check
+    if (!isPro) {
+      setMode('PRICING');
+      setError({ title: "Subscription Required", message: "Downloads are exclusive to Somo Smart Pro members. Join today to unlock elite revision notes!" });
+      return;
+    }
 
-    const userMsg = { role: 'user' as const, text: query };
+    // 2. Daily Limit Check (5 downloads)
+    if (downloadUsageCount >= 5 && !bypassLimit) {
+      setPendingDownloadMaterial(material);
+      setShowDownloadPayment(true);
+      return;
+    }
+
+    setPendingDownloadMaterial(material);
+    setLoading(true);
+    setLoadingText("Preparing Rich Lesson Notes...");
+
+    try {
+      const result = await generateRichLessonNotes(material.title, (material.realId || material.id).toString(), language, material.subject, material.grade);
+
+      // ... jspdf logic ...
+      const doc = new jsPDF();
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      const margin = 20;
+      const contentWidth = pageWidth - (margin * 2);
+      let yPos = 25;
+
+      // Helper for adding new page if needed
+      const checkPage = (height: number) => {
+        if (yPos + height > pageHeight - margin) {
+          doc.addPage();
+          yPos = margin;
+          return true;
+        }
+        return false;
+      };
+
+      // --- PDF Header & Title ---
+      doc.setFillColor(79, 70, 229); // Indigo-600
+      doc.rect(0, 0, pageWidth, 40, 'F');
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(24);
+      doc.setTextColor(255, 255, 255);
+      doc.text("Somo Smart Revision", pageWidth / 2, 22, { align: 'center' });
+
+      doc.setFontSize(10);
+      doc.text("Elite Learning Material • CBC/KCSE Aligned", pageWidth / 2, 32, { align: 'center' });
+
+      yPos = 55;
+      doc.setFontSize(18);
+      doc.setTextColor(30, 41, 59); // Slate-800
+      doc.text(result.topic, margin, yPos);
+
+      yPos += 10;
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(100, 116, 139); // Slate-500
+      doc.text(`Subject: ${material.subject} | Grade: ${material.grade} | Teacher: ${material.isVerified ? "Somo AI Specialist" : material.teacherName}`, margin, yPos);
+
+      yPos += 8;
+      doc.setDrawColor(226, 232, 240); // Slate-200
+      doc.line(margin, yPos, pageWidth - margin, yPos);
+
+      // --- Main Detailed Content (Explanation) ---
+      yPos += 15;
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(14);
+      doc.setTextColor(79, 70, 229);
+      doc.text("Detailed Lesson Notes", margin, yPos);
+
+      yPos += 10;
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(11);
+      doc.setTextColor(51, 65, 85); // Slate-700
+
+      // Split Markdown into sections or just handle long text better
+      const cleanText = result.explanation
+        .replace(/###/g, '')
+        .replace(/##/g, '')
+        .replace(/\*/g, '•');
+
+      const lines = doc.splitTextToSize(cleanText, contentWidth);
+
+      lines.forEach((line: string) => {
+        checkPage(7);
+        // Highlight logic
+        if (line.includes('•')) {
+          doc.setFont("helvetica", "bold");
+          doc.text(line, margin, yPos);
+        } else {
+          doc.setFont("helvetica", "normal");
+          doc.text(line, margin, yPos);
+        }
+        yPos += 7;
+      });
+
+      // --- Key Takeaways ---
+      yPos += 10;
+      checkPage(30);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(14);
+      doc.setTextColor(79, 70, 229);
+      doc.text("Key Takeaways for Students", margin, yPos);
+
+      yPos += 10;
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(10);
+      doc.setTextColor(51, 65, 85);
+
+      result.summaryPoints.forEach((point) => {
+        const pLines = doc.splitTextToSize(`• ${point}`, contentWidth - 5);
+        checkPage(pLines.length * 6);
+        doc.text(pLines, margin + 5, yPos);
+        yPos += (pLines.length * 6) + 2;
+      });
+
+      // --- Exam Success Section ---
+      yPos += 15;
+      checkPage(40);
+      doc.setFillColor(254, 252, 232); // Amber-50
+      doc.setDrawColor(252, 211, 77); // Amber-300
+      doc.roundedRect(margin - 5, yPos - 8, contentWidth + 10, 35, 3, 3, 'FD');
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(12);
+      doc.setTextColor(180, 83, 9); // Amber-800
+      doc.text("🚀 Exam Success Strategies", margin, yPos);
+
+      yPos += 8;
+      doc.setFont("helvetica", "italic");
+      doc.setFontSize(9);
+      doc.setTextColor(146, 64, 14); // Amber-900
+      const examHelp = "Focus on the bolded concepts above. They are frequently assessed in national exams. Practice active recall by taking the Somo Smart quiz for this topic.";
+      const examLines = doc.splitTextToSize(examHelp, contentWidth);
+      doc.text(examLines, margin, yPos);
+
+      // --- Footer on all pages ---
+      const totalPages = (doc as any).internal.getNumberOfPages();
+      for (let i = 1; i <= totalPages; i++) {
+        doc.setPage(i);
+        doc.setFontSize(8);
+        doc.setTextColor(148, 163, 184); // Slate-400
+        doc.text(`Page ${i} of ${totalPages} | Prepared by Somo Smart AI`, pageWidth / 2, pageHeight - 10, { align: 'center' });
+      }
+
+      doc.save(`${material.title.replace(/\s+/g, '_')}_Study_Notes.pdf`);
+
+      // 3. Increment usage only on success and if not a paid overage
+      if (!bypassLimit) {
+        incrementDownloadUsage();
+      }
+
+    } catch (err: any) {
+      console.error("PDF Generate error:", err);
+      if (!isOnline || !navigator.onLine || err.message?.includes('network') || err.message?.includes('Failed to fetch')) {
+        setError({ title: "Offline Error", message: "You are offline. Please check your internet to download teacher notes." });
+      } else {
+        setError({ title: "Generation Error", message: "I couldn't generate the full teacher notes. Please try again." });
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const askStudyBuddy = async (query: string) => {
+    if (!query.trim() && !pendingMedia) return;
+    if (!currentDocument) return;
+
+    const userMsg = { role: 'user' as const, text: query || (pendingMedia?.type === 'AUDIO' ? "Voice Message 🎤" : "Image Attachment 🖼️") };
     setStudyChat(prev => [...prev, userMsg]);
     setPromptText("");
     setLoading(true);
     setLoadingText("Somo is thinking...");
 
     try {
-      const result = await explainTopic(query, level, language, currentDocument.realId || currentDocument.id);
+      const result = await explainTopic(
+        query || (pendingMedia?.type === 'AUDIO' ? "Voice Message" : "Image/File Analysis"),
+        level,
+        language,
+        currentDocument.realId || currentDocument.id,
+        currentDocument.subject,
+        currentDocument.grade,
+        pendingMedia ? { data: pendingMedia.data, mimeType: pendingMedia.mimeType } : undefined
+      );
       setStudyChat(prev => [...prev, { role: 'model' as const, text: result.explanation }]);
-    } catch (err) {
+      setPendingMedia(null);
+    } catch (err: any) {
       console.error("Study Buddy error:", err);
-      setStudyChat(prev => [...prev, { role: 'model' as const, text: "I'm sorry, I hit a snag while looking through this document. 😅" }]);
+      if (!isOnline || !navigator.onLine || err.message?.includes('network') || err.message?.includes('Failed to fetch')) {
+        setStudyChat(prev => [...prev, { role: 'model' as const, text: "I can't answer right now because you are offline. 📵" }]);
+      } else {
+        setStudyChat(prev => [...prev, { role: 'model' as const, text: "I'm sorry, I hit a snag while looking through this document. 😅" }]);
+      }
     } finally {
       setLoading(false);
     }
@@ -520,14 +768,18 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
     } catch (error: any) {
       console.error("Scan error:", error);
       let errorMessage = "We couldn't process this image. Please ensure it's clear and contains text.";
+      let errorTitle = "Scan Failed";
 
-      if (error.message?.includes("Safety") || error.message?.includes("blocked")) {
+      if (!isOnline || !navigator.onLine || error.message?.includes('network') || error.message?.includes('Failed to fetch')) {
+        errorTitle = "Offline Error";
+        errorMessage = "You are offline. Please check your internet to process this scan.";
+      } else if (error.message?.includes("Safety") || error.message?.includes("blocked")) {
         errorMessage = "This content was flagged by our safety filters. Please try a different page.";
       } else if (error.message?.includes("429")) {
         errorMessage = "We're receiving too many requests. Please wait a moment and try again.";
       }
 
-      setError({ title: "Scan Failed", message: errorMessage });
+      setError({ title: errorTitle, message: errorMessage });
     } finally {
       setLoading(false);
     }
@@ -590,16 +842,40 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
       };
 
       mediaRecorder.onstop = async () => {
+        console.log("Recording stopped. Chunks:", chunksRef.current.length);
         const blob = new Blob(chunksRef.current, { type: mimeType });
-        await handleAudioExplanation(blob, mimeType);
+        if (blob.size === 0) {
+          console.warn("Empty recording blob.");
+          setIsRecording(false);
+          return;
+        }
+
+        if (mode === 'STUDY') {
+          const reader = new FileReader();
+          reader.readAsDataURL(blob);
+          reader.onloadend = () => {
+            const base64 = (reader.result as string).split(',')[1];
+            setPendingMedia({ data: base64, mimeType, type: 'AUDIO' });
+            console.log("Audio attached to Study Buddy");
+          };
+        } else {
+          await handleAudioExplanation(blob, mimeType);
+        }
         stream.getTracks().forEach(t => t.stop());
       };
 
-      mediaRecorder.start();
+      mediaRecorder.start(1000); // chunk every second
       setIsRecording(true);
-    } catch (e) {
-      console.error(e);
-      setError({ title: "Microphone Error", message: "Microphone access denied or unavailable." });
+      console.log("Recording started...");
+    } catch (e: any) {
+      console.error("Failed to start recording:", e);
+      setIsRecording(false);
+      setError({
+        title: "Microphone Error",
+        message: e.message?.includes('denied') || e.message?.includes('Permission')
+          ? "Please allow microphone access in your browser settings to use voice features."
+          : "Microphone access denied or unavailable."
+      });
     }
   };
 
@@ -655,9 +931,10 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
       };
     } catch (e: any) {
       console.error(e);
+      const isNet = !isOnline || !navigator.onLine || e.message?.includes('network') || e.message?.includes('Failed to fetch');
       setError({
-        title: "Audio Error",
-        message: "We couldn't understand the audio. Please speak clearly or try again."
+        title: isNet ? "Offline Error" : "Audio Error",
+        message: isNet ? "You are offline. Please check your internet to process audio." : "We couldn't understand the audio. Please speak clearly or try again."
       });
       setLoading(false);
     }
@@ -679,7 +956,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
         result = await explainImage(imageData.base64, imageData.mimeType, newLevel, language);
       } else if (explanation?.topic) {
         // Fallback for topic based regeneration
-        result = await explainTopic(explanation.topic, newLevel, language);
+        result = await explainTopic(explanation.topic, newLevel, language, undefined, currentDocument?.subject, currentDocument?.grade);
       }
 
       if (result) {
@@ -705,18 +982,26 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
     }
   };
 
-  const handleTopicClick = async (topic: string) => {
+  const handleTopicClick = async (topic: string, multimedia?: { data: string, mimeType: string }) => {
     if (!checkLimit()) return;
 
     setLoading(true);
     setError(null);
-    setLoadingText(`Exploring ${topic}...`);
+    setLoadingText(topic ? `Exploring ${topic}...` : "Analyzing your attachment...");
     setMode('SCAN'); // Show loading
     try {
       setAudioData(null);
       setImageData(null);
 
-      const result = await explainTopic(topic, level, language);
+      const result = await explainTopic(
+        topic || (multimedia?.mimeType.includes('audio') ? "Voice Message" : "Image Analysis"),
+        level,
+        language,
+        undefined,
+        currentDocument?.subject,
+        currentDocument?.grade,
+        multimedia
+      );
       setExplanation(result);
       setStickyQuizTaken(false); // Reset sticky quiz
       setStickyQuizData(null);
@@ -749,10 +1034,12 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
   };
 
   const handlePromptSubmit = async () => {
-    if (!promptText.trim()) return;
+    if (!promptText.trim() && !pendingMedia) return;
     const query = promptText.trim();
+    const media = pendingMedia;
     setPromptText("");
-    await handleTopicClick(query);
+    setPendingMedia(null);
+    await handleTopicClick(query, media);
   };
 
   const handleDownload = () => {
@@ -1067,7 +1354,7 @@ ${explanation.explanation}
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="w-full max-w-sm mb-6 cursor-pointer group"
+              className="w-full max-w-md mb-10 cursor-pointer group"
               onClick={() => setMode('MARKETPLACE')}
             >
               <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-[2rem] p-5 shadow-xl shadow-blue-100 flex items-center justify-between hover:scale-[1.02] transition-all border-4 border-white active:scale-95">
@@ -1147,30 +1434,6 @@ ${explanation.explanation}
               )}
             </motion.div>
 
-
-            {/* SUBJECT SHORTCUTS (CBC ALIGNED) */}
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.15 }}
-              className="mt-6 flex flex-wrap justify-center gap-2 max-w-3xl mx-auto"
-            >
-              <button onClick={() => { setPromptText("Help me learn Mathematics"); handlePromptSubmit(); }} className="flex items-center gap-1.5 px-4 py-2 bg-blue-50 text-blue-700 rounded-xl hover:bg-blue-100 hover:scale-105 transition-all font-bold text-sm border border-blue-100">
-                <Calculator className="w-4 h-4" /> Math
-              </button>
-              <button onClick={() => { setPromptText("Help me learn English"); handlePromptSubmit(); }} className="flex items-center gap-1.5 px-4 py-2 bg-emerald-50 text-emerald-700 rounded-xl hover:bg-emerald-100 hover:scale-105 transition-all font-bold text-sm border border-emerald-100">
-                <BookOpen className="w-4 h-4" /> English
-              </button>
-              <button onClick={() => { setPromptText("Help me learn Kiswahili"); handlePromptSubmit(); }} className="flex items-center gap-1.5 px-4 py-2 bg-purple-50 text-purple-700 rounded-xl hover:bg-purple-100 hover:scale-105 transition-all font-bold text-sm border border-purple-100">
-                <Languages className="w-4 h-4" /> Kiswahili
-              </button>
-              <button onClick={() => { setPromptText("Help me learn Science"); handlePromptSubmit(); }} className="flex items-center gap-1.5 px-4 py-2 bg-amber-50 text-amber-700 rounded-xl hover:bg-amber-100 hover:scale-105 transition-all font-bold text-sm border border-amber-100">
-                <FlaskConical className="w-4 h-4" /> Science
-              </button>
-              <button onClick={() => { setPromptText("Help me learn Social Studies"); handlePromptSubmit(); }} className="flex items-center gap-1.5 px-4 py-2 bg-cyan-50 text-cyan-700 rounded-xl hover:bg-cyan-100 hover:scale-105 transition-all font-bold text-sm border border-cyan-100">
-                <Globe className="w-4 h-4" /> Social Studies
-              </button>
-            </motion.div>
 
             {/* FEATURE CHIPS / SUGGESTIONS */}
             <motion.div
@@ -1556,12 +1819,12 @@ ${explanation.explanation}
               ) : explanation && (
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="prose prose-slate prose-sm max-w-none">
                   <h3 className="text-slate-900 font-black uppercase text-xs tracking-widest mb-4 flex items-center gap-2">
-                    <BookOpen className="w-4 h-4 text-indigo-600" /> Somo Smart Study Guide
+                    <BookOpen className="w-4 h-4 text-indigo-600" /> Official Study Guide & Notes
                   </h3>
                   <MarkdownText content={explanation.explanation} />
 
                   <div className="mt-8">
-                    <h4 className="text-slate-900 font-black uppercase text-[10px] tracking-widest mb-4">Key Takeaways</h4>
+                    <h4 className="text-slate-900 font-black uppercase text-[10px] tracking-widest mb-4">Summary Notes for Revision</h4>
                     <ul className="space-y-3">
                       {explanation.summaryPoints.map((point, i) => (
                         <li key={i} className="flex gap-3 text-slate-600 items-start">
@@ -1573,6 +1836,14 @@ ${explanation.explanation}
                   </div>
 
                   <div className="mt-8 pt-6 border-t border-slate-100">
+                    <div className="bg-indigo-50 rounded-2xl p-4 mb-4 border border-indigo-100">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Star className="w-3 h-3 text-indigo-600" />
+                        <span className="text-[10px] font-black text-indigo-700 uppercase tracking-widest">Exam Mastery Guide</span>
+                      </div>
+                      <p className="text-[10px] text-indigo-600 font-medium italic">Pro Tip: Review these summary notes before starting the quiz to maximize your "Stickiness Score"!</p>
+                    </div>
+
                     <div className="bg-emerald-50 rounded-2xl p-4 mb-4 border border-emerald-100">
                       <div className="flex items-center gap-2 mb-1">
                         <Sparkles className="w-3 h-3 text-emerald-600" />
@@ -1647,22 +1918,87 @@ ${explanation.explanation}
 
             {/* Input Area */}
             <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-slate-50 via-slate-50 to-transparent">
-              <div className="max-w-3xl mx-auto flex gap-3 p-2 bg-white rounded-[2rem] shadow-2xl border border-slate-200">
-                <input
-                  type="text"
-                  value={promptText}
-                  onChange={(e) => setPromptText(e.target.value)}
-                  placeholder="learn more about the subject"
-                  className="flex-1 px-6 py-4 outline-none text-slate-700 bg-transparent font-medium"
-                  onKeyDown={(e) => e.key === 'Enter' && askStudyBuddy(promptText)}
-                />
-                <button
-                  onClick={() => askStudyBuddy(promptText)}
-                  disabled={loading || !promptText.trim()}
-                  className="w-14 h-14 bg-indigo-600 rounded-full flex items-center justify-center text-white shadow-lg shadow-indigo-100 hover:scale-105 active:scale-95 transition-all disabled:opacity-50"
-                >
-                  <ArrowRight className="w-6 h-6" />
-                </button>
+              <div className="max-w-3xl mx-auto space-y-3">
+                {pendingMedia && (
+                  <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex justify-start">
+                    <div className="bg-white p-3 rounded-2xl shadow-xl border border-slate-200 inline-flex items-center gap-3">
+                      {pendingMedia.type === 'IMAGE' ? (
+                        <div className="w-12 h-12 rounded-xl overflow-hidden border border-slate-100">
+                          <img src={`data:${pendingMedia.mimeType};base64,${pendingMedia.data}`} className="w-full h-full object-cover" />
+                        </div>
+                      ) : (
+                        <div className="w-12 h-12 bg-indigo-50 rounded-xl flex items-center justify-center">
+                          {pendingMedia.type === 'AUDIO' ? <Mic className="w-6 h-6 text-indigo-600" /> : <FileText className="w-6 h-6 text-indigo-600" />}
+                        </div>
+                      )}
+                      <div className="pr-4 text-left">
+                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Attached {pendingMedia.type}</p>
+                        <p className="text-[11px] font-bold text-slate-800">Somo is ready to analyze this!</p>
+                      </div>
+                      <button onClick={() => setPendingMedia(null)} className="p-1.5 hover:bg-red-50 rounded-full text-slate-400 hover:text-red-500 transition-colors">
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </motion.div>
+                )}
+                <div className="flex items-center gap-3 p-2 bg-white rounded-[2rem] shadow-2xl border border-slate-200">
+                  <input
+                    type="file"
+                    ref={studyFileInputRef}
+                    className="hidden"
+                    accept="image/*,application/pdf"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        const data = await fileToGenerativePart(file);
+                        setPendingMedia({ data, mimeType: file.type, type: file.type.startsWith('image/') ? 'IMAGE' : 'FILE' });
+                      }
+                    }}
+                  />
+                  <div className="flex items-center gap-1 pl-2">
+                    <button
+                      onClick={() => startCamera()}
+                      className="p-3 text-slate-400 hover:text-indigo-600 transition-colors"
+                      title="Snapshot"
+                    >
+                      <Camera className="w-6 h-6" />
+                    </button>
+                    <button
+                      onClick={() => studyFileInputRef.current?.click()}
+                      className="p-3 text-slate-400 hover:text-indigo-600 transition-colors"
+                      title="Upload"
+                    >
+                      <Upload className="w-6 h-6" />
+                    </button>
+                    <button
+                      onClick={isRecording ? stopRecording : startRecording}
+                      className={`p-3 rounded-xl transition-all ${isRecording ? 'text-red-600 bg-red-50' : 'text-slate-400 hover:text-indigo-600'}`}
+                      title={isRecording ? "Stop Recording" : "Voice message"}
+                    >
+                      {isRecording ? <div className="w-6 h-6 bg-red-600 rounded-sm animate-pulse" /> : <Mic className="w-6 h-6" />}
+                    </button>
+                    {isRecording && (
+                      <span className="text-xs font-black text-red-500 tabular-nums ml-1">
+                        {formatTime(recordingTime)}
+                      </span>
+                    )}
+                  </div>
+                  <input
+                    type="text"
+                    value={promptText}
+                    onChange={(e) => setPromptText(e.target.value)}
+                    placeholder="Ask Somo about this document..."
+                    className="flex-1 px-2 py-4 outline-none text-slate-700 bg-transparent font-medium"
+                    onKeyDown={(e) => e.key === 'Enter' && askStudyBuddy(promptText)}
+                  />
+                  <button
+                    onClick={() => askStudyBuddy(promptText)}
+                    disabled={loading || (!promptText.trim() && !pendingMedia)}
+                    className="w-14 h-14 bg-indigo-600 rounded-full flex items-center justify-center text-white shadow-lg shadow-indigo-100 hover:scale-105 active:scale-95 transition-all disabled:opacity-50"
+                  >
+                    <ArrowRight className="w-6 h-6" />
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -1998,12 +2334,29 @@ ${explanation.explanation}
     if (mode === 'MARKETPLACE') {
       return (
         <div className="bg-slate-50 min-h-screen pb-32 max-w-4xl mx-auto shadow-2xl border-x border-slate-100 flex flex-col">
+          {/* Download Overage Payment Modal */}
+          {showDownloadPayment && (
+            <PaymentFlow
+              plan={SINGLE_DOWNLOAD_PLAN}
+              onSuccess={() => {
+                setShowDownloadPayment(false);
+                if (pendingDownloadMaterial) {
+                  handleDownloadAIRevisionNotes(pendingDownloadMaterial, true);
+                  setPendingDownloadMaterial(null);
+                }
+              }}
+              onCancel={() => {
+                setShowDownloadPayment(false);
+                setPendingDownloadMaterial(null);
+              }}
+            />
+          )}
+
           {/* Header */}
           <div className="sticky top-0 z-40 bg-white/90 backdrop-blur-xl border-b border-slate-200 px-6 py-4 flex items-center justify-between">
             <div className="flex items-center gap-4">
               <button onClick={() => setMode('MENU')} className="p-2 hover:bg-slate-100 rounded-full transition-colors"><ArrowRight className="w-5 h-5 rotate-180" /></button>
               <div>
-                <h1 className="text-xl font-black text-slate-900 tracking-tight leading-none">Study Materials</h1>
                 <p className="text-[9px] font-black text-indigo-500 uppercase tracking-[0.2em] mt-1.5">Premium Resource Center</p>
               </div>
             </div>
@@ -2230,15 +2583,16 @@ ${explanation.explanation}
                               : 'bg-indigo-600 text-white border-indigo-600 shadow-lg shadow-indigo-100 hover:bg-indigo-700 hover:scale-[1.02]'
                               }`}
                             onClick={() => startStudySession(item)}
+                            isLoading={loading && currentDocument?.id === item.id}
                             icon={studyUsageCount >= 3 && !isPro ? <Lock className="w-4 h-4" /> : <Sparkles className="w-4 h-4" />}
                           >
                             {studyUsageCount >= 3 && !isPro ? 'Limit Reached - Go Pro' : 'Study with Somo Smart'}
                           </Button>
                           <Button
-                            className="rounded-2xl p-4 bg-slate-100 text-slate-600 hover:bg-slate-200"
+                            className="rounded-2xl p-4 bg-indigo-600 text-white hover:bg-indigo-700 shadow-lg shadow-indigo-100 border-none transition-all hover:scale-105 active:scale-95"
                             onClick={() => {
                               if (status === 'OWNED' || status === 'PRO_INCLUDED' || status === 'FREE') {
-                                if (item.fileUrl) window.open(item.fileUrl, '_blank');
+                                handleDownloadAIRevisionNotes(item);
                               } else if (status === 'PRO_LOCKED') {
                                 setPendingMaterialId(item.id);
                                 if (!isRegistered) setShowLogin(true);
@@ -2247,7 +2601,9 @@ ${explanation.explanation}
                                 purchaseMaterial(item.id);
                               }
                             }}
-                            icon={<Download className="w-4 h-4" />}
+                            isLoading={loading && pendingDownloadMaterial?.id === item.id}
+                            icon={<Download className="w-5 h-5 stroke-[3px]" />}
+                            title="Download AI Summarized Notes"
                           />
                         </div>
                       </motion.div>

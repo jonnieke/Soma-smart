@@ -170,7 +170,15 @@ const retrieveContext = async (query: string, documentId?: string): Promise<stri
   }
 };
 
-export const explainTopic = async (topic: string, level: 'Simple' | 'Exam', language: 'EN' | 'FR' = 'EN', documentId?: string): Promise<ExplanationResult> => {
+export const explainTopic = async (
+  topic: string,
+  level: 'Simple' | 'Exam',
+  language: 'EN' | 'FR' = 'EN',
+  documentId?: string,
+  subject?: string,
+  grade?: string,
+  multimedia?: { data: string, mimeType: string }
+): Promise<ExplanationResult> => {
   const model = genAI.getGenerativeModel({
     model: MODEL_NAME,
     generationConfig: {
@@ -226,19 +234,34 @@ export const explainTopic = async (topic: string, level: 'Simple' | 'Exam', lang
     ${fileContextInstruction}
     ${ragInstruction}
 
+    SYSTEM CONTEXT: Kenyan Education System (CBC, KCPE, KCSE).
+    Target Audience: ${grade || 'Kenyan'} student.
+    Subject: ${subject || 'General Studies'}.
+    ACRONYM RULES: 
+    - CRE = Christian Religious Education (CRITICAL: NEVER interpret as Commercial Real Estate).
+    - IRE = Islamic Religious Education.
+    - HRE = Hindu Religious Education.
+
+    STRICT TASK:
     1. Identify the subject of the topic "${topic}".
     2. ${langInstruction}
-    3. Explain the topic in ${level === 'Simple' ? 'very simple language for a young student' : 'academic language suitable for exams'}.
-    4. **FORMAT**: Structure the explanation as "Easy-to-Read Notes" using summarized bullet points. Avoid long paragraphs.
-    5. Provide 3-5 short bullet points summarizing the most critical takeaways for "stickiness".
-    6. Suggest 3 short related topics for further learning.
-    7. **ENGAGEMENT**: Briefly mention that a practice quiz is available to help the student test their knowledge.
+    3. If an image or audio recording is provided, analyze it (transcribe audio if present) and answer the student's question in the context of the source document snippets provided.
+    4. Explain the topic in ${level === 'Simple' ? 'very simple language for a young student' : 'academic language suitable for exams'}.
+    5. **FORMAT**: Structure the explanation using Markdown. Use **bold text** frequently for key terms and concepts. Avoid long-form text.
+    6. Provide 3-5 short bullet points summarizing the most critical takeaways for "stickiness".
+    7. Suggest 3 short related topics for further learning.
+    8. **ENGAGEMENT**: Briefly mention that a practice quiz is available to help the student test their knowledge.
     
     Output JSON.
   `;
 
   try {
-    const result = await model.generateContent(prompt);
+    const parts: any[] = [prompt];
+    if (multimedia) {
+      parts.push({ inlineData: { data: multimedia.data, mimeType: multimedia.mimeType } });
+    }
+
+    const result = await model.generateContent(parts);
 
     const text = result.response.text();
     if (!text) throw new Error("No response from AI");
@@ -251,7 +274,7 @@ export const explainTopic = async (topic: string, level: 'Simple' | 'Exam', lang
   }
 };
 
-export const summarizeDocument = async (title: string, documentId: string, language: 'EN' | 'FR' = 'EN'): Promise<ExplanationResult> => {
+export const summarizeDocument = async (title: string, documentId: string, language: 'EN' | 'FR' = 'EN', subject?: string, grade?: string): Promise<ExplanationResult> => {
   // We use search-knowledge to get a broad overview of the document
   const ragContext = await retrieveContext("Explain the main content and purpose of this document", documentId);
 
@@ -273,20 +296,31 @@ export const summarizeDocument = async (title: string, documentId: string, langu
   });
 
   const prompt = `
-    You are an expert AI Study Companion (NotebookLM style).
-    A student wants to study the document: "${title}".
+    You are an Expert Kenyan Teacher and AI Study Companion.
+    A student in ${grade || 'their grade'} is studying the document: "${title}" for the subject: "${subject || 'General Studies'}".
+    
+    SYSTEM CONTEXT: You are operating within the Kenyan Education System (CBC, KCPE, and KCSE). 
+    ACRONYM RULES: 
+    - CRE = Christian Religious Education (NOT Commercial Real Estate).
+    - IRE = Islamic Religious Education.
+    - HRE = Hindu Religious Education.
+    - P.E. = Physical Education.
     
     Source Content Snippets:
     "${ragContext.substring(0, 10000)}"
     
     TASK:
     1. Create a "Study Guide" summary for this document.
-    2. **FORMAT**: Use a summarized bullet style that is easy to read. Structure it with "Study Notes" using clear headers and bullet points. Avoid long-form text.
-    3. Include a "The Big Idea" section and "Key Learnings" (in bullets).
-    4. Use ${language === 'FR' ? 'French' : 'English'}.
-    5. Provide 3-5 summary points optimized for better retention (stickiness).
-    6. Suggest 3 related study topics.
-    7. **STIMULATE**: Mention that the student should take the practice quiz after reading to help the information stick.
+    2. **STRICT SOURCE GROUNDING**: Your primary authority is the "Source Content Snippets" provided above. You MUST strictly follow the themes, topics, and terminology found in the snippets.
+    3. **NO HALLUCINATION**: NEVER introduce concepts from unrelated fields (e.g., do not discuss "Real Estate" for "CRE" notes).
+    4. **CONTENT INTEGRITY**: NEVER use placeholders like "[PLACEHOLDER]" or generic templates. 
+    5. **CURRICULUM ALIGNMENT**: If the source content is brief, you may expand on the concepts using your expert knowledge of the KENYAN CURRICULUM for "${subject}" at "${grade}" level. However, this expansion MUST stay strictly within the subject boundaries of ${subject}.
+    6. **FORMAT**: Use a summarized bullet style that is easy to read. Structure it with "Study Notes" and "Official Guide" using clear headers and bullet points.
+    7. Include a "The Big Idea" section and "Key Learnings" (in bullets).
+    8. Use ${language === 'FR' ? 'French' : 'English'}.
+    9. Provide 3-5 summary points optimized for better retention (stickiness).
+    10. Suggest 3 related study topics.
+    11. **STIMULATE**: Mention that the student should take the practice quiz after reading to help the information stick.
     
     Output JSON.
   `;
@@ -298,6 +332,71 @@ export const summarizeDocument = async (title: string, documentId: string, langu
     return JSON.parse(text) as ExplanationResult;
   } catch (error) {
     console.error("Error summarizing document:", error);
+    throw error;
+  }
+};
+
+export const generateRichLessonNotes = async (title: string, documentId: string, language: 'EN' | 'FR' = 'EN', subject?: string, grade?: string): Promise<ExplanationResult> => {
+  const ragContext = await retrieveContext("Provide a deep, comprehensive and pedagogical explanation of the subject matter for exam revision", documentId);
+
+  const model = genAI.getGenerativeModel({
+    model: MODEL_NAME,
+    generationConfig: {
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: SchemaType.OBJECT,
+        properties: {
+          topic: { type: SchemaType.STRING },
+          explanation: { type: SchemaType.STRING, description: "Detailed Markdown lesson notes" },
+          summaryPoints: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
+          relatedTopics: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } }
+        },
+        required: ["topic", "explanation", "summaryPoints", "relatedTopics"]
+      }
+    }
+  });
+
+  const prompt = `
+    You are an Expert Kenyan Teacher and Subject Matter Specialist.
+    Your task is to prepare Comprehensive Revision Notes for a ${grade || 'Kenyan'} student for the document: "${title}".
+    Subject Context: "${subject || 'General studies'}".
+
+    SYSTEM CONTEXT: You are operating within the Kenyan Education System (CBC, KCPE, and KCSE). 
+    ACRONYM RULES: 
+    - CRE = Christian Religious Education (CRITICAL: NEVER interpret as Commercial Real Estate).
+    - IRE = Islamic Religious Education.
+    - HRE = Hindu Religious Education.
+    
+    CRITICAL INSTRUCTION: DO NOT OVERSUMMARIZE. The student needs rich, detailed, and reliable material to study from and prepare for national exams.
+    
+    **STRICT SOURCE GROUNDING RULE**: 
+    - The "Source Content Snippets" are your absolute authority. 
+    - You MUST adhere to the domain of "${subject}" as defined in the Kenyan Curriculum.
+    - NEVER use "[PLACEHOLDER]" or template text. 
+    - Every section must contain substantive, factual information grounded in the source. 
+    - **CURRICULUM EXPANSION**: If a section (like Examples or Definitions) is requested but not explicitly in the source, use your expert knowledge of the KENYAN CURRICULUM for "${subject}" at "${grade}" level. This expansion MUST be 100% relevant to the subject and grade.
+    
+    Source Content Snippets:
+    "${ragContext.substring(0, 15000)}"
+    
+    GUIDELINES:
+    1. **Pedagogical Structure**: Start with an "Introduction/Overview", followed by "Core Concepts" (detailed), "Key Formulas/Definitions", "Practical Examples/Context", and "Advanced Insights for Higher Grades".
+    2. **Exam Focus**: Explicitly mention areas that are frequently tested. Use phrases like "Exam Tip" or "Commonly assessed in national exams (KCSE/CBC)".
+    3. **Tone**: Educational, encouraging, and professional (Teacher-to-Student).
+    4. **Richness**: Provide depth. If a concept is mentioned in the source, explain the 'why' and 'how', not just the 'what'.
+    5. **Formatting**: Use Markdown with clear H2 and H3 headers, bold text for emphasis, and organized lists.
+    6. **Language**: Use ${language === 'FR' ? 'French' : 'English'}.
+    
+    Output JSON.
+  `;
+
+  try {
+    const result = await model.generateContent(prompt);
+    const text = result.response.text();
+    if (!text) throw new Error("No response");
+    return JSON.parse(text) as ExplanationResult;
+  } catch (error) {
+    console.error("Error generating rich notes:", error);
     throw error;
   }
 };
