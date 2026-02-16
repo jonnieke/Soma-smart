@@ -8,6 +8,7 @@ interface AppContextType {
   learnerHistory: LearnerActivity[];
   saveActivity: (activity: LearnerActivity) => void;
   deleteActivity: (id: string) => void;
+  clearHistory: () => void; // New method
   studentCode: string;
   setStudentCode: (code: string) => void;
   isRegistered: boolean;
@@ -15,8 +16,8 @@ interface AppContextType {
   updateStudentProfile: (updates: { name?: string, grade?: string, parentPhone?: string }) => Promise<{ success: boolean; message?: string }>;
   usageCount: number;
   incrementUsage: () => void;
-  studyUsageCount: number;
-  incrementStudyUsage: () => void;
+  // studyUsageCount removed
+  // incrementStudyUsage removed
   registerStudent: (name: string, grade: string, pin: string, parentPhone?: string) => Promise<{ success: boolean; message?: string; data?: string }>;
   registerTeacher: (name: string, email: string, password: string, classes: string[], subjects: string[]) => Promise<{ success: boolean; message?: string }>;
   login: (code: string) => Promise<boolean>;
@@ -109,11 +110,20 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [role, setRole] = useState<UserRole>(UserRole.NONE);
 
   const [learnerHistory, setLearnerHistory] = useState<LearnerActivity[]>(offlineService.getLearnerHistory());
+
+  // Duplicate functions removed. Using async versions defined below.
+
+  const clearHistory = () => {
+    setLearnerHistory([]);
+    offlineService.clearLearnerHistory();
+  };
+
   const [studentCode, setStudentCode] = useState<string>("");
-  const [usageCount, setUsageCount] = useState<number>(0);
-  const [studyUsageCount, setStudyUsageCount] = useState<number>(() => {
-    return parseInt(localStorage.getItem('soma_study_usage') || '0');
+  const [usageCount, setUsageCount] = useState<number>(() => {
+    const saved = localStorage.getItem('somo_daily_usage');
+    return saved ? parseInt(saved) : 0;
   });
+  // studyUsageCount removed
   const [isRegistered, setIsRegistered] = useState<boolean>(false);
   const [studentProfile, setStudentProfile] = useState<{ id: string, name: string, grade: string, schoolId?: string, schoolName?: string, email?: string, parentPhone?: string, sessionId?: string } | null>(null);
 
@@ -279,12 +289,19 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setStudentProfile(null);
     setTeacherProfile(null);
     setSchoolProfile(null);
+    setLearnerHistory([]); // Clear state
+    setPurchasedMaterialIds([]); // Clear state
     setTeacherHistory([]);
     setTeacherWallet(null);
     setIsPro(false);
     setSubscriptionPlan('FREE');
     setSubscriptionExpiry(null);
+
+    // Clear Persisted Data
     localStorage.removeItem('soma_active_student');
+    offlineService.clearLearnerHistory();
+    offlineService.clearTeacherHistory();
+
     setUserId(null);
   };
 
@@ -611,7 +628,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const loginTeacher = async (email: string, pass: string): Promise<{ success: boolean; message?: string }> => {
     try {
-      console.log("Attempting login for:", email);
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password: pass
@@ -623,8 +639,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       }
 
       if (data.user) {
-        console.log("Auth successful, User ID:", data.user.id);
-
         // Fetch profile to set state
         const { data: profile, error: profileError } = await supabase.from('profiles').select('*').eq('id', data.user.id).maybeSingle();
 
@@ -633,7 +647,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         }
 
         if (profile) {
-          console.log("Profile found:", profile.role);
           setTeacherProfile({
             id: profile.id,
             name: profile.full_name,
@@ -765,7 +778,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             teacherLimit: profile.teacher_limit || 20,
             studentLimit: profile.student_limit || 100,
             subscriptionStatus: profile.subscription_status || 'TRIAL',
-            expiry: profile.expiry || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+            expiry: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
             sessionId: browserSessionId
           });
           setRole(UserRole.SCHOOL);
@@ -1220,22 +1233,18 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   const incrementUsage = () => {
-    if (role === UserRole.GUEST) {
-      const newCount = usageCount + 1;
-      setUsageCount(newCount);
-      localStorage.setItem('somo_guest_usage_general', newCount.toString());
-    } else {
-      setUsageCount(prev => prev + 1);
-    }
-  };
-
-  const incrementStudyUsage = () => {
-    setStudyUsageCount(prev => {
-      const next = prev + 1;
-      localStorage.setItem('soma_study_usage', next.toString());
-      return next;
+    setUsageCount(prev => {
+      const newCount = prev + 1;
+      localStorage.setItem('somo_daily_usage', newCount.toString());
+      // Legacy Guest Sync (Optional)
+      if (role === UserRole.GUEST) {
+        localStorage.setItem('somo_guest_usage_general', newCount.toString());
+      }
+      return newCount;
     });
   };
+
+  // incrementStudyUsage removed
 
   const incrementRevisionUsage = () => {
     if (role === UserRole.GUEST) {
@@ -1962,12 +1971,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   return (
     <AppContext.Provider value={{
-      role, setRole, learnerHistory, saveActivity, deleteActivity, studentCode, setStudentCode,
+      role, setRole, learnerHistory, saveActivity, deleteActivity, clearHistory, studentCode, setStudentCode,
       isOnline,
       usageCount, incrementUsage, isRegistered, studentProfile, updateStudentProfile,
-      studyUsageCount,
-      incrementStudyUsage,
-      registerStudent, login, loginParent, recoverStudentId, registerTeacher, loginTeacher, resetPassword,
+      // studyUsageCount removed
+      // incrementStudyUsage removed
+      registerStudent, login, registerTeacher, loginParent, recoverStudentId, loginTeacher, resetPassword,
       teacherUsageCount, incrementTeacherUsage,
       teacherDarasaUsage, incrementTeacherDarasaUsage,
       teacherProfile, updateTeacherProfile, teacherHistory,

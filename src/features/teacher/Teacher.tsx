@@ -250,8 +250,6 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
 
             mediaRecorder.onstop = async () => {
                 const blob = new Blob(chunksRef.current, { type: mimeType });
-                console.log("Audio Blob Created:", blob.size, blob.type);
-
                 // Stop all tracks now that we have the full blob
                 stream.getTracks().forEach(track => track.stop());
 
@@ -542,9 +540,9 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
             {/* Main Content Area */}
             <div className="px-6 -mt-12 relative z-20">
 
-                {/* Navigation Tabs (Floating) */}
+                {/* Navigation Tabs (Floating) - Desktop Only */}
                 {!loading && !generatedNote && !generatedQuiz && (
-                    <div className="bg-white rounded-2xl shadow-sm p-2 mb-6 flex justify-between gap-2">
+                    <div className="hidden md:flex bg-white rounded-2xl shadow-sm p-2 mb-6 justify-between gap-2">
                         <button
                             onClick={() => setActiveTab('HOME')}
                             className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl transition-all text-xs md:text-sm font-bold ${activeTab === 'HOME' ? 'bg-indigo-50 text-indigo-600' : 'text-slate-500 hover:bg-slate-50'}`}
@@ -1625,6 +1623,46 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                     />
                 )
             }
+            {/* Global Bottom Nav - Mobile Only */}
+            <div className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t border-slate-200 px-4 py-3 flex justify-between items-center z-50 md:hidden pb-safe">
+                <button
+                    onClick={() => setActiveTab('HOME')}
+                    className={`flex flex-col items-center gap-1 ${activeTab === 'HOME' ? 'text-indigo-600' : 'text-slate-400 hover:text-slate-600'}`}
+                >
+                    <Home className="w-6 h-6" />
+                    <span className="text-[10px] font-black uppercase tracking-tighter">Studio</span>
+                </button>
+                <button
+                    onClick={() => setActiveTab('LIBRARY')}
+                    className={`flex flex-col items-center gap-1 ${activeTab === 'LIBRARY' ? 'text-purple-600' : 'text-slate-400 hover:text-slate-600'}`}
+                >
+                    <Library className="w-6 h-6" />
+                    <span className="text-[10px] font-black uppercase tracking-tighter">Library</span>
+                </button>
+                <div className="relative -mt-8">
+                    <button
+                        onClick={() => setActiveTab('MARKING')}
+                        className={`relative w-14 h-14 rounded-full flex items-center justify-center shadow-xl border-4 border-white transition-all transform active:scale-95 ${activeTab === 'MARKING' ? 'bg-emerald-600 text-white scale-110 shadow-emerald-200' : 'bg-slate-900 text-white shadow-slate-200'}`}
+                    >
+                        <ScanLine className="w-6 h-6" />
+                    </button>
+                    <span className="absolute -bottom-4 left-1/2 -translate-x-1/2 text-[10px] font-black uppercase tracking-tighter text-emerald-600">Marking</span>
+                </div>
+                <button
+                    onClick={() => setActiveTab('EARNINGS')}
+                    className={`flex flex-col items-center gap-1 ${activeTab === 'EARNINGS' ? 'text-amber-600' : 'text-slate-400 hover:text-slate-600'}`}
+                >
+                    <Wallet className="w-6 h-6" />
+                    <span className="text-[10px] font-black uppercase tracking-tighter">Wallet</span>
+                </button>
+                <button
+                    onClick={() => setActiveTab('MARKETPLACE')}
+                    className={`flex flex-col items-center gap-1 ${activeTab === 'MARKETPLACE' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-600'}`}
+                >
+                    <ShoppingBag className="w-6 h-6" />
+                    <span className="text-[10px] font-black uppercase tracking-tighter">Shop</span>
+                </button>
+            </div>
         </div>
     );
 };

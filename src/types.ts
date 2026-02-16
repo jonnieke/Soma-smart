@@ -238,6 +238,7 @@ export interface SubscriptionPlan {
   savings?: string;
   teacherLimit?: number;
   studentLimit?: number;
+  features?: string[];
 }
 
 // --- MONETIZATION TYPES ---

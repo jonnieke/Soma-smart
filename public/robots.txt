@@ -3,4 +3,4 @@ Allow: /
 Disallow: /admin
 Disallow: /api/
 
-Sitemap: https://somaai.co.ke/sitemap.xml
+Sitemap: https://somoai.co.ke/sitemap.xml

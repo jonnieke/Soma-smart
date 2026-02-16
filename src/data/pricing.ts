@@ -1,17 +1,17 @@
 import { SubscriptionPlan } from '../types';
 
 export const STUDENT_PLANS: SubscriptionPlan[] = [
-    { id: 's_daily', segment: 'STUDENT', name: 'Daily Dash', price: 20, duration: 'DAILY' },
-    { id: 's_weekly', segment: 'STUDENT', name: 'Weekly Warrior', price: 100, duration: 'WEEKLY', savings: 'Save 28%' },
-    { id: 's_monthly', segment: 'STUDENT', name: 'Monthly Master', price: 300, duration: 'MONTHLY', savings: 'Save 50%' },
-    { id: 's_termly', segment: 'STUDENT', name: 'Term Lite', price: 700, duration: 'TERMLY', savings: 'Save 61%' },
-    { id: 's_annual', segment: 'STUDENT', name: 'Annual Ace', price: 2000, duration: 'ANNUAL', savings: 'Save 72%' },
+    { id: 's_daily', segment: 'STUDENT', name: 'Daily Dash', price: 20, duration: 'DAILY', features: ['Somo Homework Helper', 'Step-by-Step Solutions', 'Somo Candidate Specialists'] },
+    { id: 's_weekly', segment: 'STUDENT', name: 'Weekly Warrior', price: 100, duration: 'WEEKLY', savings: 'Save 28%', features: ['Somo Homework Helper', 'Step-by-Step Solutions', 'Offline Access', 'Somo Candidate Specialists'] },
+    { id: 's_monthly', segment: 'STUDENT', name: 'Monthly Master', price: 300, duration: 'MONTHLY', savings: 'Save 50%', features: ['Somo Homework Helper', 'Step-by-Step Solutions', 'Offline Access', 'Somo Candidate Specialists', 'Unlimited Scans', 'Practice Quizzes'] },
+    { id: 's_termly', segment: 'STUDENT', name: 'Term Lite', price: 700, duration: 'TERMLY', savings: 'Save 61%', features: ['Somo Homework Helper', 'Step-by-Step Solutions', 'Offline Access', 'Somo Candidate Specialists', 'Unlimited Scans', 'Practice Quizzes'] },
+    { id: 's_annual', segment: 'STUDENT', name: 'Annual Ace', price: 2000, duration: 'ANNUAL', savings: 'Save 72%', features: ['Somo Homework Helper', 'Step-by-Step Solutions', 'Offline Access', 'Somo Candidate Specialists', 'Unlimited Scans', 'Practice Quizzes', 'Exam Prediction'] },
 ];
 
 export const TEACHER_PLANS: SubscriptionPlan[] = [
-    { id: 't_monthly', segment: 'TEACHER', name: 'Pro Monthly', price: 600, duration: 'MONTHLY' },
-    { id: 't_termly', segment: 'TEACHER', name: 'Pro Termly', price: 1600, duration: 'TERMLY', savings: 'Save 11%' },
-    { id: 't_annual', segment: 'TEACHER', name: 'Pro Annual', price: 5000, duration: 'ANNUAL', savings: 'Save 30%' },
+    { id: 't_monthly', segment: 'TEACHER', name: 'Pro Monthly', price: 600, duration: 'MONTHLY', features: ['Somo Lesson Planner', 'Automated Grading', 'Student Analytics', 'Unlimited Classrooms'] },
+    { id: 't_termly', segment: 'TEACHER', name: 'Pro Termly', price: 1600, duration: 'TERMLY', savings: 'Save 11%', features: ['Somo Lesson Planner', 'Automated Grading', 'Student Analytics', 'Unlimited Classrooms', 'Priority Verified Badge'] },
+    { id: 't_annual', segment: 'TEACHER', name: 'Pro Annual', price: 5000, duration: 'ANNUAL', savings: 'Save 30%', features: ['Somo Lesson Planner', 'Automated Grading', 'Student Analytics', 'Unlimited Classrooms', 'Priority Verified Badge', 'Export Reports'] },
 ];
 
 export const DOWNLOAD_PASS: SubscriptionPlan = {

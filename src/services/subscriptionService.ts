@@ -24,9 +24,12 @@ export const checkSubscriptionAccess = async (userId: string, segment: UserSegme
         const isExpired = data.subscription_expiry ? new Date(data.subscription_expiry) < now : true;
         const isPreLaunch = now < LAUNCH_DATE;
 
+        // Fix: If expired and not pre-launch, report tier as FREE so UI updates correctly
+        const effectiveTier = (isPreLaunch || !isExpired) ? (data.subscription_tier || 'FREE') : 'FREE';
+
         return {
             isPro: isPreLaunch || (data.subscription_tier !== 'FREE' && !isExpired),
-            tier: (data.subscription_tier || 'FREE') as SubscriptionTier,
+            tier: effectiveTier as SubscriptionTier,
             expiry: data.subscription_expiry || null
         };
     } catch (e) {

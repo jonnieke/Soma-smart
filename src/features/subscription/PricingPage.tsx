@@ -144,9 +144,12 @@ export const PricingPage: React.FC<Props> = ({ onSelectPlan, onClose, currentTie
                                         <h3 className="text-2xl font-bold mb-2">Need a Custom Plan?</h3>
                                         <p className="text-indigo-100">For more than 60 teachers, we offer custom enterprise solutions tailored to your school&apos;s needs.</p>
                                     </div>
-                                    <button className="bg-white text-indigo-600 px-8 py-4 rounded-xl font-bold hover:bg-indigo-50 transition-colors shrink-0">
+                                    <a
+                                        href="mailto:info@somaai.co.ke"
+                                        className="bg-white text-indigo-600 px-8 py-4 rounded-xl font-bold hover:bg-indigo-50 transition-colors shrink-0"
+                                    >
                                         Contact Sales
-                                    </button>
+                                    </a>
                                 </div>
                             </div>
                         )}
@@ -243,11 +246,19 @@ const PricingCard = ({ plan, onSelect, popular, isCurrent, disabled, currentTier
             </div>
 
             <div className="space-y-4 mb-10 flex-1">
-                <Feature item="AI Homework & Exams" bold={popular} />
-                <Feature item="Step-by-Step Solutions" bold={popular} />
-                <Feature item="Offline Access" bold={popular} />
-                <div className="h-px bg-slate-50 mx-2"></div>
-                <Feature item="Candidate Specialists AI" />
+                {plan.features ? (
+                    plan.features.map((feature, idx) => (
+                        <Feature key={idx} item={feature} bold={popular && idx < 3} />
+                    ))
+                ) : (
+                    <>
+                        <Feature item="Somo Homework & Exams" bold={popular} />
+                        <Feature item="Step-by-Step Solutions" bold={popular} />
+                        <Feature item="Offline Access" bold={popular} />
+                        <div className="h-px bg-slate-50 mx-2"></div>
+                        <Feature item="Somo Candidate Specialists" />
+                    </>
+                )}
             </div>
 
             <button

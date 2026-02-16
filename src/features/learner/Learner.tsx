@@ -43,7 +43,8 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
     learnerHistory: history, saveActivity, deleteActivity, studentCode,
     usageCount, incrementUsage, isRegistered, studentProfile, updateStudentProfile,
     upgradeAccount, revisionUsageCount, incrementRevisionUsage,
-    studyUsageCount, incrementStudyUsage,
+    // studyUsageCount removed
+    // incrementStudyUsage removed
     downloadUsageCount, incrementDownloadUsage,
     logout, isPro, subscriptionPlan, subscriptionExpiry, isOnline, role, language,
     createTutoringRequest, activeTutoringRequests, isAvailableForTutoring,
@@ -168,9 +169,25 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
   const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan | null>(null);
   const [promptText, setPromptText] = useState("");
   const [showTutoringModal, setShowTutoringModal] = useState(false);
+  const [showExpiryModal, setShowExpiryModal] = useState(false); // New State
+
+  // Subscription Expiry Check
+  useEffect(() => {
+    if (isPro && subscriptionExpiry) {
+      const expiryDate = new Date(subscriptionExpiry);
+      const now = new Date();
+      // Check if expired
+      if (expiryDate < now) {
+        setShowExpiryModal(true);
+      }
+    }
+  }, [isPro, subscriptionExpiry]);
+
   const [tutoringTopic, setTutoringTopic] = useState("");
   const [materialCategory, setMaterialCategory] = useState<'ALL' | 'NOTES' | 'PAST_PAPER' | 'SYLLABUS'>('ALL');
   const [subjectFilter, setSubjectFilter] = useState<string>('ALL');
+  const [selectedGrade, setSelectedGrade] = useState<string>('ALL'); // New Filter
+  const [selectedSource, setSelectedSource] = useState<'ALL' | 'SOMO' | 'TEACHERS'>('ALL'); // New Filter
   const [pendingMaterialId, setPendingMaterialId] = useState<string | null>(null);
   const [currentDocument, setCurrentDocument] = useState<any>(null);
   const [studyChat, setStudyChat] = useState<{ role: 'user' | 'model', text: string }[]>([]);
@@ -183,6 +200,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
   const fileInputRef = useRef<HTMLInputElement>(null);
   const scanVideoRef = useRef<HTMLVideoElement>(null);
   const scanAudioRef = useRef<HTMLAudioElement | null>(null);
+  const isCameraActiveRef = useRef(false);
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -243,11 +261,6 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
     // If NOT, show everything as a fallback so the screen isn't empty.
     const result = exactMatches.length > 0 ? exactMatches : unifiedMaterials;
 
-    console.log("DEBUG: gradeFilteredMaterials", {
-      count: result.length,
-      isFallback: exactMatches.length === 0,
-      studentGrade
-    });
     return result;
   }, [unifiedMaterials, studentProfile?.grade]);
 
@@ -257,33 +270,24 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
       if (m.subject) subs.add(m.subject.trim());
     });
     const result = Array.from(subs);
-    console.log("DEBUG: subjects", result);
     return result;
   }, [gradeFilteredMaterials]);
 
   const filteredMaterials = React.useMemo(() => {
-    const result = gradeFilteredMaterials.filter(m => {
-      const cat = (materialCategory || "").trim().toUpperCase();
-      const mCat = (m.category || "").trim().toUpperCase();
-      const catMatch = cat === 'ALL' ||
-        (cat === 'NOTES' && mCat === 'NOTES') ||
-        (cat === 'PAST_PAPER' && (mCat === 'PAST_PAPER' || mCat === 'REVISION_PAPER')) ||
-        (cat === 'SYLLABUS' && mCat === 'SYLLABUS');
+    return unifiedMaterials.filter(m => {
+      // 1. Category Filter
+      if (materialCategory !== 'ALL' && m.category !== materialCategory) return false;
+      // 2. Subject Filter
+      if (subjectFilter !== 'ALL' && m.subject !== subjectFilter) return false;
+      // 3. Grade Filter
+      if (selectedGrade !== 'ALL' && m.grade !== selectedGrade) return false;
+      // 4. Source Filter
+      if (selectedSource === 'SOMO' && !m.isVerified) return false;
+      if (selectedSource === 'TEACHERS' && m.isVerified) return false;
 
-      const sub = (subjectFilter || "").trim().toUpperCase();
-      const mSub = (m.subject || "").trim().toUpperCase();
-      const subMatch = sub === 'ALL' || mSub === sub;
-
-      return catMatch && subMatch;
+      return true;
     });
-    console.log("DEBUG: filteredMaterials", {
-      count: result.length,
-      category: materialCategory,
-      subject: subjectFilter,
-      items: result
-    });
-    return result;
-  }, [gradeFilteredMaterials, materialCategory, subjectFilter]);
+  }, [unifiedMaterials, materialCategory, subjectFilter, selectedGrade, selectedSource]);
 
   // Check for subscription intent & Auto-open material intent
   React.useEffect(() => {
@@ -330,19 +334,19 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
   // --- STUDY CENTER (NotebookLM) ---
   const startStudySession = async (material: any) => {
     // Paywall Check: 3 free usages
-    if (studyUsageCount >= 3) {
+    if (usageCount >= 3) {
       if (!isRegistered) {
         setShowRegistration(true);
         return;
       }
       if (!isPro) {
-        setMode('PRICING');
+        setShowLimitModal(true);
         return;
       }
     }
 
     // Increment usage
-    incrementStudyUsage();
+    incrementUsage();
 
     setCurrentDocument(material);
     setMode('STUDY');
@@ -660,6 +664,8 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
   const streamRef = useRef<MediaStream | null>(null);
 
   const stopCameraStream = () => {
+    isCameraActiveRef.current = false; // Mark as inactive immediately
+
     // 1. Stop tracks from the video element's srcObject
     if (scanVideoRef.current && scanVideoRef.current.srcObject) {
       const stream = scanVideoRef.current.srcObject as MediaStream;
@@ -684,7 +690,17 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
     try {
       setLoading(true);
       setShowCamera(true);
+      isCameraActiveRef.current = true; // Mark as active intention
+
       const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+
+      // RACING CONDITION CHECK: If user closed camera while initializing
+      if (!isCameraActiveRef.current) {
+        console.log("Camera started but was cancelled. Stopping immediately.");
+        stream.getTracks().forEach(track => track.stop());
+        return;
+      }
+
       streamRef.current = stream; // Save stream to ref for cleanup
       if (scanVideoRef.current) {
         scanVideoRef.current.srcObject = stream;
@@ -694,6 +710,8 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
       console.error(err);
       setError({ title: "Camera Error", message: "Unable to access camera." });
       setLoading(false);
+      setShowCamera(false);
+      isCameraActiveRef.current = false;
     }
   };
 
@@ -742,23 +760,21 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
   // REMOVE duplicate useApp call that was around here
   const [showRegistration, setShowRegistration] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
+  const [showLimitModal, setShowLimitModal] = useState(false);
 
   const checkLimit = (): boolean => {
     // Pro = Unlimited Checks
     if (isPro) return true;
 
-    // Guest Mode Limit (Max 3)
-    if (role === UserRole.GUEST) {
-      if (usageCount >= 3) {
+    if (usageCount >= 3) {
+      if (role === UserRole.GUEST) {
         setShowLogin(true); // Force login
-        return false;
+      } else if (!isRegistered) {
+        setShowRegistration(true);
+      } else {
+        // Registered but Limit Reached -> PAYWALL MODAL
+        setShowLimitModal(true);
       }
-      incrementUsage();
-      return true;
-    }
-
-    if (!isRegistered && usageCount >= 3) {
-      setShowRegistration(true);
       return false;
     }
     incrementUsage();
@@ -1389,7 +1405,7 @@ ${explanation.explanation}
           {/* --- TOP BAR --- */}
           <div className="flex justify-between items-center px-6 py-4 relative z-20 bg-white/50 backdrop-blur-md sticky top-0 border-b border-slate-100">
             <div className="flex items-center gap-6">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity" onClick={() => navigate('/')}>
                 <Sparkles className="w-5 h-5 text-blue-600 fill-blue-600" />
                 <span className="font-black text-slate-900 tracking-tighter text-xl">Somo</span>
               </div>
@@ -1406,6 +1422,15 @@ ${explanation.explanation}
             </div>
 
             <div className="flex items-center gap-3">
+              {!isRegistered && (
+                <button
+                  onClick={() => setShowLogin(true)}
+                  className="px-4 py-2 bg-slate-900 text-white rounded-xl text-xs font-bold shadow-md hover:bg-slate-800 transition-all mr-2"
+                >
+                  Log In
+                </button>
+              )}
+
               <div
                 onClick={() => setMode('PROFILE')}
                 className="flex items-center gap-3 pl-2 pr-4 py-1.5 bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-blue-200 transition-all cursor-pointer group"
@@ -1736,10 +1761,12 @@ ${explanation.explanation}
               </button>
               <h1 className="font-bold text-xl text-slate-900">Your Profile</h1>
             </div>
-            <button onClick={() => setShowLogoutModal(true)} className="flex items-center gap-2 px-3 py-1.5 bg-red-50 text-red-600 rounded-xl hover:bg-red-100 transition-colors text-xs font-bold">
-              <LogOut className="w-4 h-4" />
-              Logout
-            </button>
+            {isRegistered && (
+              <button onClick={() => setShowLogoutModal(true)} className="flex items-center gap-2 px-3 py-1.5 bg-red-50 text-red-600 rounded-xl hover:bg-red-100 transition-colors text-xs font-bold">
+                <LogOut className="w-4 h-4" />
+                Logout
+              </button>
+            )}
           </motion.div>
 
           <div className="p-6 space-y-8 max-w-2xl mx-auto">
@@ -2611,7 +2638,7 @@ ${explanation.explanation}
                 <div className="flex items-center gap-2">
                   <div className="hidden sm:flex flex-col items-end mr-2">
                     <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Free Sessions</p>
-                    <p className="text-[10px] font-black text-indigo-600">{Math.max(0, 3 - studyUsageCount)} / 3 Left</p>
+                    <p className="text-[10px] font-black text-indigo-600">{Math.max(0, 3 - usageCount)} / 3 Left</p>
                   </div>
                   <button
                     onClick={() => setMode('PRICING')}
@@ -2628,29 +2655,36 @@ ${explanation.explanation}
           </div>
 
           <div className="flex-1 overflow-y-auto no-scrollbar">
-            {/* Premium Hero */}
-            <div className="p-6">
-              <div className="bg-gradient-to-br from-indigo-900 via-indigo-800 to-indigo-950 p-8 rounded-[2.5rem] text-white shadow-2xl shadow-indigo-200/50 relative overflow-hidden group">
-                <div className="absolute top-0 right-0 w-80 h-80 bg-white/5 rounded-full -mr-32 -mt-32 blur-3xl group-hover:scale-110 transition-transform duration-700"></div>
-                <div className="absolute bottom-0 left-0 w-64 h-64 bg-indigo-500/10 rounded-full -ml-32 -mb-32 blur-3xl"></div>
+            {/* Premium Hero - Lean Design */}
+            <div className="px-6 pt-6 pb-2">
+              <div className="bg-gradient-to-r from-indigo-900 to-indigo-800 rounded-3xl p-5 text-white shadow-xl shadow-indigo-200/50 flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden">
+                {/* Background Decor */}
+                <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -mr-20 -mt-20 blur-3xl"></div>
+                <div className="absolute bottom-0 left-0 w-40 h-40 bg-indigo-500/20 rounded-full -ml-10 -mb-10 blur-2xl"></div>
 
-                <div className="relative z-10">
-                  <div className="flex items-center gap-2 mb-4">
-                    <span className="px-3 py-1 bg-white/10 backdrop-blur-md rounded-full text-[9px] font-black uppercase tracking-widest border border-white/5">CBC Aligned</span>
-                    <span className="px-3 py-1 bg-indigo-500/20 backdrop-blur-md rounded-full text-[9px] font-black uppercase tracking-widest border border-white/5">Verified Content</span>
+                {/* Left: Text Content */}
+                <div className="relative z-10 flex-1 text-center md:text-left">
+                  <div className="flex items-center justify-center md:justify-start gap-2 mb-1.5">
+                    <span className="text-[8px] font-black uppercase tracking-widest text-indigo-200">Official Content</span>
+                    <span className="bg-white/10 px-2 py-0.5 rounded-md text-[8px] font-black uppercase tracking-widest border border-white/10 flex items-center gap-1">
+                      <CheckCircle className="w-2 h-2" /> Verified
+                    </span>
                   </div>
-                  <h3 className="text-4xl font-black mb-3 tracking-tight leading-tight">Elite Library.</h3>
-                  <p className="opacity-80 text-sm font-medium mb-8 max-w-xs leading-relaxed">Access verified past papers, professional syllabus guides, and top-tier revision notes.</p>
+                  <h3 className="text-2xl font-black tracking-tight leading-tight mb-1">Elite Library.</h3>
+                  <p className="opacity-80 text-xs font-medium max-w-[200px] mx-auto md:mx-0 leading-relaxed">
+                    Verified CBC past papers & professional revision notes.
+                  </p>
+                </div>
 
-                  <div className="flex items-center gap-4">
-                    <div className="bg-white/10 backdrop-blur-md px-4 py-3 rounded-2xl border border-white/5">
-                      <p className="text-[10px] font-black opacity-60 uppercase mb-0.5">Resources</p>
-                      <p className="text-xl font-black">{gradeFilteredMaterials.length}</p>
-                    </div>
-                    <div className="bg-indigo-500/30 backdrop-blur-md px-4 py-3 rounded-2xl border border-white/5">
-                      <p className="text-[10px] font-black opacity-60 uppercase mb-0.5">Your Purchases</p>
-                      <p className="text-xl font-black">{purchasedMaterialIds.length}</p>
-                    </div>
+                {/* Right: Compact Stats */}
+                <div className="relative z-10 flex items-center gap-3 shrink-0">
+                  <div className="flex flex-col items-center justify-center bg-white/10 backdrop-blur-md px-5 py-2.5 rounded-2xl border border-white/5 min-w-[90px]">
+                    <span className="text-2xl font-black leading-none mb-0.5">{gradeFilteredMaterials.length}</span>
+                    <span className="text-[7px] opacity-70 font-black uppercase tracking-widest">Available</span>
+                  </div>
+                  <div className="flex flex-col items-center justify-center bg-indigo-500/30 backdrop-blur-md px-5 py-2.5 rounded-2xl border border-white/5 min-w-[90px]">
+                    <span className="text-2xl font-black leading-none mb-0.5">{purchasedMaterialIds.length}</span>
+                    <span className="text-[7px] opacity-70 font-black uppercase tracking-widest">Unlocked</span>
                   </div>
                 </div>
               </div>
@@ -2709,6 +2743,8 @@ ${explanation.explanation}
                 </div>
               </div>
             )}
+
+            {/* Filters */}
             <div className="px-6 space-y-4">
               {/* Category Filter */}
               <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-2">
@@ -2716,25 +2752,64 @@ ${explanation.explanation}
                   <button
                     key={cat}
                     onClick={() => setMaterialCategory(cat)}
-                    className={`px-5 py-2.5 rounded-2xl text-xs font-black uppercase tracking-wider transition-all border-2 shrink-0 ${materialCategory === cat ? 'bg-indigo-600 border-indigo-600 text-white shadow-lg shadow-indigo-100 scale-105' : 'bg-white border-slate-100 text-slate-400 hover:border-indigo-100'}`}
+                    className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all border shrink-0 ${materialCategory === cat ? 'bg-indigo-600 border-indigo-600 text-white shadow-md shadow-indigo-100' : 'bg-white border-slate-100 text-slate-400 hover:border-indigo-100'}`}
                   >
                     {cat.replace('_', ' ')}
                   </button>
                 ))}
               </div>
 
-              {/* Subject Slider */}
-              <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-2">
-                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mr-2 shrink-0">Subject:</span>
-                {subjects.map(sub => (
-                  <button
-                    key={sub}
-                    onClick={() => setSubjectFilter(sub)}
-                    className={`px-4 py-2 rounded-xl text-[10px] font-bold tracking-tight transition-all shrink-0 ${subjectFilter === sub ? 'bg-slate-900 text-white shadow-md' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}
+              {/* Advanced Filter Row (Grade + Source + Subject) */}
+              <div className="flex flex-wrap items-center gap-3">
+                {/* Source Toggle */}
+                <div className="bg-slate-100 p-1 rounded-xl flex items-center shrink-0">
+                  {(['ALL', 'SOMO', 'TEACHERS'] as const).map(source => (
+                    <button
+                      key={source}
+                      onClick={() => setSelectedSource(source)}
+                      className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all ${selectedSource === source ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                    >
+                      {source === 'ALL' ? 'All' : source === 'SOMO' ? 'Somo Verified' : 'Community'}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Grade Selector */}
+                <select
+                  value={selectedGrade}
+                  onChange={(e) => setSelectedGrade(e.target.value)}
+                  className="bg-white border border-slate-200 text-slate-600 text-[10px] font-bold uppercase tracking-wider rounded-xl px-3 py-2 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition-all cursor-pointer"
+                >
+                  <option value="ALL">All Grades</option>
+                  <option value="PP1">PP1</option>
+                  <option value="PP2">PP2</option>
+                  <option value="Grade 1">Grade 1</option>
+                  <option value="Grade 2">Grade 2</option>
+                  <option value="Grade 3">Grade 3</option>
+                  <option value="Grade 4">Grade 4</option>
+                  <option value="Grade 5">Grade 5</option>
+                  <option value="Grade 6">Grade 6</option>
+                  <option value="Grade 7">Grade 7</option>
+                  <option value="Grade 8">Grade 8</option>
+                  <option value="Grade 9">Grade 9</option>
+                  <option value="Form 3">Form 3</option>
+                  <option value="Form 4">Form 4</option>
+                </select>
+
+                {/* Subject Slider */}
+                {/* Subject Selector */}
+                <div className="flex-1 min-w-[140px]">
+                  <select
+                    value={subjectFilter}
+                    onChange={(e) => setSubjectFilter(e.target.value)}
+                    className="w-full bg-white border border-slate-200 text-slate-600 text-[10px] font-bold uppercase tracking-wider rounded-xl px-3 py-2 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition-all cursor-pointer"
                   >
-                    {sub}
-                  </button>
-                ))}
+                    <option value="ALL">All Subjects</option>
+                    {subjects.filter(s => s !== 'ALL').map(sub => (
+                      <option key={sub} value={sub}>{sub}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
             </div>
 
@@ -2746,22 +2821,6 @@ ${explanation.explanation}
                     <ShoppingBag className="w-12 h-12 text-slate-200 mx-auto mb-4" />
                     <h4 className="font-black text-slate-300 uppercase tracking-widest text-xs">No materials found in this category</h4>
                     <button onClick={() => { setMaterialCategory('ALL'); setSubjectFilter('ALL'); }} className="mt-4 text-indigo-600 font-black uppercase text-[10px] tracking-widest hover:underline">Reset Filters</button>
-
-                    <div className="mt-8 mx-auto max-w-sm p-4 bg-slate-50 rounded-2xl border border-slate-100 text-[8px] font-mono text-left space-y-2 overflow-auto max-h-60">
-                      <p className="font-black text-slate-500 uppercase">Debug Visibility Dump:</p>
-                      <p className="text-slate-500">Student Grade (Normalized): "{normalizeGrade(studentProfile?.grade || "NONE")}"</p>
-                      <p className="text-slate-500">Total Materials in Memory: {unifiedMaterials.length}</p>
-                      <p className="text-slate-500">Total Grade Match: {gradeFilteredMaterials.length}</p>
-
-                      <div className="pt-2 border-t border-slate-200">
-                        <p className="font-bold mb-1 text-slate-500">Raw Material Sample (First 5):</p>
-                        {unifiedMaterials.slice(0, 5).map((m, i) => (
-                          <div key={i} className="mb-1 p-1 bg-white rounded border border-slate-100">
-                            ID: {m.id} | Grade: "{m.grade}" (Norm: "{normalizeGrade(m.grade)}") | Sub: {m.subject}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
                   </div>
                 ) : (
                   filteredMaterials.map(item => {
@@ -2777,65 +2836,65 @@ ${explanation.explanation}
 
                     return (
                       <motion.div
-                        whileHover={{ y: -5 }}
+                        whileHover={{ y: -2 }}
                         key={item.id}
-                        className="bg-white border-2 border-slate-100 rounded-[2.5rem] p-6 shadow-sm hover:border-indigo-200 hover:shadow-2xl hover:shadow-indigo-50/50 transition-all flex flex-col justify-between group"
+                        className="bg-white border border-slate-200 rounded-3xl p-5 shadow-sm hover:border-indigo-300 hover:shadow-lg hover:shadow-indigo-100/50 transition-all flex flex-col justify-between group"
                       >
                         <div>
-                          <div className="flex justify-between items-start mb-6">
-                            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-sm ${isVerified ? 'bg-indigo-50 text-indigo-600' : 'bg-blue-50 text-blue-600'}`}>
-                              {item.category === 'NOTES' ? <FileText className="w-7 h-7" /> : isSyllabus ? <Library className="w-7 h-7" /> : <Layers className="w-7 h-7" />}
+                          <div className="flex justify-between items-start mb-4">
+                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center shadow-sm ${isVerified ? 'bg-indigo-50 text-indigo-600' : 'bg-blue-50 text-blue-600'}`}>
+                              {item.category === 'NOTES' ? <FileText className="w-5 h-5" /> : isSyllabus ? <Library className="w-5 h-5" /> : <Layers className="w-5 h-5" />}
                             </div>
 
                             {/* Price / Status Tag */}
                             <div className="flex flex-col items-end gap-1">
                               {status === 'OWNED' ? (
-                                <span className="px-3 py-1 bg-green-50 text-green-600 rounded-full text-[9px] font-black uppercase tracking-widest">Library</span>
+                                <span className="px-2 py-0.5 bg-green-50 text-green-700 rounded-md text-[8px] font-black uppercase tracking-widest">Owned</span>
                               ) : status === 'FREE' ? (
-                                <span className="px-3 py-1 bg-emerald-50 text-emerald-600 rounded-full text-[9px] font-black uppercase tracking-widest">Free</span>
+                                <span className="px-2 py-0.5 bg-emerald-50 text-emerald-700 rounded-md text-[8px] font-black uppercase tracking-widest">Free</span>
                               ) : status === 'PRO_INCLUDED' ? (
-                                <span className="px-3 py-1 bg-indigo-50 text-indigo-600 rounded-full text-[9px] font-black uppercase tracking-widest">Pro Benefit</span>
+                                <span className="px-2 py-0.5 bg-indigo-50 text-indigo-700 rounded-md text-[8px] font-black uppercase tracking-widest">Pro</span>
                               ) : status === 'PRO_LOCKED' ? (
-                                <span className="px-3 py-1 bg-amber-50 text-amber-600 rounded-full text-[9px] font-black uppercase tracking-widest">Pro Locked</span>
+                                <span className="px-2 py-0.5 bg-amber-50 text-amber-700 rounded-md text-[8px] font-black uppercase tracking-widest">Locked</span>
                               ) : (
-                                <span className="px-3 py-1 bg-slate-100 text-slate-900 rounded-full text-[10px] font-black">KES {item.price}</span>
+                                <span className="px-2 py-0.5 bg-slate-100 text-slate-900 rounded-md text-[9px] font-black">KES {item.price}</span>
                               )}
                             </div>
                           </div>
 
                           <div className="flex items-center gap-2 mb-1">
                             {isVerified && (
-                              <span className="flex items-center gap-1 text-[8px] font-black text-indigo-600 uppercase tracking-widest bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-100">
+                              <span className="flex items-center gap-1 text-[8px] font-black text-indigo-600 uppercase tracking-widest bg-indigo-50 px-1.5 py-0.5 rounded-md border border-indigo-100">
                                 <CheckCircle className="w-2.5 h-2.5" /> Verified
                               </span>
                             )}
                             <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">{item.grade}</span>
                           </div>
 
-                          <h4 className="font-black text-slate-900 text-xl mb-1 tracking-tight group-hover:text-indigo-600 transition-colors">{item.title}</h4>
-                          <div className="flex items-center gap-2 mb-6 text-[9px] font-black uppercase tracking-widest">
+                          <h4 className="font-bold text-slate-900 text-base mb-1 tracking-tight group-hover:text-indigo-600 transition-colors line-clamp-1">{item.title}</h4>
+                          <div className="flex items-center gap-2 mb-4 text-[8px] font-black uppercase tracking-widest">
                             <span className="text-slate-400">{item.subject}</span>
                             <span className="text-slate-200">•</span>
                             <span className="text-slate-400">{isVerified ? "Somo Smart" : item.teacherName}</span>
                           </div>
-                          <p className="text-xs text-slate-500 font-medium line-clamp-2 mb-8 leading-relaxed">{item.description}</p>
                         </div>
 
-                        <div className="flex gap-2">
+                        <div className="flex gap-2 mt-auto">
                           <Button
                             fullWidth
-                            className={`rounded-2xl py-4 font-black uppercase tracking-widest text-[9px] transition-all border-2 ${studyUsageCount >= 3 && !isPro
-                              ? 'bg-amber-50 text-amber-600 border-amber-200 shadow-none hover:bg-amber-100'
-                              : 'bg-indigo-600 text-white border-indigo-600 shadow-lg shadow-indigo-100 hover:bg-indigo-700 hover:scale-[1.02]'
+                            className={`rounded-xl py-2.5 font-bold uppercase tracking-wider text-[9px] transition-all border ${usageCount >= 3 && !isPro
+                              ? 'bg-amber-50 text-amber-700 border-amber-200 shadow-none hover:bg-amber-100'
+                              : 'bg-indigo-600 text-white border-indigo-600 shadow-md shadow-indigo-100 hover:bg-indigo-700 hover:scale-[1.02]'
                               }`}
                             onClick={() => startStudySession(item)}
                             isLoading={loading && currentDocument?.id === item.id}
-                            icon={studyUsageCount >= 3 && !isPro ? <Lock className="w-4 h-4" /> : <Sparkles className="w-4 h-4" />}
+                            icon={usageCount >= 3 && !isPro ? <Lock className="w-3 h-3" /> : <Sparkles className="w-3 h-3" />}
                           >
-                            {studyUsageCount >= 3 && !isPro ? 'Limit Reached - Go Pro' : 'Study with Somo Smart'}
+                            {usageCount >= 3 && !isPro ? 'Limit Reached' : 'Study'}
                           </Button>
                           <Button
-                            className="rounded-2xl p-4 bg-indigo-600 text-white hover:bg-indigo-700 shadow-lg shadow-indigo-100 border-none transition-all hover:scale-105 active:scale-95"
+                            variant="ghost"
+                            className="rounded-xl p-2.5 bg-white text-indigo-600 hover:bg-indigo-50 border border-indigo-100 shadow-sm transition-all"
                             onClick={() => {
                               if (status === 'OWNED' || status === 'PRO_INCLUDED' || status === 'FREE') {
                                 handleDownloadAIRevisionNotes(item);
@@ -2848,8 +2907,8 @@ ${explanation.explanation}
                               }
                             }}
                             isLoading={loading && pendingDownloadMaterial?.id === item.id}
-                            icon={<Download className="w-5 h-5 stroke-[3px]" />}
-                            title="Download AI Summarized Notes"
+                            icon={<Download className="w-4 h-4" />}
+                            title="Download"
                           />
                         </div>
                       </motion.div>
@@ -3073,6 +3132,98 @@ ${explanation.explanation}
           navigate('/');
         }}
       />
+
+      <AnimatePresence>
+        {showLimitModal && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl relative overflow-hidden"
+            >
+              <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-100 rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl"></div>
+              <div className="absolute bottom-0 left-0 w-24 h-24 bg-amber-100 rounded-full translate-y-1/2 -translate-x-1/2 blur-xl"></div>
+
+              <div className="relative z-10 text-center">
+                <div className="w-16 h-16 bg-gradient-to-br from-indigo-100 to-white rounded-2xl flex items-center justify-center mx-auto mb-4 border border-indigo-50 shadow-sm">
+                  <Sparkles className="w-8 h-8 text-indigo-600" />
+                </div>
+
+                <h3 className="text-xl font-black text-slate-800 mb-2">Free Trials Exhausted</h3>
+                <p className="text-slate-500 text-sm leading-relaxed mb-6">
+                  You have exhausted your free trials. Click here to continue enjoying <span className="text-indigo-600 font-bold">unlimited access</span> to learning for as low as <span className="text-indigo-600 font-bold">20 KES</span>.
+                </p>
+
+                <div className="space-y-3">
+                  <Button
+                    fullWidth
+                    onClick={() => {
+                      setShowLimitModal(false);
+                      setMode('PRICING');
+                    }}
+                    className="py-4 text-base shadow-xl shadow-indigo-200"
+                  >
+                    Unlock Unlimited Access
+                  </Button>
+                  <button
+                    onClick={() => setShowLimitModal(false)}
+                    className="text-slate-400 font-bold text-xs uppercase tracking-widest hover:text-slate-600 transition-colors"
+                  >
+                    Cancel to Dashboard
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showExpiryModal && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl relative overflow-hidden"
+            >
+              <div className="absolute top-0 right-0 w-32 h-32 bg-red-100 rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl"></div>
+              <div className="absolute bottom-0 left-0 w-24 h-24 bg-orange-100 rounded-full translate-y-1/2 -translate-x-1/2 blur-xl"></div>
+
+              <div className="relative z-10 text-center">
+                <div className="w-16 h-16 bg-gradient-to-br from-red-100 to-white rounded-2xl flex items-center justify-center mx-auto mb-4 border border-red-50 shadow-sm">
+                  <Clock className="w-8 h-8 text-red-500" />
+                </div>
+
+                <h3 className="text-xl font-black text-slate-800 mb-2">Subscription Expired</h3>
+                <p className="text-slate-500 text-sm leading-relaxed mb-6">
+                  Your premium access has expired. Renew now to continue enjoying <span className="text-indigo-600 font-bold">unlimited access</span> to learning for as little as <span className="text-indigo-600 font-bold">20 KES</span>.
+                </p>
+
+                <div className="space-y-3">
+                  <Button
+                    fullWidth
+                    onClick={() => {
+                      setShowExpiryModal(false);
+                      setMode('PRICING');
+                    }}
+                    className="py-4 text-base shadow-xl shadow-red-200 bg-red-600 hover:bg-red-700"
+                  >
+                    Renew Now
+                  </Button>
+                  <button
+                    onClick={() => setShowExpiryModal(false)}
+                    className="text-slate-400 font-bold text-xs uppercase tracking-widest hover:text-slate-600 transition-colors"
+                  >
+                    Continue to Dashboard
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {showTutoringModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-6 overflow-y-auto">

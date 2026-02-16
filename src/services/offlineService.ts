@@ -23,6 +23,14 @@ export const offlineService = {
         }
     },
 
+    clearLearnerHistory() {
+        try {
+            localStorage.removeItem(LEARNER_HISTORY_KEY);
+        } catch (e) {
+            console.error("Local clear failed", e);
+        }
+    },
+
     // Teacher History
     getTeacherHistory(): TeacherActivity[] {
         try {
@@ -39,6 +47,14 @@ export const offlineService = {
             localStorage.setItem(TEACHER_HISTORY_KEY, JSON.stringify(history));
         } catch (e) {
             console.error("Local save failed", e);
+        }
+    },
+
+    clearTeacherHistory() {
+        try {
+            localStorage.removeItem(TEACHER_HISTORY_KEY);
+        } catch (e) {
+            console.error("Local clear failed", e);
         }
     },
 
