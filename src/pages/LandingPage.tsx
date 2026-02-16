@@ -750,7 +750,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
             {/* --- HOW IT WORKS --- */}
             <section id="how-it-works" className="py-6 bg-slate-50 relative overflow-hidden">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-                    <div className="text-center mb-20">
+                    <div className="text-center mb-12 md:mb-20">
                         <h2 className="text-3xl md:text-5xl font-extrabold text-blue-900 mb-6 tracking-tight">{t.howItWorks.title}</h2>
                         <p className="text-slate-600 text-lg md:text-xl max-w-2xl mx-auto leading-relaxed">{t.howItWorks.subtitle}</p>
                     </div>
@@ -787,7 +787,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
             <div className="w-full h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent opacity-20"></div>
 
             {/* --- TESTIMONIALS SECTION --- */}
-            <section className="py-24 relative overflow-hidden bg-slate-50/50">
+            <section className="py-12 md:py-24 relative overflow-hidden bg-slate-50/50">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
                     <div className="text-center mb-16">
                         <h2 className="text-3xl md:text-5xl font-extrabold text-blue-900 mb-4 tracking-tight">{t.testimonials.title}</h2>

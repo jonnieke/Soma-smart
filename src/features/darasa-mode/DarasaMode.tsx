@@ -273,7 +273,7 @@ export const DarasaMode: React.FC<DarasaModeProps> = ({ onBack }) => {
             <div className="grid lg:grid-cols-3 gap-8">
                 {/* Main Recording Station */}
                 <div className="lg:col-span-2 space-y-6">
-                    <div className="bg-white rounded-3xl p-8 border border-slate-100 shadow-xl shadow-slate-200/50 relative overflow-hidden">
+                    <div className="bg-white rounded-3xl p-6 md:p-8 border border-slate-100 shadow-xl shadow-slate-200/50 relative overflow-hidden">
                         <div className="absolute top-0 right-0 p-8 opacity-5">
                             <Mic className="w-40 h-40" />
                         </div>

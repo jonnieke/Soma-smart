@@ -2742,7 +2742,7 @@ ${explanation.explanation}
             <div className="p-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {filteredMaterials.length === 0 ? (
-                  <div className="md:col-span-2 py-32 text-center bg-white border-2 border-dashed border-slate-200 rounded-[2.5rem]">
+                  <div className="md:col-span-2 py-12 md:py-32 text-center bg-white border-2 border-dashed border-slate-200 rounded-[2.5rem]">
                     <ShoppingBag className="w-12 h-12 text-slate-200 mx-auto mb-4" />
                     <h4 className="font-black text-slate-300 uppercase tracking-widest text-xs">No materials found in this category</h4>
                     <button onClick={() => { setMaterialCategory('ALL'); setSubjectFilter('ALL'); }} className="mt-4 text-indigo-600 font-black uppercase text-[10px] tracking-widest hover:underline">Reset Filters</button>
@@ -2908,7 +2908,7 @@ ${explanation.explanation}
 
           <div className="p-6 flex-1 overflow-y-auto no-scrollbar">
             {ownedUnifiedMaterials.length === 0 ? (
-              <div className="py-32 text-center bg-white border-2 border-dashed border-slate-200 rounded-[3rem]">
+              <div className="py-12 md:py-32 text-center bg-white border-2 border-dashed border-slate-200 rounded-[3rem]">
                 <div className="w-24 h-24 bg-slate-50 rounded-[2.5rem] flex items-center justify-center mx-auto mb-6 border border-slate-100">
                   <Library className="w-10 h-10 text-slate-300" />
                 </div>

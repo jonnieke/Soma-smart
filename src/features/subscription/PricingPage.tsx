@@ -32,7 +32,7 @@ export const PricingPage: React.FC<Props> = ({ onSelectPlan, onClose, currentTie
     return (
         <div className="min-h-screen bg-slate-50 font-sans text-slate-800 pb-20">
             {/* Header */}
-            <header className="bg-gradient-to-br from-indigo-950 via-slate-900 to-indigo-900 px-6 pt-20 pb-40 rounded-b-[4rem] text-white text-center relative overflow-hidden shadow-2xl shadow-indigo-200/50">
+            <header className="bg-gradient-to-br from-indigo-950 via-slate-900 to-indigo-900 px-6 pt-20 pb-20 md:pb-40 rounded-b-[2.5rem] md:rounded-b-[4rem] text-white text-center relative overflow-hidden shadow-2xl shadow-indigo-200/50">
                 {/* Floating Orbs for Premium Feel */}
                 <motion.div
                     animate={{ x: [0, 20, 0], y: [0, -20, 0] }}
@@ -70,7 +70,7 @@ export const PricingPage: React.FC<Props> = ({ onSelectPlan, onClose, currentTie
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                     >
-                        <h1 className="text-5xl md:text-7xl font-black mb-6 tracking-tighter leading-none bg-clip-text text-transparent bg-gradient-to-b from-white to-white/60">
+                        <h1 className="text-4xl md:text-7xl font-black mb-6 tracking-tighter leading-none bg-clip-text text-transparent bg-gradient-to-b from-white to-white/60">
                             The Future of <br /> Learning is Somo.
                         </h1>
                         <p className="text-xl text-indigo-100/60 font-medium max-w-xl mx-auto leading-relaxed">

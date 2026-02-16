@@ -899,7 +899,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                                 <div className="p-8 md:p-12">
                                     <div className="space-y-4">
                                         {teacherHistory.filter(item => (!selectedClass || item.className === selectedClass) && (!selectedSubject || item.subject === selectedSubject)).length === 0 ? (
-                                            <div className="text-center py-32 group">
+                                            <div className="text-center py-12 md:py-32 group">
                                                 <div className="w-24 h-24 bg-slate-50 border-2 border-dashed border-slate-200 rounded-[2.5rem] flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform">
                                                     <HistoryIcon className="w-10 h-10 text-slate-300" />
                                                 </div>
@@ -1235,7 +1235,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                             </div>
                         </div>
 
-                        <div className="bg-white p-8 md:p-16 rounded-[4rem] shadow-sm border-2 border-slate-100 print:border-none print:shadow-none min-h-[600px] relative overflow-hidden">
+                        <div className="bg-white p-4 md:p-16 rounded-[2rem] md:rounded-[4rem] shadow-sm border-2 border-slate-100 print:border-none print:shadow-none min-h-[600px] relative overflow-hidden">
                             <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-50/30 rounded-full blur-[100px] -mr-32 -mt-32 pointer-events-none"></div>
 
                             {generatedQuiz && (
@@ -1245,10 +1245,10 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                                             <span className="text-xs font-bold bg-slate-100 px-2 py-1 rounded text-slate-500 uppercase">{selectedClass}</span>
                                             <span className="text-xs font-bold bg-slate-100 px-2 py-1 rounded text-slate-500 uppercase">{selectedSubject}</span>
                                         </div>
-                                        <h1 className="text-3xl font-bold text-slate-900 mb-2">{generatedQuiz.topic}</h1>
+                                        <h1 className="text-2xl md:text-3xl font-bold text-slate-900 mb-2">{generatedQuiz.topic}</h1>
                                         <p className="text-slate-500 uppercase tracking-widest text-xs font-bold">{t.teacher.results.classroomAssessment}</p>
                                     </div>
-                                    <div className="mt-12 p-8 bg-slate-50/50 rounded-[3rem] border-2 border-slate-100 break-before-page">
+                                    <div className="mt-8 md:mt-12 p-6 md:p-8 bg-slate-50/50 rounded-[2rem] md:rounded-[3rem] border-2 border-slate-100 break-before-page">
                                         <h3 className="text-xl font-black text-slate-900 mb-6 flex items-center gap-3">
                                             <div className="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center border border-emerald-100">
                                                 <CheckCircle className="w-6 h-6" />
@@ -1272,26 +1272,28 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
 
                             {generatedNote && (
                                 <div className="space-y-8">
-                                    <div className="flex items-center gap-4 border-b border-gray-100 pb-6">
-                                        <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center">
-                                            {activeTab === 'VOICE' ? <Mic className="w-6 h-6" /> : <FileText className="w-6 h-6" />}
-                                        </div>
-                                        <div>
-                                            <div className="flex gap-2 mb-1">
-                                                <span className="text-xs font-bold bg-blue-50 text-blue-600 px-2 py-0.5 rounded uppercase">{selectedClass}</span>
-                                                <span className="text-xs font-bold bg-blue-50 text-blue-600 px-2 py-0.5 rounded uppercase">{selectedSubject}</span>
+                                    <div className="flex flex-col md:flex-row md:items-center gap-4 border-b border-gray-100 pb-6">
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center flex-shrink-0">
+                                                {activeTab === 'VOICE' ? <Mic className="w-6 h-6" /> : <FileText className="w-6 h-6" />}
                                             </div>
-                                            <h1 className="text-2xl font-bold text-slate-900">{generatedNote.topic}</h1>
-                                            <p className="text-slate-500 text-sm">Generated on {generatedNote.date || new Date().toLocaleDateString()}</p>
+                                            <div>
+                                                <div className="flex gap-2 mb-1">
+                                                    <span className="text-xs font-bold bg-blue-50 text-blue-600 px-2 py-0.5 rounded uppercase">{selectedClass}</span>
+                                                    <span className="text-xs font-bold bg-blue-50 text-blue-600 px-2 py-0.5 rounded uppercase">{selectedSubject}</span>
+                                                </div>
+                                                <h1 className="text-xl md:text-2xl font-bold text-slate-900 leading-tight">{generatedNote.topic}</h1>
+                                                <p className="text-slate-500 text-sm">Generated on {generatedNote.date || new Date().toLocaleDateString()}</p>
+                                            </div>
                                         </div>
                                     </div>
 
-                                    <div className="grid md:grid-cols-2 gap-10">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
                                         <div className="space-y-4">
                                             <h2 className="text-xl font-black text-slate-900 flex items-center gap-3">
                                                 <span className="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center text-sm border border-blue-100">A</span> {t.teacher.results.summary}
                                             </h2>
-                                            <div className="prose prose-sm prose-slate bg-blue-50/30 p-8 rounded-[2.5rem] border-2 border-blue-50 shadow-inner">
+                                            <div className="prose prose-sm prose-slate bg-blue-50/30 p-6 md:p-8 rounded-[2rem] md:rounded-[2.5rem] border-2 border-blue-50 shadow-inner w-full max-w-none">
                                                 <MarkdownText content={generatedNote.simplifiedNotes} />
                                             </div>
                                         </div>
