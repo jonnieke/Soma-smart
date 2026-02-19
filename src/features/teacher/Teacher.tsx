@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     Upload, Mic, FileText, Share2, StopCircle, Download, BookOpen, Crown, Brain, Sparkles, X, Lightbulb, CheckCircle, Play, Pause, Trash2, ArrowRight, Library, Filter, Calendar, Home, LogOut, MonitorPlay, CreditCard, ScanLine, Plus,
-    SquarePlus, ChevronRight, Type, Layers, ClipboardList, ClipboardCheck, Archive, History as HistoryIcon, MoreVertical, Check, Wallet, ToggleRight, ToggleLeft, Users, TrendingUp, DollarSign, ShoppingBag, Store, Clock, AlertCircle, CheckCircle2, MoreHorizontal, Bell
+    SquarePlus, ChevronRight, Type, Layers, ClipboardList, ClipboardCheck, Archive, History as HistoryIcon, MoreVertical, Check, Wallet, ToggleRight, ToggleLeft, Users, TrendingUp, DollarSign, ShoppingBag, Store, Clock, AlertCircle, CheckCircle2, MoreHorizontal, Bell, Star
 }
     from 'lucide-react';
 import { Button, Card, Header, MarkdownText } from '../../components/Shared';
@@ -18,6 +18,8 @@ import { ViewState, TeacherNote, QuizData, TeacherActivity, SubscriptionPlan } f
 import { PdfPageSelector } from '../../components/PdfPageSelector';
 import { PaymentFlow } from '../subscription/PaymentFlow';
 import { translations } from '../../data/translations';
+import { TeacherRequestModal } from '../../components/TeacherRequestModal';
+import { TutoringRequest } from '../../types';
 
 import { useNavigate, useLocation } from 'react-router-dom';
 
@@ -48,44 +50,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
     const [showRegister, setShowRegister] = useState(false);
     const [authTab, setAuthTab] = useState<'TEACHER' | 'SCHOOL'>('TEACHER');
 
-    // If not authenticated, show Landing Page
-    if (!teacherProfile) {
-        return (
-            <>
-                <TeacherLanding
-                    onLogin={() => { setAuthTab('TEACHER'); setShowLogin(true); }}
-                    onRegister={() => { setAuthTab('TEACHER'); setShowRegister(true); }}
-                />
 
-                <LoginModal
-                    isOpen={showLogin}
-                    onClose={() => setShowLogin(false)}
-                    initialTab={authTab === 'SCHOOL' ? 'SCHOOL' : 'TEACHER'}
-                    onSwitchToRegister={(role) => {
-                        setShowLogin(false);
-                        if (role === 'TEACHER' || role === 'SCHOOL') {
-                            setAuthTab(role);
-                            setShowRegister(true);
-                        }
-                    }}
-                />
-
-                <RegistrationModal
-                    isOpen={showRegister}
-                    onClose={() => setShowRegister(false)}
-                    initialRole={authTab}
-                    onSwitchToLogin={() => {
-                        setShowRegister(false);
-                        setShowLogin(true);
-                    }}
-                    onSuccess={() => {
-                        setShowRegister(false);
-                        // Profile is set in context, so re-render will show dashboard
-                    }}
-                />
-            </>
-        );
-    }
 
     // Check for subscription intent from Landing Page or Pricing Page
     useEffect(() => {
@@ -163,6 +128,10 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
     const [advCount, setAdvCount] = useState(5);
     const [advType, setAdvType] = useState<'MCQ' | 'OPEN'>('MCQ');
 
+    // Request Modal State
+    const [selectedRequest, setSelectedRequest] = useState<TutoringRequest | null>(null);
+    const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
+
     // PDF Selection State
     const [pdfFile, setPdfFile] = useState<File | null>(null);
 
@@ -237,8 +206,18 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
         };
     }, []);
 
-
     // --- Handlers ---
+
+    const handleRequestClick = (request: TutoringRequest) => {
+        setSelectedRequest(request);
+        setIsRequestModalOpen(true);
+    };
+
+    const handleRequestSubmit = async (requestId: string, response: string, type: 'TEXT' | 'VOICE' | 'VIDEO', pricingType: 'FREE' | 'FIXED' | 'RATE_ME', price: number, attachments: File[]) => {
+        await submitTutoringResponse(requestId, response, type, pricingType, price, attachments);
+        setIsRequestModalOpen(false);
+        setSelectedRequest(null);
+    };
 
     const handleSaveToHistory = (type: 'NOTE' | 'QUIZ', title: string, content: any) => {
         const activity: TeacherActivity = {
@@ -400,6 +379,45 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
 
     // --- Render ---
 
+    // If not authenticated, show Landing Page
+    if (!teacherProfile) {
+        return (
+            <>
+                <TeacherLanding
+                    onLogin={() => { setAuthTab('TEACHER'); setShowLogin(true); }}
+                    onRegister={() => { setAuthTab('TEACHER'); setShowRegister(true); }}
+                />
+
+                <LoginModal
+                    isOpen={showLogin}
+                    onClose={() => setShowLogin(false)}
+                    initialTab={authTab === 'SCHOOL' ? 'SCHOOL' : 'TEACHER'}
+                    onSwitchToRegister={(role) => {
+                        setShowLogin(false);
+                        if (role === 'TEACHER' || role === 'SCHOOL') {
+                            setAuthTab(role);
+                            setShowRegister(true);
+                        }
+                    }}
+                />
+
+                <RegistrationModal
+                    isOpen={showRegister}
+                    onClose={() => setShowRegister(false)}
+                    initialRole={authTab}
+                    onSwitchToLogin={() => {
+                        setShowRegister(false);
+                        setShowLogin(true);
+                    }}
+                    onSuccess={() => {
+                        setShowRegister(false);
+                        // Profile is set in context, so re-render will show dashboard
+                    }}
+                />
+            </>
+        );
+    }
+
     if (!teacherProfile && teacherUsageCount >= 3) {
         return (
             <>
@@ -430,6 +448,12 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
     return (
         <div className="min-h-screen bg-slate-50 font-sans text-slate-800 relative selection:bg-indigo-100">
             <TeacherPaywall isOpen={showPaywall} onClose={() => setShowPaywall(false)} />
+            <TeacherRequestModal
+                isOpen={isRequestModalOpen}
+                onClose={() => setIsRequestModalOpen(false)}
+                request={selectedRequest}
+                onSubmit={handleRequestSubmit}
+            />
 
             {/* Direct Payment Modal */}
             {paymentPlan && teacherProfile && (
@@ -531,6 +555,15 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                         </div>
 
                         <div className="flex items-center gap-3 pl-4 border-l border-slate-200">
+                            {/* Rating Display */}
+                            <div className="flex flex-col items-end mr-2">
+                                <div className="flex items-center gap-1">
+                                    <Star className="w-3 h-3 text-amber-500 fill-amber-500" />
+                                    <span className="text-xs font-black text-slate-900">{teacherProfile?.rating?.toFixed(1) || 'NEW'}</span>
+                                </div>
+                                <span className="text-[9px] font-bold text-slate-400 uppercase">Rating</span>
+                            </div>
+
                             <div className="relative group cursor-pointer" onClick={() => setActiveTab('PROFILE')}>
                                 <div className="w-10 h-10 rounded-full bg-indigo-100 border-2 border-white shadow-md flex items-center justify-center overflow-hidden">
                                     <span className="font-black text-indigo-600 text-sm">TJ</span>
@@ -579,10 +612,53 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                                         >
                                             Create Homework
                                         </button>
-                                        <button className="bg-white text-slate-600 border border-slate-200 px-8 py-3 rounded-full font-bold hover:bg-slate-50 transition-all text-sm">
+                                        <button
+                                            onClick={() => navigate('/teacher/darasa')}
+                                            className="bg-white text-slate-600 border border-slate-200 px-8 py-3 rounded-full font-bold hover:bg-slate-50 transition-all text-sm"
+                                        >
                                             Start Class
                                         </button>
                                     </div>
+                                </div>
+                            </div>
+
+                            {/* Pending Requests Card */}
+                            <div
+                                onClick={() => {
+                                    if (activeTutoringRequests.filter(r => r.status === 'PENDING').length > 0) {
+                                        // Open modal with first pending request, or show list (for now just open first)
+                                        // Ideally we show a list.
+                                        // For now, let's open a Request List view or modal.
+                                        // Let's reuse 'STUDENTS' tab or similar? 
+                                        // Better: Open the RequestModal with the first pending request to demo.
+                                        const first = activeTutoringRequests.find(r => r.status === 'PENDING');
+                                        if (first) {
+                                            setSelectedRequest(first);
+                                            setIsRequestModalOpen(true);
+                                        }
+                                    }
+                                }}
+                                className="bg-white rounded-[2rem] p-6 shadow-sm border border-slate-100 flex flex-col justify-between cursor-pointer hover:shadow-md transition-all group"
+                            >
+                                <div className="flex items-start justify-between mb-4">
+                                    <div className="w-12 h-12 bg-amber-50 text-amber-600 rounded-2xl flex items-center justify-center group-hover:bg-amber-100 transition-colors">
+                                        <div className="relative">
+                                            <Bell className="w-6 h-6" />
+                                            {activeTutoringRequests.filter(r => r.status === 'PENDING').length > 0 && (
+                                                <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                                                    <span className="relative inline-flex rounded-full h-3 w-3 bg-amber-500"></span>
+                                                </span>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <div className="bg-amber-50 text-amber-700 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider">
+                                        Action Required
+                                    </div>
+                                </div>
+                                <div>
+                                    <h3 className="text-3xl font-black text-slate-900 mb-1">{activeTutoringRequests.filter(r => r.status === 'PENDING').length}</h3>
+                                    <p className="text-slate-500 font-medium text-sm">Pending Student Requests</p>
                                 </div>
                             </div>
 
@@ -622,9 +698,24 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                                         <div>
                                             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Pending</p>
                                             <p className="text-2xl font-black text-slate-900">{activeTutoringRequests.filter(r => r.status === 'PENDING').length} <span className="text-xs text-slate-400 font-bold">Requests</span></p>
+                                            <div className="mt-1 flex -space-x-2 overflow-hidden">
+                                                {activeTutoringRequests.filter(r => r.status === 'PENDING').slice(0, 3).map((r, i) => (
+                                                    <div key={i} className="inline-block h-6 w-6 rounded-full ring-2 ring-white bg-indigo-100 flex items-center justify-center text-[8px] font-bold text-indigo-800" title={r.topic}>
+                                                        {r.studentName?.charAt(0) || '?'}
+                                                    </div>
+                                                ))}
+                                            </div>
                                         </div>
                                     </div>
-                                    <ChevronRight className="w-5 h-5 text-slate-300" />
+                                    <button
+                                        onClick={() => {
+                                            const pending = activeTutoringRequests.find(r => r.status === 'PENDING');
+                                            if (pending) handleRequestClick(pending);
+                                        }}
+                                        className="p-2 hover:bg-slate-50 rounded-full transition-colors"
+                                    >
+                                        <ChevronRight className="w-5 h-5 text-slate-300" />
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -1750,7 +1841,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                                             disabled={isRecording || (responseType === 'TEXT' && !responseText.trim())}
                                             onClick={async () => {
                                                 setLoading(true);
-                                                const res = await submitTutoringResponse(respondingTo!, responseText || "Explanation provided via media.", responseType);
+                                                const res = await submitTutoringResponse(respondingTo!, responseText || "Explanation provided via media.", responseType, 'FIXED', 30, []);
                                                 setLoading(false);
                                                 if (res.success) {
                                                     setRespondingTo(null);

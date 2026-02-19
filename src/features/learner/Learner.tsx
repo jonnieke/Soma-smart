@@ -109,7 +109,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
     }
   }, [isRegistered, role, navigate, location]);
 
-  const [mode, setMode] = useState<'MENU' | 'SCAN' | 'RESULT' | 'QUIZ' | 'RECAP_RESULT' | 'PROFILE' | 'PRICING' | 'PAYMENT' | 'MARKETPLACE' | 'LIBRARY' | 'HISTORY' | 'SCAN_EXPLAIN' | 'STUDY'>('MENU');
+  const [mode, setMode] = useState<'MENU' | 'SCAN' | 'RESULT' | 'QUIZ' | 'RECAP_RESULT' | 'PROFILE' | 'PRICING' | 'PAYMENT' | 'MARKETPLACE' | 'LIBRARY' | 'HISTORY' | 'SCAN_EXPLAIN' | 'STUDY' | 'REQUESTS'>('MENU');
   const [recapData, setRecapData] = useState<any>(null); // Store LessonRecap
 
   const [loading, setLoading] = useState(false);
@@ -1449,6 +1449,94 @@ ${explanation.explanation}
       );
     }
 
+    if (mode === 'REQUESTS') {
+      return (
+        <div className="min-h-screen bg-slate-50 flex flex-col font-sans text-slate-800 max-w-4xl mx-auto shadow-2xl border-x border-slate-100 relative">
+          <div className="sticky top-0 z-40 bg-white/90 backdrop-blur-xl border-b border-slate-200 px-6 py-4 flex items-center gap-4">
+            <button onClick={() => setMode('MENU')} className="p-2 hover:bg-slate-100 rounded-full transition-colors"><ArrowRight className="w-5 h-5 rotate-180" /></button>
+            <h2 className="font-bold text-lg">My Requests</h2>
+            <span className="bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full text-xs font-bold">{activeTutoringRequests.length}</span>
+          </div>
+
+          <div className="p-6 space-y-4 flex-1 overflow-y-auto">
+            {activeTutoringRequests.length === 0 ? (
+              <div className="text-center py-20 opacity-50 flex flex-col items-center">
+                <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mb-4"><span className="text-4xl">📬</span></div>
+                <p className="font-medium">No requests sent yet.</p>
+                <button onClick={() => { setMode('SCAN'); setTimeout(() => setShowTutoringModal(true), 100); }} className="mt-4 text-indigo-600 font-bold text-sm">Ask a Teacher</button>
+              </div>
+            ) : (
+              activeTutoringRequests.map(req => (
+                <div key={req.id} className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 transition-all hover:shadow-md">
+                  <div className="flex justify-between items-start mb-3">
+                    <div>
+                      <h3 className="font-bold text-slate-900 leading-tight mb-1">{req.topic}</h3>
+                      <p className="text-xs text-slate-500 font-medium flex items-center gap-1"><Clock className="w-3 h-3" /> {new Date(req.createdAt).toLocaleDateString()}</p>
+                    </div>
+                    <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${req.status === 'COMPLETED' ? 'bg-emerald-100 text-emerald-700' :
+                      req.status === 'ACCEPTED' ? 'bg-blue-100 text-blue-700' :
+                        'bg-amber-100 text-amber-700'
+                      }`}>
+                      {req.status}
+                    </span>
+                  </div>
+                  <p className="text-slate-600 text-sm mb-4 bg-slate-50 p-3 rounded-xl leading-relaxed">{req.description}</p>
+
+                  {req.status === 'COMPLETED' && (
+                    <div className="mt-4 pt-4 border-t border-slate-100">
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Teacher Response</p>
+
+                      {req.responseType === 'TEXT' && (
+                        <p className="text-slate-800 text-sm leading-relaxed whitespace-pre-wrap bg-slate-50 p-4 rounded-xl border border-slate-100">
+                          {req.response}
+                        </p>
+                      )}
+
+                      {req.responseType === 'VOICE' && (
+                        <div className="bg-indigo-50 p-4 rounded-xl flex flex-col gap-3 border border-indigo-100">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-indigo-600 rounded-full flex items-center justify-center text-white shadow-lg shadow-indigo-200">
+                              <Play className="w-5 h-5 ml-0.5" />
+                            </div>
+                            <div className="flex-1">
+                              <p className="text-[10px] font-bold text-indigo-400 uppercase">Audio Answer</p>
+                              <p className="text-xs font-bold text-indigo-900">Listen to explanation</p>
+                            </div>
+                          </div>
+                          {/* Actual Audio Player if URL exists */}
+                          {req.response && (
+                            <audio src={req.response} controls className="w-full mt-2" />
+                          )}
+                        </div>
+                      )}
+
+                      {req.responseType === 'VIDEO' && (
+                        <div className="aspect-video bg-black rounded-xl relative overflow-hidden shadow-lg border border-slate-200">
+                          {req.response ? (
+                            <video src={req.response} controls className="w-full h-full" />
+                          ) : (
+                            <div className="flex items-center justify-center h-full text-white">
+                              <p className="text-sm font-medium">Video Processing...</p>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      <div className="mt-4 flex justify-end">
+                        <button className="text-xs font-bold text-slate-400 hover:text-indigo-600 flex items-center gap-1 transition-colors">
+                          <Star className="w-3 h-3" /> Rate Teacher
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      );
+    }
+
     if (mode === 'MENU') {
       const displayCode = profile ? profile.code : studentCode;
       const greeting = profile ? `Hi, ${profile.name.split(' ')[0]}` : "My Learning Buddy";
@@ -1471,6 +1559,14 @@ ${explanation.explanation}
               <button onClick={() => setMode('HISTORY' as any)} className="flex items-center gap-2 px-5 py-2 hover:bg-white rounded-full transition-all text-slate-600 hover:text-blue-600 font-bold text-sm hover:shadow-sm">
                 <Clock className="w-4 h-4" />
                 History
+              </button>
+              <div className="w-px h-4 bg-slate-300 mx-1" />
+              <button onClick={() => setMode('REQUESTS')} className="flex items-center gap-2 px-5 py-2 hover:bg-white rounded-full transition-all text-slate-600 hover:text-blue-600 font-bold text-sm hover:shadow-sm">
+                <span className="relative">
+                  <div className="w-4 h-4 rounded-full border-2 border-current" />
+                  {activeTutoringRequests.some(r => r.status === 'COMPLETED') && <div className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full border border-white" />}
+                </span>
+                Requests
               </button>
               <div className="w-px h-4 bg-slate-300 mx-1" />
               <button onClick={() => setMode('MARKETPLACE')} className="flex items-center gap-2 px-5 py-2 hover:bg-white rounded-full transition-all text-slate-600 hover:text-blue-600 font-bold text-sm hover:shadow-sm">
@@ -1543,6 +1639,34 @@ ${explanation.explanation}
               </button>
             </motion.div>
 
+
+            {/* Requests Summary Card (Mobile & Desktop) */}
+            {activeTutoringRequests.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                onClick={() => setMode('REQUESTS')}
+                className="w-full mb-6 bg-white rounded-3xl p-4 border border-blue-100 shadow-sm flex items-center justify-between cursor-pointer hover:shadow-md transition-all group"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                    <span className="text-xl">📬</span>
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-slate-900">My Requests</h3>
+                    <p className="text-xs text-slate-500 font-medium">
+                      {activeTutoringRequests.filter(r => r.status === 'COMPLETED').length > 0
+                        ? <span className="text-emerald-600 font-bold">{activeTutoringRequests.filter(r => r.status === 'COMPLETED').length} New Response(s)</span>
+                        : `${activeTutoringRequests.length} Active Request${activeTutoringRequests.length === 1 ? '' : 's'}`
+                      }
+                    </p>
+                  </div>
+                </div>
+                <div className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center group-hover:bg-blue-100 group-hover:text-blue-600 transition-colors">
+                  <ChevronRight className="w-4 h-4" />
+                </div>
+              </motion.div>
+            )}
 
             {/* Continue Learning Hero Card */}
             <motion.div
@@ -3567,6 +3691,35 @@ ${explanation.explanation}
             <button onClick={() => setShowTutoringModal(false)} className="absolute top-4 right-4 p-2 hover:bg-slate-100 rounded-full"><X className="w-5 h-5" /></button>
             <h2 className="text-xl font-bold mb-4">Ask a Teacher</h2>
             <p className="text-slate-500 mb-4">Describe your question below:</p>
+            <div className="grid grid-cols-2 gap-4 mb-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Grade</label>
+                <select
+                  className="w-full border rounded-xl p-3 bg-slate-50"
+                  value={selectedGrade}
+                  onChange={(e) => setSelectedGrade(e.target.value)}
+                >
+                  <option value="ALL">Select Grade</option>
+                  {['Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6', 'Grade 7', 'Grade 8', 'Grade 9', 'Form 1', 'Form 2', 'Form 3', 'Form 4'].map(g => (
+                    <option key={g} value={g}>{g}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Subject</label>
+                <select
+                  className="w-full border rounded-xl p-3 bg-slate-50"
+                  value={subjectFilter}
+                  onChange={(e) => setSubjectFilter(e.target.value)}
+                >
+                  <option value="ALL">Select Subject</option>
+                  {['Mathematics', 'English', 'Kiswahili', 'Science', 'Social Studies', 'CRE', 'Physics', 'Biology', 'Chemistry', 'History', 'Geography', 'Business', 'Computer', 'Agriculture'].map(s => (
+                    <option key={s} value={s}>{s}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
             <textarea
               className="w-full border rounded-xl p-3 mb-4"
               rows={4}
@@ -3576,8 +3729,12 @@ ${explanation.explanation}
             <Button fullWidth onClick={async () => {
               const desc = (document.getElementById('tutoring-desc-quick') as HTMLTextAreaElement).value;
               if (!desc) return;
+              if (selectedGrade === 'ALL' || subjectFilter === 'ALL') {
+                alert("Please select a Grade and Subject for your request.");
+                return;
+              }
               setLoading(true);
-              const res = await createTutoringRequest("General Help", desc, 20);
+              const res = await createTutoringRequest(tutoringTopic || "General Help", desc, 20, selectedGrade, subjectFilter);
               setLoading(false);
               if (res.success) { setShowTutoringModal(false); alert("Request Sent!"); }
             }}>Send Request</Button>

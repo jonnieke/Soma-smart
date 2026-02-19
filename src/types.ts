@@ -251,10 +251,16 @@ export interface TutoringRequest {
   teacherId?: string;
   topic: string;
   description: string;
+  grade?: string; // New
+  subject?: string; // New
   status: 'PENDING' | 'ACCEPTED' | 'COMPLETED' | 'CANCELLED';
   price: number;
+  pricingType: 'FREE' | 'FIXED' | 'RATE_ME'; // New
   response?: string;
   responseType?: 'TEXT' | 'VOICE' | 'VIDEO';
+  attachments?: string[]; // New: URLs for video/files
+  rating?: number; // New: Learner's rating
+  feedback?: string; // New: Learner's feedback
   createdAt: string;
   completedAt?: string;
 }

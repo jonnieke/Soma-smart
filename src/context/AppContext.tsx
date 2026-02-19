@@ -43,9 +43,9 @@ interface AppContextType {
   fetchEarnings: () => Promise<void>;
   // Tutoring Requests (Phase 2)
   activeTutoringRequests: TutoringRequest[];
-  createTutoringRequest: (topic: string, description: string, price: number) => Promise<{ success: boolean; message: string }>;
+  createTutoringRequest: (topic: string, description: string, price: number, grade?: string, subject?: string) => Promise<{ success: boolean; message: string }>;
   acceptTutoringRequest: (requestId: string) => Promise<{ success: boolean; message: string }>;
-  submitTutoringResponse: (requestId: string, response: string, type: 'TEXT' | 'VOICE' | 'VIDEO') => Promise<{ success: boolean; message: string }>;
+  submitTutoringResponse: (requestId: string, response: string, type: 'TEXT' | 'VOICE' | 'VIDEO', pricingType: 'FREE' | 'FIXED' | 'RATE_ME', price: number, attachments: File[]) => Promise<{ success: boolean; message: string }>;
   // Marketplace
   marketplaceMaterials: MaterialListing[];
   purchasedMaterialIds: string[];
@@ -135,7 +135,33 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [availableQuizzes, setAvailableQuizzes] = useState<TeacherActivity[]>([]);
   const [teacherWallet, setTeacherWallet] = useState<TeacherWallet | null>(null);
   const [isAvailableForTutoring, setIsAvailableForTutoring] = useState<boolean>(false);
-  const [activeTutoringRequests, setActiveTutoringRequests] = useState<TutoringRequest[]>([]);
+
+  const [activeTutoringRequests, setActiveTutoringRequests] = useState<TutoringRequest[]>([
+    {
+      id: '1',
+      studentId: 'st-1',
+      studentName: 'Faith K.',
+      topic: 'Quadratic Equations',
+      description: 'I am stuck on completing the square method. Can you explain step by step?',
+      status: 'PENDING',
+      price: 0,
+      pricingType: 'FREE',
+      createdAt: '2 hrs ago',
+      rating: 4.5
+    },
+    {
+      id: '2',
+      studentId: 'st-2',
+      studentName: 'Brian M.',
+      topic: 'Photosynthesis',
+      description: 'Need help understanding the light-dependent stage. Diagram would be great!',
+      status: 'PENDING',
+      price: 50,
+      pricingType: 'FIXED',
+      createdAt: '5 hrs ago',
+      rating: 4.8
+    }
+  ]);
 
   // School State
   const [schoolProfile, setSchoolProfile] = useState<SchoolProfile | null>(null);
@@ -1760,19 +1786,23 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   // Tutoring Request Handlers (Mock for Phase 2, sync with Supabase in Phase 3)
-  const createTutoringRequest = async (topic: string, description: string, price: number): Promise<{ success: boolean; message: string }> => {
+  const createTutoringRequest = async (topic: string, description: string, price: number, grade?: string, subject?: string): Promise<{ success: boolean; message: string }> => {
     if (!studentProfile) return { success: false, message: "Login to request help" };
 
     try {
-      const { error } = await supabase.from('tutoring_requests').insert({
-        student_id: studentProfile.id,
-        topic,
-        description,
-        price,
-        status: 'PENDING'
+      // Use RPC to bypass RLS if user is "logged in" via code but not Supabase Auth
+      const { data, error } = await supabase.rpc('create_tutoring_request_secure', {
+        p_student_id: userId, // This is the profile.id we set in login/loginParent
+        p_topic: topic,
+        p_description: description,
+        p_price: price,
+        p_grade: grade,
+        p_subject: subject
       });
 
       if (error) throw error;
+      if (data && !data.success) throw new Error(data.message);
+
       fetchTutoringRequests();
       return { success: true, message: "Request sent to available teachers!" };
     } catch (e: any) {
@@ -1797,44 +1827,74 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   };
 
-  const submitTutoringResponse = async (requestId: string, response: string, type: 'TEXT' | 'VOICE' | 'VIDEO'): Promise<{ success: boolean; message: string }> => {
-    if (!userId) return { success: false, message: "Auth required" };
+  const submitTutoringResponse = async (requestId: string, response: string, type: 'TEXT' | 'VOICE' | 'VIDEO', pricingType: 'FREE' | 'FIXED' | 'RATE_ME', price: number, attachments: File[]): Promise<{ success: boolean; message: string }> => {
+    // 1. Mock Local Update (fast feedback)
+    setActiveTutoringRequests(prev => prev.map(r => {
+      if (r.id === requestId) {
+        return {
+          ...r,
+          status: 'COMPLETED',
+          response,
+          responseType: type,
+          pricingType,
+          price,
+          completedAt: new Date().toISOString()
+        };
+      }
+      return r;
+    }));
+
+    if (!userId) return { success: true, message: "Response sent locally (Demo)" };
 
     try {
-      const request = activeTutoringRequests.find(r => r.id === requestId);
-      if (!request) return { success: false, message: "Request not found" };
-
-      // 1. Update Request
+      // 2. Real DB Update
       const { error: reqError } = await supabase.from('tutoring_requests').update({
         status: 'COMPLETED',
         response,
         response_type: type,
-        completed_at: new Date().toISOString()
+        completed_at: new Date().toISOString(),
+        pricing_type: pricingType,
+        price: price
       }).eq('id', requestId);
 
       if (reqError) throw reqError;
 
-      // 2. Credit Wallet
-      const earnings = request.price;
-      const { data: wallet } = await supabase.from('teacher_wallets').select('balance').eq('id', userId).single();
-      const currentBalance = wallet?.balance || 0;
+      // 3. Earnings Update (if fixed price)
+      if (pricingType === 'FIXED' && price > 0) {
+        const { data: wallet } = await supabase.from('teacher_wallets').select('balance').eq('id', userId).single();
+        const currentBalance = wallet?.balance || 0;
+        await supabase.from('teacher_wallets').update({ balance: currentBalance + price }).eq('id', userId);
 
-      await supabase.from('teacher_wallets').update({ balance: currentBalance + earnings }).eq('id', userId);
+        await supabase.from('transactions').insert({
+          user_id: userId,
+          type: 'EARNING',
+          amount: price,
+          description: `Tutoring: ${requestId.substring(0, 8)}...`,
+          status: 'COMPLETED'
+        });
 
-      // 3. Add Transaction
-      await supabase.from('transactions').insert({
-        teacher_id: userId,
-        type: 'EARNING',
-        amount: earnings,
-        description: `Homework Help: ${request.topic}`,
-        status: 'COMPLETED'
-      });
+        if (teacherWallet) {
+          const newTx: any = {
+            id: Date.now().toString(),
+            type: 'EARNING',
+            amount: price,
+            description: `Tutoring: ${requestId.substring(0, 8)}...`,
+            date: new Date().toISOString(),
+            status: 'COMPLETED'
+          };
 
-      fetchEarnings();
+          setTeacherWallet({
+            ...teacherWallet,
+            balance: teacherWallet.balance + price,
+            transactions: [newTx, ...teacherWallet.transactions]
+          });
+        }
+      }
+
       fetchTutoringRequests();
-
-      return { success: true, message: "Response sent! Earnings added to wallet." };
+      return { success: true, message: "Response sent successfully!" };
     } catch (e: any) {
+      console.error(e);
       return { success: false, message: e.message };
     }
   };
@@ -1929,102 +1989,115 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const fetchTutoringRequests = async () => {
     try {
-      const { data, error } = await supabase.from('tutoring_requests').select('*').order('created_at', { ascending: false });
-      if (error) throw error;
-      if (data) {
-        setActiveTutoringRequests(data.map((r: any) => ({
-          id: r.id,
-          studentId: r.student_id,
-          teacherId: r.teacher_id,
-          topic: r.topic,
-          description: r.description,
-          status: r.status,
-          price: r.price,
-          response: r.response,
-          responseType: r.response_type,
-          createdAt: r.created_at,
-          completedAt: r.completed_at
-        })));
-      }
-    } catch (e) { console.error("Fetch Tutoring Error:", e); }
-  };
+      try {
+        let query = supabase.from('tutoring_requests').select('*').order('created_at', { ascending: false });
 
-  useEffect(() => {
-    fetchMarketplaceMaterials();
-    fetchTutoringRequests();
-    if (role === UserRole.TEACHER && userId) {
-      fetchEarnings();
-    }
+        // Filter for Students: Only show their own requests
+        if (role !== UserRole.TEACHER && userId) {
+          query = query.eq('student_id', userId);
+        }
 
-    const interval = setInterval(() => {
+        const { data, error } = await query;
+        if (error) throw error;
+        if (data) {
+          setActiveTutoringRequests(data.map((r: any) => ({
+            id: r.id,
+            studentId: r.student_id,
+            teacherId: r.teacher_id,
+            topic: r.topic,
+            description: r.description,
+            status: r.status,
+            price: r.price,
+            pricingType: r.pricing_type || 'RATE_ME', // Default to RATE_ME if missing
+            response: r.response,
+            responseType: r.response_type,
+            attachments: r.attachments || [],
+            rating: r.rating,
+            feedback: r.feedback,
+            createdAt: r.created_at,
+            completedAt: r.completed_at
+          })));
+        }
+      } catch (e) { console.error("Fetch Tutoring Error:", e); }
+    };
+
+    useEffect(() => {
       fetchMarketplaceMaterials();
       fetchTutoringRequests();
       if (role === UserRole.TEACHER && userId) {
         fetchEarnings();
       }
-    }, 30000); // Poll every 30s
-    return () => clearInterval(interval);
-  }, [role, userId]);
 
-  const verifySubscription = async () => {
-    if (!userId) return;
-    await verifyAndFixSubscription(userId);
-    await refreshProfile();
+      const interval = setInterval(() => {
+        fetchMarketplaceMaterials();
+        fetchTutoringRequests();
+        if (role === UserRole.TEACHER && userId) {
+          fetchEarnings();
+        }
+      }, 30000); // Poll every 30s
+      return () => clearInterval(interval);
+    }, [role, userId]);
+
+    const verifySubscription = async () => {
+      if (!userId) return;
+      await verifyAndFixSubscription(userId);
+      await refreshProfile();
+    };
+
+    return (
+      <AppContext.Provider value={{
+        role, setRole, learnerHistory, saveActivity, deleteActivity, clearHistory, studentCode, setStudentCode,
+        isOnline,
+        usageCount, incrementUsage, isRegistered, studentProfile, updateStudentProfile,
+        // studyUsageCount removed
+        // incrementStudyUsage removed
+        registerStudent, login, registerTeacher, loginParent, recoverStudentId, loginTeacher, resetPassword,
+        teacherUsageCount, incrementTeacherUsage,
+        teacherDarasaUsage, incrementTeacherDarasaUsage,
+        teacherProfile, updateTeacherProfile, teacherHistory,
+        saveTeacherActivity,
+        deleteTeacherActivity,
+        teacherWallet,
+        isAvailableForTutoring,
+        toggleTutoringAvailability,
+        requestWithdrawal,
+        fetchEarnings,
+        // Revision
+        revisionUsageCount, incrementRevisionUsage,
+        isPro, subscriptionPlan, subscriptionExpiry, upgradeAccount, verifySubscription,
+        userId,
+        activeTutoringRequests, createTutoringRequest, acceptTutoringRequest, submitTutoringResponse,
+        // Marketplace
+        marketplaceMaterials, purchasedMaterialIds, listMaterial, purchaseMaterial,
+        schoolProfile, loginSchool, registerSchool, registerStudentForSchool,
+        schoolStats, schoolTeachers, fetchSchoolStats, addTeacherToSchool, addStudentToSchool, removeUserFromSchool,
+        schoolMaterials, shareSchoolMaterial, deleteSchoolMaterial, fetchSchoolMaterials, updateSchoolProfile,
+        language, toggleLanguage,
+        logout,
+        startGuestSession,
+        availableQuizzes,
+        fetchAvailableQuizzes,
+        resources,
+        fetchResources,
+        downloadUsageCount,
+        incrementDownloadUsage,
+        extraDownloads,
+        grantExtraDownloads,
+        sessionError,
+        resolveSessionConflict,
+        setSessionError,
+        refreshProfile
+      }}
+      >
+        {children}
+      </AppContext.Provider>
+    );
   };
 
-  return (
-    <AppContext.Provider value={{
-      role, setRole, learnerHistory, saveActivity, deleteActivity, clearHistory, studentCode, setStudentCode,
-      isOnline,
-      usageCount, incrementUsage, isRegistered, studentProfile, updateStudentProfile,
-      // studyUsageCount removed
-      // incrementStudyUsage removed
-      registerStudent, login, registerTeacher, loginParent, recoverStudentId, loginTeacher, resetPassword,
-      teacherUsageCount, incrementTeacherUsage,
-      teacherDarasaUsage, incrementTeacherDarasaUsage,
-      teacherProfile, updateTeacherProfile, teacherHistory,
-      saveTeacherActivity,
-      deleteTeacherActivity,
-      teacherWallet,
-      isAvailableForTutoring,
-      toggleTutoringAvailability,
-      requestWithdrawal,
-      fetchEarnings,
-      // Revision
-      revisionUsageCount, incrementRevisionUsage,
-      isPro, subscriptionPlan, subscriptionExpiry, upgradeAccount, verifySubscription,
-      userId,
-      activeTutoringRequests, createTutoringRequest, acceptTutoringRequest, submitTutoringResponse,
-      // Marketplace
-      marketplaceMaterials, purchasedMaterialIds, listMaterial, purchaseMaterial,
-      schoolProfile, loginSchool, registerSchool, registerStudentForSchool,
-      schoolStats, schoolTeachers, fetchSchoolStats, addTeacherToSchool, addStudentToSchool, removeUserFromSchool,
-      schoolMaterials, shareSchoolMaterial, deleteSchoolMaterial, fetchSchoolMaterials, updateSchoolProfile,
-      language, toggleLanguage,
-      logout,
-      startGuestSession,
-      availableQuizzes,
-      fetchAvailableQuizzes,
-      resources,
-      fetchResources,
-      downloadUsageCount,
-      incrementDownloadUsage,
-      extraDownloads,
-      grantExtraDownloads,
-      sessionError,
-      resolveSessionConflict,
-      setSessionError,
-      refreshProfile
-    }}>
-      {children}
-    </AppContext.Provider>
-  );
-};
-
-export const useApp = () => {
-  const context = useContext(AppContext);
-  if (context === undefined) {
-    throw new Error('useApp must be used within an AppProvider');
-  }
-  return context;
-};
+  export const useApp = () => {
+    const context = useContext(AppContext);
+    if (context === undefined) {
+      throw new Error('useApp must be used within an AppProvider');
+    }
+    return context;
+  };

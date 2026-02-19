@@ -27,6 +27,7 @@ import { ContactModal } from '../components/ContactModal';
 import { LoginModal } from '../components/LoginModal';
 import { LogoutModal } from '../components/LogoutModal';
 import { translations } from '../data/translations';
+import { SchoolCalendar } from '../components/SchoolCalendar';
 
 interface LandingPageProps {
     authError?: {
@@ -783,6 +784,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                     </div>
                 </div>
             </section>
+
+            <div className="w-full h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent opacity-20"></div>
+
+            {/* --- SCHOOL CALENDAR --- */}
+            <SchoolCalendar />
 
             <div className="w-full h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent opacity-20"></div>
 

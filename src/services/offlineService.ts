@@ -18,8 +18,24 @@ export const offlineService = {
     saveLearnerHistory(history: LearnerActivity[]) {
         try {
             localStorage.setItem(LEARNER_HISTORY_KEY, JSON.stringify(history));
-        } catch (e) {
+        } catch (e: any) {
             console.error("Local save failed", e);
+            if (e.name === 'QuotaExceededError' || e.code === 22) {
+                // Determine what to do: trim history or clear it
+                // For now, let's keep only the last 50 items if it fails
+                try {
+                    const existing = this.getLearnerHistory();
+                    if (existing.length > 50) {
+                        const trimmed = existing.slice(0, 50);
+                        localStorage.setItem(LEARNER_HISTORY_KEY, JSON.stringify(trimmed));
+                    } else {
+                        // Critical failure, clear all
+                        this.clearLearnerHistory();
+                    }
+                } catch (retryError) {
+                    console.error("Retry save failed", retryError);
+                }
+            }
         }
     },
 
@@ -72,7 +88,13 @@ export const offlineService = {
         const merged = Array.from(map.values()).sort((a, b) =>
             new Date(b.date).getTime() - new Date(a.date).getTime()
         );
-        this.saveLearnerHistory(merged);
+
+        // SAVE ONLY A SUBSET TO LOCAL STORAGE TO PREVENT QUOTA EXCEEDED
+        // Keep all pending, plus up to 20 recent items
+        const pendingIds = new Set(pending.map(p => p.id));
+        const limitedForStorage = merged.filter(item => pendingIds.has(item.id) || merged.indexOf(item) < 20);
+
+        this.saveLearnerHistory(limitedForStorage);
         return merged;
     },
 
@@ -87,7 +109,12 @@ export const offlineService = {
         const merged = Array.from(map.values()).sort((a, b) =>
             new Date(b.date).getTime() - new Date(a.date).getTime()
         );
-        this.saveTeacherHistory(merged);
+
+        // SAVE ONLY A SUBSET TO LOCAL STORAGE
+        const pendingIds = new Set(pending.map(p => p.id));
+        const limitedForStorage = merged.filter(item => pendingIds.has(item.id) || merged.indexOf(item) < 20);
+
+        this.saveTeacherHistory(limitedForStorage);
         return merged;
     }
 };
