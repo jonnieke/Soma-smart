@@ -1835,6 +1835,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           ...r,
           status: 'COMPLETED',
           response,
+          // We can't show the file locally immediately until upload confirms, 
+          // or we could create a blob URL? For now, keep simple.
           responseType: type,
           pricingType,
           price,
@@ -1847,10 +1849,32 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     if (!userId) return { success: true, message: "Response sent locally (Demo)" };
 
     try {
-      // 2. Real DB Update
+      let finalResponse = response;
+
+      // 2. Upload Attachments (if any)
+      if (attachments.length > 0) {
+        const file = attachments[0];
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${requestId}_${Date.now()}.${fileExt}`;
+        const filePath = `${userId}/${fileName}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('assignments')
+          .upload(filePath, file);
+
+        if (uploadError) throw uploadError;
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('assignments')
+          .getPublicUrl(filePath);
+
+        finalResponse = publicUrl;
+      }
+
+      // 3. Real DB Update
       const { error: reqError } = await supabase.from('tutoring_requests').update({
         status: 'COMPLETED',
-        response,
+        response: finalResponse,
         response_type: type,
         completed_at: new Date().toISOString(),
         pricing_type: pricingType,
@@ -1859,14 +1883,18 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
       if (reqError) throw reqError;
 
-      // 3. Earnings Update (if fixed price)
+      // 4. Earnings Update (if fixed price)
       if (pricingType === 'FIXED' && price > 0) {
-        const { data: wallet } = await supabase.from('teacher_wallets').select('balance').eq('id', userId).single();
-        const currentBalance = wallet?.balance || 0;
-        await supabase.from('teacher_wallets').update({ balance: currentBalance + price }).eq('id', userId);
+        const { data: wallet } = await supabase.from('teacher_wallets').select('balance').eq('id', userId).maybeSingle();
+
+        if (!wallet) {
+          await supabase.from('teacher_wallets').insert({ id: userId, balance: price });
+        } else {
+          await supabase.from('teacher_wallets').update({ balance: wallet.balance + price }).eq('id', userId);
+        }
 
         await supabase.from('transactions').insert({
-          user_id: userId,
+          teacher_id: userId,
           type: 'EARNING',
           amount: price,
           description: `Tutoring: ${requestId.substring(0, 8)}...`,
@@ -1885,7 +1913,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
           setTeacherWallet({
             ...teacherWallet,
-            balance: teacherWallet.balance + price,
+            balance: (teacherWallet.balance || 0) + price,
             transactions: [newTx, ...teacherWallet.transactions]
           });
         }
