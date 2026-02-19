@@ -34,7 +34,7 @@ create or replace function match_documents (
         content text,
         similarity float,
         document_id bigint
-    ) language plpgsql as $$ begin return query;
+    ) language plpgsql as $$ begin return query
 select knowledge_vectors.id,
     knowledge_vectors.content,
     1 - (knowledge_vectors.embedding <=> query_embedding) as similarity,
