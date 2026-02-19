@@ -49,8 +49,24 @@ $$;
 insert into storage.buckets (id, name, public)
 values ('syllabus-docs', 'syllabus-docs', true) on conflict (id) do nothing;
 -- Allow public access to syllabus-docs (read only)
-create policy "Public Access" on storage.objects for
-select using (bucket_id = 'syllabus-docs');
+DO $$ BEGIN IF NOT EXISTS (
+    SELECT 1
+    FROM pg_policies
+    WHERE policyname = 'Public Access'
+        AND tablename = 'objects'
+        AND schemaname = 'storage'
+) THEN CREATE POLICY "Public Access" ON storage.objects FOR
+SELECT USING (bucket_id = 'syllabus-docs');
+END IF;
+END $$;
 -- Allow authenticated uploads (for admin)
-create policy "Admin Upload" on storage.objects for
-insert with check (bucket_id = 'syllabus-docs');
+DO $$ BEGIN IF NOT EXISTS (
+    SELECT 1
+    FROM pg_policies
+    WHERE policyname = 'Admin Upload'
+        AND tablename = 'objects'
+        AND schemaname = 'storage'
+) THEN CREATE POLICY "Admin Upload" ON storage.objects FOR
+INSERT WITH CHECK (bucket_id = 'syllabus-docs');
+END IF;
+END $$;

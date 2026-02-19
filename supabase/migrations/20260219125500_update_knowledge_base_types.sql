@@ -1,5 +1,5 @@
 -- Drop existing check constraint
-ALTER TABLE "public"."knowledge_base" DROP CONSTRAINT "knowledge_base_type_check";
+ALTER TABLE "public"."knowledge_base" DROP CONSTRAINT IF EXISTS "knowledge_base_type_check";
 -- Add new check constraint with all types
 ALTER TABLE "public"."knowledge_base"
 ADD CONSTRAINT "knowledge_base_type_check" CHECK (
