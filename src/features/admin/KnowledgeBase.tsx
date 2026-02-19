@@ -246,17 +246,17 @@ export const AdminKnowledgeBase: React.FC = () => {
                                         onChange={e => setNewDocType(e.target.value as any)}
                                     >
                                         <optgroup label="Learning Materials">
+                                            <option value="NOTES">Learning Notes</option>
                                             <option value="SYLLABUS">Official Syllabus</option>
                                             <option value="PAST_PAPER">Past Paper</option>
-                                            <option value="NOTES">Learning Notes</option>
                                         </optgroup>
                                         <optgroup label="Teaching Resources">
-                                            <option value="LESSON_PLAN">Lesson Plans</option>
-                                            <option value="ASSIGNMENT">Assignments</option>
-                                            <option value="REPORT_BOOK">Report Books</option>
                                             <option value="ASSESSMENT_REPORT">Assessment Report</option>
-                                            <option value="SCHEME_OF_WORK">Schemes of Work</option>
+                                            <option value="ASSIGNMENT">Assignments</option>
                                             <option value="DEVELOPMENT_MODULE">Development Modules</option>
+                                            <option value="LESSON_PLAN">Lesson Plans</option>
+                                            <option value="REPORT_BOOK">Report Books</option>
+                                            <option value="SCHEME_OF_WORK">Schemes of Work</option>
                                             <option value="TRAINING_NOTE">Training Notes</option>
                                         </optgroup>
                                     </select>
@@ -324,8 +324,8 @@ export const AdminKnowledgeBase: React.FC = () => {
                                     >
                                         <div className="flex items-center gap-4">
                                             <div className={`p-3 rounded-lg ${['SYLLABUS', 'LESSON_PLAN', 'SCHEME_OF_WORK'].includes(doc.type) ? 'bg-purple-50 text-purple-600' :
-                                                    ['PAST_PAPER', 'ASSIGNMENT', 'ASSESSMENT_REPORT'].includes(doc.type) ? 'bg-orange-50 text-orange-600' :
-                                                        'bg-blue-50 text-blue-600'
+                                                ['PAST_PAPER', 'ASSIGNMENT', 'ASSESSMENT_REPORT'].includes(doc.type) ? 'bg-orange-50 text-orange-600' :
+                                                    'bg-blue-50 text-blue-600'
                                                 }`}>
                                                 <FileText className="w-6 h-6" />
                                             </div>
