@@ -8,7 +8,7 @@ export const TeacherPage: React.FC = () => {
     const location = useLocation();
 
     // Determine initial tab based on route
-    let initialTab: 'HOME' | 'CONVERT' | 'VOICE' | 'QUIZ' | 'LIBRARY' | 'MARKING' = 'HOME';
+    let initialTab: 'DASHBOARD' | 'MAGIC_CLASSROOM' | 'STUDENTS' | 'MARKING' | 'EARNINGS' | 'LIBRARY' | 'CONVERT' | 'VOICE' | 'QUIZ' | 'HOME' | 'MARKETPLACE' = 'DASHBOARD';
     if (location.pathname === '/teacher/notes') initialTab = 'HOME'; // Stay on Home (Studio) to see note tools
     if (location.pathname === '/teacher/homework') initialTab = 'HOME'; // Stay on Home (Studio) to see quiz tools
     if (location.pathname === '/teacher/marking') initialTab = 'MARKING';

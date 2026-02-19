@@ -8,7 +8,7 @@ interface LoginModalProps {
     isOpen: boolean;
     onClose: () => void;
     initialTab?: 'STUDENT' | 'TEACHER' | 'SCHOOL';
-    onSwitchToRegister?: (role?: 'STUDENT' | 'SCHOOL') => void;
+    onSwitchToRegister?: (role?: 'STUDENT' | 'SCHOOL' | 'TEACHER') => void;
     onSuccess?: () => void;
 }
 
@@ -520,7 +520,8 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, initial
                                         type="button"
                                         onClick={() => {
                                             onClose();
-                                            navigate('/teacher');
+                                            if (onSwitchToRegister) onSwitchToRegister('TEACHER');
+                                            // navigate('/teacher'); // Removed direct navigation, should open modal instead
                                         }}
                                         className="w-full py-2 text-sm text-indigo-600 font-bold hover:bg-indigo-50 rounded-lg transition-colors"
                                     >

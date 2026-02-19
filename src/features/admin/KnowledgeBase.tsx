@@ -4,12 +4,13 @@ import { Upload, FileText, Trash2, CheckCircle, Search, Filter, BookOpen, AlertT
 import { supabase } from '../../lib/supabase';
 import { Button, Card } from '../../components/Shared';
 
+
 interface Document {
     id: number;
     title: string;
     grade: string;
     subject: string;
-    type: 'SYLLABUS' | 'PAST_PAPER' | 'NOTES';
+    type: 'SYLLABUS' | 'PAST_PAPER' | 'NOTES' | 'LESSON_PLAN' | 'ASSIGNMENT' | 'REPORT_BOOK' | 'ASSESSMENT_REPORT' | 'SCHEME_OF_WORK' | 'DEVELOPMENT_MODULE' | 'TRAINING_NOTE';
     created_at: string;
     file_path: string;
     file_url: string;
@@ -26,7 +27,7 @@ export const AdminKnowledgeBase: React.FC = () => {
     const [newDocTitle, setNewDocTitle] = useState('');
     const [newDocGrade, setNewDocGrade] = useState('Grade 4');
     const [newDocSubject, setNewDocSubject] = useState('');
-    const [newDocType, setNewDocType] = useState<'SYLLABUS' | 'PAST_PAPER' | 'NOTES'>('SYLLABUS');
+    const [newDocType, setNewDocType] = useState<Document['type']>('SYLLABUS');
     const [uploadKey, setUploadKey] = useState(0); // To reset file input
 
     useEffect(() => {
@@ -156,7 +157,7 @@ export const AdminKnowledgeBase: React.FC = () => {
                             <BookOpen className="w-8 h-8 text-blue-600" />
                             CBE Knowledge Base
                         </h1>
-                        <p className="text-slate-500 mt-1">Manage official syllabus, past papers, and notes for AI grounding.</p>
+                        <p className="text-slate-500 mt-1">Manage official syllabus, past papers, notes, and teaching resources.</p>
                     </div>
                     <Button variant="outline" onClick={() => window.history.back()}>Back to Dashboard</Button>
                 </div>
@@ -190,9 +191,22 @@ export const AdminKnowledgeBase: React.FC = () => {
                                             value={newDocGrade}
                                             onChange={e => setNewDocGrade(e.target.value)}
                                         >
-                                            {['PP1', 'PP2', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6', 'Grade 7', 'Grade 8', 'Grade 9', 'Form 3', 'Form 4'].map(g => (
-                                                <option key={g} value={g}>{g}</option>
-                                            ))}
+                                            <option value="All">All Grades</option>
+                                            <optgroup label="Primary">
+                                                {['PP1', 'PP2', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6'].map(g => (
+                                                    <option key={g} value={g}>{g}</option>
+                                                ))}
+                                            </optgroup>
+                                            <optgroup label="Junior Secondary">
+                                                {['Grade 7', 'Grade 8', 'Grade 9'].map(g => (
+                                                    <option key={g} value={g}>{g}</option>
+                                                ))}
+                                            </optgroup>
+                                            <optgroup label="Senior Secondary">
+                                                {['Form 1', 'Form 2', 'Form 3', 'Form 4'].map(g => (
+                                                    <option key={g} value={g}>{g}</option>
+                                                ))}
+                                            </optgroup>
                                         </select>
                                     </div>
                                     <div>
@@ -200,11 +214,27 @@ export const AdminKnowledgeBase: React.FC = () => {
                                         <input
                                             type="text"
                                             required
+                                            list="subject-suggestions"
                                             className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
-                                            placeholder="e.g. Science"
+                                            placeholder="Subject or 'None'"
                                             value={newDocSubject}
                                             onChange={e => setNewDocSubject(e.target.value)}
                                         />
+                                        <datalist id="subject-suggestions">
+                                            <option value="All" />
+                                            <option value="None" />
+                                            <option value="Mathematics" />
+                                            <option value="English" />
+                                            <option value="Kiswahili" />
+                                            <option value="Science" />
+                                            <option value="Social Studies" />
+                                            <option value="CRE" />
+                                            <option value="IRE" />
+                                            <option value="HRE" />
+                                            <option value="Agriculture" />
+                                            <option value="Home Science" />
+                                            <option value="Computer Science" />
+                                        </datalist>
                                     </div>
                                 </div>
 
@@ -215,9 +245,20 @@ export const AdminKnowledgeBase: React.FC = () => {
                                         value={newDocType}
                                         onChange={e => setNewDocType(e.target.value as any)}
                                     >
-                                        <option value="SYLLABUS">Official Syllabus</option>
-                                        <option value="PAST_PAPER">Past Paper</option>
-                                        <option value="NOTES">Learning Notes</option>
+                                        <optgroup label="Learning Materials">
+                                            <option value="SYLLABUS">Official Syllabus</option>
+                                            <option value="PAST_PAPER">Past Paper</option>
+                                            <option value="NOTES">Learning Notes</option>
+                                        </optgroup>
+                                        <optgroup label="Teaching Resources">
+                                            <option value="LESSON_PLAN">Lesson Plans</option>
+                                            <option value="ASSIGNMENT">Assignments</option>
+                                            <option value="REPORT_BOOK">Report Books</option>
+                                            <option value="ASSESSMENT_REPORT">Assessment Report</option>
+                                            <option value="SCHEME_OF_WORK">Schemes of Work</option>
+                                            <option value="DEVELOPMENT_MODULE">Development Modules</option>
+                                            <option value="TRAINING_NOTE">Training Notes</option>
+                                        </optgroup>
                                     </select>
                                 </div>
 
@@ -282,9 +323,9 @@ export const AdminKnowledgeBase: React.FC = () => {
                                         className="bg-white p-4 rounded-xl shadow-sm border border-slate-100 flex items-center justify-between group hover:border-blue-200 transition-colors"
                                     >
                                         <div className="flex items-center gap-4">
-                                            <div className={`p-3 rounded-lg ${doc.type === 'SYLLABUS' ? 'bg-purple-50 text-purple-600' :
-                                                doc.type === 'PAST_PAPER' ? 'bg-orange-50 text-orange-600' :
-                                                    'bg-blue-50 text-blue-600'
+                                            <div className={`p-3 rounded-lg ${['SYLLABUS', 'LESSON_PLAN', 'SCHEME_OF_WORK'].includes(doc.type) ? 'bg-purple-50 text-purple-600' :
+                                                    ['PAST_PAPER', 'ASSIGNMENT', 'ASSESSMENT_REPORT'].includes(doc.type) ? 'bg-orange-50 text-orange-600' :
+                                                        'bg-blue-50 text-blue-600'
                                                 }`}>
                                                 <FileText className="w-6 h-6" />
                                             </div>

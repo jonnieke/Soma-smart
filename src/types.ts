@@ -88,6 +88,7 @@ export interface TeacherProfile {
   id: string;
   name: string;
   email?: string;
+  phone?: string;
   classes: string[]; // e.g. ["Grade 4", "Grade 5"]
   subjects: string[]; // e.g. ["Math", "Science"]
   schoolId?: string;

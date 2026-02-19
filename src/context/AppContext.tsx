@@ -19,7 +19,7 @@ interface AppContextType {
   // studyUsageCount removed
   // incrementStudyUsage removed
   registerStudent: (name: string, grade: string, pin: string, parentPhone?: string) => Promise<{ success: boolean; message?: string; data?: string }>;
-  registerTeacher: (name: string, email: string, password: string, classes: string[], subjects: string[]) => Promise<{ success: boolean; message?: string }>;
+  registerTeacher: (name: string, email: string, password: string, classes: string[], subjects: string[], phone: string) => Promise<{ success: boolean; message?: string }>;
   login: (code: string) => Promise<boolean>;
   loginParent: (code: string, phone: string) => Promise<{ success: boolean; message?: string }>;
   loginTeacher: (email: string, pass: string) => Promise<{ success: boolean; message?: string }>;
@@ -1277,7 +1277,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   };
 
-  const registerTeacher = async (name: string, email: string, password: string, classes: string[], subjects: string[]): Promise<{ success: boolean; message?: string }> => {
+  const registerTeacher = async (name: string, email: string, password: string, classes: string[], subjects: string[], phone: string): Promise<{ success: boolean; message?: string }> => {
     try {
       const { data, error } = await supabase.auth.signUp({
         email,
@@ -1287,7 +1287,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             full_name: name,
             role: 'TEACHER',
             classes,
-            subjects
+            subjects,
+            phone
           }
         }
       });
@@ -1302,12 +1303,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           role: 'TEACHER',
           classes: classes,
           subjects: subjects,
-          email: email
+          email: email,
+          phone: phone
         });
 
         if (profileError) console.error("Profile creation warning:", profileError);
 
-        setTeacherProfile({ id: data.user.id, name, email, classes, subjects });
+        setTeacherProfile({ id: data.user.id, name, email, classes, subjects, phone });
         setRole(UserRole.TEACHER);
 
         // Clear Learner Session
@@ -1337,6 +1339,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
       await supabase.from('profiles').update({
+        full_name: profile.name,
         classes: profile.classes,
         subjects: profile.subjects
       }).eq('id', user.id);
