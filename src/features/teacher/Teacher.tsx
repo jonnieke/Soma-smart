@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     Upload, Mic, FileText, Share2, StopCircle, Download, BookOpen, Crown, Brain, Sparkles, X, Lightbulb, CheckCircle, Play, Pause, Trash2, ArrowRight, Library, Filter, Calendar, Home, LogOut, MonitorPlay, CreditCard, ScanLine, Plus,
-    SquarePlus, ChevronRight, Type, Layers, ClipboardList, ClipboardCheck, Archive, History as HistoryIcon, MoreVertical, Check, Wallet, ToggleRight, ToggleLeft, Users, TrendingUp, DollarSign, ShoppingBag, Store, Clock, AlertCircle, CheckCircle2, MoreHorizontal, Bell, Star
+    SquarePlus, ChevronRight, Type, Layers, ClipboardList, ClipboardCheck, Archive, History as HistoryIcon, MoreVertical, Check, Wallet, ToggleRight, ToggleLeft, Users, TrendingUp, DollarSign, ShoppingBag, Store, Clock, AlertCircle, CheckCircle2, MoreHorizontal, Bell, Star, Loader2, ArrowLeft
 }
     from 'lucide-react';
 import { Button, Card, Header, MarkdownText } from '../../components/Shared';
@@ -14,7 +14,7 @@ import { RegistrationModal } from '../../components/RegistrationModal';
 import { TeacherLanding } from '../../components/TeacherLanding';
 import { useApp } from '../../context/AppContext';
 import { convertNotes, processVoiceNote, generateTeacherQuiz, generateAdvancedTeacherQuiz, fileToGenerativePart } from '../../services/geminiService';
-import { ViewState, TeacherNote, QuizData, TeacherActivity, SubscriptionPlan } from '../../types';
+import { ViewState, TeacherNote, QuizData, TeacherActivity, SubscriptionPlan, ChatMessage } from '../../types';
 import { PdfPageSelector } from '../../components/PdfPageSelector';
 import { PaymentFlow } from '../subscription/PaymentFlow';
 import { translations } from '../../data/translations';
@@ -37,6 +37,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
         isOnline, language,
         teacherWallet, teacherDarasaUsage, isAvailableForTutoring, toggleTutoringAvailability, fetchEarnings,
         activeTutoringRequests, acceptTutoringRequest, submitTutoringResponse,
+        chatMessages, sendChatMessage, fetchChatMessages,
         marketplaceMaterials, listMaterial
     } = useApp();
     const t = translations[language];
@@ -143,6 +144,12 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
     const [respondingTo, setRespondingTo] = useState<string | null>(null);
     const [responseType, setResponseType] = useState<'TEXT' | 'VOICE' | 'VIDEO'>('TEXT');
     const [responseText, setResponseText] = useState("");
+
+    // Teacher Chat State
+    const [teacherChatRequestId, setTeacherChatRequestId] = useState<string | null>(null);
+    const [teacherChatInput, setTeacherChatInput] = useState('');
+    const [teacherChatSending, setTeacherChatSending] = useState(false);
+    const teacherChatEndRef = useRef<HTMLDivElement>(null);
 
     // Phase 3: Marketplace Upload
     const [listingTitle, setListingTitle] = useState("");
@@ -663,56 +670,43 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                             </div>
 
                             {/* Metrics Cards */}
-                            <div className="space-y-4">
-                                <div className="bg-white rounded-[2rem] p-6 shadow-sm border border-slate-100 flex items-center justify-between">
-                                    <div className="flex items-center gap-4">
-                                        <div className="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center">
-                                            <DollarSign className="w-6 h-6" />
-                                        </div>
-                                        <div>
-                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Earnings Today</p>
-                                            <p className="text-2xl font-black text-slate-900">
-                                                {teacherWallet?.transactions
-                                                    .filter(t => new Date(t.date).toLocaleDateString() === new Date().toLocaleDateString())
-                                                    .reduce((acc, t) => acc + (t.type === 'EARNING' ? t.amount : 0), 0) || 0}
-                                            </p>
-                                        </div>
+                            <div className="flex gap-4">
+                                <div className="flex-1 bg-white rounded-[2rem] p-6 shadow-sm border border-slate-100 flex items-center gap-4">
+                                    <div className="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center">
+                                        <DollarSign className="w-6 h-6" />
+                                    </div>
+                                    <div>
+                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Earnings Today</p>
+                                        <p className="text-2xl font-black text-slate-900">
+                                            {teacherWallet?.transactions
+                                                .filter(t => new Date(t.date).toLocaleDateString() === new Date().toLocaleDateString())
+                                                .reduce((acc, t) => acc + (t.type === 'EARNING' ? t.amount : 0), 0) || 0}
+                                        </p>
                                     </div>
                                 </div>
-                                <div className="bg-white rounded-[2rem] p-6 shadow-sm border border-slate-100 flex items-center justify-between">
-                                    <div className="flex items-center gap-4">
-                                        <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center">
-                                            <FileText className="w-6 h-6" />
-                                        </div>
-                                        <div>
-                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">History</p>
-                                            <p className="text-2xl font-black text-slate-900">{teacherHistory.length} <span className="text-xs text-slate-400 font-bold">Items</span></p>
-                                        </div>
+                                <div className="flex-1 bg-white rounded-[2rem] p-6 shadow-sm border border-slate-100 flex items-center gap-4">
+                                    <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center">
+                                        <FileText className="w-6 h-6" />
+                                    </div>
+                                    <div>
+                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">History</p>
+                                        <p className="text-2xl font-black text-slate-900">{teacherHistory.length} <span className="text-xs text-slate-400 font-bold">Items</span></p>
                                     </div>
                                 </div>
-                                <div className="bg-white rounded-[2rem] p-6 shadow-sm border border-slate-100 flex items-center justify-between">
-                                    <div className="flex items-center gap-4">
-                                        <div className="w-12 h-12 bg-amber-50 text-amber-600 rounded-2xl flex items-center justify-center">
-                                            <Clock className="w-6 h-6" />
-                                        </div>
-                                        <div>
-                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Pending</p>
-                                            <p className="text-2xl font-black text-slate-900">{activeTutoringRequests.filter(r => r.status === 'PENDING').length} <span className="text-xs text-slate-400 font-bold">Requests</span></p>
-                                            <div className="mt-1 flex -space-x-2 overflow-hidden">
-                                                {activeTutoringRequests.filter(r => r.status === 'PENDING').slice(0, 3).map((r, i) => (
-                                                    <div key={i} className="inline-block h-6 w-6 rounded-full ring-2 ring-white bg-indigo-100 flex items-center justify-center text-[8px] font-bold text-indigo-800" title={r.topic}>
-                                                        {r.studentName?.charAt(0) || '?'}
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
+                                <div className="flex-1 bg-white rounded-[2rem] p-6 shadow-sm border border-slate-100 flex items-center gap-4">
+                                    <div className="w-12 h-12 bg-amber-50 text-amber-600 rounded-2xl flex items-center justify-center">
+                                        <Clock className="w-6 h-6" />
+                                    </div>
+                                    <div>
+                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Pending</p>
+                                        <p className="text-2xl font-black text-slate-900">{activeTutoringRequests.filter(r => r.status === 'PENDING').length} <span className="text-xs text-slate-400 font-bold">Requests</span></p>
                                     </div>
                                     <button
                                         onClick={() => {
                                             const pending = activeTutoringRequests.find(r => r.status === 'PENDING');
                                             if (pending) handleRequestClick(pending);
                                         }}
-                                        className="p-2 hover:bg-slate-50 rounded-full transition-colors"
+                                        className="ml-auto p-2 hover:bg-slate-50 rounded-full transition-colors"
                                     >
                                         <ChevronRight className="w-5 h-5 text-slate-300" />
                                     </button>
@@ -1338,6 +1332,47 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                                                 ))
                                         )}
                                     </div>
+
+                                    {/* Completed Requests with Chat */}
+                                    {activeTutoringRequests.filter(r => r.status === 'COMPLETED').length > 0 && (
+                                        <div className="mt-6">
+                                            <div className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white p-5 rounded-t-3xl flex justify-between items-center">
+                                                <h3 className="font-black text-lg flex items-center gap-2">
+                                                    <CheckCircle2 className="w-5 h-5" /> Completed Responses
+                                                </h3>
+                                                <span className="bg-white/20 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest backdrop-blur-sm">
+                                                    {activeTutoringRequests.filter(r => r.status === 'COMPLETED').length} Done
+                                                </span>
+                                            </div>
+                                            <div className="divide-y divide-slate-50 bg-white rounded-b-3xl border border-slate-100">
+                                                {activeTutoringRequests.filter(r => r.status === 'COMPLETED').map(req => (
+                                                    <div key={req.id} className="p-5 hover:bg-slate-50 transition-colors">
+                                                        <div className="flex justify-between items-start mb-2">
+                                                            <div>
+                                                                <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest px-2 py-0.5 bg-emerald-50 rounded">{req.topic}</span>
+                                                                <p className="text-slate-800 font-bold mt-1">{req.description}</p>
+                                                            </div>
+                                                            {req.rating && (
+                                                                <div className="flex items-center gap-1 bg-amber-50 px-2 py-1 rounded-lg">
+                                                                    <Star className="w-3 h-3 text-amber-500 fill-amber-500" />
+                                                                    <span className="text-xs font-bold text-amber-700">{req.rating}/5</span>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                        <button
+                                                            onClick={() => {
+                                                                setTeacherChatRequestId(req.id);
+                                                                fetchChatMessages(req.id);
+                                                            }}
+                                                            className="mt-2 px-5 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-bold text-xs shadow-lg shadow-blue-200 hover:shadow-xl transition-all flex items-center gap-2"
+                                                        >
+                                                            💬 Open Chat Thread
+                                                        </button>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             )}
 
@@ -2090,6 +2125,127 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                     </button>
                 </div>
             </div>
+            {/* Teacher Chat Thread Overlay */}
+            <AnimatePresence>
+                {teacherChatRequestId && (() => {
+                    const chatReq = activeTutoringRequests.find(r => r.id === teacherChatRequestId);
+                    return (
+                        <motion.div
+                            initial={{ opacity: 0, y: '100%' }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: '100%' }}
+                            className="fixed inset-0 z-[70] bg-slate-50 flex flex-col"
+                        >
+                            {/* Chat Header */}
+                            <div className="bg-white/90 backdrop-blur-xl border-b border-slate-200 px-6 py-4 flex items-center gap-4">
+                                <button onClick={() => { setTeacherChatRequestId(null); setTeacherChatInput(''); }} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
+                                    <ArrowLeft className="w-5 h-5" />
+                                </button>
+                                <div className="flex-1">
+                                    <h2 className="font-bold text-lg">{chatReq?.topic || 'Chat'}</h2>
+                                    <p className="text-xs text-slate-500 font-medium">
+                                        {chatReq?.studentName || 'Student'} • {chatReq?.rating ? `★ ${chatReq.rating}/5` : 'Ongoing'}
+                                    </p>
+                                </div>
+                                <button onClick={() => fetchChatMessages(teacherChatRequestId)} className="p-2 hover:bg-slate-100 rounded-full transition-colors text-slate-400 hover:text-blue-600">
+                                    <Loader2 className="w-4 h-4" />
+                                </button>
+                            </div>
+
+                            {/* Chat Messages */}
+                            <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                                {/* Your original response */}
+                                {chatReq?.response && (
+                                    <div className="flex gap-3 items-end flex-row-reverse">
+                                        <div className="w-8 h-8 bg-emerald-600 text-white rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0">T</div>
+                                        <div className="bg-emerald-600 text-white rounded-2xl rounded-br-md px-4 py-3 max-w-[80%] shadow-sm">
+                                            <p className="text-[10px] font-bold text-emerald-200 uppercase tracking-widest mb-1">Your Response</p>
+                                            {chatReq.responseType === 'TEXT' && (
+                                                <p className="text-sm leading-relaxed whitespace-pre-wrap">{chatReq.response}</p>
+                                            )}
+                                            {chatReq.responseType === 'VOICE' && chatReq.response && (
+                                                <audio src={chatReq.response} controls className="w-full" />
+                                            )}
+                                            {chatReq.responseType === 'VIDEO' && chatReq.response && (
+                                                <video src={chatReq.response} controls className="w-full rounded-xl" />
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Chat messages */}
+                                {chatMessages.map(msg => (
+                                    <div key={msg.id} className={`flex gap-3 items-end ${msg.senderRole === 'TEACHER' ? 'flex-row-reverse' : ''}`}>
+                                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${msg.senderRole === 'TEACHER' ? 'bg-emerald-600 text-white' : 'bg-blue-600 text-white'
+                                            }`}>
+                                            {msg.senderRole === 'TEACHER' ? 'T' : 'S'}
+                                        </div>
+                                        <div className={`rounded-2xl px-4 py-3 max-w-[80%] shadow-sm ${msg.senderRole === 'TEACHER'
+                                            ? 'bg-emerald-600 text-white rounded-br-md'
+                                            : 'bg-white border border-slate-100 rounded-bl-md'
+                                            }`}>
+                                            {msg.messageType === 'TEXT' && (
+                                                <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.content}</p>
+                                            )}
+                                            {msg.messageType === 'VOICE' && (
+                                                <audio src={msg.mediaUrl || msg.content} controls className="w-full" />
+                                            )}
+                                            {msg.messageType === 'VIDEO' && (
+                                                <video src={msg.mediaUrl || msg.content} controls className="w-full rounded-xl" />
+                                            )}
+                                            <p className={`text-[10px] mt-1 font-medium ${msg.senderRole === 'TEACHER' ? 'text-emerald-200' : 'text-slate-400'}`}>
+                                                {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                            </p>
+                                        </div>
+                                    </div>
+                                ))}
+                                <div ref={teacherChatEndRef} />
+                            </div>
+
+                            {/* Chat Input */}
+                            <div className="bg-white border-t border-slate-200 p-4 flex gap-3 items-end">
+                                <textarea
+                                    value={teacherChatInput}
+                                    onChange={e => setTeacherChatInput(e.target.value)}
+                                    onKeyDown={e => {
+                                        if (e.key === 'Enter' && !e.shiftKey) {
+                                            e.preventDefault();
+                                            if (teacherChatInput.trim() && !teacherChatSending) {
+                                                setTeacherChatSending(true);
+                                                sendChatMessage(teacherChatRequestId, teacherChatInput.trim(), 'TEXT').then(() => {
+                                                    setTeacherChatInput('');
+                                                    setTeacherChatSending(false);
+                                                    setTimeout(() => teacherChatEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
+                                                });
+                                            }
+                                        }
+                                    }}
+                                    placeholder="Reply to student..."
+                                    rows={1}
+                                    className="flex-1 bg-slate-100 border-0 rounded-2xl px-4 py-3 text-sm font-medium text-slate-800 placeholder:text-slate-400 resize-none focus:ring-2 focus:ring-emerald-200 focus:bg-white transition-all"
+                                />
+                                <button
+                                    onClick={() => {
+                                        if (teacherChatInput.trim() && !teacherChatSending) {
+                                            setTeacherChatSending(true);
+                                            sendChatMessage(teacherChatRequestId, teacherChatInput.trim(), 'TEXT').then(() => {
+                                                setTeacherChatInput('');
+                                                setTeacherChatSending(false);
+                                                setTimeout(() => teacherChatEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
+                                            });
+                                        }
+                                    }}
+                                    disabled={!teacherChatInput.trim() || teacherChatSending}
+                                    className={`p-3 rounded-full transition-all ${teacherChatInput.trim() ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-200 hover:bg-emerald-700' : 'bg-slate-100 text-slate-300 cursor-not-allowed'
+                                        }`}
+                                >
+                                    <ArrowRight className="w-5 h-5" />
+                                </button>
+                            </div>
+                        </motion.div>
+                    );
+                })()}
+            </AnimatePresence>
         </div>
     );
 };

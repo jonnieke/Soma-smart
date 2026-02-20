@@ -298,6 +298,18 @@ export interface MaterialListing {
   createdAt: string;
 }
 
+// Chat Message Types
+export interface ChatMessage {
+  id: string;
+  requestId: string;
+  senderId: string;
+  senderRole: 'STUDENT' | 'TEACHER';
+  messageType: 'TEXT' | 'VOICE' | 'VIDEO';
+  content: string;
+  mediaUrl?: string;
+  createdAt: string;
+}
+
 // Podcast Types
 export interface PodcastSegment {
   speaker: 'Host' | 'Guest';

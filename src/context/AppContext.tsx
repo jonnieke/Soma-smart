@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { LearnerActivity, UserRole, TeacherProfile, TeacherActivity, SchoolProfile, SchoolStats, SchoolTeacher, SchoolMaterial, TeacherWallet, TutoringRequest, MaterialListing, SubscriptionPlan, SubscriptionTier } from '../types';
+import { LearnerActivity, UserRole, TeacherProfile, TeacherActivity, SchoolProfile, SchoolStats, SchoolTeacher, SchoolMaterial, TeacherWallet, TutoringRequest, MaterialListing, SubscriptionPlan, SubscriptionTier, ChatMessage } from '../types';
 
 // Update interface
 interface AppContextType {
@@ -46,6 +46,11 @@ interface AppContextType {
   createTutoringRequest: (topic: string, description: string, price: number, grade?: string, subject?: string) => Promise<{ success: boolean; message: string }>;
   acceptTutoringRequest: (requestId: string) => Promise<{ success: boolean; message: string }>;
   submitTutoringResponse: (requestId: string, response: string, type: 'TEXT' | 'VOICE' | 'VIDEO', pricingType: 'FREE' | 'FIXED' | 'RATE_ME', price: number, attachments: File[]) => Promise<{ success: boolean; message: string }>;
+  rateTutoringResponse: (requestId: string, rating: number, feedback?: string) => Promise<{ success: boolean; message: string }>;
+  // Chat
+  chatMessages: ChatMessage[];
+  sendChatMessage: (requestId: string, content: string, type: 'TEXT' | 'VOICE' | 'VIDEO', mediaFile?: File) => Promise<{ success: boolean; message: string }>;
+  fetchChatMessages: (requestId: string) => Promise<void>;
   // Marketplace
   marketplaceMaterials: MaterialListing[];
   purchasedMaterialIds: string[];
@@ -1185,7 +1190,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       const { data: wallet } = await supabase.from('teacher_wallets').select('*').eq('id', userId).maybeSingle();
 
       // 2. Fetch Transactions
-      const { data: transactions } = await supabase.from('transactions').select('*').eq('teacher_id', userId).order('date', { ascending: false });
+      const { data: transactions } = await supabase.from('transactions').select('*').eq('teacher_id', userId).order('created_at', { ascending: false });
 
       if (wallet) {
         setTeacherWallet({
@@ -1197,13 +1202,17 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             type: t.type,
             amount: t.amount,
             description: t.description,
-            date: new Date(t.date).toLocaleDateString(),
+            date: new Date(t.date || t.created_at).toLocaleDateString(),
             status: t.status
           }))
         });
       } else {
-        // Auto-create wallet if missing
-        await supabase.from('teacher_wallets').insert([{ id: userId, balance: 0, currency: 'KES' }]);
+        // Auto-create wallet if missing - wrap in try/catch to prevent retry flood
+        try {
+          await supabase.from('teacher_wallets').insert([{ id: userId, balance: 0, currency: 'KES' }]);
+        } catch (insertErr) {
+          console.warn('Could not auto-create wallet (RLS may block INSERT):', insertErr);
+        }
         setTeacherWallet({ balance: 0, currency: 'KES', transactions: [] });
       }
     } catch (e) {
@@ -1829,6 +1838,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const submitTutoringResponse = async (requestId: string, response: string, type: 'TEXT' | 'VOICE' | 'VIDEO', pricingType: 'FREE' | 'FIXED' | 'RATE_ME', price: number, attachments: File[]): Promise<{ success: boolean; message: string }> => {
     // 1. Mock Local Update (fast feedback)
+    const previousRequests = [...activeTutoringRequests];
     setActiveTutoringRequests(prev => prev.map(r => {
       if (r.id === requestId) {
         return {
@@ -1871,35 +1881,38 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         finalResponse = publicUrl;
       }
 
-      // 3. Real DB Update
+      // 3. Real DB Update (removed pricing_type - column doesn't exist in table)
       const { error: reqError } = await supabase.from('tutoring_requests').update({
         status: 'COMPLETED',
         response: finalResponse,
         response_type: type,
         completed_at: new Date().toISOString(),
-        pricing_type: pricingType,
         price: price
       }).eq('id', requestId);
 
       if (reqError) throw reqError;
 
-      // 4. Earnings Update (if fixed price)
+      // 4. Earnings Update (if fixed price) - non-blocking so core response still saves
       if (pricingType === 'FIXED' && price > 0) {
-        const { data: wallet } = await supabase.from('teacher_wallets').select('balance').eq('id', userId).maybeSingle();
+        try {
+          const { data: wallet } = await supabase.from('teacher_wallets').select('balance').eq('id', userId).maybeSingle();
 
-        if (!wallet) {
-          await supabase.from('teacher_wallets').insert({ id: userId, balance: price });
-        } else {
-          await supabase.from('teacher_wallets').update({ balance: wallet.balance + price }).eq('id', userId);
+          if (!wallet) {
+            await supabase.from('teacher_wallets').insert({ id: userId, balance: price });
+          } else {
+            await supabase.from('teacher_wallets').update({ balance: wallet.balance + price }).eq('id', userId);
+          }
+
+          await supabase.from('transactions').insert({
+            teacher_id: userId,
+            type: 'EARNING',
+            amount: price,
+            description: `Tutoring: ${requestId.substring(0, 8)}...`,
+            status: 'COMPLETED'
+          });
+        } catch (earningsErr) {
+          console.warn('Earnings update failed (non-critical):', earningsErr);
         }
-
-        await supabase.from('transactions').insert({
-          teacher_id: userId,
-          type: 'EARNING',
-          amount: price,
-          description: `Tutoring: ${requestId.substring(0, 8)}...`,
-          status: 'COMPLETED'
-        });
 
         if (teacherWallet) {
           const newTx: any = {
@@ -1923,7 +1936,113 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       return { success: true, message: "Response sent successfully!" };
     } catch (e: any) {
       console.error(e);
-      return { success: false, message: e.message };
+      // Revert optimistic update on failure
+      setActiveTutoringRequests(previousRequests);
+      return { success: false, message: e.message || "Failed to submit response due to permissions/RLS." };
+    }
+  };
+
+  // --- Star Rating ---
+  const rateTutoringResponse = async (requestId: string, rating: number, feedback?: string): Promise<{ success: boolean; message: string }> => {
+    try {
+      const updateData: any = { rating };
+      if (feedback) updateData.feedback = feedback;
+
+      const { error } = await supabase.from('tutoring_requests').update(updateData).eq('id', requestId);
+      if (error) throw error;
+
+      // Update local state
+      setActiveTutoringRequests(prev => prev.map(r => r.id === requestId ? { ...r, rating, feedback } : r));
+      return { success: true, message: "Thank you for rating!" };
+    } catch (e: any) {
+      console.error("Rating error:", e);
+      return { success: false, message: e.message || "Failed to save rating." };
+    }
+  };
+
+  // --- Chat Messages ---
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+
+  const fetchChatMessages = async (requestId: string): Promise<void> => {
+    try {
+      const { data, error } = await supabase
+        .from('chat_messages')
+        .select('*')
+        .eq('request_id', requestId)
+        .order('created_at', { ascending: true });
+
+      if (error) throw error;
+
+      setChatMessages((data || []).map((m: any) => ({
+        id: m.id,
+        requestId: m.request_id,
+        senderId: m.sender_id,
+        senderRole: m.sender_role,
+        messageType: m.message_type,
+        content: m.content,
+        mediaUrl: m.media_url,
+        createdAt: m.created_at
+      })));
+    } catch (e) {
+      console.error("Fetch chat messages error:", e);
+    }
+  };
+
+  const sendChatMessage = async (requestId: string, content: string, type: 'TEXT' | 'VOICE' | 'VIDEO', mediaFile?: File): Promise<{ success: boolean; message: string }> => {
+    if (!userId) return { success: false, message: "Not logged in." };
+
+    try {
+      let mediaUrl: string | undefined;
+
+      // Upload media if present
+      if (mediaFile) {
+        const fileExt = mediaFile.name.split('.').pop();
+        const fileName = `chat_${requestId}_${Date.now()}.${fileExt}`;
+        const filePath = `${userId}/${fileName}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('assignments')
+          .upload(filePath, mediaFile);
+
+        if (uploadError) throw uploadError;
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('assignments')
+          .getPublicUrl(filePath);
+
+        mediaUrl = publicUrl;
+      }
+
+      const senderRole = role === UserRole.TEACHER ? 'TEACHER' : 'STUDENT';
+
+      const { error } = await supabase.from('chat_messages').insert({
+        request_id: requestId,
+        sender_id: userId,
+        sender_role: senderRole,
+        message_type: type,
+        content: mediaUrl || content,
+        media_url: mediaUrl
+      });
+
+      if (error) throw error;
+
+      // Add optimistic message locally
+      const newMsg: ChatMessage = {
+        id: Date.now().toString(),
+        requestId,
+        senderId: userId,
+        senderRole: senderRole,
+        messageType: type,
+        content: mediaUrl || content,
+        mediaUrl,
+        createdAt: new Date().toISOString()
+      };
+      setChatMessages(prev => [...prev, newMsg]);
+
+      return { success: true, message: "Message sent!" };
+    } catch (e: any) {
+      console.error("Send chat message error:", e);
+      return { success: false, message: e.message || "Failed to send message." };
     }
   };
 
@@ -2015,117 +2134,118 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     } catch (e) { console.error("Fetch Marketplace Error:", e); }
   };
 
-  const fetchTutoringRequests = async () => {
+  async function fetchTutoringRequests() {
     try {
-      try {
-        let query = supabase.from('tutoring_requests').select('*').order('created_at', { ascending: false });
+      let query = supabase.from('tutoring_requests').select('*').order('created_at', { ascending: false });
 
-        // Filter for Students: Only show their own requests
-        if (role !== UserRole.TEACHER && userId) {
-          query = query.eq('student_id', userId);
-        }
+      // Filter for Students: Only show their own requests
+      if (role !== UserRole.TEACHER && userId) {
+        query = query.eq('student_id', userId);
+      }
 
-        const { data, error } = await query;
-        if (error) throw error;
-        if (data) {
-          setActiveTutoringRequests(data.map((r: any) => ({
-            id: r.id,
-            studentId: r.student_id,
-            teacherId: r.teacher_id,
-            topic: r.topic,
-            description: r.description,
-            status: r.status,
-            price: r.price,
-            pricingType: r.pricing_type || 'RATE_ME', // Default to RATE_ME if missing
-            response: r.response,
-            responseType: r.response_type,
-            attachments: r.attachments || [],
-            rating: r.rating,
-            feedback: r.feedback,
-            createdAt: r.created_at,
-            completedAt: r.completed_at
-          })));
-        }
-      } catch (e) { console.error("Fetch Tutoring Error:", e); }
-    };
+      const { data, error } = await query;
+      if (error) throw error;
+      if (data) {
+        setActiveTutoringRequests(data.map((r: any) => ({
+          id: r.id,
+          studentId: r.student_id,
+          teacherId: r.teacher_id,
+          topic: r.topic,
+          description: r.description,
+          status: r.status,
+          price: r.price,
+          pricingType: r.pricing_type || 'RATE_ME', // Default to RATE_ME if missing
+          response: r.response,
+          responseType: r.response_type,
+          attachments: r.attachments || [],
+          rating: r.rating,
+          feedback: r.feedback,
+          createdAt: r.created_at,
+          completedAt: r.completed_at
+        })));
+      }
+    } catch (e) { console.error("Fetch Tutoring Error:", e); }
+  };
 
-    useEffect(() => {
+  useEffect(() => {
+    fetchMarketplaceMaterials();
+    fetchTutoringRequests();
+    if (role === UserRole.TEACHER && userId) {
+      fetchEarnings();
+    }
+
+    const interval = setInterval(() => {
       fetchMarketplaceMaterials();
       fetchTutoringRequests();
       if (role === UserRole.TEACHER && userId) {
         fetchEarnings();
       }
+    }, 30000); // Poll every 30s
+    return () => clearInterval(interval);
+  }, [role, userId]);
 
-      const interval = setInterval(() => {
-        fetchMarketplaceMaterials();
-        fetchTutoringRequests();
-        if (role === UserRole.TEACHER && userId) {
-          fetchEarnings();
-        }
-      }, 30000); // Poll every 30s
-      return () => clearInterval(interval);
-    }, [role, userId]);
-
-    const verifySubscription = async () => {
-      if (!userId) return;
-      await verifyAndFixSubscription(userId);
-      await refreshProfile();
-    };
-
-    return (
-      <AppContext.Provider value={{
-        role, setRole, learnerHistory, saveActivity, deleteActivity, clearHistory, studentCode, setStudentCode,
-        isOnline,
-        usageCount, incrementUsage, isRegistered, studentProfile, updateStudentProfile,
-        // studyUsageCount removed
-        // incrementStudyUsage removed
-        registerStudent, login, registerTeacher, loginParent, recoverStudentId, loginTeacher, resetPassword,
-        teacherUsageCount, incrementTeacherUsage,
-        teacherDarasaUsage, incrementTeacherDarasaUsage,
-        teacherProfile, updateTeacherProfile, teacherHistory,
-        saveTeacherActivity,
-        deleteTeacherActivity,
-        teacherWallet,
-        isAvailableForTutoring,
-        toggleTutoringAvailability,
-        requestWithdrawal,
-        fetchEarnings,
-        // Revision
-        revisionUsageCount, incrementRevisionUsage,
-        isPro, subscriptionPlan, subscriptionExpiry, upgradeAccount, verifySubscription,
-        userId,
-        activeTutoringRequests, createTutoringRequest, acceptTutoringRequest, submitTutoringResponse,
-        // Marketplace
-        marketplaceMaterials, purchasedMaterialIds, listMaterial, purchaseMaterial,
-        schoolProfile, loginSchool, registerSchool, registerStudentForSchool,
-        schoolStats, schoolTeachers, fetchSchoolStats, addTeacherToSchool, addStudentToSchool, removeUserFromSchool,
-        schoolMaterials, shareSchoolMaterial, deleteSchoolMaterial, fetchSchoolMaterials, updateSchoolProfile,
-        language, toggleLanguage,
-        logout,
-        startGuestSession,
-        availableQuizzes,
-        fetchAvailableQuizzes,
-        resources,
-        fetchResources,
-        downloadUsageCount,
-        incrementDownloadUsage,
-        extraDownloads,
-        grantExtraDownloads,
-        sessionError,
-        resolveSessionConflict,
-        setSessionError,
-        refreshProfile
-      }}
-      >
-        {children}
-      </AppContext.Provider>
-    );
+  const verifySubscription = async () => {
+    if (!userId) return;
+    await verifyAndFixSubscription(userId);
+    await refreshProfile();
   };
 
-  export const useApp = () => {
-    const context = useContext(AppContext);
-    if (context === undefined) {
-      throw new Error('useApp must be used within an AppProvider');
-    }
-    return context;
-  };
+  return (
+    <AppContext.Provider value={{
+      role, setRole, learnerHistory, saveActivity, deleteActivity, clearHistory, studentCode, setStudentCode,
+      isOnline,
+      usageCount, incrementUsage, isRegistered, studentProfile, updateStudentProfile,
+      // studyUsageCount removed
+      // incrementStudyUsage removed
+      registerStudent, login, registerTeacher, loginParent, recoverStudentId, loginTeacher, resetPassword,
+      teacherUsageCount, incrementTeacherUsage,
+      teacherDarasaUsage, incrementTeacherDarasaUsage,
+      teacherProfile, updateTeacherProfile, teacherHistory,
+      saveTeacherActivity,
+      deleteTeacherActivity,
+      teacherWallet,
+      isAvailableForTutoring,
+      toggleTutoringAvailability,
+      requestWithdrawal,
+      fetchEarnings,
+      // Revision
+      revisionUsageCount, incrementRevisionUsage,
+      isPro, subscriptionPlan, subscriptionExpiry, upgradeAccount, verifySubscription,
+      userId,
+      activeTutoringRequests, createTutoringRequest, acceptTutoringRequest, submitTutoringResponse,
+      rateTutoringResponse,
+      chatMessages, sendChatMessage, fetchChatMessages,
+      // Marketplace
+      marketplaceMaterials, purchasedMaterialIds, listMaterial, purchaseMaterial,
+      schoolProfile, loginSchool, registerSchool, registerStudentForSchool,
+      schoolStats, schoolTeachers, fetchSchoolStats, addTeacherToSchool, addStudentToSchool, removeUserFromSchool,
+      schoolMaterials, shareSchoolMaterial, deleteSchoolMaterial, fetchSchoolMaterials, updateSchoolProfile,
+      language, toggleLanguage,
+      logout,
+      startGuestSession,
+      availableQuizzes,
+      fetchAvailableQuizzes,
+      resources,
+      fetchResources,
+      downloadUsageCount,
+      incrementDownloadUsage,
+      extraDownloads,
+      grantExtraDownloads,
+      sessionError,
+      resolveSessionConflict,
+      setSessionError,
+      refreshProfile,
+    }}
+    >
+      {children}
+    </AppContext.Provider>
+  );
+};
+
+export const useApp = () => {
+  const context = useContext(AppContext);
+  if (context === undefined) {
+    throw new Error('useApp must be used within an AppProvider');
+  }
+  return context;
+};

@@ -7,6 +7,7 @@ ALTER TABLE public.knowledge_base ENABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS public.knowledge_vectors ENABLE ROW LEVEL SECURITY;
 -- 1. Policies for knowledge_base
 -- Allow authenticated users (students/teachers) to READ all knowledge base items
+DROP POLICY IF EXISTS "Authenticated users can read knowledge base" ON public.knowledge_base;
 CREATE POLICY "Authenticated users can read knowledge base" ON public.knowledge_base FOR
 SELECT TO authenticated USING (true);
 -- Allow admins/service_role to INSERT/UPDATE/DELETE
@@ -22,6 +23,7 @@ SELECT TO authenticated USING (true);
 -- So we might strictly limit WRITEs.
 -- 2. Policies for knowledge_vectors
 -- Allow authenticated users to READ vectors (for similarity search via RPC or direct select)
+DROP POLICY IF EXISTS "Authenticated users can read vectors" ON public.knowledge_vectors;
 CREATE POLICY "Authenticated users can read vectors" ON public.knowledge_vectors FOR
 SELECT TO authenticated USING (true);
 -- Allow full access to service_role (implicitly done by Supabase usually, but good to be aware)

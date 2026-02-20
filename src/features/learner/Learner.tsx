@@ -8,7 +8,7 @@ import {
   Calculator, FlaskConical, Globe, Languages, Loader2, Headphones, PenTool, Zap
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
-import { ExplanationResult, QuizData, ViewState, SubscriptionPlan, LearnerProfile, LearnerActivity, UserRole, PodcastScript } from '../../types';
+import { ExplanationResult, QuizData, ViewState, SubscriptionPlan, LearnerProfile, LearnerActivity, UserRole, PodcastScript, ChatMessage } from '../../types';
 import { PricingPage } from '../subscription/PricingPage';
 import { PaymentFlow } from '../subscription/PaymentFlow';
 import { STUDENT_PLANS, TEACHER_PLANS, DOWNLOAD_PASS } from '../../data/pricing';
@@ -49,6 +49,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
     downloadUsageCount, incrementDownloadUsage,
     logout, isPro, subscriptionPlan, subscriptionExpiry, isOnline, role, language,
     createTutoringRequest, activeTutoringRequests, isAvailableForTutoring,
+    rateTutoringResponse, chatMessages, sendChatMessage, fetchChatMessages,
     marketplaceMaterials, purchasedMaterialIds, purchaseMaterial,
     resources, fetchResources,
     extraDownloads, grantExtraDownloads,
@@ -193,6 +194,17 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
   const [currentDocument, setCurrentDocument] = useState<any>(null);
   const [studyChat, setStudyChat] = useState<{ role: 'user' | 'model', text: string }[]>([]);
   const [isSummarizing, setIsSummarizing] = useState(false);
+
+  // Star Rating & Chat State
+  const [ratingRequestId, setRatingRequestId] = useState<string | null>(null);
+  const [ratingValue, setRatingValue] = useState(0);
+  const [ratingHover, setRatingHover] = useState(0);
+  const [ratingFeedback, setRatingFeedback] = useState('');
+  const [ratingSubmitted, setRatingSubmitted] = useState(false);
+  const [chatRequestId, setChatRequestId] = useState<string | null>(null);
+  const [chatInput, setChatInput] = useState('');
+  const [chatSending, setChatSending] = useState(false);
+  const chatEndRef = useRef<HTMLDivElement>(null);
 
   // Refs
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -1450,6 +1462,117 @@ ${explanation.explanation}
     }
 
     if (mode === 'REQUESTS') {
+      // If a chat is open, show the chat view
+      if (chatRequestId) {
+        const chatReq = activeTutoringRequests.find(r => r.id === chatRequestId);
+        return (
+          <div className="min-h-screen bg-slate-50 flex flex-col font-sans text-slate-800 max-w-4xl mx-auto shadow-2xl border-x border-slate-100 relative">
+            {/* Chat Header */}
+            <div className="sticky top-0 z-40 bg-white/90 backdrop-blur-xl border-b border-slate-200 px-6 py-4 flex items-center gap-4">
+              <button onClick={() => { setChatRequestId(null); setChatInput(''); }} className="p-2 hover:bg-slate-100 rounded-full transition-colors"><ArrowRight className="w-5 h-5 rotate-180" /></button>
+              <div className="flex-1">
+                <h2 className="font-bold text-lg leading-tight">{chatReq?.topic || 'Chat'}</h2>
+                <p className="text-xs text-slate-500 font-medium">Continuous study session</p>
+              </div>
+              <button onClick={() => fetchChatMessages(chatRequestId)} className="p-2 hover:bg-slate-100 rounded-full transition-colors text-slate-400 hover:text-blue-600">
+                <Loader2 className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Chat Messages */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-3" style={{ maxHeight: 'calc(100vh - 180px)' }}>
+              {/* Original response as first message */}
+              {chatReq?.response && (
+                <div className="flex gap-3 items-end">
+                  <div className="w-8 h-8 bg-emerald-600 text-white rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0">T</div>
+                  <div className="bg-emerald-50 border border-emerald-100 rounded-2xl rounded-bl-md px-4 py-3 max-w-[80%] shadow-sm">
+                    <p className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest mb-1">Teacher&apos;s Response</p>
+                    {chatReq.responseType === 'TEXT' && (
+                      <p className="text-slate-800 text-sm leading-relaxed whitespace-pre-wrap">{chatReq.response}</p>
+                    )}
+                    {chatReq.responseType === 'VOICE' && chatReq.response && (
+                      <audio src={chatReq.response} controls className="w-full" />
+                    )}
+                    {chatReq.responseType === 'VIDEO' && chatReq.response && (
+                      <video src={chatReq.response} controls className="w-full rounded-xl" />
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Chat messages */}
+              {chatMessages.map(msg => (
+                <div key={msg.id} className={`flex gap-3 items-end ${msg.senderRole === 'STUDENT' ? 'flex-row-reverse' : ''}`}>
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${msg.senderRole === 'STUDENT' ? 'bg-blue-600 text-white' : 'bg-emerald-600 text-white'
+                    }`}>
+                    {msg.senderRole === 'STUDENT' ? 'S' : 'T'}
+                  </div>
+                  <div className={`rounded-2xl px-4 py-3 max-w-[80%] shadow-sm ${msg.senderRole === 'STUDENT'
+                      ? 'bg-blue-600 text-white rounded-br-md'
+                      : 'bg-white border border-slate-100 rounded-bl-md'
+                    }`}>
+                    {msg.messageType === 'TEXT' && (
+                      <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.content}</p>
+                    )}
+                    {msg.messageType === 'VOICE' && (
+                      <audio src={msg.mediaUrl || msg.content} controls className="w-full" />
+                    )}
+                    {msg.messageType === 'VIDEO' && (
+                      <video src={msg.mediaUrl || msg.content} controls className="w-full rounded-xl" />
+                    )}
+                    <p className={`text-[10px] mt-1 font-medium ${msg.senderRole === 'STUDENT' ? 'text-blue-200' : 'text-slate-400'}`}>
+                      {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </p>
+                  </div>
+                </div>
+              ))}
+              <div ref={chatEndRef} />
+            </div>
+
+            {/* Chat Input Bar */}
+            <div className="sticky bottom-0 bg-white border-t border-slate-200 p-4 flex gap-3 items-end">
+              <textarea
+                value={chatInput}
+                onChange={e => setChatInput(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    if (chatInput.trim() && !chatSending) {
+                      setChatSending(true);
+                      sendChatMessage(chatRequestId, chatInput.trim(), 'TEXT').then(() => {
+                        setChatInput('');
+                        setChatSending(false);
+                        setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
+                      });
+                    }
+                  }
+                }}
+                placeholder="Type your follow-up question..."
+                rows={1}
+                className="flex-1 bg-slate-100 border-0 rounded-2xl px-4 py-3 text-sm font-medium text-slate-800 placeholder:text-slate-400 resize-none focus:ring-2 focus:ring-blue-200 focus:bg-white transition-all"
+              />
+              <button
+                onClick={() => {
+                  if (chatInput.trim() && !chatSending) {
+                    setChatSending(true);
+                    sendChatMessage(chatRequestId, chatInput.trim(), 'TEXT').then(() => {
+                      setChatInput('');
+                      setChatSending(false);
+                      setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
+                    });
+                  }
+                }}
+                disabled={!chatInput.trim() || chatSending}
+                className={`p-3 rounded-full transition-all ${chatInput.trim() ? 'bg-blue-600 text-white shadow-lg shadow-blue-200 hover:bg-blue-700' : 'bg-slate-100 text-slate-300 cursor-not-allowed'
+                  }`}
+              >
+                <ArrowRight className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+        );
+      }
+
       return (
         <div className="min-h-screen bg-slate-50 flex flex-col font-sans text-slate-800 max-w-4xl mx-auto shadow-2xl border-x border-slate-100 relative">
           <div className="sticky top-0 z-40 bg-white/90 backdrop-blur-xl border-b border-slate-200 px-6 py-4 flex items-center gap-4">
@@ -1474,8 +1597,8 @@ ${explanation.explanation}
                       <p className="text-xs text-slate-500 font-medium flex items-center gap-1"><Clock className="w-3 h-3" /> {new Date(req.createdAt).toLocaleDateString()}</p>
                     </div>
                     <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${req.status === 'COMPLETED' ? 'bg-emerald-100 text-emerald-700' :
-                      req.status === 'ACCEPTED' ? 'bg-blue-100 text-blue-700' :
-                        'bg-amber-100 text-amber-700'
+                        req.status === 'ACCEPTED' ? 'bg-blue-100 text-blue-700' :
+                          'bg-amber-100 text-amber-700'
                       }`}>
                       {req.status}
                     </span>
@@ -1503,10 +1626,7 @@ ${explanation.explanation}
                               <p className="text-xs font-bold text-indigo-900">Listen to explanation</p>
                             </div>
                           </div>
-                          {/* Actual Audio Player if URL exists */}
-                          {req.response && (
-                            <audio src={req.response} controls className="w-full mt-2" />
-                          )}
+                          {req.response && <audio src={req.response} controls className="w-full mt-2" />}
                         </div>
                       )}
 
@@ -1522,11 +1642,89 @@ ${explanation.explanation}
                         </div>
                       )}
 
-                      <div className="mt-4 flex justify-end">
-                        <button className="text-xs font-bold text-slate-400 hover:text-indigo-600 flex items-center gap-1 transition-colors">
-                          <Star className="w-3 h-3" /> Rate Teacher
-                        </button>
+                      {/* Star Rating Section */}
+                      <div className="mt-4 pt-4 border-t border-slate-100">
+                        {req.rating ? (
+                          <div className="flex items-center gap-2">
+                            <div className="flex gap-0.5">
+                              {[1, 2, 3, 4, 5].map(star => (
+                                <Star key={star} className={`w-5 h-5 ${star <= req.rating! ? 'text-amber-500 fill-amber-500' : 'text-slate-200'}`} />
+                              ))}
+                            </div>
+                            <span className="text-xs font-bold text-slate-400">Rated {req.rating}/5</span>
+                            {req.feedback && <span className="text-xs text-slate-400 italic ml-2">&ldquo;{req.feedback}&rdquo;</span>}
+                          </div>
+                        ) : ratingRequestId === req.id ? (
+                          <div className="space-y-3">
+                            <div className="flex items-center gap-1">
+                              {[1, 2, 3, 4, 5].map(star => (
+                                <button
+                                  key={star}
+                                  onMouseEnter={() => setRatingHover(star)}
+                                  onMouseLeave={() => setRatingHover(0)}
+                                  onClick={() => setRatingValue(star)}
+                                  className="p-1 transition-transform hover:scale-125"
+                                >
+                                  <Star className={`w-7 h-7 transition-colors ${star <= (ratingHover || ratingValue) ? 'text-amber-500 fill-amber-500' : 'text-slate-200'
+                                    }`} />
+                                </button>
+                              ))}
+                              {ratingValue > 0 && (
+                                <span className="text-sm font-bold text-amber-600 ml-2">
+                                  {ratingValue === 1 ? '😐' : ratingValue === 2 ? '🙂' : ratingValue === 3 ? '😊' : ratingValue === 4 ? '🤩' : '⭐'}
+                                </span>
+                              )}
+                            </div>
+                            <input
+                              value={ratingFeedback}
+                              onChange={e => setRatingFeedback(e.target.value)}
+                              placeholder="Optional feedback..."
+                              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-medium placeholder:text-slate-400 focus:ring-2 focus:ring-amber-200 focus:border-amber-300 outline-none transition-all"
+                            />
+                            <div className="flex gap-2">
+                              <button
+                                disabled={ratingValue === 0 || ratingSubmitted}
+                                onClick={async () => {
+                                  setRatingSubmitted(true);
+                                  await rateTutoringResponse(req.id, ratingValue, ratingFeedback || undefined);
+                                  setRatingRequestId(null);
+                                  setRatingValue(0);
+                                  setRatingFeedback('');
+                                  setRatingSubmitted(false);
+                                }}
+                                className={`px-5 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${ratingValue > 0 ? 'bg-amber-500 text-white shadow-lg shadow-amber-200 hover:bg-amber-600' : 'bg-slate-100 text-slate-300 cursor-not-allowed'
+                                  }`}
+                              >
+                                {ratingSubmitted ? 'Saving...' : 'Submit Rating'}
+                              </button>
+                              <button
+                                onClick={() => { setRatingRequestId(null); setRatingValue(0); setRatingFeedback(''); }}
+                                className="px-4 py-2 text-xs font-bold text-slate-400 hover:text-slate-600 transition-colors"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => setRatingRequestId(req.id)}
+                            className="text-xs font-bold text-amber-600 hover:text-amber-700 flex items-center gap-1.5 transition-colors bg-amber-50 px-4 py-2 rounded-full hover:bg-amber-100"
+                          >
+                            <Star className="w-4 h-4" /> Rate This Response
+                          </button>
+                        )}
                       </div>
+
+                      {/* Continue Chat Button */}
+                      <button
+                        onClick={() => {
+                          setChatRequestId(req.id);
+                          fetchChatMessages(req.id);
+                        }}
+                        className="mt-3 w-full py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-2xl font-bold text-sm shadow-lg shadow-blue-200 hover:shadow-xl hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2"
+                      >
+                        <span>💬</span> Continue Chat with Teacher
+                      </button>
                     </div>
                   )}
                 </div>
