@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Upload, FileText, Trash2, CheckCircle, Search, Filter, BookOpen, AlertTriangle } from 'lucide-react';
+import { Upload, FileText, Trash2, CheckCircle, Search, Filter, BookOpen, AlertTriangle, Edit2, X, Check } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { Button, Card } from '../../components/Shared';
 
@@ -17,10 +18,20 @@ interface Document {
 }
 
 export const AdminKnowledgeBase: React.FC = () => {
+    const navigate = useNavigate();
     const [documents, setDocuments] = useState<Document[]>([]);
     const [loading, setLoading] = useState(true);
     const [uploading, setUploading] = useState(false);
+
+    // Search & Filter State
     const [searchTerm, setSearchTerm] = useState('');
+    const [filterGrade, setFilterGrade] = useState('All');
+    const [filterSubject, setFilterSubject] = useState('All');
+    const [showFilters, setShowFilters] = useState(false);
+
+    // Edit State
+    const [editingId, setEditingId] = useState<number | null>(null);
+    const [editTitle, setEditTitle] = useState('');
 
     // Upload State
     const [file, setFile] = useState<File | null>(null);
@@ -143,9 +154,26 @@ export const AdminKnowledgeBase: React.FC = () => {
         }
     };
 
+    const handleUpdateTitle = async (id: number) => {
+        if (!editTitle.trim()) {
+            setEditingId(null);
+            return;
+        }
+        try {
+            const { error } = await supabase.from('knowledge_base').update({ title: editTitle }).eq('id', id);
+            if (error) throw error;
+            setDocuments(documents.map(d => d.id === id ? { ...d, title: editTitle } : d));
+            setEditingId(null);
+        } catch (error) {
+            console.error('Update failed:', error);
+            alert('Failed to update title');
+        }
+    };
+
     const filteredDocs = documents.filter(doc =>
-        doc.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        doc.subject.toLowerCase().includes(searchTerm.toLowerCase())
+        (doc.title.toLowerCase().includes(searchTerm.toLowerCase()) || doc.subject.toLowerCase().includes(searchTerm.toLowerCase())) &&
+        (filterGrade === 'All' || doc.grade === filterGrade) &&
+        (filterSubject === 'All' || doc.subject === filterSubject)
     );
 
     return (
@@ -159,7 +187,7 @@ export const AdminKnowledgeBase: React.FC = () => {
                         </h1>
                         <p className="text-slate-500 mt-1">Manage official syllabus, past papers, notes, and teaching resources.</p>
                     </div>
-                    <Button variant="outline" onClick={() => window.history.back()}>Back to Dashboard</Button>
+                    <Button variant="outline" onClick={() => navigate('/admin')}>Back to Dashboard</Button>
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -287,21 +315,90 @@ export const AdminKnowledgeBase: React.FC = () => {
                     {/* DOCUMENT LIST */}
                     <div className="lg:col-span-2 space-y-6">
 
-                        {/* SEARCH BAR */}
-                        <div className="flex gap-4">
-                            <div className="flex-1 relative">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-                                <input
-                                    type="text"
-                                    placeholder="Search documents..."
-                                    className="w-full pl-10 p-3 rounded-xl border border-slate-200 shadow-sm focus:ring-2 focus:ring-blue-500"
-                                    value={searchTerm}
-                                    onChange={e => setSearchTerm(e.target.value)}
-                                />
+                        {/* SEARCH BAR & FILTERS */}
+                        <div className="space-y-4">
+                            <div className="flex gap-4">
+                                <div className="flex-1 relative">
+                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                                    <input
+                                        type="text"
+                                        placeholder="Search documents..."
+                                        className="w-full pl-10 p-3 rounded-xl border border-slate-200 shadow-sm focus:ring-2 focus:ring-blue-500"
+                                        value={searchTerm}
+                                        onChange={e => setSearchTerm(e.target.value)}
+                                    />
+                                </div>
+                                <button
+                                    onClick={() => setShowFilters(!showFilters)}
+                                    className={`p-3 rounded-xl shadow-sm border transition-colors ${showFilters ? 'bg-blue-50 border-blue-200 text-blue-600' : 'bg-white border-slate-200 hover:bg-slate-50 text-slate-600'}`}
+                                >
+                                    <Filter className="w-5 h-5" />
+                                </button>
                             </div>
-                            <button className="p-3 bg-white border border-slate-200 rounded-xl shadow-sm hover:bg-slate-50 text-slate-600">
-                                <Filter className="w-5 h-5" />
-                            </button>
+
+                            {/* FILTER DROPDOWN UI */}
+                            {showFilters && (
+                                <motion.div
+                                    initial={{ opacity: 0, y: -10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    className="p-4 bg-white border border-slate-200 rounded-xl shadow-sm flex flex-wrap gap-4"
+                                >
+                                    <div className="flex-1 min-w-[200px]">
+                                        <label className="block text-xs font-bold text-slate-500 mb-1 uppercase tracking-wider">Grade</label>
+                                        <select
+                                            value={filterGrade}
+                                            onChange={e => setFilterGrade(e.target.value)}
+                                            className="w-full p-2 border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500"
+                                        >
+                                            <option value="All">All Grades</option>
+                                            <option value="PP1">PP1</option>
+                                            <option value="PP2">PP2</option>
+                                            <option value="Grade 1">Grade 1</option>
+                                            <option value="Grade 2">Grade 2</option>
+                                            <option value="Grade 3">Grade 3</option>
+                                            <option value="Grade 4">Grade 4</option>
+                                            <option value="Grade 5">Grade 5</option>
+                                            <option value="Grade 6">Grade 6</option>
+                                            <option value="Grade 7">Grade 7</option>
+                                            <option value="Grade 8">Grade 8</option>
+                                            <option value="Grade 9">Grade 9</option>
+                                            <option value="Form 1">Form 1</option>
+                                            <option value="Form 2">Form 2</option>
+                                            <option value="Form 3">Form 3</option>
+                                            <option value="Form 4">Form 4</option>
+                                        </select>
+                                    </div>
+                                    <div className="flex-1 min-w-[200px]">
+                                        <label className="block text-xs font-bold text-slate-500 mb-1 uppercase tracking-wider">Subject</label>
+                                        <select
+                                            value={filterSubject}
+                                            onChange={e => setFilterSubject(e.target.value)}
+                                            className="w-full p-2 border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500"
+                                        >
+                                            <option value="All">All Subjects</option>
+                                            <option value="Mathematics">Mathematics</option>
+                                            <option value="English">English</option>
+                                            <option value="Kiswahili">Kiswahili</option>
+                                            <option value="Science">Science</option>
+                                            <option value="Social Studies">Social Studies</option>
+                                            <option value="CRE">CRE</option>
+                                            <option value="IRE">IRE</option>
+                                            <option value="HRE">HRE</option>
+                                            <option value="Agriculture">Agriculture</option>
+                                            <option value="Home Science">Home Science</option>
+                                            <option value="Computer Science">Computer Science</option>
+                                        </select>
+                                    </div>
+                                    <div className="flex items-end">
+                                        <button
+                                            onClick={() => { setFilterGrade('All'); setFilterSubject('All'); setSearchTerm(''); }}
+                                            className="p-2 text-sm text-slate-500 hover:text-red-500 font-medium transition-colors"
+                                        >
+                                            Reset
+                                        </button>
+                                    </div>
+                                </motion.div>
+                            )}
                         </div>
 
                         {/* LIST */}
@@ -330,7 +427,25 @@ export const AdminKnowledgeBase: React.FC = () => {
                                                 <FileText className="w-6 h-6" />
                                             </div>
                                             <div>
-                                                <h3 className="font-bold text-slate-800">{doc.title}</h3>
+                                                {editingId === doc.id ? (
+                                                    <div className="flex items-center gap-2 mb-1">
+                                                        <input
+                                                            type="text"
+                                                            className="border border-blue-300 rounded px-2 py-1 text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                            value={editTitle}
+                                                            onChange={e => setEditTitle(e.target.value)}
+                                                            autoFocus
+                                                            onKeyDown={e => {
+                                                                if (e.key === 'Enter') handleUpdateTitle(doc.id);
+                                                                if (e.key === 'Escape') setEditingId(null);
+                                                            }}
+                                                        />
+                                                        <button onClick={() => handleUpdateTitle(doc.id)} className="p-1 text-green-600 hover:bg-green-50 rounded"><Check className="w-4 h-4" /></button>
+                                                        <button onClick={() => setEditingId(null)} className="p-1 text-slate-400 hover:bg-slate-100 rounded"><X className="w-4 h-4" /></button>
+                                                    </div>
+                                                ) : (
+                                                    <h3 className="font-bold text-slate-800">{doc.title}</h3>
+                                                )}
                                                 <div className="flex items-center gap-2 text-xs text-slate-500 mt-1">
                                                     <span className="bg-slate-100 px-2 py-0.5 rounded text-slate-600 font-medium">{doc.grade}</span>
                                                     <span>•</span>
@@ -344,6 +459,15 @@ export const AdminKnowledgeBase: React.FC = () => {
                                         </div>
 
                                         <div className="flex items-center gap-2">
+                                            {editingId !== doc.id && (
+                                                <button
+                                                    onClick={() => { setEditingId(doc.id); setEditTitle(doc.title); }}
+                                                    className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                                    title="Edit Title"
+                                                >
+                                                    <Edit2 className="w-5 h-5" />
+                                                </button>
+                                            )}
                                             <a
                                                 href={doc.file_url}
                                                 target="_blank"

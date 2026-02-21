@@ -12,7 +12,7 @@ serve(async (req) => {
     }
 
     try {
-        const { query, document_id } = await req.json()
+        const { query, document_id, grade, subject } = await req.json()
 
         if (!query) {
             return new Response(JSON.stringify({ error: 'No query provided' }), { headers: corsHeaders })
@@ -48,12 +48,14 @@ serve(async (req) => {
         const embedding = result.embedding.values
 
         // 2. Search Database using the match_documents RPC
-        // Note: document_id is passed to allow filtering by the specific material
+        // Filter by document ID, grade, or subject dynamically for curriculum-wide search
         const { data: chunks, error } = await supabase.rpc('match_documents', {
             query_embedding: embedding,
             match_threshold: 0.5,
             match_count: 5,
-            filter_document_id: document_id || null
+            filter_document_id: document_id || null,
+            filter_grade: grade || null,
+            filter_subject: subject || null
         })
 
         if (error) throw error

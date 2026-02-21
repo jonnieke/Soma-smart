@@ -12,7 +12,7 @@ interface AppContextType {
   studentCode: string;
   setStudentCode: (code: string) => void;
   isRegistered: boolean;
-  studentProfile: { id: string, name: string, grade: string, schoolId?: string, schoolName?: string, email?: string, parentPhone?: string } | null;
+  studentProfile: { id: string, name: string, grade: string, schoolId?: string, schoolName?: string, email?: string, parentPhone?: string, parentPin?: string, chatApproved?: boolean, sessionId?: string } | null;
   updateStudentProfile: (updates: { name?: string, grade?: string, parentPhone?: string }) => Promise<{ success: boolean; message?: string }>;
   usageCount: number;
   incrementUsage: () => void;
@@ -51,6 +51,10 @@ interface AppContextType {
   chatMessages: ChatMessage[];
   sendChatMessage: (requestId: string, content: string, type: 'TEXT' | 'VOICE' | 'VIDEO', mediaFile?: File) => Promise<{ success: boolean; message: string }>;
   fetchChatMessages: (requestId: string) => Promise<void>;
+  // Parent PIN Chat Approval
+  chatApproved: boolean;
+  setParentPin: (pin: string) => Promise<{ success: boolean; message: string }>;
+  verifyChatPin: (pin: string) => Promise<{ success: boolean; message: string }>;
   // Marketplace
   marketplaceMaterials: MaterialListing[];
   purchasedMaterialIds: string[];
@@ -130,7 +134,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   });
   // studyUsageCount removed
   const [isRegistered, setIsRegistered] = useState<boolean>(false);
-  const [studentProfile, setStudentProfile] = useState<{ id: string, name: string, grade: string, schoolId?: string, schoolName?: string, email?: string, parentPhone?: string, sessionId?: string } | null>(null);
+  const [studentProfile, setStudentProfile] = useState<{ id: string, name: string, grade: string, schoolId?: string, schoolName?: string, email?: string, parentPhone?: string, parentPin?: string, chatApproved?: boolean, sessionId?: string } | null>(null);
+  const [chatApproved, setChatApproved] = useState<boolean>(false);
 
   // Teacher State
   const [teacherUsageCount, setTeacherUsageCount] = useState<number>(0);
@@ -148,6 +153,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       studentName: 'Faith K.',
       topic: 'Quadratic Equations',
       description: 'I am stuck on completing the square method. Can you explain step by step?',
+      grade: 'Form 2',
+      subject: 'Mathematics',
       status: 'PENDING',
       price: 0,
       pricingType: 'FREE',
@@ -160,6 +167,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       studentName: 'Brian M.',
       topic: 'Photosynthesis',
       description: 'Need help understanding the light-dependent stage. Diagram would be great!',
+      grade: 'Grade 7',
+      subject: 'Science',
       status: 'PENDING',
       price: 50,
       pricingType: 'FIXED',
@@ -246,8 +255,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             schoolName: profile.school_name,
             email: profile.email,
             parentPhone: profile.parent_phone,
+            parentPin: profile.parent_pin,
+            chatApproved: profile.chat_approved,
             sessionId: profile.session_id
           });
+          setChatApproved(!!profile.chat_approved);
           setIsRegistered(true);
           setRole(profile.role === 'REVISION' ? UserRole.REVISION : UserRole.LEARNER);
         } else if (profile.role === 'TEACHER') {
@@ -456,6 +468,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             setRole(profile.role === 'REVISION' ? UserRole.REVISION : UserRole.LEARNER);
           } else if (profile.role === 'TEACHER') {
             setRole(UserRole.TEACHER);
+            setIsRegistered(true);
             setTeacherProfile({
               id: profile.id,
               name: profile.full_name,
@@ -471,6 +484,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             setIsAvailableForTutoring(!!profile.is_available);
           } else if (profile.role === 'SCHOOL') {
             setRole(UserRole.SCHOOL);
+            setIsRegistered(true);
             setSchoolProfile({
               id: profile.id,
               name: profile.full_name,
@@ -1305,6 +1319,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       if (subject) query = query.eq('subject', subject);
 
       const { data, error } = await query;
+      console.log("FETCHED RESOURCES:", data, "ERROR:", error);
       if (error) throw error;
       setResources(data || []);
     } catch (e) {
@@ -1499,8 +1514,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         schoolId: profile.school_id,
         email: profile.email,
         parentPhone: profile.parent_phone,
+        parentPin: profile.parent_pin,
+        chatApproved: profile.chat_approved,
         sessionId: profile.session_id
       });
+      setChatApproved(!!profile.chat_approved);
       setIsRegistered(true);
       setRole(UserRole.PARENT);
       setUserId(profile.id); // Parent acts as student user for session checks? 
@@ -1554,8 +1572,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         schoolId: profile.school_id,
         email: profile.email,
         parentPhone: profile.parent_phone,
+        parentPin: profile.parent_pin,
+        chatApproved: profile.chat_approved,
         sessionId: profile.session_id
       });
+      setChatApproved(!!profile.chat_approved);
       setIsRegistered(true);
       setRole(profile.role === 'REVISION' ? UserRole.REVISION : UserRole.LEARNER);
       setUserId(profile.id);
@@ -1837,20 +1858,23 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   const submitTutoringResponse = async (requestId: string, response: string, type: 'TEXT' | 'VOICE' | 'VIDEO', pricingType: 'FREE' | 'FIXED' | 'RATE_ME', price: number, attachments: File[]): Promise<{ success: boolean; message: string }> => {
+    // Determine status: if paid request, keep ACCEPTED until payment; free goes straight to COMPLETED
+    const newStatus = (pricingType === 'FIXED' && price > 0) ? 'ACCEPTED' : 'COMPLETED';
+
     // 1. Mock Local Update (fast feedback)
     const previousRequests = [...activeTutoringRequests];
     setActiveTutoringRequests(prev => prev.map(r => {
       if (r.id === requestId) {
         return {
           ...r,
-          status: 'COMPLETED',
+          status: newStatus,
           response,
           // We can't show the file locally immediately until upload confirms, 
           // or we could create a blob URL? For now, keep simple.
           responseType: type,
           pricingType,
           price,
-          completedAt: new Date().toISOString()
+          completedAt: newStatus === 'COMPLETED' ? new Date().toISOString() : undefined
         };
       }
       return r;
@@ -1881,14 +1905,17 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         finalResponse = publicUrl;
       }
 
-      // 3. Real DB Update (removed pricing_type - column doesn't exist in table)
-      const { error: reqError } = await supabase.from('tutoring_requests').update({
-        status: 'COMPLETED',
+      // 3. Real DB Update
+      const dbUpdate: any = {
+        status: newStatus,
         response: finalResponse,
         response_type: type,
-        completed_at: new Date().toISOString(),
         price: price
-      }).eq('id', requestId);
+      };
+      if (newStatus === 'COMPLETED') {
+        dbUpdate.completed_at = new Date().toISOString();
+      }
+      const { error: reqError } = await supabase.from('tutoring_requests').update(dbUpdate).eq('id', requestId);
 
       if (reqError) throw reqError;
 
@@ -1957,6 +1984,58 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     } catch (e: any) {
       console.error("Rating error:", e);
       return { success: false, message: e.message || "Failed to save rating." };
+    }
+  };
+
+  // --- Parent PIN Chat Approval ---
+  const setParentPin = async (pin: string): Promise<{ success: boolean; message: string }> => {
+    if (!userId) return { success: false, message: 'Not logged in.' };
+    if (!/^\d{4}$/.test(pin)) return { success: false, message: 'PIN must be exactly 4 digits.' };
+
+    try {
+      const { error } = await supabase.from('profiles').update({
+        parent_pin: pin,
+        chat_approved: true
+      }).eq('id', userId);
+
+      if (error) throw error;
+
+      setStudentProfile(prev => prev ? { ...prev, parentPin: pin, chatApproved: true } : null);
+      setChatApproved(true);
+      return { success: true, message: 'Parent PIN set and chat approved!' };
+    } catch (e: any) {
+      console.error('Set Parent PIN error:', e);
+      return { success: false, message: e.message || 'Failed to set PIN.' };
+    }
+  };
+
+  const verifyChatPin = async (pin: string): Promise<{ success: boolean; message: string }> => {
+    if (!userId) return { success: false, message: 'Not logged in.' };
+
+    try {
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('parent_pin')
+        .eq('id', userId)
+        .maybeSingle();
+
+      if (error) throw error;
+      if (!profile?.parent_pin) return { success: false, message: 'No parent PIN set. Ask your parent to set one first.' };
+      if (profile.parent_pin !== pin) return { success: false, message: 'Incorrect PIN. Ask your parent for the correct PIN.' };
+
+      // PIN matches — approve chat
+      const { error: updateError } = await supabase.from('profiles').update({
+        chat_approved: true
+      }).eq('id', userId);
+
+      if (updateError) throw updateError;
+
+      setStudentProfile(prev => prev ? { ...prev, chatApproved: true } : null);
+      setChatApproved(true);
+      return { success: true, message: 'Chat approved!' };
+    } catch (e: any) {
+      console.error('Verify Chat PIN error:', e);
+      return { success: false, message: e.message || 'Failed to verify PIN.' };
     }
   };
 
@@ -2149,12 +2228,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         setActiveTutoringRequests(data.map((r: any) => ({
           id: r.id,
           studentId: r.student_id,
+          studentName: r.student_name,
           teacherId: r.teacher_id,
           topic: r.topic,
           description: r.description,
+          grade: r.grade,
+          subject: r.subject,
           status: r.status,
           price: r.price,
-          pricingType: r.pricing_type || 'RATE_ME', // Default to RATE_ME if missing
+          pricingType: r.pricing_type || 'RATE_ME',
           response: r.response,
           responseType: r.response_type,
           attachments: r.attachments || [],
@@ -2215,6 +2297,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       activeTutoringRequests, createTutoringRequest, acceptTutoringRequest, submitTutoringResponse,
       rateTutoringResponse,
       chatMessages, sendChatMessage, fetchChatMessages,
+      chatApproved, setParentPin, verifyChatPin,
       // Marketplace
       marketplaceMaterials, purchasedMaterialIds, listMaterial, purchaseMaterial,
       schoolProfile, loginSchool, registerSchool, registerStudentForSchool,

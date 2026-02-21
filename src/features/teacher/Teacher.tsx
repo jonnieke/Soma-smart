@@ -508,9 +508,9 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
             {/* --- MODERN HEADER --- */}
             <div className="bg-white sticky top-0 z-50 shadow-sm border-b border-slate-100">
                 <div className="max-w-[1440px] mx-auto px-4 md:px-8 h-[72px] flex items-center justify-between">
-                    {/* Left: Logo */}
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-indigo-200">
+                    {/* Left: Logo — clickable to go home */}
+                    <div className="flex items-center gap-3 cursor-pointer group" onClick={() => navigate('/')}>
+                        <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-indigo-200 group-hover:scale-110 transition-transform">
                             <Brain className="w-6 h-6" />
                         </div>
                         <div>
@@ -1298,9 +1298,19 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                                                     <div key={req.id} className="p-6 hover:bg-slate-50 transition-colors">
                                                         <div className="flex justify-between items-start mb-4">
                                                             <div>
-                                                                <div className="flex items-center gap-2 mb-1">
+                                                                <div className="flex items-center gap-2 mb-1 flex-wrap">
                                                                     <span className="text-[10px] font-black text-indigo-600 uppercase tracking-widest px-2 py-0.5 bg-indigo-50 rounded">{req.topic}</span>
                                                                     {req.status === 'ACCEPTED' && <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest px-2 py-0.5 bg-emerald-50 rounded animate-pulse">Accepted</span>}
+                                                                </div>
+                                                                <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+                                                                    {req.studentName && (
+                                                                        <span className="text-xs font-bold text-slate-700 flex items-center gap-1">
+                                                                            <span className="w-5 h-5 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-[9px] font-black">{req.studentName[0].toUpperCase()}</span>
+                                                                            {req.studentName}
+                                                                        </span>
+                                                                    )}
+                                                                    {req.grade && <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">{req.grade}</span>}
+                                                                    {req.subject && <span className="text-[10px] font-bold text-violet-600 bg-violet-50 px-2 py-0.5 rounded-full">{req.subject}</span>}
                                                                 </div>
                                                                 <p className="text-slate-800 font-bold text-lg leading-tight">{req.description}</p>
                                                             </div>
@@ -1350,6 +1360,16 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                                                         <div className="flex justify-between items-start mb-2">
                                                             <div>
                                                                 <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest px-2 py-0.5 bg-emerald-50 rounded">{req.topic}</span>
+                                                                <div className="flex items-center gap-2 mt-1 mb-1 flex-wrap">
+                                                                    {req.studentName && (
+                                                                        <span className="text-xs font-bold text-slate-700 flex items-center gap-1">
+                                                                            <span className="w-5 h-5 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-[9px] font-black">{req.studentName[0].toUpperCase()}</span>
+                                                                            {req.studentName}
+                                                                        </span>
+                                                                    )}
+                                                                    {req.grade && <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">{req.grade}</span>}
+                                                                    {req.subject && <span className="text-[10px] font-bold text-violet-600 bg-violet-50 px-2 py-0.5 rounded-full">{req.subject}</span>}
+                                                                </div>
                                                                 <p className="text-slate-800 font-bold mt-1">{req.description}</p>
                                                             </div>
                                                             {req.rating && (
@@ -2131,85 +2151,120 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                     const chatReq = activeTutoringRequests.find(r => r.id === teacherChatRequestId);
                     return (
                         <motion.div
-                            initial={{ opacity: 0, y: '100%' }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: '100%' }}
-                            className="fixed inset-0 z-[70] bg-slate-50 flex flex-col"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="fixed inset-0 z-[70] bg-black/40 backdrop-blur-sm flex items-center justify-center p-0 md:p-6"
                         >
-                            {/* Chat Header */}
-                            <div className="bg-white/90 backdrop-blur-xl border-b border-slate-200 px-6 py-4 flex items-center gap-4">
-                                <button onClick={() => { setTeacherChatRequestId(null); setTeacherChatInput(''); }} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
-                                    <ArrowLeft className="w-5 h-5" />
-                                </button>
-                                <div className="flex-1">
-                                    <h2 className="font-bold text-lg">{chatReq?.topic || 'Chat'}</h2>
-                                    <p className="text-xs text-slate-500 font-medium">
-                                        {chatReq?.studentName || 'Student'} • {chatReq?.rating ? `★ ${chatReq.rating}/5` : 'Ongoing'}
-                                    </p>
-                                </div>
-                                <button onClick={() => fetchChatMessages(teacherChatRequestId)} className="p-2 hover:bg-slate-100 rounded-full transition-colors text-slate-400 hover:text-blue-600">
-                                    <Loader2 className="w-4 h-4" />
-                                </button>
-                            </div>
-
-                            {/* Chat Messages */}
-                            <div className="flex-1 overflow-y-auto p-4 space-y-3">
-                                {/* Your original response */}
-                                {chatReq?.response && (
-                                    <div className="flex gap-3 items-end flex-row-reverse">
-                                        <div className="w-8 h-8 bg-emerald-600 text-white rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0">T</div>
-                                        <div className="bg-emerald-600 text-white rounded-2xl rounded-br-md px-4 py-3 max-w-[80%] shadow-sm">
-                                            <p className="text-[10px] font-bold text-emerald-200 uppercase tracking-widest mb-1">Your Response</p>
-                                            {chatReq.responseType === 'TEXT' && (
-                                                <p className="text-sm leading-relaxed whitespace-pre-wrap">{chatReq.response}</p>
-                                            )}
-                                            {chatReq.responseType === 'VOICE' && chatReq.response && (
-                                                <audio src={chatReq.response} controls className="w-full" />
-                                            )}
-                                            {chatReq.responseType === 'VIDEO' && chatReq.response && (
-                                                <video src={chatReq.response} controls className="w-full rounded-xl" />
-                                            )}
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                                animate={{ opacity: 1, scale: 1, y: 0 }}
+                                exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                                transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+                                className="bg-white w-full h-full md:max-w-lg md:h-[85vh] md:rounded-[2.5rem] shadow-2xl flex flex-col overflow-hidden relative"
+                            >
+                                {/* Premium Chat Header */}
+                                <div className="bg-gradient-to-r from-emerald-600 to-teal-600 px-6 py-5 text-white relative overflow-hidden flex-shrink-0">
+                                    <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 blur-2xl" />
+                                    <div className="relative z-10 flex items-center gap-4">
+                                        <button
+                                            onClick={() => { setTeacherChatRequestId(null); setTeacherChatInput(''); }}
+                                            className="p-2 hover:bg-white/20 rounded-full transition-colors -ml-2"
+                                        >
+                                            <ArrowLeft className="w-5 h-5" />
+                                        </button>
+                                        <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center text-sm font-black backdrop-blur-md border border-white/20">
+                                            {(chatReq?.studentName || 'S')[0].toUpperCase()}
                                         </div>
-                                    </div>
-                                )}
-
-                                {/* Chat messages */}
-                                {chatMessages.map(msg => (
-                                    <div key={msg.id} className={`flex gap-3 items-end ${msg.senderRole === 'TEACHER' ? 'flex-row-reverse' : ''}`}>
-                                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${msg.senderRole === 'TEACHER' ? 'bg-emerald-600 text-white' : 'bg-blue-600 text-white'
-                                            }`}>
-                                            {msg.senderRole === 'TEACHER' ? 'T' : 'S'}
-                                        </div>
-                                        <div className={`rounded-2xl px-4 py-3 max-w-[80%] shadow-sm ${msg.senderRole === 'TEACHER'
-                                            ? 'bg-emerald-600 text-white rounded-br-md'
-                                            : 'bg-white border border-slate-100 rounded-bl-md'
-                                            }`}>
-                                            {msg.messageType === 'TEXT' && (
-                                                <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.content}</p>
-                                            )}
-                                            {msg.messageType === 'VOICE' && (
-                                                <audio src={msg.mediaUrl || msg.content} controls className="w-full" />
-                                            )}
-                                            {msg.messageType === 'VIDEO' && (
-                                                <video src={msg.mediaUrl || msg.content} controls className="w-full rounded-xl" />
-                                            )}
-                                            <p className={`text-[10px] mt-1 font-medium ${msg.senderRole === 'TEACHER' ? 'text-emerald-200' : 'text-slate-400'}`}>
-                                                {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                        <div className="flex-1 min-w-0">
+                                            <h2 className="font-black text-base truncate">{chatReq?.topic || 'Chat'}</h2>
+                                            <p className="text-emerald-100 text-[11px] font-bold truncate">
+                                                {chatReq?.studentName || 'Student'} • {chatReq?.rating ? `★ ${chatReq.rating}/5` : 'Ongoing'}
                                             </p>
                                         </div>
+                                        <button
+                                            onClick={() => fetchChatMessages(teacherChatRequestId)}
+                                            className="p-2 hover:bg-white/20 rounded-full transition-colors"
+                                        >
+                                            <Loader2 className="w-4 h-4" />
+                                        </button>
                                     </div>
-                                ))}
-                                <div ref={teacherChatEndRef} />
-                            </div>
+                                </div>
 
-                            {/* Chat Input */}
-                            <div className="bg-white border-t border-slate-200 p-4 flex gap-3 items-end">
-                                <textarea
-                                    value={teacherChatInput}
-                                    onChange={e => setTeacherChatInput(e.target.value)}
-                                    onKeyDown={e => {
-                                        if (e.key === 'Enter' && !e.shiftKey) {
-                                            e.preventDefault();
+                                {/* Chat Messages */}
+                                <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4 bg-slate-50/50">
+                                    {/* Original response */}
+                                    {chatReq?.response && (
+                                        <div className="flex gap-2.5 items-end flex-row-reverse">
+                                            <div className="w-7 h-7 bg-emerald-600 text-white rounded-full flex items-center justify-center text-[10px] font-black flex-shrink-0 shadow-sm">T</div>
+                                            <div className="bg-emerald-600 text-white rounded-2xl rounded-br-sm px-4 py-3 max-w-[85%] shadow-md shadow-emerald-100">
+                                                <p className="text-[9px] font-black text-emerald-200 uppercase tracking-[0.15em] mb-1.5">Your Response</p>
+                                                {chatReq.responseType === 'TEXT' && (
+                                                    <p className="text-[13px] leading-relaxed whitespace-pre-wrap">{chatReq.response}</p>
+                                                )}
+                                                {chatReq.responseType === 'VOICE' && chatReq.response && (
+                                                    <audio src={chatReq.response} controls className="w-full max-w-[240px]" />
+                                                )}
+                                                {chatReq.responseType === 'VIDEO' && chatReq.response && (
+                                                    <video src={chatReq.response} controls className="w-full rounded-xl max-w-[260px]" />
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Chat messages */}
+                                    {chatMessages.map(msg => (
+                                        <div key={msg.id} className={`flex gap-2.5 items-end ${msg.senderRole === 'TEACHER' ? 'flex-row-reverse' : ''}`}>
+                                            <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-black flex-shrink-0 shadow-sm ${msg.senderRole === 'TEACHER' ? 'bg-emerald-600 text-white' : 'bg-blue-600 text-white'
+                                                }`}>
+                                                {msg.senderRole === 'TEACHER' ? 'T' : 'S'}
+                                            </div>
+                                            <div className={`rounded-2xl px-4 py-2.5 max-w-[85%] ${msg.senderRole === 'TEACHER'
+                                                ? 'bg-emerald-600 text-white rounded-br-sm shadow-md shadow-emerald-100'
+                                                : 'bg-white border border-slate-100 rounded-bl-sm shadow-sm'
+                                                }`}>
+                                                {msg.messageType === 'TEXT' && (
+                                                    <p className="text-[13px] leading-relaxed whitespace-pre-wrap">{msg.content}</p>
+                                                )}
+                                                {msg.messageType === 'VOICE' && (
+                                                    <audio src={msg.mediaUrl || msg.content} controls className="w-full max-w-[240px]" />
+                                                )}
+                                                {msg.messageType === 'VIDEO' && (
+                                                    <video src={msg.mediaUrl || msg.content} controls className="w-full rounded-xl max-w-[260px]" />
+                                                )}
+                                                <p className={`text-[10px] mt-1 font-semibold ${msg.senderRole === 'TEACHER' ? 'text-emerald-200' : 'text-slate-400'}`}>
+                                                    {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    ))}
+                                    <div ref={teacherChatEndRef} />
+                                </div>
+
+                                {/* Chat Input */}
+                                <div className="bg-white border-t border-slate-100 px-4 py-3 flex gap-2.5 items-end flex-shrink-0">
+                                    <textarea
+                                        value={teacherChatInput}
+                                        onChange={e => setTeacherChatInput(e.target.value)}
+                                        onKeyDown={e => {
+                                            if (e.key === 'Enter' && !e.shiftKey) {
+                                                e.preventDefault();
+                                                if (teacherChatInput.trim() && !teacherChatSending) {
+                                                    setTeacherChatSending(true);
+                                                    sendChatMessage(teacherChatRequestId, teacherChatInput.trim(), 'TEXT').then(() => {
+                                                        setTeacherChatInput('');
+                                                        setTeacherChatSending(false);
+                                                        setTimeout(() => teacherChatEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
+                                                    });
+                                                }
+                                            }
+                                        }}
+                                        placeholder="Reply to student..."
+                                        rows={1}
+                                        className="flex-1 bg-slate-50 border-2 border-slate-100 rounded-2xl px-4 py-3 text-sm font-medium text-slate-800 placeholder:text-slate-400 resize-none focus:ring-0 focus:border-emerald-300 focus:bg-white transition-all outline-none"
+                                    />
+                                    <button
+                                        onClick={() => {
                                             if (teacherChatInput.trim() && !teacherChatSending) {
                                                 setTeacherChatSending(true);
                                                 sendChatMessage(teacherChatRequestId, teacherChatInput.trim(), 'TEXT').then(() => {
@@ -2218,30 +2273,15 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                                                     setTimeout(() => teacherChatEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
                                                 });
                                             }
-                                        }
-                                    }}
-                                    placeholder="Reply to student..."
-                                    rows={1}
-                                    className="flex-1 bg-slate-100 border-0 rounded-2xl px-4 py-3 text-sm font-medium text-slate-800 placeholder:text-slate-400 resize-none focus:ring-2 focus:ring-emerald-200 focus:bg-white transition-all"
-                                />
-                                <button
-                                    onClick={() => {
-                                        if (teacherChatInput.trim() && !teacherChatSending) {
-                                            setTeacherChatSending(true);
-                                            sendChatMessage(teacherChatRequestId, teacherChatInput.trim(), 'TEXT').then(() => {
-                                                setTeacherChatInput('');
-                                                setTeacherChatSending(false);
-                                                setTimeout(() => teacherChatEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
-                                            });
-                                        }
-                                    }}
-                                    disabled={!teacherChatInput.trim() || teacherChatSending}
-                                    className={`p-3 rounded-full transition-all ${teacherChatInput.trim() ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-200 hover:bg-emerald-700' : 'bg-slate-100 text-slate-300 cursor-not-allowed'
-                                        }`}
-                                >
-                                    <ArrowRight className="w-5 h-5" />
-                                </button>
-                            </div>
+                                        }}
+                                        disabled={!teacherChatInput.trim() || teacherChatSending}
+                                        className={`p-3 rounded-2xl transition-all flex-shrink-0 ${teacherChatInput.trim() ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-200 hover:bg-emerald-700 hover:-translate-y-0.5' : 'bg-slate-100 text-slate-300 cursor-not-allowed'
+                                            }`}
+                                    >
+                                        <ArrowRight className="w-5 h-5" />
+                                    </button>
+                                </div>
+                            </motion.div>
                         </motion.div>
                     );
                 })()}

@@ -140,7 +140,7 @@ import { supabase } from '../lib/supabase';
 import { getContext } from './contextService';
 
 // --- RAG HELPER ---
-const retrieveContext = async (query: string, documentId?: string): Promise<string> => {
+const retrieveContext = async (query: string, documentId?: string, grade?: string, subject?: string): Promise<string> => {
   try {
     const { data: { session } } = await supabase.auth.getSession();
     const token = session?.access_token;
@@ -153,7 +153,7 @@ const retrieveContext = async (query: string, documentId?: string): Promise<stri
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`
       },
-      body: JSON.stringify({ query, document_id: documentId })
+      body: JSON.stringify({ query, document_id: documentId, grade, subject })
     });
 
     if (!response.ok) return "";
@@ -196,21 +196,13 @@ export const explainTopic = async (
     }
   });
 
-  // 1. Convert File Context (if any)
+  // 1. Get Curriculum Context (Grade & Subject Filters)
   const context = getContext();
-  let fileContextInstruction = "";
-  if (context) {
-    fileContextInstruction = `
-      IMPORTANT: You have been provided with specific source material called "${context.name}".
-      You MUST answer the question using ONLY this source material. Do not use outside knowledge unless necessary to clarify terms.
-      
-      Source Material:
-      "${context.content.substring(0, 30000)}" 
-      `;
-  }
+  const searchGrade = grade || context?.grade;
+  const searchSubject = subject || context?.subject;
 
-  // 2. Retrieve RAG Context (CBE Knowledge Base)
-  const ragContext = await retrieveContext(topic, documentId);
+  // 2. Retrieve RAG Context (Knowledge Base)
+  const ragContext = await retrieveContext(topic, documentId, searchGrade, searchSubject);
   let ragInstruction = "";
   if (ragContext) {
     ragInstruction = `
@@ -231,7 +223,6 @@ export const explainTopic = async (
     : "LANGUAGE RULE: If the subject is 'Kiswahili' or 'Swahili', you MUST respond in Swahili. For ALL other subjects, you MUST respond ONLY in English.";
 
   const prompt = `
-    ${fileContextInstruction}
     ${ragInstruction}
 
     SYSTEM CONTEXT: Kenyan Education System (CBC, KCPE, KCSE).

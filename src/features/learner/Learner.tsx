@@ -5,7 +5,7 @@ import {
   Sparkles, Home, X, XCircle, Camera, ScanLine, Mic, Upload, Clock,
   CheckCircle, Play, Pause, ChevronRight, Star, BookOpen, Brain, Lightbulb, Lock, Volume2, CreditCard,
   ArrowRight, UserCircle, Download, ImageIcon, Trash2, AlertTriangle, LogOut, Users, DollarSign, FileText, ShoppingBag, Library, Layers,
-  Calculator, FlaskConical, Globe, Languages, Loader2, Headphones, PenTool, Zap
+  Calculator, FlaskConical, Globe, Languages, Loader2, Headphones, PenTool, Zap, ListChecks
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { ExplanationResult, QuizData, ViewState, SubscriptionPlan, LearnerProfile, LearnerActivity, UserRole, PodcastScript, ChatMessage } from '../../types';
@@ -15,6 +15,7 @@ import { STUDENT_PLANS, TEACHER_PLANS, DOWNLOAD_PASS } from '../../data/pricing'
 import { RegistrationModal } from '../../components/RegistrationModal'; // Assuming path
 import { LoginModal } from '../../components/LoginModal'; // Assuming path
 import { LogoutModal } from '../../components/LogoutModal';
+import { ParentPinModal } from '../../components/ParentPinModal';
 import { MarkdownText, Button, Card } from '../../components/Shared';
 import {
   fileToGenerativePart, explainImage, explainAudio, explainTopic,
@@ -50,6 +51,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
     logout, isPro, subscriptionPlan, subscriptionExpiry, isOnline, role, language,
     createTutoringRequest, activeTutoringRequests, isAvailableForTutoring,
     rateTutoringResponse, chatMessages, sendChatMessage, fetchChatMessages,
+    chatApproved, setParentPin, verifyChatPin,
     marketplaceMaterials, purchasedMaterialIds, purchaseMaterial,
     resources, fetchResources,
     extraDownloads, grantExtraDownloads,
@@ -111,6 +113,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
   }, [isRegistered, role, navigate, location]);
 
   const [mode, setMode] = useState<'MENU' | 'SCAN' | 'RESULT' | 'QUIZ' | 'RECAP_RESULT' | 'PROFILE' | 'PRICING' | 'PAYMENT' | 'MARKETPLACE' | 'LIBRARY' | 'HISTORY' | 'SCAN_EXPLAIN' | 'STUDY' | 'REQUESTS'>('MENU');
+  const [studyTab, setStudyTab] = useState<'LESSON' | 'RECAP' | 'QNA' | 'QUIZ'>('LESSON');
   const [recapData, setRecapData] = useState<any>(null); // Store LessonRecap
 
   const [loading, setLoading] = useState(false);
@@ -205,6 +208,12 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
   const [chatInput, setChatInput] = useState('');
   const [chatSending, setChatSending] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
+  const [showPinModal, setShowPinModal] = useState(false);
+  const [showPaymentGate, setShowPaymentGate] = useState<{ reqId: string; price: number; topic: string } | null>(null);
+  const [isRecordingChat, setIsRecordingChat] = useState(false);
+  const chatRecorderRef = useRef<MediaRecorder | null>(null);
+  const chatChunksRef = useRef<Blob[]>([]);
+  const chatImageInputRef = useRef<HTMLInputElement>(null);
 
   // Refs
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -1147,34 +1156,51 @@ ${explanation.explanation}
   };
 
   const restoreActivity = (item: LearnerActivity) => {
-    if (item.type === 'EXPLANATION' && item.details) {
-      try {
-        const details = JSON.parse(item.details);
-        if (details && details.explanation) {
-          setExplanation(details.explanation);
-          // Restore image if present
-          if (details.imageBase64) {
-            setImageData({ base64: details.imageBase64, mimeType: details.mimeType || 'image/jpeg' });
-          } else {
-            setImageData(null);
-          }
+    if (!item.details) return;
 
-          // Restore audio if present
-          if (details.audioBase64) {
-            setAudioData({ base64: details.audioBase64, mimeType: details.mimeType || 'audio/mp3' });
-          } else {
-            setAudioData(null);
-          }
+    try {
+      const details = JSON.parse(item.details);
 
-          setStickyQuizTaken(true); // Treat restored history as "done" so we don't nag them again immediately
-          setStickyQuizData(null);
-          setPodcastScript(null); // Clear podcast script
-          setIsPodcastPlaying(false); // Stop podcast
-          setMode('RESULT');
+      if (item.type === 'EXPLANATION' && details.explanation) {
+        setExplanation(details.explanation);
+        // Restore image if present
+        if (details.imageBase64) {
+          setImageData({ base64: details.imageBase64, mimeType: details.mimeType || 'image/jpeg' });
+        } else {
+          setImageData(null);
         }
-      } catch (e) {
-        console.error("Failed to restore activity", e);
+
+        // Restore audio if present
+        if (details.audioBase64) {
+          setAudioData({ base64: details.audioBase64, mimeType: details.mimeType || 'audio/mp3' });
+        } else {
+          setAudioData(null);
+        }
+
+        setStickyQuizTaken(true); // Treat restored history as "done" so we don't nag them again immediately
+        setStickyQuizData(null);
+        setPodcastScript(null); // Clear podcast script
+        setIsPodcastPlaying(false); // Stop podcast
+        setMode('RESULT');
+      } else if (item.type === 'QUIZ') {
+        setQuizData(details);
+        setMode('QUIZ');
+      } else if (item.type === 'STUDY') {
+        const material = {
+          id: details.materialId,
+          realId: details.realId,
+          title: item.topic,
+          subject: details.subject,
+          grade: details.grade,
+          teacherName: details.teacherName,
+          category: details.category,
+          isVerified: details.isVerified,
+          fileUrl: details.fileUrl
+        };
+        startStudySession(material);
       }
+    } catch (e) {
+      console.error("Failed to restore activity", e);
     }
   };
 
@@ -1508,8 +1534,8 @@ ${explanation.explanation}
                     {msg.senderRole === 'STUDENT' ? 'S' : 'T'}
                   </div>
                   <div className={`rounded-2xl px-4 py-3 max-w-[80%] shadow-sm ${msg.senderRole === 'STUDENT'
-                      ? 'bg-blue-600 text-white rounded-br-md'
-                      : 'bg-white border border-slate-100 rounded-bl-md'
+                    ? 'bg-blue-600 text-white rounded-br-md'
+                    : 'bg-white border border-slate-100 rounded-bl-md'
                     }`}>
                     {msg.messageType === 'TEXT' && (
                       <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.content}</p>
@@ -1530,13 +1556,100 @@ ${explanation.explanation}
             </div>
 
             {/* Chat Input Bar */}
-            <div className="sticky bottom-0 bg-white border-t border-slate-200 p-4 flex gap-3 items-end">
-              <textarea
-                value={chatInput}
-                onChange={e => setChatInput(e.target.value)}
-                onKeyDown={e => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
+            <div className="sticky bottom-0 bg-white border-t border-slate-200 p-4 space-y-2">
+              {/* Hidden file input for image upload */}
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                ref={chatImageInputRef}
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (!file || !chatRequestId) return;
+                  setChatSending(true);
+                  await sendChatMessage(chatRequestId, 'Sent an image', 'TEXT', file);
+                  setChatSending(false);
+                  e.target.value = '';
+                  setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
+                }}
+              />
+              <div className="flex gap-2 items-end">
+                {/* Voice Record Button */}
+                <button
+                  onClick={async () => {
+                    if (isRecordingChat) {
+                      // Stop recording
+                      chatRecorderRef.current?.stop();
+                      setIsRecordingChat(false);
+                    } else {
+                      // Start recording
+                      try {
+                        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                        const recorder = new MediaRecorder(stream);
+                        chatChunksRef.current = [];
+                        recorder.ondataavailable = (e) => { if (e.data.size > 0) chatChunksRef.current.push(e.data); };
+                        recorder.onstop = async () => {
+                          stream.getTracks().forEach(t => t.stop());
+                          const blob = new Blob(chatChunksRef.current, { type: 'audio/webm' });
+                          const file = new File([blob], `voice_${Date.now()}.webm`, { type: 'audio/webm' });
+                          if (chatRequestId) {
+                            setChatSending(true);
+                            await sendChatMessage(chatRequestId, 'Voice message', 'VOICE', file);
+                            setChatSending(false);
+                            setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
+                          }
+                        };
+                        recorder.start();
+                        chatRecorderRef.current = recorder;
+                        setIsRecordingChat(true);
+                      } catch (err) {
+                        alert('Microphone access is required for voice messages.');
+                      }
+                    }
+                  }}
+                  className={`p-3 rounded-2xl transition-all flex-shrink-0 ${isRecordingChat
+                    ? 'bg-red-500 text-white shadow-lg shadow-red-200 animate-pulse'
+                    : 'bg-slate-100 text-slate-500 hover:bg-blue-50 hover:text-blue-600'
+                    }`}
+                  title={isRecordingChat ? 'Stop recording' : 'Record voice message'}
+                >
+                  <Mic className="w-5 h-5" />
+                </button>
+
+                {/* Image Upload Button */}
+                <button
+                  onClick={() => chatImageInputRef.current?.click()}
+                  className="p-3 rounded-2xl bg-slate-100 text-slate-500 hover:bg-blue-50 hover:text-blue-600 transition-all flex-shrink-0"
+                  title="Send an image"
+                >
+                  <ImageIcon className="w-5 h-5" />
+                </button>
+
+                {/* Text Input */}
+                <textarea
+                  value={chatInput}
+                  onChange={e => setChatInput(e.target.value)}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      if (chatInput.trim() && !chatSending) {
+                        setChatSending(true);
+                        sendChatMessage(chatRequestId, chatInput.trim(), 'TEXT').then(() => {
+                          setChatInput('');
+                          setChatSending(false);
+                          setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
+                        });
+                      }
+                    }
+                  }}
+                  placeholder="Type your follow-up question..."
+                  rows={1}
+                  className="flex-1 bg-slate-50 border-2 border-slate-100 rounded-2xl px-4 py-3 text-sm font-medium text-slate-800 placeholder:text-slate-400 resize-none focus:ring-0 focus:border-blue-300 focus:bg-white transition-all outline-none"
+                />
+
+                {/* Send Button */}
+                <button
+                  onClick={() => {
                     if (chatInput.trim() && !chatSending) {
                       setChatSending(true);
                       sendChatMessage(chatRequestId, chatInput.trim(), 'TEXT').then(() => {
@@ -1545,29 +1658,14 @@ ${explanation.explanation}
                         setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
                       });
                     }
-                  }
-                }}
-                placeholder="Type your follow-up question..."
-                rows={1}
-                className="flex-1 bg-slate-100 border-0 rounded-2xl px-4 py-3 text-sm font-medium text-slate-800 placeholder:text-slate-400 resize-none focus:ring-2 focus:ring-blue-200 focus:bg-white transition-all"
-              />
-              <button
-                onClick={() => {
-                  if (chatInput.trim() && !chatSending) {
-                    setChatSending(true);
-                    sendChatMessage(chatRequestId, chatInput.trim(), 'TEXT').then(() => {
-                      setChatInput('');
-                      setChatSending(false);
-                      setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
-                    });
-                  }
-                }}
-                disabled={!chatInput.trim() || chatSending}
-                className={`p-3 rounded-full transition-all ${chatInput.trim() ? 'bg-blue-600 text-white shadow-lg shadow-blue-200 hover:bg-blue-700' : 'bg-slate-100 text-slate-300 cursor-not-allowed'
-                  }`}
-              >
-                <ArrowRight className="w-5 h-5" />
-              </button>
+                  }}
+                  disabled={!chatInput.trim() || chatSending}
+                  className={`p-3 rounded-2xl transition-all flex-shrink-0 ${chatInput.trim() ? 'bg-blue-600 text-white shadow-lg shadow-blue-200 hover:bg-blue-700' : 'bg-slate-100 text-slate-300 cursor-not-allowed'
+                    }`}
+                >
+                  <ArrowRight className="w-5 h-5" />
+                </button>
+              </div>
             </div>
           </div>
         );
@@ -1597,15 +1695,32 @@ ${explanation.explanation}
                       <p className="text-xs text-slate-500 font-medium flex items-center gap-1"><Clock className="w-3 h-3" /> {new Date(req.createdAt).toLocaleDateString()}</p>
                     </div>
                     <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${req.status === 'COMPLETED' ? 'bg-emerald-100 text-emerald-700' :
-                        req.status === 'ACCEPTED' ? 'bg-blue-100 text-blue-700' :
-                          'bg-amber-100 text-amber-700'
+                      req.status === 'ACCEPTED' ? 'bg-blue-100 text-blue-700' :
+                        'bg-amber-100 text-amber-700'
                       }`}>
                       {req.status}
                     </span>
                   </div>
                   <p className="text-slate-600 text-sm mb-4 bg-slate-50 p-3 rounded-xl leading-relaxed">{req.description}</p>
 
-                  {req.status === 'COMPLETED' && (
+                  {/* Payment Required Card for priced requests */}
+                  {req.status === 'ACCEPTED' && req.price > 0 && req.response && (
+                    <div className="mb-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-2xl p-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <CreditCard className="w-5 h-5 text-blue-600" />
+                        <p className="font-black text-blue-900 text-sm">Teacher has responded!</p>
+                      </div>
+                      <p className="text-blue-700 text-xs mb-3">Pay <span className="font-black text-lg text-blue-900">KES {req.price}</span> to access the response and chat with your teacher.</p>
+                      <button
+                        onClick={() => setShowPaymentGate({ reqId: req.id, price: req.price, topic: req.topic })}
+                        className="w-full py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-bold text-xs shadow-lg shadow-blue-200 hover:shadow-xl transition-all flex items-center justify-center gap-2"
+                      >
+                        <CreditCard className="w-4 h-4" /> Pay & View Response
+                      </button>
+                    </div>
+                  )}
+
+                  {(req.status === 'COMPLETED' || (req.status === 'ACCEPTED' && req.response && req.price === 0)) && (
                     <div className="mt-4 pt-4 border-t border-slate-100">
                       <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Teacher Response</p>
 
@@ -1715,15 +1830,27 @@ ${explanation.explanation}
                         )}
                       </div>
 
-                      {/* Continue Chat Button */}
+                      {/* Continue Chat Button — gated by parent PIN + payment */}
                       <button
                         onClick={() => {
-                          setChatRequestId(req.id);
-                          fetchChatMessages(req.id);
+                          if (!chatApproved) {
+                            setShowPinModal(true);
+                          } else if (req.price > 0 && req.status !== 'COMPLETED') {
+                            setShowPaymentGate({ reqId: req.id, price: req.price, topic: req.topic });
+                          } else {
+                            setChatRequestId(req.id);
+                            fetchChatMessages(req.id);
+                          }
                         }}
                         className="mt-3 w-full py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-2xl font-bold text-sm shadow-lg shadow-blue-200 hover:shadow-xl hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2"
                       >
-                        <span>💬</span> Continue Chat with Teacher
+                        {!chatApproved ? (
+                          <><Lock className="w-4 h-4" /> Unlock Chat (Parent PIN Required)</>
+                        ) : req.price > 0 && req.status !== 'COMPLETED' ? (
+                          <><CreditCard className="w-4 h-4" /> Pay KES {req.price} to Chat</>
+                        ) : (
+                          <><span>💬</span> Continue Chat with Teacher</>
+                        )}
                       </button>
                     </div>
                   )}
@@ -1773,8 +1900,13 @@ ${explanation.explanation}
               </button>
             </nav>
 
-            {/* Profile */}
+            {/* Profile & Streaks */}
             <div className="flex items-center gap-3">
+              <div className="hidden sm:flex items-center gap-1.5 bg-orange-50 px-3 py-1.5 rounded-full border border-orange-100 mr-2 shadow-sm">
+                <span className="text-orange-500 font-bold text-sm">🔥 3</span>
+                <span className="text-orange-800 text-[10px] font-black uppercase tracking-wider">Day Streak</span>
+              </div>
+
               {!isRegistered && (
                 <button
                   onClick={() => setShowLogin(true)}
@@ -1794,7 +1926,7 @@ ${explanation.explanation}
                 <div className="hidden sm:block text-right leading-tight">
                   <p className="text-sm font-black text-slate-900">{profile?.name.split(' ')[0] || 'Guest'}</p>
                   <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider flex items-center justify-end gap-1">
-                    <span className="text-amber-500">★</span> Level {levelInfo.level} • {totalXP} XP
+                    <span className="text-amber-500">★</span> Lvl {levelInfo.level} • {totalXP} XP
                   </p>
                 </div>
               </div>
@@ -1804,37 +1936,77 @@ ${explanation.explanation}
           {/* --- MAIN CENTER CONTENT --- */}
           <div className="flex-1 flex flex-col items-center px-4 relative z-10 pb-32 max-w-5xl mx-auto w-full">
 
-            {/* Greeting & CBE CTA */}
+            {/* Greeting, Daily Quest, & Actions */}
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="w-full mb-8 pt-8 flex flex-col md:flex-row md:items-end justify-between gap-6"
+              className="w-full mb-8 pt-8 flex flex-col gap-6"
             >
-              <div className="flex flex-col items-start pl-6">
-                <h1 className="text-3xl md:text-4xl font-black text-slate-900 mb-2 flex items-center gap-3">
-                  Hi, {profile ? profile.name.split(' ')[0] : 'Friend'} <span className="animate-wave text-4xl">👋</span>
-                </h1>
-                <p className="text-slate-500 font-medium text-lg">Ready to master your studies today?</p>
-              </div>
-
-              {/* CBE Notes CTA */}
-              <button
-                onClick={() => setMode('MARKETPLACE')}
-                className="group flex-1 md:flex-none md:w-auto bg-white border-2 border-indigo-50 hover:border-indigo-100 hover:bg-slate-50 p-3 rounded-3xl transition-all hover:shadow-lg flex items-center gap-4 text-left"
-              >
-                <div className="w-16 h-16 bg-indigo-600 text-white rounded-2xl flex items-center justify-center shrink-0 shadow-lg shadow-indigo-200 group-hover:scale-105 transition-transform">
-                  <BookOpen className="w-8 h-8" />
-                </div>
-                <div className="pr-4">
-                  <h3 className="font-black text-slate-900 text-lg leading-tight">CBE NOTES</h3>
-                  <p className="text-xs font-semibold text-slate-400 max-w-[240px] leading-tight mt-1">
-                    Study with CBE aligned notes. Download & Quiz available.
+              {/* Top Row: Greeting + Start Studying */}
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 w-full">
+                <div className="flex flex-col items-start pl-6 w-full lg:w-1/2">
+                  <h1 className="text-3xl md:text-4xl font-black text-slate-900 mb-2 flex items-center gap-3">
+                    {(() => {
+                      const hour = new Date().getHours();
+                      if (hour < 12) return 'Good Morning,';
+                      if (hour < 17) return 'Good Afternoon,';
+                      return 'Evening Review,';
+                    })()} {profile ? profile.name.split(' ')[0] : 'Friend'} <span className="animate-wave text-4xl">👋</span>
+                  </h1>
+                  <p className="text-slate-500 font-medium text-lg">
+                    {(() => {
+                      const hour = new Date().getHours();
+                      if (hour < 12) return 'Ready to crush your goals today?';
+                      if (hour < 17) return 'Keep the momentum going!';
+                      return 'Let\'s finish strong before tomorrow!';
+                    })()}
                   </p>
                 </div>
-                <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center group-hover:bg-indigo-100 group-hover:text-indigo-600 transition-colors">
-                  <ChevronRight className="w-5 h-5" />
+
+                {/* Start Studying Green Card */}
+                <div className="w-full md:w-auto bg-gradient-to-br from-emerald-400 to-emerald-500 rounded-[2rem] p-6 lg:px-10 flex flex-col items-center justify-center shadow-lg shadow-emerald-200">
+                  <button
+                    onClick={() => setMode('MARKETPLACE')}
+                    className="bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-full px-8 py-3.5 font-bold text-xl shadow-lg shadow-blue-900/20 hover:scale-105 transition-transform flex items-center gap-3 w-full justify-center mb-2"
+                  >
+                    <span className="text-2xl">🚀</span> Start Studying
+                  </button>
+                  <p className="text-emerald-50 font-medium text-sm">Continue your learning journey</p>
                 </div>
-              </button>
+              </div>
+
+              {/* Bottom Row: Daily Quest + CBE Notes */}
+              <div className="flex flex-col md:flex-row items-stretch gap-6 w-full md:pl-6">
+                {/* Daily Goal Urgency Bar */}
+                <div className="flex-1 bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col justify-center gap-3">
+                  <div className="flex justify-between items-center mb-1">
+                    <span className="text-xs font-black uppercase tracking-widest text-slate-400 flex items-center gap-1.5">
+                      <Zap className="w-4 h-4 text-amber-500 fill-amber-500" /> Daily Quest
+                    </span>
+                    <span className="text-xs font-bold text-slate-800 bg-slate-100 px-3 py-1 rounded-full">1/3 Lessons</span>
+                  </div>
+                  <div className="w-full h-3 bg-slate-100 rounded-full overflow-hidden">
+                    <div className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full w-1/3 shadow-[0_0_10px_rgba(59,130,246,0.5)]" />
+                  </div>
+                  <p className="text-[11px] font-bold text-slate-500 mt-1">Complete 2 more lessons to earn 50 Bonus XP!</p>
+                </div>
+
+                {/* CBE Notes CTA */}
+                <button
+                  onClick={() => setMode('MARKETPLACE')}
+                  className="group flex-1 bg-white border border-slate-100 hover:border-indigo-200 active:bg-indigo-50 p-5 rounded-3xl transition-all flex items-center gap-4 text-left shadow-sm hover:shadow-md"
+                >
+                  <div className="w-16 h-16 bg-blue-600 text-white rounded-2xl flex items-center justify-center shrink-0 shadow-md shadow-blue-200 group-hover:scale-105 transition-transform">
+                    <BookOpen className="w-8 h-8" />
+                  </div>
+                  <div className="pr-4 flex-1">
+                    <h3 className="font-black text-slate-900 text-lg leading-tight">CBE NOTES</h3>
+                    <p className="text-xs font-semibold text-slate-500 leading-tight mt-1">
+                      Study with CBE aligned notes & quizzes.
+                    </p>
+                  </div>
+                </button>
+              </div>
             </motion.div>
 
 
@@ -1935,9 +2107,23 @@ ${explanation.explanation}
                           </p>
                         </div>
 
-                        <button className="px-8 py-4 bg-amber-400 hover:bg-amber-500 text-amber-950 rounded-2xl font-black shadow-lg shadow-amber-200 transition-all hover:-translate-y-0.5 flex items-center gap-3 text-sm tracking-wide">
-                          RESUME LESSON <Play className="w-5 h-5 fill-current" />
-                        </button>
+                        <div className="space-y-4 w-full">
+                          {/* Motivational Progress Bar */}
+                          <div>
+                            <div className="flex justify-between items-center mb-1">
+                              <span className="text-xs font-bold text-slate-500">Mastery Progress</span>
+                              <span className="text-xs font-black text-blue-600">75%</span>
+                            </div>
+                            <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+                              <div className="h-full bg-blue-500 rounded-full w-3/4" />
+                            </div>
+                            <p className="text-[10px] font-bold text-slate-400 mt-1.5 uppercase tracking-wider">Almost there! Keep going.</p>
+                          </div>
+
+                          <button className="w-full sm:w-auto px-8 py-4 bg-amber-400 hover:bg-amber-500 text-amber-950 rounded-2xl font-black shadow-lg shadow-amber-200 transition-all hover:-translate-y-0.5 flex items-center justify-center sm:justify-start gap-3 text-sm tracking-wide">
+                            RESUME LESSON <Play className="w-5 h-5 fill-current" />
+                          </button>
+                        </div>
                       </div>
 
                       {/* Dynamic Illustration based on Type */}
@@ -2616,218 +2802,331 @@ ${explanation.explanation}
     if (mode === 'STUDY' && currentDocument) {
       return (
         <div className="bg-slate-50 min-h-screen flex flex-col md:flex-row max-w-[1440px] mx-auto shadow-2xl border-x border-slate-100 overflow-hidden">
-          {/* Sidebar: Study Guide & Document Info */}
-          <div className="w-full md:w-1/3 bg-white border-r border-slate-200 flex flex-col h-[50vh] md:h-screen">
-            <div className="p-6 border-b border-slate-100 bg-indigo-900 text-white">
-              <button onClick={() => setMode('MARKETPLACE')} className="flex items-center gap-2 mb-6 text-indigo-200 hover:text-white transition-colors">
+          {/* Virtual Classroom Sidebar Navigation */}
+          <div className="w-full md:w-72 bg-slate-900 border-r border-slate-800 flex flex-col h-auto md:h-screen shrink-0 relative z-20">
+            {/* Header Area */}
+            <div className="p-6 pb-8 border-b border-white/10 bg-gradient-to-b from-indigo-900/50 to-slate-900">
+              <button
+                onClick={() => setMode('MARKETPLACE')}
+                className="flex items-center gap-2 mb-6 px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white transition-colors w-fit"
+                title="Exit Classroom"
+              >
                 <ArrowRight className="w-4 h-4 rotate-180" />
-                <span className="text-[10px] font-black uppercase tracking-widest">Exit Study Center</span>
+                <span className="text-[10px] font-black uppercase tracking-widest">Exit Class</span>
               </button>
-              <h1 className="text-2xl font-black mb-2 tracking-tight line-clamp-2">{currentDocument.title}</h1>
-              <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-indigo-300">
-                <span>{currentDocument.grade}</span>
-                <span>•</span>
-                <span>{currentDocument.subject}</span>
+
+              <div className="flex items-start gap-4 mt-2">
+                <div className="p-2.5 bg-indigo-500/20 rounded-xl mt-1 border border-indigo-500/30 shrink-0">
+                  <BookOpen className="w-6 h-6 text-indigo-400" />
+                </div>
+                <div>
+                  <h1 className="text-xl font-black text-white leading-tight mb-3 tracking-tight">{currentDocument.title}</h1>
+                  <div className="flex flex-wrap gap-2">
+                    <span className="text-[9px] font-black uppercase tracking-widest text-indigo-200 bg-indigo-500/20 px-2.5 py-1 rounded w-fit border border-indigo-500/20">{currentDocument.grade}</span>
+                    <span className="text-[9px] font-black uppercase tracking-widest text-emerald-300 bg-emerald-500/20 px-2.5 py-1 rounded w-fit border border-emerald-500/20">{currentDocument.subject}</span>
+                  </div>
+                </div>
               </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-6 space-y-8 no-scrollbar">
-              {/* Study Guide Content */}
-              {isSummarizing ? (
-                <div className="space-y-4 animate-pulse">
-                  <div className="h-4 bg-slate-100 rounded w-3/4"></div>
-                  <div className="h-4 bg-slate-100 rounded w-full"></div>
-                  <div className="h-4 bg-slate-100 rounded w-5/6"></div>
+            {/* Navigation Tabs */}
+            <div className="flex-1 overflow-y-auto py-6 px-4 space-y-2 no-scrollbar">
+              <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-4 px-2">Classroom Activities</p>
+
+              <button
+                onClick={() => setStudyTab('LESSON')}
+                className={`w-full flex items-center gap-3 p-3.5 rounded-xl transition-all ${studyTab === 'LESSON' ? 'bg-indigo-600 shadow-lg shadow-indigo-900/50 text-white font-bold' : 'text-slate-400 hover:bg-white/5 hover:text-slate-200'}`}
+              >
+                <FileText className={`w-5 h-5 ${studyTab === 'LESSON' ? 'text-indigo-200' : ''}`} />
+                <span className="text-[15px] tracking-wide">The Lesson</span>
+              </button>
+
+              <button
+                onClick={() => setStudyTab('RECAP')}
+                className={`w-full flex items-center gap-3 p-3.5 rounded-xl transition-all ${studyTab === 'RECAP' ? 'bg-indigo-600 shadow-lg shadow-indigo-900/50 text-white font-bold' : 'text-slate-400 hover:bg-white/5 hover:text-slate-200'}`}
+              >
+                <ListChecks className={`w-5 h-5 ${studyTab === 'RECAP' ? 'text-indigo-200' : ''}`} />
+                <span className="text-[15px] tracking-wide">Quick Recap</span>
+              </button>
+
+              <button
+                onClick={() => setStudyTab('QNA')}
+                className={`w-full flex items-center justify-between p-3.5 rounded-xl transition-all ${studyTab === 'QNA' ? 'bg-indigo-600 shadow-lg shadow-indigo-900/50 text-white font-bold' : 'text-slate-400 hover:bg-white/5 hover:text-slate-200'}`}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="relative">
+                    <Sparkles className={`w-5 h-5 ${studyTab === 'QNA' ? 'text-indigo-200' : ''}`} />
+                    {studyChat.length > 0 && studyTab !== 'QNA' && (
+                      <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-slate-900"></span>
+                    )}
+                  </div>
+                  <span className="text-[15px] tracking-wide">Raise Hand</span>
                 </div>
-              ) : explanation && (
-                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="prose prose-slate prose-sm max-w-none">
-                  <h3 className="text-slate-900 font-black uppercase text-xs tracking-widest mb-4 flex items-center gap-2">
-                    <BookOpen className="w-4 h-4 text-indigo-600" /> Official Study Guide & Notes
-                  </h3>
-                  <MarkdownText content={explanation.explanation} />
+              </button>
 
-                  <div className="mt-8">
-                    <h4 className="text-slate-900 font-black uppercase text-[10px] tracking-widest mb-4">Summary Notes for Revision</h4>
-                    <ul className="space-y-3">
-                      {explanation.summaryPoints.map((point, i) => (
-                        <li key={i} className="flex gap-3 text-slate-600 items-start">
-                          <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
-                          <span className="text-sm font-medium">{point}</span>
-                        </li>
-                      ))}
-                    </ul>
+              <div className="pt-4 mt-4 border-t border-white/5">
+                <button
+                  onClick={() => setStudyTab('QUIZ')}
+                  className={`w-full flex items-center justify-between p-3.5 rounded-xl transition-all border border-dashed ${studyTab === 'QUIZ' ? 'bg-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.1)] border-emerald-500/50 text-emerald-400 font-bold' : 'border-slate-700 text-slate-400 hover:bg-emerald-500/10 hover:border-emerald-500/30 hover:text-emerald-300'}`}
+                >
+                  <div className="flex items-center gap-3">
+                    <CheckCircle className="w-5 h-5" />
+                    <span className="text-[15px] tracking-wide">Pop Quiz</span>
                   </div>
+                  <ArrowRight className="w-4 h-4 opacity-50" />
+                </button>
+              </div>
+            </div>
 
-                  <div className="mt-8 pt-6 border-t border-slate-100">
-                    <div className="bg-indigo-50 rounded-2xl p-4 mb-4 border border-indigo-100">
-                      <div className="flex items-center gap-2 mb-1">
-                        <Star className="w-3 h-3 text-indigo-600" />
-                        <span className="text-[10px] font-black text-indigo-700 uppercase tracking-widest">Exam Mastery Guide</span>
-                      </div>
-                      <p className="text-[10px] text-indigo-600 font-medium italic">Pro Tip: Review these summary notes before starting the quiz to maximize your "Stickiness Score"!</p>
-                    </div>
-
-                    <div className="bg-emerald-50 rounded-2xl p-4 mb-4 border border-emerald-100">
-                      <div className="flex items-center gap-2 mb-1">
-                        <Sparkles className="w-3 h-3 text-emerald-600" />
-                        <span className="text-[10px] font-black text-emerald-700 uppercase tracking-widest">Stickiness Boost</span>
-                      </div>
-                      <p className="text-[10px] text-emerald-600 font-medium italic">Did you know? Taking a 2-minute quiz now increases your retention by up to 80%!</p>
-                    </div>
-                    <Button
-                      fullWidth
-                      className="rounded-2xl py-4 bg-indigo-600 text-white shadow-xl shadow-indigo-100 font-black uppercase tracking-widest text-[10px] hover:bg-indigo-700 hover:scale-[1.02] transition-all"
-                      onClick={generatePracticeQuiz}
-                      icon={<Clock className="w-4 h-4" />}
-                    >
-                      Take Practice Quiz
-                    </Button>
-                  </div>
-                </motion.div>
-              )}
+            <div className="p-6 border-t border-white/5 bg-slate-900/50 backdrop-blur-md">
+              <div className="flex items-center gap-3 opacity-60">
+                <div className="w-8 h-8 rounded-lg bg-indigo-500/20 flex items-center justify-center border border-indigo-500/30">
+                  <Sparkles className="w-4 h-4 text-indigo-400" />
+                </div>
+                <div>
+                  <span className="block text-[9px] font-black uppercase tracking-widest text-slate-500">Virtual Classroom</span>
+                  <span className="block text-xs font-bold text-slate-400">Somo Smart</span>
+                </div>
+              </div>
             </div>
           </div>
 
-          {/* Main Content: Chat Interface */}
-          <div className="flex-1 flex flex-col bg-slate-50 relative h-[50vh] md:h-screen">
-            <div className="sticky top-0 z-10 p-6 flex items-center justify-between bg-white/80 backdrop-blur-md border-b border-slate-100">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-indigo-100 rounded-2xl flex items-center justify-center">
-                  <Sparkles className="w-6 h-6 text-indigo-600" />
-                </div>
-                <div>
-                  <h2 className="font-black text-slate-800 tracking-tight">Study Buddy</h2>
-                  <p className="text-[9px] font-black text-emerald-500 uppercase tracking-widest">Document-Locked Chat</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="px-3 py-1 bg-slate-100 rounded-full text-[9px] font-black text-slate-500 uppercase tracking-widest">Soma v1.5</span>
-              </div>
-            </div>
+          {/* Main Content Area */}
+          <div className="flex-1 flex flex-col bg-slate-50 relative h-[50vh] md:h-screen overflow-hidden">
 
-            <div
-              ref={chatContainerRef}
-              className="flex-1 overflow-y-auto p-6 space-y-6 no-scrollbar pb-32 scroll-smooth"
-            >
-              {studyChat.length === 0 ? (
-                <div className="h-full flex flex-col items-center justify-center text-center max-w-sm mx-auto opacity-40">
-                  <div className="w-20 h-20 bg-slate-200 rounded-full flex items-center justify-center mb-6">
-                    <Sparkles className="w-10 h-10 text-slate-400" />
-                  </div>
-                  <h3 className="text-xl font-black text-slate-600 mb-2">Ready to study with Somo?</h3>
-                  <p className="text-sm font-medium text-slate-500">I'm ready to help you master this material. Ask me for examples, easy summaries, or anything else you're curious about!</p>
-                </div>
-              ) : (
-                studyChat.map((msg, i) => (
-                  <motion.div
-                    key={i}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                  >
-                    <div className={`max-w-[85%] p-4 rounded-3xl ${msg.role === 'user' ? 'bg-indigo-600 text-white rounded-tr-none' : 'bg-white text-slate-800 shadow-sm border border-slate-100 rounded-tl-none'}`}>
-                      <MarkdownText content={msg.text} />
+            {/* TAB: LESSON */}
+            {studyTab === 'LESSON' && (
+              <div className="flex-1 overflow-y-auto p-4 md:p-12 no-scrollbar animate-in fade-in slide-in-from-bottom-4 duration-500 pb-32">
+                <div className="max-w-4xl mx-auto bg-white p-6 md:p-16 rounded-[2rem] shadow-sm border border-slate-100">
+                  {isSummarizing ? (
+                    <div className="space-y-6 animate-pulse">
+                      <div className="h-8 bg-slate-100 rounded-lg w-1/3 mb-10"></div>
+                      <div className="h-4 bg-slate-100 rounded w-full"></div>
+                      <div className="h-4 bg-slate-100 rounded w-11/12"></div>
+                      <div className="h-4 bg-slate-100 rounded w-full"></div>
+                      <div className="h-4 bg-slate-100 rounded w-5/6 mt-8"></div>
+                      <div className="h-4 bg-slate-100 rounded w-full"></div>
                     </div>
-                  </motion.div>
-                ))
-              )}
-              {loading && (
-                <div className="flex justify-start">
-                  <div className="bg-white p-4 rounded-3xl rounded-tl-none shadow-sm border border-slate-100 flex items-center gap-2">
-                    <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce"></div>
-                    <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce delay-100"></div>
-                    <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce delay-200"></div>
-                  </div>
-                </div>
-              )}
-              <div ref={messagesEndRef} />
-            </div>
-
-            {/* Input Area */}
-            <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-slate-50 via-slate-50 to-transparent">
-              <div className="max-w-3xl mx-auto space-y-3">
-                {pendingMedia && (
-                  <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex justify-start">
-                    <div className="bg-white p-3 rounded-2xl shadow-xl border border-slate-200 inline-flex items-center gap-3">
-                      {pendingMedia.type === 'IMAGE' ? (
-                        <div className="w-12 h-12 rounded-xl overflow-hidden border border-slate-100">
-                          <img src={`data:${pendingMedia.mimeType};base64,${pendingMedia.data}`} className="w-full h-full object-cover" />
+                  ) : explanation ? (
+                    <div className="prose prose-slate prose-lg max-w-none prose-headings:font-black prose-headings:tracking-tight prose-a:text-indigo-600 prose-li:marker:text-indigo-400">
+                      <div className="flex items-center gap-3 mb-10 border-b border-indigo-100 pb-6">
+                        <div className="p-3 bg-indigo-50 rounded-2xl">
+                          <BookOpen className="w-6 h-6 text-indigo-600" />
                         </div>
-                      ) : (
-                        <div className="w-12 h-12 bg-indigo-50 rounded-xl flex items-center justify-center">
-                          {pendingMedia.type === 'AUDIO' ? <Mic className="w-6 h-6 text-indigo-600" /> : <FileText className="w-6 h-6 text-indigo-600" />}
+                        <div>
+                          <h2 className="text-2xl font-black text-slate-800 tracking-tight m-0">The Lesson</h2>
+                          <p className="text-sm font-medium text-slate-500 m-0 leading-none mt-1">Detailed Study Guide & Notes</p>
                         </div>
-                      )}
-                      <div className="pr-4 text-left">
-                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Attached {pendingMedia.type}</p>
-                        <p className="text-[11px] font-bold text-slate-800">Somo is ready to analyze this!</p>
                       </div>
-                      <button onClick={() => setPendingMedia(null)} className="p-1.5 hover:bg-red-50 rounded-full text-slate-400 hover:text-red-500 transition-colors">
-                        <X className="w-4 h-4" />
-                      </button>
+                      <MarkdownText content={explanation.explanation} />
                     </div>
-                  </motion.div>
-                )}
-                <div className="flex items-center gap-3 p-2 bg-white rounded-[2rem] shadow-2xl border border-slate-200">
-                  <input
-                    type="file"
-                    ref={studyFileInputRef}
-                    className="hidden"
-                    accept="image/*,application/pdf"
-                    onChange={async (e) => {
-                      const file = e.target.files?.[0];
-                      if (file) {
-                        const data = await fileToGenerativePart(file);
-                        setPendingMedia({ data, mimeType: file.type, type: file.type.startsWith('image/') ? 'IMAGE' : 'FILE' });
-                      }
-                    }}
-                  />
-                  <div className="flex items-center gap-1 pl-2">
-                    <button
-                      onClick={() => startCamera()}
-                      className="p-3 text-slate-400 hover:text-indigo-600 transition-colors"
-                      title="Snapshot"
-                    >
-                      <Camera className="w-6 h-6" />
-                    </button>
-                    <button
-                      onClick={() => studyFileInputRef.current?.click()}
-                      className="p-3 text-slate-400 hover:text-indigo-600 transition-colors"
-                      title="Upload"
-                    >
-                      <Upload className="w-6 h-6" />
-                    </button>
-                    <button
-                      onClick={isRecording ? stopRecording : startRecording}
-                      className={`p-3 rounded-xl transition-all ${isRecording ? 'text-red-600 bg-red-50' : 'text-slate-400 hover:text-indigo-600'}`}
-                      title={isRecording ? "Stop Recording" : "Voice message"}
-                    >
-                      {isRecording ? <div className="w-6 h-6 bg-red-600 rounded-sm animate-pulse" /> : <Mic className="w-6 h-6" />}
-                    </button>
-                    {isRecording && (
-                      <span className="text-xs font-black text-red-500 tabular-nums ml-1">
-                        {formatTime(recordingTime)}
-                      </span>
-                    )}
-                  </div>
-                  <input
-                    type="text"
-                    value={promptText}
-                    onChange={(e) => setPromptText(e.target.value)}
-                    placeholder="Ask Somo about this document..."
-                    className="flex-1 px-2 py-4 outline-none text-slate-700 bg-transparent font-medium"
-                    onKeyDown={(e) => e.key === 'Enter' && askStudyBuddy(promptText)}
-                  />
-                  <button
-                    onClick={() => askStudyBuddy(promptText)}
-                    disabled={loading || (!promptText.trim() && !pendingMedia)}
-                    className="w-14 h-14 bg-indigo-600 rounded-full flex items-center justify-center text-white shadow-lg shadow-indigo-100 hover:scale-105 active:scale-95 transition-all disabled:opacity-50"
-                  >
-                    <ArrowRight className="w-6 h-6" />
-                  </button>
+                  ) : (
+                    <div className="text-center py-32 flex flex-col items-center">
+                      <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mb-6">
+                        <BookOpen className="w-10 h-10 text-slate-300" />
+                      </div>
+                      <h3 className="text-xl font-black text-slate-400">Loading lesson material...</h3>
+                    </div>
+                  )}
                 </div>
               </div>
-            </div>
+            )}
+
+            {/* TAB: RECAP */}
+            {studyTab === 'RECAP' && (
+              <div className="flex-1 overflow-y-auto p-4 md:p-12 no-scrollbar animate-in fade-in slide-in-from-bottom-4 duration-500 pb-32">
+                <div className="max-w-3xl mx-auto">
+                  <div className="mb-10 text-center md:text-left">
+                    <span className="inline-block px-4 py-1.5 rounded-full bg-emerald-100 text-emerald-700 text-xs font-black uppercase tracking-widest mb-4">Memory Check</span>
+                    <h2 className="text-4xl font-black text-slate-800 mb-3 tracking-tight">Quick Recap</h2>
+                    <p className="text-slate-500 font-medium text-lg max-w-xl">Review these summary points generated from the lesson. Check them off to ensure you've understood the core concepts before proceeding.</p>
+                  </div>
+
+                  {explanation ? (
+                    <div className="space-y-4">
+                      {explanation.summaryPoints.map((point, i) => (
+                        <motion.div
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: i * 0.1 }}
+                          key={i}
+                          className="bg-white p-6 md:p-8 rounded-3xl shadow-sm border border-slate-200 flex gap-6 items-start group hover:border-indigo-300 hover:shadow-md transition-all cursor-cell relative overflow-hidden"
+                        >
+                          <div className="absolute top-0 left-0 bottom-0 w-1.5 bg-indigo-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                          <div className="p-3 bg-indigo-50 border border-indigo-100 rounded-xl group-hover:bg-indigo-600 group-hover:border-indigo-600 transition-colors shrink-0">
+                            <CheckCircle className="w-6 h-6 text-indigo-500 group-hover:text-white transition-colors" />
+                          </div>
+                          <span className="text-xl text-slate-700 font-medium leading-relaxed pt-1.5">{point}</span>
+                        </motion.div>
+                      ))}
+
+                      <div className="mt-12 p-8 bg-gradient-to-br from-indigo-50 to-white border border-indigo-100 rounded-3xl text-center">
+                        <Sparkles className="w-10 h-10 text-indigo-400 mx-auto mb-4" />
+                        <h3 className="text-xl font-black text-slate-800 mb-2">Feeling Confident?</h3>
+                        <p className="text-slate-500 font-medium mb-6">If you understood these points, you are ready to test your knowledge.</p>
+                        <Button onClick={() => setStudyTab('QUIZ')} className="bg-indigo-600 text-white rounded-full px-8 py-3 font-bold hover:bg-indigo-700 transition-colors">Go to Pop Quiz</Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-20 text-slate-400">Loading recap...</div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* TAB: QUIZ */}
+            {studyTab === 'QUIZ' && (
+              <div className="flex-1 overflow-y-auto p-4 md:p-12 flex flex-col items-center justify-center no-scrollbar animate-in fade-in zoom-in-95 duration-500">
+                <div className="max-w-lg w-full text-center bg-white p-12 rounded-[3rem] shadow-xl border border-slate-100 relative overflow-hidden">
+                  <div className="absolute top-0 left-0 right-0 h-3 bg-gradient-to-r from-emerald-400 to-teal-400"></div>
+                  <div className="w-28 h-28 bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-8 shadow-inner border border-emerald-100">
+                    <CheckCircle className="w-12 h-12 text-emerald-500" />
+                  </div>
+                  <h2 className="text-4xl font-black text-slate-800 tracking-tight mb-4">Pop Quiz!</h2>
+                  <p className="text-slate-500 font-medium mb-10 text-lg leading-relaxed">Taking a practice quiz right after a session increases knowledge retention by up to <strong className="text-emerald-600 font-black">80%</strong>. Let's see how much you remember!</p>
+
+                  <Button
+                    fullWidth
+                    className="rounded-full py-5 text-lg bg-emerald-500 border-b-4 border-emerald-700 text-white font-black hover:bg-emerald-400 hover:border-emerald-600 active:border-b-0 active:translate-y-1 transition-all shadow-lg hover:shadow-emerald-500/30"
+                    onClick={generatePracticeQuiz}
+                  >
+                    Start Quiz Now
+                  </Button>
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-6">Powered by Somo AI Assessment</p>
+                </div>
+              </div>
+            )}
+
+            {/* TAB: QNA (Raise Hand / Chatbot) */}
+            {studyTab === 'QNA' && (
+              <div className="flex-1 flex flex-col bg-white rounded-t-3xl md:rounded-l-3xl md:rounded-tr-none shadow-[-10px_0_30px_rgba(0,0,0,0.03)] relative h-full animate-in fade-in slide-in-from-right-8 duration-500 border-l border-slate-200 overflow-hidden">
+                <div className="p-5 md:p-8 flex items-center justify-between border-b border-slate-100 bg-white/80 backdrop-blur-md z-10 shrink-0">
+                  <div className="flex items-center gap-4">
+                    <div className="w-14 h-14 bg-indigo-50 rounded-2xl flex items-center justify-center border border-indigo-100">
+                      <Sparkles className="w-7 h-7 text-indigo-600" />
+                    </div>
+                    <div>
+                      <h2 className="font-black text-slate-800 text-2xl tracking-tight leading-none mb-1">Somo Smart</h2>
+                      <p className="text-[10px] font-black text-indigo-500 uppercase tracking-widest flex items-center gap-1"><span className="w-1.5 h-1.5 inline-block rounded-full bg-emerald-500 animate-pulse"></span> Online Assistant</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div
+                  ref={chatContainerRef}
+                  className="flex-1 overflow-y-auto p-4 md:p-8 space-y-6 no-scrollbar pb-40 scroll-smooth bg-slate-50/50"
+                >
+                  {studyChat.length === 0 ? (
+                    <div className="h-full flex flex-col items-center justify-center text-center max-w-sm mx-auto opacity-80">
+                      <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center mb-6 border-4 border-indigo-50 shadow-xl relative">
+                        <div className="absolute inset-0 bg-indigo-400 rounded-full blur-xl opacity-20 animate-pulse"></div>
+                        <Sparkles className="w-10 h-10 text-indigo-500 relative z-10" />
+                      </div>
+                      <h3 className="text-2xl font-black text-slate-800 mb-3 tracking-tight">Raise your hand!</h3>
+                      <p className="text-base font-medium text-slate-500 leading-relaxed">I am your personal teacher for this class. Ask me to clarify anything in the notes, give you an example, or explain it in a simpler way.</p>
+                    </div>
+                  ) : (
+                    studyChat.map((msg, i) => (
+                      <motion.div
+                        key={i}
+                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                      >
+                        {/* Chat Avatars */}
+                        {msg.role === 'model' && (
+                          <div className="w-8 h-8 rounded-full bg-indigo-100 border border-indigo-200 flex items-center justify-center shrink-0 mr-3 mt-1 shadow-sm">
+                            <Sparkles className="w-4 h-4 text-indigo-600" />
+                          </div>
+                        )}
+                        <div className={`max-w-[85%] p-5 rounded-3xl text-[15px] leading-relaxed shadow-sm ${msg.role === 'user' ? 'bg-indigo-600 text-white rounded-tr-none shadow-indigo-200/50 mr-2' : 'bg-white text-slate-800 border border-slate-100 rounded-tl-none font-medium'}`}>
+                          <MarkdownText content={msg.text} />
+                        </div>
+                      </motion.div>
+                    ))
+                  )}
+                  {loading && (
+                    <div className="flex justify-start">
+                      <div className="w-8 h-8 rounded-full bg-indigo-100 border border-indigo-200 flex items-center justify-center shrink-0 mr-3 mt-1 shadow-sm opacity-50">
+                        <Sparkles className="w-4 h-4 text-indigo-600" />
+                      </div>
+                      <div className="bg-white p-5 rounded-3xl rounded-tl-none border border-slate-100 shadow-sm flex items-center gap-3 h-[60px]">
+                        <div className="w-2.5 h-2.5 bg-indigo-400 rounded-full animate-bounce"></div>
+                        <div className="w-2.5 h-2.5 bg-indigo-400 rounded-full animate-bounce delay-100"></div>
+                        <div className="w-2.5 h-2.5 bg-indigo-400 rounded-full animate-bounce delay-200"></div>
+                      </div>
+                    </div>
+                  )}
+                  <div ref={messagesEndRef} />
+                </div>
+
+                {/* Secure Chat Input Area */}
+                <div className="absolute bottom-0 left-0 right-0 p-4 md:p-8 bg-gradient-to-t from-white via-white to-transparent shrink-0">
+                  <div className="max-w-4xl mx-auto space-y-3">
+                    {pendingMedia && (
+                      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex justify-start">
+                        <div className="bg-white p-3 rounded-2xl shadow-xl border border-slate-200 inline-flex items-center gap-3">
+                          {pendingMedia.type === 'IMAGE' ? (
+                            <div className="w-14 h-14 rounded-xl overflow-hidden border border-slate-100 shadow-inner">
+                              <img src={`data:${pendingMedia.mimeType};base64,${pendingMedia.data}`} className="w-full h-full object-cover" />
+                            </div>
+                          ) : (
+                            <div className="w-14 h-14 bg-indigo-50 rounded-xl flex items-center justify-center border border-indigo-100">
+                              {pendingMedia.type === 'AUDIO' ? <Mic className="w-6 h-6 text-indigo-600" /> : <FileText className="w-6 h-6 text-indigo-600" />}
+                            </div>
+                          )}
+                          <div className="pr-6 text-left">
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Attached {pendingMedia.type}</p>
+                            <p className="text-xs font-bold text-slate-800">Somo is ready to analyze this!</p>
+                          </div>
+                          <button onClick={() => setPendingMedia(null)} className="p-2 hover:bg-red-50 rounded-full text-slate-400 hover:text-red-500 transition-colors ml-2">
+                            <Trash2 className="w-5 h-5" />
+                          </button>
+                        </div>
+                      </motion.div>
+                    )}
+
+                    <div className="relative group">
+                      <div className="absolute -inset-1.5 bg-indigo-500 rounded-[2rem] opacity-0 group-focus-within:opacity-20 blur-lg transition duration-500"></div>
+                      <div className="relative flex items-center bg-white border border-slate-200 rounded-[2rem] p-2 shadow-lg focus-within:ring-2 focus-within:ring-indigo-500 focus-within:border-transparent transition-all">
+                        <button type="button" onClick={() => studyFileInputRef.current?.click()} className="p-3.5 text-slate-400 hover:text-indigo-600 hover:bg-slate-50 rounded-full transition-colors hidden sm:block">
+                          <Upload className="w-6 h-6" />
+                        </button>
+                        <button type="button" onClick={isRecording ? stopRecording : startRecording} className={`p-3.5 rounded-full transition-colors ${isRecording ? 'text-red-500 bg-red-50 animate-pulse' : 'text-slate-400 hover:text-indigo-600 hover:bg-slate-50'}`}>
+                          <Mic className="w-6 h-6" />
+                        </button>
+                        <input type="file" ref={studyFileInputRef} className="hidden" accept="image/*,.pdf" onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            const data = await fileToGenerativePart(file);
+                            setPendingMedia({ data, mimeType: file.type, type: file.type.startsWith('image/') ? 'IMAGE' : 'FILE' });
+                          }
+                        }} />
+
+                        <input
+                          type="text"
+                          value={promptText}
+                          onChange={(e) => setPromptText(e.target.value)}
+                          onKeyDown={(e) => e.key === 'Enter' && askStudyBuddy(promptText)}
+                          placeholder="Ask Teacher Somo a question..."
+                          className="flex-1 bg-transparent px-4 py-4 outline-none text-slate-700 placeholder:text-slate-400 font-medium text-lg"
+                          disabled={loading}
+                        />
+
+                        <button
+                          type="button"
+                          disabled={(!promptText.trim() && !pendingMedia) || loading}
+                          onClick={() => askStudyBuddy(promptText)}
+                          className="p-4 bg-indigo-600 text-white rounded-full hover:bg-indigo-700 disabled:opacity-50 disabled:hover:bg-indigo-600 transition-colors shadow-md shadow-indigo-200 mr-1"
+                        >
+                          <ArrowRight className="w-6 h-6" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       );
@@ -3183,7 +3482,8 @@ ${explanation.explanation}
           type: 'QUIZ',
           topic: `${subjectPrefix}${quizData.topic}`,
           date: new Date().toLocaleDateString(),
-          score
+          score,
+          details: JSON.stringify(quizData)
         });
 
         // Return to marketplace/materials after study quiz
@@ -3790,6 +4090,58 @@ ${explanation.explanation}
           navigate('/');
         }}
       />
+      <ParentPinModal
+        isOpen={showPinModal}
+        onClose={() => setShowPinModal(false)}
+        hasPin={!!studentProfile?.parentPin}
+        onSetPin={setParentPin}
+        onVerifyPin={verifyChatPin}
+        parentPhone={studentProfile?.parentPhone}
+      />
+
+      {/* Payment Gate Modal */}
+      <AnimatePresence>
+        {showPaymentGate && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white rounded-[2rem] p-8 max-w-sm w-full shadow-2xl text-center"
+            >
+              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <CreditCard className="w-8 h-8 text-blue-600" />
+              </div>
+              <h3 className="text-xl font-black text-slate-900 mb-2">Payment Required</h3>
+              <p className="text-slate-500 text-sm mb-1">To chat with your teacher about:</p>
+              <p className="font-bold text-slate-800 mb-4">{showPaymentGate.topic}</p>
+              <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-2xl p-4 mb-6">
+                <p className="text-3xl font-black">KES {showPaymentGate.price}</p>
+                <p className="text-blue-200 text-xs font-bold uppercase tracking-widest mt-1">One-time fee</p>
+              </div>
+              <div className="space-y-3">
+                <button
+                  onClick={() => {
+                    // For now, proceed to chat (wire to payment later)
+                    setChatRequestId(showPaymentGate.reqId);
+                    fetchChatMessages(showPaymentGate.reqId);
+                    setShowPaymentGate(null);
+                  }}
+                  className="w-full py-3.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-2xl font-bold text-sm shadow-lg shadow-blue-200 hover:shadow-xl transition-all"
+                >
+                  Pay KES {showPaymentGate.price} & Start Chat
+                </button>
+                <button
+                  onClick={() => setShowPaymentGate(null)}
+                  className="w-full py-2.5 text-slate-400 font-bold text-xs uppercase tracking-widest hover:text-slate-600 transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       <AnimatePresence>
         {showLimitModal && (
@@ -3926,15 +4278,20 @@ ${explanation.explanation}
             ></textarea>
             <Button fullWidth onClick={async () => {
               const desc = (document.getElementById('tutoring-desc-quick') as HTMLTextAreaElement).value;
-              if (!desc) return;
+              if (!desc) { alert("Please describe your question."); return; }
               if (selectedGrade === 'ALL' || subjectFilter === 'ALL') {
                 alert("Please select a Grade and Subject for your request.");
+                return;
+              }
+              if (!studentProfile) {
+                alert("You need to log in with your Student Code to ask a teacher. Guest mode doesn't support this feature.");
                 return;
               }
               setLoading(true);
               const res = await createTutoringRequest(tutoringTopic || "General Help", desc, 20, selectedGrade, subjectFilter);
               setLoading(false);
               if (res.success) { setShowTutoringModal(false); alert("Request Sent!"); }
+              else { alert(res.message || "Failed to send request. Please try again."); }
             }}>Send Request</Button>
           </div>
         </div>

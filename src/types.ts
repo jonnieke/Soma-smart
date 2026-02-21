@@ -80,6 +80,8 @@ export interface LearnerProfile {
   subscriptionExpiry: string | null;
   schoolId?: string;
   parentPhone?: string;
+  parentPin?: string; // 4-digit PIN set by parent to approve chat
+  chatApproved?: boolean; // Whether parent has approved learner-teacher chat
   sessionId?: string; // For backward compatibility? Or primary current session?
   activeSessions?: string[]; // New: list of active session IDs (max 2)
 }
