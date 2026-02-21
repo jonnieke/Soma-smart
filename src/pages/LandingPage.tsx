@@ -358,7 +358,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                     onClick={() => handleRoleSelect(UserRole.LEARNER)}
                                     className="px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 rounded-xl font-bold text-lg shadow-xl shadow-blue-200 transition-all hover:-translate-y-1 w-full sm:w-auto flex items-center justify-center gap-2 group"
                                 >
-                                    {t.hero.ctaStudents} <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                                    {t.hero.ctaLearner} <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                                 </button>
                                 <button
                                     onClick={() => handleRoleSelect(UserRole.TEACHER)}
@@ -367,10 +367,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                     {t.hero.ctaTeachers} <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                                 </button>
                                 <button
-                                    onClick={() => handleRoleSelect(UserRole.SCHOOL)}
-                                    className="px-8 py-4 bg-slate-900 text-white hover:bg-slate-800 rounded-xl font-bold text-lg shadow-xl shadow-slate-200 transition-all hover:-translate-y-1 w-full sm:w-auto flex items-center justify-center gap-2 group border border-slate-700"
+                                    onClick={() => setShowContact(true)}
+                                    className="px-8 py-4 bg-white text-blue-700 border-2 border-blue-200 hover:border-blue-400 hover:bg-blue-50 rounded-xl font-bold text-lg shadow-lg shadow-blue-100/50 transition-all hover:-translate-y-1 w-full sm:w-auto flex items-center justify-center gap-2 group"
                                 >
-                                    {t.hero.ctaSchools} <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                                    {t.hero.ctaPilot} <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                                 </button>
                             </div>
 

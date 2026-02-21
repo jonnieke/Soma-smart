@@ -3,12 +3,12 @@ export const translations = {
         hero: {
             pillStudents: "Join 10,000+ Students & Teachers",
             pillTeachers: "🍎 Teachers: Save 2 hours/day",
-            headline: "Study Better. Teach Smarter - ",
-            gradient: "The Smart Learning Platform for Students and Teachers",
-            subheadline: "Somo helps students revise for exams and complete homework confidently, while teachers create notes, quizzes, and lesson materials in minutes.",
-            ctaStudents: "For Students",
+            headline: "SomaAI — A study coach for CBC learners ",
+            gradient: "& time-saving tools for Kenyan teachers.",
+            subheadline: "Learners scan homework and get instant, step-by-step explanations. Teachers auto-generate exams, notes & mark papers in minutes — not hours.",
+            ctaLearner: "Try Learner for Free",
             ctaTeachers: "For Teachers",
-            ctaSchools: "For Schools"
+            ctaPilot: "Book School Pilot"
         },
         efficiency: {
             title: "Dominate with ",
@@ -281,12 +281,12 @@ export const translations = {
         hero: {
             pillStudents: "Rejoignez 10 000+ Étudiants et Enseignants",
             pillTeachers: "🍎 Enseignants : Gagnez 2h/jour",
-            headline: "Étudiez Mieux. Enseignez Plus Intelligemment - ",
-            gradient: "La Plateforme d'Apprentissage Intelligente pour Étudiants et Enseignants",
-            subheadline: "Somo aide les élèves à réviser leurs examens et à faire leurs devoirs en toute confiance, tandis que les enseignants créent des notes, des quiz et du matériel pédagogique en quelques minutes.",
-            ctaStudents: "Pour les Étudiants",
+            headline: "SomaAI — Un coach d'étude pour les apprenants CBC ",
+            gradient: "& des outils gain de temps pour les enseignants kényans.",
+            subheadline: "Les apprenants scannent leurs devoirs et obtiennent des explications étape par étape. Les enseignants génèrent automatiquement examens, notes et corrigent en minutes — pas en heures.",
+            ctaLearner: "Essayer Apprenant Gratuitement",
             ctaTeachers: "Pour les Enseignants",
-            ctaSchools: "Pour les Écoles"
+            ctaPilot: "Réserver un Pilote École"
         },
         efficiency: {
             title: "Dominez avec ",
