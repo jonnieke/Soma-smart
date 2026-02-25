@@ -1321,7 +1321,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       const { data, error } = await query;
       console.log("FETCHED RESOURCES:", data, "ERROR:", error);
       if (error) throw error;
-      setResources(data || []);
+      const filteredData = (data || []).filter(item => !/^\d{13}$/.test(item.title));
+      setResources(filteredData);
     } catch (e) {
       console.error("Error fetching resources:", e);
     }
@@ -1630,7 +1631,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         }
 
         if (data) {
-          const mapped: LearnerActivity[] = data.map((d: any) => ({
+          // Filter out corrupted activities where the topic is just a long timestamp
+          const validData = data.filter((d: any) => !/^\d{13}$/.test(d.topic));
+
+          const mapped: LearnerActivity[] = validData.map((d: any) => ({
             id: d.id,
             type: d.type,
             topic: d.topic,

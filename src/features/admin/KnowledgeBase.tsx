@@ -52,8 +52,12 @@ export const AdminKnowledgeBase: React.FC = () => {
             .select('*')
             .order('created_at', { ascending: false });
 
-        if (error) console.error('Error fetching docs:', error);
-        else setDocuments(data || []);
+        if (error) {
+            console.error('Error fetching docs:', error);
+        } else {
+            const filteredDocs = (data || []).filter(doc => !/^\d{13}$/.test(doc.title));
+            setDocuments(filteredDocs);
+        }
         setLoading(false);
     };
 

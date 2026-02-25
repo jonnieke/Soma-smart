@@ -183,15 +183,49 @@ export const explainTopic = async (
     model: MODEL_NAME,
     generationConfig: {
       responseMimeType: "application/json",
+      maxOutputTokens: 8192,
       responseSchema: {
         type: SchemaType.OBJECT,
         properties: {
           topic: { type: SchemaType.STRING },
-          explanation: { type: SchemaType.STRING, description: "Markdown formatted explanation" },
+          explanation: { type: SchemaType.STRING, description: "Markdown formatted general overview explanation" },
+          subtopics: {
+            type: SchemaType.ARRAY,
+            items: {
+              type: SchemaType.OBJECT,
+              properties: {
+                title: { type: SchemaType.STRING, description: "Subtopic heading string" },
+                blocks: {
+                  type: SchemaType.ARRAY,
+                  description: "Structured content blocks for this subtopic to ensure readability.",
+                  items: {
+                    type: SchemaType.OBJECT,
+                    properties: {
+                      type: { type: SchemaType.STRING, description: "Must be exactly 'paragraph' or 'list'" },
+                      text: { type: SchemaType.STRING, description: "The conversational paragraph text. Required if type is 'paragraph'." },
+                      items: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING }, description: "Array of bullet points or numbered list items. Required if type is 'list'." }
+                    },
+                    required: ["type"]
+                  }
+                }
+              },
+              required: ["title", "blocks"]
+            }
+          },
+          recapNodes: {
+            type: SchemaType.ARRAY,
+            items: {
+              type: SchemaType.OBJECT,
+              properties: {
+                point: { type: SchemaType.STRING, description: "Short, punchy summary point for checklist" },
+                details: { type: SchemaType.STRING, description: "Detailed paragraph explaining the point in depth" }
+              }
+            }
+          },
           summaryPoints: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
           relatedTopics: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } }
         },
-        required: ["topic", "explanation", "summaryPoints", "relatedTopics"]
+        required: ["topic", "explanation", "subtopics", "recapNodes", "summaryPoints", "relatedTopics"]
       }
     }
   });
@@ -233,15 +267,23 @@ export const explainTopic = async (
     - IRE = Islamic Religious Education.
     - HRE = Hindu Religious Education.
 
+    FORMATTING RULES FOR YOUNG LEARNERS (CRITICAL):
+    - NO WALLS OF TEXT. Keep paragraphs extremely short (2-3 sentences maximum).
+    - Use abundant bullet points (- ) and numbered lists (1. 2. 3.) to break up information.
+    - Write in plain text. Do NOT use ** (bold markers) or ## (headers) in the content fields.
+    - Keep sentences simple, friendly, and easy to read.
+    - Add blank lines between every paragraph and list item for visual breathing room.
+    
     STRICT TASK:
     1. Identify the subject of the topic "${topic}".
     2. ${langInstruction}
     3. If an image or audio recording is provided, analyze it (transcribe audio if present) and answer the student's question in the context of the source document snippets provided.
-    4. Explain the topic in ${level === 'Simple' ? 'very simple language for a young student' : 'academic language suitable for exams'}.
-    5. **FORMAT**: Structure the explanation using Markdown. Use **bold text** frequently for key terms and concepts. Avoid long-form text.
-    6. Provide 3-5 short bullet points summarizing the most critical takeaways for "stickiness".
-    7. Suggest 3 short related topics for further learning.
-    8. **ENGAGEMENT**: Briefly mention that a practice quiz is available to help the student test their knowledge.
+    4. Provide a general overview in the 'explanation' field.
+    5. DEEP LEARNING (subtopics): Break the topic down into EXACTLY 3 distinct, logical subtopics using the FORMATTING RULES above. For EACH subtopic, provide highly readable, bite-sized paragraph notes in plain text. Do NOT use ** (bold markers) or ## (headers) in the content. Use numbered lists and bullet points frequently to break down processes or features.
+       - CRITICAL LIMIT: Do not generate excessively long notes. You MUST ensure the full JSON output is completed and valid without truncating. Keep it concise.
+    6. INTERACTIVE RECAP (recapNodes): Provide EXACTLY 3 titled key concept names as "point" (NOT sentences). For EACH point, provide a detailed explanatory paragraph in the 'details' field in plain text.
+    7. Provide EXACTLY 3 short bullet points summarizing the most critical takeaways for "stickiness" in the 'summaryPoints' field.
+    8. Suggest EXACTLY 3 short related topics for further learning.
     
     Output JSON.
   `;
@@ -273,21 +315,55 @@ export const summarizeDocument = async (title: string, documentId: string, langu
     model: MODEL_NAME,
     generationConfig: {
       responseMimeType: "application/json",
+      maxOutputTokens: 8192,
       responseSchema: {
         type: SchemaType.OBJECT,
         properties: {
           topic: { type: SchemaType.STRING },
-          explanation: { type: SchemaType.STRING, description: "Markdown formatted study guide" },
+          explanation: { type: SchemaType.STRING, description: "Markdown formatted general overview and introduction to the topic" },
+          subtopics: {
+            type: SchemaType.ARRAY,
+            items: {
+              type: SchemaType.OBJECT,
+              properties: {
+                title: { type: SchemaType.STRING, description: "Clear subtopic heading — like a chapter or section title in a textbook" },
+                blocks: {
+                  type: SchemaType.ARRAY,
+                  description: "Structured content blocks for this subtopic to ensure readability.",
+                  items: {
+                    type: SchemaType.OBJECT,
+                    properties: {
+                      type: { type: SchemaType.STRING, description: "Must be exactly 'paragraph' or 'list'" },
+                      text: { type: SchemaType.STRING, description: "The conversational paragraph text. Required if type is 'paragraph'." },
+                      items: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING }, description: "Array of bullet points or numbered list items. Required if type is 'list'." }
+                    },
+                    required: ["type"]
+                  }
+                }
+              },
+              required: ["title", "blocks"]
+            }
+          },
+          recapNodes: {
+            type: SchemaType.ARRAY,
+            items: {
+              type: SchemaType.OBJECT,
+              properties: {
+                point: { type: SchemaType.STRING, description: "A titled key concept or takeaway — like a chapter heading" },
+                details: { type: SchemaType.STRING, description: "Detailed paragraph explaining this key concept thoroughly for revision" }
+              }
+            }
+          },
           summaryPoints: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
           relatedTopics: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } }
         },
-        required: ["topic", "explanation", "summaryPoints", "relatedTopics"]
+        required: ["topic", "explanation", "subtopics", "recapNodes", "summaryPoints", "relatedTopics"]
       }
     }
   });
 
   const prompt = `
-    You are an Expert Kenyan Teacher and AI Study Companion.
+    You are an Expert Kenyan Teacher and AI Study Companion building a COMPREHENSIVE LEARNING HUB.
     A student in ${grade || 'their grade'} is studying the document: "${title}" for the subject: "${subject || 'General Studies'}".
     
     SYSTEM CONTEXT: You are operating within the Kenyan Education System (CBC, KCPE, and KCSE). 
@@ -300,18 +376,44 @@ export const summarizeDocument = async (title: string, documentId: string, langu
     Source Content Snippets:
     "${ragContext.substring(0, 10000)}"
     
-    TASK:
-    1. Create a "Study Guide" summary for this document.
-    2. **STRICT SOURCE GROUNDING**: Your primary authority is the "Source Content Snippets" provided above. You MUST strictly follow the themes, topics, and terminology found in the snippets.
-    3. **NO HALLUCINATION**: NEVER introduce concepts from unrelated fields (e.g., do not discuss "Real Estate" for "CRE" notes).
-    4. **CONTENT INTEGRITY**: NEVER use placeholders like "[PLACEHOLDER]" or generic templates. 
-    5. **CURRICULUM ALIGNMENT**: If the source content is brief, you may expand on the concepts using your expert knowledge of the KENYAN CURRICULUM for "${subject}" at "${grade}" level. However, this expansion MUST stay strictly within the subject boundaries of ${subject}.
-    6. **FORMAT**: Use a summarized bullet style that is easy to read. Structure it with "Study Notes" and "Official Guide" using clear headers and bullet points.
-    7. Include a "The Big Idea" section and "Key Learnings" (in bullets).
-    8. Use ${language === 'FR' ? 'French' : 'English'}.
-    9. Provide 3-5 summary points optimized for better retention (stickiness).
-    10. Suggest 3 related study topics.
-    11. **STIMULATE**: Mention that the student should take the practice quiz after reading to help the information stick.
+    CRITICAL RULES:
+    - **STRICT SOURCE GROUNDING**: Your primary authority is the "Source Content Snippets" provided above. You MUST strictly follow the themes, topics, and terminology found in the snippets.
+    - **NO HALLUCINATION**: NEVER introduce concepts from unrelated fields (e.g., do not discuss "Real Estate" for "CRE" notes).
+    - **CONTENT INTEGRITY**: NEVER use placeholders like "[PLACEHOLDER]" or generic templates. 
+    - **CURRICULUM ALIGNMENT**: If the source content is brief, you may expand on the concepts using your expert knowledge of the KENYAN CURRICULUM for "${subject}" at "${grade}" level. However, this expansion MUST stay strictly within the subject boundaries of ${subject}.
+    
+    TASK — GENERATE DETAILED STUDY NOTES (NOT A SUMMARY):
+    
+    FORMATTING RULES FOR YOUNG LEARNERS (CRITICAL):
+    - NO WALLS OF TEXT. Keep paragraphs extremely short (2-3 sentences maximum).
+    - Use abundant bullet points (- ) and numbered lists (1. 2. 3.) to break up information.
+    - Write in plain text. Do NOT use ** (bold markers) or ## (headers) in the content fields.
+    - Keep sentences simple, friendly, and easy to read.
+    - Use 🎯 for exam tips and key takeaways, placing them on their own separate line.
+    - Add blank lines between every paragraph and list item for visual breathing room.
+    
+    1. OVERVIEW (explanation field): Write a brief, friendly introduction to the topic. What is the big idea? Why does it matter?
+    
+    2. DEEP STRUCTURED NOTES (subtopics field): This is the MOST IMPORTANT part. Break the document content into EXACTLY 3 distinct subtopics structured like a textbook syllabus. For EACH subtopic:
+       - Give it a clear, descriptive title (like a chapter heading, e.g. "1. Types of Soil and Their Properties", "2. Factors Affecting Soil Formation")
+       - Write comprehensive but highly readable notes in the content field using the formatting rules above. Include:
+         - Clear definitions of key terms
+         - Fun, relatable examples for young learners
+         - Step-by-step numbered lists for processes or steps
+         - Bulleted lists for characteristics, types, or examples
+         - 🎯 Exam Tips for frequently tested areas
+       - The content must be detailed but presented in bite-sized, digestible pieces, NOT large blocks of text.
+       - CRITICAL LIMIT: Do not generate excessively long notes. You MUST ensure the full JSON output is completed and valid without truncating. Keep it concise.
+    
+    3. INTERACTIVE RECAP (recapNodes field): Provide EXACTLY 3 titled recap points. For EACH:
+       - The "point" field should be a short, titled key concept name (e.g. "Photosynthesis Process", "Newton's Third Law") — NOT a full sentence
+       - The "details" field should be a very concise, single-paragraph explanation of this concept for revision. Write in plain text, no bold markers.
+    
+    4. STICKINESS POINTS (summaryPoints): EXACTLY 3 ultra-concise bullet points — the absolute critical takeaways.
+    
+    5. RELATED TOPICS: Suggest EXACTLY 3 related study topics for further learning.
+    
+    6. Use ${language === 'FR' ? 'French' : 'English'}.
     
     Output JSON.
   `;

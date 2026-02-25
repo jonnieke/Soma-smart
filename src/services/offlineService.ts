@@ -8,7 +8,12 @@ export const offlineService = {
     getLearnerHistory(): LearnerActivity[] {
         try {
             const data = localStorage.getItem(LEARNER_HISTORY_KEY);
-            return data ? JSON.parse(data) : [];
+            if (data) {
+                const parsed = JSON.parse(data) as LearnerActivity[];
+                // Filter out corrupted activities where topic is just a timestamp
+                return parsed.filter(item => !/^\d{13}$/.test(item.topic));
+            }
+            return [];
         } catch (e) {
             console.error("Local load failed", e);
             return [];
@@ -17,16 +22,27 @@ export const offlineService = {
 
     saveLearnerHistory(history: LearnerActivity[]) {
         try {
-            localStorage.setItem(LEARNER_HISTORY_KEY, JSON.stringify(history));
+            // ONLY keep full details for the 3 most recent activities.
+            // Strip the heavy "details" payload from older items to prevent QuotaExceededError.
+            const historyToSave = history.map((item, index) => {
+                if (index >= 3 && item.details) {
+                    const { details, ...rest } = item;
+                    return rest;
+                }
+                return item;
+            });
+            localStorage.setItem(LEARNER_HISTORY_KEY, JSON.stringify(historyToSave));
         } catch (e: any) {
             console.error("Local save failed", e);
             if (e.name === 'QuotaExceededError' || e.code === 22) {
-                // Determine what to do: trim history or clear it
-                // For now, let's keep only the last 50 items if it fails
+                // If the quota still fails, aggressively keep only 10 items total
                 try {
                     const existing = this.getLearnerHistory();
-                    if (existing.length > 50) {
-                        const trimmed = existing.slice(0, 50);
+                    if (existing.length > 10) {
+                        const trimmed = existing.slice(0, 10).map(item => {
+                            const { details, ...rest } = item;
+                            return rest;
+                        });
                         localStorage.setItem(LEARNER_HISTORY_KEY, JSON.stringify(trimmed));
                     } else {
                         // Critical failure, clear all

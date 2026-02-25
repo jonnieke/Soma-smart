@@ -26,10 +26,29 @@ export enum ViewState {
 export type SubscriptionTier = 'FREE' | 'PRO' | 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'TERMLY' | 'ANNUAL';
 export type UserSegment = 'STUDENT' | 'TEACHER' | 'SCHOOL';
 
+export interface SubtopicBlock {
+  type: 'paragraph' | 'list';
+  text?: string;
+  items?: string[];
+}
+
+export interface Subtopic {
+  title: string;
+  content?: string; // Legacy markdown content
+  blocks?: SubtopicBlock[]; // New structured content for readable formatting
+}
+
+export interface RecapNode {
+  point: string;   // Short summary point
+  details: string; // Detailed paragraph explaining the point
+}
+
 export interface ExplanationResult {
   topic: string;
-  explanation: string; // Markdown
-  summaryPoints: string[];
+  explanation: string; // Markdown (Overview)
+  subtopics?: Subtopic[]; // Deeper scrollable topics
+  recapNodes?: RecapNode[]; // Interactive detailed checklists
+  summaryPoints: string[]; // Keep for backward compatibility
   level: 'Simple' | 'Exam';
   relatedTopics?: string[];
   transcript?: string;

@@ -5,7 +5,7 @@ import {
   Sparkles, Home, X, XCircle, Camera, ScanLine, Mic, Upload, Clock,
   CheckCircle, Play, Pause, ChevronRight, Star, BookOpen, Brain, Lightbulb, Lock, Volume2, CreditCard,
   ArrowRight, UserCircle, Download, ImageIcon, Trash2, AlertTriangle, LogOut, Users, DollarSign, FileText, ShoppingBag, Library, Layers,
-  Calculator, FlaskConical, Globe, Languages, Loader2, Headphones, PenTool, Zap, ListChecks
+  Calculator, FlaskConical, Globe, Languages, Loader2, Headphones, PenTool, Zap, ListChecks, Trophy, Hand
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { ExplanationResult, QuizData, ViewState, SubscriptionPlan, LearnerProfile, LearnerActivity, UserRole, PodcastScript, ChatMessage } from '../../types';
@@ -114,6 +114,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
 
   const [mode, setMode] = useState<'MENU' | 'SCAN' | 'RESULT' | 'QUIZ' | 'RECAP_RESULT' | 'PROFILE' | 'PRICING' | 'PAYMENT' | 'MARKETPLACE' | 'LIBRARY' | 'HISTORY' | 'SCAN_EXPLAIN' | 'STUDY' | 'REQUESTS'>('MENU');
   const [studyTab, setStudyTab] = useState<'LESSON' | 'RECAP' | 'QNA' | 'QUIZ'>('LESSON');
+  const [expandedRecaps, setExpandedRecaps] = useState<number[]>([]);
   const [recapData, setRecapData] = useState<any>(null); // Store LessonRecap
 
   const [loading, setLoading] = useState(false);
@@ -2908,17 +2909,114 @@ ${explanation.explanation}
                       <div className="h-4 bg-slate-100 rounded w-full"></div>
                     </div>
                   ) : explanation ? (
-                    <div className="prose prose-slate prose-lg max-w-none prose-headings:font-black prose-headings:tracking-tight prose-a:text-indigo-600 prose-li:marker:text-indigo-400">
-                      <div className="flex items-center gap-3 mb-10 border-b border-indigo-100 pb-6">
-                        <div className="p-3 bg-indigo-50 rounded-2xl">
-                          <BookOpen className="w-6 h-6 text-indigo-600" />
+                    <div className="prose prose-slate prose-lg max-w-none prose-headings:font-semibold prose-headings:tracking-tight prose-a:text-indigo-600 prose-li:marker:text-indigo-400 prose-strong:font-semibold">
+                      <div className="mb-10 border-b border-indigo-100 pb-6">
+                        <div className="flex items-center gap-3 mb-5">
+                          <div className="p-3 bg-indigo-50 rounded-2xl">
+                            <BookOpen className="w-6 h-6 text-indigo-600" />
+                          </div>
+                          <div>
+                            <h2 className="text-2xl font-black text-slate-800 tracking-tight m-0">The Lesson</h2>
+                            <p className="text-sm font-medium text-slate-500 m-0 leading-none mt-1">Detailed Study Guide & Notes</p>
+                          </div>
                         </div>
-                        <div>
-                          <h2 className="text-2xl font-black text-slate-800 tracking-tight m-0">The Lesson</h2>
-                          <p className="text-sm font-medium text-slate-500 m-0 leading-none mt-1">Detailed Study Guide & Notes</p>
+
+                        {/* Action Pill Buttons */}
+                        <div className="flex flex-wrap items-center gap-3">
+                          <button
+                            onClick={handlePodcastToggle}
+                            disabled={podcastLoading}
+                            className={`flex items-center gap-3 px-5 py-2.5 rounded-full transition-all hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 ${isPodcastPlaying ? 'bg-indigo-700 shadow-inner' : 'bg-indigo-600 hover:bg-indigo-700'}`}
+                          >
+                            <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
+                              {podcastLoading ? (
+                                <div className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+                              ) : isPodcastPlaying ? (
+                                <Pause className="w-4 h-4 text-white" />
+                              ) : (
+                                <Headphones className="w-4 h-4 text-white" />
+                              )}
+                            </div>
+                            <div className="flex flex-col items-start pr-2">
+                              <span className="text-white font-black text-sm leading-none m-0 uppercase tracking-wide">Listen & Learn</span>
+                              <span className="text-indigo-200 font-bold text-[0.65rem] leading-none m-0 uppercase tracking-widest mt-1">Audio Lesson Explanation</span>
+                            </div>
+                          </button>
+
+                          <div className="flex items-center gap-2 ml-auto">
+                            <button
+                              onClick={() => setStudyTab('QNA')}
+                              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 text-xs font-bold uppercase tracking-wider transition-all hover:shadow-md hover:-translate-y-0.5"
+                            >
+                              <Hand className="w-3.5 h-3.5" />
+                              Raise Hand
+                            </button>
+                            <button
+                              onClick={() => currentDocument && handleDownloadAIRevisionNotes(currentDocument)}
+                              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-slate-50 hover:bg-emerald-50 border border-slate-200 hover:border-emerald-200 text-slate-700 hover:text-emerald-700 text-xs font-bold uppercase tracking-wider transition-all hover:shadow-md hover:-translate-y-0.5"
+                            >
+                              <Download className="w-3.5 h-3.5" />
+                              Download Notes
+                            </button>
+                            <button
+                              onClick={() => setStudyTab('QUIZ')}
+                              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold uppercase tracking-wider transition-all shadow-md shadow-amber-500/20 hover:shadow-lg hover:-translate-y-0.5"
+                            >
+                              <CheckCircle className="w-3.5 h-3.5" />
+                              Quiz
+                            </button>
+                          </div>
                         </div>
                       </div>
-                      <MarkdownText content={explanation.explanation} />
+
+                      {explanation.subtopics && explanation.subtopics.length > 0 ? (
+                        <div className="space-y-16">
+                          {explanation.subtopics.map((sub, idx) => (
+                            <div key={idx} className="relative">
+                              <h3 className="text-xl font-semibold text-slate-700 mb-4">{sub.title}</h3>
+
+                              {sub.blocks && sub.blocks.length > 0 ? (
+                                <div className="space-y-4">
+                                  {sub.blocks.map((block, bIdx) => (
+                                    <React.Fragment key={bIdx}>
+                                      {block.type === 'paragraph' && block.text && (
+                                        <p className="text-slate-700 leading-relaxed text-lg m-0 whitespace-pre-line">{block.text}</p>
+                                      )}
+                                      {block.type === 'list' && block.items && block.items.length > 0 && (
+                                        <ul className="list-disc list-outside ml-6 space-y-2 m-0 text-slate-700 text-lg">
+                                          {block.items.map((item, iIdx) => (
+                                            <li key={iIdx} className="pl-2">{item}</li>
+                                          ))}
+                                        </ul>
+                                      )}
+                                    </React.Fragment>
+                                  ))}
+                                </div>
+                              ) : sub.content ? (
+                                <MarkdownText content={sub.content} />
+                              ) : null}
+
+                              <div className="mt-8 p-6 bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-100 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4">
+                                <div className="flex items-center gap-4">
+                                  <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-sm text-emerald-500">
+                                    <Trophy className="w-6 h-6" />
+                                  </div>
+                                  <div>
+                                    <h4 className="text-emerald-900 font-bold m-0 text-base leading-tight">Mastered this topic?</h4>
+                                    <p className="text-emerald-700 m-0 text-sm leading-tight mt-1">Test your knowledge before moving on.</p>
+                                  </div>
+                                </div>
+                                <Button onClick={() => setStudyTab('QUIZ')} className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-full px-6 py-2 font-bold whitespace-nowrap shadow-md shadow-emerald-500/20">
+                                  Take a Quick Quiz
+                                </Button>
+                              </div>
+                              {idx < explanation.subtopics!.length - 1 && <hr className="my-16 border-slate-100" />}
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <MarkdownText content={explanation.explanation} />
+                      )}
                     </div>
                   ) : (
                     <div className="text-center py-32 flex flex-col items-center">
@@ -2939,26 +3037,80 @@ ${explanation.explanation}
                   <div className="mb-10 text-center md:text-left">
                     <span className="inline-block px-4 py-1.5 rounded-full bg-emerald-100 text-emerald-700 text-xs font-black uppercase tracking-widest mb-4">Memory Check</span>
                     <h2 className="text-4xl font-black text-slate-800 mb-3 tracking-tight">Quick Recap</h2>
-                    <p className="text-slate-500 font-medium text-lg max-w-xl">Review these summary points generated from the lesson. Check them off to ensure you've understood the core concepts before proceeding.</p>
+                    <p className="text-slate-500 font-medium text-lg max-w-xl">Key concepts and takeaways from the lesson. Tap each to expand the detailed revision notes — make sure you've mastered every concept before the quiz.</p>
                   </div>
 
                   {explanation ? (
                     <div className="space-y-4">
-                      {explanation.summaryPoints.map((point, i) => (
-                        <motion.div
-                          initial={{ opacity: 0, y: 20 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: i * 0.1 }}
-                          key={i}
-                          className="bg-white p-6 md:p-8 rounded-3xl shadow-sm border border-slate-200 flex gap-6 items-start group hover:border-indigo-300 hover:shadow-md transition-all cursor-cell relative overflow-hidden"
-                        >
-                          <div className="absolute top-0 left-0 bottom-0 w-1.5 bg-indigo-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                          <div className="p-3 bg-indigo-50 border border-indigo-100 rounded-xl group-hover:bg-indigo-600 group-hover:border-indigo-600 transition-colors shrink-0">
-                            <CheckCircle className="w-6 h-6 text-indigo-500 group-hover:text-white transition-colors" />
-                          </div>
-                          <span className="text-xl text-slate-700 font-medium leading-relaxed pt-1.5">{point}</span>
-                        </motion.div>
-                      ))}
+                      {explanation.recapNodes && explanation.recapNodes.length > 0 ? (
+                        explanation.recapNodes.map((node, i) => {
+                          const isExpanded = expandedRecaps.includes(i);
+                          return (
+                            <motion.div
+                              initial={{ opacity: 0, y: 20 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              transition={{ delay: i * 0.1 }}
+                              key={i}
+                              onClick={() => {
+                                if (isExpanded) {
+                                  setExpandedRecaps(prev => prev.filter(id => id !== i));
+                                } else {
+                                  setExpandedRecaps(prev => [...prev, i]);
+                                }
+                              }}
+                              className={`bg-white rounded-3xl shadow-sm border ${isExpanded ? 'border-indigo-400 shadow-md ring-4 ring-indigo-50' : 'border-slate-200 hover:border-indigo-300'} transition-all cursor-pointer relative overflow-hidden`}
+                            >
+                              <div className={`absolute top-0 left-0 bottom-0 w-1.5 bg-indigo-500 transition-opacity ${isExpanded ? 'opacity-100' : 'opacity-0'}`}></div>
+
+                              <div className="p-6 md:p-8 flex gap-6 items-start">
+                                <div className={`p-3 border rounded-xl transition-colors shrink-0 ${isExpanded ? 'bg-indigo-600 border-indigo-600 text-white' : 'bg-indigo-50 border-indigo-100 text-indigo-500'}`}>
+                                  {isExpanded ? <CheckCircle className="w-6 h-6" /> : <ListChecks className="w-6 h-6" />}
+                                </div>
+                                <div className="flex-1 pt-1.5">
+                                  <div className="flex items-center justify-between gap-3">
+                                    <div>
+                                      <span className={`text-lg font-black leading-tight tracking-tight transition-colors block ${isExpanded ? 'text-indigo-900' : 'text-slate-800'}`}>{node.point}</span>
+                                      <span className="text-xs font-medium text-slate-400 mt-1 block">Tap to expand revision notes</span>
+                                    </div>
+                                    <ChevronRight className={`w-5 h-5 text-slate-400 transition-transform duration-300 shrink-0 ${isExpanded ? 'rotate-90' : ''}`} />
+                                  </div>
+
+                                  <AnimatePresence>
+                                    {isExpanded && (
+                                      <motion.div
+                                        initial={{ height: 0, opacity: 0, marginTop: 0 }}
+                                        animate={{ height: 'auto', opacity: 1, marginTop: 16 }}
+                                        exit={{ height: 0, opacity: 0, marginTop: 0 }}
+                                        className="overflow-hidden"
+                                      >
+                                        <div className="prose prose-slate prose-p:leading-relaxed text-slate-600 border-t border-slate-100 pt-4">
+                                          <MarkdownText content={node.details} />
+                                        </div>
+                                      </motion.div>
+                                    )}
+                                  </AnimatePresence>
+                                </div>
+                              </div>
+                            </motion.div>
+                          );
+                        })
+                      ) : (
+                        explanation.summaryPoints.map((point, i) => (
+                          <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: i * 0.1 }}
+                            key={i}
+                            className="bg-white p-6 md:p-8 rounded-3xl shadow-sm border border-slate-200 flex gap-6 items-start group hover:border-indigo-300 hover:shadow-md transition-all cursor-cell relative overflow-hidden"
+                          >
+                            <div className="absolute top-0 left-0 bottom-0 w-1.5 bg-indigo-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                            <div className="p-3 bg-indigo-50 border border-indigo-100 rounded-xl group-hover:bg-indigo-600 group-hover:border-indigo-600 transition-colors shrink-0">
+                              <CheckCircle className="w-6 h-6 text-indigo-500 group-hover:text-white transition-colors" />
+                            </div>
+                            <span className="text-xl text-slate-700 font-medium leading-relaxed pt-1.5">{point}</span>
+                          </motion.div>
+                        ))
+                      )}
 
                       <div className="mt-12 p-8 bg-gradient-to-br from-indigo-50 to-white border border-indigo-100 rounded-3xl text-center">
                         <Sparkles className="w-10 h-10 text-indigo-400 mx-auto mb-4" />
@@ -3513,7 +3665,7 @@ ${explanation.explanation}
           plan={selectedPlan}
           materialId={pendingMaterialId || undefined}
           onSuccess={async () => {
-            await upgradeAccount(selectedPlan);
+            await verifySubscription();
             setMode('MENU');
             setSelectedPlan(null);
             // Auto-open if we have a pending material

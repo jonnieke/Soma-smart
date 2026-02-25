@@ -4,6 +4,7 @@ import { Smartphone, Loader2, CheckCircle2, XCircle, ArrowLeft, ShieldCheck, Cre
 import { useApp } from '../../context/AppContext';
 import { pesapalService } from '../../services/pesapalService';
 import { UserRole } from '../../types';
+import { supabase } from '../../lib/supabase';
 
 interface Props {
     plan: any;
@@ -41,6 +42,40 @@ export const PaymentFlow: React.FC<Props> = ({ plan, materialId, onSuccess, onCa
     }, [studentProfile, teacherProfile, role]);
 
     const isRegistered = !!(studentProfile || teacherProfile);
+
+    // Poll for payment success when in IFRAME
+    useEffect(() => {
+        if (step !== 'IFRAME') return;
+
+        const interval = setInterval(async () => {
+            const profileId = studentProfile?.id || teacherProfile?.id;
+            const uid = userId || profileId;
+            if (!uid) return;
+
+            try {
+                const { data } = await supabase
+                    .from('transactions')
+                    .select('status')
+                    .eq('user_id', uid)
+                    .order('created_at', { ascending: false })
+                    .limit(1)
+                    .maybeSingle();
+
+                if (data && data.status === 'SUCCESS') {
+                    setStep('SUCCESS');
+                    setTimeout(() => {
+                        onSuccess();
+                    }, 3000);
+                } else if (data && data.status === 'FAILED') {
+                    setStep('ERROR');
+                }
+            } catch (err) {
+                console.error("Polling error:", err);
+            }
+        }, 3000); // Check every 3 seconds
+
+        return () => clearInterval(interval);
+    }, [step, userId, studentProfile, teacherProfile, onSuccess]);
 
     const handlePayment = async () => {
         if (!phone || (!isRegistered && (!firstName || !lastName || !email))) {
