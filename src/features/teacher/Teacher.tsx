@@ -25,7 +25,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 
 interface TeacherProps {
     onNavigate: (view: ViewState) => void;
-    initialTab?: 'DASHBOARD' | 'MAGIC_CLASSROOM' | 'STUDENTS' | 'MARKING' | 'EARNINGS' | 'LIBRARY' | 'HOME' | 'CONVERT' | 'VOICE' | 'QUIZ' | 'MARKETPLACE' | 'PROFILE';
+    initialTab?: 'DASHBOARD' | 'MAGIC_CLASSROOM' | 'STUDENTS' | 'MARKING' | 'EARNINGS' | 'LIBRARY' | 'HOME' | 'CONVERT' | 'VOICE' | 'QUIZ' | 'MARKETPLACE' | 'PROFILE' | 'REPORTS';
 }
 
 export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTab }) => {
@@ -114,7 +114,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
     const [paymentPlan, setPaymentPlan] = useState<SubscriptionPlan | null>(null);
     const [showLoginModal, setShowLoginModal] = useState(false);
     const [showLogoutModal, setShowLogoutModal] = useState(false);
-    const [activeTab, setActiveTab] = useState<'DASHBOARD' | 'MAGIC_CLASSROOM' | 'STUDENTS' | 'MARKING' | 'EARNINGS' | 'LIBRARY' | 'CONVERT' | 'VOICE' | 'QUIZ' | 'HOME' | 'MARKETPLACE' | 'PROFILE'>(initialTab || 'DASHBOARD');
+    const [activeTab, setActiveTab] = useState<'DASHBOARD' | 'MAGIC_CLASSROOM' | 'STUDENTS' | 'MARKING' | 'EARNINGS' | 'LIBRARY' | 'CONVERT' | 'VOICE' | 'QUIZ' | 'HOME' | 'MARKETPLACE' | 'PROFILE' | 'REPORTS'>(initialTab || 'DASHBOARD');
     const [loading, setLoading] = useState(false);
 
     // Selection State
@@ -520,63 +520,68 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                     </div>
 
                     {/* Center: Navigation */}
-                    <div className="hidden md:flex items-center gap-1 bg-slate-50/50 p-1 rounded-2xl border border-slate-100">
+                    <div className="hidden md:flex items-center gap-6">
                         <button
                             onClick={() => setActiveTab('DASHBOARD')}
-                            className={`px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${activeTab === 'DASHBOARD' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100/50'}`}
+                            className={`pb-1 text-lg tracking-wide font-black transition-all ${activeTab === 'DASHBOARD' ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-slate-500 hover:text-slate-900'}`}
                         >
                             Dashboard
                         </button>
                         <button
                             onClick={() => setActiveTab('MAGIC_CLASSROOM')}
-                            className={`px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${activeTab === 'MAGIC_CLASSROOM' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100/50'}`}
+                            className={`pb-1 text-lg tracking-wide font-black transition-all ${activeTab === 'MAGIC_CLASSROOM' ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-slate-500 hover:text-slate-900'}`}
                         >
-                            Magic Classroom
+                            Classroom
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('MARKING')}
+                            className={`pb-1 text-lg tracking-wide font-black transition-all ${activeTab === 'MARKING' ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-slate-500 hover:text-slate-900'}`}
+                        >
+                            Assignments
                         </button>
                         <button
                             onClick={() => setActiveTab('STUDENTS')}
-                            className={`px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${activeTab === 'STUDENTS' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100/50'}`}
+                            className={`pb-1 text-lg tracking-wide font-black transition-all ${activeTab === 'STUDENTS' ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-slate-500 hover:text-slate-900'}`}
                         >
                             Students
                         </button>
                         <button
-                            onClick={() => setActiveTab('MARKING')}
-                            className={`px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${activeTab === 'MARKING' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100/50'}`}
+                            onClick={() => setActiveTab('REPORTS')}
+                            className={`pb-1 text-lg tracking-wide font-black transition-all ${activeTab === 'REPORTS' ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-slate-500 hover:text-slate-900'}`}
                         >
-                            Marking
-                        </button>
-                        <button
-                            onClick={() => setActiveTab('EARNINGS')}
-                            className={`px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${activeTab === 'EARNINGS' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100/50'}`}
-                        >
-                            Earnings
+                            Reports
                         </button>
                     </div>
 
-                    {/* Right: Wallet & Avatar */}
-                    <div className="flex items-center gap-4">
-                        <div className="hidden md:flex items-center gap-2 bg-emerald-50 px-4 py-2 rounded-full border border-emerald-100 cursor-pointer hover:bg-emerald-100 transition-colors shadow-sm" onClick={() => setActiveTab('EARNINGS')}>
-                            <Wallet className="w-4 h-4 text-emerald-600" />
-                            <span className="text-xs font-black text-emerald-700">KES {teacherWallet?.balance || 0}</span>
-                            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse ml-1"></div>
+                    {/* Right: Actions Menu */}
+                    <div className="flex items-center gap-6">
+                        {/* Notification Bell */}
+                        <div className="relative cursor-pointer text-slate-500 hover:text-slate-900 transition-colors">
+                            <Bell className="w-5 h-5" />
+                            {activeTutoringRequests.filter(r => r.status === 'PENDING').length > 0 && (
+                                <span className="absolute top-0 right-0 w-2 h-2 bg-amber-500 rounded-full border border-white"></span>
+                            )}
                         </div>
 
-                        <div className="flex items-center gap-3 pl-4 border-l border-slate-200">
-                            {/* Rating Display */}
-                            <div className="flex flex-col items-end mr-2">
-                                <div className="flex items-center gap-1">
-                                    <Star className="w-3 h-3 text-amber-500 fill-amber-500" />
-                                    <span className="text-xs font-black text-slate-900">{teacherProfile?.rating?.toFixed(1) || 'NEW'}</span>
-                                </div>
-                                <span className="text-[9px] font-bold text-slate-400 uppercase">Rating</span>
-                            </div>
+                        {/* AI Action */}
+                        <div className="cursor-pointer text-slate-500 hover:text-indigo-600 transition-colors">
+                            <Sparkles className="w-5 h-5" />
+                        </div>
 
-                            <div className="relative group cursor-pointer" onClick={() => setActiveTab('PROFILE')}>
-                                <div className="w-10 h-10 rounded-full bg-indigo-100 border-2 border-white shadow-md flex items-center justify-center overflow-hidden">
-                                    <span className="font-black text-indigo-600 text-sm">TJ</span>
-                                </div>
-                                <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div>
+                        {/* Wallet - De-emphasized */}
+                        <div className="flex items-center gap-2 cursor-pointer text-slate-500 hover:text-slate-900 transition-colors" onClick={() => setActiveTab('EARNINGS')}>
+                            <Wallet className="w-5 h-5" />
+                            <span className="text-sm font-bold">KES {teacherWallet?.balance || 0}</span>
+                        </div>
+
+                        {/* Avatar */}
+                        <div className="relative group cursor-pointer" onClick={() => setActiveTab('PROFILE')}>
+                            <div className="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center overflow-hidden">
+                                <span className="font-bold text-slate-600 text-sm">
+                                    {teacherProfile?.name?.charAt(0) || 'T'}
+                                </span>
                             </div>
+                            <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-2 border-white rounded-full"></div>
                         </div>
                     </div>
                 </div>
@@ -591,41 +596,73 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-8">
                         {/* Hero Section */}
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                            {/* Greeting Card */}
-                            <div className="lg:col-span-2 bg-white rounded-[2rem] p-8 shadow-sm border border-slate-100 flex flex-col justify-between relative overflow-hidden">
-                                <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-50/50 rounded-full blur-3xl -mr-16 -mt-16"></div>
-                                <div className="relative z-10">
-                                    <h2 className="text-3xl font-black text-slate-900 tracking-tight mb-2">
-                                        Good morning, Teacher {teacherProfile?.name.split(' ')[0] || 'Jane'} <span className="text-2xl">👋</span>
+                            {/* AI Priority Strip (Hero Section) */}
+                            <div className="lg:col-span-2 bg-gradient-to-r from-indigo-900 to-indigo-800 rounded-[2rem] p-8 shadow-xl border border-indigo-700/50 flex flex-col md:flex-row justify-between items-center relative overflow-hidden gap-8">
+                                <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/20 rounded-full blur-3xl -mr-16 -mt-16"></div>
+                                <div className="absolute bottom-0 left-0 w-48 h-48 bg-purple-500/20 rounded-full blur-3xl -ml-12 -mb-12"></div>
+
+                                {/* LEFT: Today's Teaching Focus */}
+                                <div className="relative z-10 flex-1 w-full text-white">
+                                    <h2 className="text-xl font-black tracking-tight mb-6 flex items-center gap-2">
+                                        <Sparkles className="w-5 h-5 text-indigo-300" />
+                                        Today's Teaching Focus
                                     </h2>
-                                    <div className="space-y-2 mb-8">
-                                        <div className="flex items-center gap-2 text-slate-600 font-medium">
-                                            <div className="w-1.5 h-1.5 rounded-full bg-slate-400"></div>
-                                            Today: <span className="text-slate-900 font-bold">{new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })}</span>
+
+                                    <div className="space-y-4 font-bold text-sm">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-8 h-8 rounded-xl bg-red-500/20 flex items-center justify-center border border-red-500/30">
+                                                <AlertCircle className="w-4 h-4 text-red-400" />
+                                            </div>
+                                            <p className="text-indigo-50">
+                                                <span className="text-white font-black text-base">8 students</span> at risk in {selectedSubject}
+                                            </p>
                                         </div>
-                                        <div className="flex items-center gap-2 text-slate-600 font-medium">
-                                            <div className="w-1.5 h-1.5 rounded-full bg-indigo-500"></div>
-                                            <span className="text-slate-900 font-bold">{teacherHistory.length} resources</span> created <FileText className="w-3 h-3 text-indigo-500" />
+
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-8 h-8 rounded-xl bg-amber-500/20 flex items-center justify-center border border-amber-500/30">
+                                                <FileText className="w-4 h-4 text-amber-400" />
+                                            </div>
+                                            <p className="text-indigo-50">
+                                                <span className="text-white font-black text-base">{activeTutoringRequests.filter(r => r.status === 'PENDING').length} assignments</span> need marking
+                                            </p>
                                         </div>
-                                        <div className="flex items-center gap-2 text-slate-600 font-medium">
-                                            <div className="w-1.5 h-1.5 rounded-full bg-amber-500"></div>
-                                            <span className="text-slate-900 font-bold">{activeTutoringRequests.filter(r => r.status === 'PENDING').length} requests</span> need attention <AlertCircle className="w-3 h-3 text-amber-500" />
+
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-8 h-8 rounded-xl bg-emerald-500/20 flex items-center justify-center border border-emerald-500/30">
+                                                <TrendingUp className="w-4 h-4 text-emerald-400" />
+                                            </div>
+                                            <p className="text-indigo-50">
+                                                <span className="text-white font-black text-base">{selectedClass} improving</span> <span className="text-emerald-400">+6%</span>
+                                            </p>
+                                        </div>
+
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-8 h-8 rounded-xl bg-purple-500/20 flex items-center justify-center border border-purple-500/30">
+                                                <Lightbulb className="w-4 h-4 text-purple-400" />
+                                            </div>
+                                            <p className="text-indigo-50">
+                                                Suggested remedial: <span className="text-white font-black text-base">Decimals</span>
+                                            </p>
                                         </div>
                                     </div>
-                                    <div className="flex flex-wrap gap-4">
-                                        <button
-                                            onClick={() => setActiveTab('MAGIC_CLASSROOM')}
-                                            className="bg-indigo-600 text-white px-8 py-3 rounded-full font-bold shadow-lg shadow-indigo-200 hover:bg-indigo-700 hover:scale-105 transition-all text-sm"
-                                        >
-                                            Create Homework
-                                        </button>
-                                        <button
-                                            onClick={() => navigate('/teacher/darasa')}
-                                            className="bg-white text-slate-600 border border-slate-200 px-8 py-3 rounded-full font-bold hover:bg-slate-50 transition-all text-sm"
-                                        >
-                                            Start Class
-                                        </button>
-                                    </div>
+                                </div>
+
+                                {/* RIGHT: Primary CTA Panel */}
+                                <div className="relative z-10 w-full md:w-auto flex flex-col gap-4 min-w-[240px]">
+                                    <button
+                                        onClick={() => setActiveTab('MAGIC_CLASSROOM')}
+                                        className="w-full bg-white text-indigo-900 px-8 py-4 rounded-2xl font-black text-lg shadow-2xl shadow-indigo-900/50 hover:scale-105 hover:bg-slate-50 transition-all flex items-center justify-center gap-2 group"
+                                    >
+                                        🚀 Fix Today's Gaps
+                                        <ChevronRight className="w-5 h-5 text-indigo-400 group-hover:text-indigo-600 transition-colors" />
+                                    </button>
+                                    <button
+                                        onClick={() => setActiveTab('MAGIC_CLASSROOM')}
+                                        className="w-full bg-indigo-800/50 text-indigo-100 border border-indigo-500/30 px-8 py-3.5 rounded-2xl font-bold hover:bg-indigo-700/50 hover:text-white transition-all flex items-center justify-center gap-2"
+                                    >
+                                        <Plus className="w-5 h-5" />
+                                        Create Resource
+                                    </button>
                                 </div>
                             </div>
 

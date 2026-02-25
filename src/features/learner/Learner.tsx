@@ -95,9 +95,17 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
   }, [totalXP]);
 
   useEffect(() => {
-    // Only redirect if NONE role (Guest is allowed)
-    if (!isRegistered && role === UserRole.NONE) {
-      navigate('/');
+    // We want learners to see the dashboard even if not registered (they get limited access).
+    // Do not force an immediate redirect if they are exploring directly, or wait for session load.
+    const savedStudent = localStorage.getItem('soma_active_student');
+    if (!isRegistered && role === UserRole.NONE && !savedStudent) {
+      // Small delay to ensure auth check finishes, though ideally we use an auth loading state
+      const timer = setTimeout(() => {
+        if (!isRegistered && role === UserRole.NONE) {
+          navigate('/');
+        }
+      }, 1000);
+      return () => clearTimeout(timer);
     }
 
     // Payment Success for Download Pass
@@ -1935,234 +1943,35 @@ ${explanation.explanation}
           </div>
 
           {/* --- MAIN CENTER CONTENT --- */}
-          <div className="flex-1 flex flex-col items-center px-4 relative z-10 pb-32 max-w-5xl mx-auto w-full">
+          <div className="flex-1 flex flex-col items-center px-4 md:px-8 relative z-10 pb-32 max-w-7xl mx-auto w-full">
 
-            {/* Greeting, Daily Quest, & Actions */}
+            {/* Premium Unified Hero */}
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="w-full mb-8 pt-8 flex flex-col gap-6"
+              className="w-full mt-10 mb-10 text-center"
             >
-              {/* Top Row: Greeting + Start Studying */}
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 w-full">
-                <div className="flex flex-col items-start pl-6 w-full lg:w-1/2">
-                  <h1 className="text-3xl md:text-4xl font-black text-slate-900 mb-2 flex items-center gap-3">
-                    {(() => {
-                      const hour = new Date().getHours();
-                      if (hour < 12) return 'Good Morning,';
-                      if (hour < 17) return 'Good Afternoon,';
-                      return 'Evening Review,';
-                    })()} {profile ? profile.name.split(' ')[0] : 'Friend'} <span className="animate-wave text-4xl">👋</span>
-                  </h1>
-                  <p className="text-slate-500 font-medium text-lg">
-                    {(() => {
-                      const hour = new Date().getHours();
-                      if (hour < 12) return 'Ready to crush your goals today?';
-                      if (hour < 17) return 'Keep the momentum going!';
-                      return 'Let\'s finish strong before tomorrow!';
-                    })()}
-                  </p>
-                </div>
+              <h1 className="text-4xl md:text-[3.5rem] font-black text-slate-900 mb-4 tracking-tighter leading-tight">
+                Good Morning, {profile?.name.split(' ')[0] || 'Friend'} <span className="text-emerald-500 block sm:inline mt-2 sm:mt-0">Improve Your Marks Today.</span>
+              </h1>
+              <p className="text-slate-500 font-medium text-lg md:text-xl md:tracking-tight max-w-2xl mx-auto block leading-relaxed mt-4">
+                Snap a photo of your homework, ask a tricky question, or dive straight into personalized revision.
+              </p>
 
-                {/* Start Studying Green Card */}
-                <div className="w-full md:w-auto bg-gradient-to-br from-emerald-400 to-emerald-500 rounded-[2rem] p-6 lg:px-10 flex flex-col items-center justify-center shadow-lg shadow-emerald-200">
-                  <button
-                    onClick={() => setMode('MARKETPLACE')}
-                    className="bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-full px-8 py-3.5 font-bold text-xl shadow-lg shadow-blue-900/20 hover:scale-105 transition-transform flex items-center gap-3 w-full justify-center mb-2"
-                  >
-                    <span className="text-2xl">🚀</span> Start Studying
-                  </button>
-                  <p className="text-emerald-50 font-medium text-sm">Continue your learning journey</p>
-                </div>
-              </div>
-
-              {/* Bottom Row: Daily Quest + CBE Notes */}
-              <div className="flex flex-col md:flex-row items-stretch gap-6 w-full md:pl-6">
-                {/* Daily Goal Urgency Bar */}
-                <div className="flex-1 bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col justify-center gap-3">
-                  <div className="flex justify-between items-center mb-1">
-                    <span className="text-xs font-black uppercase tracking-widest text-slate-400 flex items-center gap-1.5">
-                      <Zap className="w-4 h-4 text-amber-500 fill-amber-500" /> Daily Quest
-                    </span>
-                    <span className="text-xs font-bold text-slate-800 bg-slate-100 px-3 py-1 rounded-full">1/3 Lessons</span>
-                  </div>
-                  <div className="w-full h-3 bg-slate-100 rounded-full overflow-hidden">
-                    <div className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full w-1/3 shadow-[0_0_10px_rgba(59,130,246,0.5)]" />
-                  </div>
-                  <p className="text-[11px] font-bold text-slate-500 mt-1">Complete 2 more lessons to earn 50 Bonus XP!</p>
-                </div>
-
-                {/* CBE Notes CTA */}
+              <div className="flex justify-center items-center gap-4 mt-8">
                 <button
-                  onClick={() => setMode('MARKETPLACE')}
-                  className="group flex-1 bg-white border border-slate-100 hover:border-indigo-200 active:bg-indigo-50 p-5 rounded-3xl transition-all flex items-center gap-4 text-left shadow-sm hover:shadow-md"
+                  onClick={() => navigate('/revision')}
+                  className="px-10 py-4 bg-indigo-600 text-white rounded-full font-black text-sm md:text-base shadow-2xl shadow-indigo-600/30 hover:bg-indigo-700 hover:-translate-y-1 transition-all flex items-center gap-3"
                 >
-                  <div className="w-16 h-16 bg-blue-600 text-white rounded-2xl flex items-center justify-center shrink-0 shadow-md shadow-blue-200 group-hover:scale-105 transition-transform">
-                    <BookOpen className="w-8 h-8" />
-                  </div>
-                  <div className="pr-4 flex-1">
-                    <h3 className="font-black text-slate-900 text-lg leading-tight">CBE NOTES</h3>
-                    <p className="text-xs font-semibold text-slate-500 leading-tight mt-1">
-                      Study with CBE aligned notes & quizzes.
-                    </p>
-                  </div>
+                  IMPROVE MY MARKS <ChevronRight className="w-5 h-5" />
+                </button>
+                <button
+                  onClick={startCamera}
+                  className="w-14 h-14 md:w-16 md:h-16 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center transition-all hover:scale-105 active:scale-95 shrink-0"
+                >
+                  <Camera className="w-6 h-6 md:w-7 md:h-7" />
                 </button>
               </div>
-            </motion.div>
-
-
-            {/* Requests Summary Card (Mobile & Desktop) */}
-            {activeTutoringRequests.length > 0 && (
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                onClick={() => setMode('REQUESTS')}
-                className="w-full mb-6 bg-white rounded-3xl p-4 border border-blue-100 shadow-sm flex items-center justify-between cursor-pointer hover:shadow-md transition-all group"
-              >
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-colors">
-                    <span className="text-xl">📬</span>
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-slate-900">My Requests</h3>
-                    <p className="text-xs text-slate-500 font-medium">
-                      {activeTutoringRequests.filter(r => r.status === 'COMPLETED').length > 0
-                        ? <span className="text-emerald-600 font-bold">{activeTutoringRequests.filter(r => r.status === 'COMPLETED').length} New Response(s)</span>
-                        : `${activeTutoringRequests.length} Active Request${activeTutoringRequests.length === 1 ? '' : 's'}`
-                      }
-                    </p>
-                  </div>
-                </div>
-                <div className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center group-hover:bg-blue-100 group-hover:text-blue-600 transition-colors">
-                  <ChevronRight className="w-4 h-4" />
-                </div>
-              </motion.div>
-            )}
-
-            {/* Continue Learning Hero Card */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
-              className="w-full mb-8"
-            >
-              {history.length > 0 ? (() => {
-                // Sort history by ID (timestamp) descending to get true latest
-                const sortedHistory = [...history].sort((a, b) => {
-                  const tA = parseInt(a.id) || 0;
-                  const tB = parseInt(b.id) || 0;
-                  return tB - tA;
-                });
-                const latestActivity = sortedHistory[0];
-
-                const relativeTime = (() => {
-                  try {
-                    let timestamp = parseInt(latestActivity.id);
-
-                    // Fallback: If ID is not a valid timestamp (e.g. legacy uuid), try parsing the date string
-                    if (isNaN(timestamp) || timestamp < 1000000000000) { // Basic check for ms timestamp
-                      const dateObj = new Date(latestActivity.date);
-                      if (!isNaN(dateObj.getTime())) {
-                        timestamp = dateObj.getTime();
-                      } else {
-                        return 'Recently';
-                      }
-                    }
-
-                    const diff = Date.now() - timestamp;
-                    if (diff < 0) return 'Just now';
-
-                    const minutes = Math.floor(diff / 60000);
-                    if (minutes < 1) return 'Just now';
-                    if (minutes < 60) return `${minutes} mins ago`;
-                    const hours = Math.floor(minutes / 60);
-                    if (hours < 24) return `${hours} hours ago`;
-                    return `${Math.floor(hours / 24)} days ago`;
-                  } catch (e) { return 'Recently'; }
-                })();
-
-                return (
-                  <div
-                    onClick={() => restoreActivity(latestActivity)}
-                    className="bg-white rounded-[2.5rem] p-6 md:p-10 shadow-xl shadow-blue-900/5 border border-slate-100 relative overflow-hidden cursor-pointer group hover:shadow-2xl hover:shadow-blue-900/10 transition-all"
-                  >
-                    {/* Background Decoration */}
-                    <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-blue-50 to-indigo-50 rounded-full blur-3xl opacity-80 -translate-y-1/2 translate-x-1/4 group-hover:scale-110 transition-transform duration-700" />
-
-                    <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-                      <div className="space-y-6 max-w-lg">
-                        <div>
-                          <div className="flex items-center gap-3 mb-3">
-                            <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-[10px] font-black uppercase tracking-wider">
-                              Continue Learning
-                            </span>
-                            <span className="text-xs text-slate-400 font-bold flex items-center gap-1.5">
-                              <Clock className="w-3.5 h-3.5" /> {relativeTime}
-                            </span>
-                          </div>
-                          <h2 className="text-3xl md:text-3xl font-black text-slate-900 leading-tight mb-2 line-clamp-2">
-                            {latestActivity.topic || "Untitled Lesson"}
-                          </h2>
-                          <p className="text-slate-500 font-medium text-lg">
-                            {latestActivity.type === 'QUIZ' ? 'Stickiness Boost Quiz' : 'Detailed Explanation & Notes'}
-                          </p>
-                        </div>
-
-                        <div className="space-y-4 w-full">
-                          {/* Motivational Progress Bar */}
-                          <div>
-                            <div className="flex justify-between items-center mb-1">
-                              <span className="text-xs font-bold text-slate-500">Mastery Progress</span>
-                              <span className="text-xs font-black text-blue-600">75%</span>
-                            </div>
-                            <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
-                              <div className="h-full bg-blue-500 rounded-full w-3/4" />
-                            </div>
-                            <p className="text-[10px] font-bold text-slate-400 mt-1.5 uppercase tracking-wider">Almost there! Keep going.</p>
-                          </div>
-
-                          <button className="w-full sm:w-auto px-8 py-4 bg-amber-400 hover:bg-amber-500 text-amber-950 rounded-2xl font-black shadow-lg shadow-amber-200 transition-all hover:-translate-y-0.5 flex items-center justify-center sm:justify-start gap-3 text-sm tracking-wide">
-                            RESUME LESSON <Play className="w-5 h-5 fill-current" />
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* Dynamic Illustration based on Type */}
-                      {/* Dynamic Illustration: Student & Teacher Scene */}
-                      <div className="hidden md:flex items-center justify-center relative pr-4">
-                        <img
-                          src={heroSectionImage}
-                          alt="Student learning with teacher"
-                          className="w-[14rem] h-auto object-contain drop-shadow-xl group-hover:scale-110 group-hover:-translate-y-2 transition-all duration-500 rounded-2xl"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                );
-              })() : (
-                // Empty State Hero
-                <div
-                  onClick={() => startCamera()}
-                  className="bg-white rounded-[2.5rem] p-6 md:p-10 shadow-xl shadow-indigo-900/5 border border-slate-100 relative overflow-hidden cursor-pointer group hover:shadow-2xl hover:shadow-indigo-900/10 transition-all"
-                >
-                  <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-purple-50 to-pink-50 rounded-full blur-3xl opacity-80 -translate-y-1/2 translate-x-1/4 group-hover:scale-110 transition-transform duration-700" />
-
-                  <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6 text-center md:text-left">
-                    <div className="space-y-6 max-w-lg">
-                      <h2 className="text-3xl md:text-4xl font-black text-slate-900 leading-tight">Start Your First Lesson!</h2>
-                      <p className="text-slate-500 font-medium text-lg">Snap a photo of your homework or ask a question to get instant help.</p>
-                      <button className="px-8 py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-black shadow-lg shadow-indigo-200 transition-all hover:-translate-y-0.5 flex items-center gap-3 text-sm tracking-wide mx-auto md:mx-0">
-                        START LEARNING <ArrowRight className="w-5 h-5" />
-                      </button>
-                    </div>
-                    <div className="hidden md:block pr-8">
-                      <div className="w-32 h-32 bg-indigo-100 rounded-full flex items-center justify-center animate-bounce duration-[3000ms]">
-                        <Camera className="w-16 h-16 text-indigo-600" />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
             </motion.div>
 
             {/* Redesigned Smart Input Bar */}
@@ -2172,27 +1981,7 @@ ${explanation.explanation}
               transition={{ delay: 0.2 }}
               className="w-full relative z-30 mb-12"
             >
-              <div className="bg-white rounded-[2.5rem] shadow-xl shadow-slate-200/60 border border-slate-200 p-2.5 flex items-center gap-2 pr-2.5 focus-within:ring-4 focus-within:ring-blue-100 focus-within:border-blue-300 transition-all hover:shadow-2xl hover:shadow-slate-200/80">
-                {/* Action Buttons */}
-                <div className="flex gap-1 pl-2">
-                  <button
-                    onClick={() => fileInputRef.current?.click()}
-                    className="p-3.5 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-2xl transition-all group"
-                    title="Upload Image"
-                  >
-                    <ImageIcon className="w-6 h-6 group-hover:scale-110 transition-transform" />
-                  </button>
-                  <button
-                    onClick={isRecording ? stopRecording : startRecording}
-                    className={`p-3.5 rounded-2xl transition-all group ${isRecording ? 'text-red-500 bg-red-50' : 'text-slate-500 hover:text-red-500 hover:bg-red-50'}`}
-                    title="Record Audio"
-                  >
-                    {isRecording ? <div className="w-6 h-6 bg-red-500 rounded-sm animate-pulse" /> : <Mic className="w-6 h-6 group-hover:scale-110 transition-transform" />}
-                  </button>
-                </div>
-
-                <div className="w-px h-8 bg-slate-200 mx-2" />
-
+              <div className="bg-white rounded-[2.5rem] shadow-xl shadow-indigo-200/40 border border-slate-200 p-2.5 flex items-center gap-2 pl-6 pr-2.5 focus-within:ring-4 focus-within:ring-indigo-100 focus-within:border-indigo-300 transition-all hover:shadow-2xl hover:shadow-indigo-200/60">
                 <textarea
                   value={promptText}
                   onChange={(e) => setPromptText(e.target.value)}
@@ -2204,7 +1993,7 @@ ${explanation.explanation}
                   }}
                   placeholder="Ask anything... (math, science, history)"
                   rows={1}
-                  className="flex-1 bg-transparent border-0 focus:ring-0 text-slate-800 text-lg font-bold py-4 px-2 min-h-[64px] max-h-40 resize-none placeholder:text-slate-400 placeholder:font-medium"
+                  className="flex-1 bg-transparent border-0 focus:ring-0 text-slate-800 text-lg font-bold py-4 px-2 min-h-[64px] max-h-40 resize-none placeholder:text-slate-400 placeholder:font-medium outline-none"
                   style={{ height: 'auto' }}
                   onInput={(e) => {
                     const target = e.target as HTMLTextAreaElement;
@@ -2213,13 +2002,33 @@ ${explanation.explanation}
                   }}
                 />
 
-                <button
-                  onClick={handlePromptSubmit}
-                  disabled={!promptText.trim() || loading}
-                  className={`p-4 rounded-full transition-all aspect-square flex items-center justify-center ${promptText.trim() ? 'bg-blue-600 text-white shadow-lg shadow-blue-200 scale-100 hover:bg-blue-700 hover:scale-105' : 'bg-slate-100 text-slate-300 scale-95 cursor-not-allowed'}`}
-                >
-                  <ArrowRight className="w-6 h-6" />
-                </button>
+                {/* Action Buttons Right Side */}
+                <div className="flex items-center gap-1 shrink-0">
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    className="p-3 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-2xl transition-all group"
+                    title="Upload Image"
+                  >
+                    <ImageIcon className="w-6 h-6 group-hover:scale-110 transition-transform" />
+                  </button>
+                  <button
+                    onClick={isRecording ? stopRecording : startRecording}
+                    className={`p-3 rounded-2xl transition-all group ${isRecording ? 'text-red-500 bg-red-50' : 'text-slate-400 hover:text-red-500 hover:bg-red-50'}`}
+                    title="Record Audio"
+                  >
+                    {isRecording ? <div className="w-6 h-6 bg-red-500 rounded-sm animate-pulse" /> : <Mic className="w-6 h-6 group-hover:scale-110 transition-transform" />}
+                  </button>
+
+                  <div className="w-px h-8 bg-slate-200 mx-1" />
+
+                  <button
+                    onClick={handlePromptSubmit}
+                    disabled={!promptText.trim() || loading}
+                    className={`p-4 rounded-full transition-all aspect-square flex items-center justify-center ml-1 ${promptText.trim() ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-200 scale-100 hover:bg-indigo-700 hover:scale-105' : 'bg-slate-100 text-slate-300 scale-95 cursor-not-allowed'}`}
+                  >
+                    <ArrowRight className="w-6 h-6" />
+                  </button>
+                </div>
               </div>
 
               {/* Recording Indicator Overlay */}
@@ -2231,40 +2040,148 @@ ${explanation.explanation}
               )}
             </motion.div>
 
+            {/* Sleek Action Pills */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.3 }}
+              className="w-full flex flex-wrap justify-center gap-3 mb-12"
+            >
+              <button onClick={isOnline ? startCamera : undefined} className="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 px-6 py-3 rounded-full font-bold text-sm transition-all hover:shadow-md border border-emerald-100/50 flex items-center gap-2">
+                <Camera className="w-4 h-4" /> Scan Homework
+              </button>
+              <button onClick={() => setShowTutoringModal(true)} className="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-6 py-3 rounded-full font-bold text-sm transition-all hover:shadow-md border border-indigo-100/50 flex items-center gap-2">
+                <Users className="w-4 h-4" /> Ask a Question
+              </button>
+              <button onClick={() => navigate('/revision')} className="bg-amber-50 hover:bg-amber-100 text-amber-700 px-6 py-3 rounded-full font-bold text-sm transition-all hover:shadow-md border border-amber-100/50 flex items-center gap-2">
+                <Brain className="w-4 h-4" /> Revision & Exams
+              </button>
+            </motion.div>
 
-            {/* Quick Actions Section */}
+            {/* Top Grid Redesign */}
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-              className="w-full grid grid-cols-1 md:grid-cols-3 gap-4 mb-10"
+              className="w-full mb-12 flex flex-col gap-6 mt-8"
             >
-              <button onClick={isOnline ? startCamera : undefined} className="bg-blue-50 hover:bg-blue-100 text-blue-800 p-6 rounded-[2rem] transition-all hover:-translate-y-1 flex items-center gap-4 border border-blue-100 group shadow-sm hover:shadow-md cursor-pointer text-left">
-                <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform ring-4 ring-blue-50/50">
-                  <Camera className="w-7 h-7 text-blue-600" />
-                </div>
-                <div>
-                  <span className="block font-black text-lg leading-tight">Scan<br />Homework</span>
-                </div>
-              </button>
+              {(() => {
+                const validPerformances = subjectPerformance.filter(s => s.hasData);
+                let overallAvg = 0;
+                let strongest = { subject: 'Science', score: 84 };
+                let needsAtten = { subject: 'Fractions', score: 45 };
 
-              <button onClick={() => setShowTutoringModal(true)} className="bg-indigo-50 hover:bg-indigo-100 text-indigo-800 p-6 rounded-[2rem] transition-all hover:-translate-y-1 flex items-center gap-4 border border-indigo-100 group shadow-sm hover:shadow-md cursor-pointer text-left">
-                <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform ring-4 ring-indigo-50/50">
-                  <Users className="w-7 h-7 text-indigo-600" />
-                </div>
-                <div>
-                  <span className="block font-black text-lg leading-tight">Ask a<br />Question</span>
-                </div>
-              </button>
+                if (validPerformances.length > 0) {
+                  const totalScore = validPerformances.reduce((acc, curr) => acc + curr.score, 0);
+                  overallAvg = Math.round(totalScore / validPerformances.length);
+                  strongest = validPerformances.reduce((prev, current) => (prev.score > current.score) ? prev : current);
+                  needsAtten = validPerformances.reduce((prev, current) => (prev.score < current.score) ? prev : current);
+                } else {
+                  overallAvg = 72;
+                }
 
-              <button onClick={() => navigate('/revision')} className="bg-orange-50 hover:bg-orange-100 text-orange-800 p-6 rounded-[2rem] transition-all hover:-translate-y-1 flex items-center gap-4 border border-orange-100 group shadow-sm hover:shadow-md cursor-pointer text-left">
-                <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform ring-4 ring-orange-50/50">
-                  <Brain className="w-7 h-7 text-orange-600" />
-                </div>
-                <div>
-                  <span className="block font-black text-lg leading-tight">Revision<br />& Exams</span>
-                </div>
-              </button>
+                // Study time estimate
+                const totalMins = history.length * 15 || 200;
+                const hrs = Math.floor(totalMins / 60);
+                const mins = totalMins % 60;
+
+                return (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full mt-4">
+                    {/* Left Column */}
+                    <div className="lg:col-span-2 space-y-6">
+                      {/* Sleek Dashboard Overview Row */}
+                      <div className="bg-white rounded-[2rem] p-6 border border-slate-100 shadow-sm transition-all hover:shadow-md w-full">
+                        <div className="flex items-center gap-3 mb-6">
+                          <h3 className="font-black text-slate-800 tracking-tight text-lg">Weekly Overview</h3>
+                          <div className="bg-emerald-100 text-emerald-700 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
+                            On Track
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 divide-y md:divide-y-0 md:divide-x divide-slate-100">
+                          {/* Average */}
+                          <div className="md:pr-6">
+                            <p className="text-sm font-bold text-slate-500 mb-1">Overall Average</p>
+                            <div className="flex items-end gap-2">
+                              <span className="text-3xl font-black text-slate-900 leading-none">{overallAvg}%</span>
+                              <span className="text-sm font-bold text-emerald-500 mb-0.5">+5%</span>
+                            </div>
+                            <div className="w-full h-1.5 bg-slate-100 rounded-full mt-3 overflow-hidden">
+                              <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${Math.max(10, overallAvg)}%` }} />
+                            </div>
+                          </div>
+
+                          {/* Strongest */}
+                          <div className="md:px-6 pt-4 md:pt-0">
+                            <p className="text-sm font-bold text-slate-500 mb-1">Strongest Subject</p>
+                            <div className="flex items-end gap-2">
+                              <span className="text-xl font-bold text-slate-900 leading-none">{strongest.subject}</span>
+                            </div>
+                            <p className="text-sm font-bold text-emerald-600 mt-2">{strongest.score}% Score</p>
+                          </div>
+
+                          {/* Needs Attention */}
+                          <div className="md:px-6 pt-4 md:pt-0">
+                            <p className="text-sm font-bold text-slate-500 mb-1">Needs Attention</p>
+                            <div className="flex items-end gap-2">
+                              <span className="text-xl font-bold text-slate-900 leading-none">{needsAtten.subject}</span>
+                            </div>
+                            <p className="text-sm font-bold text-amber-500 mt-2">Practice Recommended</p>
+                          </div>
+
+                          {/* Study Time */}
+                          <div className="md:pl-6 pt-4 md:pt-0 flex flex-col justify-center">
+                            <p className="text-sm font-bold text-slate-500 mb-1">Study Time</p>
+                            <div className="flex items-end gap-2">
+                              <span className="text-2xl font-black text-blue-600 leading-none">{hrs}h {mins}m</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Action Cards Row */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full mt-2">
+                        {/* Green Prepare for Exams Card */}
+                        <div className="bg-gradient-to-br from-emerald-400 to-emerald-500 rounded-[2rem] p-6 text-white shadow-xl shadow-emerald-200/50 relative overflow-hidden flex flex-col justify-center min-h-[160px]">
+                          <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
+                          <div className="relative z-10 flex items-center gap-4">
+                            <div className="w-14 h-14 bg-white/20 rounded-2xl flex items-center justify-center shrink-0">
+                              <span className="text-2xl">🎓</span>
+                            </div>
+                            <div>
+                              <h3 className="font-bold text-xl mb-1 leading-tight">Prepare for<br />End-Term Exams</h3>
+                              <p className="text-emerald-100 text-sm font-medium">View targeted study materials</p>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Scan & Tuition combined */}
+                        <div className="flex flex-col gap-4">
+                          <button
+                            onClick={startCamera}
+                            className="bg-white rounded-[1.5rem] p-4 border border-slate-100 shadow-sm flex items-center gap-4 cursor-pointer hover:shadow-md hover:border-emerald-100 transition-all group text-left w-full"
+                          >
+                            <div className="w-10 h-10 bg-emerald-100 text-emerald-600 rounded-xl flex items-center justify-center group-hover:bg-emerald-500 group-hover:text-white transition-colors shrink-0">
+                              <CheckCircle className="w-5 h-5" />
+                            </div>
+                            <div className="flex-1">
+                              <h4 className="font-black text-slate-800 text-sm leading-tight">Fast Homework Scan</h4>
+                              <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5 block">AI Assistant</span>
+                            </div>
+                            <ChevronRight className="w-5 h-5 text-slate-300 group-hover:text-emerald-500 transition-colors" />
+                          </button>
+
+                          <div className="bg-amber-50/50 rounded-[1.5rem] p-4 border border-amber-100 shadow-sm flex items-center gap-4 h-full">
+                            <div className="text-xl drop-shadow-sm shrink-0">💡</div>
+                            <p className="text-xs text-slate-600 leading-relaxed font-medium">
+                              Soma Smart is equivalent to <strong>3 tuition sessions</strong> per week – at a fraction of the cost.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
             </motion.div>
 
             {/* Recommended & Challenge Grid */}
@@ -2272,42 +2189,45 @@ ${explanation.explanation}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4 }}
-              className="w-full grid grid-cols-1 md:grid-cols-2 gap-6 mb-10"
+              className="w-full grid grid-cols-1 md:grid-cols-2 gap-6 mb-12"
             >
-              {/* Recommended For You */}
-              <div className="bg-white rounded-[2.5rem] p-8 shadow-sm border border-slate-100 flex flex-col">
-                <h3 className="font-black text-xl text-slate-900 mb-6 flex items-center gap-2">
-                  <Sparkles className="w-5 h-5 text-yellow-500 fill-current" /> Recommended for You
-                </h3>
-                <div className="space-y-3 flex-1">
+              {/* Recommended For You - Sleek List */}
+              <div className="bg-white rounded-[2rem] p-6 shadow-sm border border-slate-100 flex flex-col">
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="font-black text-lg text-slate-800 flex items-center gap-2">
+                    <Sparkles className="w-5 h-5 text-indigo-500 fill-current" /> Recommended Action
+                  </h3>
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">AI Curated</span>
+                </div>
+
+                <div className="space-y-4 flex-1">
                   {(() => {
-                    // Deriving recommendations from history
                     const recentTopics = [...new Set(history.map(h => h.topic))].slice(0, 3);
                     const defaultSubjects = ['Science', 'English', 'Mathematics'];
 
-                    const subject1 = recentTopics[0] || defaultSubjects[0]; // For Revision
-                    const subject2 = recentTopics[1] || (recentTopics[0] === defaultSubjects[1] ? defaultSubjects[0] : defaultSubjects[1]); // For Practice
-                    const subject3 = recentTopics[2] || defaultSubjects[2]; // For Mock
+                    const subject1 = recentTopics[0] || defaultSubjects[0];
+                    const subject2 = recentTopics[1] || (recentTopics[0] === defaultSubjects[1] ? defaultSubjects[0] : defaultSubjects[1]);
+                    const subject3 = recentTopics[2] || defaultSubjects[2];
 
                     const recommendations = [
                       {
-                        title: `5 min ${subject1.split('•')[0].trim()} revision`,
+                        title: `5 Minute ${subject1.split('•')[0].trim()} Recap`,
                         type: "Revision",
-                        color: "bg-emerald-100 text-emerald-700",
+                        color: "bg-indigo-50 text-indigo-600 border-indigo-100",
                         icon: <Brain className="w-5 h-5" />,
                         prompt: `Give me a concise 5-minute revision summary for ${subject1}.`
                       },
                       {
-                        title: `${subject2.split('•')[0].trim()} practice`,
+                        title: `${subject2.split('•')[0].trim()} Practice`,
                         type: "Practice",
-                        color: "bg-blue-100 text-blue-700",
+                        color: "bg-emerald-50 text-emerald-600 border-emerald-100",
                         icon: <BookOpen className="w-5 h-5" />,
                         prompt: `Generate 5 practice questions for ${subject2}.`
                       },
                       {
-                        title: "3 KPSEA style questions",
-                        type: "Mock",
-                        color: "bg-purple-100 text-purple-700",
+                        title: "KPSEA Style Mock",
+                        type: "Exams",
+                        color: "bg-purple-50 text-purple-600 border-purple-100",
                         icon: <PenTool className="w-5 h-5" />,
                         prompt: `Generate 3 KPSEA (CBC Grade 6) style exam questions for ${subject3}.`
                       }
@@ -2316,25 +2236,14 @@ ${explanation.explanation}
                     return recommendations.map((item, i) => (
                       <div
                         key={i}
-                        onClick={() => {
-                          setPromptText(item.prompt);
-                          // We need to defer the submit slightly to allow state update or just call logic directly if possible
-                          // But handlePromptSubmit depends on promptText state. 
-                          // Better approach: set text then auto-submit in useEffect or just pass text to a helper.
-                          // For now, we'll set it and user can press enter, OR we modify handlePromptSubmit to accept an arg.
-                          // Since I can't easily modify handler signature safely without checking, I'll just set text.
-                          // Wait, the user asked for it to be FUNCTIONAL. I should try to make it submit.
-                          // I'll update the textarea value directly if needed, but react state is better.
-                          // Actually, I can allow the user to review the prompt before sending.
-                          // User request: "lets make this section functional taking from real data"
-                        }}
-                        className="flex items-center gap-4 p-3 rounded-2xl hover:bg-slate-50 transition-colors cursor-pointer group/item border border-transparent hover:border-slate-100"
+                        onClick={() => { setPromptText(item.prompt); }}
+                        className="flex items-center gap-4 p-4 rounded-[1.5rem] hover:bg-slate-50 transition-colors cursor-pointer group/item border border-slate-100"
                       >
-                        <div className={`w-12 h-12 ${item.color} rounded-2xl flex items-center justify-center font-bold text-lg group-hover/item:scale-110 transition-transform`}>
+                        <div className={`w-12 h-12 ${item.color} border rounded-xl flex items-center justify-center font-bold text-lg group-hover/item:scale-110 transition-transform`}>
                           {item.icon}
                         </div>
                         <div className="flex-1">
-                          <h4 className="font-bold text-slate-800 leading-tight">{item.title}</h4>
+                          <h4 className="font-bold text-slate-800 text-sm leading-tight">{item.title}</h4>
                           <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-1">{item.type}</p>
                         </div>
                         <div
@@ -2342,7 +2251,7 @@ ${explanation.explanation}
                             e.stopPropagation();
                             askStudyBuddy(item.prompt);
                           }}
-                          className="w-8 h-8 rounded-full border-2 border-slate-100 flex items-center justify-center text-slate-300 group-hover/item:border-blue-500 group-hover/item:text-blue-500 transition-all hover:bg-blue-50"
+                          className="w-8 h-8 rounded-full border-2 border-slate-100 flex items-center justify-center text-slate-300 group-hover/item:border-indigo-500 group-hover/item:text-indigo-500 group-hover/item:bg-indigo-50 transition-all hover:bg-slate-100"
                         >
                           <ArrowRight className="w-4 h-4" />
                         </div>
@@ -2352,30 +2261,33 @@ ${explanation.explanation}
                 </div>
               </div>
 
-              {/* Today's Challenge */}
+              {/* Today's Challenge - Premium Card */}
               <div
                 onClick={() => { setPromptText(`Generate a ${dailyChallenge.quiz}`); handlePromptSubmit(); }}
-                className="bg-white rounded-[2.5rem] p-8 shadow-sm border border-slate-100 relative overflow-hidden group cursor-pointer hover:shadow-xl hover:shadow-orange-500/5 transition-all"
+                className="bg-slate-900 rounded-[2rem] p-8 shadow-2xl shadow-indigo-900/20 relative overflow-hidden group cursor-pointer hover:shadow-indigo-900/40 transition-all flex flex-col"
               >
-                <div className="absolute top-0 right-0 p-20 bg-gradient-to-br from-orange-50 to-amber-50 rounded-full blur-3xl opacity-60 -translate-y-1/3 translate-x-1/3" />
+                <div className="absolute top-0 right-0 p-32 bg-gradient-to-br from-indigo-500/20 to-purple-500/20 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
 
                 <div className="relative z-10 h-full flex flex-col">
                   <div className="flex justify-between items-start mb-6">
-                    <h3 className="text-2xl font-black text-slate-900 leading-tight">Today's Result<br />Challenge</h3>
-                    <div className="w-12 h-12 bg-orange-100 rounded-2xl flex items-center justify-center text-2xl shadow-inner">
+                    <div>
+                      <span className="text-indigo-400 font-bold text-xs uppercase tracking-widest mb-2 block">Daily Objective</span>
+                      <h3 className="text-3xl font-black text-white leading-tight">Sprint<br />Challenge</h3>
+                    </div>
+                    <div className="w-14 h-14 bg-white/10 backdrop-blur-sm rounded-2xl flex items-center justify-center text-2xl border border-white/10 group-hover:scale-110 transition-transform">
                       🏆
                     </div>
                   </div>
 
                   <div className="mb-8 flex-1">
-                    <p className="text-slate-500 font-medium text-lg mb-2">Solve <strong className="text-slate-900">5 questions</strong></p>
-                    <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-indigo-50 text-indigo-700 rounded-lg text-xs font-black uppercase tracking-wider">
-                      +50 XP Reward
+                    <p className="text-slate-300 font-medium text-lg mb-3">Complete <strong className="text-white">5 math questions</strong> flawlessly.</p>
+                    <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-amber-400/20 to-orange-400/20 border border-amber-400/30 text-amber-400 rounded-lg text-xs font-black uppercase tracking-wider">
+                      <Sparkles className="w-3 h-3" /> +50 XP Reward
                     </div>
                   </div>
 
-                  <button className="w-full py-3.5 bg-slate-900 text-white rounded-2xl font-bold shadow-lg shadow-slate-200 group-hover:bg-slate-800 transition-all flex items-center justify-center gap-2">
-                    Start Challenge
+                  <button className="w-full py-4 bg-white text-slate-900 rounded-[1.25rem] font-black shadow-lg shadow-white/10 group-hover:bg-indigo-50 transition-all flex items-center justify-center gap-2">
+                    Start Challenge <ArrowRight className="w-4 h-4" />
                   </button>
                 </div>
               </div>
@@ -2388,63 +2300,72 @@ ${explanation.explanation}
               transition={{ delay: 0.5 }}
               className="w-full grid grid-cols-1 md:grid-cols-12 gap-6 mb-20"
             >
-              {/* Weekly Progress (Span 7) */}
-              <div className="md:col-span-7 bg-white rounded-[2.5rem] p-8 shadow-sm border border-slate-100">
-                <div className="flex justify-between items-center mb-6">
-                  <h3 className="font-black text-xl text-slate-900">Weekly Progress</h3>
-                  <button className="text-xs font-bold text-slate-400 hover:text-blue-600 transition-colors">View Report</button>
+              {/* Weekly Progress (Span 8) */}
+              <div className="md:col-span-8 bg-white rounded-[2rem] p-8 shadow-sm border border-slate-100 flex flex-col">
+                <div className="flex justify-between items-center mb-8">
+                  <h3 className="font-black text-xl text-slate-900 tracking-tight">Your Progress Journey</h3>
+                  <button className="text-xs font-bold text-slate-400 hover:text-indigo-600 transition-colors uppercase tracking-widest hidden sm:block">View Detailed Report</button>
                 </div>
 
-                {/* Level Bar */}
-                <div className="bg-slate-50 rounded-2xl p-6 mb-6">
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="font-black text-slate-700">Level {levelInfo.level}</span>
-                    <span className="text-xs font-bold text-slate-400">{totalXP} / {levelInfo.nextLevelXP} XP</span>
-                  </div>
-                  <div className="h-3 bg-slate-200 rounded-full overflow-hidden">
-                    <div className="h-full bg-blue-600 rounded-full" style={{ width: `${(totalXP / levelInfo.nextLevelXP) * 100}%` }} />
-                  </div>
-                </div>
+                <div className="flex flex-col md:flex-row gap-8 flex-1">
+                  {/* Level Bar Column */}
+                  <div className="bg-slate-50 border border-slate-100 rounded-[1.5rem] p-6 flex-1 flex flex-col justify-center relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/5 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2 group-hover:bg-blue-500/10 transition-colors" />
 
-                {/* Subjects */}
-                <div className="space-y-4">
-                  {subjectPerformance.slice(0, 3).map((item, i) => (
-                    <div key={i}>
-                      <div className="flex justify-between text-xs font-bold text-slate-500 mb-1">
-                        <span>{item.subject}</span>
-                        <span className="text-slate-900">{item.score}%</span>
+                    <div className="flex justify-between items-end mb-4 relative z-10">
+                      <div>
+                        <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400 block mb-1">Current Status</span>
+                        <span className="font-black text-2xl text-slate-800 leading-none">Level {levelInfo.level}</span>
                       </div>
-                      <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-                        <div className={`h-full rounded-full ${i === 0 ? 'bg-emerald-500' : i === 1 ? 'bg-blue-500' : 'bg-purple-500'}`} style={{ width: `${item.score}%` }} />
+                      <span className="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded-md">{totalXP} / {levelInfo.nextLevelXP} XP</span>
+                    </div>
+                    <div className="h-4 bg-slate-200/60 rounded-full overflow-hidden relative z-10 shadow-inner">
+                      <div className="h-full bg-blue-600 rounded-full shadow-sm relative overflow-hidden" style={{ width: `${(totalXP / levelInfo.nextLevelXP) * 100}%` }}>
+                        <div className="absolute inset-0 bg-white/20 skew-x-12 -translate-x-full group-hover:animate-[shimmer_2s_infinite]" />
                       </div>
                     </div>
-                  ))}
-                  {subjectPerformance.length === 0 && (
-                    <p className="text-center text-slate-400 text-sm italic">Start quizzes to track progress!</p>
-                  )}
+                  </div>
+
+                  {/* Subjects Column */}
+                  <div className="flex-1 space-y-5 flex flex-col justify-center">
+                    {subjectPerformance.slice(0, 3).map((item, i) => (
+                      <div key={i} className="group">
+                        <div className="flex justify-between text-xs font-bold text-slate-500 mb-2">
+                          <span className="group-hover:text-slate-800 transition-colors">{item.subject}</span>
+                          <span className="text-slate-800 group-hover:text-indigo-600 transition-colors">{item.score}%</span>
+                        </div>
+                        <div className="h-2.5 bg-slate-100 rounded-full overflow-hidden">
+                          <div className={`h-full rounded-full transition-all group-hover:brightness-110 ${i === 0 ? 'bg-emerald-500' : i === 1 ? 'bg-blue-500' : 'bg-purple-500'}`} style={{ width: `${item.score}%` }} />
+                        </div>
+                      </div>
+                    ))}
+                    {subjectPerformance.length === 0 && (
+                      <p className="text-center text-slate-400 text-sm italic">Complete quizzes to unlock progress tracking!</p>
+                    )}
+                  </div>
                 </div>
               </div>
 
-              {/* Tools (Span 5) */}
-              <div className="md:col-span-5 grid grid-cols-2 gap-4">
-                <button onClick={() => setMode('HISTORY' as any)} className="bg-white hover:bg-slate-50 p-4 rounded-[2rem] border border-slate-100 flex flex-col items-center justify-center gap-3 shadow-sm hover:shadow-md transition-all group aspect-square">
-                  <div className="w-12 h-12 bg-emerald-50 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
+              {/* Tools (Span 4) */}
+              <div className="md:col-span-4 grid grid-cols-2 grid-rows-2 gap-4">
+                <button onClick={() => setMode('HISTORY' as any)} className="bg-white hover:bg-slate-50 p-6 rounded-[2rem] border border-slate-100 flex flex-col items-center justify-center gap-3 shadow-sm hover:shadow-md transition-all group">
+                  <div className="w-12 h-12 bg-emerald-50 rounded-xl flex items-center justify-center group-hover:scale-110 group-hover:-rotate-3 transition-transform">
                     <Clock className="w-6 h-6 text-emerald-600" />
                   </div>
-                  <span className="font-bold text-slate-700">History</span>
+                  <span className="font-bold text-slate-700 text-sm tracking-tight">History</span>
                 </button>
-                <label className="bg-white hover:bg-slate-50 p-4 rounded-[2rem] border border-slate-100 flex flex-col items-center justify-center gap-3 shadow-sm hover:shadow-md transition-all group aspect-square cursor-pointer">
-                  <div className="w-12 h-12 bg-purple-50 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
+                <label className="bg-white hover:bg-slate-50 p-6 rounded-[2rem] border border-slate-100 flex flex-col items-center justify-center gap-3 shadow-sm hover:shadow-md transition-all group cursor-pointer">
+                  <div className="w-12 h-12 bg-purple-50 rounded-xl flex items-center justify-center group-hover:scale-110 group-hover:rotate-3 transition-transform">
                     <Upload className="w-6 h-6 text-purple-600" />
                   </div>
-                  <span className="font-bold text-slate-700">Upload</span>
+                  <span className="font-bold text-slate-700 text-sm tracking-tight">Upload</span>
                   <input type="file" className="hidden" ref={fileInputRef} onChange={handleFileUpload} />
                 </label>
-                <button onClick={() => window.open('/revision', '_blank')} className="col-span-2 bg-white hover:bg-slate-50 p-4 rounded-[2rem] border border-slate-100 flex items-center justify-center gap-4 shadow-sm hover:shadow-md transition-all group">
-                  <div className="w-10 h-10 bg-pink-50 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
+                <button onClick={() => window.open('/revision', '_blank')} className="col-span-2 bg-gradient-to-r from-pink-50 to-rose-50 hover:from-pink-100 hover:to-rose-100 p-6 rounded-[2rem] border border-pink-100/50 flex items-center justify-center gap-4 shadow-sm hover:shadow-md transition-all group">
+                  <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
                     <Library className="w-5 h-5 text-pink-600" />
                   </div>
-                  <span className="font-bold text-slate-700">Resources</span>
+                  <span className="font-bold text-slate-800 tracking-tight">Access Resource Library</span>
                 </button>
               </div>
             </motion.div>

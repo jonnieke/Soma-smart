@@ -4,7 +4,7 @@ import {
     GraduationCap, Users, Baby, ChevronRight, MessageSquare,
     ScanLine, CheckCircle, Menu, X, CheckSquare, Play, BookOpen, LogOut,
     CreditCard, AlertCircle, FileText, Clock, Award, ArrowRight, School,
-    Sparkles, Zap, Building2, TrendingUp, Quote, Globe
+    Sparkles, Zap, Building2, TrendingUp, Quote, Globe, ShieldCheck
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { UserRole } from '../types';
@@ -15,7 +15,7 @@ import learnerImg from '../assets/images/learner.png';
 import teacherImg from '../assets/images/teacher.png';
 import parentImg from '../assets/images/parent.png';
 import logoImg from '../assets/images/logo.png';
-import heroBannerImg from '../assets/images/hero-banner.png';
+import heroBannerImg from '../assets/images/soma_smart_hero_graphic_with_teacher.png';
 import stepScanImg from '../assets/images/step_scan.png';
 import stepExplainImg from '../assets/images/step_explain.png';
 import stepQuizImg from '../assets/images/step_quiz.png';
@@ -53,7 +53,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
 
     // Get translations
     const t = translations[language];
-    const [registrationRole, setRegistrationRole] = useState<'STUDENT' | 'SCHOOL'>('STUDENT');
+    const [registrationRole, setRegistrationRole] = useState<'STUDENT' | 'TEACHER' | 'SCHOOL'>('STUDENT');
     const [pendingRoute, setPendingRoute] = useState<string | null>(null);
 
     // Handle incoming plan selection from PricingPage
@@ -346,35 +346,59 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                 <span className="text-sm">{t.language.invitePrefix} {language === 'FR' ? 'Mode Activé ✅' : t.language.frenchClick} 🇫🇷</span>
                             </div>
 
-                            <h1 className="text-3xl md:text-4xl lg:text-5xl font-extrabold text-blue-900 tracking-tight mb-6 leading-[1.2] lg:leading-[1.1]">
-                                {t.hero.headline} <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">{t.hero.gradient}</span>
+                            <h1 className="text-3xl md:text-5xl lg:text-[54px] font-extrabold text-[#1a2b5e] tracking-tight mb-8 leading-[1.1]">
+                                Improve CBC exam scores by 15–30% in 8 weeks—<br /><span className="text-[#5b61de]">with Somo Homework/Study Assistant & Teacher dashboard.</span>
                             </h1>
-                            <p className="text-base md:text-lg text-slate-600 mb-10 leading-relaxed max-w-xl">
-                                {t.hero.subheadline}
-                            </p>
 
-                            <div className="flex flex-col sm:flex-row items-center gap-4 mb-10">
+                            <div className="space-y-4 mb-10 text-[#4a5568] text-lg lg:text-xl">
+                                <div className="flex items-center gap-3 bg-[#fdfdf5] text-[#2d3748] px-5 py-3 rounded-2xl mb-6 border border-[#f5eed6] w-fit shadow-sm">
+                                    <CheckCircle className="w-6 h-6 text-[#2cb674]" />
+                                    <span><span className="font-bold">Trusted by 1,000+ CBC learners</span> across Kenya</span>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                    <CheckCircle className="w-6 h-6 text-[#2cb674]" />
+                                    <span><span className="font-bold">1,200+ Kenyan learners</span> improved math scores</span>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                    <CheckCircle className="w-6 h-6 text-[#2cb674]" />
+                                    <span><span className="font-bold">Teachers save 5–8 hours</span> weekly on marking</span>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                    <CheckCircle className="w-6 h-6 text-[#2cb674]" />
+                                    <span>Used in <span className="font-bold">15+ CBC-aligned schools</span></span>
+                                </div>
+                            </div>
+
+                            <div className="flex flex-col sm:flex-row items-stretch gap-4 sm:gap-6 mb-12">
+                                {/* Primary CTA (Try Learner) */}
                                 <button
                                     onClick={() => handleRoleSelect(UserRole.LEARNER)}
-                                    className="px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 rounded-xl font-bold text-lg shadow-xl shadow-blue-200 transition-all hover:-translate-y-1 w-full sm:w-auto flex items-center justify-center gap-2 group"
+                                    className="bg-[#5b61de] text-white hover:bg-[#4a50d0] rounded-3xl py-6 px-4 font-bold flex-1 shadow-xl shadow-indigo-200 transition-all hover:-translate-y-1 sm:w-auto flex flex-col items-center justify-center gap-1 group w-full"
                                 >
-                                    {t.hero.ctaLearner} <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                                    <span className="flex items-center gap-1 text-xl">Try Learner <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" /></span>
+                                    <span className="text-sm font-medium text-white/90">for Free</span>
                                 </button>
+
+                                {/* Secondary CTA (For Teachers) */}
                                 <button
                                     onClick={() => handleRoleSelect(UserRole.TEACHER)}
-                                    className="px-8 py-4 bg-gradient-to-r from-emerald-500 to-teal-600 text-white hover:from-emerald-600 hover:to-teal-700 rounded-xl font-bold text-lg shadow-xl shadow-emerald-100 transition-all hover:-translate-y-1 w-full sm:w-auto flex items-center justify-center gap-2 group border border-emerald-400/20"
+                                    className="bg-[#2cb674] text-white hover:bg-[#259b63] rounded-3xl py-6 px-4 font-bold flex-1 shadow-xl shadow-emerald-100 transition-all hover:-translate-y-1 sm:w-auto flex flex-col items-center justify-center gap-1 group w-full"
                                 >
-                                    {t.hero.ctaTeachers} <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                                    <span className="flex items-center gap-1 text-xl">For <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" /></span>
+                                    <span className="text-sm font-medium text-white/90">Teachers</span>
                                 </button>
+
+                                {/* Tertiary CTA (Book School Pilot) */}
                                 <button
                                     onClick={() => setShowContact(true)}
-                                    className="px-8 py-4 bg-white text-blue-700 border-2 border-blue-200 hover:border-blue-400 hover:bg-blue-50 rounded-xl font-bold text-lg shadow-lg shadow-blue-100/50 transition-all hover:-translate-y-1 w-full sm:w-auto flex items-center justify-center gap-2 group"
+                                    className="bg-white text-[#5b61de] border border-[#f0f2fb] hover:border-[#5b61de] hover:bg-[#f0f2fb] rounded-3xl py-6 px-4 font-bold flex-1 shadow-sm transition-all hover:-translate-y-1 sm:w-auto flex flex-col items-center justify-center gap-1 w-full text-center"
                                 >
-                                    {t.hero.ctaPilot} <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                                    <span className="text-xl">Book</span>
+                                    <span className="text-sm font-medium text-[#718096]">School Pilot</span>
                                 </button>
                             </div>
 
-                            <div className="flex items-center gap-4 pt-4 border-t border-slate-100">
+                            <div className="flex items-center gap-4 pt-4 border-t border-slate-100 mt-8">
                                 <div className="flex -space-x-2">
                                     {[1, 2, 3, 4].map(i => (
                                         <div key={i} className="w-10 h-10 rounded-full border-2 border-white bg-slate-200 overflow-hidden">
@@ -382,8 +406,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                         </div>
                                     ))}
                                 </div>
-                                <div className="text-sm font-medium text-slate-500">
-                                    <span className="text-blue-600 font-bold">4.9/5</span> from 2,000+ reviews
+                                <div className="text-sm font-medium text-[#718096]">
+                                    <span className="text-[#5b61de] font-bold">4.9/5</span> from 2,000+ reviews
                                 </div>
                             </div>
                         </motion.div>
@@ -393,55 +417,19 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                             initial={{ opacity: 0, scale: 0.95 }}
                             animate={{ opacity: 1, scale: 1 }}
                             transition={{ duration: 0.6, delay: 0.1 }}
-                            className="relative"
+                            className="relative flex items-center justify-center"
                         >
-                            <div className="relative z-10 rounded-2xl overflow-hidden shadow-2xl shadow-blue-200/50 border border-white/50 backdrop-blur-sm aspect-[4/3] md:aspect-video bg-slate-100">
+                            <div className="relative z-10 w-full overflow-hidden drop-shadow-2xl">
                                 <img
                                     src={heroBannerImg}
                                     alt="Somo Smart Learning - Your Study Assistant for Kenyan Students"
-                                    className="w-full h-full object-cover"
+                                    className="w-full h-auto object-contain transform scale-[1.02]"
                                     fetchPriority="high"
-                                    width="800"
-                                    height="600"
                                 />
                             </div>
 
-                            {/* Floating Elements */}
-                            <motion.div
-                                animate={{ y: [0, -10, 0] }}
-                                transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-                                className="absolute -top-6 -right-6 bg-white p-4 rounded-2xl shadow-xl z-20 hidden md:block border border-slate-100"
-                            >
-                                <div className="flex items-center gap-3">
-                                    <div className="bg-green-100 p-2 rounded-lg">
-                                        <CheckCircle className="w-6 h-6 text-green-600" />
-                                    </div>
-                                    <div>
-                                        <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Lesson Mastery</p>
-                                        <p className="text-sm font-bold text-slate-800">92% Avg. Improvement</p>
-                                    </div>
-                                </div>
-                            </motion.div>
-
-                            <motion.div
-                                animate={{ y: [0, 10, 0] }}
-                                transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
-                                className="absolute -bottom-6 -left-6 bg-white p-4 rounded-2xl shadow-xl z-20 hidden md:block border border-slate-100"
-                            >
-                                <div className="flex items-center gap-3">
-                                    <div className="bg-orange-100 p-2 rounded-lg">
-                                        <BookOpen className="w-6 h-6 text-orange-600" />
-                                    </div>
-                                    <div>
-                                        <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Study Sessions</p>
-                                        <p className="text-sm font-bold text-slate-800">1.2M+ Minutes Active</p>
-                                    </div>
-                                </div>
-                            </motion.div>
-
-                            {/* Background Blobs */}
-                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] bg-blue-400/10 blur-[100px] -z-10 rounded-full"></div>
-                            <div className="absolute top-0 right-0 w-64 h-64 bg-orange-200/20 blur-[80px] -z-10 rounded-full"></div>
+                            {/* Background Emphasis */}
+                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[110%] h-[110%] bg-[#f5f7ff]/50 -z-10 rounded-[3rem] pointer-events-none"></div>
                         </motion.div>
                     </div>
 
@@ -633,7 +621,81 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                 </div>
             </section>
 
+            <div className="w-full h-px bg-gradient-to-r from-transparent via-slate-100 to-transparent"></div>
 
+            {/* --- ENTERPRISE SOLUTIONS FOR SCHOOLS --- */}
+            <section className="py-20 bg-slate-50 relative overflow-hidden">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div className="text-center mb-16">
+                        <span className="px-4 py-1.5 bg-blue-100 text-blue-800 text-xs font-black uppercase tracking-widest rounded-full mb-4 inline-block">
+                            For Administrators
+                        </span>
+                        <h2 className="text-3xl md:text-5xl font-extrabold text-[#1a2b5e] mb-4 tracking-tight">Enterprise Solutions <span className="text-blue-600">For Schools</span></h2>
+                        <p className="text-slate-500 text-lg md:text-xl max-w-2xl mx-auto leading-relaxed">
+                            Deploy Somo Smart campus-wide to elevate both teacher efficiency and student outcomes with unmatched administrative oversight.
+                        </p>
+                    </div>
+
+                    <div className="grid md:grid-cols-3 gap-8">
+                        {/* Feature 1 */}
+                        <motion.div
+                            whileHover={{ y: -8 }}
+                            className="bg-white p-8 rounded-3xl border border-slate-200 shadow-xl shadow-slate-100 flex flex-col justify-between"
+                        >
+                            <div>
+                                <div className="w-14 h-14 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mb-6">
+                                    <Globe className="w-7 h-7" />
+                                </div>
+                                <h3 className="text-xl font-bold text-slate-900 mb-3">Campus-Wide Analytics</h3>
+                                <p className="text-slate-500 leading-relaxed mb-6">
+                                    Monitor performance metrics across every class, subject, and student. Identify learning gaps instantly at a macro level.
+                                </p>
+                            </div>
+                        </motion.div>
+
+                        {/* Feature 2 */}
+                        <motion.div
+                            whileHover={{ y: -8 }}
+                            className="bg-white p-8 rounded-3xl border border-slate-200 shadow-xl shadow-slate-100 flex flex-col justify-between"
+                        >
+                            <div>
+                                <div className="w-14 h-14 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mb-6">
+                                    <Users className="w-7 h-7" />
+                                </div>
+                                <h3 className="text-xl font-bold text-slate-900 mb-3">Bulk Enrollment</h3>
+                                <p className="text-slate-500 leading-relaxed mb-6">
+                                    Onboard hundreds of students and teachers in minutes via CSV. Streamline the transition to AI-assisted learning effortlessly.
+                                </p>
+                            </div>
+                        </motion.div>
+
+                        {/* Feature 3 */}
+                        <motion.div
+                            whileHover={{ y: -8 }}
+                            className="bg-white p-8 rounded-3xl border border-slate-200 shadow-xl shadow-slate-100 flex flex-col justify-between"
+                        >
+                            <div>
+                                <div className="w-14 h-14 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center mb-6">
+                                    <ShieldCheck className="w-7 h-7" />
+                                </div>
+                                <h3 className="text-xl font-bold text-slate-900 mb-3">Administrative Control</h3>
+                                <p className="text-slate-500 leading-relaxed mb-6">
+                                    Manage teacher access, oversee assignments, and control the learning ecosystem from a powerful, centralized dashboard.
+                                </p>
+                            </div>
+                        </motion.div>
+                    </div>
+
+                    <div className="mt-12 text-center">
+                        <button
+                            onClick={() => setShowContact(true)}
+                            className="px-8 py-4 bg-[#1a2b5e] text-white rounded-2xl font-bold text-lg hover:bg-[#2a3b6e] transition-all shadow-xl shadow-blue-900/20 flex items-center gap-2 mx-auto"
+                        >
+                            <Building2 className="w-5 h-5" /> Reserve a School Pilot
+                        </button>
+                    </div>
+                </div>
+            </section>
 
             <div className="w-full h-px bg-gradient-to-r from-transparent via-slate-100 to-transparent"></div>
 
@@ -645,7 +707,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                         <p className="text-slate-500 text-lg md:text-xl max-w-2xl mx-auto leading-relaxed">{t.roles.subtitle}</p>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
                         {/* Learner Card */}
                         <motion.div
                             whileHover={{ y: -10 }}
@@ -657,19 +719,21 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                 <h3 className="text-2xl font-bold">{t.roles.student.title}</h3>
                                 <p className="text-white/80 font-medium italic text-sm">{t.roles.student.desc}</p>
                             </div>
-                            <div className="h-64 overflow-hidden bg-gray-50 relative aspect-[4/3]">
+                            <div className="h-48 lg:h-56 overflow-hidden bg-gray-50 relative">
                                 <img src={learnerImg} alt="Kenyan Student using Somo Smart for CBC and KCSE revision" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" loading="lazy" decoding="async" width="400" height="300" />
                                 <div className="absolute inset-0 bg-gradient-to-t from-white via-transparent to-transparent opacity-60"></div>
                             </div>
-                            <div className="p-8 space-y-4 bg-white flex-1">
-                                {t.roles.student.points.map((text, idx) => (
-                                    <div key={idx} className="flex items-center gap-3 text-slate-700">
-                                        <div className="p-1.5 rounded-lg bg-orange-50 text-orange-500">
-                                            {idx === 0 ? <ScanLine className="w-4 h-4" /> : idx === 1 ? <MessageSquare className="w-4 h-4" /> : <CheckSquare className="w-4 h-4" />}
+                            <div className="p-8 space-y-4 bg-white flex-1 flex flex-col justify-between">
+                                <div>
+                                    {t.roles.student.points.map((text, idx) => (
+                                        <div key={idx} className="flex items-center gap-3 text-slate-700 mb-3">
+                                            <div className="p-1.5 rounded-lg bg-orange-50 text-orange-500">
+                                                {idx === 0 ? <ScanLine className="w-4 h-4" /> : idx === 1 ? <MessageSquare className="w-4 h-4" /> : <CheckSquare className="w-4 h-4" />}
+                                            </div>
+                                            <span className="font-bold text-sm tracking-tight">{text}</span>
                                         </div>
-                                        <span className="font-bold text-sm tracking-tight">{text}</span>
-                                    </div>
-                                ))}
+                                    ))}
+                                </div>
                                 <button className="w-full mt-4 py-3 rounded-xl bg-orange-50 text-orange-600 font-bold group-hover:bg-orange-500 group-hover:text-white transition-all">
                                     {t.roles.student.cta}
                                 </button>
@@ -687,23 +751,23 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                 <h3 className="text-2xl font-bold">For Teachers</h3>
                                 <p className="text-white/80 font-medium italic text-sm">Teach Better. Save Time.</p>
                             </div>
-                            <div className="h-64 overflow-hidden bg-gray-50 relative aspect-[4/3]">
+                            <div className="h-48 lg:h-56 overflow-hidden bg-gray-50 relative">
                                 <img src={teacherImg} alt="Kenyan Teacher creating lessons with Somo Smart" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" loading="lazy" decoding="async" width="400" height="300" />
                                 <div className="absolute inset-0 bg-gradient-to-t from-white via-transparent to-transparent opacity-60"></div>
                             </div>
-                            <div className="p-8 space-y-4 bg-white flex-1">
+                            <div className="p-8 space-y-4 bg-white flex-1 flex flex-col justify-between">
                                 <div>
                                     <h3 className="text-2xl font-black text-blue-900 mb-2">{t.roles.teacher.title}</h3>
-                                    <p className="text-slate-500 text-sm font-medium">{t.roles.teacher.desc}</p>
-                                </div>
-                                {[...t.roles.teacher.points].map((text, idx) => (
-                                    <div key={idx} className="flex items-center gap-3 text-slate-700">
-                                        <div className="p-1.5 rounded-lg bg-blue-50 text-blue-500">
-                                            {idx === 0 ? <ScanLine className="w-4 h-4" /> : idx === 1 ? <FileText className="w-4 h-4" /> : <TrendingUp className="w-4 h-4" />}
+                                    <p className="text-slate-500 text-sm font-medium mb-4">{t.roles.teacher.desc}</p>
+                                    {[...t.roles.teacher.points].map((text, idx) => (
+                                        <div key={idx} className="flex items-center gap-3 text-slate-700 mb-3">
+                                            <div className="p-1.5 rounded-lg bg-blue-50 text-blue-500">
+                                                {idx === 0 ? <ScanLine className="w-4 h-4" /> : idx === 1 ? <FileText className="w-4 h-4" /> : <TrendingUp className="w-4 h-4" />}
+                                            </div>
+                                            <span className="font-bold text-sm tracking-tight">{text}</span>
                                         </div>
-                                        <span className="font-bold text-sm tracking-tight">{text}</span>
-                                    </div>
-                                ))}
+                                    ))}
+                                </div>
                                 <button className="w-full mt-4 py-3 rounded-xl bg-blue-50 text-blue-600 font-bold group-hover:bg-blue-600 group-hover:text-white transition-all">
                                     {t.roles.teacher.cta}
                                 </button>
@@ -714,31 +778,79 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                         <motion.div
                             whileHover={{ y: -10 }}
                             onClick={() => handleRoleSelect(UserRole.PARENT)}
-                            className="bg-white rounded-2xl shadow-xl shadow-slate-100 overflow-hidden cursor-pointer border border-slate-100 group flex flex-col transition-all duration-300 hover:shadow-green-100"
+                            className="bg-white rounded-2xl shadow-xl shadow-slate-100 overflow-hidden cursor-pointer border border-slate-100 group flex flex-col transition-all duration-300 hover:shadow-teal-100"
                         >
-                            <div className="bg-gradient-to-br from-emerald-500 to-teal-600 p-6 text-center text-white">
+                            <div className="bg-gradient-to-br from-teal-500 to-emerald-600 p-6 text-center text-white">
                                 <Users className="w-10 h-10 mx-auto mb-3 opacity-90" />
                                 <h3 className="text-2xl font-bold">For Parents</h3>
                                 <p className="text-white/80 font-medium italic text-sm">Clear Learning. Real Progress.</p>
                             </div>
-                            <div className="h-64 overflow-hidden bg-gray-50 relative aspect-[4/3]">
+                            <div className="h-48 lg:h-56 overflow-hidden bg-gray-50 relative">
                                 <img src={parentImg} alt="Kenyan Parent tracking student progress on Somo Smart" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" loading="lazy" decoding="async" width="400" height="300" />
                                 <div className="absolute inset-0 bg-gradient-to-t from-white via-transparent to-transparent opacity-60"></div>
                             </div>
-                            <div className="p-8 space-y-4 bg-white flex-1">
-                                {t.roles.parent.points.map((text, idx) => (
-                                    <div key={idx} className="flex items-center gap-3 text-slate-700">
-                                        <div className="p-1.5 rounded-lg bg-emerald-50 text-emerald-500">
-                                            {idx === 0 ? <CheckCircle className="w-4 h-4" /> : idx === 1 ? <MessageSquare className="w-4 h-4" /> : <GraduationCap className="w-4 h-4" />}
+                            <div className="p-8 space-y-4 bg-white flex-1 flex flex-col justify-between">
+                                <div>
+                                    {t.roles.parent.points.map((text, idx) => (
+                                        <div key={idx} className="flex items-center gap-3 text-slate-700 mb-3">
+                                            <div className="p-1.5 rounded-lg bg-teal-50 text-teal-500">
+                                                {idx === 0 ? <CheckCircle className="w-4 h-4" /> : idx === 1 ? <MessageSquare className="w-4 h-4" /> : <GraduationCap className="w-4 h-4" />}
+                                            </div>
+                                            <span className="font-bold text-sm tracking-tight">{text}</span>
                                         </div>
-                                        <span className="font-bold text-sm tracking-tight">{text}</span>
-                                    </div>
-                                ))}
+                                    ))}
+                                </div>
                                 <button
                                     onClick={() => handleRoleSelect(UserRole.PARENT)}
-                                    className="w-full mt-4 py-3 rounded-xl bg-emerald-50 text-emerald-600 font-bold group-hover:bg-emerald-500 group-hover:text-white transition-all"
+                                    className="w-full mt-4 py-3 rounded-xl bg-teal-50 text-teal-600 font-bold group-hover:bg-teal-500 group-hover:text-white transition-all"
                                 >
                                     {t.roles.parent.cta}
+                                </button>
+                            </div>
+                        </motion.div>
+
+                        {/* School Card */}
+                        <motion.div
+                            whileHover={{ y: -10 }}
+                            onClick={() => handleRoleSelect(UserRole.SCHOOL)}
+                            className="bg-white rounded-2xl shadow-xl shadow-slate-100 overflow-hidden cursor-pointer border border-slate-100 group flex flex-col transition-all duration-300 hover:shadow-blue-100"
+                        >
+                            <div className="bg-gradient-to-br from-indigo-700 to-blue-900 p-6 text-center text-white">
+                                <Building2 className="w-10 h-10 mx-auto mb-3 opacity-90" />
+                                <h3 className="text-2xl font-bold">For Schools</h3>
+                                <p className="text-white/80 font-medium italic text-sm">Empower Entire Institutions.</p>
+                            </div>
+                            <div className="h-48 lg:h-56 overflow-hidden bg-slate-900 relative flex items-center justify-center">
+                                <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-20 mix-blend-overlay"></div>
+                                <School className="w-24 h-24 text-blue-500/20" />
+                                <div className="absolute inset-0 bg-gradient-to-t from-white via-transparent to-transparent opacity-60"></div>
+                            </div>
+                            <div className="p-8 space-y-4 bg-white flex-1 flex flex-col justify-between">
+                                <div>
+                                    <div className="flex items-center gap-3 text-slate-700 mb-3">
+                                        <div className="p-1.5 rounded-lg bg-blue-50 text-blue-800">
+                                            <TrendingUp className="w-4 h-4" />
+                                        </div>
+                                        <span className="font-bold text-sm tracking-tight">School-Wide Analytics</span>
+                                    </div>
+                                    <div className="flex items-center gap-3 text-slate-700 mb-3">
+                                        <div className="p-1.5 rounded-lg bg-blue-50 text-blue-800">
+                                            <Users className="w-4 h-4" />
+                                        </div>
+                                        <span className="font-bold text-sm tracking-tight">Bulk Student Enrollment</span>
+                                    </div>
+                                    <div className="flex items-center gap-3 text-slate-700 mb-3">
+                                        <div className="p-1.5 rounded-lg bg-blue-50 text-blue-800">
+                                            <FileText className="w-4 h-4" />
+                                        </div>
+                                        <span className="font-bold text-sm tracking-tight">Centralized Teacher Control</span>
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); setShowContact(true); }}
+                                    className="w-full mt-4 py-3 rounded-xl bg-blue-50 text-blue-800 font-bold group-hover:bg-blue-800 group-hover:text-white transition-all"
+                                >
+                                    Book School Pilot
                                 </button>
                             </div>
                         </motion.div>
@@ -891,21 +1003,27 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                         whileInView={{ opacity: 1, scale: 1 }}
                         transition={{ duration: 0.6 }}
                     >
-                        <h2 className="text-4xl md:text-6xl font-extrabold text-white mb-6 leading-tight">Ready to Master Any Subject?</h2>
-                        <p className="text-blue-100/80 mb-12 text-xl max-w-2xl mx-auto">Join the thousands of students already learning smarter with Somo Smart.</p>
+                        <h2 className="text-4xl md:text-5xl font-extrabold text-white mb-6 leading-tight">Ready to Transform Your Learning Environment?</h2>
+                        <p className="text-blue-100/80 mb-12 text-xl max-w-2xl mx-auto">Join thousands of learners, teachers, and schools building the future of education with Somo Smart.</p>
 
-                        <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
+                        <div className="flex flex-col md:flex-row items-center justify-center gap-4">
                             <button
                                 onClick={() => handleRoleSelect(UserRole.LEARNER)}
-                                className="px-10 py-5 bg-green-500 text-white rounded-2xl font-bold text-xl shadow-2xl shadow-green-900/40 hover:bg-green-400 hover:-translate-y-1 transition-all w-full sm:w-auto flex items-center justify-center gap-3"
+                                className="px-8 py-4 bg-green-500 text-white rounded-2xl font-bold text-lg shadow-2xl shadow-green-900/40 hover:bg-green-400 hover:-translate-y-1 transition-all w-full md:w-auto flex items-center justify-center gap-2"
                             >
-                                Get Started Now <ChevronRight className="w-6 h-6" />
+                                Try Learner Free <ChevronRight className="w-5 h-5" />
                             </button>
                             <button
-                                onClick={() => navigate('/teacher/darasa')}
-                                className="px-10 py-5 bg-white/10 text-white backdrop-blur-md border border-white/20 rounded-2xl font-bold text-xl hover:bg-white/20 transition-all w-full sm:w-auto flex items-center justify-center gap-3"
+                                onClick={() => handleRoleSelect(UserRole.TEACHER)}
+                                className="px-8 py-4 bg-white/10 text-white backdrop-blur-md border border-white/20 rounded-2xl font-bold text-lg hover:bg-white/20 transition-all w-full md:w-auto flex items-center justify-center gap-2"
                             >
-                                Try Darasa Mode
+                                Teacher Access
+                            </button>
+                            <button
+                                onClick={() => setShowContact(true)}
+                                className="px-8 py-4 bg-transparent text-white border-2 border-white/30 rounded-2xl font-bold text-lg hover:bg-white/10 transition-all w-full md:w-auto flex items-center justify-center gap-2"
+                            >
+                                Book School Pilot
                             </button>
                         </div>
                     </motion.div>
@@ -1060,6 +1178,24 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                     </div>
                 }
             />
+
+            {/* --- MOBILE STICKY CTA --- */}
+            <div className="md:hidden fixed bottom-0 left-0 right-0 p-3 bg-white/95 backdrop-blur-md border-t border-slate-200 shadow-2xl z-50 flex gap-3">
+                <button
+                    onClick={() => handleRoleSelect(UserRole.LEARNER)}
+                    className="flex-1 bg-[#5b61de] text-white py-3 px-2 rounded-xl font-bold flex flex-col items-center justify-center leading-tight shadow-md"
+                >
+                    <span className="text-[10px] opacity-90 uppercase tracking-wider">Start Learning</span>
+                    <span>For Free</span>
+                </button>
+                <button
+                    onClick={() => handleRoleSelect(UserRole.TEACHER)}
+                    className="flex-1 bg-[#2cb674] text-white py-3 px-2 rounded-xl font-bold flex flex-col items-center justify-center leading-tight shadow-md"
+                >
+                    <span className="text-[10px] opacity-90 uppercase tracking-wider">Teacher Access</span>
+                    <span>Save Marking Time</span>
+                </button>
+            </div>
         </div >
     );
 };
