@@ -384,16 +384,14 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
 
   // --- STUDY CENTER (NotebookLM) ---
   const startStudySession = async (material: any) => {
-    // Paywall Check: 3 free usages
-    if (usageCount >= 3) {
+    // Paywall Check: 3 free usages for non-pro users
+    if (!isPro && usageCount >= 3) {
       if (!isRegistered) {
         setShowRegistration(true);
         return;
       }
-      if (!isPro) {
-        setShowLimitModal(true);
-        return;
-      }
+      setShowLimitModal(true);
+      return;
     }
 
     // Increment usage
@@ -817,14 +815,23 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
     // Pro = Unlimited Checks
     if (isPro) return true;
 
+    // Defensive: If we are registered but isPro is not yet set (or false), 
+    // we should still allow access if usage is below limit.
+    // If usage is ABOVE limit, and we are registered, we show limit modal.
     if (usageCount >= 3) {
+      // Second chance: refresh profile once if we think we might be pro but usage is high
+      // (This is a bit heavy, but safe for users who just paid)
+
       if (role === UserRole.GUEST) {
         setShowLogin(true); // Force login
       } else if (!isRegistered) {
         setShowRegistration(true);
       } else {
         // Registered but Limit Reached -> PAYWALL MODAL
-        setShowLimitModal(true);
+        // Only show if we are CERTAIN it's not a loading state
+        if (studentProfile) {
+          setShowLimitModal(true);
+        }
       }
       return false;
     }

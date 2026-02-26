@@ -130,6 +130,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [studentCode, setStudentCode] = useState<string>("");
   const [usageCount, setUsageCount] = useState<number>(() => {
     const saved = localStorage.getItem('somo_daily_usage');
+    const lastDate = localStorage.getItem('somo_daily_date');
+    const today = new Date().toLocaleDateString();
+
+    if (lastDate !== today) {
+      localStorage.setItem('somo_daily_date', today);
+      localStorage.setItem('somo_daily_usage', '0');
+      return 0;
+    }
     return saved ? parseInt(saved) : 0;
   });
   // studyUsageCount removed
@@ -464,11 +472,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
               parentPhone: profile.parent_phone,
               sessionId: profile.session_id
             });
-            setIsRegistered(true);
             setRole(profile.role === 'REVISION' ? UserRole.REVISION : UserRole.LEARNER);
           } else if (profile.role === 'TEACHER') {
             setRole(UserRole.TEACHER);
-            setIsRegistered(true);
             setTeacherProfile({
               id: profile.id,
               name: profile.full_name,
@@ -484,7 +490,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             setIsAvailableForTutoring(!!profile.is_available);
           } else if (profile.role === 'SCHOOL') {
             setRole(UserRole.SCHOOL);
-            setIsRegistered(true);
             setSchoolProfile({
               id: profile.id,
               name: profile.full_name,
@@ -556,7 +561,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             } else if ('session_id' in profile && !profile.session_id) {
               await supabase.from('profiles').update({ session_id: browserSessionId }).eq('id', profile.id);
             }
-            setIsRegistered(true);
             setRole(profile.role === 'REVISION' ? UserRole.REVISION : UserRole.LEARNER);
           } else {
             localStorage.removeItem('soma_active_student');
@@ -564,9 +568,25 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         }
       }
 
-      // 3. Check Subscription Access if we have a user
+      // 3. Check Subscription Access immediately if we have a user
       if (currentUserId) {
-        const access = await checkSubscriptionAccess(currentUserId, 'STUDENT');
+        // Use a defensive segment determination
+        let segment: 'STUDENT' | 'TEACHER' = 'STUDENT';
+
+        // Quick re-check profile role if needed, or rely on what we set above 
+        // In local state, it's safer to fetch again or use a local variable from the blocks above.
+        // Let's use the currentUserId to get the role if not already known.
+        const { data: roleCheck } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', currentUserId)
+          .maybeSingle();
+
+        if (roleCheck?.role === 'TEACHER') {
+          segment = 'TEACHER';
+        }
+
+        const access = await checkSubscriptionAccess(currentUserId, segment);
         setIsPro(access.isPro);
         setSubscriptionPlan(access.tier);
         setSubscriptionExpiry(access.expiry);
@@ -577,6 +597,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         setSubscriptionExpiry(null);
       }
 
+      // 4. Finally set registration status (triggers UI)
+      if (currentUserId) {
+        setIsRegistered(true);
+      }
     };
     initSession();
   }, []);
@@ -1284,7 +1308,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const incrementUsage = () => {
     setUsageCount(prev => {
       const newCount = prev + 1;
+      const today = new Date().toLocaleDateString();
       localStorage.setItem('somo_daily_usage', newCount.toString());
+      localStorage.setItem('somo_daily_date', today);
       // Legacy Guest Sync (Optional)
       if (role === UserRole.GUEST) {
         localStorage.setItem('somo_guest_usage_general', newCount.toString());
