@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import {
     GraduationCap, Users, Baby, ChevronRight, MessageSquare,
     ScanLine, CheckCircle, Menu, X, CheckSquare, Play, BookOpen, LogOut,
     CreditCard, AlertCircle, FileText, Clock, Award, ArrowRight, School,
-    Sparkles, Zap, Building2, TrendingUp, Quote, Globe, ShieldCheck
+    Sparkles, Zap, Building2, TrendingUp, Quote, Globe, ShieldCheck, BarChart
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { UserRole } from '../types';
@@ -238,6 +239,31 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                 )}
             </AnimatePresence>
 
+            <Helmet>
+                <title>Somo Smart | Kenya's Premium AI Learning & Revision App</title>
+                <meta name="description" content="Somo Smart is the ultimate AI learning platform for Kenyan CBC and KCSE students. Access instantly generated quizzes, CBC/8-4-4 past papers, and expert AI-assisted tutoring." />
+                <meta name="keywords" content="Somo Smart, learning app Kenya, KCSE revision, CBC past papers, AI tutor Kenya, primary school revision, secondary school studying, 8-4-4, SomoSmart, Somo AI" />
+
+                {/* AIO specific meta tags */}
+                <meta name="ai-search-index" content="index" />
+                <meta name="ai-knowledge-base" content="official" />
+                <meta name="educational-framework" content="CBC, KCSE" />
+                <meta name="target-audience" content="Learners, Teachers, Parents" />
+                <meta name="core-features" content="AI Study Assistant, Curriculum-aligned Past Papers, Darasa Mode, Smart Quizzes" />
+
+                {/* Open Graph */}
+                <meta property="og:title" content="Somo Smart | Kenya's Premium AI Learning & Revision App" />
+                <meta property="og:description" content="Transform how you study with Somo Smart. Explore AI-powered testing, customized CBC/KCSE revision past papers, and a 24/7 AI tutor." />
+                <meta property="og:type" content="website" />
+                <meta property="og:url" content="https://somaai.co.ke/" />
+
+                {/* Twitter */}
+                <meta name="twitter:title" content="Somo Smart | Premium AI Learning Kenya" />
+                <meta name="twitter:description" content="AI-assisted learning and revision platform for Kenyan students. CBC, KCSE, and JSS materials." />
+
+                <link rel="canonical" href="https://somaai.co.ke/" />
+            </Helmet>
+
             {/* --- HEADER --- */}
             <motion.header
                 initial={{ y: -20, opacity: 0 }}
@@ -245,43 +271,40 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                 className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm shadow-sm"
             >
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex justify-between items-center py-4">
+                    <div className="flex justify-between items-center py-3">
                         {/* Logo */}
-                        <div className="flex items-center gap-4 cursor-pointer" onClick={() => window.scrollTo(0, 0)}>
-                            <img src={logoImg} alt="Somo Smart Logo - Kenya's Leading Study Assistant" className="w-24 h-24 object-contain" />
+                        <div className="flex items-center gap-3 cursor-pointer" onClick={() => window.scrollTo(0, 0)}>
+                            <img src={logoImg} alt="Somo Smart Logo" className="w-14 h-14 object-contain" />
                             <div className="hidden sm:block">
-                                <h1 className="text-3xl font-bold text-blue-900 leading-none tracking-tight">Somo Smart</h1>
-                                <p className="text-[11px] text-blue-600 font-bold tracking-wide uppercase mt-1">Teach Faster. Learn Smarter. Improve Results.</p>
+                                <h1 className="text-2xl font-bold text-blue-900 leading-none tracking-tight">Somo Smart</h1>
+                                <p className="text-[10px] text-slate-500 font-semibold tracking-wide uppercase mt-0.5">AI Study Assistant</p>
                             </div>
                         </div>
 
-                        {/* Desktop Nav */}
+                        {/* Desktop Nav â€” 3 items + CTA */}
                         <nav className="hidden md:flex items-center gap-8">
-                            <button onClick={() => handleRoleSelect(UserRole.LEARNER)} className="flex items-center gap-2 text-gray-600 hover:text-blue-600 font-medium transition-colors">
-                                <Baby className="w-5 h-5 text-blue-500" /> Students
+                            <a href="#how-it-works" className="text-slate-600 hover:text-blue-600 font-medium transition-colors text-sm">How It Works</a>
+                            <button onClick={() => navigate('/pricing')} className="text-slate-600 hover:text-blue-600 font-medium transition-colors text-sm">Pricing</button>
+                            <button onClick={() => setShowLogin(true)} className="text-slate-600 hover:text-blue-600 font-medium transition-colors text-sm">Login</button>
+                            <button onClick={toggleLanguage} className="text-slate-400 hover:text-slate-600 transition-colors" title="Switch language">
+                                <Globe className="w-4 h-4" />
                             </button>
-                            <button onClick={() => handleRoleSelect(UserRole.TEACHER)} className="flex items-center gap-2 text-gray-600 hover:text-blue-600 font-medium transition-colors">
-                                <GraduationCap className="w-5 h-5 text-gray-500" /> Teachers
-                            </button>
-                            <button onClick={() => handleRoleSelect(UserRole.SCHOOL)} className="flex items-center gap-2 text-gray-600 hover:text-emerald-600 font-medium transition-colors">
-                                <School className="w-5 h-5 text-emerald-500" /> Schools
-                            </button>
-                            <button onClick={() => navigate('/pricing')} className="flex items-center gap-2 text-gray-600 hover:text-indigo-600 font-medium transition-colors relative">
-                                <CreditCard className="w-5 h-5 text-indigo-500" /> Pricing
-                            </button>
-                            <button onClick={() => handleRoleSelect(UserRole.PARENT)} className="flex items-center gap-2 text-gray-600 hover:text-blue-600 font-medium transition-colors">
-                                <Users className="w-5 h-5 text-gray-500" /> Parents
-                            </button>
-                            <button onClick={toggleLanguage} className="flex items-center gap-2 text-gray-600 hover:text-blue-600 font-medium transition-colors">
-                                <Globe className="w-5 h-5 text-gray-400" />
-                                <span className={`text-xs font-bold px-1.5 py-0.5 rounded ${language === 'EN' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-500'}`}>EN</span>
-                                <span className="text-gray-300">/</span>
-                                <span className={`text-xs font-bold px-1.5 py-0.5 rounded ${language === 'FR' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-500'}`}>FR</span>
+                            <button
+                                onClick={() => handleRoleSelect(UserRole.LEARNER)}
+                                className="bg-[#5b61de] text-white px-6 py-2.5 rounded-xl font-bold text-sm hover:bg-[#4a50d0] transition-all shadow-md shadow-indigo-200 hover:-translate-y-0.5"
+                            >
+                                Get Started Free
                             </button>
                         </nav>
 
                         {/* Mobile Menu Button */}
-                        <div className="md:hidden">
+                        <div className="md:hidden flex items-center gap-3">
+                            <button
+                                onClick={() => handleRoleSelect(UserRole.LEARNER)}
+                                className="bg-[#5b61de] text-white px-4 py-2 rounded-lg font-bold text-xs shadow-md"
+                            >
+                                Get Started
+                            </button>
                             <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="p-2 text-gray-600">
                                 {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
                             </button>
@@ -299,26 +322,18 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                             transition={{ duration: 0.2, ease: "easeOut" }}
                             className="md:hidden border-t border-slate-100 overflow-hidden bg-white"
                         >
-                            <nav className="flex flex-col p-4 space-y-4">
-                                <button onClick={() => { handleRoleSelect(UserRole.LEARNER); setMobileMenuOpen(false); }} className="flex items-center gap-3 p-3 rounded-lg bg-blue-50 text-blue-700 font-bold">
-                                    <Baby className="w-5 h-5" /> Students
+                            <nav className="flex flex-col p-4 space-y-3">
+                                <a href="#how-it-works" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 text-slate-600 font-medium">
+                                    <BookOpen className="w-5 h-5 text-blue-500" /> How It Works
+                                </a>
+                                <button onClick={() => { navigate('/pricing'); setMobileMenuOpen(false); }} className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 text-slate-600 font-medium">
+                                    <CreditCard className="w-5 h-5 text-indigo-500" /> Pricing
                                 </button>
-                                <button onClick={() => { handleRoleSelect(UserRole.TEACHER); setMobileMenuOpen(false); }} className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 text-slate-600 font-medium">
-                                    <GraduationCap className="w-5 h-5" /> Teachers
+                                <button onClick={() => { setShowLogin(true); setMobileMenuOpen(false); }} className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 text-slate-600 font-medium">
+                                    <Users className="w-5 h-5 text-slate-400" /> Login
                                 </button>
-                                <button onClick={() => { handleRoleSelect(UserRole.SCHOOL); setMobileMenuOpen(false); }} className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 text-slate-600 font-medium">
-                                    <School className="w-5 h-5 text-emerald-500" /> Schools
-                                </button>
-                                <button onClick={() => { navigate('/pricing'); setMobileMenuOpen(false); }} className="flex items-center justify-between p-3 rounded-lg hover:bg-slate-50 text-slate-600 font-medium">
-                                    <div className="flex items-center gap-3">
-                                        <CreditCard className="w-5 h-5 text-indigo-500" /> Pricing
-                                    </div>
-                                </button>
-                                <button onClick={() => { handleRoleSelect(UserRole.PARENT); setMobileMenuOpen(false); }} className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 text-slate-600 font-medium">
-                                    <Users className="w-5 h-5" /> Parents
-                                </button>
-                                <button onClick={() => { toggleLanguage(); setMobileMenuOpen(false); }} className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 text-slate-600 font-medium">
-                                    <Globe className="w-5 h-5" /> Language: <span className="font-bold text-blue-600">{language === 'EN' ? 'English' : 'Français'}</span>
+                                <button onClick={() => { toggleLanguage(); setMobileMenuOpen(false); }} className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 text-slate-400 font-medium text-sm">
+                                    <Globe className="w-4 h-4" /> {language === 'EN' ? 'FranÃ§ais' : 'English'}
                                 </button>
                             </nav>
                         </motion.div>
@@ -327,540 +342,251 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
             </motion.header>
 
             {/* --- HERO SECTION --- */}
-            <section className="relative overflow-hidden bg-white py-0">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-                    <div className="grid lg:grid-cols-2 gap-12 items-center">
-                        {/* Left Column: Text & CTA */}
-                        <motion.div
-                            initial={{ opacity: 0, x: -30 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ duration: 0.8 }}
-                            className="text-left"
-                        >
-                            <div
-                                onClick={toggleLanguage}
-                                className={`cursor-pointer mb-6 inline-flex items-center gap-2 px-4 py-2 rounded-xl border transition-all duration-300 ${language === 'FR' ? 'bg-indigo-600 border-indigo-600 text-white shadow-lg shadow-indigo-200' : 'bg-indigo-50 border-indigo-100 text-indigo-700 hover:bg-indigo-100'}`}
-                            >
-                                <Globe className={`w-4 h-4 ${language === 'FR' ? 'text-white' : 'text-indigo-600'}`} />
-                                <span className="font-bold">{t.language.frenchBadge}</span>
-                                <span className="text-sm">{t.language.invitePrefix} {language === 'FR' ? 'Mode Activé ✅' : t.language.frenchClick} 🇫🇷</span>
-                            </div>
-
-                            <h1 className="text-3xl md:text-5xl lg:text-[54px] font-extrabold text-[#1a2b5e] tracking-tight mb-8 leading-[1.1]">
-                                Improve CBC exam scores by 15–30% in 8 weeks—<br /><span className="text-[#5b61de]">with Somo Homework/Study Assistant & Teacher dashboard.</span>
-                            </h1>
-
-                            <div className="space-y-4 mb-10 text-[#4a5568] text-lg lg:text-xl">
-                                <div className="flex items-center gap-3 bg-[#fdfdf5] text-[#2d3748] px-5 py-3 rounded-2xl mb-6 border border-[#f5eed6] w-fit shadow-sm">
-                                    <CheckCircle className="w-6 h-6 text-[#2cb674]" />
-                                    <span><span className="font-bold">Trusted by 1,000+ CBC learners</span> across Kenya</span>
-                                </div>
-                                <div className="flex items-center gap-3">
-                                    <CheckCircle className="w-6 h-6 text-[#2cb674]" />
-                                    <span><span className="font-bold">1,200+ Kenyan learners</span> improved math scores</span>
-                                </div>
-                                <div className="flex items-center gap-3">
-                                    <CheckCircle className="w-6 h-6 text-[#2cb674]" />
-                                    <span><span className="font-bold">Teachers save 5–8 hours</span> weekly on marking</span>
-                                </div>
-                                <div className="flex items-center gap-3">
-                                    <CheckCircle className="w-6 h-6 text-[#2cb674]" />
-                                    <span>Used in <span className="font-bold">15+ CBC-aligned schools</span></span>
-                                </div>
-                            </div>
-
-                            <div className="flex flex-col sm:flex-row items-stretch gap-4 sm:gap-6 mb-12">
-                                {/* Primary CTA (Try Learner) */}
-                                <button
-                                    onClick={() => handleRoleSelect(UserRole.LEARNER)}
-                                    className="bg-[#5b61de] text-white hover:bg-[#4a50d0] rounded-3xl py-6 px-4 font-bold flex-1 shadow-xl shadow-indigo-200 transition-all hover:-translate-y-1 sm:w-auto flex flex-col items-center justify-center gap-1 group w-full"
-                                >
-                                    <span className="flex items-center gap-1 text-xl">Try Learner <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" /></span>
-                                    <span className="text-sm font-medium text-white/90">for Free</span>
-                                </button>
-
-                                {/* Secondary CTA (For Teachers) */}
-                                <button
-                                    onClick={() => handleRoleSelect(UserRole.TEACHER)}
-                                    className="bg-[#2cb674] text-white hover:bg-[#259b63] rounded-3xl py-6 px-4 font-bold flex-1 shadow-xl shadow-emerald-100 transition-all hover:-translate-y-1 sm:w-auto flex flex-col items-center justify-center gap-1 group w-full"
-                                >
-                                    <span className="flex items-center gap-1 text-xl">For <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" /></span>
-                                    <span className="text-sm font-medium text-white/90">Teachers</span>
-                                </button>
-
-                                {/* Tertiary CTA (Book School Pilot) */}
-                                <button
-                                    onClick={() => setShowContact(true)}
-                                    className="bg-white text-[#5b61de] border border-[#f0f2fb] hover:border-[#5b61de] hover:bg-[#f0f2fb] rounded-3xl py-6 px-4 font-bold flex-1 shadow-sm transition-all hover:-translate-y-1 sm:w-auto flex flex-col items-center justify-center gap-1 w-full text-center"
-                                >
-                                    <span className="text-xl">Book</span>
-                                    <span className="text-sm font-medium text-[#718096]">School Pilot</span>
-                                </button>
-                            </div>
-
-                            <div className="flex items-center gap-4 pt-4 border-t border-slate-100 mt-8">
-                                <div className="flex -space-x-2">
-                                    {[1, 2, 3, 4].map(i => (
-                                        <div key={i} className="w-10 h-10 rounded-full border-2 border-white bg-slate-200 overflow-hidden">
-                                            <img src={`https://i.pravatar.cc/100?img=${i + 14}`} alt="User" />
-                                        </div>
-                                    ))}
-                                </div>
-                                <div className="text-sm font-medium text-[#718096]">
-                                    <span className="text-[#5b61de] font-bold">4.9/5</span> from 2,000+ reviews
-                                </div>
-                            </div>
-                        </motion.div>
-
-                        {/* Right Column: Hero Banner */}
-                        <motion.div
-                            initial={{ opacity: 0, scale: 0.95 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            transition={{ duration: 0.6, delay: 0.1 }}
-                            className="relative flex items-center justify-center"
-                        >
-                            <div className="relative z-10 w-full overflow-hidden drop-shadow-2xl">
-                                <img
-                                    src={heroBannerImg}
-                                    alt="Somo Smart Learning - Your Study Assistant for Kenyan Students"
-                                    className="w-full h-auto object-contain transform scale-[1.02]"
-                                    fetchPriority="high"
-                                />
-                            </div>
-
-                            {/* Background Emphasis */}
-                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[110%] h-[110%] bg-[#f5f7ff]/50 -z-10 rounded-[3rem] pointer-events-none"></div>
-                        </motion.div>
-                    </div>
-
-                    {/* --- STRATEGIC DOMINANCE SECTION --- */}
-                    <div className="mt-0 relative z-10">
-                        <div className="text-center mb-12">
-                            <h2 className="text-3xl md:text-4xl font-black text-blue-900 mb-4 tracking-tighter">
-                                {t.efficiency.title} <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">{t.efficiency.gradient}</span>
-                            </h2>
-                            <p className="text-slate-500 font-medium max-w-2xl mx-auto leading-relaxed">
-                                {t.efficiency.subtitle}
-                            </p>
-                        </div>
-
-                        <div className="flex flex-wrap justify-center gap-4">
-                            {[
-                                {
-                                    title: t.efficiency.darasa.title,
-                                    desc: t.efficiency.darasa.desc,
-                                    icon: Play,
-                                    color: "bg-indigo-50 text-indigo-600",
-                                    route: "/teacher/darasa",
-                                    cta: "Record Now"
-                                },
-                                {
-                                    title: t.efficiency.notes.title,
-                                    desc: t.efficiency.notes.desc,
-                                    icon: FileText,
-                                    color: "bg-blue-50 text-blue-600",
-                                    route: "/teacher/notes",
-                                    cta: "Generate"
-                                },
-                                {
-                                    title: t.efficiency.exam.title,
-                                    desc: t.efficiency.exam.desc,
-                                    icon: Award,
-                                    color: "bg-emerald-50 text-emerald-600",
-                                    route: "/revision",
-                                    cta: "Setup Exam"
-                                },
-                                {
-                                    title: t.efficiency.marking.title,
-                                    desc: t.efficiency.marking.desc,
-                                    icon: ScanLine,
-                                    color: "bg-purple-50 text-purple-600",
-                                    route: "/teacher/marking",
-                                    cta: "Start Marking"
-                                },
-                                {
-                                    title: t.efficiency.homework.title,
-                                    desc: t.efficiency.homework.desc,
-                                    icon: Clock,
-                                    color: "bg-orange-50 text-orange-600",
-                                    route: "/learner",
-                                    cta: "Get Started"
-                                }
-                            ].map((card, idx) => (
-                                <motion.div
-                                    key={idx}
-                                    whileHover={{ y: -8 }}
-                                    className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-xl shadow-slate-100/50 hover:shadow-2xl hover:shadow-blue-100 transition-all flex flex-col justify-between group cursor-pointer w-full sm:w-[calc(50%-1rem)] lg:w-[calc(20%-1rem)] min-w-[200px]"
-                                    onClick={() => handleCardClick(card as any)}
-                                >
-                                    <div>
-                                        <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                                            <card.icon className="w-6 h-6" />
-                                        </div>
-                                        <h3 className="font-extrabold text-slate-800 mb-2 tracking-tight text-lg">{card.title}</h3>
-                                        <p className="text-sm text-slate-500 font-medium leading-relaxed mb-4">
-                                            {card.desc}
-                                        </p>
-                                    </div>
-                                    <button className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-blue-600 group-hover:gap-3 transition-all">
-                                        {card.cta} <ArrowRight className="w-3 h-3" />
-                                    </button>
-                                </motion.div>
-                            ))}
-                        </div>
-                    </div>
+            <section className="relative overflow-hidden bg-gradient-to-b from-white via-slate-50/50 to-white pt-8 pb-16 md:pt-12 md:pb-24">
+                {/* Background Hero Image Overlay */}
+                <div className="absolute inset-0 z-0 pointer-events-none opacity-20 flex items-center justify-center overflow-hidden">
+                    <img
+                        src={heroBannerImg}
+                        alt=""
+                        className="w-full h-full object-cover object-top md:object-center transform md:scale-110"
+                    />
                 </div>
-            </section>
 
-            <div className="w-full h-px bg-gradient-to-r from-transparent via-slate-100 to-transparent"></div>
-
-            {/* --- TEACHER'S POWER SUITE --- */}
-            <section className="py-20 bg-white relative overflow-hidden mt-[-85px]">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="grid lg:grid-cols-2 gap-16 items-center">
-                        <motion.div
-                            initial={{ opacity: 0, x: -30 }}
-                            whileInView={{ opacity: 1, x: 0 }}
-                            className="space-y-8"
-                        >
-                            <div>
-                                <span className="px-4 py-1.5 bg-blue-50 text-blue-700 text-xs font-black uppercase tracking-widest rounded-full mb-4 inline-block">
-                                    {t.powerSuite.badge}
-                                </span>
-                                <h2 className="text-3xl md:text-5xl font-black text-blue-900 leading-tight">
-                                    {t.powerSuite.title} <span className="text-blue-600">{t.powerSuite.gradient}</span>
-                                </h2>
-                            </div>
-
-                            <p className="text-lg text-slate-600 leading-relaxed">
-                                {t.powerSuite.desc}
-                            </p>
-
-                            <div className="space-y-6">
-                                {[
-                                    {
-                                        title: t.powerSuite.printables.title,
-                                        desc: t.powerSuite.printables.desc,
-                                        icon: FileText,
-                                        color: "text-blue-600",
-                                        bg: "bg-blue-50"
-                                    },
-                                    {
-                                        title: t.powerSuite.creator.title,
-                                        desc: t.powerSuite.creator.desc,
-                                        icon: TrendingUp,
-                                        color: "text-emerald-600",
-                                        bg: "bg-emerald-50"
-                                    },
-                                    {
-                                        title: t.powerSuite.marking.title,
-                                        desc: t.powerSuite.marking.desc,
-                                        icon: ScanLine,
-                                        color: "text-purple-600",
-                                        bg: "bg-purple-50"
-                                    }
-                                ].map((item, i) => (
-                                    <div key={i} className="flex gap-4">
-                                        <div className={`flex-shrink-0 w-12 h-12 ${item.bg} ${item.color} rounded-2xl flex items-center justify-center`}>
-                                            <item.icon className="w-6 h-6" />
-                                        </div>
-                                        <div>
-                                            <h4 className="font-bold text-slate-800 text-lg">{item.title}</h4>
-                                            <p className="text-slate-500 text-sm leading-relaxed">{item.desc}</p>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </motion.div>
-
-                        <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            whileInView={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.8 }}
-                            className="relative group/card w-full max-w-4xl lg:w-[70%] mx-auto mt-[45px]"
-                        >
-                            <div className="relative z-10 bg-white rounded-[4rem] p-[30px] shadow-[0_32px_64px_-16px_rgba(0,0,0,0.1)] overflow-hidden border border-slate-100 flex flex-col items-center">
-                                {/* Illustration Container */}
-                                <div className="relative w-full aspect-[2/3] md:aspect-[3/4] rounded-[3rem] overflow-hidden mb-8 mx-auto">
-                                    <motion.img
-                                        src={teacherWeaponImg}
-                                        alt="The Teacher's Secret Weapon"
-                                        className="w-full h-full object-cover transform transition-transform duration-700 group-hover/card:scale-105"
-                                        initial={{ scale: 1.1, opacity: 0 }}
-                                        whileInView={{ scale: 1, opacity: 1 }}
-                                        transition={{ duration: 1, ease: "easeOut" }}
-                                    />
-                                    <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
-                                </div>
-
-                                {/* Floating Action Zone */}
-                                <div className="w-full px-4 text-center">
-                                    <motion.button
-                                        whileHover={{ scale: 1.02, y: -2 }}
-                                        whileTap={{ scale: 0.98 }}
-                                        onClick={() => handleRoleSelect(UserRole.TEACHER)}
-                                        className="w-full py-5 bg-slate-900 text-white rounded-3xl font-black uppercase tracking-[0.2em] text-xs shadow-2xl hover:bg-slate-800 transition-all flex items-center justify-center gap-3 relative z-10 group/btn"
-                                    >
-                                        {t.powerSuite.saveTime.cta}
-                                        <div className="w-6 h-6 bg-white/10 rounded-full flex items-center justify-center group-hover/btn:bg-white/20 transition-colors">
-                                            <ArrowRight className="w-3.5 h-3.5 group-hover/btn:translate-x-0.5 transition-transform" />
-                                        </div>
-                                    </motion.button>
-                                    <p className="mt-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center justify-center gap-2">
-                                        <Sparkles className="w-3 h-3 text-amber-500" />
-                                        Get Your Evenings Back!
-                                    </p>
-                                </div>
-
-                                {/* Background Accents */}
-                                <div className="absolute -top-10 -right-10 w-40 h-40 bg-indigo-500/10 blur-[80px] rounded-full"></div>
-                                <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-blue-500/10 blur-[80px] rounded-full"></div>
-                            </div>
-                        </motion.div>
-                    </div>
-                </div>
-            </section>
-
-            <div className="w-full h-px bg-gradient-to-r from-transparent via-slate-100 to-transparent"></div>
-
-            {/* --- ENTERPRISE SOLUTIONS FOR SCHOOLS --- */}
-            <section className="py-20 bg-slate-50 relative overflow-hidden">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="text-center mb-16">
-                        <span className="px-4 py-1.5 bg-blue-100 text-blue-800 text-xs font-black uppercase tracking-widest rounded-full mb-4 inline-block">
-                            For Administrators
-                        </span>
-                        <h2 className="text-3xl md:text-5xl font-extrabold text-[#1a2b5e] mb-4 tracking-tight">Enterprise Solutions <span className="text-blue-600">For Schools</span></h2>
-                        <p className="text-slate-500 text-lg md:text-xl max-w-2xl mx-auto leading-relaxed">
-                            Deploy Somo Smart campus-wide to elevate both teacher efficiency and student outcomes with unmatched administrative oversight.
+                <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
+                    {/* Headline â€” answers WHO + WHAT in 3 seconds */}
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.6 }}
+                    >
+                        <h1 className="text-4xl md:text-6xl lg:text-7xl font-extrabold text-[#1a2b5e] tracking-tight leading-[1.05] mb-6">
+                            Kenya's #1 Smart{' '}
+                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#5b61de] to-[#2cb674]">Study Assistant</span>
+                        </h1>
+                        <p className="text-lg md:text-xl text-slate-600 max-w-2xl mx-auto leading-relaxed mb-4">
+                            Scan homework, get instant Smart explanations, revise with past papers all aligned to <strong>CBE & KCSE</strong>.
                         </p>
-                    </div>
+                        <p className="text-sm text-slate-400 font-medium">
+                            Trusted by <strong className="text-slate-600">1,200+ learners</strong> and <strong className="text-slate-600">15+ schools</strong> across Kenya
+                        </p>
+                    </motion.div>
 
-                    <div className="grid md:grid-cols-3 gap-8">
-                        {/* Feature 1 */}
-                        <motion.div
-                            whileHover={{ y: -8 }}
-                            className="bg-white p-8 rounded-3xl border border-slate-200 shadow-xl shadow-slate-100 flex flex-col justify-between"
-                        >
-                            <div>
-                                <div className="w-14 h-14 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mb-6">
-                                    <Globe className="w-7 h-7" />
+                    {/* "I am a..." Audience Selector Lanes */}
+                    <motion.div
+                        initial={{ opacity: 0, y: 30 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.6, delay: 0.2 }}
+                        className="mt-12 mb-8"
+                    >
+                        <div className="flex items-center justify-center gap-4 mb-8">
+                            <div className="h-[2px] bg-slate-200 w-12 md:w-24 rounded-full"></div>
+                            <p className="text-sm font-black uppercase tracking-[0.3em] text-slate-600 bg-white/80 px-6 py-2 rounded-full border border-slate-200 shadow-sm backdrop-blur-md">I am a...</p>
+                            <div className="h-[2px] bg-slate-200 w-12 md:w-24 rounded-full"></div>
+                        </div>
+                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 max-w-4xl mx-auto">
+                            {/* Student Lane */}
+                            <motion.button
+                                whileHover={{ y: -6, scale: 1.02 }}
+                                whileTap={{ scale: 0.98 }}
+                                onClick={() => handleRoleSelect(UserRole.LEARNER)}
+                                className="bg-gradient-to-br from-white/95 to-orange-50/50 backdrop-blur rounded-2xl p-7 border border-slate-200 border-t-4 border-t-orange-500 shadow-xl shadow-slate-300/50 hover:shadow-2xl hover:shadow-orange-500/20 hover:border-orange-400 transition-all duration-300 text-left group relative overflow-hidden flex flex-col h-full"
+                            >
+                                <div className="absolute -right-4 -bottom-4 opacity-[0.03] group-hover:opacity-[0.06] transition-opacity">
+                                    <Baby className="w-32 h-32" />
                                 </div>
-                                <h3 className="text-xl font-bold text-slate-900 mb-3">Campus-Wide Analytics</h3>
-                                <p className="text-slate-500 leading-relaxed mb-6">
-                                    Monitor performance metrics across every class, subject, and student. Identify learning gaps instantly at a macro level.
-                                </p>
-                            </div>
-                        </motion.div>
+                                <div className="w-14 h-14 bg-orange-100/80 text-orange-600 rounded-xl flex items-center justify-center mb-5 group-hover:scale-110 transition-transform shadow-sm">
+                                    <Baby className="w-7 h-7" />
+                                </div>
+                                <h3 className="font-extrabold text-slate-900 text-xl mb-2">Student</h3>
+                                <p className="text-sm text-slate-600 leading-relaxed mb-6 flex-grow">Scan homework, get instant AI explanations</p>
+                                <div className="mt-auto relative z-10">
+                                    <span className="text-xs font-bold text-white bg-orange-500 px-4 py-3 rounded-xl uppercase tracking-wider flex items-center justify-center gap-2 group-hover:bg-orange-600 transition-colors w-full shadow-md shadow-orange-500/20">
+                                        Start Free <ArrowRight className="w-4 h-4" />
+                                    </span>
+                                </div>
+                            </motion.button>
 
-                        {/* Feature 2 */}
-                        <motion.div
-                            whileHover={{ y: -8 }}
-                            className="bg-white p-8 rounded-3xl border border-slate-200 shadow-xl shadow-slate-100 flex flex-col justify-between"
-                        >
-                            <div>
-                                <div className="w-14 h-14 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mb-6">
+                            {/* Teacher Lane */}
+                            <motion.button
+                                whileHover={{ y: -6, scale: 1.02 }}
+                                whileTap={{ scale: 0.98 }}
+                                onClick={() => handleRoleSelect(UserRole.TEACHER)}
+                                className="bg-gradient-to-br from-white/95 to-blue-50/50 backdrop-blur rounded-2xl p-7 border border-slate-200 border-t-4 border-t-blue-500 shadow-xl shadow-slate-300/50 hover:shadow-2xl hover:shadow-blue-500/20 hover:border-blue-400 transition-all duration-300 text-left group relative overflow-hidden flex flex-col h-full"
+                            >
+                                <div className="absolute -right-4 -bottom-4 opacity-[0.03] group-hover:opacity-[0.06] transition-opacity">
+                                    <GraduationCap className="w-32 h-32" />
+                                </div>
+                                <div className="w-14 h-14 bg-blue-100/80 text-blue-600 rounded-xl flex items-center justify-center mb-5 group-hover:scale-110 transition-transform shadow-sm">
+                                    <GraduationCap className="w-7 h-7" />
+                                </div>
+                                <h3 className="font-extrabold text-slate-900 text-xl mb-2">Teacher</h3>
+                                <p className="text-sm text-slate-600 leading-relaxed mb-6 flex-grow">Auto-mark, generate notes, save hours</p>
+                                <div className="mt-auto relative z-10">
+                                    <span className="text-xs font-bold text-white bg-blue-600 px-4 py-3 rounded-xl uppercase tracking-wider flex items-center justify-center gap-2 group-hover:bg-blue-700 transition-colors w-full shadow-md shadow-blue-500/20">
+                                        Try Tools <ArrowRight className="w-4 h-4" />
+                                    </span>
+                                </div>
+                            </motion.button>
+
+                            {/* Parent Lane */}
+                            <motion.button
+                                whileHover={{ y: -6, scale: 1.02 }}
+                                whileTap={{ scale: 0.98 }}
+                                onClick={() => handleRoleSelect(UserRole.PARENT)}
+                                className="bg-gradient-to-br from-white/95 to-teal-50/50 backdrop-blur rounded-2xl p-7 border border-slate-200 border-t-4 border-t-teal-500 shadow-xl shadow-slate-300/50 hover:shadow-2xl hover:shadow-teal-500/20 hover:border-teal-400 transition-all duration-300 text-left group relative overflow-hidden flex flex-col h-full"
+                            >
+                                <div className="absolute -right-4 -bottom-4 opacity-[0.03] group-hover:opacity-[0.06] transition-opacity">
+                                    <Users className="w-32 h-32" />
+                                </div>
+                                <div className="w-14 h-14 bg-teal-100/80 text-teal-600 rounded-xl flex items-center justify-center mb-5 group-hover:scale-110 transition-transform shadow-sm">
                                     <Users className="w-7 h-7" />
                                 </div>
-                                <h3 className="text-xl font-bold text-slate-900 mb-3">Bulk Enrollment</h3>
-                                <p className="text-slate-500 leading-relaxed mb-6">
-                                    Onboard hundreds of students and teachers in minutes via CSV. Streamline the transition to AI-assisted learning effortlessly.
-                                </p>
-                            </div>
-                        </motion.div>
-
-                        {/* Feature 3 */}
-                        <motion.div
-                            whileHover={{ y: -8 }}
-                            className="bg-white p-8 rounded-3xl border border-slate-200 shadow-xl shadow-slate-100 flex flex-col justify-between"
-                        >
-                            <div>
-                                <div className="w-14 h-14 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center mb-6">
-                                    <ShieldCheck className="w-7 h-7" />
+                                <h3 className="font-extrabold text-slate-900 text-xl mb-2">Parent</h3>
+                                <p className="text-sm text-slate-600 leading-relaxed mb-6 flex-grow">See your child's real progress</p>
+                                <div className="mt-auto relative z-10">
+                                    <span className="text-xs font-bold text-white bg-teal-600 px-4 py-3 rounded-xl uppercase tracking-wider flex items-center justify-center gap-2 group-hover:bg-teal-700 transition-colors w-full shadow-md shadow-teal-500/20">
+                                        Track Progress <ArrowRight className="w-4 h-4" />
+                                    </span>
                                 </div>
-                                <h3 className="text-xl font-bold text-slate-900 mb-3">Administrative Control</h3>
-                                <p className="text-slate-500 leading-relaxed mb-6">
-                                    Manage teacher access, oversee assignments, and control the learning ecosystem from a powerful, centralized dashboard.
-                                </p>
-                            </div>
-                        </motion.div>
-                    </div>
+                            </motion.button>
 
-                    <div className="mt-12 text-center">
-                        <button
-                            onClick={() => setShowContact(true)}
-                            className="px-8 py-4 bg-[#1a2b5e] text-white rounded-2xl font-bold text-lg hover:bg-[#2a3b6e] transition-all shadow-xl shadow-blue-900/20 flex items-center gap-2 mx-auto"
-                        >
-                            <Building2 className="w-5 h-5" /> Reserve a School Pilot
-                        </button>
-                    </div>
+                            {/* School Lane */}
+                            <motion.button
+                                whileHover={{ y: -6, scale: 1.02 }}
+                                whileTap={{ scale: 0.98 }}
+                                onClick={() => handleRoleSelect(UserRole.SCHOOL)}
+                                className="bg-gradient-to-br from-white/95 to-indigo-50/50 backdrop-blur rounded-2xl p-7 border border-slate-200 border-t-4 border-t-indigo-500 shadow-xl shadow-slate-300/50 hover:shadow-2xl hover:shadow-indigo-500/20 hover:border-indigo-400 transition-all duration-300 text-left group relative overflow-hidden flex flex-col h-full"
+                            >
+                                <div className="absolute -right-4 -bottom-4 opacity-[0.03] group-hover:opacity-[0.06] transition-opacity">
+                                    <Building2 className="w-32 h-32" />
+                                </div>
+                                <div className="w-14 h-14 bg-indigo-100/80 text-indigo-600 rounded-xl flex items-center justify-center mb-5 group-hover:scale-110 transition-transform shadow-sm">
+                                    <Building2 className="w-7 h-7" />
+                                </div>
+                                <h3 className="font-extrabold text-slate-900 text-xl mb-2">School</h3>
+                                <p className="text-sm text-slate-600 leading-relaxed mb-6 flex-grow">Campus-wide analytics & control</p>
+                                <div className="mt-auto relative z-10">
+                                    <span className="text-xs font-bold text-white bg-indigo-600 px-4 py-3 rounded-xl uppercase tracking-wider flex items-center justify-center gap-2 group-hover:bg-indigo-700 transition-colors w-full shadow-md shadow-indigo-500/20">
+                                        Book Pilot <ArrowRight className="w-4 h-4" />
+                                    </span>
+                                </div>
+                            </motion.button>
+                        </div>
+                    </motion.div>
+
+                    {/* Hero Image moved to background overlay */}
                 </div>
+
+                {/* Background decoration */}
+                <div className="absolute top-1/4 left-0 w-72 h-72 bg-blue-100/30 rounded-full blur-[100px] pointer-events-none"></div>
+                <div className="absolute bottom-1/4 right-0 w-72 h-72 bg-indigo-100/30 rounded-full blur-[100px] pointer-events-none"></div>
             </section>
 
-            <div className="w-full h-px bg-gradient-to-r from-transparent via-slate-100 to-transparent"></div>
+            <div className="w-full h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent"></div>
 
-            {/* --- ROLES SECTION --- */}
-            <section id="roles-section" className="py-0 bg-white relative">
+
+            {/* --- CBE/KCSE CURRICULUM ALIGNMENT --- */}
+            <section className="py-16 bg-white relative overflow-hidden">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-                    <div className="text-center mb-16">
-                        <h2 className="text-3xl md:text-5xl font-extrabold text-blue-900 mb-4 tracking-tight">{t.roles.title} {t.roles.gradient}</h2>
-                        <p className="text-slate-500 text-lg md:text-xl max-w-2xl mx-auto leading-relaxed">{t.roles.subtitle}</p>
-                    </div>
+                    <div className="grid lg:grid-cols-2 gap-12 items-center">
+                        <div>
+                            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 text-blue-700 font-bold text-xs mb-6 uppercase tracking-wider">
+                                <FileText className="w-4 h-4" /> Curriculum Aligned
+                            </div>
+                            <h2 className="text-3xl md:text-5xl font-extrabold text-[#1a2b5e] mb-6 tracking-tight">
+                                Built on Genuine <br className="hidden md:block" />
+                                <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#5b61de] to-[#2cb674]">CBE & KCSE Materials</span>
+                            </h2>
+                            <p className="text-lg text-slate-600 mb-8 leading-relaxed">
+                                No generic AI fluff. Somo Smart uses actual teacher-created notes and past examinations to generate precise, curriculum-appropriate explanations.
+                            </p>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-                        {/* Learner Card */}
-                        <motion.div
-                            whileHover={{ y: -10 }}
-                            onClick={() => handleRoleSelect(UserRole.LEARNER)}
-                            className="bg-white rounded-2xl shadow-xl shadow-slate-100 overflow-hidden cursor-pointer border border-slate-100 group flex flex-col transition-all duration-300 hover:shadow-orange-100"
-                        >
-                            <div className="bg-gradient-to-br from-orange-400 to-red-500 p-6 text-center text-white">
-                                <Baby className="w-10 h-10 mx-auto mb-3 opacity-90" />
-                                <h3 className="text-2xl font-bold">{t.roles.student.title}</h3>
-                                <p className="text-white/80 font-medium italic text-sm">{t.roles.student.desc}</p>
-                            </div>
-                            <div className="h-48 lg:h-56 overflow-hidden bg-gray-50 relative">
-                                <img src={learnerImg} alt="Kenyan Student using Somo Smart for CBC and KCSE revision" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" loading="lazy" decoding="async" width="400" height="300" />
-                                <div className="absolute inset-0 bg-gradient-to-t from-white via-transparent to-transparent opacity-60"></div>
-                            </div>
-                            <div className="p-8 space-y-4 bg-white flex-1 flex flex-col justify-between">
-                                <div>
-                                    {t.roles.student.points.map((text, idx) => (
-                                        <div key={idx} className="flex items-center gap-3 text-slate-700 mb-3">
-                                            <div className="p-1.5 rounded-lg bg-orange-50 text-orange-500">
-                                                {idx === 0 ? <ScanLine className="w-4 h-4" /> : idx === 1 ? <MessageSquare className="w-4 h-4" /> : <CheckSquare className="w-4 h-4" />}
-                                            </div>
-                                            <span className="font-bold text-sm tracking-tight">{text}</span>
-                                        </div>
-                                    ))}
-                                </div>
-                                <button className="w-full mt-4 py-3 rounded-xl bg-orange-50 text-orange-600 font-bold group-hover:bg-orange-500 group-hover:text-white transition-all">
-                                    {t.roles.student.cta}
-                                </button>
-                            </div>
-                        </motion.div>
-
-                        {/* Teacher Card */}
-                        <motion.div
-                            whileHover={{ y: -10 }}
-                            onClick={() => handleRoleSelect(UserRole.TEACHER)}
-                            className="bg-white rounded-2xl shadow-xl shadow-slate-100 overflow-hidden cursor-pointer border border-slate-100 group flex flex-col transition-all duration-300 hover:shadow-blue-100"
-                        >
-                            <div className="bg-gradient-to-br from-blue-600 to-indigo-700 p-6 text-center text-white">
-                                <GraduationCap className="w-10 h-10 mx-auto mb-3 opacity-90" />
-                                <h3 className="text-2xl font-bold">For Teachers</h3>
-                                <p className="text-white/80 font-medium italic text-sm">Teach Better. Save Time.</p>
-                            </div>
-                            <div className="h-48 lg:h-56 overflow-hidden bg-gray-50 relative">
-                                <img src={teacherImg} alt="Kenyan Teacher creating lessons with Somo Smart" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" loading="lazy" decoding="async" width="400" height="300" />
-                                <div className="absolute inset-0 bg-gradient-to-t from-white via-transparent to-transparent opacity-60"></div>
-                            </div>
-                            <div className="p-8 space-y-4 bg-white flex-1 flex flex-col justify-between">
-                                <div>
-                                    <h3 className="text-2xl font-black text-blue-900 mb-2">{t.roles.teacher.title}</h3>
-                                    <p className="text-slate-500 text-sm font-medium mb-4">{t.roles.teacher.desc}</p>
-                                    {[...t.roles.teacher.points].map((text, idx) => (
-                                        <div key={idx} className="flex items-center gap-3 text-slate-700 mb-3">
-                                            <div className="p-1.5 rounded-lg bg-blue-50 text-blue-500">
-                                                {idx === 0 ? <ScanLine className="w-4 h-4" /> : idx === 1 ? <FileText className="w-4 h-4" /> : <TrendingUp className="w-4 h-4" />}
-                                            </div>
-                                            <span className="font-bold text-sm tracking-tight">{text}</span>
-                                        </div>
-                                    ))}
-                                </div>
-                                <button className="w-full mt-4 py-3 rounded-xl bg-blue-50 text-blue-600 font-bold group-hover:bg-blue-600 group-hover:text-white transition-all">
-                                    {t.roles.teacher.cta}
-                                </button>
-                            </div>
-                        </motion.div>
-
-                        {/* Parent Card */}
-                        <motion.div
-                            whileHover={{ y: -10 }}
-                            onClick={() => handleRoleSelect(UserRole.PARENT)}
-                            className="bg-white rounded-2xl shadow-xl shadow-slate-100 overflow-hidden cursor-pointer border border-slate-100 group flex flex-col transition-all duration-300 hover:shadow-teal-100"
-                        >
-                            <div className="bg-gradient-to-br from-teal-500 to-emerald-600 p-6 text-center text-white">
-                                <Users className="w-10 h-10 mx-auto mb-3 opacity-90" />
-                                <h3 className="text-2xl font-bold">For Parents</h3>
-                                <p className="text-white/80 font-medium italic text-sm">Clear Learning. Real Progress.</p>
-                            </div>
-                            <div className="h-48 lg:h-56 overflow-hidden bg-gray-50 relative">
-                                <img src={parentImg} alt="Kenyan Parent tracking student progress on Somo Smart" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" loading="lazy" decoding="async" width="400" height="300" />
-                                <div className="absolute inset-0 bg-gradient-to-t from-white via-transparent to-transparent opacity-60"></div>
-                            </div>
-                            <div className="p-8 space-y-4 bg-white flex-1 flex flex-col justify-between">
-                                <div>
-                                    {t.roles.parent.points.map((text, idx) => (
-                                        <div key={idx} className="flex items-center gap-3 text-slate-700 mb-3">
-                                            <div className="p-1.5 rounded-lg bg-teal-50 text-teal-500">
-                                                {idx === 0 ? <CheckCircle className="w-4 h-4" /> : idx === 1 ? <MessageSquare className="w-4 h-4" /> : <GraduationCap className="w-4 h-4" />}
-                                            </div>
-                                            <span className="font-bold text-sm tracking-tight">{text}</span>
-                                        </div>
-                                    ))}
-                                </div>
-                                <button
-                                    onClick={() => handleRoleSelect(UserRole.PARENT)}
-                                    className="w-full mt-4 py-3 rounded-xl bg-teal-50 text-teal-600 font-bold group-hover:bg-teal-500 group-hover:text-white transition-all"
-                                >
-                                    {t.roles.parent.cta}
-                                </button>
-                            </div>
-                        </motion.div>
-
-                        {/* School Card */}
-                        <motion.div
-                            whileHover={{ y: -10 }}
-                            onClick={() => handleRoleSelect(UserRole.SCHOOL)}
-                            className="bg-white rounded-2xl shadow-xl shadow-slate-100 overflow-hidden cursor-pointer border border-slate-100 group flex flex-col transition-all duration-300 hover:shadow-blue-100"
-                        >
-                            <div className="bg-gradient-to-br from-indigo-700 to-blue-900 p-6 text-center text-white">
-                                <Building2 className="w-10 h-10 mx-auto mb-3 opacity-90" />
-                                <h3 className="text-2xl font-bold">For Schools</h3>
-                                <p className="text-white/80 font-medium italic text-sm">Empower Entire Institutions.</p>
-                            </div>
-                            <div className="h-48 lg:h-56 overflow-hidden bg-slate-900 relative flex items-center justify-center">
-                                <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-20 mix-blend-overlay"></div>
-                                <School className="w-24 h-24 text-blue-500/20" />
-                                <div className="absolute inset-0 bg-gradient-to-t from-white via-transparent to-transparent opacity-60"></div>
-                            </div>
-                            <div className="p-8 space-y-4 bg-white flex-1 flex flex-col justify-between">
-                                <div>
-                                    <div className="flex items-center gap-3 text-slate-700 mb-3">
-                                        <div className="p-1.5 rounded-lg bg-blue-50 text-blue-800">
-                                            <TrendingUp className="w-4 h-4" />
-                                        </div>
-                                        <span className="font-bold text-sm tracking-tight">School-Wide Analytics</span>
+                            <div className="space-y-4">
+                                <div className="p-5 rounded-2xl border border-slate-100 bg-slate-50 relative overflow-hidden group hover:border-blue-200 transition-colors">
+                                    <div className="absolute top-0 left-0 w-1 h-full bg-blue-500"></div>
+                                    <div className="flex justify-between items-start mb-2">
+                                        <h4 className="font-bold text-slate-900">Grade 7 English — Report Writing</h4>
+                                        <span className="text-xs font-bold text-slate-400 bg-white px-2 py-1 rounded-md shadow-sm">Sample Query</span>
                                     </div>
-                                    <div className="flex items-center gap-3 text-slate-700 mb-3">
-                                        <div className="p-1.5 rounded-lg bg-blue-50 text-blue-800">
-                                            <Users className="w-4 h-4" />
-                                        </div>
-                                        <span className="font-bold text-sm tracking-tight">Bulk Student Enrollment</span>
-                                    </div>
-                                    <div className="flex items-center gap-3 text-slate-700 mb-3">
-                                        <div className="p-1.5 rounded-lg bg-blue-50 text-blue-800">
-                                            <FileText className="w-4 h-4" />
-                                        </div>
-                                        <span className="font-bold text-sm tracking-tight">Centralized Teacher Control</span>
+                                    <p className="text-sm text-slate-600 italic mb-3">"How do I structure a factual report about a school event?"</p>
+                                    <div className="bg-white p-3 rounded-xl shadow-sm text-sm border border-slate-100 flex gap-3">
+                                        <CheckCircle className="w-5 h-5 text-green-500 shrink-0 mt-0.5" />
+                                        <span className="text-slate-700">Somo breaks down the CBE standard: Introduction (Who, What, Where, When), Body Paragraphs (Chronological facts), and Conclusion.</span>
                                     </div>
                                 </div>
-                                <button
-                                    onClick={(e) => { e.stopPropagation(); setShowContact(true); }}
-                                    className="w-full mt-4 py-3 rounded-xl bg-blue-50 text-blue-800 font-bold group-hover:bg-blue-800 group-hover:text-white transition-all"
-                                >
-                                    Book School Pilot
-                                </button>
                             </div>
-                        </motion.div>
+                        </div>
+                        <div className="relative">
+                            <div className="absolute inset-0 bg-gradient-to-tr from-blue-100/50 to-green-100/50 rounded-[3rem] transform rotate-3 scale-105 -z-10"></div>
+                            <div className="bg-white rounded-3xl p-8 shadow-xl border border-slate-100">
+                                <h3 className="font-bold text-xl text-slate-800 mb-6 flex items-center gap-2">
+                                    <BookOpen className="w-5 h-5 text-blue-600" /> Current Knowledge Base Include:
+                                </h3>
+                                <ul className="space-y-4">
+                                    <li className="flex items-center gap-3">
+                                        <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center text-blue-600"><CheckCircle className="w-4 h-4" /></div>
+                                        <span className="font-medium text-slate-700">Grade 7-9 JSS Curriculum Notes</span>
+                                    </li>
+                                    <li className="flex items-center gap-3">
+                                        <div className="w-8 h-8 rounded-full bg-green-50 flex items-center justify-center text-green-600"><CheckCircle className="w-4 h-4" /></div>
+                                        <span className="font-medium text-slate-700">KCSE Past Papers (2018–2023)</span>
+                                    </li>
+                                    <li className="flex items-center gap-3">
+                                        <div className="w-8 h-8 rounded-full bg-orange-50 flex items-center justify-center text-orange-600"><CheckCircle className="w-4 h-4" /></div>
+                                        <span className="font-medium text-slate-700">Primary CBE Level Assessments</span>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </section>
 
-            <div className="w-full h-px bg-gradient-to-r from-transparent via-slate-100 to-transparent"></div>
+            {/* --- TEACHER WORKFLOW --- */}
+            <section className="py-16 bg-slate-50 relative overflow-hidden border-y border-slate-100">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+                    <div className="text-center mb-12">
+                        <h2 className="text-3xl md:text-5xl font-extrabold text-[#1a2b5e] mb-4 tracking-tight">Supercharge Your Teaching</h2>
+                        <p className="text-lg text-slate-600 max-w-2xl mx-auto">Somo Smart isn't just for students. It's a full workflow companion for educators.</p>
+                    </div>
 
-            {/* --- HOW IT WORKS --- */}
+                    <div className="grid md:grid-cols-3 gap-6">
+                        <div className="bg-white p-6 rounded-3xl shadow-md border border-slate-100 hover:shadow-xl transition-shadow">
+                            <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center mb-6">
+                                <FileText className="w-6 h-6" />
+                            </div>
+                            <h3 className="text-xl font-bold text-slate-900 mb-3">1. AI-Assisted Grading</h3>
+                            <p className="text-slate-600 text-sm leading-relaxed">
+                                Upload student essays or short-answer sheets. Somo analyzes them against your marking scheme and highlights areas for improvement within seconds.
+                            </p>
+                        </div>
+
+                        <div className="bg-white p-6 rounded-3xl shadow-md border border-slate-100 hover:shadow-xl transition-shadow relative">
+                            <div className="absolute -top-3 -right-3 bg-red-500 text-white text-[10px] font-black uppercase tracking-wider py-1 px-3 rounded-full shadow-lg">New</div>
+                            <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center mb-6">
+                                <GraduationCap className="w-6 h-6" />
+                            </div>
+                            <h3 className="text-xl font-bold text-slate-900 mb-3">2. Auto-Generate Lessons</h3>
+                            <p className="text-slate-600 text-sm leading-relaxed">
+                                Enter a topic and target grade level. Somo instantly generates CBE-aligned lesson plans, class notes, and multiple-choice quizzes for your students.
+                            </p>
+                        </div>
+
+                        <div className="bg-white p-6 rounded-3xl shadow-md border border-slate-100 hover:shadow-xl transition-shadow">
+                            <div className="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center mb-6">
+                                <BarChart className="w-6 h-6" />
+                            </div>
+                            <h3 className="text-xl font-bold text-slate-900 mb-3">3. Track Progress</h3>
+                            <p className="text-slate-600 text-sm leading-relaxed">
+                                View centralized analytics for your class. Identify exactly which CBE competencies students are struggling with and intervene early.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <div className="w-full h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent"></div>
+
             <section id="how-it-works" className="py-6 bg-slate-50 relative overflow-hidden">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
                     <div className="text-center mb-12 md:mb-20">

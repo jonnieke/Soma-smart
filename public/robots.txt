@@ -1,6 +1,13 @@
 User-agent: *
-Allow: /
+Allow: /$
+Allow: /revision$
+Allow: /pricing$
+Disallow: /learner
+Disallow: /teacher
 Disallow: /admin
+Disallow: /parent
+Disallow: /school
+Disallow: /revision/dashboard
 Disallow: /api/
 
 Sitemap: https://somaai.co.ke/sitemap.xml

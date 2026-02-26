@@ -1,5 +1,6 @@
 import React, { Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { HelmetProvider } from 'react-helmet-async';
 import { ConnectivityBanner } from './components/ConnectivityBanner';
 import { AskSomo } from './components/AskSomo';
 import { SessionConflictModal } from './components/SessionConflictModal';
@@ -50,7 +51,7 @@ const App: React.FC = () => {
     }, [navigate]);
 
     return (
-        <>
+        <HelmetProvider>
             <ConnectivityBanner />
             <AskSomo />
             <SessionConflictModal />
@@ -74,7 +75,7 @@ const App: React.FC = () => {
                     <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
             </Suspense>
-        </>
+        </HelmetProvider>
     );
 };
 

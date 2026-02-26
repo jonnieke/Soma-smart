@@ -1,5 +1,6 @@
 import React from 'react';
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import { PricingPage as PricingComponent } from '../features/subscription/PricingPage';
 import { Button } from '../components/Shared';
 import { ArrowLeft, Loader2, CheckCircle2 } from 'lucide-react';
@@ -54,6 +55,24 @@ export const PricingPage: React.FC = () => {
 
     return (
         <div className="relative min-h-screen">
+            <Helmet>
+                <title>Somo Smart Pricing | Affordable AI Education in Kenya</title>
+                <meta name="description" content="Explore Somo Smart's affordable pricing plans for Kenyan students, parents, and teachers. Get unlimited access to CBC and KCSE past papers and our AI study tutor starting at just KES 20." />
+                <meta name="keywords" content="somo smart pricing, learning app subscription kenya, kcse revision cost, affordable cbc learning, ai tutor subscription" />
+
+                {/* AIO */}
+                <meta name="ai-search-index" content="index" />
+                <meta name="ai-knowledge-base" content="official" />
+                <meta name="pricing-structure" content="Daily, Weekly, Monthly, Termly Options Available" />
+
+                {/* Open Graph */}
+                <meta property="og:title" content="Somo Smart Pricing | Affordable AI Education in Kenya" />
+                <meta property="og:description" content="Explore affordable plans for unlimited CBC and KCSE AI-assisted learning. Unlock your potential today." />
+                <meta property="og:url" content="https://somaai.co.ke/pricing" />
+
+                <link rel="canonical" href="https://somaai.co.ke/pricing" />
+            </Helmet>
+
             {/* Status Overlays */}
             {(verifying || verifySuccess || verifyError) && (
                 <div className="fixed inset-0 z-[100] bg-slate-900/80 backdrop-blur-md flex items-center justify-center p-6">

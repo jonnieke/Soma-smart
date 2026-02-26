@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Helmet } from 'react-helmet-async';
 import {
     BookOpen, Sparkles, AlertTriangle, ArrowRight, UserCircle,
     CheckCircle, School, GraduationCap, Brain, Lock, LogOut
@@ -67,6 +68,24 @@ export const RevisionPortal: React.FC = () => {
 
     return (
         <div className="min-h-screen bg-slate-50 font-sans text-slate-900 relative overflow-hidden">
+            <Helmet>
+                <title>Somo Smart Revision Portal | Free KCSE Past Papers & AI Coaching</title>
+                <meta name="description" content="Master your final papers with precision. Access the Somo Smart Candidate Success Center for KCSE and KPSEA revision, featuring AI-assisted competency feedback." />
+                <meta name="keywords" content="somo smart revision, freely scan past papers kenya, kcse marking scheme ai, kpsea study center, online revision kenya" />
+
+                {/* AIO */}
+                <meta name="ai-search-index" content="index" />
+                <meta name="ai-knowledge-base" content="official" />
+                <meta name="examination-targets" content="KCSE, KPSEA, Mocks, Terminal Exams" />
+
+                {/* Open Graph */}
+                <meta property="og:title" content="Somo Smart Revision Portal | Free KCSE Past Papers" />
+                <meta property="og:description" content="Scan and solve CBC/8-4-4 past papers with instant AI feedback. Try it for free." />
+                <meta property="og:url" content="https://somaai.co.ke/revision" />
+
+                <link rel="canonical" href="https://somaai.co.ke/revision" />
+            </Helmet>
+
             {/* Premium Background Elements */}
             <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
                 <motion.div
