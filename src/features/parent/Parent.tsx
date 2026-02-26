@@ -161,7 +161,7 @@ export const ParentDashboard: React.FC<ParentProps> = ({ onNavigate, activityLog
                         ) : (
                             <div className="mt-8">
                                 <p className="text-xs text-slate-400 bg-slate-50 py-2 px-4 rounded-full inline-block">
-                                    Hint: Register a student profile first to generate an ID.
+                                    Hint: <span onClick={() => navigate('/learner')} className="text-indigo-500 font-bold hover:underline cursor-pointer">Register</span> a student profile first to generate an ID.
                                 </p>
                             </div>
                         )}
@@ -337,7 +337,7 @@ export const ParentDashboard: React.FC<ParentProps> = ({ onNavigate, activityLog
                         <div className="space-y-4">
                             {Object.entries(stats.subjects).map(([subject, count], i) => {
                                 const total = Math.max(1, stats.totalTopics);
-                                const pct = (count / total) * 100;
+                                const pct = ((count as number) / total) * 100;
                                 if (pct === 0 && i > 1) return null; // Hide empty if not core
 
                                 return (
