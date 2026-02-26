@@ -277,7 +277,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                             <img src={logoImg} alt="Somo Smart Logo" className="w-14 h-14 object-contain" />
                             <div className="hidden sm:block">
                                 <h1 className="text-2xl font-bold text-blue-900 leading-none tracking-tight">Somo Smart</h1>
-                                <p className="text-[10px] text-slate-500 font-semibold tracking-wide uppercase mt-0.5">AI Study Assistant</p>
+                                <p className="text-[10px] text-slate-500 font-semibold tracking-wide uppercase mt-0.5">Smart Study Assistant</p>
                             </div>
                         </div>
 
