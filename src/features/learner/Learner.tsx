@@ -2210,7 +2210,7 @@ ${explanation.explanation}
                 <div className="space-y-4 flex-1">
                   {(() => {
                     const recentTopics = [...new Set(history.map(h => h.topic))].slice(0, 3);
-                    const defaultSubjects = ['Science', 'English', 'Mathematics'];
+                    const defaultSubjects = ['Science', 'English', 'Mathematics', 'French', 'German'];
 
                     const subject1 = recentTopics[0] || defaultSubjects[0];
                     const subject2 = recentTopics[1] || (recentTopics[0] === defaultSubjects[1] ? defaultSubjects[0] : defaultSubjects[1]);
@@ -4351,7 +4351,7 @@ ${explanation.explanation}
                   onChange={(e) => setSubjectFilter(e.target.value)}
                 >
                   <option value="ALL">Select Subject</option>
-                  {['Mathematics', 'English', 'Kiswahili', 'Science', 'Social Studies', 'CRE', 'Physics', 'Biology', 'Chemistry', 'History', 'Geography', 'Business', 'Computer', 'Agriculture'].map(s => (
+                  {['Mathematics', 'English', 'Kiswahili', 'Science', 'Social Studies', 'CRE', 'Physics', 'Biology', 'Chemistry', 'History', 'Geography', 'Business Studies', 'Computer', 'Agriculture', 'Indigenous Language', 'French', 'German', 'Arabic', 'Integrated Science', 'Physical Sciences (PE)'].map(s => (
                     <option key={s} value={s}>{s}</option>
                   ))}
                 </select>

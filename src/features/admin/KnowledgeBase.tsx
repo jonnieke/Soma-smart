@@ -266,6 +266,13 @@ export const AdminKnowledgeBase: React.FC = () => {
                                             <option value="Agriculture" />
                                             <option value="Home Science" />
                                             <option value="Computer Science" />
+                                            <option value="Indigenous Language" />
+                                            <option value="French" />
+                                            <option value="German" />
+                                            <option value="Arabic" />
+                                            <option value="Integrated Science" />
+                                            <option value="Business Studies" />
+                                            <option value="Physical Sciences (PE)" />
                                         </datalist>
                                     </div>
                                 </div>
@@ -391,6 +398,13 @@ export const AdminKnowledgeBase: React.FC = () => {
                                             <option value="Agriculture">Agriculture</option>
                                             <option value="Home Science">Home Science</option>
                                             <option value="Computer Science">Computer Science</option>
+                                            <option value="Indigenous Language">Indigenous Language</option>
+                                            <option value="French">French</option>
+                                            <option value="German">German</option>
+                                            <option value="Arabic">Arabic</option>
+                                            <option value="Integrated Science">Integrated Science</option>
+                                            <option value="Business Studies">Business Studies</option>
+                                            <option value="Physical Sciences (PE)">Physical Sciences (PE)</option>
                                         </select>
                                     </div>
                                     <div className="flex items-end">

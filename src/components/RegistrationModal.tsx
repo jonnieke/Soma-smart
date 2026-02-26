@@ -74,7 +74,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
     ];
 
     const subjectOptions = [
-        "Mathematics", "English", "Kiswahili", "Science&Tech", "Social Studies", "CRE", "IRE", "Home Science", "Agriculture", "Computer Studies", "Business Studies", "History", "Geography", "Chemistry", "Biology", "Physics"
+        "Mathematics", "English", "Kiswahili", "Science&Tech", "Social Studies", "CRE", "IRE", "Home Science", "Agriculture", "Computer Studies", "Business Studies", "History", "Geography", "Chemistry", "Biology", "Physics", "Indigenous Language", "French", "German", "Arabic", "Integrated Science", "Physical Sciences (PE)"
     ];
 
     const handleSubmit = async (e: React.FormEvent) => {

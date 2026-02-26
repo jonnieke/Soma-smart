@@ -261,6 +261,8 @@ export const TeacherOnboarding: React.FC<TeacherOnboardingProps> = ({ onComplete
                                             <option value="Kiswahili">Kiswahili</option>
                                             <option value="French">French</option>
                                             <option value="German">German</option>
+                                            <option value="Arabic">Arabic</option>
+                                            <option value="Indigenous Language">Indigenous Language</option>
                                         </optgroup>
                                         <optgroup label="Sciences">
                                             <option value="Mathematics">Mathematics</option>
@@ -268,6 +270,8 @@ export const TeacherOnboarding: React.FC<TeacherOnboardingProps> = ({ onComplete
                                             <option value="Physics">Physics</option>
                                             <option value="Chemistry">Chemistry</option>
                                             <option value="General Science">General Science</option>
+                                            <option value="Integrated Science">Integrated Science</option>
+                                            <option value="Physical Sciences (PE)">Physical Sciences (PE)</option>
                                         </optgroup>
                                         <optgroup label="Humanities">
                                             <option value="Geography">Geography</option>
@@ -287,7 +291,6 @@ export const TeacherOnboarding: React.FC<TeacherOnboardingProps> = ({ onComplete
                                         <optgroup label="Creative Arts">
                                             <option value="Music">Music</option>
                                             <option value="Art & Design">Art & Design</option>
-                                            <option value="Physical Education">Physical Education</option>
                                         </optgroup>
                                     </select>
                                     <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none text-slate-400">
