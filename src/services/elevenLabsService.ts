@@ -107,10 +107,22 @@ export const cancelPodcast = () => {
     stopSpeech();
 };
 
-export const playPodcast = async (script: Array<{ speaker: 'Host' | 'Guest', text: string }>, onProgress: (index: number) => void, onComplete: () => void) => {
+export const playPodcast = async (
+    script: Array<{ speaker: 'Host' | 'Guest', text: string }>,
+    onProgress: (index: number) => void,
+    onComplete: () => void,
+    onError?: (error: any) => void
+) => {
     cancelPodcast(); // Stop any existing playback
     podcastController = new AbortController();
     const signal = podcastController.signal;
+
+    if (!API_KEY || API_KEY.length < 5) {
+        console.error("ElevenLabs API Key is missing or invalid.");
+        if (onError) onError(new Error("Missing ElevenLabs API Key. Please check your configuration."));
+        onComplete();
+        return;
+    }
 
     const VOICES = {
         Host: "21m00Tcm4TlvDq8ikWAM", // Rachel
@@ -119,7 +131,6 @@ export const playPodcast = async (script: Array<{ speaker: 'Host' | 'Guest', tex
 
     // Helper to fetch audio
     const fetchAudio = async (text: string, voiceId: string): Promise<string> => {
-        if (!API_KEY) throw new Error("No ElevenLabs Key");
         const response = await axios.post(
             `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`,
             {
@@ -136,17 +147,12 @@ export const playPodcast = async (script: Array<{ speaker: 'Host' | 'Guest', tex
     };
 
     try {
-        // Pre-fetch first segment to start quickly
-        // Then stream the rest sequentially? Or fetch next while playing current?
-        // For simplicity and stability: Fetch one by one (or batch of 2) to manage cost/latency. 
-        // Better: Fetch next while playing current.
-
         for (let i = 0; i < script.length; i++) {
             if (signal.aborted) return;
             onProgress(i);
 
             const segment = script[i];
-            const voiceId = VOICES[segment.speaker];
+            const voiceId = VOICES[segment.speaker] || VOICES.Host;
 
             // Fetch
             const audioUrl = await fetchAudio(segment.text, voiceId);
@@ -162,11 +168,16 @@ export const playPodcast = async (script: Array<{ speaker: 'Host' | 'Guest', tex
                     URL.revokeObjectURL(audioUrl);
                     resolve();
                 };
-                audio.onerror = reject;
-                audio.play().catch(reject);
+                audio.onerror = (e) => {
+                    URL.revokeObjectURL(audioUrl);
+                    reject(e);
+                };
+                // Handle potential autoplay restrictions
+                audio.play().catch(err => {
+                    console.warn("Autoplay blocked or playback error:", err);
+                    reject(err);
+                });
             });
-
-            // Remove from queue logic not strictly needed if we just clear all on cancel
         }
 
         if (!signal.aborted) {
@@ -175,6 +186,10 @@ export const playPodcast = async (script: Array<{ speaker: 'Host' | 'Guest', tex
 
     } catch (e) {
         console.error("Podcast Playback Error", e);
-        if (!signal.aborted) onComplete(); // Treat error as end or handle differently
+        if (!signal.aborted) {
+            if (onError) onError(e);
+            onComplete();
+        }
     }
 };
+

@@ -249,6 +249,14 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
     return () => clearInterval(interval);
   }, [isRecording]);
 
+  const handlePricingNavigation = () => {
+    if (!isRegistered) {
+      setShowRegistration(true);
+    } else {
+      setMode('PRICING');
+    }
+  };
+
   useEffect(() => {
     if (mode === 'MARKETPLACE') {
       fetchResources();
@@ -341,8 +349,12 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
 
     // New Direct Payment handling
     if (state?.initiatePaymentFor) {
-      setSelectedPlan(state.initiatePaymentFor);
-      setMode('PAYMENT');
+      if (!isRegistered) {
+        setShowRegistration(true);
+      } else {
+        setSelectedPlan(state.initiatePaymentFor);
+        setMode('PAYMENT');
+      }
       navigate(location.pathname, { replace: true, state: {} });
       return;
     }
@@ -352,19 +364,23 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
         // Already pro, just stay on dashboard and clear state
         navigate(location.pathname, { replace: true, state: {} });
       } else {
-        setSelectedPlan(state.selectedPlan);
-        setMode('PAYMENT');
-        setPendingMaterialId(state.materialId || null); // Preserve materialId if available 
+        if (!isRegistered) {
+          setShowRegistration(true);
+        } else {
+          setSelectedPlan(state.selectedPlan);
+          setMode('PAYMENT');
+          setPendingMaterialId(state.materialId || null); // Preserve materialId if available 
+        }
         // Clear state to avoid re-triggering on refresh
         navigate(location.pathname, { replace: true, state: {} });
       }
     } else if (state?.openSubscription) {
-      setMode('PRICING');
+      handlePricingNavigation();
       setPendingMaterialId(state.materialId || null); // Preserve materialId if available
       // Clear state
       navigate(location.pathname, { replace: true, state: {} });
     }
-  }, [location.state, isPro, navigate, unifiedMaterials]);
+  }, [location.state, isPro, isRegistered, navigate, unifiedMaterials]);
 
   // --- STUDY CENTER (NotebookLM) ---
   const startStudySession = async (material: any) => {
@@ -451,7 +467,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
   const handleDownloadAIRevisionNotes = async (material: any, bypassLimit = false) => {
     // 1. Strict Subscription Check
     if (!isPro) {
-      setMode('PRICING');
+      handlePricingNavigation();
       setError({ title: "Subscription Required", message: "Downloads are exclusive to Somo Smart Pro members. Join today to unlock elite revision notes!" });
       return;
     }
@@ -1275,7 +1291,12 @@ ${explanation.explanation}
     if (podcastScript) {
       // Resume or Restart? For now, restart.
       setIsPodcastPlaying(true);
-      playPodcast(podcastScript.script, (idx) => setCurrentSegmentIndex(idx), () => setIsPodcastPlaying(false));
+      playPodcast(
+        podcastScript.script,
+        (idx) => setCurrentSegmentIndex(idx),
+        () => setIsPodcastPlaying(false),
+        (err) => setError({ title: "Audio Error", message: err.message || "Failed to play audio segment." })
+      );
       return;
     }
 
@@ -1288,7 +1309,12 @@ ${explanation.explanation}
       setPodcastLoading(false);
       setIsPodcastPlaying(true);
 
-      playPodcast(script.script, (idx) => setCurrentSegmentIndex(idx), () => setIsPodcastPlaying(false));
+      playPodcast(
+        script.script,
+        (idx) => setCurrentSegmentIndex(idx),
+        () => setIsPodcastPlaying(false),
+        (err) => setError({ title: "Audio Error", message: err.message || "Failed to play audio segment." })
+      );
 
     } catch (e) {
       console.error(e);
@@ -1296,6 +1322,7 @@ ${explanation.explanation}
       setError({ title: "Podcast Error", message: "Failed to generate audio overview." });
     }
   };
+
 
   // Remove unused playBuffer helper
   // eslint-disable-next-line @typescript-eslint/no-empty-function
@@ -2218,19 +2245,20 @@ ${explanation.explanation}
 
                     const recommendations = [
                       {
-                        title: `5 Minute ${subject1.split('•')[0].trim()} Recap`,
+                        title: `5 Minute ${(subject1 as string).split('•')[0].trim()} Recap`,
                         type: "Revision",
                         color: "bg-indigo-50 text-indigo-600 border-indigo-100",
                         icon: <Brain className="w-5 h-5" />,
                         prompt: `Give me a concise 5-minute revision summary for ${subject1}.`
                       },
                       {
-                        title: `${subject2.split('•')[0].trim()} Practice`,
+                        title: `${(subject2 as string).split('•')[0].trim()} Practice`,
                         type: "Practice",
                         color: "bg-emerald-50 text-emerald-600 border-emerald-100",
                         icon: <BookOpen className="w-5 h-5" />,
                         prompt: `Generate 5 practice questions for ${subject2}.`
                       },
+
                       {
                         title: "KPSEA Style Mock",
                         type: "Exams",
@@ -2614,7 +2642,7 @@ ${explanation.explanation}
                     <Button
                       variant="outline"
                       className="rounded-xl border-blue-200 text-blue-600 hover:bg-blue-50 font-black text-[10px] uppercase tracking-widest px-6 ml-2"
-                      onClick={() => setMode('PRICING')}
+                      onClick={() => handlePricingNavigation()}
                     >
                       {isPro ? 'Upgrade Plan' : 'Get Pro Now'}
                     </Button>
@@ -3245,12 +3273,14 @@ ${explanation.explanation}
                 {podcastLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : (isPodcastPlaying ? <Volume2 className="w-4 h-4 animate-pulse" /> : <Headphones className="w-4 h-4" />)}
               </div>
               <div className="text-left flex flex-col">
-                <span className="text-xs font-black uppercase tracking-wide leading-none mb-0.5">{isPodcastPlaying ? "Processing..." : "Listen & Learn"}</span>
+                <span className="text-xs font-black uppercase tracking-wide leading-none mb-0.5">{isPodcastPlaying ? "Stop Playing" : "Listen & Learn"}</span>
+
                 <span className={`text-[9px] font-bold uppercase tracking-wider ${isPodcastPlaying ? 'text-indigo-500' : 'text-indigo-100'}`}>
-                  {isPodcastPlaying ? "Playing Lesson" : "Audio Lesson Explanation"}
+                  {isPodcastPlaying ? "Audio Lesson" : "Audio Lesson Explanation"}
                 </span>
               </div>
             </button>
+
 
             <button onClick={handleDownload} className="p-2 text-blue-600 hover:bg-blue-50 rounded-full transition-colors">
               <Download className="w-5 h-5" />
@@ -3344,14 +3374,16 @@ ${explanation.explanation}
                     {podcastLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Headphones className="w-5 h-5" />}
                   </div>
                   <div className="text-left">
-                    <p className="text-sm font-black uppercase tracking-wide">Listen & Learn</p>
+                    <p className="text-sm font-black uppercase tracking-wide">{isPodcastPlaying ? "Stop" : "Listen & Learn"}</p>
+
                     <p className={`text-xs font-medium ${isPodcastPlaying ? 'text-indigo-600' : 'text-indigo-100'}`}>
-                      {isPodcastPlaying ? "Playing Lesson..." : "Audio Lesson Explanation"}
+                      {isPodcastPlaying ? "Audio Lesson Active" : "Audio Lesson Explanation"}
                     </p>
                   </div>
                 </div>
                 {isPodcastPlaying ? <div className="w-2 h-2 bg-indigo-500 rounded-full animate-pulse" /> : <Play className="w-5 h-5 fill-current opacity-80" />}
               </button>
+
             </div>
 
             {/* Key Points - Modernized */}
@@ -3611,7 +3643,7 @@ ${explanation.explanation}
               setPendingMaterialId(null);
             }
           }}
-          onCancel={() => setMode('PRICING' as any)}
+          onCancel={() => handlePricingNavigation()}
         />
       );
     }
@@ -3653,7 +3685,7 @@ ${explanation.explanation}
                     <p className="text-[10px] font-black text-indigo-600">{Math.max(0, 3 - usageCount)} / 3 Left</p>
                   </div>
                   <button
-                    onClick={() => setMode('PRICING')}
+                    onClick={() => handlePricingNavigation()}
                     className="bg-amber-100 text-amber-700 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider border border-amber-200 shadow-sm"
                   >
                     Go Pro
@@ -3913,7 +3945,7 @@ ${explanation.explanation}
                               } else if (status === 'PRO_LOCKED') {
                                 setPendingMaterialId(item.id);
                                 if (!isRegistered) setShowLogin(true);
-                                else setMode('PRICING');
+                                else handlePricingNavigation();
                               } else {
                                 purchaseMaterial(item.id);
                               }
@@ -4258,7 +4290,7 @@ ${explanation.explanation}
                     fullWidth
                     onClick={() => {
                       setShowLimitModal(false);
-                      setMode('PRICING');
+                      handlePricingNavigation();
                     }}
                     className="py-4 text-base shadow-xl shadow-indigo-200"
                   >
@@ -4304,7 +4336,7 @@ ${explanation.explanation}
                     fullWidth
                     onClick={() => {
                       setShowExpiryModal(false);
-                      setMode('PRICING');
+                      handlePricingNavigation();
                     }}
                     className="py-4 text-base shadow-xl shadow-red-200 bg-red-600 hover:bg-red-700"
                   >

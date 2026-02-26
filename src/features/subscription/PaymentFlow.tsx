@@ -146,56 +146,14 @@ export const PaymentFlow: React.FC<Props> = ({ plan, materialId, onSuccess, onCa
                             </div>
 
                             <div className="space-y-4">
-                                {!isRegistered && (
-                                    <>
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <div className="bg-slate-50 p-4 rounded-2xl border-2 border-slate-100">
-                                                <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest block mb-1">First Name</label>
-                                                <input
-                                                    type="text"
-                                                    className="w-full bg-transparent font-bold outline-none"
-                                                    value={firstName}
-                                                    onChange={(e) => setFirstName(e.target.value)}
-                                                />
-                                            </div>
-                                            <div className="bg-slate-50 p-4 rounded-2xl border-2 border-slate-100">
-                                                <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest block mb-1">Last Name</label>
-                                                <input
-                                                    type="text"
-                                                    className="w-full bg-transparent font-bold outline-none"
-                                                    value={lastName}
-                                                    onChange={(e) => setLastName(e.target.value)}
-                                                />
-                                            </div>
-                                        </div>
-
-                                        <div className="bg-slate-50 p-4 rounded-2xl border-2 border-slate-100">
-                                            <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest block mb-1">Email Address</label>
-                                            <input
-                                                type="email"
-                                                className="w-full bg-transparent font-bold outline-none"
-                                                value={email}
-                                                onChange={(e) => setEmail(e.target.value)}
-                                            />
-                                        </div>
-                                    </>
-                                )}
-
-                                {isRegistered && (
-                                    <div className="bg-indigo-50/50 p-4 rounded-2xl border border-indigo-100 mb-2">
-                                        <p className="text-[10px] font-black uppercase text-indigo-400 tracking-widest mb-1">Paying as</p>
-                                        <p className="font-bold text-slate-700">{firstName} {lastName}</p>
-                                        <p className="text-[10px] text-slate-400 truncate">{email}</p>
-                                        <div className="hidden">
-                                            <input type="text" value={firstName} readOnly />
-                                            <input type="text" value={lastName} readOnly />
-                                            <input type="text" value={email} readOnly />
-                                        </div>
-                                    </div>
-                                )}
+                                <div className="bg-indigo-50/50 p-4 rounded-2xl border border-indigo-100 mb-2">
+                                    <p className="text-[10px] font-black uppercase text-indigo-400 tracking-widest mb-1">Paying as</p>
+                                    <p className="font-bold text-slate-700">{firstName} {lastName}</p>
+                                    <p className="text-[10px] text-slate-400 truncate">{email}</p>
+                                </div>
 
                                 <div className="bg-slate-50 p-4 rounded-2xl border-2 border-slate-100">
-                                    <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest block mb-1">Phone Number</label>
+                                    <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest block mb-1">M-Pesa Phone Number</label>
                                     <div className="flex items-center gap-3">
                                         <span className="font-bold text-slate-400">+254</span>
                                         <input
