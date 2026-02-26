@@ -4351,7 +4351,7 @@ ${explanation.explanation}
                   onChange={(e) => setSubjectFilter(e.target.value)}
                 >
                   <option value="ALL">Select Subject</option>
-                  {['Mathematics', 'English', 'Kiswahili', 'Science', 'Social Studies', 'CRE', 'Physics', 'Biology', 'Chemistry', 'History', 'Geography', 'Business Studies', 'Computer', 'Agriculture', 'Indigenous Language', 'French', 'German', 'Arabic', 'Integrated Science', 'Physical Sciences (PE)'].map(s => (
+                  {['Mathematics', 'English', 'Kiswahili', 'Science', 'Social Studies', 'CRE', 'Physics', 'Biology', 'Chemistry', 'History', 'Geography', 'Business Studies', 'Computer', 'Agriculture', 'Indigenous Language', 'French', 'German', 'Arabic', 'Integrated Science', 'Physical Education (PE)'].map(s => (
                     <option key={s} value={s}>{s}</option>
                   ))}
                 </select>

@@ -272,7 +272,7 @@ export const AdminKnowledgeBase: React.FC = () => {
                                             <option value="Arabic" />
                                             <option value="Integrated Science" />
                                             <option value="Business Studies" />
-                                            <option value="Physical Sciences (PE)" />
+                                            <option value="Physical Education (PE)" />
                                         </datalist>
                                     </div>
                                 </div>
@@ -404,7 +404,7 @@ export const AdminKnowledgeBase: React.FC = () => {
                                             <option value="Arabic">Arabic</option>
                                             <option value="Integrated Science">Integrated Science</option>
                                             <option value="Business Studies">Business Studies</option>
-                                            <option value="Physical Sciences (PE)">Physical Sciences (PE)</option>
+                                            <option value="Physical Education (PE)">Physical Education (PE)</option>
                                         </select>
                                     </div>
                                     <div className="flex items-end">

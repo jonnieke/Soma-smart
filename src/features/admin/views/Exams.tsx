@@ -334,7 +334,7 @@ export const ExamsView: React.FC = () => {
                                                         <option>Arabic</option>
                                                         <option>Integrated Science</option>
                                                         <option>Business Studies</option>
-                                                        <option>Physical Sciences (PE)</option>
+                                                        <option>Physical Education (PE)</option>
                                                     </select>
                                                 </div>
                                             </div>
