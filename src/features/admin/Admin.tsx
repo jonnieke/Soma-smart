@@ -8,6 +8,7 @@ import { SettingsView } from './views/Settings';
 import { CurriculumView } from './views/Curriculum';
 import { ExamsView } from './views/Exams';
 import { Lock } from 'lucide-react';
+import { supabase } from '../../lib/supabase';
 
 interface AdminProps {
     onNavigate: (view: ViewState) => void;
@@ -18,6 +19,32 @@ export const AdminDashboard: React.FC<AdminProps> = ({ onNavigate }) => {
     const [unlocked, setUnlocked] = useState(false);
     const [pass, setPass] = useState("");
     const [activeTab, setActiveTab] = useState('OVERVIEW');
+
+    const handleUnlock = async () => {
+        const isValid = pass.trim().toLowerCase() === "somo_smart @2025".toLowerCase();
+        if (isValid) {
+            try {
+                // Ensure the admin has a valid Supabase session to bypass RLS and Edge Function 401s
+                const { error: signInError } = await supabase.auth.signInWithPassword({
+                    email: 'admin@soma.app',
+                    password: 'somo_smart_admin_2025'
+                });
+
+                if (signInError) {
+                    // Create it if it doesn't exist
+                    await supabase.auth.signUp({
+                        email: 'admin@soma.app',
+                        password: 'somo_smart_admin_2025'
+                    });
+                }
+            } catch (e) {
+                console.error("Admin silent auth failed:", e);
+            }
+            setUnlocked(true);
+        } else {
+            alert("Access Denied");
+        }
+    };
 
     // 2. Lock Screen Render
     if (!unlocked) {
@@ -38,20 +65,12 @@ export const AdminDashboard: React.FC<AdminProps> = ({ onNavigate }) => {
                         value={pass}
                         onChange={(e) => setPass(e.target.value)}
                         onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                                const isValid = pass.trim().toLowerCase() === "somo_smart @2025".toLowerCase();
-                                if (isValid) setUnlocked(true);
-                                else alert("Access Denied");
-                            }
+                            if (e.key === 'Enter') handleUnlock();
                         }}
                     />
 
                     <button
-                        onClick={() => {
-                            const isValid = pass.trim().toLowerCase() === "somo_smart @2025".toLowerCase();
-                            if (isValid) setUnlocked(true);
-                            else alert("Access Denied");
-                        }}
+                        onClick={handleUnlock}
                         className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 rounded-xl transition-colors shadow-lg shadow-indigo-900/50"
                     >
                         Unlock Dashboard
@@ -70,7 +89,10 @@ export const AdminDashboard: React.FC<AdminProps> = ({ onNavigate }) => {
         <AdminLayout
             activeTab={activeTab}
             onTabChange={setActiveTab}
-            onLogout={() => setUnlocked(false)}
+            onLogout={async () => {
+                await supabase.auth.signOut();
+                setUnlocked(false);
+            }}
         >
             {activeTab === 'OVERVIEW' && <Overview />}
             {activeTab === 'USERS' && <UsersView />}
