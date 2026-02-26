@@ -119,10 +119,12 @@ export const playPodcast = async (
 
     if (!API_KEY || API_KEY.length < 5) {
         console.error("ElevenLabs API Key is missing or invalid.");
-        if (onError) onError(new Error("Missing ElevenLabs API Key. Please check your configuration."));
+        if (onError) onError(new Error("ElevenLabs API Key is missing. Please add VITE_ELEVEN_LABS_API_KEY to your .env file."));
         onComplete();
         return;
     }
+
+    console.log(`[ElevenLabs] Starting podcast playback. Key starts with: ${API_KEY.substring(0, 4)}... (Length: ${API_KEY.length})`);
 
     const VOICES = {
         Host: "21m00Tcm4TlvDq8ikWAM", // Rachel
@@ -131,19 +133,34 @@ export const playPodcast = async (
 
     // Helper to fetch audio
     const fetchAudio = async (text: string, voiceId: string): Promise<string> => {
-        const response = await axios.post(
-            `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`,
-            {
-                text,
-                model_id: "eleven_multilingual_v2",
-                voice_settings: { stability: 0.5, similarity_boost: 0.75 },
-            },
-            {
-                headers: { 'xi-api-key': API_KEY, 'Content-Type': 'application/json' },
-                responseType: 'blob',
+        try {
+            const response = await axios.post(
+                `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`,
+                {
+                    text,
+                    model_id: "eleven_multilingual_v2",
+                    voice_settings: { stability: 0.5, similarity_boost: 0.75 },
+                },
+                {
+                    headers: { 'xi-api-key': API_KEY, 'Content-Type': 'application/json' },
+                    responseType: 'blob',
+                }
+            );
+            return URL.createObjectURL(response.data);
+        } catch (err: any) {
+            if (err.response) {
+                if (err.response.status === 401) {
+                    throw new Error("Invalid ElevenLabs API Key. Please verify your sk_ key in .env");
+                }
+                if (err.response.status === 429) {
+                    throw new Error("ElevenLabs Quota Exhausted. This key has no more character credits.");
+                }
+                if (err.response.status === 404) {
+                    throw new Error(`Voice ID ${voiceId} not found or not available for this account.`);
+                }
             }
-        );
-        return URL.createObjectURL(response.data);
+            throw err;
+        }
     };
 
     try {
@@ -192,4 +209,3 @@ export const playPodcast = async (
         }
     }
 };
-

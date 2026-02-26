@@ -166,7 +166,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
     return (
         <AnimatePresence>
             <div
-                className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+                className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-4 sm:p-6 bg-black/60 backdrop-blur-sm overflow-y-auto"
                 onClick={onClose}
             >
                 <motion.div
@@ -174,8 +174,9 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.95 }}
                     onClick={(e) => e.stopPropagation()}
-                    className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden relative"
+                    className="bg-white rounded-2xl shadow-2xl w-full max-w-md relative flex flex-col max-h-[calc(100vh-2rem)] sm:max-h-[90vh] my-auto overflow-hidden"
                 >
+
                     <button
                         onClick={onClose}
                         className="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors z-10"
@@ -184,7 +185,8 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
                     </button>
 
                     {step === 'FORM' ? (
-                        <div className="p-8">
+                        <div className="p-6 sm:p-8 overflow-y-auto">
+
                             <div className="text-center mb-6">
                                 <div className={`w-16 h-16 ${role === 'SCHOOL' ? 'bg-blue-900/10 text-blue-900' : 'bg-blue-100 text-blue-600'} rounded-full flex items-center justify-center mx-auto mb-4 transition-colors`}>
                                     <User className="w-8 h-8" />
@@ -370,7 +372,8 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
                                             <select
                                                 multiple
                                                 value={teacherClasses}
-                                                onChange={(e) => setTeacherClasses(Array.from(e.target.selectedOptions, option => option.value))}
+                                                onChange={(e) => setTeacherClasses(Array.from(e.target.selectedOptions, (option: any) => option.value))}
+
                                                 className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none appearance-none bg-white cursor-pointer h-32"
                                             >
                                                 {gradeOptions.map(g => (
@@ -384,7 +387,8 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
                                             <select
                                                 multiple
                                                 value={teacherSubjects}
-                                                onChange={(e) => setTeacherSubjects(Array.from(e.target.selectedOptions, option => option.value))}
+                                                onChange={(e) => setTeacherSubjects(Array.from(e.target.selectedOptions, (option: any) => option.value))}
+
                                                 className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none appearance-none bg-white cursor-pointer h-32"
                                             >
                                                 {subjectOptions.map(s => (
@@ -415,7 +419,8 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
                             </div>
                         </div>
                     ) : (
-                        <div className="p-8 text-center relative overflow-hidden">
+                        <div className="p-6 sm:p-8 text-center relative overflow-hidden overflow-y-auto">
+
                             <div className="absolute inset-0 bg-gradient-to-br from-white via-green-50 to-blue-50 opacity-50 z-0"></div>
 
                             <div className="relative z-10">
@@ -458,6 +463,6 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
                     )}
                 </motion.div>
             </div>
-        </AnimatePresence>
+        </AnimatePresence >
     );
 };
