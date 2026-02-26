@@ -1421,7 +1421,7 @@ ${explanation.explanation}
 
     if (mode === 'RECAP_RESULT' && recapData) {
       return (
-        <div className="min-h-screen bg-slate-50 pb-20 font-sans text-slate-800 max-w-4xl mx-auto shadow-2xl border-x border-slate-100">
+        <div className="min-h-screen bg-slate-50 pb-20 font-sans text-slate-800 w-full">
           <div className="bg-white p-6 sticky top-0 z-10 shadow-sm flex items-center gap-4">
             <button onClick={() => setMode('MENU')}><ArrowRight className="w-6 h-6 rotate-180" /></button>
             <h2 className="font-bold text-lg">Lesson Recap</h2>
@@ -1496,7 +1496,7 @@ ${explanation.explanation}
       if (chatRequestId) {
         const chatReq = activeTutoringRequests.find(r => r.id === chatRequestId);
         return (
-          <div className="min-h-screen bg-slate-50 flex flex-col font-sans text-slate-800 max-w-4xl mx-auto shadow-2xl border-x border-slate-100 relative">
+          <div className="min-h-screen bg-slate-50 flex flex-col font-sans text-slate-800 w-full relative">
             {/* Chat Header */}
             <div className="sticky top-0 z-40 bg-white/90 backdrop-blur-xl border-b border-slate-200 px-6 py-4 flex items-center gap-4">
               <button onClick={() => { setChatRequestId(null); setChatInput(''); }} className="p-2 hover:bg-slate-100 rounded-full transition-colors"><ArrowRight className="w-5 h-5 rotate-180" /></button>
@@ -1676,7 +1676,7 @@ ${explanation.explanation}
       }
 
       return (
-        <div className="min-h-screen bg-slate-50 flex flex-col font-sans text-slate-800 max-w-4xl mx-auto shadow-2xl border-x border-slate-100 relative">
+        <div className="min-h-screen bg-slate-50 flex flex-col font-sans text-slate-800 w-full relative">
           <div className="sticky top-0 z-40 bg-white/90 backdrop-blur-xl border-b border-slate-200 px-6 py-4 flex items-center gap-4">
             <button onClick={() => setMode('MENU')} className="p-2 hover:bg-slate-100 rounded-full transition-colors"><ArrowRight className="w-5 h-5 rotate-180" /></button>
             <h2 className="font-bold text-lg">My Requests</h2>
@@ -1871,7 +1871,7 @@ ${explanation.explanation}
       const greeting = profile ? `Hi, ${profile.name.split(' ')[0]}` : "My Learning Buddy";
 
       return (
-        <div className="min-h-screen bg-slate-50 flex flex-col font-sans text-slate-800 max-w-4xl mx-auto shadow-2xl border-x border-slate-100 relative overflow-hidden">
+        <div className="min-h-screen bg-slate-50 flex flex-col font-sans text-slate-800 w-full relative overflow-hidden">
 
           {/* --- TOP BAR --- */}
           <div className="flex justify-between items-center px-6 py-4 bg-white/80 backdrop-blur-xl sticky top-0 z-50 border-b border-slate-100/50">
@@ -2387,7 +2387,7 @@ ${explanation.explanation}
     // --- HISTORY VIEW ---
     if (mode === 'HISTORY' as any) {
       return (
-        <div className="min-h-screen bg-white font-sans text-slate-800 max-w-4xl mx-auto border-x border-slate-100 flex flex-col">
+        <div className="min-h-screen bg-white font-sans text-slate-800 w-full flex flex-col">
           <div className="p-4 border-b border-slate-100 flex items-center gap-3 sticky top-0 bg-white z-20">
             <button onClick={() => setMode('MENU')} className="p-2 hover:bg-slate-100 rounded-full transition-colors"><ArrowRight className="w-6 h-6 rotate-180" /></button>
             <h1 className="text-lg font-bold">Learning History</h1>
