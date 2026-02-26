@@ -96,16 +96,11 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
 
   useEffect(() => {
     // We want learners to see the dashboard even if not registered (they get limited access).
-    // Do not force an immediate redirect if they are exploring directly, or wait for session load.
+    // Allow users to explore directly as a 'Guest' without kicking them.
     const savedStudent = localStorage.getItem('soma_active_student');
     if (!isRegistered && role === UserRole.NONE && !savedStudent) {
-      // Small delay to ensure auth check finishes, though ideally we use an auth loading state
-      const timer = setTimeout(() => {
-        if (!isRegistered && role === UserRole.NONE) {
-          navigate('/');
-        }
-      }, 1000);
-      return () => clearTimeout(timer);
+      // Intentionally do nothing and let them explore.
+      // Top bar will display Register and Log In buttons.
     }
 
     // Payment Success for Download Pass
