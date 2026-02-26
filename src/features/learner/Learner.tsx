@@ -1917,12 +1917,20 @@ ${explanation.explanation}
               </div>
 
               {!isRegistered && (
-                <button
-                  onClick={() => setShowLogin(true)}
-                  className="px-5 py-2.5 bg-slate-900 text-white rounded-full text-xs font-bold shadow-lg shadow-slate-200 hover:bg-slate-800 transition-all hover:-translate-y-0.5"
-                >
-                  Log In
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setShowRegistration(true)}
+                    className="hidden sm:block px-4 py-2 bg-slate-100 text-slate-700 rounded-full text-xs font-bold hover:bg-slate-200 transition-all font-sans"
+                  >
+                    Register
+                  </button>
+                  <button
+                    onClick={() => setShowLogin(true)}
+                    className="px-5 py-2.5 bg-slate-900 text-white rounded-full text-xs font-bold shadow-lg shadow-slate-200 hover:bg-slate-800 transition-all hover:-translate-y-0.5"
+                  >
+                    Log In
+                  </button>
+                </div>
               )}
 
               <div
@@ -2418,7 +2426,7 @@ ${explanation.explanation}
 
     if (mode === 'PROFILE') {
       // PRO GUARD: If no student profile is active, redirect to menu or show login prompt
-      if (!isRegistered && role !== UserRole.LEARNER && role !== UserRole.REVISION) {
+      if (!isRegistered && role !== UserRole.REVISION) {
         return (
           <div className="flex flex-col items-center justify-center min-h-[60vh] p-6 text-center">
             <div className="w-20 h-20 bg-slate-100 rounded-3xl flex items-center justify-center mb-6">
