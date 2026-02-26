@@ -2429,12 +2429,20 @@ ${explanation.explanation}
             </div>
             <h2 className="text-2xl font-black text-slate-900 mb-2">Login Required</h2>
             <p className="text-slate-500 mb-8 max-w-xs">Please log in or register as a student to view and manage your profile settings.</p>
-            <Button
-              onClick={() => navigate('/')}
-              className="bg-blue-600 hover:bg-blue-700 text-white rounded-2xl px-12"
-            >
-              Go to Home
-            </Button>
+            <div className="flex flex-col sm:flex-row gap-3 w-full max-w-sm justify-center">
+              <button
+                onClick={() => setShowRegistration(true)}
+                className="bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-2xl w-full sm:w-auto px-8 py-3 transition-colors text-sm"
+              >
+                Register Now
+              </button>
+              <button
+                onClick={() => setMode('MENU')}
+                className="bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold rounded-2xl w-full sm:w-auto px-8 py-3 transition-colors text-sm"
+              >
+                Return as Guest
+              </button>
+            </div>
           </div>
         );
       }
