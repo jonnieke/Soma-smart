@@ -226,6 +226,98 @@ export interface LessonRecap {
   teacherNotes?: string; // Teacher specific field
 }
 
+// --- EXAM PRACTICE TYPES ---
+
+export enum ExamPracticeMode {
+  TIMED_QUIZ = 'TIMED_QUIZ',
+  PRACTICE_BY_TOPIC = 'PRACTICE_BY_TOPIC',
+  FULL_PAPER = 'FULL_PAPER'
+}
+
+export interface AnswerAttempt {
+  questionId: number;
+  questionNumber: string;
+  questionText: string;
+  learnerAnswer: string;
+  marksAwarded: number;
+  marksAvailable: number;
+  modelAnswer: string;
+  feedback: string;       // Why marks were gained/lost
+  examTip?: string;       // "In KCSE 2024, this topic appeared as..."
+  isCorrect: boolean;
+  topic: string;
+  timeTakenSeconds?: number;
+}
+
+export interface ExamPracticeResult {
+  id: string;
+  date: string;
+  subject: string;
+  grade: string;
+  paperTitle?: string;
+  mode: ExamPracticeMode;
+  totalMarks: number;
+  marksObtained: number;
+  percentage: number;
+  timeLimitSeconds?: number;
+  timeTakenSeconds: number;
+  attempts: AnswerAttempt[];
+  weakTopics: string[];
+  strongTopics: string[];
+}
+
+export interface PerformanceRecord {
+  id: string;
+  date: string;
+  subject: string;
+  grade: string;
+  score: number;          // percentage
+  totalQuestions: number;
+  correctAnswers: number;
+  timeSpentSeconds: number;
+  weakTopics: string[];
+  mode: ExamPracticeMode;
+}
+
+export interface MarkingResult {
+  marksAwarded: number;
+  marksAvailable: number;
+  isCorrect: boolean;
+  modelAnswer: string;
+  feedback: string;
+  examTip: string;
+}
+
+// --- AI STRUCTURED NOTES TYPES ---
+
+export interface StudyTopic {
+  id: number;
+  title: string;
+  difficulty: 'Easy' | 'Medium' | 'Hard';
+  examRelevance: 'Low' | 'Medium' | 'High' | 'Very High';
+  keyConcepts: string[];
+  content: string;          // Detailed markdown content
+  examTips: string[];       // How this topic appears in exams
+  commonMistakes: string[]; // What candidates get wrong
+}
+
+export interface StructuredStudyNotes {
+  subject: string;
+  grade: string;
+  title: string;
+  overview: string;         // 2-3 sentence summary
+  topics: StudyTopic[];
+  totalTopics: number;
+}
+
+export interface QuestionExplanation {
+  whatItTests: string;       // "This question tests your understanding of..."
+  keyConcepts: string[];     // Concepts needed to answer
+  approachStrategy: string;  // Step-by-step approach
+  commonPitfalls: string[];  // What to avoid
+  examContext: string;       // "This type of question appears in KCSE Paper 1..."
+}
+
 // --- DARASA MODE TYPES ---
 
 export interface NoteSection {

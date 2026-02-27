@@ -1239,6 +1239,464 @@ export const getPaperGuidance = async (analysis: ExamAnalysis, query?: string, l
   }
 };
 
+// --- EXAM MARKING & PRACTICE FUNCTIONS ---
+
+import { MarkingResult } from "../types";
+
+export const markStudentAnswer = async (
+  question: ExamQuestion,
+  learnerAnswer: string,
+  language: 'EN' | 'FR' = 'EN'
+): Promise<MarkingResult> => {
+  const model = genAI.getGenerativeModel({
+    model: MODEL_NAME,
+    generationConfig: {
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: SchemaType.OBJECT,
+        properties: {
+          marksAwarded: { type: SchemaType.INTEGER },
+          marksAvailable: { type: SchemaType.INTEGER },
+          isCorrect: { type: SchemaType.BOOLEAN },
+          modelAnswer: { type: SchemaType.STRING },
+          feedback: { type: SchemaType.STRING },
+          examTip: { type: SchemaType.STRING }
+        },
+        required: ["marksAwarded", "marksAvailable", "isCorrect", "modelAnswer", "feedback", "examTip"]
+      }
+    }
+  });
+
+  const langInstruction = language === 'FR'
+    ? "LANGUAGE RULE: Respond in French."
+    : "LANGUAGE RULE: If the subject is 'Kiswahili' or 'Swahili', respond in Swahili. Otherwise respond in English.";
+
+  const prompt = `
+    You are a STRICT Kenyan National Exam Marker (KNEC standard).
+    You are marking a candidate's answer for a KPSEA/KCSE examination.
+    
+    QUESTION: "${question.text}"
+    Topic: ${question.topic}
+    Marks Available: ${question.marks || 2}
+    Competency: ${question.competency || 'General'}
+    
+    CANDIDATE'S ANSWER: "${learnerAnswer}"
+    
+    ${langInstruction}
+    
+    MARKING INSTRUCTIONS:
+    1. Compare the candidate's answer against the KNEC marking scheme standard.
+    2. Award marks strictly — partial marks are allowed.
+    3. In "modelAnswer", provide the COMPLETE correct answer as it would appear in the official marking scheme.
+    4. In "feedback", explain specifically WHY marks were awarded or lost. Be direct: "You got X marks because... You lost Y marks because..."
+    5. In "examTip", give a practical tip for this type of question in future KPSEA/KCSE exams. Reference real exam patterns: "This topic frequently appears in KCSE Paper 1 Section B..."
+    
+    Output JSON:
+    {
+      "marksAwarded": number,
+      "marksAvailable": ${question.marks || 2},
+      "isCorrect": boolean,
+      "modelAnswer": "The complete correct answer...",
+      "feedback": "You scored X/${question.marks || 2}. Here's why...",
+      "examTip": "In KCSE/KPSEA exams, this type of question..."
+    }
+  `;
+
+  try {
+    const result = await model.generateContent(prompt);
+    const text = result.response.text();
+    if (!text) throw new Error("No response from AI");
+    return JSON.parse(text) as MarkingResult;
+  } catch (error) {
+    console.error("Error marking answer:", error);
+    throw error;
+  }
+};
+
+export const generateExamQuestions = async (
+  base64Data: string,
+  mimeType: string,
+  subject: string,
+  grade: string,
+  count: number = 10,
+  language: 'EN' | 'FR' = 'EN'
+): Promise<ExamAnalysis> => {
+  const model = genAI.getGenerativeModel({
+    model: MODEL_NAME,
+    generationConfig: {
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: SchemaType.OBJECT,
+        properties: {
+          subject: { type: SchemaType.STRING },
+          grade: { type: SchemaType.STRING },
+          questions: {
+            type: SchemaType.ARRAY,
+            items: {
+              type: SchemaType.OBJECT,
+              properties: {
+                id: { type: SchemaType.INTEGER },
+                number: { type: SchemaType.STRING },
+                text: { type: SchemaType.STRING },
+                topic: { type: SchemaType.STRING },
+                subStrand: { type: SchemaType.STRING },
+                competency: { type: SchemaType.STRING },
+                marks: { type: SchemaType.INTEGER }
+              },
+              required: ["id", "number", "text", "topic", "competency", "marks"]
+            }
+          }
+        },
+        required: ["subject", "grade", "questions"]
+      }
+    }
+  });
+
+  const langInstruction = language === 'FR'
+    ? "LANGUAGE RULE: Generate questions in French."
+    : "LANGUAGE RULE: If the subject is 'Kiswahili' or 'Swahili', generate in Swahili. Otherwise use English.";
+
+  const prompt = `
+    You are a KNEC-level Exam Setter for Kenyan national examinations (KPSEA, KCSE).
+    
+    Using the attached revision notes/document as source material, generate ${count} exam-quality questions.
+    
+    Subject: ${subject}
+    Grade: ${grade}
+    ${langInstruction}
+    
+    RULES:
+    1. Questions MUST be in the style of actual KPSEA/KCSE papers — structured, precise, with clear mark allocation.
+    2. Mix question types: factual recall (2 marks), application (3-4 marks), and analytical/essay (5+ marks).
+    3. Each question must test a specific competency from the Kenyan CBC/8-4-4 curriculum.
+    4. Include marks for each question.
+    5. Questions should be ANSWERABLE from the document content.
+    6. Use proper examination language: "State...", "Explain...", "Describe...", "Calculate...", "Discuss..."
+    
+    Output as ExamAnalysis JSON.
+  `;
+
+  try {
+    const result = await model.generateContent([
+      prompt,
+      { inlineData: { data: base64Data, mimeType } }
+    ]);
+
+    const text = result.response.text();
+    if (!text) throw new Error("No response from AI");
+    return JSON.parse(text) as ExamAnalysis;
+  } catch (error) {
+    console.error("Error generating exam questions:", error);
+    throw error;
+  }
+};
+
+export const predictLikelyQuestions = async (
+  analysis: ExamAnalysis,
+  language: 'EN' | 'FR' = 'EN'
+): Promise<ExamAnalysis> => {
+  const model = genAI.getGenerativeModel({
+    model: MODEL_NAME,
+    generationConfig: {
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: SchemaType.OBJECT,
+        properties: {
+          subject: { type: SchemaType.STRING },
+          grade: { type: SchemaType.STRING },
+          questions: {
+            type: SchemaType.ARRAY,
+            items: {
+              type: SchemaType.OBJECT,
+              properties: {
+                id: { type: SchemaType.INTEGER },
+                number: { type: SchemaType.STRING },
+                text: { type: SchemaType.STRING },
+                topic: { type: SchemaType.STRING },
+                subStrand: { type: SchemaType.STRING },
+                competency: { type: SchemaType.STRING },
+                marks: { type: SchemaType.INTEGER }
+              },
+              required: ["id", "number", "text", "topic", "competency", "marks"]
+            }
+          }
+        },
+        required: ["subject", "grade", "questions"]
+      }
+    }
+  });
+
+  const paperContext = analysis.questions.map(q =>
+    `Q${q.number}: "${q.text}" (Topic: ${q.topic}, Marks: ${q.marks || 2})`
+  ).join('\n');
+
+  const prompt = `
+    You are a senior KNEC exam analyst who has studied Kenyan national examination patterns for 20 years.
+    
+    Based on this past paper's pattern:
+    Subject: ${analysis.subject}
+    Grade: ${analysis.grade}
+    Questions from past paper:
+    ${paperContext}
+    
+    ${language === 'FR' ? "Respond in French." : "If Kiswahili subject, respond in Swahili. Otherwise English."}
+    
+    TASK: Generate 8 PREDICTED questions that are MOST LIKELY to appear in the NEXT exam sitting.
+    
+    PREDICTION CRITERIA:
+    1. Topics that appear frequently across KPSEA/KCSE papers get repeated.
+    2. Topics NOT covered in this paper are likely to appear next time.
+    3. Current affairs or trending topics in Kenya relevant to the subject.
+    4. KNEC tends to rotate between application and knowledge questions.
+    5. Include some "killer" questions that separate A students from B students.
+    
+    Each question must have marks allocated and be in proper KNEC exam format.
+    Output as ExamAnalysis JSON.
+  `;
+
+  try {
+    const result = await model.generateContent(prompt);
+    const text = result.response.text();
+    if (!text) throw new Error("No response from AI");
+    return JSON.parse(text) as ExamAnalysis;
+  } catch (error) {
+    console.error("Error predicting questions:", error);
+    throw error;
+  }
+};
+
+// --- AI STRUCTURED NOTES & EXPLANATION FUNCTIONS ---
+
+import { StructuredStudyNotes, StudyTopic, QuestionExplanation } from "../types";
+
+export const extractStructuredNotes = async (
+  base64Data: string,
+  mimeType: string,
+  subject: string,
+  grade: string,
+  language: 'EN' | 'FR' = 'EN'
+): Promise<StructuredStudyNotes> => {
+  const model = genAI.getGenerativeModel({
+    model: MODEL_NAME,
+    generationConfig: {
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: SchemaType.OBJECT,
+        properties: {
+          subject: { type: SchemaType.STRING },
+          grade: { type: SchemaType.STRING },
+          title: { type: SchemaType.STRING },
+          overview: { type: SchemaType.STRING },
+          totalTopics: { type: SchemaType.INTEGER },
+          topics: {
+            type: SchemaType.ARRAY,
+            items: {
+              type: SchemaType.OBJECT,
+              properties: {
+                id: { type: SchemaType.INTEGER },
+                title: { type: SchemaType.STRING },
+                difficulty: { type: SchemaType.STRING },
+                examRelevance: { type: SchemaType.STRING },
+                keyConcepts: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
+                content: { type: SchemaType.STRING },
+                examTips: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
+                commonMistakes: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } }
+              },
+              required: ["id", "title", "difficulty", "examRelevance", "keyConcepts", "content", "examTips", "commonMistakes"]
+            }
+          }
+        },
+        required: ["subject", "grade", "title", "overview", "totalTopics", "topics"]
+      }
+    }
+  });
+
+  const langInstruction = language === 'FR'
+    ? "LANGUAGE RULE: Respond in French."
+    : "LANGUAGE RULE: If the subject is 'Kiswahili' or 'Swahili', respond in Swahili. Otherwise respond in English.";
+
+  const prompt = `
+    You are a world-class Kenyan CBC/8-4-4 curriculum expert and exam strategist.
+    
+    TASK: Read this document thoroughly and convert it into DETAILED, well-structured, exam-focused study notes.
+    
+    Subject: ${subject || 'Identify from document'}
+    Grade: ${grade || 'Identify from document'}
+    ${langInstruction}
+    
+    INSTRUCTIONS:
+    1. Segment the content into MAIN EXAMINABLE TOPICS (each topic should be a core area that KNEC examines).
+    2. For each topic provide:
+       - **title**: Clear, specific topic name
+       - **difficulty**: "Easy", "Medium", or "Hard" based on how students typically perform
+       - **examRelevance**: "Low", "Medium", "High", or "Very High" based on how frequently this appears in KPSEA/KCSE papers
+       - **keyConcepts**: List 3-6 key concepts/terms/formulas the student must know
+       - **content**: Detailed, well-structured notes in Markdown format. Include:
+         * Clear explanations with examples
+         * Definitions of key terms
+         * Step-by-step procedures/methods where applicable
+         * Diagrams described in text form
+         * Tables or comparisons where relevant
+         * At least 500 words per topic for depth
+       - **examTips**: 2-3 specific tips about how this topic appears in KPSEA/KCSE exams
+       - **commonMistakes**: 2-3 mistakes candidates commonly make in this topic
+    
+    3. Make notes COMPREHENSIVE. A candidate should be able to study ONLY from these notes and answer exam questions.
+    4. Use clear, student-friendly language. Define technical terms.
+    5. Include relevant examples from Kenyan context where applicable.
+    
+    Output as StructuredStudyNotes JSON.
+  `;
+
+  try {
+    const result = await model.generateContent([
+      prompt,
+      { inlineData: { data: base64Data, mimeType } }
+    ]);
+
+    const text = result.response.text();
+    if (!text) throw new Error("No response from AI");
+    return JSON.parse(text) as StructuredStudyNotes;
+  } catch (error) {
+    console.error("Error extracting structured notes:", error);
+    throw error;
+  }
+};
+
+export const generateTopicQuiz = async (
+  topic: StudyTopic,
+  subject: string,
+  grade: string,
+  language: 'EN' | 'FR' = 'EN'
+): Promise<ExamAnalysis> => {
+  const model = genAI.getGenerativeModel({
+    model: MODEL_NAME,
+    generationConfig: {
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: SchemaType.OBJECT,
+        properties: {
+          subject: { type: SchemaType.STRING },
+          grade: { type: SchemaType.STRING },
+          questions: {
+            type: SchemaType.ARRAY,
+            items: {
+              type: SchemaType.OBJECT,
+              properties: {
+                id: { type: SchemaType.INTEGER },
+                number: { type: SchemaType.STRING },
+                text: { type: SchemaType.STRING },
+                topic: { type: SchemaType.STRING },
+                subStrand: { type: SchemaType.STRING },
+                competency: { type: SchemaType.STRING },
+                marks: { type: SchemaType.INTEGER }
+              },
+              required: ["id", "number", "text", "topic", "competency", "marks"]
+            }
+          }
+        },
+        required: ["subject", "grade", "questions"]
+      }
+    }
+  });
+
+  const langInstruction = language === 'FR'
+    ? "Generate questions in French."
+    : "If Kiswahili subject, generate in Swahili. Otherwise English.";
+
+  const prompt = `
+    You are a KNEC-level exam setter. Generate 5 exam-quality questions specifically on this topic.
+    
+    Subject: ${subject}
+    Grade: ${grade}
+    Topic: ${topic.title}
+    ${langInstruction}
+    
+    Topic Content for Context:
+    ${topic.content.slice(0, 4000)}
+    
+    Key Concepts to Test:
+    ${topic.keyConcepts.join(', ')}
+    
+    RULES:
+    1. Questions MUST test understanding of THIS specific topic only.
+    2. Mix difficulty: 2 easy (2 marks), 2 medium (3-4 marks), 1 hard (5 marks).
+    3. Use KPSEA/KCSE exam format: "State...", "Explain...", "Describe...", "Calculate..."
+    4. Questions should be answerable from the topic content provided.
+    
+    Output as ExamAnalysis JSON.
+  `;
+
+  try {
+    const result = await model.generateContent(prompt);
+    const text = result.response.text();
+    if (!text) throw new Error("No response from AI");
+    return JSON.parse(text) as ExamAnalysis;
+  } catch (error) {
+    console.error("Error generating topic quiz:", error);
+    throw error;
+  }
+};
+
+export const explainQuestion = async (
+  question: ExamQuestion,
+  language: 'EN' | 'FR' = 'EN'
+): Promise<QuestionExplanation> => {
+  const model = genAI.getGenerativeModel({
+    model: MODEL_NAME,
+    generationConfig: {
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: SchemaType.OBJECT,
+        properties: {
+          whatItTests: { type: SchemaType.STRING },
+          keyConcepts: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
+          approachStrategy: { type: SchemaType.STRING },
+          commonPitfalls: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
+          examContext: { type: SchemaType.STRING }
+        },
+        required: ["whatItTests", "keyConcepts", "approachStrategy", "commonPitfalls", "examContext"]
+      }
+    }
+  });
+
+  const langInstruction = language === 'FR'
+    ? "Respond in French."
+    : "If Kiswahili subject, respond in Swahili. Otherwise English.";
+
+  const prompt = `
+    You are the Somo Smart Candidate Specialist — a KNEC exam strategist.
+    
+    QUESTION: "${question.text}"
+    Topic: ${question.topic}
+    Marks: ${question.marks || 2}
+    Competency: ${question.competency || 'General'}
+    ${langInstruction}
+    
+    TASK: Provide a strategic breakdown of this question to help the candidate PREPARE before answering. DO NOT reveal the actual answer.
+    
+    1. **whatItTests**: "This question tests your understanding of..." (one clear sentence)
+    2. **keyConcepts**: List 3-5 concepts/terms the candidate needs to know to answer this
+    3. **approachStrategy**: Step-by-step strategy for tackling this question. "First, identify... Then consider... Finally, present your answer by..."
+    4. **commonPitfalls**: 2-3 mistakes candidates commonly make on this type of question. "Many candidates lose marks by..."
+    5. **examContext**: Where does this type of question typically appear in KPSEA/KCSE? How frequently? What marks does it typically carry?
+    
+    Be strategic and specific. Help the candidate THINK before they write.
+    Output as QuestionExplanation JSON.
+  `;
+
+  try {
+    const result = await model.generateContent(prompt);
+    const text = result.response.text();
+    if (!text) throw new Error("No response from AI");
+    return JSON.parse(text) as QuestionExplanation;
+  } catch (error) {
+    console.error("Error explaining question:", error);
+    throw error;
+  }
+};
+
+
 // --- TSC LIVE & RECAP FEATURES ---
 
 import { LessonRecap } from "../types";

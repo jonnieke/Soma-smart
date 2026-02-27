@@ -48,6 +48,9 @@ export const TeacherRequestModal: React.FC<TeacherRequestModalProps> = ({ isOpen
 
     const startRecording = async () => {
         try {
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                throw new Error("Microphone access is not supported in this browser or context (HTTPS may be required).");
+            }
             const constraints = responseType === 'VIDEO' ? { video: true, audio: true } : { audio: true };
             const stream = await navigator.mediaDevices.getUserMedia(constraints);
             streamRef.current = stream;

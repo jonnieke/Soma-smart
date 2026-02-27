@@ -1,14 +1,17 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useMemo } from 'react';
 import { useApp } from '../../context/AppContext';
-import { Upload, BookOpen, Brain, TrendingUp, ArrowRight, ScanLine, X, Camera, Zap, CheckCircle, Smartphone, LogOut, Filter, FileText, ChevronRight } from 'lucide-react';
+import { Upload, BookOpen, Brain, TrendingUp, ArrowRight, ScanLine, X, Camera, Zap, CheckCircle, Smartphone, LogOut, Search, FileText, ChevronRight, ChevronDown, Shield, Users, Sparkles, Filter, GraduationCap, Unlock } from 'lucide-react';
 import { ViewState, RevisionMode, TeacherActivity } from '../../types';
 import { motion, AnimatePresence } from 'framer-motion';
 import { LogoutModal } from '../../components/LogoutModal';
+import { ThemeToggle } from '../../components/ThemeToggle';
 
 interface Props {
     onStartSession: (data: File | TeacherActivity, mode: RevisionMode) => void;
     onNavigate: (view: ViewState) => void;
 }
+
+type TabKey = 'papers' | 'notes' | 'syllabus' | 'community';
 
 export const RevisionLanding: React.FC<Props> = ({ onStartSession, onNavigate }) => {
     const { logout, availableQuizzes, fetchAvailableQuizzes, isOnline, studentProfile, resources, fetchResources } = useApp();
@@ -17,6 +20,9 @@ export const RevisionLanding: React.FC<Props> = ({ onStartSession, onNavigate })
     const [loadingQuizzes, setLoadingQuizzes] = useState(false);
     const [showLogoutModal, setShowLogoutModal] = useState(false);
     const [activeSubject, setActiveSubject] = useState<string>('All');
+    const [activeTab, setActiveTab] = useState<TabKey>('papers');
+    const [searchQuery, setSearchQuery] = useState('');
+    const [showCount, setShowCount] = useState(6);
 
     // Fetch quizzes & resources on mount
     React.useEffect(() => {
@@ -29,13 +35,49 @@ export const RevisionLanding: React.FC<Props> = ({ onStartSession, onNavigate })
         }
     }, [isOnline]);
 
-    const subjects = ['All', ...new Set([
-        ...availableQuizzes.map(q => q.subject),
-        ...resources.map(r => r.subject)
-    ])];
+    // Derive subjects from all data
+    const subjects = useMemo(() => {
+        const unique = new Set([
+            ...availableQuizzes.map(q => q.subject).filter(Boolean),
+            ...resources.map(r => r.subject).filter(Boolean)
+        ]);
+        unique.delete('All');
+        return ['All', ...unique];
+    }, [availableQuizzes, resources]);
 
-    const filteredQuizzes = availableQuizzes.filter(q => activeSubject === 'All' || q.subject === activeSubject);
-    const filteredResources = resources.filter(r => activeSubject === 'All' || r.subject === activeSubject);
+    // Split resources into papers, syllabus, and notes
+    const isPaper = (title?: string) => {
+        const t = title?.toLowerCase() || '';
+        return t.includes('paper') || t.includes('exam') || t.includes('test') || t.includes('mock') ||
+            t.includes('kpsea') || t.includes('kcse') || t.includes('kjsea') || t.includes('kilea') || t.includes('kcpe');
+    };
+    const isSyllabus = (title?: string) => (title?.toLowerCase() || '').includes('syllabus');
+
+    const papers = useMemo(() => resources.filter(r => isPaper(r.title)), [resources]);
+    const syllabus = useMemo(() => resources.filter(r => isSyllabus(r.title) && !isPaper(r.title)), [resources]);
+    const notes = useMemo(() => resources.filter(r => !isPaper(r.title) && !isSyllabus(r.title)), [resources]);
+
+    // Filter by subject + search
+    const filterItems = useCallback(<T extends { title?: string; subject?: string }>(items: T[]) => {
+        return items.filter(item => {
+            const matchesSubject = activeSubject === 'All' || item.subject === activeSubject;
+            const matchesSearch = !searchQuery || item.title?.toLowerCase().includes(searchQuery.toLowerCase()) || item.subject?.toLowerCase().includes(searchQuery.toLowerCase());
+            return matchesSubject && matchesSearch;
+        });
+    }, [activeSubject, searchQuery]);
+
+    const filteredPapers = useMemo(() => filterItems(papers), [filterItems, papers]);
+    const filteredSyllabus = useMemo(() => filterItems(syllabus), [filterItems, syllabus]);
+    const filteredNotes = useMemo(() => filterItems(notes), [filterItems, notes]);
+    const filteredQuizzes = useMemo(() => filterItems(availableQuizzes), [filterItems, availableQuizzes]);
+
+    // Reset show count when switching tabs/filters
+    React.useEffect(() => { setShowCount(6); }, [activeTab, activeSubject, searchQuery]);
+
+    // Current tab data
+    const currentItems = activeTab === 'papers' ? filteredPapers : activeTab === 'syllabus' ? filteredSyllabus : activeTab === 'notes' ? filteredNotes : filteredQuizzes;
+    const visibleItems = currentItems.slice(0, showCount);
+    const hasMore = currentItems.length > showCount;
 
     // Camera State
     const [showCamera, setShowCamera] = useState(false);
@@ -43,7 +85,6 @@ export const RevisionLanding: React.FC<Props> = ({ onStartSession, onNavigate })
     const videoRef = useRef<HTMLVideoElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
 
-    // Fix: Cleanup camera on unmount
     React.useEffect(() => {
         return () => {
             if (stream) {
@@ -75,6 +116,9 @@ export const RevisionLanding: React.FC<Props> = ({ onStartSession, onNavigate })
 
     const startCamera = async () => {
         try {
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                throw new Error("Camera access is not supported in this browser or context (HTTPS may be required).");
+            }
             const mediaStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
             setStream(mediaStream);
             setShowCamera(true);
@@ -118,249 +162,242 @@ export const RevisionLanding: React.FC<Props> = ({ onStartSession, onNavigate })
         }
     };
 
+    const tabs: { key: TabKey; label: string; icon: React.ReactNode; count: number }[] = [
+        { key: 'papers', label: 'Past Papers', icon: <FileText className="w-4 h-4" />, count: filteredPapers.length },
+        { key: 'notes', label: 'Revision Notes', icon: <BookOpen className="w-4 h-4" />, count: filteredNotes.length },
+        { key: 'syllabus', label: 'Syllabus', icon: <GraduationCap className="w-4 h-4" />, count: filteredSyllabus.length },
+        { key: 'community', label: 'Community', icon: <Users className="w-4 h-4" />, count: filteredQuizzes.length },
+    ];
+
     return (
-        <div className="min-h-screen bg-slate-50 font-sans text-slate-800 pb-20">
-            {/* Header - Modernized & Neat */}
-            <div className="bg-white px-6 pt-12 pb-12 rounded-b-[3rem] shadow-sm relative overflow-hidden border-b border-indigo-50">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-50 rounded-full blur-3xl opacity-50 -mr-32 -mt-32"></div>
-                <div className="absolute bottom-0 left-0 w-48 h-48 bg-blue-50 rounded-full blur-3xl opacity-50 -ml-24 -mb-24"></div>
-
-                <div className="relative z-10 max-w-2xl mx-auto">
-                    <div className="flex justify-between items-center mb-8">
-                        <button onClick={() => onNavigate(ViewState.DASHBOARD)} className="text-slate-500 hover:text-indigo-600 transition-colors flex items-center gap-2 font-bold text-xs bg-slate-50 px-4 py-2 rounded-xl border border-slate-100">
-                            <ArrowRight className="w-4 h-4 rotate-180" /> Back
-                        </button>
-                        <button onClick={() => setShowLogoutModal(true)} className="text-slate-500 hover:text-red-600 transition-colors flex items-center gap-2 font-bold text-xs bg-slate-50 px-4 py-2 rounded-xl border border-slate-100 ml-auto">
-                            <LogOut className="w-4 h-4" /> Logout
-                        </button>
-                    </div>
-
-                    <div className="flex items-center gap-3 mb-4">
-                        <div className="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 font-bold">
-                            {studentProfile?.name?.[0] || 'C'}
+        <div className="min-h-screen bg-slate-50 dark:bg-slate-950 font-sans text-slate-800 dark:text-slate-100 transition-colors duration-300">
+            {/* Compact Header */}
+            <div className="bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 sticky top-0 z-30 transition-colors">
+                <div className="max-w-5xl mx-auto px-4 md:px-6">
+                    <div className="flex items-center justify-between py-3">
+                        <div className="flex items-center gap-3">
+                            <button onClick={() => onNavigate(ViewState.DASHBOARD)} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors text-slate-500 dark:text-slate-400">
+                                <ArrowRight className="w-5 h-5 rotate-180" />
+                            </button>
+                            <div>
+                                <h1 className="font-black text-slate-900 dark:text-white text-lg tracking-tight">Revision Hub</h1>
+                                <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                                    {studentProfile?.grade || 'All Grades'} • {resources.length + availableQuizzes.length} resources
+                                </p>
+                            </div>
                         </div>
-                        <div>
-                            <p className="text-xs font-bold text-indigo-600 uppercase tracking-widest">Candidate Profile</p>
-                            <p className="text-sm font-bold text-slate-700">{studentProfile?.schoolName || 'Kenyan Candidate'}</p>
+                        <div className="flex items-center gap-2">
+                            <div className="hidden md:flex items-center gap-1 bg-indigo-50 text-indigo-600 px-3 py-1.5 rounded-xl text-xs font-bold dark:bg-indigo-900/20 dark:text-indigo-300">
+                                <Shield className="w-3 h-3" /> {studentProfile?.name?.split(' ')[0] || 'Candidate'}
+                            </div>
+                            <ThemeToggle />
+                            <button onClick={() => setShowLogoutModal(true)} className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-xl transition-colors">
+                                <LogOut className="w-4 h-4" />
+                            </button>
                         </div>
                     </div>
-                    <h1 className="text-4xl font-black mb-3 text-slate-900 tracking-tight leading-tight">
-                        Welcome back, <span className="text-indigo-600">{studentProfile?.name?.split(' ')[0] || 'Candidate'}</span>
-                    </h1>
-                    <p className="text-slate-500 font-medium text-lg max-w-sm leading-relaxed">
-                        Ready to master your <span className="text-indigo-600 font-bold">{studentProfile?.grade || 'exams'}</span> today?
-                    </p>
                 </div>
             </div>
 
-            <main className="max-w-2xl mx-auto px-6 -mt-8 relative z-20 space-y-8">
+            <main className="max-w-5xl mx-auto px-4 md:px-6 pt-6 pb-24">
 
-                {/* Mode Selection Cards - Refined */}
-                <div className="bg-white p-1.5 rounded-2xl shadow-lg shadow-slate-200/40 flex gap-2 overflow-x-auto no-scrollbar border border-slate-100">
-                    {[
-                        { mode: RevisionMode.LEARN, icon: BookOpen, label: 'Learn', color: 'indigo' },
-                        { mode: RevisionMode.EXAM, icon: Brain, label: 'Exam', color: 'orange' },
-                        { mode: RevisionMode.WEAK_AREAS, icon: TrendingUp, label: 'Weakness', color: 'rose' }
-                    ].map((item) => (
+                {/* Mode + Upload Row */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                    {/* Mode Selection */}
+                    <div className="md:col-span-2 bg-white dark:bg-slate-900 p-1.5 rounded-2xl border border-slate-100 dark:border-slate-800 flex gap-1.5 transition-colors">
+                        {[
+                            { mode: RevisionMode.LEARN, icon: BookOpen, label: 'Learn Mode', desc: 'Guided study', color: 'indigo' },
+                            { mode: RevisionMode.EXAM, icon: Brain, label: 'Exam Mode', desc: 'Test yourself', color: 'orange' },
+                            { mode: RevisionMode.WEAK_AREAS, icon: TrendingUp, label: 'Weakness', desc: 'Focus areas', color: 'rose' }
+                        ].map((item) => (
+                            <button
+                                key={item.mode}
+                                onClick={() => setSelectedMode(item.mode)}
+                                className={`flex-1 py-3 px-3 rounded-xl flex items-center justify-center gap-2 transition-all text-sm font-bold ${selectedMode === item.mode
+                                    ? 'bg-indigo-600 dark:bg-indigo-500 text-white shadow-md shadow-indigo-200 dark:shadow-none'
+                                    : 'hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-400 dark:text-slate-500'}`}
+                            >
+                                <item.icon className="w-4 h-4" />
+                                <span className="hidden sm:inline">{item.label}</span>
+                                <span className="sm:hidden text-xs">{item.label.split(' ')[0]}</span>
+                            </button>
+                        ))}
+                    </div>
+
+                    {/* Quick Actions */}
+                    <div className="flex gap-2">
                         <button
-                            key={item.mode}
-                            onClick={() => setSelectedMode(item.mode)}
-                            className={`flex-1 min-w-[100px] py-4 rounded-xl flex flex-col items-center gap-2 transition-all duration-300 ${selectedMode === item.mode
-                                ? `bg-${item.color}-50 text-${item.color}-700 ring-1 ring-${item.color}-200`
-                                : 'hover:bg-slate-50 text-slate-400 font-medium'}`}
+                            onClick={startCamera}
+                            className="flex-1 bg-indigo-600 dark:bg-indigo-500 text-white rounded-2xl flex items-center justify-center gap-2 py-3 font-bold text-sm hover:bg-indigo-700 dark:hover:bg-indigo-600 transition-colors shadow-md shadow-indigo-200 dark:shadow-none"
                         >
-                            <item.icon className={`w-5 h-5 ${selectedMode === item.mode ? 'fill-current' : ''}`} />
-                            <span className="text-[10px] font-bold uppercase tracking-widest">{item.label}</span>
+                            <Camera className="w-4 h-4" /> Scan
+                        </button>
+                        <div
+                            className={`flex-1 relative cursor-pointer border-2 border-dashed rounded-2xl flex items-center justify-center gap-2 py-3 transition-all ${dragActive
+                                ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20'
+                                : 'border-slate-200 dark:border-slate-800 hover:border-indigo-300 dark:hover:border-indigo-700 bg-white dark:bg-slate-900'}`}
+                            onDragEnter={handleDrag}
+                            onDragLeave={handleDrag}
+                            onDragOver={handleDrag}
+                            onDrop={handleDrop}
+                            onClick={() => document.getElementById('file-upload')?.click()}
+                        >
+                            <input id="file-upload" type="file" className="hidden" onChange={handleChange} accept="image/*" />
+                            <Upload className="w-4 h-4 text-slate-400" />
+                            <span className="text-sm font-bold text-slate-500">Upload</span>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Search + Filters */}
+                <div className="mb-6 space-y-4">
+                    {/* Search Bar */}
+                    <div className="relative">
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-slate-500" />
+                        <input
+                            type="text"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            placeholder="Search papers, notes, subjects..."
+                            className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl pl-11 pr-4 py-3 text-sm font-medium text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900/30 focus:border-indigo-300 dark:focus:border-indigo-700 outline-none transition-all"
+                        />
+                        {searchQuery && (
+                            <button onClick={() => setSearchQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full">
+                                <X className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
+                            </button>
+                        )}
+                    </div>
+
+                    {/* Subject Filter Chips */}
+                    <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
+                        {subjects.map(s => (
+                            <button
+                                key={s}
+                                onClick={() => setActiveSubject(s)}
+                                className={`shrink-0 text-xs font-bold px-4 py-2 rounded-xl transition-all ${activeSubject === s
+                                    ? 'bg-indigo-600 dark:bg-indigo-500 text-white shadow-sm'
+                                    : 'bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-800 hover:border-indigo-200 dark:hover:border-indigo-700 hover:text-indigo-600 dark:hover:text-indigo-400'}`}
+                            >
+                                {s}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Tab Navigation */}
+                <div className="flex gap-1 bg-white dark:bg-slate-900 p-1 rounded-2xl mb-6 border border-slate-100 dark:border-slate-800 transition-colors">
+                    {tabs.map((tab) => (
+                        <button
+                            key={tab.key}
+                            onClick={() => setActiveTab(tab.key)}
+                            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all ${activeTab === tab.key
+                                ? 'bg-slate-900 dark:bg-slate-800 text-white shadow-sm'
+                                : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50'}`}
+                        >
+                            {tab.icon}
+                            <span className="hidden sm:inline">{tab.label}</span>
+                            <span className="sm:hidden text-xs">{tab.label.split(' ')[0]}</span>
+                            <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-md ${activeTab === tab.key ? 'bg-white/20 dark:bg-slate-700' : 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500'}`}>
+                                {tab.count}
+                            </span>
                         </button>
                     ))}
                 </div>
 
-                {/* Primary Action: CAMERA - Modernized */}
-                <motion.div
-                    initial={{ scale: 0.95, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    className="space-y-4"
-                >
-                    <button
-                        onClick={startCamera}
-                        className="w-full bg-white border-2 border-indigo-100 hover:border-indigo-400 p-1 rounded-[2rem] shadow-sm hover:shadow-indigo-100 transition-all group"
-                    >
-                        <div className="bg-indigo-50/30 rounded-[1.7rem] p-6 flex items-center justify-between">
-                            <div className="flex items-center gap-5">
-                                <div className="w-14 h-14 bg-indigo-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-indigo-200 group-hover:scale-110 transition-transform">
-                                    <Camera className="w-7 h-7" />
-                                </div>
-                                <div className="text-left">
-                                    <h3 className="font-extrabold text-xl text-slate-900">Scan Past Paper</h3>
-                                    <p className="text-slate-500 text-sm font-medium">Capture directly from paper</p>
-                                </div>
-                            </div>
-                            <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center group-hover:bg-indigo-600 group-hover:text-white transition-all">
-                                <ArrowRight className="w-5 h-5" />
-                            </div>
+                {/* Content Grid */}
+                <div className="mb-8">
+                    {loadingQuizzes ? (
+                        <div className="py-16 text-center">
+                            <div className="animate-spin w-8 h-8 border-3 border-indigo-500 border-t-transparent rounded-full mx-auto mb-3"></div>
+                            <p className="text-sm text-slate-400 dark:text-slate-500 font-medium">Loading resources...</p>
                         </div>
-                    </button>
-
-                    {/* Secondary Action: UPLOAD - Refined */}
-                    <div
-                        className={`relative group cursor-pointer border-2 border-dashed rounded-[2rem] p-8 transition-all duration-300 ${dragActive
-                            ? 'border-indigo-500 bg-indigo-50/50'
-                            : 'border-slate-200 hover:border-indigo-300 bg-white'}`}
-                        onDragEnter={handleDrag}
-                        onDragLeave={handleDrag}
-                        onDragOver={handleDrag}
-                        onDrop={handleDrop}
-                        onClick={() => document.getElementById('file-upload')?.click()}
-                    >
-                        <input
-                            id="file-upload"
-                            type="file"
-                            className="hidden"
-                            onChange={handleChange}
-                            accept="image/*"
-                        />
-                        <div className="text-center space-y-4">
-                            <div className="w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center mx-auto border border-slate-100 text-slate-400 group-hover:text-indigo-500 group-hover:scale-110 group-hover:bg-indigo-50 transition-all">
-                                <Upload className="w-5 h-5" />
+                    ) : visibleItems.length === 0 ? (
+                        <div className="py-16 text-center bg-white dark:bg-slate-900/50 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800">
+                            <div className="w-14 h-14 bg-slate-50 dark:bg-slate-800/50 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                                <FileText className="w-7 h-7 text-slate-300 dark:text-slate-600" />
                             </div>
-                            <div>
-                                <h4 className="font-bold text-slate-700">Upload History</h4>
-                                <p className="text-xs text-slate-400 font-medium mt-1">Images, PDF, or Scans</p>
-                            </div>
+                            <p className="font-bold text-slate-500 dark:text-slate-400 mb-1">No resources found</p>
+                            <p className="text-xs text-slate-400 dark:text-slate-500">Try adjusting your search or filters</p>
                         </div>
-                    </div>
-                </motion.div>
-
-                {/* TEST PAPERS LIBRARY */}
-                <div className="space-y-6">
-                    <div className="flex items-center justify-between">
-                        <h3 className="font-bold text-slate-800 text-lg">Resource Library</h3>
-                        <div className="flex gap-2 overflow-x-auto no-scrollbar max-w-[60%]">
-                            {subjects.map(s => (
-                                <button
-                                    key={s}
-                                    onClick={() => setActiveSubject(s)}
-                                    className={`shrink-0 text-[10px] font-bold px-3 py-1 rounded-full transition-all ${activeSubject === s ? 'bg-indigo-600 text-white shadow-md' : 'bg-white text-slate-500 border border-slate-200'}`}
-                                >
-                                    {s}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-
-                    <div className="space-y-6">
-                        {/* Official Resources */}
-                        {filteredResources.length > 0 && (
-                            <div className="space-y-3">
-                                <p className="text-[10px] font-bold text-indigo-500 uppercase tracking-widest px-1">Somo Smart Verified Materials</p>
-                                <div className="grid grid-cols-1 gap-3">
-                                    {filteredResources.map((res) => (
-                                        <button
-                                            key={res.id}
-                                            onClick={() => onStartSession(res, selectedMode)}
-                                            className="bg-white p-5 rounded-[2rem] border-2 border-indigo-50 shadow-sm hover:border-indigo-300 hover:shadow-md transition-all text-left flex items-center justify-between group relative overflow-hidden"
+                    ) : (
+                        <>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                {visibleItems.map((item: any, idx: number) => {
+                                    const isOfficial = 'file_path' in item;
+                                    return (
+                                        <motion.button
+                                            key={item.id || idx}
+                                            initial={{ opacity: 0, y: 8 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            transition={{ delay: idx * 0.03 }}
+                                            onClick={() => onStartSession(item, selectedMode)}
+                                            className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200/70 dark:border-slate-800/80 text-left hover:border-indigo-300 dark:hover:border-indigo-700 hover:shadow-lg dark:hover:shadow-black/40 hover:-translate-y-0.5 transition-all group relative overflow-hidden"
                                         >
-                                            <div className="absolute top-0 right-0 bg-indigo-600 text-white text-[8px] font-black px-3 py-1 rounded-bl-xl shadow-sm">
-                                                VERIFIED
-                                            </div>
-                                            <div className="flex items-center gap-4">
-                                                <div className="w-12 h-12 bg-indigo-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-indigo-100">
-                                                    <Brain className="w-6 h-6" />
+                                            {isOfficial && activeTab !== 'syllabus' && (
+                                                <div className="absolute top-0 right-0 bg-indigo-600 dark:bg-indigo-500 text-white text-[8px] font-black px-2.5 py-1 rounded-bl-xl flex items-center gap-1">
+                                                    <CheckCircle className="w-2.5 h-2.5" /> VERIFIED
                                                 </div>
-                                                <div>
-                                                    <h4 className="font-extrabold text-slate-900 group-hover:text-indigo-700 transition-colors uppercase text-sm tracking-tight">{res.title}</h4>
-                                                    <div className="flex gap-2 mt-1">
-                                                        <span className="text-[10px] bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-full font-bold">{res.subject}</span>
-                                                        <span className="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">{res.grade}</span>
+                                            )}
+                                            {activeTab === 'syllabus' && (
+                                                <div className="absolute top-0 right-0 bg-emerald-600 dark:bg-emerald-500 text-white text-[8px] font-black px-2.5 py-1 rounded-bl-xl flex items-center gap-1">
+                                                    <Unlock className="w-2.5 h-2.5" /> OPEN ACCESS
+                                                </div>
+                                            )}
+                                            <div className="flex items-start gap-3 mb-3">
+                                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${isOfficial
+                                                    ? 'bg-indigo-600 dark:bg-indigo-500 text-white shadow-sm shadow-indigo-200 dark:shadow-none'
+                                                    : 'bg-slate-50 dark:bg-slate-800/50 text-slate-400 dark:text-slate-500 group-hover:bg-slate-100 dark:group-hover:bg-slate-800'}`}>
+                                                    {activeTab === 'papers' ? <FileText className="w-5 h-5" /> :
+                                                        activeTab === 'syllabus' ? <GraduationCap className="w-5 h-5" /> :
+                                                            activeTab === 'notes' ? <BookOpen className="w-5 h-5" /> :
+                                                                <Brain className="w-5 h-5" />}
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <h4 className="font-bold text-slate-800 dark:text-slate-200 text-sm leading-tight truncate group-hover:text-indigo-700 dark:group-hover:text-indigo-400 transition-colors">
+                                                        {item.title}
+                                                    </h4>
+                                                    <div className="flex items-center gap-2 mt-1.5">
+                                                        <span className="text-[10px] bg-indigo-50 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 px-2 py-0.5 rounded-md font-bold">{item.subject}</span>
+                                                        {item.grade && <span className="text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-500 px-2 py-0.5 rounded-md">{item.grade || item.className}</span>}
                                                     </div>
                                                 </div>
                                             </div>
-                                            <ChevronRight className="w-5 h-5 text-indigo-300 group-hover:text-indigo-600 group-hover:translate-x-1 transition-all" />
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Teacher Community */}
-                        <div className="space-y-3">
-                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-1">Teacher Community Contributions</p>
-                            <div className="grid grid-cols-1 gap-3">
-                                {loadingQuizzes ? (
-                                    <div className="py-10 text-center bg-white rounded-3xl border border-slate-100">
-                                        <div className="animate-spin w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full mx-auto mb-2"></div>
-                                        <p className="text-xs text-slate-400">Fetching community papers...</p>
-                                    </div>
-                                ) : filteredQuizzes.length === 0 ? (
-                                    <div className="py-8 text-center bg-white/50 rounded-3xl border border-dashed border-slate-200 italic text-slate-400 text-xs">
-                                        No community papers in this category.
-                                    </div>
-                                ) : (
-                                    filteredQuizzes.map((quiz) => (
-                                        <button
-                                            key={quiz.id}
-                                            onClick={() => onStartSession(quiz, selectedMode)}
-                                            className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm hover:border-slate-300 transition-all text-left flex items-center justify-between group"
-                                        >
-                                            <div className="flex items-center gap-4">
-                                                <div className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center text-slate-400 group-hover:bg-slate-100 group-hover:text-slate-600 transition-colors">
-                                                    <FileText className="w-5 h-5" />
-                                                </div>
-                                                <div>
-                                                    <h4 className="font-bold text-slate-800 group-hover:text-slate-900 transition-colors text-xs tracking-tight">{quiz.title}</h4>
-                                                    <div className="flex gap-2 mt-1">
-                                                        <span className="text-[9px] bg-slate-50 text-slate-500 px-2 py-0.5 rounded-full">{quiz.subject}</span>
-                                                    </div>
-                                                </div>
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-[10px] font-bold text-slate-300 dark:text-slate-600 uppercase tracking-wider">
+                                                    {isOfficial ? 'Somo Verified' : 'Community'}
+                                                </span>
+                                                <ChevronRight className="w-4 h-4 text-slate-300 dark:text-slate-600 group-hover:text-indigo-500 dark:group-hover:text-indigo-400 group-hover:translate-x-0.5 transition-all" />
                                             </div>
-                                            <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-slate-500 group-hover:translate-x-1 transition-all" />
-                                        </button>
-                                    ))
-                                )}
+                                        </motion.button>
+                                    );
+                                })}
                             </div>
-                        </div>
-                    </div>
-                </div>
 
-                {/* Dynamic Strategy Cards - Fun & Useful */}
-                <div className="space-y-4">
-                    <h3 className="font-bold text-slate-800 text-lg flex items-center gap-2">
-                        <Zap className="w-5 h-5 text-amber-500" /> Quick Revision Paths
-                    </h3>
-                    <div className="grid grid-cols-2 gap-4">
-                        <button className="bg-gradient-to-br from-indigo-500 to-indigo-700 p-5 rounded-3xl text-white text-left shadow-lg shadow-indigo-100 group hover:scale-[1.02] transition-transform">
-                            <TrendingUp className="w-8 h-8 mb-3 opacity-80 group-hover:scale-110 transition-transform" />
-                            <h4 className="font-bold text-sm mb-1">Mock Sprint</h4>
-                            <p className="text-[10px] opacity-80 font-medium">Practice most common paper questions in 30 mins.</p>
-                        </button>
-                        <button className="bg-gradient-to-br from-emerald-500 to-emerald-700 p-5 rounded-3xl text-white text-left shadow-lg shadow-emerald-100 group hover:scale-[1.02] transition-transform">
-                            <CheckCircle className="w-8 h-8 mb-3 opacity-80 group-hover:scale-110 transition-transform" />
-                            <h4 className="font-bold text-sm mb-1">CAT Mastery</h4>
-                            <p className="text-[10px] opacity-80 font-medium">Focus on specific topics for your upcoming CAT.</p>
-                        </button>
-                    </div>
+                            {/* Show More */}
+                            {hasMore && (
+                                <div className="text-center mt-6">
+                                    <button
+                                        onClick={() => setShowCount(prev => prev + 6)}
+                                        className="inline-flex items-center gap-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 font-bold text-sm px-6 py-3 rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-800 hover:border-indigo-200 dark:hover:border-indigo-700 transition-all font-sans"
+                                    >
+                                        <ChevronDown className="w-4 h-4" />
+                                        Show More ({currentItems.length - showCount} remaining)
+                                    </button>
+                                </div>
+                            )}
+                        </>
+                    )}
                 </div>
-
-                {/* Features List */}
-                <div className="space-y-4 pt-4 pb-10">
-                    <h4 className="font-bold text-slate-400 text-xs uppercase tracking-widest text-center">Your Candidate Toolbox</h4>
-                    <div className="grid grid-cols-2 gap-3">
-                        <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-3">
-                            <div className="w-10 h-10 bg-amber-50 rounded-xl flex items-center justify-center text-amber-500">
-                                <Zap className="w-5 h-5" />
-                            </div>
-                            <span className="text-xs font-bold text-slate-600">Instant Answers</span>
-                        </div>
-                        <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-3">
-                            <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center text-blue-500">
-                                <Smartphone className="w-5 h-5" />
-                            </div>
-                            <span className="text-xs font-bold text-slate-600">Revision App</span>
-                        </div>
-                    </div>
-                </div>
-
             </main>
+
+            {/* Logout Modal */}
+            {showLogoutModal && (
+                <LogoutModal
+                    isOpen={showLogoutModal}
+                    onConfirm={logout}
+                    onClose={() => setShowLogoutModal(false)}
+                />
+            )}
 
             {/* CAMERA MODAL */}
             <AnimatePresence>
@@ -372,16 +409,8 @@ export const RevisionLanding: React.FC<Props> = ({ onStartSession, onNavigate })
                         className="fixed inset-0 z-50 bg-black flex flex-col"
                     >
                         <div className="relative flex-1 bg-black">
-                            {/* Video Feed */}
-                            <video
-                                ref={videoRef}
-                                autoPlay
-                                playsInline
-                                className="absolute inset-0 w-full h-full object-cover"
-                            />
+                            <video ref={videoRef} autoPlay playsInline className="absolute inset-0 w-full h-full object-cover" />
                             <canvas ref={canvasRef} className="hidden" />
-
-                            {/* Overlays */}
                             <div className="absolute top-0 left-0 right-0 p-6 flex justify-between items-start z-10 bg-gradient-to-b from-black/50 to-transparent">
                                 <button onClick={stopCamera} className="p-3 bg-black/40 backdrop-blur-md rounded-full text-white hover:bg-black/60">
                                     <X className="w-6 h-6" />
@@ -390,8 +419,6 @@ export const RevisionLanding: React.FC<Props> = ({ onStartSession, onNavigate })
                                     Align document within frame
                                 </div>
                             </div>
-
-                            {/* Guidelines */}
                             <div className="absolute inset-8 border-2 border-white/30 rounded-3xl pointer-events-none">
                                 <div className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-white rounded-tl-xl"></div>
                                 <div className="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-white rounded-tr-xl"></div>
@@ -399,13 +426,8 @@ export const RevisionLanding: React.FC<Props> = ({ onStartSession, onNavigate })
                                 <div className="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-white rounded-br-xl"></div>
                             </div>
                         </div>
-
-                        {/* Controls */}
                         <div className="h-32 bg-black flex items-center justify-center gap-8 pb-8 pt-4">
-                            <button
-                                onClick={capturePhoto}
-                                className="w-20 h-20 rounded-full border-4 border-white flex items-center justify-center relative group"
-                            >
+                            <button onClick={capturePhoto} className="w-20 h-20 rounded-full border-4 border-white flex items-center justify-center relative group">
                                 <div className="w-16 h-16 bg-white rounded-full transition-transform group-active:scale-90" />
                             </button>
                         </div>

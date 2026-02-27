@@ -262,6 +262,9 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
     const startRecording = async () => {
         if (!checkLimit()) return;
         try {
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                throw new Error("Microphone access is not supported in this browser or context (HTTPS may be required).");
+            }
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
             // Determine supported mime type

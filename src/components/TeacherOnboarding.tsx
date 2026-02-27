@@ -271,6 +271,7 @@ export const TeacherOnboarding: React.FC<TeacherOnboardingProps> = ({ onComplete
                                             <option value="Chemistry">Chemistry</option>
                                             <option value="General Science">General Science</option>
                                             <option value="Integrated Science">Integrated Science</option>
+                                            <option value="Music">Music</option>
                                             <option value="Physical Education (PE)">Physical Education (PE)</option>
                                         </optgroup>
                                         <optgroup label="Humanities">

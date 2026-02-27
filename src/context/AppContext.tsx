@@ -106,6 +106,9 @@ interface AppContextType {
   incrementDownloadUsage: () => void;
   extraDownloads: number;
   grantExtraDownloads: (amount: number) => void;
+  // Theme
+  theme: 'light' | 'dark';
+  toggleTheme: () => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -221,6 +224,26 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [language, setLanguage] = useState<'EN' | 'FR'>(() => {
     return (localStorage.getItem('soma_language') as 'EN' | 'FR') || 'EN';
   });
+
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    const saved = localStorage.getItem('soma_theme') as 'light' | 'dark';
+    if (saved) return saved;
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  });
+
+  useEffect(() => {
+    const root = window.document.documentElement;
+    if (theme === 'dark') {
+      root.classList.add('dark');
+    } else {
+      root.classList.remove('dark');
+    }
+    localStorage.setItem('soma_theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme(prev => prev === 'light' ? 'dark' : 'light');
+  };
 
   // Marketplace State
   const [marketplaceMaterials, setMarketplaceMaterials] = useState<MaterialListing[]>([]);
@@ -2302,54 +2325,34 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     await refreshProfile();
   };
 
+
+  const contextValue: AppContextType = {
+    role, setRole, learnerHistory, saveActivity, deleteActivity, clearHistory,
+    studentCode, setStudentCode, isRegistered, studentProfile, updateStudentProfile,
+    usageCount, incrementUsage, registerStudent, registerTeacher, login,
+    loginParent, loginTeacher, resetPassword, recoverStudentId, teacherUsageCount,
+    incrementTeacherUsage, teacherDarasaUsage, incrementTeacherDarasaUsage,
+    teacherProfile, updateTeacherProfile, teacherHistory, saveTeacherActivity,
+    deleteTeacherActivity, teacherWallet, isAvailableForTutoring, toggleTutoringAvailability,
+    requestWithdrawal, fetchEarnings, activeTutoringRequests, createTutoringRequest,
+    acceptTutoringRequest, submitTutoringResponse, rateTutoringResponse,
+    chatMessages, sendChatMessage, fetchChatMessages, chatApproved, setParentPin,
+    verifyChatPin, marketplaceMaterials, purchasedMaterialIds, listMaterial,
+    purchaseMaterial, revisionUsageCount, incrementRevisionUsage, isPro,
+    subscriptionPlan, subscriptionExpiry, upgradeAccount, verifySubscription,
+    logout, userId, isOnline, availableQuizzes, fetchAvailableQuizzes,
+    schoolProfile, loginSchool, registerSchool, registerStudentForSchool,
+    schoolStats, schoolTeachers, fetchSchoolStats, addTeacherToSchool,
+    addStudentToSchool, removeUserFromSchool, schoolMaterials, shareSchoolMaterial,
+    deleteSchoolMaterial, fetchSchoolMaterials, updateSchoolProfile,
+    language, toggleLanguage, startGuestSession, resources, fetchResources,
+    sessionError, resolveSessionConflict, setSessionError, refreshProfile,
+    downloadUsageCount, incrementDownloadUsage, extraDownloads, grantExtraDownloads,
+    theme, toggleTheme
+  };
+
   return (
-    <AppContext.Provider value={{
-      role, setRole, learnerHistory, saveActivity, deleteActivity, clearHistory, studentCode, setStudentCode,
-      isOnline,
-      usageCount, incrementUsage, isRegistered, studentProfile, updateStudentProfile,
-      // studyUsageCount removed
-      // incrementStudyUsage removed
-      registerStudent, login, registerTeacher, loginParent, recoverStudentId, loginTeacher, resetPassword,
-      teacherUsageCount, incrementTeacherUsage,
-      teacherDarasaUsage, incrementTeacherDarasaUsage,
-      teacherProfile, updateTeacherProfile, teacherHistory,
-      saveTeacherActivity,
-      deleteTeacherActivity,
-      teacherWallet,
-      isAvailableForTutoring,
-      toggleTutoringAvailability,
-      requestWithdrawal,
-      fetchEarnings,
-      // Revision
-      revisionUsageCount, incrementRevisionUsage,
-      isPro, subscriptionPlan, subscriptionExpiry, upgradeAccount, verifySubscription,
-      userId,
-      activeTutoringRequests, createTutoringRequest, acceptTutoringRequest, submitTutoringResponse,
-      rateTutoringResponse,
-      chatMessages, sendChatMessage, fetchChatMessages,
-      chatApproved, setParentPin, verifyChatPin,
-      // Marketplace
-      marketplaceMaterials, purchasedMaterialIds, listMaterial, purchaseMaterial,
-      schoolProfile, loginSchool, registerSchool, registerStudentForSchool,
-      schoolStats, schoolTeachers, fetchSchoolStats, addTeacherToSchool, addStudentToSchool, removeUserFromSchool,
-      schoolMaterials, shareSchoolMaterial, deleteSchoolMaterial, fetchSchoolMaterials, updateSchoolProfile,
-      language, toggleLanguage,
-      logout,
-      startGuestSession,
-      availableQuizzes,
-      fetchAvailableQuizzes,
-      resources,
-      fetchResources,
-      downloadUsageCount,
-      incrementDownloadUsage,
-      extraDownloads,
-      grantExtraDownloads,
-      sessionError,
-      resolveSessionConflict,
-      setSessionError,
-      refreshProfile,
-    }}
-    >
+    <AppContext.Provider value={contextValue}>
       {children}
     </AppContext.Provider>
   );

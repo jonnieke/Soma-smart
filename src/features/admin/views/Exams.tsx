@@ -333,6 +333,7 @@ export const ExamsView: React.FC = () => {
                                                         <option>German</option>
                                                         <option>Arabic</option>
                                                         <option>Integrated Science</option>
+                                                        <option>Music</option>
                                                         <option>Business Studies</option>
                                                         <option>Physical Education (PE)</option>
                                                     </select>

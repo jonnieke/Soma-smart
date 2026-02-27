@@ -22,8 +22,12 @@ h6,
 }
 
 body {
-  @apply bg-gray-50 text-slate-900 antialiased;
+  @apply bg-gray-50 text-slate-900 antialiased transition-colors duration-300;
   text-rendering: optimizeLegibility;
+}
+
+.dark body {
+  @apply bg-slate-950 text-slate-100;
 }
 
 /* Custom Scrollbar */
@@ -36,18 +40,12 @@ body {
   background: transparent;
 }
 
-@keyframes shimmer {
-  0% {
-    background-position: 200% 0;
-  }
-
-  100% {
-    background-position: -200% 0;
-  }
+.dark ::-webkit-scrollbar-thumb {
+  background: #334155;
 }
 
-.animate-shimmer {
-  animation: shimmer 3s infinite linear;
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #475569;
 }
 
 ::-webkit-scrollbar-thumb {
@@ -61,7 +59,11 @@ body {
 
 /* Glassmorphism Utilities */
 .glass {
-  @apply bg-white/70 backdrop-blur-lg border border-white/20 shadow-xl;
+  @apply bg-white/70 backdrop-blur-lg border border-white/20 shadow-xl transition-all duration-300;
+}
+
+.dark .glass {
+  @apply bg-slate-900/70 border-slate-700/50 shadow-2xl;
 }
 
 /* Animation Utilities */

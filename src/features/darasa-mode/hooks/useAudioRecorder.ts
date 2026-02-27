@@ -129,6 +129,9 @@ export const useAudioRecorder = (onCaptureComplete: (blob: Blob) => void): UseAu
         try {
             setError(null);
             // 1. Get Mic Stream
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                throw new Error("Microphone access is not supported in this browser or context (HTTPS may be required).");
+            }
             const stream = await navigator.mediaDevices.getUserMedia({
                 audio: {
                     echoCancellation: true,

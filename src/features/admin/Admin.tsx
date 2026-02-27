@@ -7,6 +7,7 @@ import { FinancialsView } from './views/Financials';
 import { SettingsView } from './views/Settings';
 import { CurriculumView } from './views/Curriculum';
 import { ExamsView } from './views/Exams';
+import { AnalyticsView } from './views/Analytics';
 import { Lock } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 
@@ -99,6 +100,7 @@ export const AdminDashboard: React.FC<AdminProps> = ({ onNavigate }) => {
             {activeTab === 'FINANCE' && <FinancialsView />}
             {activeTab === 'CURRICULUM' && <CurriculumView />}
             {activeTab === 'EXAMS' && <ExamsView />}
+            {activeTab === 'ANALYTICS' && <AnalyticsView />}
             {activeTab === 'SETTINGS' && <SettingsView />}
         </AdminLayout>
     );

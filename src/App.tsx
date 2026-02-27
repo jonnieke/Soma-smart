@@ -5,6 +5,8 @@ import { ConnectivityBanner } from './components/ConnectivityBanner';
 import { AskSomo } from './components/AskSomo';
 import { SessionConflictModal } from './components/SessionConflictModal';
 import { supabase } from './lib/supabase';
+import ReactGA from "react-ga4";
+import { useLocation } from 'react-router-dom';
 
 // Lazy Load Pages for Performance
 const LandingPage = React.lazy(() => import('./pages/LandingPage').then(module => ({ default: module.LandingPage })));
@@ -37,6 +39,23 @@ const DarasaPage = () => {
 
 const App: React.FC = () => {
     const navigate = useNavigate();
+    const location = useLocation();
+
+    // Initialize Google Analytics
+    React.useEffect(() => {
+        const gaId = import.meta.env.VITE_GA_MEASUREMENT_ID;
+        if (gaId && gaId !== 'G-CHECK_GA_DASHBOARD') {
+            ReactGA.initialize(gaId);
+            console.log("Analytics Initialized");
+        }
+    }, []);
+
+    // Track page views on route change
+    React.useEffect(() => {
+        if (import.meta.env.VITE_GA_MEASUREMENT_ID !== 'G-CHECK_GA_DASHBOARD') {
+            ReactGA.send({ hitType: "pageview", page: location.pathname + location.search });
+        }
+    }, [location]);
 
     // Listen for auth state changes (Recovery flow)
     React.useEffect(() => {

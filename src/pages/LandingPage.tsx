@@ -29,6 +29,7 @@ import { LoginModal } from '../components/LoginModal';
 import { LogoutModal } from '../components/LogoutModal';
 import { translations } from '../data/translations';
 import { SchoolCalendar } from '../components/SchoolCalendar';
+import { ThemeToggle } from '../components/ThemeToggle';
 
 interface LandingPageProps {
     authError?: {
@@ -201,7 +202,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
     };
 
     return (
-        <div className="min-h-screen bg-white font-sans text-gray-900 overflow-x-hidden">
+        <div className="min-h-screen bg-white dark:bg-slate-950 font-sans text-gray-900 dark:text-slate-100 overflow-x-hidden transition-colors duration-300">
             {/* Global Auth Error Banner */}
             <AnimatePresence>
                 {authError && (
@@ -240,26 +241,30 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
             </AnimatePresence>
 
             <Helmet>
-                <title>Somo Smart | Kenya's Premium AI Learning & Revision App</title>
-                <meta name="description" content="Somo Smart is the ultimate AI learning platform for Kenyan CBC and KCSE students. Access instantly generated quizzes, CBC/8-4-4 past papers, and expert AI-assisted tutoring." />
-                <meta name="keywords" content="Somo Smart, learning app Kenya, KCSE revision, CBC past papers, AI tutor Kenya, primary school revision, secondary school studying, 8-4-4, SomoSmart, Somo AI" />
+                <title>Somo Smart | Kenya's #1 AI Exam & Revision Assistant (KCSE, KPSEA, JSS)</title>
+                <meta name="description" content="Master your exams with Somo Smart. Kenya's premier AI platform for KCSE, KPSEA, and Junior School revision. Get instant explanations, auto-marked past papers, and personalized study notes." />
+                <meta name="keywords" content="Somo Smart, KCSE revision 2024, KPSEA past papers, JSS revision notes, AI tutor Kenya, Kenyan curriculum AI, SomoSmart app, KILEA revision, CBE study assistant" />
 
-                {/* AIO specific meta tags */}
+                {/* AIO/SEO specific meta tags */}
                 <meta name="ai-search-index" content="index" />
                 <meta name="ai-knowledge-base" content="official" />
-                <meta name="educational-framework" content="CBC, KCSE" />
-                <meta name="target-audience" content="Learners, Teachers, Parents" />
-                <meta name="core-features" content="AI Study Assistant, Curriculum-aligned Past Papers, Darasa Mode, Smart Quizzes" />
+                <meta name="educational-framework" content="CBE, 8-4-4, KCSE, KPSEA, KJSEA" />
+                <meta name="target-audience" content="Learners, Teachers, Parents, School Administrators" />
+                <meta name="core-features" content="AI Smart Exam Assistant, Instant Explanations, Auto-Grading, Topical Quizzes, CBE Notes" />
 
-                {/* Open Graph */}
-                <meta property="og:title" content="Somo Smart | Kenya's Premium AI Learning & Revision App" />
-                <meta property="og:description" content="Transform how you study with Somo Smart. Explore AI-powered testing, customized CBC/KCSE revision past papers, and a 24/7 AI tutor." />
+                {/* Search Engine Optimization */}
+                <meta name="robots" content="index, follow" />
+                <meta name="author" content="Somo Smart" />
+                <meta property="og:title" content="Somo Smart | Your Smart Exam Assistant - Improve Grades NOW!" />
+                <meta property="og:description" content="Transform your revision with AI. Access verified KCSE, KPSEA, and JSS materials with instant smart feedback." />
+                <meta property="og:image" content="https://somaai.co.ke/og-image.jpg" />
                 <meta property="og:type" content="website" />
                 <meta property="og:url" content="https://somaai.co.ke/" />
 
-                {/* Twitter */}
-                <meta name="twitter:title" content="Somo Smart | Premium AI Learning Kenya" />
-                <meta name="twitter:description" content="AI-assisted learning and revision platform for Kenyan students. CBC, KCSE, and JSS materials." />
+                {/* Twitter Meta */}
+                <meta name="twitter:card" content="summary_large_image" />
+                <meta name="twitter:title" content="Somo Smart | Kenya's Best AI Study App" />
+                <meta name="twitter:description" content="Improve your grades with AI. All Kenyan exams supported: KCSE, KPSEA, JSS." />
 
                 <link rel="canonical" href="https://somaai.co.ke/" />
             </Helmet>
@@ -268,7 +273,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
             <motion.header
                 initial={{ y: -20, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
-                className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm shadow-sm"
+                className="sticky top-0 z-50 bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm shadow-sm border-b dark:border-slate-800 transition-colors"
             >
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex justify-between items-center py-3">
@@ -276,19 +281,20 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                         <div className="flex items-center gap-3 cursor-pointer" onClick={() => window.scrollTo(0, 0)}>
                             <img src={logoImg} alt="Somo Smart Logo" className="w-14 h-14 object-contain" />
                             <div className="hidden sm:block">
-                                <h1 className="text-2xl font-bold text-blue-900 leading-none tracking-tight">Somo Smart</h1>
-                                <p className="text-[10px] text-slate-500 font-semibold tracking-wide uppercase mt-0.5">Smart Study Assistant</p>
+                                <h1 className="text-2xl font-bold text-blue-900 dark:text-blue-400 leading-none tracking-tight">Somo Smart</h1>
+                                <p className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold tracking-wide uppercase mt-0.5">Smart Study Assistant</p>
                             </div>
                         </div>
 
                         {/* Desktop Nav â€” 3 items + CTA */}
                         <nav className="hidden md:flex items-center gap-8">
-                            <a href="#how-it-works" className="text-slate-600 hover:text-blue-600 font-medium transition-colors text-sm">How It Works</a>
-                            <button onClick={() => navigate('/pricing')} className="text-slate-600 hover:text-blue-600 font-medium transition-colors text-sm">Pricing</button>
-                            <button onClick={() => setShowLogin(true)} className="text-slate-600 hover:text-blue-600 font-medium transition-colors text-sm">Login</button>
+                            <a href="#how-it-works" className="text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors text-sm">How It Works</a>
+                            <button onClick={() => navigate('/pricing')} className="text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors text-sm">Pricing</button>
+                            <button onClick={() => setShowLogin(true)} className="text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors text-sm">Login</button>
                             <button onClick={toggleLanguage} className="text-slate-400 hover:text-slate-600 transition-colors" title="Switch language">
                                 <Globe className="w-4 h-4" />
                             </button>
+                            <ThemeToggle />
                             <button
                                 onClick={() => handleRoleSelect(UserRole.LEARNER)}
                                 className="bg-[#5b61de] text-white px-6 py-2.5 rounded-xl font-bold text-sm hover:bg-[#4a50d0] transition-all shadow-md shadow-indigo-200 hover:-translate-y-0.5"
@@ -333,8 +339,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                     <Users className="w-5 h-5 text-slate-400" /> Login
                                 </button>
                                 <button onClick={() => { toggleLanguage(); setMobileMenuOpen(false); }} className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 text-slate-400 font-medium text-sm">
-                                    <Globe className="w-4 h-4" /> {language === 'EN' ? 'FranÃ§ais' : 'English'}
+                                    <Globe className="w-4 h-4" /> {language === 'EN' ? 'Français' : 'English'}
                                 </button>
+                                <div className="p-3">
+                                    <ThemeToggle className="w-full justify-center" />
+                                </div>
                             </nav>
                         </motion.div>
                     )}
@@ -342,7 +351,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
             </motion.header>
 
             {/* --- HERO SECTION --- */}
-            <section className="relative overflow-hidden bg-gradient-to-b from-white via-slate-50/50 to-white pt-8 pb-16 md:pt-12 md:pb-24">
+            <section className="relative overflow-hidden bg-gradient-to-b from-white via-slate-50/50 to-white dark:from-slate-950 dark:via-slate-900/50 dark:to-slate-950 pt-8 pb-16 md:pt-12 md:pb-24 transition-colors">
                 {/* Background Hero Image Overlay */}
                 <div className="absolute inset-0 z-0 pointer-events-none opacity-20 flex items-center justify-center overflow-hidden">
                     <img
@@ -352,22 +361,22 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                     />
                 </div>
 
-                <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
-                    {/* Headline â€” answers WHO + WHAT in 3 seconds */}
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
+                    {/* Headline — answers WHO + WHAT in 3 seconds */}
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.6 }}
                     >
-                        <h1 className="text-4xl md:text-6xl lg:text-7xl font-extrabold text-[#1a2b5e] tracking-tight leading-[1.05] mb-6">
+                        <h1 className="text-4xl md:text-6xl lg:text-7xl font-extrabold text-[#1a2b5e] dark:text-blue-100 tracking-tight leading-[1.05] mb-6">
                             Kenya's #1 Smart{' '}
                             <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#5b61de] to-[#2cb674]">Study Assistant</span>
                         </h1>
-                        <p className="text-lg md:text-xl text-slate-600 max-w-2xl mx-auto leading-relaxed mb-4">
+                        <p className="text-lg md:text-xl text-slate-600 dark:text-slate-400 max-w-2xl mx-auto leading-relaxed mb-4">
                             Scan homework, get instant Smart explanations, revise with past papers all aligned to <strong>CBE & KCSE</strong>.
                         </p>
-                        <p className="text-sm text-slate-400 font-medium">
-                            Trusted by <strong className="text-slate-600">1,200+ learners</strong> and <strong className="text-slate-600">15+ schools</strong> across Kenya
+                        <p className="text-sm text-slate-400 dark:text-slate-500 font-medium">
+                            Trusted by <strong className="text-slate-600 dark:text-slate-300">1,200+ learners</strong> and <strong className="text-slate-600 dark:text-slate-300">15+ schools</strong> across Kenya
                         </p>
                     </motion.div>
 
@@ -379,29 +388,51 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                         className="mt-12 mb-8"
                     >
                         <div className="flex items-center justify-center gap-4 mb-8">
-                            <div className="h-[2px] bg-slate-200 w-12 md:w-24 rounded-full"></div>
-                            <p className="text-sm font-black uppercase tracking-[0.3em] text-slate-600 bg-white/80 px-6 py-2 rounded-full border border-slate-200 shadow-sm backdrop-blur-md">I am a...</p>
-                            <div className="h-[2px] bg-slate-200 w-12 md:w-24 rounded-full"></div>
+                            <div className="h-[2px] bg-slate-200 dark:bg-slate-800 w-12 md:w-24 rounded-full"></div>
+                            <p className="text-sm font-black uppercase tracking-[0.3em] text-slate-600 dark:text-slate-400 bg-white/80 dark:bg-slate-900/80 px-6 py-2 rounded-full border border-slate-200 dark:border-slate-800 shadow-sm backdrop-blur-md">I am a...</p>
+                            <div className="h-[2px] bg-slate-200 dark:bg-slate-800 w-12 md:w-24 rounded-full"></div>
                         </div>
-                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 max-w-4xl mx-auto">
+                        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 max-w-6xl mx-auto">
                             {/* Student Lane */}
                             <motion.button
                                 whileHover={{ y: -6, scale: 1.02 }}
                                 whileTap={{ scale: 0.98 }}
                                 onClick={() => handleRoleSelect(UserRole.LEARNER)}
-                                className="bg-gradient-to-br from-white/95 to-orange-50/50 backdrop-blur rounded-2xl p-7 border border-slate-200 border-t-4 border-t-orange-500 shadow-xl shadow-slate-300/50 hover:shadow-2xl hover:shadow-orange-500/20 hover:border-orange-400 transition-all duration-300 text-left group relative overflow-hidden flex flex-col h-full"
+                                className="bg-gradient-to-br from-white/95 to-blue-50/50 dark:from-slate-900/95 dark:to-blue-950/20 backdrop-blur rounded-2xl p-6 border border-slate-200 dark:border-slate-800 border-t-4 border-t-blue-500 shadow-xl shadow-slate-300/50 dark:shadow-black/20 hover:shadow-2xl hover:shadow-blue-500/20 hover:border-blue-400 transition-all duration-300 text-left group relative overflow-hidden flex flex-col h-full"
                             >
                                 <div className="absolute -right-4 -bottom-4 opacity-[0.03] group-hover:opacity-[0.06] transition-opacity">
                                     <Baby className="w-32 h-32" />
                                 </div>
-                                <div className="w-14 h-14 bg-orange-100/80 text-orange-600 rounded-xl flex items-center justify-center mb-5 group-hover:scale-110 transition-transform shadow-sm">
-                                    <Baby className="w-7 h-7" />
+                                <div className="w-12 h-12 bg-blue-100/80 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-sm">
+                                    <Baby className="w-6 h-6" />
                                 </div>
-                                <h3 className="font-extrabold text-slate-900 text-xl mb-2">Student</h3>
-                                <p className="text-sm text-slate-600 leading-relaxed mb-6 flex-grow">Scan homework, get instant AI explanations</p>
+                                <h3 className="font-extrabold text-slate-900 dark:text-white text-lg mb-1">Student</h3>
+                                <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed mb-6 flex-grow">Scan homework, get instant AI explanations</p>
                                 <div className="mt-auto relative z-10">
-                                    <span className="text-xs font-bold text-white bg-orange-500 px-4 py-3 rounded-xl uppercase tracking-wider flex items-center justify-center gap-2 group-hover:bg-orange-600 transition-colors w-full shadow-md shadow-orange-500/20">
+                                    <span className="text-xs font-bold text-white bg-blue-500 px-4 py-3 rounded-xl uppercase tracking-wider flex items-center justify-center gap-2 group-hover:bg-blue-600 transition-colors w-full shadow-md shadow-blue-500/20">
                                         Start Free <ArrowRight className="w-4 h-4" />
+                                    </span>
+                                </div>
+                            </motion.button>
+
+                            {/* Candidate Lane (Revision Hub) */}
+                            <motion.button
+                                whileHover={{ y: -6, scale: 1.02 }}
+                                whileTap={{ scale: 0.98 }}
+                                onClick={() => navigate('/revision')}
+                                className="bg-gradient-to-br from-white/95 to-amber-50/70 dark:from-slate-900/95 dark:to-amber-950/20 backdrop-blur rounded-[2rem] p-6 border-2 border-amber-200 dark:border-amber-800 border-t-8 border-t-amber-500 shadow-xl hover:shadow-2xl hover:shadow-amber-500/30 hover:border-amber-400 transition-all duration-300 text-left group relative overflow-hidden flex flex-col h-full ring-4 ring-amber-50 dark:ring-amber-900/10 min-h-[220px]"
+                            >
+                                <div className="absolute -right-4 -bottom-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                                    <Zap className="w-32 h-32 text-amber-500" />
+                                </div>
+                                <div className="w-12 h-12 bg-amber-500 text-white rounded-xl flex items-center justify-center mb-4 group-hover:rotate-12 transition-transform shadow-lg shadow-orange-200 dark:shadow-none">
+                                    <Sparkles className="w-6 h-6" />
+                                </div>
+                                <h3 className="font-black text-slate-900 dark:text-white text-lg mb-1">Candidates</h3>
+                                <p className="text-xs text-slate-600 dark:text-slate-400 font-bold leading-relaxed mb-6 flex-grow">Smart Exam Hub: KCSE, KPSEA & JSS Revision</p>
+                                <div className="mt-auto relative z-10">
+                                    <span className="text-xs font-black text-white bg-gradient-to-r from-amber-600 to-orange-600 px-4 py-3 rounded-xl uppercase tracking-wider flex items-center justify-center gap-2 group-hover:from-amber-700 group-hover:to-orange-700 transition-colors w-full shadow-lg shadow-orange-500/20">
+                                        Open Hub <Zap className="w-4 h-4 fill-current" />
                                     </span>
                                 </div>
                             </motion.button>
@@ -411,19 +442,19 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                 whileHover={{ y: -6, scale: 1.02 }}
                                 whileTap={{ scale: 0.98 }}
                                 onClick={() => handleRoleSelect(UserRole.TEACHER)}
-                                className="bg-gradient-to-br from-white/95 to-blue-50/50 backdrop-blur rounded-2xl p-7 border border-slate-200 border-t-4 border-t-blue-500 shadow-xl shadow-slate-300/50 hover:shadow-2xl hover:shadow-blue-500/20 hover:border-blue-400 transition-all duration-300 text-left group relative overflow-hidden flex flex-col h-full"
+                                className="bg-gradient-to-br from-white/95 to-indigo-50/50 dark:from-slate-900/95 dark:to-indigo-950/20 backdrop-blur rounded-2xl p-6 border border-slate-200 dark:border-slate-800 border-t-4 border-t-indigo-500 shadow-xl shadow-slate-300/50 dark:shadow-black/20 hover:shadow-2xl hover:shadow-indigo-500/20 hover:border-indigo-400 transition-all duration-300 text-left group relative overflow-hidden flex flex-col h-full"
                             >
                                 <div className="absolute -right-4 -bottom-4 opacity-[0.03] group-hover:opacity-[0.06] transition-opacity">
-                                    <GraduationCap className="w-32 h-32" />
+                                    <Users className="w-32 h-32" />
                                 </div>
-                                <div className="w-14 h-14 bg-blue-100/80 text-blue-600 rounded-xl flex items-center justify-center mb-5 group-hover:scale-110 transition-transform shadow-sm">
-                                    <GraduationCap className="w-7 h-7" />
+                                <div className="w-12 h-12 bg-indigo-100/80 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-sm">
+                                    <Users className="w-6 h-6" />
                                 </div>
-                                <h3 className="font-extrabold text-slate-900 text-xl mb-2">Teacher</h3>
-                                <p className="text-sm text-slate-600 leading-relaxed mb-6 flex-grow">Auto-mark, generate notes, save hours</p>
+                                <h3 className="font-extrabold text-slate-900 dark:text-white text-lg mb-1">Teacher</h3>
+                                <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed mb-6 flex-grow">Auto-grade exams & generate CBE lesson plans</p>
                                 <div className="mt-auto relative z-10">
-                                    <span className="text-xs font-bold text-white bg-blue-600 px-4 py-3 rounded-xl uppercase tracking-wider flex items-center justify-center gap-2 group-hover:bg-blue-700 transition-colors w-full shadow-md shadow-blue-500/20">
-                                        Try Tools <ArrowRight className="w-4 h-4" />
+                                    <span className="text-xs font-bold text-white bg-indigo-500 px-4 py-3 rounded-xl uppercase tracking-wider flex items-center justify-center gap-2 group-hover:bg-indigo-600 transition-colors w-full shadow-md shadow-indigo-500/20">
+                                        Teacher Login <ArrowRight className="w-4 h-4" />
                                     </span>
                                 </div>
                             </motion.button>
@@ -433,19 +464,19 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                 whileHover={{ y: -6, scale: 1.02 }}
                                 whileTap={{ scale: 0.98 }}
                                 onClick={() => handleRoleSelect(UserRole.PARENT)}
-                                className="bg-gradient-to-br from-white/95 to-teal-50/50 backdrop-blur rounded-2xl p-7 border border-slate-200 border-t-4 border-t-teal-500 shadow-xl shadow-slate-300/50 hover:shadow-2xl hover:shadow-teal-500/20 hover:border-teal-400 transition-all duration-300 text-left group relative overflow-hidden flex flex-col h-full"
+                                className="bg-gradient-to-br from-white/95 to-emerald-50/50 dark:from-slate-900/95 dark:to-emerald-950/20 backdrop-blur rounded-2xl p-6 border border-slate-200 dark:border-slate-800 border-t-4 border-t-emerald-500 shadow-xl shadow-slate-300/50 dark:shadow-black/20 hover:shadow-2xl hover:shadow-emerald-500/20 hover:border-emerald-400 transition-all duration-300 text-left group relative overflow-hidden flex flex-col h-full"
                             >
                                 <div className="absolute -right-4 -bottom-4 opacity-[0.03] group-hover:opacity-[0.06] transition-opacity">
                                     <Users className="w-32 h-32" />
                                 </div>
-                                <div className="w-14 h-14 bg-teal-100/80 text-teal-600 rounded-xl flex items-center justify-center mb-5 group-hover:scale-110 transition-transform shadow-sm">
-                                    <Users className="w-7 h-7" />
+                                <div className="w-12 h-12 bg-emerald-100/80 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-sm">
+                                    <Users className="w-6 h-6" />
                                 </div>
-                                <h3 className="font-extrabold text-slate-900 text-xl mb-2">Parent</h3>
-                                <p className="text-sm text-slate-600 leading-relaxed mb-6 flex-grow">See your child's real progress</p>
+                                <h3 className="font-extrabold text-slate-900 dark:text-white text-lg mb-1">Parent</h3>
+                                <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed mb-6 flex-grow">Track your child's learning & competency progress</p>
                                 <div className="mt-auto relative z-10">
-                                    <span className="text-xs font-bold text-white bg-teal-600 px-4 py-3 rounded-xl uppercase tracking-wider flex items-center justify-center gap-2 group-hover:bg-teal-700 transition-colors w-full shadow-md shadow-teal-500/20">
-                                        Track Progress <ArrowRight className="w-4 h-4" />
+                                    <span className="text-xs font-bold text-white bg-emerald-500 px-4 py-3 rounded-xl uppercase tracking-wider flex items-center justify-center gap-2 group-hover:bg-emerald-600 transition-colors w-full shadow-md shadow-emerald-500/20">
+                                        Parent View <ArrowRight className="w-4 h-4" />
                                     </span>
                                 </div>
                             </motion.button>
@@ -455,63 +486,57 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                 whileHover={{ y: -6, scale: 1.02 }}
                                 whileTap={{ scale: 0.98 }}
                                 onClick={() => handleRoleSelect(UserRole.SCHOOL)}
-                                className="bg-gradient-to-br from-white/95 to-indigo-50/50 backdrop-blur rounded-2xl p-7 border border-slate-200 border-t-4 border-t-indigo-500 shadow-xl shadow-slate-300/50 hover:shadow-2xl hover:shadow-indigo-500/20 hover:border-indigo-400 transition-all duration-300 text-left group relative overflow-hidden flex flex-col h-full"
+                                className="bg-gradient-to-br from-white/95 to-blue-50/50 dark:from-slate-900/95 dark:to-blue-950/20 backdrop-blur rounded-2xl p-6 border border-slate-200 dark:border-slate-800 border-t-4 border-t-[#1a2b5e] shadow-xl shadow-slate-300/50 dark:shadow-black/20 hover:shadow-2xl hover:shadow-blue-900/20 hover:border-blue-900 transition-all duration-300 text-left group relative overflow-hidden flex flex-col h-full"
                             >
                                 <div className="absolute -right-4 -bottom-4 opacity-[0.03] group-hover:opacity-[0.06] transition-opacity">
-                                    <Building2 className="w-32 h-32" />
+                                    <School className="w-32 h-32" />
                                 </div>
-                                <div className="w-14 h-14 bg-indigo-100/80 text-indigo-600 rounded-xl flex items-center justify-center mb-5 group-hover:scale-110 transition-transform shadow-sm">
-                                    <Building2 className="w-7 h-7" />
+                                <div className="w-12 h-12 bg-slate-100/80 dark:bg-slate-900/40 text-[#1a2b5e] dark:text-blue-400 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-sm">
+                                    <School className="w-6 h-6" />
                                 </div>
-                                <h3 className="font-extrabold text-slate-900 text-xl mb-2">School</h3>
-                                <p className="text-sm text-slate-600 leading-relaxed mb-6 flex-grow">Campus-wide analytics & control</p>
+                                <h3 className="font-extrabold text-slate-900 dark:text-white text-lg mb-1">School</h3>
+                                <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed mb-6 flex-grow">Complete institution deployment & analytics</p>
                                 <div className="mt-auto relative z-10">
-                                    <span className="text-xs font-bold text-white bg-indigo-600 px-4 py-3 rounded-xl uppercase tracking-wider flex items-center justify-center gap-2 group-hover:bg-indigo-700 transition-colors w-full shadow-md shadow-indigo-500/20">
-                                        Book Pilot <ArrowRight className="w-4 h-4" />
+                                    <span className="text-xs font-bold text-white bg-[#1a2b5e] px-4 py-3 rounded-xl uppercase tracking-wider flex items-center justify-center gap-2 group-hover:bg-[#111c3d] transition-colors w-full shadow-md">
+                                        Admin Panel <ArrowRight className="w-4 h-4" />
                                     </span>
                                 </div>
                             </motion.button>
                         </div>
                     </motion.div>
-
-                    {/* Hero Image moved to background overlay */}
                 </div>
-
-                {/* Background decoration */}
-                <div className="absolute top-1/4 left-0 w-72 h-72 bg-blue-100/30 rounded-full blur-[100px] pointer-events-none"></div>
-                <div className="absolute bottom-1/4 right-0 w-72 h-72 bg-indigo-100/30 rounded-full blur-[100px] pointer-events-none"></div>
             </section>
 
             <div className="w-full h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent"></div>
 
 
             {/* --- CBE/KCSE CURRICULUM ALIGNMENT --- */}
-            <section className="py-16 bg-white relative overflow-hidden">
+            <section className="py-16 bg-white dark:bg-slate-900 relative overflow-hidden transition-colors">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
                     <div className="grid lg:grid-cols-2 gap-12 items-center">
                         <div>
                             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 text-blue-700 font-bold text-xs mb-6 uppercase tracking-wider">
                                 <FileText className="w-4 h-4" /> Curriculum Aligned
                             </div>
-                            <h2 className="text-3xl md:text-5xl font-extrabold text-[#1a2b5e] mb-6 tracking-tight">
+                            <h2 className="text-3xl md:text-5xl font-extrabold text-[#1a2b5e] dark:text-blue-100 mb-6 tracking-tight">
                                 Built on Genuine <br className="hidden md:block" />
                                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#5b61de] to-[#2cb674]">CBE & KCSE Materials</span>
                             </h2>
-                            <p className="text-lg text-slate-600 mb-8 leading-relaxed">
+                            <p className="text-lg text-slate-600 dark:text-slate-400 mb-8 leading-relaxed">
                                 No generic AI fluff. Somo Smart uses actual teacher-created notes and past examinations to generate precise, curriculum-appropriate explanations.
                             </p>
 
                             <div className="space-y-4">
-                                <div className="p-5 rounded-2xl border border-slate-100 bg-slate-50 relative overflow-hidden group hover:border-blue-200 transition-colors">
+                                <div className="p-5 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 relative overflow-hidden group hover:border-blue-200 dark:hover:border-blue-700 transition-colors">
                                     <div className="absolute top-0 left-0 w-1 h-full bg-blue-500"></div>
                                     <div className="flex justify-between items-start mb-2">
-                                        <h4 className="font-bold text-slate-900">Grade 7 English — Report Writing</h4>
-                                        <span className="text-xs font-bold text-slate-400 bg-white px-2 py-1 rounded-md shadow-sm">Sample Query</span>
+                                        <h4 className="font-bold text-slate-900 dark:text-white">Grade 7 English — Report Writing</h4>
+                                        <span className="text-xs font-bold text-slate-400 dark:text-slate-500 bg-white dark:bg-slate-950 px-2 py-1 rounded-md shadow-sm">Sample Query</span>
                                     </div>
-                                    <p className="text-sm text-slate-600 italic mb-3">"How do I structure a factual report about a school event?"</p>
-                                    <div className="bg-white p-3 rounded-xl shadow-sm text-sm border border-slate-100 flex gap-3">
+                                    <p className="text-sm text-slate-600 dark:text-slate-400 italic mb-3">"How do I structure a factual report about a school event?"</p>
+                                    <div className="bg-white dark:bg-slate-900 p-3 rounded-xl shadow-sm text-sm border border-slate-100 dark:border-slate-800 flex gap-3">
                                         <CheckCircle className="w-5 h-5 text-green-500 shrink-0 mt-0.5" />
-                                        <span className="text-slate-700">Somo breaks down the CBE standard: Introduction (Who, What, Where, When), Body Paragraphs (Chronological facts), and Conclusion.</span>
+                                        <span className="text-slate-700 dark:text-slate-300">Somo breaks down the CBE standard: Introduction (Who, What, Where, When), Body Paragraphs (Chronological facts), and Conclusion.</span>
                                     </div>
                                 </div>
                             </div>
@@ -543,7 +568,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
             </section>
 
             {/* --- TEACHER WORKFLOW --- */}
-            <section className="py-16 bg-slate-50 relative overflow-hidden border-y border-slate-100">
+            <section className="py-16 bg-slate-50 dark:bg-slate-950 relative overflow-hidden border-y border-slate-100 dark:border-slate-800 transition-colors">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
                     <div className="text-center mb-12">
                         <h2 className="text-3xl md:text-5xl font-extrabold text-[#1a2b5e] mb-4 tracking-tight">Supercharge Your Teaching</h2>
@@ -551,33 +576,33 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                     </div>
 
                     <div className="grid md:grid-cols-3 gap-6">
-                        <div className="bg-white p-6 rounded-3xl shadow-md border border-slate-100 hover:shadow-xl transition-shadow">
-                            <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center mb-6">
+                        <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl shadow-md border border-slate-100 dark:border-slate-800 hover:shadow-xl transition-shadow">
+                            <div className="w-12 h-12 bg-indigo-50 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 rounded-xl flex items-center justify-center mb-6">
                                 <FileText className="w-6 h-6" />
                             </div>
-                            <h3 className="text-xl font-bold text-slate-900 mb-3">1. AI-Assisted Grading</h3>
-                            <p className="text-slate-600 text-sm leading-relaxed">
+                            <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-3">1. AI-Assisted Grading</h3>
+                            <p className="text-slate-600 dark:text-slate-400 text-sm leading-relaxed">
                                 Upload student essays or short-answer sheets. Somo analyzes them against your marking scheme and highlights areas for improvement within seconds.
                             </p>
                         </div>
 
-                        <div className="bg-white p-6 rounded-3xl shadow-md border border-slate-100 hover:shadow-xl transition-shadow relative">
+                        <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl shadow-md border border-slate-100 dark:border-slate-800 hover:shadow-xl transition-shadow relative">
                             <div className="absolute -top-3 -right-3 bg-red-500 text-white text-[10px] font-black uppercase tracking-wider py-1 px-3 rounded-full shadow-lg">New</div>
-                            <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center mb-6">
+                            <div className="w-12 h-12 bg-blue-50 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 rounded-xl flex items-center justify-center mb-6">
                                 <GraduationCap className="w-6 h-6" />
                             </div>
-                            <h3 className="text-xl font-bold text-slate-900 mb-3">2. Auto-Generate Lessons</h3>
-                            <p className="text-slate-600 text-sm leading-relaxed">
+                            <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-3">2. Auto-Generate Lessons</h3>
+                            <p className="text-slate-600 dark:text-slate-400 text-sm leading-relaxed">
                                 Enter a topic and target grade level. Somo instantly generates CBE-aligned lesson plans, class notes, and multiple-choice quizzes for your students.
                             </p>
                         </div>
 
-                        <div className="bg-white p-6 rounded-3xl shadow-md border border-slate-100 hover:shadow-xl transition-shadow">
-                            <div className="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center mb-6">
+                        <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl shadow-md border border-slate-100 dark:border-slate-800 hover:shadow-xl transition-shadow">
+                            <div className="w-12 h-12 bg-emerald-50 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 rounded-xl flex items-center justify-center mb-6">
                                 <BarChart className="w-6 h-6" />
                             </div>
-                            <h3 className="text-xl font-bold text-slate-900 mb-3">3. Track Progress</h3>
-                            <p className="text-slate-600 text-sm leading-relaxed">
+                            <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-3">3. Track Progress</h3>
+                            <p className="text-slate-600 dark:text-slate-400 text-sm leading-relaxed">
                                 View centralized analytics for your class. Identify exactly which CBE competencies students are struggling with and intervene early.
                             </p>
                         </div>
@@ -630,64 +655,15 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
 
             <div className="w-full h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent opacity-20"></div>
 
-            {/* --- TESTIMONIALS SECTION --- */}
-            <section className="py-12 md:py-24 relative overflow-hidden bg-slate-50/50">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+            {/* --- TESTIMONIALS --- */}
+            <section className="py-24 bg-white dark:bg-slate-900 transition-colors">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="text-center mb-16">
-                        <h2 className="text-3xl md:text-5xl font-extrabold text-blue-900 mb-4 tracking-tight">{t.testimonials.title}</h2>
-                        <div className="w-24 h-1.5 bg-gradient-to-r from-orange-400 to-red-500 mx-auto rounded-full"></div>
+                        <h2 className="text-3xl md:text-5xl font-extrabold text-[#1a2b5e] dark:text-blue-100 mb-6 tracking-tight">Voices of Success</h2>
+                        <p className="text-lg text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">See how Somo Smart is transforming the educational landscape for Kenyan students and teachers.</p>
                     </div>
 
                     <div className="grid md:grid-cols-3 gap-8">
-                        {/* Teacher Testimonial */}
-                        <motion.div
-                            whileHover={{ y: -5 }}
-                            className="bg-white p-8 rounded-3xl shadow-xl shadow-slate-100 border border-slate-100 relative"
-                        >
-                            <div className="absolute top-8 right-8 text-blue-100">
-                                <Quote className="w-12 h-12" />
-                            </div>
-                            <div className="flex items-center gap-4 mb-6">
-                                <div className="w-14 h-14 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-xl border-2 border-white shadow-lg">
-                                    mk
-                                </div>
-                                <div>
-                                    <h4 className="font-bold text-slate-900">{t.testimonials.teacher.name}</h4>
-                                    <p className="text-xs font-semibold text-blue-600 uppercase tracking-wider">Teacher</p>
-                                </div>
-                            </div>
-                            <p className="text-slate-600 italic leading-relaxed relative z-10">
-                                "{t.testimonials.teacher.quote}"
-                            </p>
-                            <div className="mt-6 pt-6 border-t border-slate-50 flex items-center gap-2 text-xs font-bold text-slate-400">
-                                <School className="w-4 h-4" /> ABC Primary School
-                            </div>
-                        </motion.div>
-
-                        {/* School Testimonial */}
-                        <motion.div
-                            whileHover={{ y: -5 }}
-                            className="bg-white p-8 rounded-3xl shadow-xl shadow-slate-100 border border-slate-100 relative"
-                        >
-                            <div className="absolute top-8 right-8 text-emerald-100">
-                                <Quote className="w-12 h-12" />
-                            </div>
-                            <div className="flex items-center gap-4 mb-6">
-                                <div className="w-14 h-14 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 font-bold text-xl border-2 border-white shadow-lg">
-                                    PO
-                                </div>
-                                <div>
-                                    <h4 className="font-bold text-slate-900">Principal Omondi</h4>
-                                    <p className="text-xs font-semibold text-emerald-600 uppercase tracking-wider">School Admin</p>
-                                </div>
-                            </div>
-                            <p className="text-slate-600 italic leading-relaxed relative z-10">
-                                "The analytics provided by Somo have transformed how we track student performance across the entire school. It's an essential tool for modern education."
-                            </p>
-                            <div className="mt-6 pt-6 border-t border-slate-50 flex items-center gap-2 text-xs font-bold text-slate-400">
-                                <Building2 className="w-4 h-4" /> Nairobi High School
-                            </div>
-                        </motion.div>
 
                         {/* Parent Testimonial */}
                         <motion.div

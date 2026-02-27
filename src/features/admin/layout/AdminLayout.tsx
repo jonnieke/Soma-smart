@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { LayoutDashboard, Users, CreditCard, Settings, LogOut, Menu, X, Bell, BookOpen, ClipboardCheck } from 'lucide-react';
+import { LayoutDashboard, Users, CreditCard, Settings, LogOut, Menu, X, Bell, BookOpen, ClipboardCheck, BarChart3 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ViewState } from '../../../types';
 
@@ -21,6 +21,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children, activeTab, o
         { id: 'FINANCE', label: 'Financials', icon: <CreditCard className="w-5 h-5" /> },
         { id: 'KNOWLEDGE', label: 'CBE Knowledge Base', icon: <BookOpen className="w-5 h-5 text-indigo-400" /> },
         { id: 'CURRICULUM', label: 'Curriculum & AI', icon: <BookOpen className="w-5 h-5" /> },
+        { id: 'ANALYTICS', label: 'Analytics', icon: <BarChart3 className="w-5 h-5" /> },
         { id: 'SETTINGS', label: 'System & Logs', icon: <Settings className="w-5 h-5" /> },
     ];
 
