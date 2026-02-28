@@ -282,8 +282,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                             <img src={logoImg} alt="Somo Smart Logo" className="h-14 sm:h-16 w-auto object-contain" />
                         </div>
 
-                        {/* Desktop Nav â€” 3 items + CTA */}
+                        {/* Desktop Nav */}
                         <nav className="hidden md:flex items-center gap-8">
+                            <button onClick={() => handleRoleSelect(UserRole.PARENT)} className="text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors text-sm">For Parents</button>
                             <a href="#how-it-works" className="text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors text-sm">How It Works</a>
                             <button onClick={() => navigate('/pricing')} className="text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors text-sm">Pricing</button>
                             <button onClick={() => setShowLogin(true)} className="text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors text-sm">Login</button>
@@ -328,6 +329,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                 <a href="#how-it-works" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 text-slate-600 font-medium">
                                     <BookOpen className="w-5 h-5 text-blue-500" /> How It Works
                                 </a>
+                                <button onClick={() => { handleRoleSelect(UserRole.PARENT); setMobileMenuOpen(false); }} className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 text-slate-600 font-medium">
+                                    <Users className="w-5 h-5 text-emerald-500" /> For Parents
+                                </button>
                                 <button onClick={() => { navigate('/pricing'); setMobileMenuOpen(false); }} className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 text-slate-600 font-medium">
                                     <CreditCard className="w-5 h-5 text-indigo-500" /> Pricing
                                 </button>
@@ -358,146 +362,58 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                 </div>
 
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
-                    {/* Headline — answers WHO + WHAT in 3 seconds */}
+                    {/* Hero Content Re-imagined */}
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.6 }}
+                        className="py-12 md:py-20"
                     >
-                        <h1 className="text-4xl md:text-6xl lg:text-7xl font-extrabold text-[#1a2b5e] dark:text-blue-100 tracking-tight leading-[1.05] mb-6">
-                            Kenya's #1 Smart{' '}
-                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#5b61de] to-[#2cb674]">Study Assistant</span>
-                        </h1>
-                        <p className="text-lg md:text-xl text-slate-600 dark:text-slate-400 max-w-2xl mx-auto leading-relaxed mb-4">
-                            Scan homework, get instant Smart explanations, revise with past papers all aligned to <strong>CBE & KCSE</strong>.
-                        </p>
-                        <p className="text-sm text-slate-400 dark:text-slate-500 font-medium">
-                            Trusted by <strong className="text-slate-600 dark:text-slate-300">1,200+ learners</strong> and <strong className="text-slate-600 dark:text-slate-300">15+ schools</strong> across Kenya
-                        </p>
-                    </motion.div>
-
-                    {/* "I am a..." Audience Selector Lanes */}
-                    <motion.div
-                        initial={{ opacity: 0, y: 30 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.6, delay: 0.2 }}
-                        className="mt-12 mb-8"
-                    >
-                        <div className="flex items-center justify-center gap-4 mb-8">
-                            <div className="h-[2px] bg-slate-200 dark:bg-slate-800 w-12 md:w-24 rounded-full"></div>
-                            <p className="text-sm font-black uppercase tracking-[0.3em] text-slate-600 dark:text-slate-400 bg-white/80 dark:bg-slate-900/80 px-6 py-2 rounded-full border border-slate-200 dark:border-slate-800 shadow-sm backdrop-blur-md">I am a...</p>
-                            <div className="h-[2px] bg-slate-200 dark:bg-slate-800 w-12 md:w-24 rounded-full"></div>
+                        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 text-blue-600 dark:text-blue-300 text-xs font-bold mb-8 uppercase tracking-widest shadow-sm">
+                            <Star className="w-3.5 h-3.5 fill-current" />
+                            Trusted by 1,200+ Kenyan learners and 15+ schools
                         </div>
-                        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 max-w-6xl mx-auto">
-                            {/* Student Lane */}
-                            <motion.button
-                                whileHover={{ y: -6, scale: 1.02 }}
-                                whileTap={{ scale: 0.98 }}
+
+                        <h1 className="text-5xl md:text-6xl lg:text-[5.5rem] font-black text-[#1a2b5e] dark:text-white tracking-tight leading-[1.05] mb-6 md:mb-8">
+                            Smarter CBE Learning.<br />
+                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#5b61de] to-[#2cb674]">Better Results.</span>
+                        </h1>
+                        <p className="text-lg md:text-xl lg:text-2xl text-slate-600 dark:text-slate-400 max-w-3xl mx-auto leading-relaxed mb-10 font-medium">
+                            Scan homework, revise past papers, and understand concepts instantly — aligned with <strong className="text-slate-800 dark:text-slate-200">CBE & KCSE</strong>.
+                        </p>
+
+                        {/* Primary Call to Action */}
+                        <div className="flex flex-col items-center justify-center gap-6 mb-8">
+                            <button
                                 onClick={() => handleRoleSelect(UserRole.LEARNER)}
-                                className="bg-gradient-to-br from-white/95 to-blue-50/50 dark:from-slate-900/95 dark:to-blue-950/20 backdrop-blur rounded-2xl p-6 border border-slate-200 dark:border-slate-800 border-t-4 border-t-blue-500 shadow-xl shadow-slate-300/50 dark:shadow-black/20 hover:shadow-2xl hover:shadow-blue-500/20 hover:border-blue-400 transition-all duration-300 text-left group relative overflow-hidden flex flex-col h-full"
+                                className="group relative inline-flex items-center justify-center gap-3 px-12 py-5 md:px-16 md:py-6 bg-gradient-to-r from-[#5b61de] to-indigo-600 text-white font-black text-xl rounded-full shadow-[0_20px_40px_-10px_rgba(91,97,222,0.4)] hover:shadow-[0_25px_50px_-12px_rgba(91,97,222,0.5)] hover:-translate-y-1 transition-all duration-300 overflow-hidden"
                             >
-                                <div className="absolute -right-4 -bottom-4 opacity-[0.03] group-hover:opacity-[0.06] transition-opacity">
-                                    <Baby className="w-32 h-32" />
-                                </div>
-                                <div className="w-12 h-12 bg-blue-100/80 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-sm">
-                                    <Baby className="w-6 h-6" />
-                                </div>
-                                <h3 className="font-extrabold text-slate-900 dark:text-white text-lg mb-1">Student</h3>
-                                <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed mb-6 flex-grow">Scan homework, get instant AI explanations</p>
-                                <div className="mt-auto relative z-10">
-                                    <span className="text-xs font-bold text-white bg-blue-500 px-4 py-3 rounded-xl uppercase tracking-wider flex items-center justify-center gap-2 group-hover:bg-blue-600 transition-colors w-full shadow-md shadow-blue-500/20">
-                                        Start Free <ArrowRight className="w-4 h-4" />
-                                    </span>
-                                </div>
-                            </motion.button>
+                                <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out"></div>
+                                <span className="relative z-10 transition-transform duration-300 group-hover:scale-105">Start Free</span>
+                                <ArrowRight className="w-6 h-6 relative z-10 transition-transform duration-300 group-hover:translate-x-1" />
+                            </button>
 
-                            {/* Candidate Lane (Revision Hub) */}
-                            <motion.button
-                                whileHover={{ y: -6, scale: 1.02 }}
-                                whileTap={{ scale: 0.98 }}
-                                onClick={() => navigate('/revision')}
-                                className="bg-gradient-to-br from-white/95 to-amber-50/70 dark:from-slate-900/95 dark:to-amber-950/20 backdrop-blur rounded-[2rem] p-6 border-2 border-amber-200 dark:border-amber-800 border-t-8 border-t-amber-500 shadow-xl hover:shadow-2xl hover:shadow-amber-500/30 hover:border-amber-400 transition-all duration-300 text-left group relative overflow-hidden flex flex-col h-full ring-4 ring-amber-50 dark:ring-amber-900/10 min-h-[220px]"
-                            >
-                                <div className="absolute -right-4 -bottom-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                                    <Zap className="w-32 h-32 text-amber-500" />
-                                </div>
-                                <div className="w-12 h-12 bg-amber-500 text-white rounded-xl flex items-center justify-center mb-4 group-hover:rotate-12 transition-transform shadow-lg shadow-orange-200 dark:shadow-none">
-                                    <Sparkles className="w-6 h-6" />
-                                </div>
-                                <h3 className="font-black text-slate-900 dark:text-white text-lg mb-1">Candidates</h3>
-                                <p className="text-xs text-slate-600 dark:text-slate-400 font-bold leading-relaxed mb-6 flex-grow">Smart Exam Hub: KCSE, KPSEA & JSS Revision</p>
-                                <div className="mt-auto relative z-10">
-                                    <span className="text-xs font-black text-white bg-gradient-to-r from-amber-600 to-orange-600 px-4 py-3 rounded-xl uppercase tracking-wider flex items-center justify-center gap-2 group-hover:from-amber-700 group-hover:to-orange-700 transition-colors w-full shadow-lg shadow-orange-500/20">
-                                        Open Hub <Zap className="w-4 h-4 fill-current" />
-                                    </span>
-                                </div>
-                            </motion.button>
-
-                            {/* Teacher Lane */}
-                            <motion.button
-                                whileHover={{ y: -6, scale: 1.02 }}
-                                whileTap={{ scale: 0.98 }}
-                                onClick={() => handleRoleSelect(UserRole.TEACHER)}
-                                className="bg-gradient-to-br from-white/95 to-indigo-50/50 dark:from-slate-900/95 dark:to-indigo-950/20 backdrop-blur rounded-2xl p-6 border border-slate-200 dark:border-slate-800 border-t-4 border-t-indigo-500 shadow-xl shadow-slate-300/50 dark:shadow-black/20 hover:shadow-2xl hover:shadow-indigo-500/20 hover:border-indigo-400 transition-all duration-300 text-left group relative overflow-hidden flex flex-col h-full"
-                            >
-                                <div className="absolute -right-4 -bottom-4 opacity-[0.03] group-hover:opacity-[0.06] transition-opacity">
-                                    <Users className="w-32 h-32" />
-                                </div>
-                                <div className="w-12 h-12 bg-indigo-100/80 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-sm">
-                                    <Users className="w-6 h-6" />
-                                </div>
-                                <h3 className="font-extrabold text-slate-900 dark:text-white text-lg mb-1">Teacher</h3>
-                                <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed mb-6 flex-grow">Auto-grade exams & generate CBE lesson plans</p>
-                                <div className="mt-auto relative z-10">
-                                    <span className="text-xs font-bold text-white bg-indigo-500 px-4 py-3 rounded-xl uppercase tracking-wider flex items-center justify-center gap-2 group-hover:bg-indigo-600 transition-colors w-full shadow-md shadow-indigo-500/20">
-                                        Teacher Login <ArrowRight className="w-4 h-4" />
-                                    </span>
-                                </div>
-                            </motion.button>
-
-                            {/* Parent Lane */}
-                            <motion.button
-                                whileHover={{ y: -6, scale: 1.02 }}
-                                whileTap={{ scale: 0.98 }}
-                                onClick={() => handleRoleSelect(UserRole.PARENT)}
-                                className="bg-gradient-to-br from-white/95 to-emerald-50/50 dark:from-slate-900/95 dark:to-emerald-950/20 backdrop-blur rounded-2xl p-6 border border-slate-200 dark:border-slate-800 border-t-4 border-t-emerald-500 shadow-xl shadow-slate-300/50 dark:shadow-black/20 hover:shadow-2xl hover:shadow-emerald-500/20 hover:border-emerald-400 transition-all duration-300 text-left group relative overflow-hidden flex flex-col h-full"
-                            >
-                                <div className="absolute -right-4 -bottom-4 opacity-[0.03] group-hover:opacity-[0.06] transition-opacity">
-                                    <Users className="w-32 h-32" />
-                                </div>
-                                <div className="w-12 h-12 bg-emerald-100/80 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-sm">
-                                    <Users className="w-6 h-6" />
-                                </div>
-                                <h3 className="font-extrabold text-slate-900 dark:text-white text-lg mb-1">Parent</h3>
-                                <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed mb-6 flex-grow">Track your child's learning & competency progress</p>
-                                <div className="mt-auto relative z-10">
-                                    <span className="text-xs font-bold text-white bg-emerald-500 px-4 py-3 rounded-xl uppercase tracking-wider flex items-center justify-center gap-2 group-hover:bg-emerald-600 transition-colors w-full shadow-md shadow-emerald-500/20">
-                                        Parent View <ArrowRight className="w-4 h-4" />
-                                    </span>
-                                </div>
-                            </motion.button>
-
-                            {/* School Lane */}
-                            <motion.button
-                                whileHover={{ y: -6, scale: 1.02 }}
-                                whileTap={{ scale: 0.98 }}
-                                onClick={() => handleRoleSelect(UserRole.SCHOOL)}
-                                className="bg-gradient-to-br from-white/95 to-blue-50/50 dark:from-slate-900/95 dark:to-blue-950/20 backdrop-blur rounded-2xl p-6 border border-slate-200 dark:border-slate-800 border-t-4 border-t-[#1a2b5e] shadow-xl shadow-slate-300/50 dark:shadow-black/20 hover:shadow-2xl hover:shadow-blue-900/20 hover:border-blue-900 transition-all duration-300 text-left group relative overflow-hidden flex flex-col h-full"
-                            >
-                                <div className="absolute -right-4 -bottom-4 opacity-[0.03] group-hover:opacity-[0.06] transition-opacity">
-                                    <School className="w-32 h-32" />
-                                </div>
-                                <div className="w-12 h-12 bg-slate-100/80 dark:bg-slate-900/40 text-[#1a2b5e] dark:text-blue-400 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-sm">
-                                    <School className="w-6 h-6" />
-                                </div>
-                                <h3 className="font-extrabold text-slate-900 dark:text-white text-lg mb-1">School</h3>
-                                <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed mb-6 flex-grow">Complete institution deployment & analytics</p>
-                                <div className="mt-auto relative z-10">
-                                    <span className="text-xs font-bold text-white bg-[#1a2b5e] px-4 py-3 rounded-xl uppercase tracking-wider flex items-center justify-center gap-2 group-hover:bg-[#111c3d] transition-colors w-full shadow-md">
-                                        Admin Panel <ArrowRight className="w-4 h-4" />
-                                    </span>
-                                </div>
-                            </motion.button>
+                            {/* Secondary Action Pills */}
+                            <div className="flex flex-wrap justify-center gap-3 md:gap-4 mt-2">
+                                <button
+                                    onClick={() => navigate('/revision')}
+                                    className="px-6 py-2.5 rounded-full border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 font-bold text-sm hover:border-amber-400 hover:text-amber-600 dark:hover:text-amber-400 hover:shadow-md transition-all flex items-center gap-2 group"
+                                >
+                                    <Zap className="w-4 h-4 text-amber-500 group-hover:scale-110 transition-transform" /> For Candidates
+                                </button>
+                                <button
+                                    onClick={() => handleRoleSelect(UserRole.TEACHER)}
+                                    className="px-6 py-2.5 rounded-full border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 font-bold text-sm hover:border-indigo-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:shadow-md transition-all flex items-center gap-2 group"
+                                >
+                                    <Users className="w-4 h-4 text-indigo-500 group-hover:scale-110 transition-transform" /> For Teachers
+                                </button>
+                                <button
+                                    onClick={() => handleRoleSelect(UserRole.SCHOOL)}
+                                    className="px-6 py-2.5 rounded-full border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 font-bold text-sm hover:border-blue-400 hover:text-blue-600 dark:hover:text-blue-400 hover:shadow-md transition-all flex items-center gap-2 group"
+                                >
+                                    <School className="w-4 h-4 text-blue-500 group-hover:scale-110 transition-transform" /> For Schools
+                                </button>
+                            </div>
                         </div>
                     </motion.div>
                 </div>
