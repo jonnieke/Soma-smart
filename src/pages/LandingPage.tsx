@@ -284,7 +284,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
 
                         {/* Desktop Nav */}
                         <nav className="hidden md:flex items-center gap-8">
-                            <button onClick={() => handleRoleSelect(UserRole.PARENT)} className="text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors text-sm">For Parents</button>
                             <a href="#how-it-works" className="text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors text-sm">How It Works</a>
                             <button onClick={() => navigate('/pricing')} className="text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors text-sm">Pricing</button>
                             <button onClick={() => setShowLogin(true)} className="text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors text-sm">Login</button>
@@ -329,9 +328,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                 <a href="#how-it-works" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 text-slate-600 font-medium">
                                     <BookOpen className="w-5 h-5 text-blue-500" /> How It Works
                                 </a>
-                                <button onClick={() => { handleRoleSelect(UserRole.PARENT); setMobileMenuOpen(false); }} className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 text-slate-600 font-medium">
-                                    <Users className="w-5 h-5 text-emerald-500" /> For Parents
-                                </button>
                                 <button onClick={() => { navigate('/pricing'); setMobileMenuOpen(false); }} className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 text-slate-600 font-medium">
                                     <CreditCard className="w-5 h-5 text-indigo-500" /> Pricing
                                 </button>
@@ -416,7 +412,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                             <p className="text-sm font-black uppercase tracking-[0.3em] text-slate-600 dark:text-slate-400 bg-white/80 dark:bg-slate-900/80 px-6 py-2 rounded-full border border-slate-200 dark:border-slate-800 shadow-sm backdrop-blur-md">I AM A...</p>
                             <div className="h-[2px] bg-slate-200 dark:bg-slate-800 w-12 md:w-24 rounded-full"></div>
                         </div>
-                        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 max-w-7xl mx-auto">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
                             {/* Student Lane */}
                             <motion.button
                                 whileHover={{ y: -6, scale: 1.02 }}
@@ -479,50 +475,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                 <div className="mt-auto relative z-10">
                                     <span className="text-sm font-black text-white bg-indigo-500 px-4 py-3.5 rounded-[1rem] uppercase tracking-wider flex items-center justify-between group-hover:bg-indigo-600 transition-colors w-full shadow-md shadow-indigo-500/20">
                                         FOR FREE <ArrowRight className="w-4 h-4" />
-                                    </span>
-                                </div>
-                            </motion.button>
-
-                            {/* Parent Lane */}
-                            <motion.button
-                                whileHover={{ y: -6, scale: 1.02 }}
-                                whileTap={{ scale: 0.98 }}
-                                onClick={() => handleRoleSelect(UserRole.PARENT)}
-                                className="bg-gradient-to-br from-white/95 to-emerald-50/50 dark:from-slate-900/95 dark:to-emerald-950/20 backdrop-blur rounded-[2rem] p-6 border-2 border-slate-100 dark:border-slate-800 shadow-xl shadow-slate-300/50 dark:shadow-black/20 hover:shadow-2xl hover:shadow-emerald-500/20 hover:border-emerald-400 transition-all duration-300 text-left group relative overflow-hidden flex flex-col h-full min-h-[260px]"
-                            >
-                                <div className="absolute -right-4 -bottom-4 opacity-[0.03] group-hover:opacity-[0.06] transition-opacity">
-                                    <Users className="w-32 h-32" />
-                                </div>
-                                <div className="w-14 h-14 bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 rounded-2xl flex items-center justify-center mb-5 group-hover:scale-110 transition-transform">
-                                    <Users className="w-7 h-7" />
-                                </div>
-                                <h3 className="font-extrabold text-slate-900 dark:text-white text-xl mb-2">Parent</h3>
-                                <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed mb-6 flex-grow font-medium">Track your child's learning & competency progress</p>
-                                <div className="mt-auto relative z-10">
-                                    <span className="text-sm font-black text-white bg-emerald-500 px-4 py-3.5 rounded-[1rem] uppercase tracking-wider flex items-center justify-between group-hover:bg-emerald-600 transition-colors w-full shadow-md shadow-emerald-500/20">
-                                        VIEW NOW <ArrowRight className="w-4 h-4" />
-                                    </span>
-                                </div>
-                            </motion.button>
-
-                            {/* School Lane */}
-                            <motion.button
-                                whileHover={{ y: -6, scale: 1.02 }}
-                                whileTap={{ scale: 0.98 }}
-                                onClick={() => handleRoleSelect(UserRole.SCHOOL)}
-                                className="bg-gradient-to-br from-white/95 to-blue-50/50 dark:from-slate-900/95 dark:to-blue-950/20 backdrop-blur rounded-[2rem] p-6 border-2 border-slate-100 dark:border-slate-800 shadow-xl shadow-slate-300/50 dark:shadow-black/20 hover:shadow-2xl hover:shadow-blue-900/20 hover:border-blue-900 transition-all duration-300 text-left group relative overflow-hidden flex flex-col h-full min-h-[260px] col-span-2 lg:col-span-1"
-                            >
-                                <div className="absolute -right-4 -bottom-4 opacity-[0.03] group-hover:opacity-[0.06] transition-opacity">
-                                    <School className="w-32 h-32" />
-                                </div>
-                                <div className="w-14 h-14 bg-slate-100 dark:bg-slate-900/40 text-[#1a2b5e] dark:text-blue-400 rounded-2xl flex items-center justify-center mb-5 group-hover:scale-110 transition-transform">
-                                    <School className="w-7 h-7" />
-                                </div>
-                                <h3 className="font-extrabold text-slate-900 dark:text-white text-xl mb-2">School</h3>
-                                <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed mb-6 flex-grow font-medium">Complete institution deployment & analytics</p>
-                                <div className="mt-auto relative z-10">
-                                    <span className="text-sm font-black text-white bg-[#1a2b5e] px-4 py-3.5 rounded-[1rem] uppercase tracking-wider flex items-center justify-between group-hover:bg-[#111c3d] transition-colors w-full shadow-md">
-                                        ADMIN PANEL <ArrowRight className="w-4 h-4" />
                                     </span>
                                 </div>
                             </motion.button>
