@@ -279,21 +279,22 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                     <div className="flex justify-between items-center py-3">
                         {/* Logo */}
                         <div className="flex items-center gap-3 cursor-pointer" onClick={() => window.scrollTo(0, 0)}>
-                            <img src={logoImg} alt="Somo Smart Logo" className="h-10 sm:h-12 w-auto object-contain transition-all hover:scale-[1.02]" />
+                            <img src={logoImg} alt="Somo Smart Logo" className="h-14 sm:h-16 w-auto object-contain" />
                         </div>
 
                         {/* Desktop Nav */}
-                        <nav className="hidden md:flex items-center gap-10">
-                            <a href="#how-it-works" className="text-slate-700 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 font-semibold transition-colors text-base">How It Works</a>
-                            <button onClick={() => navigate('/pricing')} className="text-slate-700 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 font-semibold transition-colors text-base">Pricing</button>
-                            <button onClick={() => setShowLogin(true)} className="text-slate-700 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 font-semibold transition-colors text-base">Login</button>
-                            <button onClick={toggleLanguage} className="text-slate-500 dark:text-slate-400 hover:text-blue-600 transition-colors p-1" title="Switch language">
-                                <Globe className="w-5 h-5" />
+                        <nav className="hidden md:flex items-center gap-8">
+                            <button onClick={() => handleRoleSelect(UserRole.PARENT)} className="text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors text-sm">For Parents</button>
+                            <a href="#how-it-works" className="text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors text-sm">How It Works</a>
+                            <button onClick={() => navigate('/pricing')} className="text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors text-sm">Pricing</button>
+                            <button onClick={() => setShowLogin(true)} className="text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors text-sm">Login</button>
+                            <button onClick={toggleLanguage} className="text-slate-400 hover:text-slate-600 transition-colors" title="Switch language">
+                                <Globe className="w-4 h-4" />
                             </button>
                             <ThemeToggle />
                             <button
                                 onClick={() => handleRoleSelect(UserRole.LEARNER)}
-                                className="bg-[#5b61de] text-white px-7 py-3 rounded-xl font-bold text-base hover:bg-[#4a50d0] transition-all shadow-md shadow-indigo-200 hover:-translate-y-0.5"
+                                className="bg-[#5b61de] text-white px-6 py-2.5 rounded-xl font-bold text-sm hover:bg-[#4a50d0] transition-all shadow-md shadow-indigo-200 hover:-translate-y-0.5"
                             >
                                 Get Started Free
                             </button>
@@ -328,6 +329,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                 <a href="#how-it-works" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 text-slate-600 font-medium">
                                     <BookOpen className="w-5 h-5 text-blue-500" /> How It Works
                                 </a>
+                                <button onClick={() => { handleRoleSelect(UserRole.PARENT); setMobileMenuOpen(false); }} className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 text-slate-600 font-medium">
+                                    <Users className="w-5 h-5 text-emerald-500" /> For Parents
+                                </button>
                                 <button onClick={() => { navigate('/pricing'); setMobileMenuOpen(false); }} className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 text-slate-600 font-medium">
                                     <CreditCard className="w-5 h-5 text-indigo-500" /> Pricing
                                 </button>
@@ -357,120 +361,171 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                     />
                 </div>
 
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-left">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
                     {/* Hero Content Re-imagined */}
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.6 }}
-                        className="py-12 md:py-20 lg:py-24"
+                        className="py-12 md:py-20"
                     >
-                        <div className="mb-10 lg:mb-12">
-                            <img src={logoImg} alt="Somo Smart Logo" className="h-16 md:h-20 lg:h-24 w-auto object-contain drop-shadow-md" />
-                        </div>
-
                         <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 text-blue-600 dark:text-blue-300 text-xs font-bold mb-8 uppercase tracking-widest shadow-sm">
                             <Star className="w-3.5 h-3.5 fill-current" />
                             Trusted by 1,200+ Kenyan learners and 15+ schools
                         </div>
 
-                        <h1 className="text-5xl md:text-6xl lg:text-[5.5rem] font-black text-[#1a2b5e] dark:text-white tracking-tight leading-[1.05] mb-6 md:mb-8 max-w-5xl">
+                        <h1 className="text-5xl md:text-6xl lg:text-[5.5rem] font-black text-[#1a2b5e] dark:text-white tracking-tight leading-[1.05] mb-6 md:mb-8">
                             Smarter CBE Learning.<br />
                             <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#5b61de] to-[#2cb674]">Better Results.</span>
                         </h1>
-                        <p className="text-lg md:text-xl lg:text-2xl text-slate-600 dark:text-slate-400 max-w-3xl leading-relaxed mb-10 font-medium">
+                        <p className="text-lg md:text-xl lg:text-2xl text-slate-600 dark:text-slate-400 max-w-3xl mx-auto leading-relaxed mb-10 font-medium">
                             Scan homework, revise past papers, and understand concepts instantly — aligned with <strong className="text-slate-800 dark:text-slate-200">CBE & KCSE</strong>.
                         </p>
 
                         {/* Primary Call to Action */}
-                        <div className="flex flex-col sm:flex-row items-center sm:items-start sm:justify-start gap-4 md:gap-6 mb-16">
-                            <button
-                                onClick={() => handleRoleSelect(UserRole.LEARNER)}
-                                className="group relative w-full sm:w-auto inline-flex items-center justify-center gap-3 px-10 py-4 md:px-12 md:py-5 bg-gradient-to-r from-[#5b61de] to-indigo-600 text-white font-black text-lg md:text-xl rounded-full shadow-[0_20px_40px_-10px_rgba(91,97,222,0.4)] hover:shadow-[0_25px_50px_-12px_rgba(91,97,222,0.5)] hover:-translate-y-1 transition-all duration-300 overflow-hidden"
-                            >
-                                <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out"></div>
-                                <span className="relative z-10 transition-transform duration-300 group-hover:scale-105">Start Free</span>
-                                <ArrowRight className="w-5 h-5 md:w-6 md:h-6 relative z-10 transition-transform duration-300 group-hover:translate-x-1" />
-                            </button>
-
-                            <button
-                                onClick={() => navigate('/revision')}
-                                className="group relative w-full sm:w-auto inline-flex items-center justify-center gap-3 px-10 py-4 md:px-12 md:py-5 bg-white dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-800 text-slate-800 dark:text-white font-black text-lg md:text-xl rounded-full shadow-lg hover:border-amber-400 hover:shadow-amber-500/20 hover:-translate-y-1 transition-all duration-300 overflow-hidden"
-                            >
-                                <span className="relative z-10 transition-transform duration-300 group-hover:scale-105">Help with Exams</span>
-                                <Zap className="w-5 h-5 md:w-6 md:h-6 text-amber-500 relative z-10 transition-transform duration-300 group-hover:scale-110" />
-                            </button>
+                        <div className="flex flex-col items-center justify-center gap-6 mb-12">
+                            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 w-full">
+                                <button
+                                    onClick={() => handleRoleSelect(UserRole.LEARNER)}
+                                    className="group relative inline-flex items-center justify-center gap-3 px-10 py-4 md:px-12 md:py-6 bg-gradient-to-r from-[#5b61de] to-indigo-600 text-white font-black text-lg md:text-xl rounded-full shadow-[0_20px_40px_-10px_rgba(91,97,222,0.4)] hover:shadow-[0_25px_50px_-12px_rgba(91,97,222,0.5)] hover:-translate-y-1 transition-all duration-300 overflow-hidden w-full sm:w-auto"
+                                >
+                                    <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out"></div>
+                                    <span className="relative z-10 transition-transform duration-300 group-hover:scale-105">Start Free</span>
+                                    <ArrowRight className="w-5 h-5 md:w-6 md:h-6 relative z-10 transition-transform duration-300 group-hover:translate-x-1" />
+                                </button>
+                                <button
+                                    onClick={() => navigate('/revision')}
+                                    className="group relative inline-flex items-center justify-center gap-3 px-10 py-4 md:px-12 md:py-6 bg-white dark:bg-slate-900 border-2 border-[#2cb674] text-[#2cb674] font-black text-lg md:text-xl rounded-full shadow-lg hover:shadow-xl hover:bg-emerald-50 dark:hover:bg-emerald-900/20 hover:-translate-y-1 transition-all duration-300 w-full sm:w-auto overflow-hidden"
+                                >
+                                    <span className="relative z-10 transition-transform duration-300 group-hover:scale-105">Help with Exams</span>
+                                    <Zap className="w-5 h-5 md:w-6 md:h-6 relative z-10 transition-transform duration-300 group-hover:scale-110" />
+                                </button>
+                            </div>
                         </div>
+                    </motion.div>
 
-                        {/* "I am a..." Audience Selector Lanes */}
-                        <div className="mt-8 mb-8">
-                            <div className="flex items-center gap-4 mb-10 w-full">
-                                <p className="text-sm font-black uppercase tracking-[0.3em] text-slate-600 dark:text-slate-400 bg-white/80 dark:bg-slate-900/80 pr-4 py-2 border-slate-200 dark:border-slate-800 shadow-sm backdrop-blur-md">I AM A...</p>
-                                <div className="h-[2px] bg-slate-200 dark:bg-slate-800 flex-grow rounded-full max-w-[100px]"></div>
-                            </div>
+                    {/* "I am a..." Audience Selector Lanes */}
+                    <motion.div
+                        initial={{ opacity: 0, y: 30 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.6, delay: 0.2 }}
+                        className="mt-6 mb-8"
+                    >
+                        <div className="flex items-center justify-center gap-4 mb-8">
+                            <div className="h-[2px] bg-slate-200 dark:bg-slate-800 w-12 md:w-24 rounded-full"></div>
+                            <p className="text-sm font-black uppercase tracking-[0.3em] text-slate-600 dark:text-slate-400 bg-white/80 dark:bg-slate-900/80 px-6 py-2 rounded-full border border-slate-200 dark:border-slate-800 shadow-sm backdrop-blur-md">I AM A...</p>
+                            <div className="h-[2px] bg-slate-200 dark:bg-slate-800 w-12 md:w-24 rounded-full"></div>
+                        </div>
+                        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 max-w-7xl mx-auto">
+                            {/* Student Lane */}
+                            <motion.button
+                                whileHover={{ y: -6, scale: 1.02 }}
+                                whileTap={{ scale: 0.98 }}
+                                onClick={() => handleRoleSelect(UserRole.LEARNER)}
+                                className="bg-gradient-to-br from-white/95 to-blue-50/50 dark:from-slate-900/95 dark:to-blue-950/20 backdrop-blur rounded-[2rem] p-6 border-2 border-slate-100 dark:border-slate-800 shadow-xl shadow-slate-300/50 dark:shadow-black/20 hover:shadow-2xl hover:shadow-blue-500/20 hover:border-blue-400 dark:hover:border-blue-500 transition-all duration-300 text-left group relative overflow-hidden flex flex-col h-full min-h-[260px]"
+                            >
+                                <div className="absolute -right-4 -bottom-4 opacity-[0.03] group-hover:opacity-[0.06] transition-opacity">
+                                    <Baby className="w-32 h-32" />
+                                </div>
+                                <div className="w-14 h-14 bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 rounded-2xl flex items-center justify-center mb-5 group-hover:scale-110 transition-transform">
+                                    <Baby className="w-7 h-7" />
+                                </div>
+                                <h3 className="font-extrabold text-slate-900 dark:text-white text-xl mb-2">Student</h3>
+                                <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed mb-6 flex-grow font-medium">Scan homework, get instant AI explanations</p>
+                                <div className="mt-auto relative z-10">
+                                    <span className="text-sm font-black text-white bg-blue-500 px-4 py-3.5 rounded-[1rem] uppercase tracking-wider flex items-center justify-between group-hover:bg-blue-600 transition-colors w-full shadow-md shadow-blue-500/20">
+                                        START FREE <ArrowRight className="w-4 h-4" />
+                                    </span>
+                                </div>
+                            </motion.button>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 max-w-4xl mx-auto">
-                                {/* Teacher Card */}
-                                <motion.div
-                                    whileHover={{ y: -6, scale: 1.02 }}
-                                    whileTap={{ scale: 0.98 }}
-                                    onClick={() => handleRoleSelect(UserRole.TEACHER)}
-                                    className="bg-white dark:bg-slate-900 rounded-[2rem] p-5 md:p-6 border-2 border-indigo-100 dark:border-indigo-900/50 hover:border-indigo-400 dark:hover:border-indigo-500 shadow-xl shadow-indigo-100/50 dark:shadow-black/20 hover:shadow-2xl hover:shadow-indigo-500/20 transition-all duration-300 text-left group flex flex-col h-full cursor-pointer relative overflow-hidden"
-                                >
-                                    <div className="w-14 h-14 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-2xl flex items-center justify-center mb-5 group-hover:scale-110 transition-transform shadow-inner">
-                                        <Users className="w-7 h-7" />
-                                    </div>
-                                    <h3 className="font-extrabold text-slate-900 dark:text-white text-xl mb-2">Teacher</h3>
-                                    <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed mb-6 flex-grow">Auto-grade exams & generate CBE lesson plans</p>
-                                    <div className="mt-auto">
-                                        <button className="w-full bg-indigo-500 text-white font-bold text-sm px-4 py-3.5 rounded-xl uppercase tracking-wider flex items-center justify-center gap-2 group-hover:bg-indigo-600 transition-colors shadow-md shadow-indigo-500/30 hover:shadow-lg">
-                                            Teacher Login <ArrowRight className="w-4 h-4" />
-                                        </button>
-                                    </div>
-                                </motion.div>
+                            {/* Candidate Lane (Revision Hub) */}
+                            <motion.button
+                                whileHover={{ y: -6, scale: 1.02 }}
+                                whileTap={{ scale: 0.98 }}
+                                onClick={() => navigate('/revision')}
+                                className="bg-gradient-to-br from-white/95 to-amber-50/70 dark:from-slate-900/95 dark:to-amber-950/20 backdrop-blur rounded-[2rem] p-6 border-2 border-amber-300 dark:border-amber-700 shadow-xl hover:shadow-2xl hover:shadow-amber-500/30 hover:border-amber-500 transition-all duration-300 text-left group relative overflow-hidden flex flex-col h-full min-h-[260px] ring-4 ring-amber-50 dark:ring-amber-900/10"
+                            >
+                                <div className="absolute -right-4 -bottom-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                                    <Zap className="w-32 h-32 text-amber-500" />
+                                </div>
+                                <div className="w-14 h-14 bg-amber-500 text-white rounded-2xl flex items-center justify-center mb-5 group-hover:rotate-12 transition-transform shadow-lg shadow-orange-200 dark:shadow-none">
+                                    <Sparkles className="w-7 h-7" />
+                                </div>
+                                <h3 className="font-black text-slate-900 dark:text-white text-xl mb-2">Candidates</h3>
+                                <p className="text-sm text-slate-600 dark:text-slate-300 font-bold leading-relaxed mb-6 flex-grow">Smart Exam Hub: KCSE, KPSEA & JSS Revision</p>
+                                <div className="mt-auto relative z-10">
+                                    <span className="text-sm font-black text-white bg-gradient-to-r from-amber-600 to-orange-600 px-4 py-3.5 rounded-[1rem] uppercase tracking-wider flex items-center justify-between group-hover:from-amber-700 group-hover:to-orange-700 transition-colors w-full shadow-lg shadow-orange-500/20">
+                                        OPEN HUB <Zap className="w-4 h-4 fill-current" />
+                                    </span>
+                                </div>
+                            </motion.button>
 
-                                {/* Parent Card */}
-                                <motion.div
-                                    whileHover={{ y: -6, scale: 1.02 }}
-                                    whileTap={{ scale: 0.98 }}
-                                    onClick={() => handleRoleSelect(UserRole.PARENT)}
-                                    className="bg-white dark:bg-slate-900 rounded-[2rem] p-5 md:p-6 border-2 border-emerald-100 dark:border-emerald-900/50 hover:border-emerald-400 dark:hover:border-emerald-500 shadow-xl shadow-emerald-100/50 dark:shadow-black/20 hover:shadow-2xl hover:shadow-emerald-500/20 transition-all duration-300 text-left group flex flex-col h-full cursor-pointer relative overflow-hidden"
-                                >
-                                    <div className="w-14 h-14 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-2xl flex items-center justify-center mb-5 group-hover:scale-110 transition-transform shadow-inner">
-                                        <Users className="w-7 h-7" />
-                                    </div>
-                                    <h3 className="font-extrabold text-slate-900 dark:text-white text-xl mb-2">Parent</h3>
-                                    <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed mb-6 flex-grow">Track your child's learning & competency progress</p>
-                                    <div className="mt-auto">
-                                        <button className="w-full bg-emerald-500 text-white font-bold text-sm px-4 py-3.5 rounded-xl uppercase tracking-wider flex items-center justify-center gap-2 group-hover:bg-emerald-600 transition-colors shadow-md shadow-emerald-500/30 hover:shadow-lg">
-                                            Parent View <ArrowRight className="w-4 h-4" />
-                                        </button>
-                                    </div>
-                                </motion.div>
-                            </div>
+                            {/* Teacher Lane */}
+                            <motion.button
+                                whileHover={{ y: -6, scale: 1.02 }}
+                                whileTap={{ scale: 0.98 }}
+                                onClick={() => handleRoleSelect(UserRole.TEACHER)}
+                                className="bg-gradient-to-br from-white/95 to-indigo-50/50 dark:from-slate-900/95 dark:to-indigo-950/20 backdrop-blur rounded-[2rem] p-6 border-2 border-slate-100 dark:border-slate-800 shadow-xl shadow-slate-300/50 dark:shadow-black/20 hover:shadow-2xl hover:shadow-indigo-500/20 hover:border-indigo-400 transition-all duration-300 text-left group relative overflow-hidden flex flex-col h-full min-h-[260px]"
+                            >
+                                <div className="absolute -right-4 -bottom-4 opacity-[0.03] group-hover:opacity-[0.06] transition-opacity">
+                                    <Users className="w-32 h-32" />
+                                </div>
+                                <div className="w-14 h-14 bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 rounded-2xl flex items-center justify-center mb-5 group-hover:scale-110 transition-transform">
+                                    <Users className="w-7 h-7" />
+                                </div>
+                                <h3 className="font-extrabold text-slate-900 dark:text-white text-xl mb-2">Teacher</h3>
+                                <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed mb-6 flex-grow font-medium">Auto-grade exams & generate CBE lesson plans</p>
+                                <div className="mt-auto relative z-10">
+                                    <span className="text-sm font-black text-white bg-indigo-500 px-4 py-3.5 rounded-[1rem] uppercase tracking-wider flex items-center justify-between group-hover:bg-indigo-600 transition-colors w-full shadow-md shadow-indigo-500/20">
+                                        FOR FREE <ArrowRight className="w-4 h-4" />
+                                    </span>
+                                </div>
+                            </motion.button>
 
-                            {/* Optional 5th Card for Schools */}
-                            <div className="mt-6 flex justify-center w-full px-4 sm:px-0">
-                                <motion.div
-                                    whileHover={{ y: -6, scale: 1.02 }}
-                                    whileTap={{ scale: 0.98 }}
-                                    onClick={() => handleRoleSelect(UserRole.SCHOOL)}
-                                    className="bg-white dark:bg-slate-900 rounded-[2rem] p-5 md:p-6 border-2 border-slate-200 dark:border-slate-800 hover:border-[#1a2b5e] dark:hover:border-blue-500 shadow-xl shadow-slate-200/50 dark:shadow-black/20 hover:shadow-2xl transition-all duration-300 text-left group flex flex-col items-center sm:flex-row sm:items-center gap-6 cursor-pointer max-w-2xl w-full"
-                                >
-                                    <div className="w-14 h-14 bg-slate-100 dark:bg-slate-800 text-[#1a2b5e] dark:text-white rounded-2xl flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform shadow-inner">
-                                        <School className="w-7 h-7" />
-                                    </div>
-                                    <div className="text-center sm:text-left flex-grow">
-                                        <h3 className="font-extrabold text-slate-900 dark:text-white text-xl mb-1">School Administrator</h3>
-                                        <p className="text-sm text-slate-500 dark:text-slate-400">Complete institution deployment & analytics</p>
-                                    </div>
-                                    <div className="w-full sm:w-auto mt-4 sm:mt-0">
-                                        <button className="w-full sm:w-auto bg-[#1a2b5e] dark:bg-slate-800 text-white font-bold text-sm px-6 py-3.5 rounded-xl uppercase tracking-wider flex items-center justify-center gap-2 group-hover:bg-[#111c3d] dark:group-hover:bg-slate-700 transition-colors shadow-md hover:shadow-lg">
-                                            Admin Panel <ArrowRight className="w-4 h-4" />
-                                        </button>
-                                    </div>
-                                </motion.div>
-                            </div>
+                            {/* Parent Lane */}
+                            <motion.button
+                                whileHover={{ y: -6, scale: 1.02 }}
+                                whileTap={{ scale: 0.98 }}
+                                onClick={() => handleRoleSelect(UserRole.PARENT)}
+                                className="bg-gradient-to-br from-white/95 to-emerald-50/50 dark:from-slate-900/95 dark:to-emerald-950/20 backdrop-blur rounded-[2rem] p-6 border-2 border-slate-100 dark:border-slate-800 shadow-xl shadow-slate-300/50 dark:shadow-black/20 hover:shadow-2xl hover:shadow-emerald-500/20 hover:border-emerald-400 transition-all duration-300 text-left group relative overflow-hidden flex flex-col h-full min-h-[260px]"
+                            >
+                                <div className="absolute -right-4 -bottom-4 opacity-[0.03] group-hover:opacity-[0.06] transition-opacity">
+                                    <Users className="w-32 h-32" />
+                                </div>
+                                <div className="w-14 h-14 bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 rounded-2xl flex items-center justify-center mb-5 group-hover:scale-110 transition-transform">
+                                    <Users className="w-7 h-7" />
+                                </div>
+                                <h3 className="font-extrabold text-slate-900 dark:text-white text-xl mb-2">Parent</h3>
+                                <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed mb-6 flex-grow font-medium">Track your child's learning & competency progress</p>
+                                <div className="mt-auto relative z-10">
+                                    <span className="text-sm font-black text-white bg-emerald-500 px-4 py-3.5 rounded-[1rem] uppercase tracking-wider flex items-center justify-between group-hover:bg-emerald-600 transition-colors w-full shadow-md shadow-emerald-500/20">
+                                        VIEW NOW <ArrowRight className="w-4 h-4" />
+                                    </span>
+                                </div>
+                            </motion.button>
+
+                            {/* School Lane */}
+                            <motion.button
+                                whileHover={{ y: -6, scale: 1.02 }}
+                                whileTap={{ scale: 0.98 }}
+                                onClick={() => handleRoleSelect(UserRole.SCHOOL)}
+                                className="bg-gradient-to-br from-white/95 to-blue-50/50 dark:from-slate-900/95 dark:to-blue-950/20 backdrop-blur rounded-[2rem] p-6 border-2 border-slate-100 dark:border-slate-800 shadow-xl shadow-slate-300/50 dark:shadow-black/20 hover:shadow-2xl hover:shadow-blue-900/20 hover:border-blue-900 transition-all duration-300 text-left group relative overflow-hidden flex flex-col h-full min-h-[260px] col-span-2 lg:col-span-1"
+                            >
+                                <div className="absolute -right-4 -bottom-4 opacity-[0.03] group-hover:opacity-[0.06] transition-opacity">
+                                    <School className="w-32 h-32" />
+                                </div>
+                                <div className="w-14 h-14 bg-slate-100 dark:bg-slate-900/40 text-[#1a2b5e] dark:text-blue-400 rounded-2xl flex items-center justify-center mb-5 group-hover:scale-110 transition-transform">
+                                    <School className="w-7 h-7" />
+                                </div>
+                                <h3 className="font-extrabold text-slate-900 dark:text-white text-xl mb-2">School</h3>
+                                <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed mb-6 flex-grow font-medium">Complete institution deployment & analytics</p>
+                                <div className="mt-auto relative z-10">
+                                    <span className="text-sm font-black text-white bg-[#1a2b5e] px-4 py-3.5 rounded-[1rem] uppercase tracking-wider flex items-center justify-between group-hover:bg-[#111c3d] transition-colors w-full shadow-md">
+                                        ADMIN PANEL <ArrowRight className="w-4 h-4" />
+                                    </span>
+                                </div>
+                            </motion.button>
                         </div>
                     </motion.div>
                 </div>
