@@ -279,12 +279,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                     <div className="flex justify-between items-center py-3">
                         {/* Logo */}
                         <div className="flex items-center gap-3 cursor-pointer" onClick={() => window.scrollTo(0, 0)}>
-                            <img src={logoImg} alt="Somo Smart Logo" className="h-14 sm:h-16 w-auto object-contain" />
+                            <img src={logoImg} alt="Somo Smart Logo" className="h-20 sm:h-24 lg:h-28 w-auto object-contain transition-all hover:scale-[1.02]" />
                         </div>
 
                         {/* Desktop Nav */}
                         <nav className="hidden md:flex items-center gap-8">
-                            <button onClick={() => handleRoleSelect(UserRole.PARENT)} className="text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors text-sm">For Parents</button>
                             <a href="#how-it-works" className="text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors text-sm">How It Works</a>
                             <button onClick={() => navigate('/pricing')} className="text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors text-sm">Pricing</button>
                             <button onClick={() => setShowLogin(true)} className="text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors text-sm">Login</button>
@@ -329,9 +328,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                 <a href="#how-it-works" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 text-slate-600 font-medium">
                                     <BookOpen className="w-5 h-5 text-blue-500" /> How It Works
                                 </a>
-                                <button onClick={() => { handleRoleSelect(UserRole.PARENT); setMobileMenuOpen(false); }} className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 text-slate-600 font-medium">
-                                    <Users className="w-5 h-5 text-emerald-500" /> For Parents
-                                </button>
                                 <button onClick={() => { navigate('/pricing'); setMobileMenuOpen(false); }} className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 text-slate-600 font-medium">
                                     <CreditCard className="w-5 h-5 text-indigo-500" /> Pricing
                                 </button>
@@ -410,46 +406,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                 <div className="h-[2px] bg-slate-200 dark:bg-slate-800 w-16 md:w-32 rounded-full"></div>
                             </div>
 
-                            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 max-w-6xl mx-auto">
-                                {/* Student Card */}
-                                <motion.div
-                                    whileHover={{ y: -6, scale: 1.02 }}
-                                    whileTap={{ scale: 0.98 }}
-                                    onClick={() => handleRoleSelect(UserRole.LEARNER)}
-                                    className="bg-white dark:bg-slate-900 rounded-[2rem] p-5 md:p-6 border-2 border-slate-100 dark:border-slate-800 hover:border-blue-400 dark:hover:border-blue-500 shadow-xl shadow-slate-200/50 dark:shadow-black/20 hover:shadow-2xl hover:shadow-blue-500/20 transition-all duration-300 text-left group flex flex-col h-full cursor-pointer relative overflow-hidden"
-                                >
-                                    <div className="w-14 h-14 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-2xl flex items-center justify-center mb-5 group-hover:scale-110 transition-transform shadow-inner">
-                                        <Baby className="w-7 h-7" />
-                                    </div>
-                                    <h3 className="font-extrabold text-slate-900 dark:text-white text-xl mb-2">Student</h3>
-                                    <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed mb-6 flex-grow">Scan homework, get instant AI explanations</p>
-                                    <div className="mt-auto">
-                                        <button className="w-full bg-blue-500 text-white font-bold text-sm px-4 py-3.5 rounded-xl uppercase tracking-wider flex items-center justify-center gap-2 group-hover:bg-blue-600 transition-colors shadow-md shadow-blue-500/30 hover:shadow-lg">
-                                            Start Free <ArrowRight className="w-4 h-4" />
-                                        </button>
-                                    </div>
-                                </motion.div>
-
-                                {/* Candidates Card */}
-                                <motion.div
-                                    whileHover={{ y: -6, scale: 1.02 }}
-                                    whileTap={{ scale: 0.98 }}
-                                    onClick={() => navigate('/revision')}
-                                    className="bg-white dark:bg-slate-900 rounded-[2rem] p-5 md:p-6 border-2 border-amber-200 dark:border-amber-900/50 hover:border-amber-400 dark:hover:border-amber-500 shadow-xl shadow-amber-100/50 dark:shadow-black/20 hover:shadow-2xl hover:shadow-amber-500/20 transition-all duration-300 text-left group flex flex-col h-full cursor-pointer relative overflow-hidden"
-                                >
-                                    <div className="absolute top-0 right-0 w-24 h-24 bg-amber-400/10 rounded-full blur-2xl -mr-10 -mt-10"></div>
-                                    <div className="w-14 h-14 bg-amber-500 text-white rounded-2xl flex items-center justify-center mb-5 group-hover:rotate-12 transition-transform shadow-lg shadow-amber-500/40 relative z-10">
-                                        <Sparkles className="w-7 h-7" />
-                                    </div>
-                                    <h3 className="font-extrabold text-slate-900 dark:text-white text-xl mb-2 relative z-10">Candidates</h3>
-                                    <p className="text-sm text-slate-600 dark:text-slate-400 font-medium leading-relaxed mb-6 flex-grow relative z-10">Smart Exam Hub: KCSE, KPSEA & JSS Revision</p>
-                                    <div className="mt-auto relative z-10">
-                                        <button className="w-full bg-gradient-to-r from-amber-600 to-orange-600 text-white font-black text-sm px-4 py-3.5 rounded-xl uppercase tracking-wider flex items-center justify-center gap-2 group-hover:from-amber-700 group-hover:to-orange-700 transition-all shadow-lg shadow-orange-500/30 hover:shadow-xl">
-                                            Open Hub <Zap className="w-4 h-4 fill-current" />
-                                        </button>
-                                    </div>
-                                </motion.div>
-
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 max-w-4xl mx-auto">
                                 {/* Teacher Card */}
                                 <motion.div
                                     whileHover={{ y: -6, scale: 1.02 }}
