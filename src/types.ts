@@ -433,3 +433,83 @@ export interface PodcastScript {
   title: string;
   script: PodcastSegment[];
 }
+
+// --- SUPER TEACHER PHASE 2: ADAPTIVE TUTORING TYPES ---
+
+export type LearningStyle = 'Visual' | 'Analogical' | 'Technical';
+
+export interface MasteryRecord {
+  topic: string;
+  subject?: string;
+  subStrand?: string;
+  grade?: string;
+  masteryLevel: number;    // 0-100
+  timesTested: number;
+  lastTested: string;      // ISO date
+}
+
+export interface SpacedRepetitionItem {
+  topic: string;
+  subject?: string;
+  grade?: string;
+  nextReviewDate: string;  // ISO date
+  intervalDays: number;
+  easeFactor: number;      // SM-2 ease factor (default 2.5)
+  lastScore: number;       // 0-100
+  reviewCount: number;
+}
+
+export interface SuperTeacherMemory {
+  masteryGraph: Record<string, number>;  // topic → 0-100% mastery
+  preferredStyle: LearningStyle;
+  recentHurdles: string[];               // topics student struggles with
+  spacedRepetitionQueue: SpacedRepetitionItem[];
+}
+
+// --- SUPER TEACHER PHASE 3: EVOLUTIONARY EDUCATOR TYPES ---
+
+export type TeachingPersona = 'Coach' | 'Professor' | 'Mentor' | 'DrillSergeant';
+
+export interface TeachingStrategy {
+  id: string;
+  insight: string;
+  rootCause: string;
+  strategy: string;          // The actual prompt instruction text
+  expectedImpact: string;
+  targetGrade?: string;
+  targetTopic?: string;
+  targetSubject?: string;
+  priority: 'HIGH' | 'MEDIUM' | 'LOW';
+  status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'ACTIVE';
+  effectivenessScore?: number;
+  createdAt: string;
+  approvedAt?: string;
+}
+
+export interface TopicAnalytics {
+  topic: string;
+  subject: string;
+  grade: string;
+  avgMastery: number;
+  studentCount: number;
+  avgAttempts: number;
+}
+
+export interface PedagogicalAnalytics {
+  topicBreakdown: TopicAnalytics[];
+  bottomTopics: TopicAnalytics[];     // Lowest mastery topics
+  topTopics: TopicAnalytics[];        // Highest mastery topics
+  totalStudentsAnalyzed: number;
+  totalTopicsTracked: number;
+  overallAvgMastery: number;
+  computedAt: string;
+}
+
+export interface StrategyRefinement {
+  strategyId: string;
+  originalPrompt: string;
+  refinedPrompt: string;
+  appliedAt: string;
+  rolledBackAt?: string;
+}
+

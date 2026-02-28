@@ -8,6 +8,7 @@ import { SettingsView } from './views/Settings';
 import { CurriculumView } from './views/Curriculum';
 import { ExamsView } from './views/Exams';
 import { AnalyticsView } from './views/Analytics';
+import { StrategyLabView } from './views/StrategyLab';
 import { Lock } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 
@@ -22,20 +23,29 @@ export const AdminDashboard: React.FC<AdminProps> = ({ onNavigate }) => {
     const [activeTab, setActiveTab] = useState('OVERVIEW');
 
     const handleUnlock = async () => {
-        const isValid = pass.trim().toLowerCase() === "somo_smart @2025".toLowerCase();
+        const adminPass = import.meta.env.VITE_ADMIN_PASS;
+        const isValid = adminPass && pass.trim().toLowerCase() === adminPass.toLowerCase();
         if (isValid) {
             try {
+                const adminEmail = import.meta.env.VITE_ADMIN_EMAIL;
+                const adminAuthPass = import.meta.env.VITE_ADMIN_AUTH_PASS;
+
+                if (!adminEmail || !adminAuthPass) {
+                    console.error("Admin credentials (Email/AuthPass) missing in environment.");
+                    setUnlocked(true); // Still unlock UI if local pass matched
+                    return;
+                }
                 // Ensure the admin has a valid Supabase session to bypass RLS and Edge Function 401s
                 const { error: signInError } = await supabase.auth.signInWithPassword({
-                    email: 'admin@soma.app',
-                    password: 'somo_smart_admin_2025'
+                    email: adminEmail,
+                    password: adminAuthPass
                 });
 
                 if (signInError) {
                     // Create it if it doesn't exist
                     await supabase.auth.signUp({
-                        email: 'admin@soma.app',
-                        password: 'somo_smart_admin_2025'
+                        email: adminEmail,
+                        password: adminAuthPass
                     });
                 }
             } catch (e) {
@@ -101,6 +111,7 @@ export const AdminDashboard: React.FC<AdminProps> = ({ onNavigate }) => {
             {activeTab === 'CURRICULUM' && <CurriculumView />}
             {activeTab === 'EXAMS' && <ExamsView />}
             {activeTab === 'ANALYTICS' && <AnalyticsView />}
+            {activeTab === 'STRATEGY_LAB' && <StrategyLabView />}
             {activeTab === 'SETTINGS' && <SettingsView />}
         </AdminLayout>
     );

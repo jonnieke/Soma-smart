@@ -117,14 +117,13 @@ export const playPodcast = async (
     podcastController = new AbortController();
     const signal = podcastController.signal;
 
-    if (!API_KEY || API_KEY.length < 5) {
-        console.error("ElevenLabs API Key is missing or invalid.");
-        if (onError) onError(new Error("ElevenLabs API Key is missing. Please add VITE_ELEVEN_LABS_API_KEY to your .env file."));
-        onComplete();
-        return;
-    }
+    let useElevenLabs = !!API_KEY && API_KEY.length >= 5;
 
-    console.log(`[ElevenLabs] Starting podcast playback. Key starts with: ${API_KEY.substring(0, 4)}... (Length: ${API_KEY.length})`);
+    if (!useElevenLabs) {
+        console.warn("ElevenLabs API Key is missing or invalid. Falling back to browser TTS.");
+    } else {
+        console.log(`[ElevenLabs] Starting podcast playback. Key starts with: ${API_KEY.substring(0, 4)}... (Length: ${API_KEY.length})`);
+    }
 
     const VOICES = {
         Host: "21m00Tcm4TlvDq8ikWAM", // Rachel
@@ -133,68 +132,104 @@ export const playPodcast = async (
 
     // Helper to fetch audio
     const fetchAudio = async (text: string, voiceId: string): Promise<string> => {
-        try {
-            const response = await axios.post(
-                `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`,
-                {
-                    text,
-                    model_id: "eleven_multilingual_v2",
-                    voice_settings: { stability: 0.5, similarity_boost: 0.75 },
-                },
-                {
-                    headers: { 'xi-api-key': API_KEY, 'Content-Type': 'application/json' },
-                    responseType: 'blob',
-                }
-            );
-            return URL.createObjectURL(response.data);
-        } catch (err: any) {
-            if (err.response) {
-                if (err.response.status === 401) {
-                    throw new Error("Invalid ElevenLabs API Key. Please verify your sk_ key in .env");
-                }
-                if (err.response.status === 429) {
-                    throw new Error("ElevenLabs Quota Exhausted. This key has no more character credits.");
-                }
-                if (err.response.status === 404) {
-                    throw new Error(`Voice ID ${voiceId} not found or not available for this account.`);
-                }
+        const response = await axios.post(
+            `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`,
+            {
+                text,
+                model_id: "eleven_multilingual_v2",
+                voice_settings: { stability: 0.5, similarity_boost: 0.75 },
+            },
+            {
+                headers: { 'xi-api-key': API_KEY, 'Content-Type': 'application/json' },
+                responseType: 'blob',
             }
-            throw err;
-        }
+        );
+        return URL.createObjectURL(response.data);
+    };
+
+    const playNativeBrowserSpeech = (text: string, speaker: 'Host' | 'Guest'): Promise<void> => {
+        return new Promise((resolve, reject) => {
+            if (!window.speechSynthesis) {
+                resolve(); // Just skip if no TTS
+                return;
+            }
+
+            // To ensure we don't start reading if aborted already
+            if (signal.aborted) {
+                resolve();
+                return;
+            }
+
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'en-US';
+            utterance.rate = speaker === 'Host' ? 1.05 : 0.95;
+            utterance.pitch = speaker === 'Host' ? 1.1 : 0.9;
+
+            const voices = window.speechSynthesis.getVoices();
+            if (speaker === 'Host') {
+                const voice = voices.find(v => (v.name.includes("Female") || v.name.includes("Zira") || v.name.includes("Google UK English Female") || v.name.includes("Samantha")));
+                if (voice) utterance.voice = voice;
+            } else {
+                const voice = voices.find(v => (v.name.includes("Male") || v.name.includes("David") || v.name.includes("Google UK English Male") || v.name.includes("Daniel")));
+                if (voice) utterance.voice = voice;
+            }
+
+            utterance.onend = () => resolve();
+            utterance.onerror = (e) => reject(e);
+
+            window.speechSynthesis.speak(utterance);
+        });
     };
 
     try {
+        // Pre-load voices if using native TTS
+        if (!useElevenLabs && window.speechSynthesis.getVoices().length === 0) {
+            window.speechSynthesis.getVoices();
+        }
+
         for (let i = 0; i < script.length; i++) {
             if (signal.aborted) return;
             onProgress(i);
 
             const segment = script[i];
-            const voiceId = VOICES[segment.speaker] || VOICES.Host;
 
-            // Fetch
-            const audioUrl = await fetchAudio(segment.text, voiceId);
-            if (signal.aborted) return;
+            if (useElevenLabs) {
+                try {
+                    const voiceId = VOICES[segment.speaker] || VOICES.Host;
 
-            const audio = new Audio(audioUrl);
-            podcastQueue.push(audio);
-            currentAudio = audio;
+                    // Fetch
+                    const audioUrl = await fetchAudio(segment.text, voiceId);
+                    if (signal.aborted) return;
 
-            // Play and wait
-            await new Promise<void>((resolve, reject) => {
-                audio.onended = () => {
-                    URL.revokeObjectURL(audioUrl);
-                    resolve();
-                };
-                audio.onerror = (e) => {
-                    URL.revokeObjectURL(audioUrl);
-                    reject(e);
-                };
-                // Handle potential autoplay restrictions
-                audio.play().catch(err => {
-                    console.warn("Autoplay blocked or playback error:", err);
-                    reject(err);
-                });
-            });
+                    const audio = new Audio(audioUrl);
+                    podcastQueue.push(audio);
+                    currentAudio = audio;
+
+                    // Play and wait
+                    await new Promise<void>((resolve, reject) => {
+                        audio.onended = () => {
+                            URL.revokeObjectURL(audioUrl);
+                            resolve();
+                        };
+                        audio.onerror = (e) => {
+                            URL.revokeObjectURL(audioUrl);
+                            reject(e);
+                        };
+                        // Handle potential autoplay restrictions
+                        audio.play().catch(err => {
+                            console.warn("Autoplay blocked or playback error:", err);
+                            reject(err);
+                        });
+                    });
+                } catch (err: any) {
+                    console.warn("ElevenLabs failed during podcast, falling back to browser TTS.", err.message || err);
+                    useElevenLabs = false; // Fallback for this and all subsequent segments
+                }
+            }
+
+            if (!useElevenLabs && !signal.aborted) {
+                await playNativeBrowserSpeech(segment.text, segment.speaker);
+            }
         }
 
         if (!signal.aborted) {

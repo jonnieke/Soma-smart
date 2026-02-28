@@ -4,6 +4,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#4f46e5" />
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png" />
   <title>Somo Smart | Kenya's Leading AI-Powered Learning Platform</title>
   <meta name="description"
     content="Somo Smart is Kenya's premier AI study assistant for CBC and KCSE students. Scan textbooks, get simple AI explanations, and practice with smart quizzes. Tailored for Kenyan learners, teachers, and parents." />
@@ -40,11 +43,15 @@
     content="Transform how you study with Somo Smart. AI-powered explanations for CBC and KCSE curricula." />
   <meta property="twitter:image" content="https://somaai.co.ke/og-image.png" />
 
-  <!-- Localization -->
+  <!-- Localization & Language Alternates -->
   <meta name="geo.region" content="KE" />
   <meta name="geo.placename" content="Nairobi" />
   <meta name="geo.position" content="-1.2921;36.8219" />
   <meta name="ICBM" content="-1.2921, 36.8219" />
+  <link rel="alternate" hreflang="en" href="https://somaai.co.ke/" />
+  <link rel="alternate" hreflang="sw" href="https://somaai.co.ke/?lang=sw" />
+  <link rel="alternate" hreflang="x-default" href="https://somaai.co.ke/" />
+  <link rel="canonical" href="https://somaai.co.ke/" />
 
   <!-- Structured Data (JSON-LD) for AI Search Engines -->
   <script type="application/ld+json">
@@ -84,6 +91,70 @@
       }
     }
   </script>
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Course",
+      "name": "CBC & KCSE AI Study Platform",
+      "description": "AI-powered learning for Kenyan students covering all CBC and KCSE subjects with personalized explanations, quizzes, and spaced repetition.",
+      "provider": {
+        "@type": "Organization",
+        "name": "Somo Smart",
+        "url": "https://somaai.co.ke"
+      },
+      "educationalLevel": ["Primary", "Junior Secondary", "Senior Secondary"],
+      "inLanguage": ["en", "sw"],
+      "isAccessibleForFree": true,
+      "offers": {
+        "@type": "Offer",
+        "price": "200",
+        "priceCurrency": "KES",
+        "availability": "https://schema.org/InStock",
+        "name": "Somo Smart Pro Monthly",
+        "description": "Unlimited AI explanations, quizzes, and downloads for 30 days"
+      }
+    }
+  </script>
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "What is Somo Smart?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Somo Smart is Kenya's leading AI-powered learning platform for CBC and KCSE students. It provides instant AI explanations, smart quizzes, and spaced repetition revision tailored to the Kenyan curriculum."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "How much does Somo Smart cost?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Somo Smart offers a free tier with 3 AI explanations per session. Pro plans start at KES 200/month for unlimited access, with term (KES 500) and annual (KES 1,500) options."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Which subjects does Somo Smart cover?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Somo Smart covers all CBC and KCSE subjects including Mathematics, Science, English, Kiswahili, Social Studies, CRE, Physics, Chemistry, Biology, and more."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Can teachers use Somo Smart?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes. Teachers can use Somo Smart to generate lesson notes, create quizzes, mark assignments, and manage their classrooms with AI-powered tools."
+          }
+        }
+      ]
+    }
+  </script>
 
   <style>
     @media print {
@@ -104,6 +175,16 @@
 <body class="bg-gray-50 text-gray-900 antialiased selection:bg-indigo-100 selection:text-indigo-900">
   <div id="root"></div>
   <script type="module" src="/src/index.tsx"></script>
+  <script>
+    // Register Service Worker for offline support
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js')
+          .then((reg) => console.log('[PWA] Service Worker registered:', reg.scope))
+          .catch((err) => console.warn('[PWA] SW registration failed:', err));
+      });
+    }
+  </script>
 </body>
 
 </html>

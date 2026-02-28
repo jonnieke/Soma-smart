@@ -1,5 +1,8 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { LearnerActivity, UserRole, TeacherProfile, TeacherActivity, SchoolProfile, SchoolStats, SchoolTeacher, SchoolMaterial, TeacherWallet, TutoringRequest, MaterialListing, SubscriptionPlan, SubscriptionTier, ChatMessage } from '../types';
+import { LearnerActivity, UserRole, TeacherProfile, TeacherActivity, SchoolProfile, SchoolStats, SchoolTeacher, SchoolMaterial, TeacherWallet, TutoringRequest, MaterialListing, SubscriptionPlan, SubscriptionTier, ChatMessage, SpacedRepetitionItem, TeachingStrategy, PedagogicalAnalytics } from '../types';
+import { processQuizResult, getDueTopics, getWeakTopics, loadSRFromLocal, loadMasteryFromLocal, getPersonalizedChallenge } from '../services/spacedRepetitionService';
+import { loadStrategiesFromLocal, approveStrategy as approveStrategyFn, rejectStrategy as rejectStrategyFn, addStrategies, getActiveStrategies, getPendingStrategies } from '../services/strategyService';
+import { fetchPedagogicalAnalytics, generateTeachingStrategies } from '../services/adminAgentService';
 
 // Update interface
 interface AppContextType {
@@ -16,8 +19,6 @@ interface AppContextType {
   updateStudentProfile: (updates: { name?: string, grade?: string, parentPhone?: string }) => Promise<{ success: boolean; message?: string }>;
   usageCount: number;
   incrementUsage: () => void;
-  // studyUsageCount removed
-  // incrementStudyUsage removed
   registerStudent: (name: string, grade: string, pin: string, parentPhone?: string) => Promise<{ success: boolean; message?: string; data?: string }>;
   registerTeacher: (name: string, email: string, password: string, classes: string[], subjects: string[], phone: string) => Promise<{ success: boolean; message?: string }>;
   login: (code: string) => Promise<boolean>;
@@ -63,6 +64,22 @@ interface AppContextType {
   // Revision
   revisionUsageCount: number;
   incrementRevisionUsage: () => void;
+  // Super Teacher Phase 2: Adaptive Tutoring
+  masteryGraph: Record<string, number>;
+  spacedRepetitionItems: SpacedRepetitionItem[];
+  dueForReview: SpacedRepetitionItem[];
+  weakTopics: string[];
+  processQuizCompletion: (topic: string, score: number, subject?: string, grade?: string) => void;
+  getPersonalizedDailyChallenge: () => { topic: string; title: string; quiz: string; isPersonalized: boolean };
+  // Super Teacher Phase 3: Evolutionary Educator
+  teachingStrategies: TeachingStrategy[];
+  activeStrategies: TeachingStrategy[];
+  pendingStrategies: TeachingStrategy[];
+  pedagogicalAnalytics: PedagogicalAnalytics | null;
+  isAdminAgentRunning: boolean;
+  runAdminAgent: () => Promise<void>;
+  approveTeachingStrategy: (strategyId: string) => void;
+  rejectTeachingStrategy: (strategyId: string) => void;
   // Subscription
   isPro: boolean;
   subscriptionPlan: SubscriptionTier;
@@ -198,6 +215,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   // Revision State
   const [revisionUsageCount, setRevisionUsageCount] = useState<number>(0);
+
+  // Super Teacher Phase 2: Adaptive Tutoring State
+  const [masteryGraph, setMasteryGraph] = useState<Record<string, number>>(loadMasteryFromLocal);
+  const [spacedRepetitionItems, setSpacedRepetitionItems] = useState<SpacedRepetitionItem[]>(loadSRFromLocal);
+
+  // Super Teacher Phase 3: Evolutionary Educator State
+  const [teachingStrategies, setTeachingStrategies] = useState<TeachingStrategy[]>(loadStrategiesFromLocal);
+  const [pedagogicalAnalytics, setPedagogicalAnalytics] = useState<PedagogicalAnalytics | null>(null);
+  const [isAdminAgentRunning, setIsAdminAgentRunning] = useState(false);
 
 
   // Subscription State
@@ -1354,6 +1380,54 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   };
 
+  // --- Super Teacher Phase 2: Adaptive Tutoring Handlers ---
+  const processQuizCompletion = (topic: string, score: number, subject?: string, grade?: string) => {
+    const result = processQuizResult(topic, score, masteryGraph, spacedRepetitionItems, subject, grade);
+    setMasteryGraph(result.mastery);
+    setSpacedRepetitionItems(result.srItems);
+  };
+
+  const dueForReview = getDueTopics(spacedRepetitionItems);
+  const weakTopics = getWeakTopics(masteryGraph);
+
+  const getPersonalizedDailyChallenge = () => {
+    return getPersonalizedChallenge(spacedRepetitionItems, masteryGraph);
+  };
+
+  // --- Super Teacher Phase 3: Evolutionary Educator Handlers ---
+  const activeStrategies = getActiveStrategies(teachingStrategies);
+  const pendingStrategies = getPendingStrategies(teachingStrategies);
+
+  const runAdminAgent = async () => {
+    setIsAdminAgentRunning(true);
+    try {
+      // 1. Fetch analytics
+      const analytics = await fetchPedagogicalAnalytics();
+      setPedagogicalAnalytics(analytics);
+
+      // 2. Generate strategies
+      const newStrategies = await generateTeachingStrategies(analytics, activeStrategies);
+
+      // 3. Add to list as PENDING
+      const updated = addStrategies(teachingStrategies, newStrategies);
+      setTeachingStrategies(updated);
+    } catch (e) {
+      console.error('Admin Agent failed:', e);
+    } finally {
+      setIsAdminAgentRunning(false);
+    }
+  };
+
+  const approveTeachingStrategy = (strategyId: string) => {
+    const updated = approveStrategyFn(teachingStrategies, strategyId);
+    setTeachingStrategies(updated);
+  };
+
+  const rejectTeachingStrategy = (strategyId: string) => {
+    const updated = rejectStrategyFn(teachingStrategies, strategyId);
+    setTeachingStrategies(updated);
+  };
+
   const grantExtraDownloads = (amount: number) => {
     const newValue = extraDownloads + amount;
     setExtraDownloads(newValue);
@@ -1384,10 +1458,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         password,
         options: {
           data: {
+            role: UserRole.TEACHER,
             full_name: name,
-            role: 'TEACHER',
-            classes,
-            subjects,
             phone
           }
         }
@@ -2348,7 +2420,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     language, toggleLanguage, startGuestSession, resources, fetchResources,
     sessionError, resolveSessionConflict, setSessionError, refreshProfile,
     downloadUsageCount, incrementDownloadUsage, extraDownloads, grantExtraDownloads,
-    theme, toggleTheme
+    theme, toggleTheme,
+    masteryGraph, spacedRepetitionItems, dueForReview, weakTopics,
+    processQuizCompletion, getPersonalizedDailyChallenge,
+    teachingStrategies, activeStrategies, pendingStrategies,
+    pedagogicalAnalytics, isAdminAgentRunning,
+    runAdminAgent, approveTeachingStrategy, rejectTeachingStrategy
   };
 
   return (

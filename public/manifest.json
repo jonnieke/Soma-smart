@@ -1,0 +1,56 @@
+{
+    "name": "Somo Smart",
+    "short_name": "Somo",
+    "description": "Kenya's leading AI-powered learning platform for CBC & KCSE students",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#f8fafc",
+    "theme_color": "#4f46e5",
+    "orientation": "portrait-primary",
+    "lang": "en",
+    "categories": [
+        "education",
+        "productivity"
+    ],
+    "icons": [
+        {
+            "src": "/assets/icon-192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any maskable"
+        },
+        {
+            "src": "/assets/icon-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any maskable"
+        }
+    ],
+    "screenshots": [],
+    "shortcuts": [
+        {
+            "name": "Study Dashboard",
+            "short_name": "Study",
+            "description": "Open your AI study assistant",
+            "url": "/learner",
+            "icons": [
+                {
+                    "src": "/assets/icon-192.png",
+                    "sizes": "192x192"
+                }
+            ]
+        },
+        {
+            "name": "Revision Portal",
+            "short_name": "Revise",
+            "description": "Practice with past papers",
+            "url": "/revision",
+            "icons": [
+                {
+                    "src": "/assets/icon-192.png",
+                    "sizes": "192x192"
+                }
+            ]
+        }
+    ]
+}

@@ -1,20 +1,81 @@
 import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
-import { ExplanationResult, QuizData, TeacherNote, RevisionMode, TutoringStep, ExamQuestion, ExamAnalysis, TutorResponse, LessonResult } from "../types";
+import { ExplanationResult, QuizData, TeacherNote, RevisionMode, TutoringStep, ExamQuestion, ExamAnalysis, TutorResponse, LessonResult, TeachingStrategy } from "../types";
 import { speak as ttSpeak, stopSpeech as ttStop } from "./elevenLabsService";
+import { buildScaffoldingContext } from "./spacedRepetitionService";
+import { buildTargetedStrategiesInstruction } from "./strategyService";
+import { buildPersonaInstruction, recommendPersona } from "./adminAgentService";
 
-const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+// --- PROXY CONFIG ---
+// We no longer use VITE_GEMINI_API_KEY on the client.
+// Instead, we call a Supabase Edge Function which adds the key server-side.
+import { supabase } from "../lib/supabase";
 
-if (!apiKey) {
-  console.error("API_KEY is missing from environment variables.");
-}
+const callGeminiProxy = async (model: string, contents: any, generationConfig: any = {}, systemInstruction: any = null) => {
+  const { data, error } = await supabase.functions.invoke('gemini-proxy', {
+    body: { model, contents, generationConfig, systemInstruction }
+  });
 
-const genAI = new GoogleGenerativeAI(apiKey || 'DUMMY_KEY_FOR_DEV');
+  if (error) {
+    console.error("Gemini Proxy Error:", error);
+    throw new Error(error.message || "Failed to call AI proxy");
+  }
 
-if (!apiKey) {
-  console.warn("Using DUMMY_KEY_FOR_DEV. Results will fail. Please check .env and Vite config.");
-}
+  // Convert the raw response to match the structure expected by the rest of the file
+  return {
+    response: {
+      text: () => data.candidates[0].content.parts[0].text,
+      // Add other helpers if needed by existing code
+    }
+  };
+};
+
+const genAI = {
+  getGenerativeModel: (config: any) => ({
+    generateContent: async (parts: any) => {
+      // Support string, array of parts, or contents object
+      let contents;
+      if (typeof parts === 'string') {
+        contents = [{ role: 'user', parts: [{ text: parts }] }];
+      } else if (Array.isArray(parts)) {
+        contents = [{ role: 'user', parts }];
+      } else {
+        contents = parts.contents;
+      }
+      return callGeminiProxy(config.model, contents, config.generationConfig, config.systemInstruction);
+    }
+  })
+};
 
 const MODEL_NAME = "gemini-2.0-flash"; // Upgraded to latest available version
+
+// --- SUPER TEACHER INSTRUCTIONS ---
+const SYLLABUS_GROUNDING_INSTRUCTION = `
+CRITICAL: MANDATORY SYLLABUS CITATION
+- You MUST identify and state the exact Kenyan CBE/8-4-4 Strand and Sub-strand for this topic.
+- Place this as the VERY FIRST line of your 'explanation' field.
+- Format: "Curriculum Alignment: [Grade/Form] [Subject], Strand [Number]"
+- Example: "Curriculum Alignment: Grade 4 Science, Strand 1.2"
+- Use official Kenyan pedagogical terminology.
+`;
+
+const EXAM_CROSS_LINK_INSTRUCTION = `
+CRITICAL: MANDATORY EXAM CROSS-LINK (Super Teacher Mode)
+- In the 'explanation' field, include a section titled "🎓 Exam Insight".
+- Proactively mention if this topic or question is a 'KCSE/KPSEA/KCPE Favorite'.
+- Cite specific years if possible (e.g., 'This concept appeared in KCSE 2021 Paper 2').
+- Provide one 'Killer Tip' for scoring full marks based on official KNEC marking patterns.
+`;
+
+// --- SUPER TEACHER PHASE 2: ADAPTIVE SCAFFOLDING ---
+const ADAPTIVE_SCAFFOLDING_INSTRUCTION = `
+ADAPTIVE TUTORING MODE (Super Teacher Phase 2):
+- You MUST adapt your teaching depth and approach based on the ADAPTIVE CONTEXT provided below.
+- If mastery is LOW: Start with fundamentals, use simple language, define key terms.
+- If mastery is INTERMEDIATE: Skip basics, focus on application and problem-solving.
+- If mastery is HIGH: Go straight to advanced/exam content, edge cases, and past paper practice.
+- Include a scaffolded "🤔 Think About It" checkpoint before revealing complex answers when mastery < 70%.
+- Always end with one follow-up question to reinforce learning.
+`;
 
 // --- Helper: File to Base64 ---
 export const fileToGenerativePart = async (file: File): Promise<string> => {
@@ -63,6 +124,9 @@ export const explainImage = async (base64Image: string, mimeType: string, level:
     5. Explain the content in ${level === 'Simple' ? 'very simple language for a young student' : 'exam-ready academic language'}.
     6. Suggest 3 short related topics for further learning.
     
+    ${SYLLABUS_GROUNDING_INSTRUCTION}
+    ${EXAM_CROSS_LINK_INSTRUCTION}
+
     Output JSON.
   `;
 
@@ -116,6 +180,9 @@ export const explainAudio = async (base64Audio: string, mimeType: string, level:
     6. Explain the content in ${level === 'Simple' ? 'very simple language for a young student' : 'exam-ready academic language'}.
     7. Suggest 3 short related topics for further learning.
     
+    ${SYLLABUS_GROUNDING_INSTRUCTION}
+    ${EXAM_CROSS_LINK_INSTRUCTION}
+
     Output JSON.
   `;
 
@@ -136,7 +203,6 @@ export const explainAudio = async (base64Audio: string, mimeType: string, level:
   }
 };
 
-import { supabase } from '../lib/supabase';
 import { getContext } from './contextService';
 
 // --- RAG HELPER ---
@@ -177,7 +243,9 @@ export const explainTopic = async (
   documentId?: string,
   subject?: string,
   grade?: string,
-  multimedia?: { data: string, mimeType: string }
+  multimedia?: { data: string, mimeType: string },
+  masteryData?: { masteryGraph: Record<string, number>, recentHurdles?: string[] },
+  teachingStrategies?: TeachingStrategy[]
 ): Promise<ExplanationResult> => {
   const model = genAI.getGenerativeModel({
     model: MODEL_NAME,
@@ -256,24 +324,33 @@ export const explainTopic = async (
     ? "LANGUAGE RULE: You MUST respond in French (Français). Translate specific educational terms if needed, but keep the explanation natural in French."
     : "LANGUAGE RULE: If the subject is 'Kiswahili' or 'Swahili', you MUST respond in Swahili. For ALL other subjects, you MUST respond ONLY in English.";
 
+  // Build adaptive scaffolding context if mastery data is available
+  const adaptiveContext = masteryData
+    ? buildScaffoldingContext(topic, masteryData.masteryGraph, masteryData.recentHurdles)
+    : '';
+  const adaptiveInstruction = adaptiveContext
+    ? `${ADAPTIVE_SCAFFOLDING_INSTRUCTION}\n${adaptiveContext}`
+    : '';
+
+  // Build Phase 3: Dynamic strategy instruction
+  const strategiesInstruction = teachingStrategies
+    ? buildTargetedStrategiesInstruction(teachingStrategies, topic, grade)
+    : '';
+
+  // Build Phase 3: Persona instruction based on mastery level
+  let personaInstruction = '';
+  if (grade && masteryData) {
+    const topicMastery = masteryData.masteryGraph[topic] ?? 50;
+    const { persona } = recommendPersona(grade, topicMastery);
+    personaInstruction = buildPersonaInstruction(persona);
+  }
+
   const prompt = `
     ${ragInstruction}
+    ${adaptiveInstruction}
+    ${strategiesInstruction}
+    ${personaInstruction}
 
-    SYSTEM CONTEXT: Kenyan Education System (CBC, KCPE, KCSE).
-    Target Audience: ${grade || 'Kenyan'} student.
-    Subject: ${subject || 'General Studies'}.
-    ACRONYM RULES: 
-    - CRE = Christian Religious Education (CRITICAL: NEVER interpret as Commercial Real Estate).
-    - IRE = Islamic Religious Education.
-    - HRE = Hindu Religious Education.
-
-    FORMATTING RULES FOR YOUNG LEARNERS (CRITICAL):
-    - NO WALLS OF TEXT. Keep paragraphs extremely short (2-3 sentences maximum).
-    - Use abundant bullet points (- ) and numbered lists (1. 2. 3.) to break up information.
-    - Write in plain text. Do NOT use ** (bold markers) or ## (headers) in the content fields.
-    - Keep sentences simple, friendly, and easy to read.
-    - Add blank lines between every paragraph and list item for visual breathing room.
-    
     STRICT TASK:
     1. Identify the subject of the topic "${topic}".
     2. ${langInstruction}
@@ -282,6 +359,10 @@ export const explainTopic = async (
     5. DEEP LEARNING (subtopics): Break the topic down into EXACTLY 3 distinct, logical subtopics using the FORMATTING RULES above. For EACH subtopic, provide highly readable, bite-sized paragraph notes in plain text. Do NOT use ** (bold markers) or ## (headers) in the content. Use numbered lists and bullet points frequently to break down processes or features.
        - CRITICAL LIMIT: Do not generate excessively long notes. You MUST ensure the full JSON output is completed and valid without truncating. Keep it concise.
     6. INTERACTIVE RECAP (recapNodes): Provide EXACTLY 3 titled key concept names as "point" (NOT sentences). For EACH point, provide a detailed explanatory paragraph in the 'details' field in plain text.
+
+    ${SYLLABUS_GROUNDING_INSTRUCTION}
+    ${EXAM_CROSS_LINK_INSTRUCTION}
+
     7. Provide EXACTLY 3 short bullet points summarizing the most critical takeaways for "stickiness" in the 'summaryPoints' field.
     8. Suggest EXACTLY 3 short related topics for further learning.
     
@@ -363,53 +444,56 @@ export const summarizeDocument = async (title: string, documentId: string, langu
   });
 
   const prompt = `
+    ${SYLLABUS_GROUNDING_INSTRUCTION}
+    ${EXAM_CROSS_LINK_INSTRUCTION}
+
     You are an Expert Kenyan Teacher and AI Study Companion building a COMPREHENSIVE LEARNING HUB.
     A student in ${grade || 'their grade'} is studying the document: "${title}" for the subject: "${subject || 'General Studies'}".
     
-    SYSTEM CONTEXT: You are operating within the Kenyan Education System (CBC, KCPE, and KCSE). 
-    ACRONYM RULES: 
-    - CRE = Christian Religious Education (NOT Commercial Real Estate).
+    SYSTEM CONTEXT: You are operating within the Kenyan Education System(CBC, KCPE, and KCSE). 
+    ACRONYM RULES:
+  - CRE = Christian Religious Education(NOT Commercial Real Estate).
     - IRE = Islamic Religious Education.
     - HRE = Hindu Religious Education.
     - P.E. = Physical Education.
     
     Source Content Snippets:
-    "${ragContext.substring(0, 10000)}"
+  "${ragContext.substring(0, 10000)}"
     
     CRITICAL RULES:
-    - **STRICT SOURCE GROUNDING**: Your primary authority is the "Source Content Snippets" provided above. You MUST strictly follow the themes, topics, and terminology found in the snippets.
-    - **NO HALLUCINATION**: NEVER introduce concepts from unrelated fields (e.g., do not discuss "Real Estate" for "CRE" notes).
-    - **CONTENT INTEGRITY**: NEVER use placeholders like "[PLACEHOLDER]" or generic templates. 
-    - **CURRICULUM ALIGNMENT**: If the source content is brief, you may expand on the concepts using your expert knowledge of the KENYAN CURRICULUM for "${subject}" at "${grade}" level. However, this expansion MUST stay strictly within the subject boundaries of ${subject}.
+    - ** STRICT SOURCE GROUNDING **: Your primary authority is the "Source Content Snippets" provided above.You MUST strictly follow the themes, topics, and terminology found in the snippets.
+    - ** NO HALLUCINATION **: NEVER introduce concepts from unrelated fields(e.g., do not discuss "Real Estate" for "CRE" notes).
+    - ** CONTENT INTEGRITY **: NEVER use placeholders like "[PLACEHOLDER]" or generic templates. 
+    - ** CURRICULUM ALIGNMENT **: If the source content is brief, you may expand on the concepts using your expert knowledge of the KENYAN CURRICULUM for "${subject}" at "${grade}" level.However, this expansion MUST stay strictly within the subject boundaries of ${subject}.
+
+  TASK — GENERATE DETAILED STUDY NOTES(NOT A SUMMARY):
     
-    TASK — GENERATE DETAILED STUDY NOTES (NOT A SUMMARY):
-    
-    FORMATTING RULES FOR YOUNG LEARNERS (CRITICAL):
-    - NO WALLS OF TEXT. Keep paragraphs extremely short (2-3 sentences maximum).
-    - Use abundant bullet points (- ) and numbered lists (1. 2. 3.) to break up information.
-    - Write in plain text. Do NOT use ** (bold markers) or ## (headers) in the content fields.
+    FORMATTING RULES FOR YOUNG LEARNERS(CRITICAL):
+  - NO WALLS OF TEXT.Keep paragraphs extremely short(2 - 3 sentences maximum).
+    - Use abundant bullet points(- ) and numbered lists(1. 2. 3.) to break up information.
+    - Write in plain text.Do NOT use ** (bold markers) or ##(headers) in the content fields.
     - Keep sentences simple, friendly, and easy to read.
     - Use 🎯 for exam tips and key takeaways, placing them on their own separate line.
     - Add blank lines between every paragraph and list item for visual breathing room.
     
-    1. OVERVIEW (explanation field): Write a brief, friendly introduction to the topic. What is the big idea? Why does it matter?
-    
-    2. DEEP STRUCTURED NOTES (subtopics field): This is the MOST IMPORTANT part. Break the document content into EXACTLY 3 distinct subtopics structured like a textbook syllabus. For EACH subtopic:
-       - Give it a clear, descriptive title (like a chapter heading, e.g. "1. Types of Soil and Their Properties", "2. Factors Affecting Soil Formation")
-       - Write comprehensive but highly readable notes in the content field using the formatting rules above. Include:
+    1. OVERVIEW(explanation field): Write a brief, friendly introduction to the topic.What is the big idea ? Why does it matter ?
+
+    2. DEEP STRUCTURED NOTES(subtopics field): This is the MOST IMPORTANT part.Break the document content into EXACTLY 3 distinct subtopics structured like a textbook syllabus.For EACH subtopic:
+  - Give it a clear, descriptive title(like a chapter heading, e.g. "1. Types of Soil and Their Properties", "2. Factors Affecting Soil Formation")
+    - Write comprehensive but highly readable notes in the content field using the formatting rules above.Include:
          - Clear definitions of key terms
-         - Fun, relatable examples for young learners
-         - Step-by-step numbered lists for processes or steps
-         - Bulleted lists for characteristics, types, or examples
-         - 🎯 Exam Tips for frequently tested areas
-       - The content must be detailed but presented in bite-sized, digestible pieces, NOT large blocks of text.
-       - CRITICAL LIMIT: Do not generate excessively long notes. You MUST ensure the full JSON output is completed and valid without truncating. Keep it concise.
+    - Fun, relatable examples for young learners
+      - Step - by - step numbered lists for processes or steps
+        - Bulleted lists for characteristics, types, or examples
+          - 🎯 Exam Tips for frequently tested areas
+            - The content must be detailed but presented in bite - sized, digestible pieces, NOT large blocks of text.
+       - CRITICAL LIMIT: Do not generate excessively long notes.You MUST ensure the full JSON output is completed and valid without truncating.Keep it concise.
     
-    3. INTERACTIVE RECAP (recapNodes field): Provide EXACTLY 3 titled recap points. For EACH:
-       - The "point" field should be a short, titled key concept name (e.g. "Photosynthesis Process", "Newton's Third Law") — NOT a full sentence
-       - The "details" field should be a very concise, single-paragraph explanation of this concept for revision. Write in plain text, no bold markers.
+    3. INTERACTIVE RECAP(recapNodes field): Provide EXACTLY 3 titled recap points.For EACH:
+  - The "point" field should be a short, titled key concept name(e.g. "Photosynthesis Process", "Newton's Third Law") — NOT a full sentence
+    - The "details" field should be a very concise, single - paragraph explanation of this concept for revision.Write in plain text, no bold markers.
     
-    4. STICKINESS POINTS (summaryPoints): EXACTLY 3 ultra-concise bullet points — the absolute critical takeaways.
+    4. STICKINESS POINTS(summaryPoints): EXACTLY 3 ultra - concise bullet points — the absolute critical takeaways.
     
     5. RELATED TOPICS: Suggest EXACTLY 3 related study topics for further learning.
     
@@ -454,31 +538,31 @@ export const generateRichLessonNotes = async (title: string, documentId: string,
     Your task is to prepare Comprehensive Revision Notes for a ${grade || 'Kenyan'} student for the document: "${title}".
     Subject Context: "${subject || 'General studies'}".
 
-    SYSTEM CONTEXT: You are operating within the Kenyan Education System (CBC, KCPE, and KCSE). 
-    ACRONYM RULES: 
-    - CRE = Christian Religious Education (CRITICAL: NEVER interpret as Commercial Real Estate).
+    SYSTEM CONTEXT: You are operating within the Kenyan Education System(CBC, KCPE, and KCSE). 
+    ACRONYM RULES:
+- CRE = Christian Religious Education(CRITICAL: NEVER interpret as Commercial Real Estate).
     - IRE = Islamic Religious Education.
     - HRE = Hindu Religious Education.
     
-    CRITICAL INSTRUCTION: DO NOT OVERSUMMARIZE. The student needs rich, detailed, and reliable material to study from and prepare for national exams.
+    CRITICAL INSTRUCTION: DO NOT OVERSUMMARIZE.The student needs rich, detailed, and reliable material to study from and prepare for national exams.
     
-    **STRICT SOURCE GROUNDING RULE**: 
-    - The "Source Content Snippets" are your absolute authority. 
+    ** STRICT SOURCE GROUNDING RULE **:
+- The "Source Content Snippets" are your absolute authority. 
     - You MUST adhere to the domain of "${subject}" as defined in the Kenyan Curriculum.
     - NEVER use "[PLACEHOLDER]" or template text. 
     - Every section must contain substantive, factual information grounded in the source. 
-    - **CURRICULUM EXPANSION**: If a section (like Examples or Definitions) is requested but not explicitly in the source, use your expert knowledge of the KENYAN CURRICULUM for "${subject}" at "${grade}" level. This expansion MUST be 100% relevant to the subject and grade.
+    - ** CURRICULUM EXPANSION **: If a section(like Examples or Definitions) is requested but not explicitly in the source, use your expert knowledge of the KENYAN CURRICULUM for "${subject}" at "${grade}" level.This expansion MUST be 100 % relevant to the subject and grade.
     
     Source Content Snippets:
-    "${ragContext.substring(0, 15000)}"
-    
-    GUIDELINES:
-    1. **Pedagogical Structure**: Start with an "Introduction/Overview", followed by "Core Concepts" (detailed), "Key Formulas/Definitions", "Practical Examples/Context", and "Advanced Insights for Higher Grades".
-    2. **Exam Focus**: Explicitly mention areas that are frequently tested. Use phrases like "Exam Tip" or "Commonly assessed in national exams (KCSE/CBC)".
-    3. **Tone**: Educational, encouraging, and professional (Teacher-to-Student).
-    4. **Richness**: Provide depth. If a concept is mentioned in the source, explain the 'why' and 'how', not just the 'what'.
-    5. **Formatting**: Use Markdown with clear H2 and H3 headers, bold text for emphasis, and organized lists.
-    6. **Language**: Use ${language === 'FR' ? 'French' : 'English'}.
+"${ragContext.substring(0, 15000)}"
+
+GUIDELINES:
+1. ** Pedagogical Structure **: Start with an "Introduction/Overview", followed by "Core Concepts"(detailed), "Key Formulas/Definitions", "Practical Examples/Context", and "Advanced Insights for Higher Grades".
+    2. ** Exam Focus **: Explicitly mention areas that are frequently tested.Use phrases like "Exam Tip" or "Commonly assessed in national exams (KCSE/CBC)".
+    3. ** Tone **: Educational, encouraging, and professional(Teacher - to - Student).
+    4. ** Richness **: Provide depth.If a concept is mentioned in the source, explain the 'why' and 'how', not just the 'what'.
+    5. ** Formatting **: Use Markdown with clear H2 and H3 headers, bold text for emphasis, and organized lists.
+    6. ** Language **: Use ${language === 'FR' ? 'French' : 'English'}.
     
     Output JSON.
   `;
@@ -523,17 +607,17 @@ export const continueResearch = async (
     : "LANGUAGE RULE: If the subject is 'Kiswahili' or 'Swahili', you MUST respond in Swahili. For ALL other subjects, you MUST respond ONLY in English.";
 
   const prompt = `
-    CONTEXT: The student is learning about "${currentTopic}".
+CONTEXT: The student is learning about "${currentTopic}".
     CURRENT EXPLANATION: "${currentExplanation.substring(0, 1000)}..."
     
-    USER FOLLOW-UP: "${userQuery}"
-    
-    TASK:
-    1. Update the explanation to address the user's follow-up question. 
-    2. Keep the focus on "${currentTopic}" but pivot to answer the specific query.
+    USER FOLLOW - UP: "${userQuery}"
+
+TASK:
+1. Update the explanation to address the user's follow-up question. 
+2. Keep the focus on "${currentTopic}" but pivot to answer the specific query.
     3. ${langInstruction}
-    4. Explain in ${level === 'Simple' ? 'very simple language' : 'academic language'}.
-    5. Provide updated summary points and related topics.
+4. Explain in ${level === 'Simple' ? 'very simple language' : 'academic language'}.
+5. Provide updated summary points and related topics.
     
     Output JSON.
   `;
@@ -586,12 +670,12 @@ export const generateQuiz = async (content: string, topic: string, language: 'EN
 
   const prompt = `
     Based on the following content about "${topic}":
-    "${content.substring(0, 5000)}" 
-    
-    1. Identify the subject. 
+"${content.substring(0, 5000)}"
+
+1. Identify the subject. 
     2. ${langInstruction}
-    3. Generate a quiz with:
-       - Exactly 3 Multiple Choice Questions (MCQ)
+3. Generate a quiz with:
+- Exactly 3 Multiple Choice Questions(MCQ)
     
     For each question, provide the correct answer and a brief explanation of why.
     Output JSON.
@@ -645,11 +729,11 @@ export const generateQuickQuiz = async (content: string, topic: string, language
 
   const prompt = `
     Based on the explanation of "${topic}", generate a quick "Sticky Quiz" to test immediate retention.
-    
-    ${langInstruction}
-    Generate exactly 3 simple Multiple Choice Questions (MCQ).
-    
-    Content: "${content.substring(0, 3000)}"
+
+  ${langInstruction}
+    Generate exactly 3 simple Multiple Choice Questions(MCQ).
+
+  Content: "${content.substring(0, 3000)}"
     
     Output JSON.
   `;
@@ -701,9 +785,9 @@ export const convertNotes = async (base64Data: string, mimeType: string, subject
   const prompt = `
     Analyze this document. 
     1. CONTEXT: The teacher has indicated this is for ${subject || 'a school subject'} and the students are in ${className || 'a Kenyan classroom'}.
-    2. ${langInstruction}
-    3. Create structured lesson notes (headings, key concepts, examples) targeted at the appropriate academic level for ${className || 'this grade'}.
-    4. Create a simplified version suitable for students to study from directly.
+2. ${langInstruction}
+3. Create structured lesson notes(headings, key concepts, examples) targeted at the appropriate academic level for ${className || 'this grade'}.
+4. Create a simplified version suitable for students to study from directly.
     
     Output JSON.
   `;
@@ -751,27 +835,27 @@ export const processVoiceNote = async (audioBase64: string, mimeType: string = "
     : "LANGUAGE RULE: If the subject is 'Kiswahili' or 'Swahili', you MUST respond in Swahili. For ALL other subjects, you MUST respond ONLY in English.";
 
   const prompt = `
-        You are an expert Study Companion (like NotebookLM) for a Kenyan classroom.
-        
-        TASK 1: LISTEN & VERIFY
-        - Listen to the audio.
+        You are an expert Study Companion(like NotebookLM) for a Kenyan classroom.
+
+  TASK 1: LISTEN & VERIFY
+    - Listen to the audio.
         - If the audio is silent, just background noise, or unintelligible:
-          - Set topic to "Unclear Audio".
+- Set topic to "Unclear Audio".
           - Set simplifiedNotes to "I couldn't hear any clear speech. Please try recording again closer to the microphone."
-          - Set structuredNotes to "Audio was unclear."
-          - STOP there.
-        
-        TASK 2: TRANSCRIBE & SIMPLIFY (Only if speech is clear)
-        - Transcribe the teacher's lesson.
-        - CONTEXT: This lesson is about ${subject || 'a specific subject'} for students in ${className || 'a Kenyan classroom'}.
-        - ${langInstruction}
-        - Create a "NotebookLM Style" Study Guide targeted at ${className || 'the students level'}:
-          1. **Topic**: A fun, catchy title.
-          2. **The Big Idea**: One simple sentence explaining what this is about.
-          3. **Key Points**: 3-4 bullet points using simple words.
-          4. **Fun Fact / Example**: A relatable example.
-        
-        Format as JSON.
+  - Set structuredNotes to "Audio was unclear."
+    - STOP there.
+
+      TASK 2: TRANSCRIBE & SIMPLIFY(Only if speech is clear)
+- Transcribe the teacher's lesson.
+  - CONTEXT: This lesson is about ${subject || 'a specific subject'} for students in ${className || 'a Kenyan classroom'}.
+- ${langInstruction}
+- Create a "NotebookLM Style" Study Guide targeted at ${className || 'the students level'}:
+1. ** Topic **: A fun, catchy title.
+          2. ** The Big Idea **: One simple sentence explaining what this is about.
+          3. ** Key Points **: 3 - 4 bullet points using simple words.
+4. ** Fun Fact / Example **: A relatable example.
+
+Format as JSON.
     `;
 
   try {
@@ -784,8 +868,8 @@ export const processVoiceNote = async (audioBase64: string, mimeType: string = "
     if (!text) throw new Error("No response from AI");
 
     try {
-      // Try to clean potential markdown fences ```json\n?|```/g
-      const cleanedText = text.replace(/```json\n?|```/g, '').trim();
+      // Try to clean potential markdown fences ```json\n ?| ```/g
+      const cleanedText = text.replace(/```json\n ?| ```/g, '').trim();
       const json = JSON.parse(cleanedText);
       return {
         id: Date.now().toString(),
@@ -860,35 +944,35 @@ export const generateAdvancedTeacherQuiz = async (
     : "LANGUAGE RULE: If the subject is 'Kiswahili' or 'Swahili', you MUST generate the quiz in Swahili. For ALL other subjects, generate the quiz ONLY in English.";
 
   const prompt = `
-    You are an expert Kenyan Competency-Based Curriculum (CBC) Developer.
-    
-    Task: Create a professional ${grade} Exam Quiz about "${topic}".
+    You are an expert Kenyan Competency - Based Curriculum(CBC) Developer.
+
+  Task: Create a professional ${grade} Exam Quiz about "${topic}".
     
     Source Material: Use the attached images as context.
-    
-    Requirements:
-    1. Subject identification: Identify the subject from the topic or content.
+
+  Requirements:
+1. Subject identification: Identify the subject from the topic or content.
     2. ${langInstruction}
-    3. Generate EXACTLY ${count} questions.
+3. Generate EXACTLY ${count} questions.
     4. Format: ${type === 'MCQ' ? 'Multiple Choice Questions (4 options)' : 'Short Answer / Structured Questions (No options)'}.
-    5. Standard: Align with Kenyan CBC standards (Scenario-based, Critical Thinking, Application).
-    6. Language: Academic and age-appropriate for ${grade}.
+5. Standard: Align with Kenyan CBC standards(Scenario - based, Critical Thinking, Application).
+    6. Language: Academic and age - appropriate for ${grade}.
     
     Output JSON structure:
-    {
-      "topic": "${topic}",
-      "questions": [
-        {
-          "id": 1,
-          "type": "${type === 'MCQ' ? 'MCQ' : 'SHORT'}",
-          "question": "Question text here...",
-          "options": ["A", "B", "C", "D"] (Only if MCQ),
-          "correctAnswer": "Correct Answer",
-          "explanation": "Brief explanation for the teacher marking scheme"
+{
+  "topic": "${topic}",
+    "questions": [
+      {
+        "id": 1,
+        "type": "${type === 'MCQ' ? 'MCQ' : 'SHORT'}",
+        "question": "Question text here...",
+        "options": ["A", "B", "C", "D"](Only if MCQ),
+      "correctAnswer": "Correct Answer",
+      "explanation": "Brief explanation for the teacher marking scheme"
         }
       ]
     }
-  `;
+`;
 
   try {
     const result = await model.generateContent([
@@ -912,30 +996,30 @@ export const askSomo = async (userQuery: string, chatHistory: { role: 'user' | '
   const model = genAI.getGenerativeModel({ model: MODEL_NAME });
 
   // Construct prompt with history manually
-  const systemInstruction = `You are Somo, a super friendly, caring, and easy-going AI Learning Buddy for children! 🌟 
+  const systemInstruction = `You are Somo, a super friendly, caring, and easy - going AI Learning Buddy for children! 🌟 
 
 YOUR PERSONALITY:
-- Be extremely encouraging and kind. Use phrases like "Great question!", "I'm so happy to help you!", and "Let's learn together!"
-- Use very simple words that a young learner can understand easily.
+- Be extremely encouraging and kind.Use phrases like "Great question!", "I'm so happy to help you!", and "Let's learn together!"
+  - Use very simple words that a young learner can understand easily.
 - Use lots of fun emojis to keep things exciting! 🚀📚✨
 
 NAVIGATION & HELP:
-1. **Logging In**: If someone wants to log in, tell them: "Look at the very top of the page and click the big 'Student Login' button! 👆"
-2. **Registering**: If they are new, tell them: "Click 'Student Login' first, then look for the blue link at the bottom that says 'New Student? Create Profile'. It's easy! 😊"
-3. **Homework & Math**: If a learner asks a factual or math question (like "what is 4x4"), ALWAYS give the correct answer clearly first. Then add: "To use my Magic Scanner and see a full explanation with fun helpers, make sure to login or create your profile! 📸"
+1. ** Logging In **: If someone wants to log in, tell them: "Look at the very top of the page and click the big 'Student Login' button! 👆"
+2. ** Registering **: If they are new, tell them: "Click 'Student Login' first, then look for the blue link at the bottom that says 'New Student? Create Profile'. It's easy! 😊"
+3. ** Homework & Math **: If a learner asks a factual or math question(like "what is 4x4"), ALWAYS give the correct answer clearly first.Then add: "To use my Magic Scanner and see a full explanation with fun helpers, make sure to login or create your profile! 📸"
 
 USE THESE EXACT LINKS:
-- Sign In/Dashboard: [Student Login](/learner)
-- See how Somo works: [How it Works](#how-it-works)
-- For Parents: [Parent Dashboard](/parent)
-- For Teachers: [Teacher Dashboard](/teacher)
-- For Exam Candidates: [Candidate Success Center](/revision)
+- Sign In / Dashboard: [Student Login](/learner)
+  - See how Somo works: [How it Works](#how - it - works)
+    - For Parents: [Parent Dashboard](/parent)
+      - For Teachers: [Teacher Dashboard](/teacher)
+        - For Exam Candidates: [Candidate Success Center](/revision)
 
 ${language === 'FR' ? "LANGUAGE RULE: You MUST respond ONLY in French (Français). If the user asks in English, still respond in French." : ""}
-Keep answers short (1-3 sentences), warm, and very clear. Always be helpful! ❤️`;
+Keep answers short(1 - 3 sentences), warm, and very clear.Always be helpful! ❤️`;
 
-  const historyText = chatHistory.map(msg => `${msg.role === 'user' ? 'User' : 'Somo'}: ${msg.text}`).join('\n');
-  const fullPrompt = `${systemInstruction}\n\n${historyText}\nUser: ${userQuery}\nSomo:`;
+  const historyText = chatHistory.map(msg => `${msg.role === 'user' ? 'User' : 'Somo'}: ${msg.text} `).join('\n');
+  const fullPrompt = `${systemInstruction} \n\n${historyText} \nUser: ${userQuery} \nSomo: `;
 
   try {
     const result = await model.generateContent(fullPrompt);
@@ -988,17 +1072,17 @@ export const ingestPastPaper = async (file: File): Promise<ExamAnalysis> => {
 
   const prompt = `
     You are an expert Educational Content Architect. 
-    Analyze this uploaded document, which is a past national examination paper (KCSE, KPSEA, or KEPSEA).
+    Analyze this uploaded document, which is a past national examination paper(KCSE, KPSEA, or KEPSEA).
     
-    1. Identify the Subject (e.g., Mathematics, English, Kiswahili).
-    2. Identify the Grade Level (e.g., Form 4, Grade 9, Grade 6).
+    1. Identify the Subject(e.g., Mathematics, English, Kiswahili).
+    2. Identify the Grade Level(e.g., Form 4, Grade 9, Grade 6).
     3. Extract EVERY question from the paper.
     4. For each question:
-       - Extract the question number (e.g., 1, 2a, 3).
+- Extract the question number(e.g., 1, 2a, 3).
        - Extract the full text of the question.
-       - Identify the specific Topic and Sub-strand it belongs to (based on Kenyan CBC/844 curriculum).
-       - Identify the Competency being tested (e.g., Critical Thinking, Problem Solving, Literacy, Numeracy).
-       - Extract the Marks assigned to it (0 if not specified).
+       - Identify the specific Topic and Sub - strand it belongs to(based on Kenyan CBC / 844 curriculum).
+       - Identify the Competency being tested(e.g., Critical Thinking, Problem Solving, Literacy, Numeracy).
+       - Extract the Marks assigned to it(0 if not specified).
     
     Output JSON compatible with the ExamAnalysis interface.
   `;
@@ -1055,25 +1139,25 @@ export const analyzeExamPaper = async (base64Image: string, mimeType: string): P
     Analyze this exam paper image.
     1. Identify the Subject and Grade Level.
     2. Extract all visible questions.
-    3. For each question, identify the Topic, Sub-Strand (CBC), and Competency being tested.
+    3. For each question, identify the Topic, Sub - Strand(CBC), and Competency being tested.
     
     Output JSON structure:
-    {
-      "subject": "string",
-      "grade": "string",
+{
+  "subject": "string",
+    "grade": "string",
       "questions": [
-        { 
-          "id": number, 
-          "number": "string (e.g. 1a)", 
-          "text": "string content", 
+        {
+          "id": number,
+          "number": "string (e.g. 1a)",
+          "text": "string content",
           "topic": "string",
           "subStrand": "string",
           "competency": "string",
-          "marks": number (or 0 if not shown)
+          "marks": number(or 0 if not shown)
         }
       ]
-    }
-  `;
+}
+`;
 
   try {
     const result = await model.generateContent([
@@ -1120,56 +1204,59 @@ export const getRevisionTutorResponse = async (
     : "LANGUAGE RULE: If the subject is 'Kiswahili' or 'Swahili', you MUST respond in Swahili. For ALL other subjects, you MUST respond ONLY in English.";
 
   const systemInstruction = `
-    You are Somo Smart Candidate Specialist, an expert international-level exam strategist for Kenyan Candidates (KCSE, KPSEA, KEPSEA).
-    Tone: Highly Strategic, Professional, Evidence-Based, and Results-Oriented.
+    ${SYLLABUS_GROUNDING_INSTRUCTION}
+    ${EXAM_CROSS_LINK_INSTRUCTION}
+
+    You are Somo Smart Candidate Specialist, an expert international - level exam strategist for Kenyan Candidates(KCSE, KPSEA, KEPSEA).
+  Tone: Highly Strategic, Professional, Evidence - Based, and Results - Oriented.
     
     Your goal is to guide the candidate THROUGH one national exam question at a time using a strict pedagogical flow.
-    
-    Current Question: "${question.text}"
-    Topic: ${question.topic}
-    Competency: ${question.competency}
+
+  Current Question: "${question.text}"
+Topic: ${question.topic}
+Competency: ${question.competency}
     
     Current Step: ${currentStep}
-    Mode: ${mode}
+Mode: ${mode}
     
     INSTRUCTIONS FOR CURRENT STEP:
-    1. Identify the subject from the topic or question text.
+1. Identify the subject from the topic or question text.
     2. ${langInstruction}
     
     IF STEP = 'A_UNDERSTAND':
-      - Provide a DIRECT, single-sentence summary of what this question is testing.
+- Provide a DIRECT, single - sentence summary of what this question is testing.
       - "This question tests your ability to..."
-      - DO NOT explain the concept in detail yet.
+  - DO NOT explain the concept in detail yet.
       - DO NOT GIVE THE ANSWER.
       
     IF STEP = 'B_THINKING':
-      - Provide a DIRECT strategy to solve this. 
+- Provide a DIRECT strategy to solve this. 
       - "To solve this, first identify... then calculate/compare..."
-      - Warn briefly about the #1 common pitfall.
+  - Warn briefly about the #1 common pitfall.
       - DO NOT GIVE THE ANSWER.
       
     IF STEP = 'C_SOLUTION':
-      - Provide the DIRECT step-by-step solution immediately.
+- Provide the DIRECT step - by - step solution immediately.
       - Use numbered points.
       - Show every calculation or logical step clearly.
       - Use simple, direct language.
       
     IF STEP = 'D_REFLECTION':
-      - State the FINAL ANSWER clearly at the top.
+- State the FINAL ANSWER clearly at the top.
       - Provide a "Pro-Tip" for similar questions in the future.
       
     Output JSON:
-    {
-      "text": "Your teaching response here (use Markdown for formatting)",
-      "step": "${currentStep}", 
+{
+  "text": "Your teaching response here (use Markdown for formatting)",
+    "step": "${currentStep}",
       "nextStep": "The next logical step (e.g. B_THINKING after A is done, or COMPLETE after D)",
-      "hint": "Optional short hint if in Exam Mode"
-    }
-  `;
+        "hint": "Optional short hint if in Exam Mode"
+}
+`;
 
   // We only send the last few messages to keep context relevant but focused
-  const chatContext = history.map(h => `${h.role}: ${h.text}`).join('\n');
-  const fullPrompt = `${systemInstruction}\n\nChat History:\n${chatContext}\n\nAssistant:`;
+  const chatContext = history.map(h => `${h.role}: ${h.text} `).join('\n');
+  const fullPrompt = `${systemInstruction} \n\nChat History: \n${chatContext} \n\nAssistant: `;
 
   try {
     const result = await model.generateContent(fullPrompt);
@@ -1187,11 +1274,11 @@ export const getPaperGuidance = async (analysis: ExamAnalysis, query?: string, l
   const model = genAI.getGenerativeModel({ model: MODEL_NAME });
 
   const paperContext = `
-        Subject: ${analysis.subject}
-        Grade: ${analysis.grade}
-        Questions:
+Subject: ${analysis.subject}
+Grade: ${analysis.grade}
+Questions:
         ${analysis.questions.map(q => `- Q${q.number}: ${q.topic} (Competency: ${q.competency})`).join('\n')}
-    `;
+`;
 
   const strategyPrompt = `
         You are the Somo Smart Candidate Specialist. 
@@ -1201,12 +1288,12 @@ export const getPaperGuidance = async (analysis: ExamAnalysis, query?: string, l
         ${paperContext}
         
         Your report MUST include:
-        1. **Paper Structure**: Briefly describe what this paper covers.
-        2. **Difficulty Hotspots**: Which questions appear most challenging based on the competencies?
-        3. **Strategic Tips**: How should a student allocate their time? (e.g. "Focus on Section B first...")
-        4. **Key Competencies**: What should the student master most to excel in this specific paper?
-        
-        Keep it concise, professional, and highly strategic. Use Markdown formatting.
+1. ** Paper Structure **: Briefly describe what this paper covers.
+        2. ** Difficulty Hotspots **: Which questions appear most challenging based on the competencies ?
+  3. ** Strategic Tips **: How should a student allocate their time ? (e.g. "Focus on Section B first...")
+4. ** Key Competencies **: What should the student master most to excel in this specific paper ?
+
+  Keep it concise, professional, and highly strategic.Use Markdown formatting.
     `;
 
   const queryPrompt = `
@@ -1219,7 +1306,7 @@ export const getPaperGuidance = async (analysis: ExamAnalysis, query?: string, l
         Student Question: "${query}"
         
         Provide a helpful, expert response grounded strictly in the paper's structure and content.
-    `;
+  `;
 
   const prompt = query ? queryPrompt : strategyPrompt;
 
@@ -1227,7 +1314,7 @@ export const getPaperGuidance = async (analysis: ExamAnalysis, query?: string, l
     ${prompt}
     
     ${language === 'FR' ? "LANGUAGE RULE: You MUST respond in French (Français)." : "LANGUAGE RULE: If the subject is 'Kiswahili' or 'Swahili', you MUST respond in Swahili. For ALL other subjects, you MUST respond ONLY in English."}
-  `;
+`;
 
   try {
     const result = await model.generateContent(finalPrompt);
@@ -1272,35 +1359,35 @@ export const markStudentAnswer = async (
     : "LANGUAGE RULE: If the subject is 'Kiswahili' or 'Swahili', respond in Swahili. Otherwise respond in English.";
 
   const prompt = `
-    You are a STRICT Kenyan National Exam Marker (KNEC standard).
+    You are a STRICT Kenyan National Exam Marker(KNEC standard).
     You are marking a candidate's answer for a KPSEA/KCSE examination.
-    
-    QUESTION: "${question.text}"
-    Topic: ${question.topic}
+
+QUESTION: "${question.text}"
+Topic: ${question.topic}
     Marks Available: ${question.marks || 2}
-    Competency: ${question.competency || 'General'}
+Competency: ${question.competency || 'General'}
     
     CANDIDATE'S ANSWER: "${learnerAnswer}"
     
     ${langInstruction}
     
     MARKING INSTRUCTIONS:
-    1. Compare the candidate's answer against the KNEC marking scheme standard.
-    2. Award marks strictly — partial marks are allowed.
+1. Compare the candidate's answer against the KNEC marking scheme standard.
+2. Award marks strictly — partial marks are allowed.
     3. In "modelAnswer", provide the COMPLETE correct answer as it would appear in the official marking scheme.
-    4. In "feedback", explain specifically WHY marks were awarded or lost. Be direct: "You got X marks because... You lost Y marks because..."
-    5. In "examTip", give a practical tip for this type of question in future KPSEA/KCSE exams. Reference real exam patterns: "This topic frequently appears in KCSE Paper 1 Section B..."
+    4. In "feedback", explain specifically WHY marks were awarded or lost.Be direct: "You got X marks because... You lost Y marks because..."
+5. In "examTip", give a practical tip for this type of question in future KPSEA / KCSE exams.Reference real exam patterns: "This topic frequently appears in KCSE Paper 1 Section B..."
     
     Output JSON:
-    {
-      "marksAwarded": number,
-      "marksAvailable": ${question.marks || 2},
-      "isCorrect": boolean,
-      "modelAnswer": "The complete correct answer...",
+{
+  "marksAwarded": number,
+    "marksAvailable": ${question.marks || 2},
+  "isCorrect": boolean,
+    "modelAnswer": "The complete correct answer...",
       "feedback": "You scored X/${question.marks || 2}. Here's why...",
-      "examTip": "In KCSE/KPSEA exams, this type of question..."
-    }
-  `;
+        "examTip": "In KCSE/KPSEA exams, this type of question..."
+}
+`;
 
   try {
     const result = await model.generateContent(prompt);
@@ -1357,23 +1444,23 @@ export const generateExamQuestions = async (
     : "LANGUAGE RULE: If the subject is 'Kiswahili' or 'Swahili', generate in Swahili. Otherwise use English.";
 
   const prompt = `
-    You are a KNEC-level Exam Setter for Kenyan national examinations (KPSEA, KCSE).
+    You are a KNEC - level Exam Setter for Kenyan national examinations(KPSEA, KCSE).
     
-    Using the attached revision notes/document as source material, generate ${count} exam-quality questions.
-    
-    Subject: ${subject}
-    Grade: ${grade}
+    Using the attached revision notes / document as source material, generate ${count} exam - quality questions.
+
+  Subject: ${subject}
+Grade: ${grade}
     ${langInstruction}
-    
-    RULES:
-    1. Questions MUST be in the style of actual KPSEA/KCSE papers — structured, precise, with clear mark allocation.
-    2. Mix question types: factual recall (2 marks), application (3-4 marks), and analytical/essay (5+ marks).
-    3. Each question must test a specific competency from the Kenyan CBC/8-4-4 curriculum.
+
+RULES:
+1. Questions MUST be in the style of actual KPSEA / KCSE papers — structured, precise, with clear mark allocation.
+    2. Mix question types: factual recall(2 marks), application(3 - 4 marks), and analytical / essay(5 + marks).
+    3. Each question must test a specific competency from the Kenyan CBC / 8 - 4 - 4 curriculum.
     4. Include marks for each question.
     5. Questions should be ANSWERABLE from the document content.
     6. Use proper examination language: "State...", "Explain...", "Describe...", "Calculate...", "Discuss..."
-    
-    Output as ExamAnalysis JSON.
+
+Output as ExamAnalysis JSON.
   `;
 
   try {
@@ -1427,31 +1514,31 @@ export const predictLikelyQuestions = async (
   });
 
   const paperContext = analysis.questions.map(q =>
-    `Q${q.number}: "${q.text}" (Topic: ${q.topic}, Marks: ${q.marks || 2})`
+    `Q${q.number}: "${q.text}"(Topic: ${q.topic}, Marks: ${q.marks || 2})`
   ).join('\n');
 
   const prompt = `
     You are a senior KNEC exam analyst who has studied Kenyan national examination patterns for 20 years.
     
     Based on this past paper's pattern:
-    Subject: ${analysis.subject}
-    Grade: ${analysis.grade}
+Subject: ${analysis.subject}
+Grade: ${analysis.grade}
     Questions from past paper:
     ${paperContext}
     
     ${language === 'FR' ? "Respond in French." : "If Kiswahili subject, respond in Swahili. Otherwise English."}
-    
-    TASK: Generate 8 PREDICTED questions that are MOST LIKELY to appear in the NEXT exam sitting.
+
+TASK: Generate 8 PREDICTED questions that are MOST LIKELY to appear in the NEXT exam sitting.
     
     PREDICTION CRITERIA:
-    1. Topics that appear frequently across KPSEA/KCSE papers get repeated.
+1. Topics that appear frequently across KPSEA / KCSE papers get repeated.
     2. Topics NOT covered in this paper are likely to appear next time.
     3. Current affairs or trending topics in Kenya relevant to the subject.
     4. KNEC tends to rotate between application and knowledge questions.
     5. Include some "killer" questions that separate A students from B students.
     
     Each question must have marks allocated and be in proper KNEC exam format.
-    Output as ExamAnalysis JSON.
+Output as ExamAnalysis JSON.
   `;
 
   try {
@@ -1516,36 +1603,39 @@ export const extractStructuredNotes = async (
     : "LANGUAGE RULE: If the subject is 'Kiswahili' or 'Swahili', respond in Swahili. Otherwise respond in English.";
 
   const prompt = `
-    You are a world-class Kenyan CBC/8-4-4 curriculum expert and exam strategist.
-    
-    TASK: Read this document thoroughly and convert it into DETAILED, well-structured, exam-focused study notes.
-    
+    ${SYLLABUS_GROUNDING_INSTRUCTION}
+    ${EXAM_CROSS_LINK_INSTRUCTION}
+
+    You are a world - class Kenyan CBC / 8 - 4 - 4 curriculum expert and exam strategist.
+
+  TASK: Read this document thoroughly and convert it into DETAILED, well - structured, exam - focused study notes.
+
     Subject: ${subject || 'Identify from document'}
-    Grade: ${grade || 'Identify from document'}
+Grade: ${grade || 'Identify from document'}
     ${langInstruction}
-    
-    INSTRUCTIONS:
-    1. Segment the content into MAIN EXAMINABLE TOPICS (each topic should be a core area that KNEC examines).
+
+INSTRUCTIONS:
+1. Segment the content into MAIN EXAMINABLE TOPICS(each topic should be a core area that KNEC examines).
     2. For each topic provide:
-       - **title**: Clear, specific topic name
-       - **difficulty**: "Easy", "Medium", or "Hard" based on how students typically perform
-       - **examRelevance**: "Low", "Medium", "High", or "Very High" based on how frequently this appears in KPSEA/KCSE papers
-       - **keyConcepts**: List 3-6 key concepts/terms/formulas the student must know
-       - **content**: Detailed, well-structured notes in Markdown format. Include:
+       - ** title **: Clear, specific topic name
+  - ** difficulty **: "Easy", "Medium", or "Hard" based on how students typically perform
+    - ** examRelevance **: "Low", "Medium", "High", or "Very High" based on how frequently this appears in KPSEA / KCSE papers
+      - ** keyConcepts **: List 3 - 6 key concepts / terms / formulas the student must know
+        - ** content **: Detailed, well - structured notes in Markdown format.Include:
          * Clear explanations with examples
-         * Definitions of key terms
-         * Step-by-step procedures/methods where applicable
-         * Diagrams described in text form
-         * Tables or comparisons where relevant
-         * At least 500 words per topic for depth
-       - **examTips**: 2-3 specific tips about how this topic appears in KPSEA/KCSE exams
-       - **commonMistakes**: 2-3 mistakes candidates commonly make in this topic
-    
-    3. Make notes COMPREHENSIVE. A candidate should be able to study ONLY from these notes and answer exam questions.
-    4. Use clear, student-friendly language. Define technical terms.
+* Definitions of key terms
+  * Step - by - step procedures / methods where applicable
+    * Diagrams described in text form
+      * Tables or comparisons where relevant
+        * At least 500 words per topic for depth
+          - ** examTips **: 2 - 3 specific tips about how this topic appears in KPSEA / KCSE exams
+            - ** commonMistakes **: 2 - 3 mistakes candidates commonly make in this topic
+
+3. Make notes COMPREHENSIVE.A candidate should be able to study ONLY from these notes and answer exam questions.
+    4. Use clear, student - friendly language.Define technical terms.
     5. Include relevant examples from Kenyan context where applicable.
-    
-    Output as StructuredStudyNotes JSON.
+
+Output as StructuredStudyNotes JSON.
   `;
 
   try {
@@ -1605,11 +1695,11 @@ export const generateTopicQuiz = async (
     : "If Kiswahili subject, generate in Swahili. Otherwise English.";
 
   const prompt = `
-    You are a KNEC-level exam setter. Generate 5 exam-quality questions specifically on this topic.
-    
-    Subject: ${subject}
-    Grade: ${grade}
-    Topic: ${topic.title}
+    You are a KNEC - level exam setter.Generate 5 exam - quality questions specifically on this topic.
+
+  Subject: ${subject}
+Grade: ${grade}
+Topic: ${topic.title}
     ${langInstruction}
     
     Topic Content for Context:
@@ -1617,14 +1707,14 @@ export const generateTopicQuiz = async (
     
     Key Concepts to Test:
     ${topic.keyConcepts.join(', ')}
-    
-    RULES:
-    1. Questions MUST test understanding of THIS specific topic only.
-    2. Mix difficulty: 2 easy (2 marks), 2 medium (3-4 marks), 1 hard (5 marks).
-    3. Use KPSEA/KCSE exam format: "State...", "Explain...", "Describe...", "Calculate..."
-    4. Questions should be answerable from the topic content provided.
-    
-    Output as ExamAnalysis JSON.
+
+RULES:
+1. Questions MUST test understanding of THIS specific topic only.
+    2. Mix difficulty: 2 easy(2 marks), 2 medium(3 - 4 marks), 1 hard(5 marks).
+    3. Use KPSEA / KCSE exam format: "State...", "Explain...", "Describe...", "Calculate..."
+4. Questions should be answerable from the topic content provided.
+
+Output as ExamAnalysis JSON.
   `;
 
   try {
@@ -1666,23 +1756,23 @@ export const explainQuestion = async (
 
   const prompt = `
     You are the Somo Smart Candidate Specialist — a KNEC exam strategist.
-    
-    QUESTION: "${question.text}"
-    Topic: ${question.topic}
-    Marks: ${question.marks || 2}
-    Competency: ${question.competency || 'General'}
+
+  QUESTION: "${question.text}"
+Topic: ${question.topic}
+Marks: ${question.marks || 2}
+Competency: ${question.competency || 'General'}
     ${langInstruction}
+
+TASK: Provide a strategic breakdown of this question to help the candidate PREPARE before answering.DO NOT reveal the actual answer.
     
-    TASK: Provide a strategic breakdown of this question to help the candidate PREPARE before answering. DO NOT reveal the actual answer.
-    
-    1. **whatItTests**: "This question tests your understanding of..." (one clear sentence)
-    2. **keyConcepts**: List 3-5 concepts/terms the candidate needs to know to answer this
-    3. **approachStrategy**: Step-by-step strategy for tackling this question. "First, identify... Then consider... Finally, present your answer by..."
-    4. **commonPitfalls**: 2-3 mistakes candidates commonly make on this type of question. "Many candidates lose marks by..."
-    5. **examContext**: Where does this type of question typically appear in KPSEA/KCSE? How frequently? What marks does it typically carry?
-    
-    Be strategic and specific. Help the candidate THINK before they write.
-    Output as QuestionExplanation JSON.
+    1. ** whatItTests **: "This question tests your understanding of..."(one clear sentence)
+2. ** keyConcepts **: List 3 - 5 concepts / terms the candidate needs to know to answer this
+3. ** approachStrategy **: Step - by - step strategy for tackling this question. "First, identify... Then consider... Finally, present your answer by..."
+4. ** commonPitfalls **: 2 - 3 mistakes candidates commonly make on this type of question. "Many candidates lose marks by..."
+5. ** examContext **: Where does this type of question typically appear in KPSEA / KCSE ? How frequently ? What marks does it typically carry ?
+
+  Be strategic and specific.Help the candidate THINK before they write.
+Output as QuestionExplanation JSON.
   `;
 
   try {
@@ -1729,11 +1819,11 @@ export const generateLessonRecap = async (inputBase64: string, mimeType: string,
 
   const learnerPrompt = `
     You are an expert tutor helping a student understand a live lesson they just attended.
-    1. Analyze the recording/notes and identify the subject.
+    1. Analyze the recording / notes and identify the subject.
     2. ${language === 'FR' ? "LANGUAGE RULE: You MUST respond in French (Français)." : "LANGUAGE RULE: If the subject is 'Kiswahili' or 'Swahili', you MUST respond in Swahili. For ALL other subjects, you MUST respond ONLY in English."}
-    3. Extract the Main Topic.
-    4. Write a fun, simple Summary (2-3 sentences).
-    5. List 5 Key Points (Bullet points).
+3. Extract the Main Topic.
+    4. Write a fun, simple Summary(2 - 3 sentences).
+    5. List 5 Key Points(Bullet points).
     6. Highlight 3 "Exam Tips" - things they must remember for tests.
     7. Define 3 key terms used.
     
@@ -1742,12 +1832,12 @@ export const generateLessonRecap = async (inputBase64: string, mimeType: string,
 
   const teacherPrompt = `
     You are a curriculum expert summarizing a lesson for a fellow teacher.
-    1. Analyze the recording/notes and identify the subject.
+    1. Analyze the recording / notes and identify the subject.
     2. ${language === 'FR' ? "LANGUAGE RULE: You MUST respond in French (Français)." : "LANGUAGE RULE: If the subject is 'Kiswahili' or 'Swahili', you MUST respond in Swahili. For ALL other subjects, you MUST respond ONLY in English."}
-    3. Extract Topic and Competencies covered.
+3. Extract Topic and Competencies covered.
     4. Provide a professional Summary.
     5. List Key Teaching Points.
-    6. Suggest 3 Follow-up assessment ideas.
+    6. Suggest 3 Follow - up assessment ideas.
     
     Output JSON compatible with the schema, mapping 'teacherNotes' to specific pedagogy comments.
   `;
@@ -1817,28 +1907,28 @@ export const generateDarasaLesson = async (audioBase64: string, mimeType: string
 
   const prompt = `
     You are an expert Teaching Assistant for a Kenyan Classroom.
-    
-    TASK 1: ANALYZE RECORDING
+
+  TASK 1: ANALYZE RECORDING
     Listen to this teacher's lesson recording carefully. Identify the subject.
     
     TASK 2: COMPREHENSIVE NOTES
-    Create detailed, professional-grade teacher notes.
+    Create detailed, professional - grade teacher notes.
     - ${language === 'FR' ? "LANGUAGE RULE: You MUST respond in French (Français)." : "LANGUAGE RULE: If the subject is 'Kiswahili' or 'Swahili', you MUST respond in Swahili. For ALL other subjects, you MUST respond ONLY in English."}
-    - **Introduction**: Briefly introduce the topic.
-    - **Core Concepts**: Explain 3-5 main concepts covered in depth.
-    - **Examples**: Provide 2-3 real-world examples mentioned or relevant to the context.
-    - **Summary**: A concluding paragraph.
+    - ** Introduction **: Briefly introduce the topic.
+    - ** Core Concepts **: Explain 3 - 5 main concepts covered in depth.
+    - ** Examples **: Provide 2 - 3 real - world examples mentioned or relevant to the context.
+    - ** Summary **: A concluding paragraph.
     
     Map this to the "simplifiedNotes" schema as sections:
-    - Title: "Introduction", Content: ...
-    - Title: "Core Concepts", Content: ... (Use markdown bullets)
-    - etc.
+- Title: "Introduction", Content: ...
+- Title: "Core Concepts", Content: ... (Use markdown bullets)
+- etc.
 
-    TASK 3: EXTENSIVE QUIZ
+  TASK 3: EXTENSIVE QUIZ
     Generate a robust quiz to strictly test understanding.
-    - **Quantity**: Generate AT LEAST 8 questions (Target 10).
-    - **Type**: Multiple Choice.
-    - **Difficulty**: Mixed (Easy to Hard).
+    - ** Quantity **: Generate AT LEAST 8 questions(Target 10).
+    - ** Type **: Multiple Choice.
+    - ** Difficulty **: Mixed(Easy to Hard).
     
     Output structured JSON matching the schema.
   `;
@@ -1907,33 +1997,33 @@ export const generateDarasaRevision = async (imageBase64: string, mimeType: stri
   });
 
   const prompt = `
-    TASK: REVISION FROM IMAGE
-    1. Analyze this image of lesson notes or a textbook page. Identify the subject.
+TASK: REVISION FROM IMAGE
+1. Analyze this image of lesson notes or a textbook page.Identify the subject.
     2. ${language === 'FR' ? "LANGUAGE RULE: You MUST respond in French (Français)." : "LANGUAGE RULE: If the subject is 'Kiswahili' or 'Swahili', you MUST respond in Swahili. For ALL other subjects, you MUST respond ONLY in English."}
-    3. Extract the Main Topic.
-    4. Write a clear, simple Summary (2-3 sentences).
-    5. Create "Simplified Notes" broken into logical sections (Title + Content).
-    6. Generate a Quiz with 3-5 Multiple Choice Questions based DIRECTLY on the content.
+3. Extract the Main Topic.
+    4. Write a clear, simple Summary(2 - 3 sentences).
+    5. Create "Simplified Notes" broken into logical sections(Title + Content).
+    6. Generate a Quiz with 3 - 5 Multiple Choice Questions based DIRECTLY on the content.
 
     Output structured JSON matching this schema:
-    {
-       "topic": "String",
-       "summary": "String",
-       "simplifiedNotes": [
-          { "title": "Section Title", "content": "Simplified explanation..." }
-       ],
-       "quiz": [
+{
+  "topic": "String",
+    "summary": "String",
+      "simplifiedNotes": [
+        { "title": "Section Title", "content": "Simplified explanation..." }
+      ],
+        "quiz": [
           {
-             "id": 1,
-             "type": "MCQ",
-             "question": "Question text",
-             "options": ["Option A", "Option B", "Option C", "Option D"],
-             "correctAnswer": 0,
-             "explanation": "Why this is correct"
+            "id": 1,
+            "type": "MCQ",
+            "question": "Question text",
+            "options": ["Option A", "Option B", "Option C", "Option D"],
+            "correctAnswer": 0,
+            "explanation": "Why this is correct"
           }
-       ]
-    }
-  `;
+        ]
+}
+`;
 
   try {
     const result = await model.generateContent([
@@ -1986,18 +2076,18 @@ export const generatePodcastScript = async (content: string, topic: string): Pro
 
   const prompt = `
     You are the producer of a popular educational podcast called "Somo Smart Audio".
-    Your task is to convert the following educational content into a lively, engaging 2-minute podcast script between two hosts:
-    - **Host (Rachel)**: Enthusiastic, introduces the topic, asks guiding questions, and summarizes key points.
-    - **Guest (Expert)**: Knowledgeable but accessible, explains complex ideas with analogies and examples.
+    Your task is to convert the following educational content into a lively, engaging 2 - minute podcast script between two hosts:
+    - ** Host(Rachel) **: Enthusiastic, introduces the topic, asks guiding questions, and summarizes key points.
+    - ** Guest(Expert) **: Knowledgeable but accessible, explains complex ideas with analogies and examples.
 
-    **Content to cover:**
-    Topic: "${topic}"
-    Material:
-    "${content.slice(0, 15000).replace(/"/g, "'")}"
+    ** Content to cover:**
+  Topic: "${topic}"
+Material:
+"${content.slice(0, 15000).replace(/"/g, "'")}"
 
-    **Rules:**
-    1. Start with a catchy intro (e.g., "Welcome back to Somo Smart Audio...").
-    2. Make it sound like a real conversation (use "Exactly!", "That's a great point", "Wait, so you mean...").
+  ** Rules:**
+    1. Start with a catchy intro(e.g., "Welcome back to Somo Smart Audio...").
+    2. Make it sound like a real conversation(use "Exactly!", "That's a great point", "Wait, so you mean...").
     3. Keep explanations simple and use analogies.
     4. End with a quick takeaway or study tip.
     5. The script should be roughly 2 minutes long when spoken.

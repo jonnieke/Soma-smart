@@ -4,6 +4,7 @@ import { HelmetProvider } from 'react-helmet-async';
 import { ConnectivityBanner } from './components/ConnectivityBanner';
 import { AskSomo } from './components/AskSomo';
 import { SessionConflictModal } from './components/SessionConflictModal';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { supabase } from './lib/supabase';
 import ReactGA from "react-ga4";
 import { useLocation } from 'react-router-dom';
@@ -21,6 +22,7 @@ const DarasaMode = React.lazy(() => import('./features/darasa-mode/DarasaMode').
 const ResetPassword = React.lazy(() => import('./pages/ResetPassword').then(module => ({ default: module.ResetPassword })));
 const PricingPage = React.lazy(() => import('./pages/PricingPage').then(module => ({ default: module.PricingPage })));
 const SchoolDashboard = React.lazy(() => import('./features/school/SchoolDashboard').then(module => ({ default: module.SchoolDashboard })));
+const OfflinePage = React.lazy(() => import('./pages/OfflinePage').then(module => ({ default: module.OfflinePage })));
 
 // Loading Fallback Component
 const PageLoader = () => (
@@ -71,29 +73,35 @@ const App: React.FC = () => {
 
     return (
         <HelmetProvider>
-            <ConnectivityBanner />
-            <AskSomo />
-            <SessionConflictModal />
-            <Suspense fallback={<PageLoader />}>
-                <Routes>
-                    <Route path="/" element={<LandingPage />} />
-                    <Route path="/learner" element={<LearnerPage />} />
-                    <Route path="/teacher" element={<TeacherPage />} />
-                    <Route path="/teacher/notes" element={<TeacherPage />} />
-                    <Route path="/teacher/homework" element={<TeacherPage />} />
-                    <Route path="/teacher/marking" element={<TeacherPage />} />
-                    <Route path="/parent" element={<ParentPage />} />
-                    <Route path="/admin" element={<AdminDashboard onNavigate={() => window.location.href = '/'} />} />
-                    <Route path="/admin/knowledge" element={<AdminKnowledgeBase />} />
-                    <Route path="/revision" element={<RevisionPortal />} />
-                    <Route path="/revision/dashboard" element={<RevisionDashboard />} />
-                    <Route path="/teacher/darasa" element={<DarasaPage />} />
-                    <Route path="/reset-password" element={<ResetPassword />} />
-                    <Route path="/pricing" element={<PricingPage />} />
-                    <Route path="/school" element={<SchoolDashboard />} />
-                    <Route path="*" element={<Navigate to="/" replace />} />
-                </Routes>
-            </Suspense>
+            <ErrorBoundary>
+                <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:z-[100] focus:top-2 focus:left-2 focus:bg-indigo-600 focus:text-white focus:px-4 focus:py-2 focus:rounded-lg focus:font-bold">Skip to content</a>
+                <ConnectivityBanner />
+                <AskSomo />
+                <SessionConflictModal />
+                <Suspense fallback={<PageLoader />}>
+                    <main id="main-content">
+                        <Routes>
+                            <Route path="/" element={<LandingPage />} />
+                            <Route path="/learner" element={<LearnerPage />} />
+                            <Route path="/teacher" element={<TeacherPage />} />
+                            <Route path="/teacher/notes" element={<TeacherPage />} />
+                            <Route path="/teacher/homework" element={<TeacherPage />} />
+                            <Route path="/teacher/marking" element={<TeacherPage />} />
+                            <Route path="/parent" element={<ParentPage />} />
+                            <Route path="/admin" element={<AdminDashboard onNavigate={() => window.location.href = '/'} />} />
+                            <Route path="/admin/knowledge" element={<AdminKnowledgeBase />} />
+                            <Route path="/revision" element={<RevisionPortal />} />
+                            <Route path="/revision/dashboard" element={<RevisionDashboard />} />
+                            <Route path="/teacher/darasa" element={<DarasaPage />} />
+                            <Route path="/reset-password" element={<ResetPassword />} />
+                            <Route path="/pricing" element={<PricingPage />} />
+                            <Route path="/school" element={<SchoolDashboard />} />
+                            <Route path="/offline" element={<OfflinePage />} />
+                            <Route path="*" element={<Navigate to="/" replace />} />
+                        </Routes>
+                    </main>
+                </Suspense>
+            </ErrorBoundary>
         </HelmetProvider>
     );
 };

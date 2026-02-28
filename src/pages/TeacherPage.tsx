@@ -1,5 +1,6 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import { TeacherDashboard } from '../features/teacher/Teacher';
 import { ViewState } from '../types';
 
@@ -20,9 +21,19 @@ export const TeacherPage: React.FC = () => {
     };
 
     return (
-        <TeacherDashboard
-            onNavigate={handleNavigate}
-            initialTab={initialTab}
-        />
+        <>
+            <Helmet>
+                <title>Teacher Dashboard | Somo Smart — AI Teaching Tools for Kenyan Educators</title>
+                <meta name="description" content="AI-powered teaching studio for Kenyan educators. Create lesson notes, generate quizzes, mark assignments, and manage your classroom with Somo Smart." />
+                <link rel="canonical" href="https://somaai.co.ke/teacher" />
+                <meta property="og:title" content="Teacher Dashboard | Somo Smart" />
+                <meta property="og:description" content="AI-powered teaching tools for Kenyan CBC & KCSE educators." />
+                <meta property="og:url" content="https://somaai.co.ke/teacher" />
+            </Helmet>
+            <TeacherDashboard
+                onNavigate={handleNavigate}
+                initialTab={initialTab}
+            />
+        </>
     );
 };

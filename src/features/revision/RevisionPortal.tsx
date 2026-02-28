@@ -68,12 +68,8 @@ export const RevisionPortal: React.FC = () => {
     };
 
     return (
-        <div className="min-h-screen bg-slate-50 dark:bg-slate-950 font-sans text-slate-900 dark:text-white relative overflow-hidden transition-colors duration-300">
+        <div className="bg-slate-50 min-h-screen font-sans selection:bg-indigo-100 selection:text-indigo-900 pb-20 dark:text-white relative overflow-hidden transition-colors duration-300">
             <Helmet>
-                <title>Somo Smart Revision Portal | Free KCSE Past Papers & AI Coaching</title>
-                <meta name="description" content="Master your final papers with precision. Access the Somo Smart Candidate Success Center for KCSE and KPSEA revision, featuring AI-assisted competency feedback." />
-                <meta name="keywords" content="somo smart revision, freely scan past papers kenya, kcse marking scheme ai, kpsea study center, online revision kenya" />
-
                 {/* AIO */}
                 <meta name="ai-search-index" content="index" />
                 <meta name="ai-knowledge-base" content="official" />

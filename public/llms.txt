@@ -1,0 +1,45 @@
+# Somo Smart — AI-Powered Learning Platform
+
+> Somo Smart is Kenya's leading AI-powered learning platform for CBC and KCSE students, teachers, and parents.
+
+## What We Offer
+
+- **AI Explanations**: Students scan textbooks or type any topic to get curriculum-aligned explanations with KCSE exam insights
+- **Smart Quizzes**: AI-generated practice quizzes tailored to the Kenyan CBC/8-4-4 curriculum
+- **Spaced Repetition**: Adaptive review system based on the SM-2 algorithm for long-term retention
+- **Teacher Tools**: Lesson note generation, quiz creation, automated marking, and homework management
+- **Resource Library**: Verified study materials, past papers, and syllabus guides for all CBC/KCSE subjects
+- **Parent Portal**: Secure access for parents to monitor their child's study progress and quiz scores
+
+## Subjects Covered
+
+Mathematics, Science, English, Kiswahili, Social Studies, CRE, IRE, Agriculture, Business Studies, Computer Science, History, Geography, Physics, Chemistry, Biology, Home Science
+
+## Grade Levels
+
+- CBC: Grade 1 through Grade 9 (Junior Secondary)
+- 8-4-4: Form 1 through Form 4
+
+## Pricing
+
+- Free tier: 3 AI explanations per session
+- Pro Monthly (KES 200): Unlimited explanations, quizzes, and downloads for 30 days
+- Pro Term (KES 500): Unlimited access for 90 days
+- Pro Annual (KES 1,500): Full year of unlimited access
+
+## Target Audience
+
+- Kenyan students preparing for KCSE, KPSEA, and CBC assessments
+- Teachers in Kenyan primary and secondary schools
+- Parents monitoring their children's academic progress
+
+## Technical Details
+
+- Built with React 19, Vite, Supabase, and Google Gemini AI
+- Available at: https://somaai.co.ke
+- Supports English and Kiswahili languages
+
+## Contact
+
+- Website: https://somaai.co.ke
+- Location: Nairobi, Kenya
