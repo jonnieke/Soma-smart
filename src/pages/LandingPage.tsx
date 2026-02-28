@@ -379,7 +379,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                         </p>
 
                         {/* Primary Call to Action */}
-                        <div className="flex flex-col items-center justify-center gap-6 mb-12">
+                        <div className="flex flex-col items-center justify-center gap-6 mb-2">
                             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 w-full">
                                 <button
                                     onClick={() => handleRoleSelect(UserRole.LEARNER)}
@@ -405,9 +405,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                         initial={{ opacity: 0, y: 30 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.6, delay: 0.2 }}
-                        className="mt-6 mb-8"
+                        className="mt-2 mb-8"
                     >
-                        <div className="flex items-center justify-center gap-4 mb-8">
+                        <div className="flex items-center justify-center gap-4 mb-6">
                             <div className="h-[2px] bg-slate-200 dark:bg-slate-800 w-12 md:w-24 rounded-full"></div>
                             <p className="text-sm font-black uppercase tracking-[0.3em] text-slate-600 dark:text-slate-400 bg-white/80 dark:bg-slate-900/80 px-6 py-2 rounded-full border border-slate-200 dark:border-slate-800 shadow-sm backdrop-blur-md">I AM A...</p>
                             <div className="h-[2px] bg-slate-200 dark:bg-slate-800 w-12 md:w-24 rounded-full"></div>
