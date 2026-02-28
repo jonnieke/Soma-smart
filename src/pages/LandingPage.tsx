@@ -409,7 +409,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                     >
                         <div className="flex items-center justify-center gap-4 mb-6">
                             <div className="h-[2px] bg-slate-200 dark:bg-slate-800 w-12 md:w-24 rounded-full"></div>
-                            <p className="text-sm font-black uppercase tracking-[0.3em] text-slate-600 dark:text-slate-400 bg-white/80 dark:bg-slate-900/80 px-6 py-2 rounded-full border border-slate-200 dark:border-slate-800 shadow-sm backdrop-blur-md">I AM A...</p>
+                            <p className="text-lg md:text-xl font-black uppercase tracking-[0.25em] text-slate-600 dark:text-slate-400 bg-white/80 dark:bg-slate-900/80 px-8 py-3 rounded-full border border-slate-200 dark:border-slate-800 shadow-sm backdrop-blur-md">I AM A...</p>
                             <div className="h-[2px] bg-slate-200 dark:bg-slate-800 w-12 md:w-24 rounded-full"></div>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
