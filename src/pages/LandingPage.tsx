@@ -357,16 +357,16 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                     />
                 </div>
 
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-left">
                     {/* Hero Content Re-imagined */}
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.6 }}
-                        className="py-12 md:py-20"
+                        className="py-12 md:py-20 lg:py-24"
                     >
-                        <div className="flex justify-center mb-8 md:mb-12">
-                            <img src={logoImg} alt="Somo Smart Logo" className="h-24 sm:h-32 md:h-40 lg:h-48 w-auto object-contain drop-shadow-2xl hover:scale-[1.03] transition-transform duration-300" />
+                        <div className="mb-10 lg:mb-12">
+                            <img src={logoImg} alt="Somo Smart Logo" className="h-16 md:h-20 lg:h-24 w-auto object-contain drop-shadow-md" />
                         </div>
 
                         <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 text-blue-600 dark:text-blue-300 text-xs font-bold mb-8 uppercase tracking-widest shadow-sm">
@@ -374,16 +374,16 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                             Trusted by 1,200+ Kenyan learners and 15+ schools
                         </div>
 
-                        <h1 className="text-5xl md:text-6xl lg:text-[5.5rem] font-black text-[#1a2b5e] dark:text-white tracking-tight leading-[1.05] mb-6 md:mb-8">
+                        <h1 className="text-5xl md:text-6xl lg:text-[5.5rem] font-black text-[#1a2b5e] dark:text-white tracking-tight leading-[1.05] mb-6 md:mb-8 max-w-5xl">
                             Smarter CBE Learning.<br />
                             <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#5b61de] to-[#2cb674]">Better Results.</span>
                         </h1>
-                        <p className="text-lg md:text-xl lg:text-2xl text-slate-600 dark:text-slate-400 max-w-3xl mx-auto leading-relaxed mb-10 font-medium">
+                        <p className="text-lg md:text-xl lg:text-2xl text-slate-600 dark:text-slate-400 max-w-3xl leading-relaxed mb-10 font-medium">
                             Scan homework, revise past papers, and understand concepts instantly — aligned with <strong className="text-slate-800 dark:text-slate-200">CBE & KCSE</strong>.
                         </p>
 
                         {/* Primary Call to Action */}
-                        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 md:gap-6 mb-12">
+                        <div className="flex flex-col sm:flex-row items-center sm:items-start sm:justify-start gap-4 md:gap-6 mb-16">
                             <button
                                 onClick={() => handleRoleSelect(UserRole.LEARNER)}
                                 className="group relative w-full sm:w-auto inline-flex items-center justify-center gap-3 px-10 py-4 md:px-12 md:py-5 bg-gradient-to-r from-[#5b61de] to-indigo-600 text-white font-black text-lg md:text-xl rounded-full shadow-[0_20px_40px_-10px_rgba(91,97,222,0.4)] hover:shadow-[0_25px_50px_-12px_rgba(91,97,222,0.5)] hover:-translate-y-1 transition-all duration-300 overflow-hidden"
@@ -403,11 +403,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                         </div>
 
                         {/* "I am a..." Audience Selector Lanes */}
-                        <div className="mt-16 mb-8">
-                            <div className="flex items-center justify-center gap-4 mb-10 w-full">
-                                <div className="h-[2px] bg-slate-200 dark:bg-slate-800 w-16 md:w-32 rounded-full"></div>
-                                <p className="text-sm font-black uppercase tracking-[0.3em] text-slate-600 dark:text-slate-400 bg-white/80 dark:bg-slate-900/80 px-8 py-3 rounded-full border border-slate-200 dark:border-slate-800 shadow-sm backdrop-blur-md">I am a...</p>
-                                <div className="h-[2px] bg-slate-200 dark:bg-slate-800 w-16 md:w-32 rounded-full"></div>
+                        <div className="mt-8 mb-8">
+                            <div className="flex items-center gap-4 mb-10 w-full">
+                                <p className="text-sm font-black uppercase tracking-[0.3em] text-slate-600 dark:text-slate-400 bg-white/80 dark:bg-slate-900/80 pr-4 py-2 border-slate-200 dark:border-slate-800 shadow-sm backdrop-blur-md">I AM A...</p>
+                                <div className="h-[2px] bg-slate-200 dark:bg-slate-800 flex-grow rounded-full max-w-[100px]"></div>
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 max-w-4xl mx-auto">
