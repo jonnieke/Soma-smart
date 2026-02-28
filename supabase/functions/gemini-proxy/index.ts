@@ -31,12 +31,21 @@ serve(async (req) => {
             );
         }
 
-        // Build the Gemini API request
-        const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
+        // Build the Gemini API request based on model type
+        let geminiUrl;
+        let geminiBody: Record<string, unknown> = {};
 
-        const geminiBody: Record<string, unknown> = { contents };
-        if (generationConfig) geminiBody.generationConfig = generationConfig;
-        if (systemInstruction) geminiBody.systemInstruction = systemInstruction;
+        if (model.includes('embedding')) {
+            // For embeddings, use embedContent endpoint
+            geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:embedContent?key=${GEMINI_API_KEY}`;
+            geminiBody = { content: contents[0] }; // Embeddings take a single content object
+        } else {
+            // For generation, use generateContent endpoint
+            geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
+            geminiBody = { contents };
+            if (generationConfig) geminiBody.generationConfig = generationConfig;
+            if (systemInstruction) geminiBody.systemInstruction = systemInstruction;
+        }
 
         const geminiRes = await fetch(geminiUrl, {
             method: 'POST',

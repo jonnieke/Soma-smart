@@ -169,6 +169,12 @@ export const RevisionLanding: React.FC<Props> = ({ onStartSession, onNavigate })
         { key: 'community', label: 'Community', icon: <Users className="w-4 h-4" />, count: filteredQuizzes.length },
     ];
 
+    // Find latest uploads
+    const latestUploads = useMemo(() => {
+        if (!resources || resources.length === 0) return [];
+        return [...resources].sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()).slice(0, 3);
+    }, [resources]);
+
     return (
         <div className="min-h-screen bg-slate-50 dark:bg-slate-950 font-sans text-slate-800 dark:text-slate-100 transition-colors duration-300">
             {/* Compact Header */}
@@ -197,6 +203,34 @@ export const RevisionLanding: React.FC<Props> = ({ onStartSession, onNavigate })
                         </div>
                     </div>
                 </div>
+
+                {/* Sliding Notification Belt for New Materials */}
+                {latestUploads.length > 0 && (
+                    <div className="bg-gradient-to-r from-indigo-600 to-indigo-700 text-white overflow-hidden py-2.5 relative flex items-center">
+                        <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-indigo-600 to-transparent z-10"></div>
+                        <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-indigo-700 to-transparent z-10"></div>
+                        <motion.div
+                            animate={{ x: [0, -1000] }}
+                            transition={{ repeat: Infinity, ease: 'linear', duration: 25 }}
+                            className="flex whitespace-nowrap gap-12 text-xs md:text-sm font-bold items-center px-4"
+                        >
+                            {[...Array(3)].map((_, loopIdx) => (
+                                <React.Fragment key={loopIdx}>
+                                    {latestUploads.map((u, i) => (
+                                        <button
+                                            key={`${loopIdx}-${i}`}
+                                            onClick={() => onStartSession(u, RevisionMode.LEARN)}
+                                            className="flex items-center gap-2 hover:text-amber-300 transition-colors"
+                                        >
+                                            <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                                            🆕 New Upload: {u.title} <span className="opacity-75">({u.subject})</span>
+                                        </button>
+                                    ))}
+                                </React.Fragment>
+                            ))}
+                        </motion.div>
+                    </div>
+                )}
             </div>
 
             <main className="max-w-5xl mx-auto px-4 md:px-6 pt-6 pb-24">
