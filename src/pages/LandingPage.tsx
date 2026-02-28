@@ -383,36 +383,133 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                         </p>
 
                         {/* Primary Call to Action */}
-                        <div className="flex flex-col items-center justify-center gap-6 mb-8">
+                        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 md:gap-6 mb-12">
                             <button
                                 onClick={() => handleRoleSelect(UserRole.LEARNER)}
-                                className="group relative inline-flex items-center justify-center gap-3 px-12 py-5 md:px-16 md:py-6 bg-gradient-to-r from-[#5b61de] to-indigo-600 text-white font-black text-xl rounded-full shadow-[0_20px_40px_-10px_rgba(91,97,222,0.4)] hover:shadow-[0_25px_50px_-12px_rgba(91,97,222,0.5)] hover:-translate-y-1 transition-all duration-300 overflow-hidden"
+                                className="group relative w-full sm:w-auto inline-flex items-center justify-center gap-3 px-10 py-4 md:px-12 md:py-5 bg-gradient-to-r from-[#5b61de] to-indigo-600 text-white font-black text-lg md:text-xl rounded-full shadow-[0_20px_40px_-10px_rgba(91,97,222,0.4)] hover:shadow-[0_25px_50px_-12px_rgba(91,97,222,0.5)] hover:-translate-y-1 transition-all duration-300 overflow-hidden"
                             >
                                 <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out"></div>
                                 <span className="relative z-10 transition-transform duration-300 group-hover:scale-105">Start Free</span>
-                                <ArrowRight className="w-6 h-6 relative z-10 transition-transform duration-300 group-hover:translate-x-1" />
+                                <ArrowRight className="w-5 h-5 md:w-6 md:h-6 relative z-10 transition-transform duration-300 group-hover:translate-x-1" />
                             </button>
 
-                            {/* Secondary Action Pills */}
-                            <div className="flex flex-wrap justify-center gap-3 md:gap-4 mt-2">
-                                <button
+                            <button
+                                onClick={() => navigate('/revision')}
+                                className="group relative w-full sm:w-auto inline-flex items-center justify-center gap-3 px-10 py-4 md:px-12 md:py-5 bg-white dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-800 text-slate-800 dark:text-white font-black text-lg md:text-xl rounded-full shadow-lg hover:border-amber-400 hover:shadow-amber-500/20 hover:-translate-y-1 transition-all duration-300 overflow-hidden"
+                            >
+                                <span className="relative z-10 transition-transform duration-300 group-hover:scale-105">Help with Exams</span>
+                                <Zap className="w-5 h-5 md:w-6 md:h-6 text-amber-500 relative z-10 transition-transform duration-300 group-hover:scale-110" />
+                            </button>
+                        </div>
+
+                        {/* "I am a..." Audience Selector Lanes */}
+                        <div className="mt-16 mb-8">
+                            <div className="flex items-center justify-center gap-4 mb-10 w-full">
+                                <div className="h-[2px] bg-slate-200 dark:bg-slate-800 w-16 md:w-32 rounded-full"></div>
+                                <p className="text-sm font-black uppercase tracking-[0.3em] text-slate-600 dark:text-slate-400 bg-white/80 dark:bg-slate-900/80 px-8 py-3 rounded-full border border-slate-200 dark:border-slate-800 shadow-sm backdrop-blur-md">I am a...</p>
+                                <div className="h-[2px] bg-slate-200 dark:bg-slate-800 w-16 md:w-32 rounded-full"></div>
+                            </div>
+
+                            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 max-w-6xl mx-auto">
+                                {/* Student Card */}
+                                <motion.div
+                                    whileHover={{ y: -6, scale: 1.02 }}
+                                    whileTap={{ scale: 0.98 }}
+                                    onClick={() => handleRoleSelect(UserRole.LEARNER)}
+                                    className="bg-white dark:bg-slate-900 rounded-[2rem] p-5 md:p-6 border-2 border-slate-100 dark:border-slate-800 hover:border-blue-400 dark:hover:border-blue-500 shadow-xl shadow-slate-200/50 dark:shadow-black/20 hover:shadow-2xl hover:shadow-blue-500/20 transition-all duration-300 text-left group flex flex-col h-full cursor-pointer relative overflow-hidden"
+                                >
+                                    <div className="w-14 h-14 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-2xl flex items-center justify-center mb-5 group-hover:scale-110 transition-transform shadow-inner">
+                                        <Baby className="w-7 h-7" />
+                                    </div>
+                                    <h3 className="font-extrabold text-slate-900 dark:text-white text-xl mb-2">Student</h3>
+                                    <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed mb-6 flex-grow">Scan homework, get instant AI explanations</p>
+                                    <div className="mt-auto">
+                                        <button className="w-full bg-blue-500 text-white font-bold text-sm px-4 py-3.5 rounded-xl uppercase tracking-wider flex items-center justify-center gap-2 group-hover:bg-blue-600 transition-colors shadow-md shadow-blue-500/30 hover:shadow-lg">
+                                            Start Free <ArrowRight className="w-4 h-4" />
+                                        </button>
+                                    </div>
+                                </motion.div>
+
+                                {/* Candidates Card */}
+                                <motion.div
+                                    whileHover={{ y: -6, scale: 1.02 }}
+                                    whileTap={{ scale: 0.98 }}
                                     onClick={() => navigate('/revision')}
-                                    className="px-6 py-2.5 rounded-full border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 font-bold text-sm hover:border-amber-400 hover:text-amber-600 dark:hover:text-amber-400 hover:shadow-md transition-all flex items-center gap-2 group"
+                                    className="bg-white dark:bg-slate-900 rounded-[2rem] p-5 md:p-6 border-2 border-amber-200 dark:border-amber-900/50 hover:border-amber-400 dark:hover:border-amber-500 shadow-xl shadow-amber-100/50 dark:shadow-black/20 hover:shadow-2xl hover:shadow-amber-500/20 transition-all duration-300 text-left group flex flex-col h-full cursor-pointer relative overflow-hidden"
                                 >
-                                    <Zap className="w-4 h-4 text-amber-500 group-hover:scale-110 transition-transform" /> For Candidates
-                                </button>
-                                <button
+                                    <div className="absolute top-0 right-0 w-24 h-24 bg-amber-400/10 rounded-full blur-2xl -mr-10 -mt-10"></div>
+                                    <div className="w-14 h-14 bg-amber-500 text-white rounded-2xl flex items-center justify-center mb-5 group-hover:rotate-12 transition-transform shadow-lg shadow-amber-500/40 relative z-10">
+                                        <Sparkles className="w-7 h-7" />
+                                    </div>
+                                    <h3 className="font-extrabold text-slate-900 dark:text-white text-xl mb-2 relative z-10">Candidates</h3>
+                                    <p className="text-sm text-slate-600 dark:text-slate-400 font-medium leading-relaxed mb-6 flex-grow relative z-10">Smart Exam Hub: KCSE, KPSEA & JSS Revision</p>
+                                    <div className="mt-auto relative z-10">
+                                        <button className="w-full bg-gradient-to-r from-amber-600 to-orange-600 text-white font-black text-sm px-4 py-3.5 rounded-xl uppercase tracking-wider flex items-center justify-center gap-2 group-hover:from-amber-700 group-hover:to-orange-700 transition-all shadow-lg shadow-orange-500/30 hover:shadow-xl">
+                                            Open Hub <Zap className="w-4 h-4 fill-current" />
+                                        </button>
+                                    </div>
+                                </motion.div>
+
+                                {/* Teacher Card */}
+                                <motion.div
+                                    whileHover={{ y: -6, scale: 1.02 }}
+                                    whileTap={{ scale: 0.98 }}
                                     onClick={() => handleRoleSelect(UserRole.TEACHER)}
-                                    className="px-6 py-2.5 rounded-full border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 font-bold text-sm hover:border-indigo-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:shadow-md transition-all flex items-center gap-2 group"
+                                    className="bg-white dark:bg-slate-900 rounded-[2rem] p-5 md:p-6 border-2 border-indigo-100 dark:border-indigo-900/50 hover:border-indigo-400 dark:hover:border-indigo-500 shadow-xl shadow-indigo-100/50 dark:shadow-black/20 hover:shadow-2xl hover:shadow-indigo-500/20 transition-all duration-300 text-left group flex flex-col h-full cursor-pointer relative overflow-hidden"
                                 >
-                                    <Users className="w-4 h-4 text-indigo-500 group-hover:scale-110 transition-transform" /> For Teachers
-                                </button>
-                                <button
+                                    <div className="w-14 h-14 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-2xl flex items-center justify-center mb-5 group-hover:scale-110 transition-transform shadow-inner">
+                                        <Users className="w-7 h-7" />
+                                    </div>
+                                    <h3 className="font-extrabold text-slate-900 dark:text-white text-xl mb-2">Teacher</h3>
+                                    <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed mb-6 flex-grow">Auto-grade exams & generate CBE lesson plans</p>
+                                    <div className="mt-auto">
+                                        <button className="w-full bg-indigo-500 text-white font-bold text-sm px-4 py-3.5 rounded-xl uppercase tracking-wider flex items-center justify-center gap-2 group-hover:bg-indigo-600 transition-colors shadow-md shadow-indigo-500/30 hover:shadow-lg">
+                                            Teacher Login <ArrowRight className="w-4 h-4" />
+                                        </button>
+                                    </div>
+                                </motion.div>
+
+                                {/* Parent Card */}
+                                <motion.div
+                                    whileHover={{ y: -6, scale: 1.02 }}
+                                    whileTap={{ scale: 0.98 }}
+                                    onClick={() => handleRoleSelect(UserRole.PARENT)}
+                                    className="bg-white dark:bg-slate-900 rounded-[2rem] p-5 md:p-6 border-2 border-emerald-100 dark:border-emerald-900/50 hover:border-emerald-400 dark:hover:border-emerald-500 shadow-xl shadow-emerald-100/50 dark:shadow-black/20 hover:shadow-2xl hover:shadow-emerald-500/20 transition-all duration-300 text-left group flex flex-col h-full cursor-pointer relative overflow-hidden"
+                                >
+                                    <div className="w-14 h-14 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-2xl flex items-center justify-center mb-5 group-hover:scale-110 transition-transform shadow-inner">
+                                        <Users className="w-7 h-7" />
+                                    </div>
+                                    <h3 className="font-extrabold text-slate-900 dark:text-white text-xl mb-2">Parent</h3>
+                                    <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed mb-6 flex-grow">Track your child's learning & competency progress</p>
+                                    <div className="mt-auto">
+                                        <button className="w-full bg-emerald-500 text-white font-bold text-sm px-4 py-3.5 rounded-xl uppercase tracking-wider flex items-center justify-center gap-2 group-hover:bg-emerald-600 transition-colors shadow-md shadow-emerald-500/30 hover:shadow-lg">
+                                            Parent View <ArrowRight className="w-4 h-4" />
+                                        </button>
+                                    </div>
+                                </motion.div>
+                            </div>
+
+                            {/* Optional 5th Card for Schools */}
+                            <div className="mt-6 flex justify-center w-full px-4 sm:px-0">
+                                <motion.div
+                                    whileHover={{ y: -6, scale: 1.02 }}
+                                    whileTap={{ scale: 0.98 }}
                                     onClick={() => handleRoleSelect(UserRole.SCHOOL)}
-                                    className="px-6 py-2.5 rounded-full border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 font-bold text-sm hover:border-blue-400 hover:text-blue-600 dark:hover:text-blue-400 hover:shadow-md transition-all flex items-center gap-2 group"
+                                    className="bg-white dark:bg-slate-900 rounded-[2rem] p-5 md:p-6 border-2 border-slate-200 dark:border-slate-800 hover:border-[#1a2b5e] dark:hover:border-blue-500 shadow-xl shadow-slate-200/50 dark:shadow-black/20 hover:shadow-2xl transition-all duration-300 text-left group flex flex-col items-center sm:flex-row sm:items-center gap-6 cursor-pointer max-w-2xl w-full"
                                 >
-                                    <School className="w-4 h-4 text-blue-500 group-hover:scale-110 transition-transform" /> For Schools
-                                </button>
+                                    <div className="w-14 h-14 bg-slate-100 dark:bg-slate-800 text-[#1a2b5e] dark:text-white rounded-2xl flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform shadow-inner">
+                                        <School className="w-7 h-7" />
+                                    </div>
+                                    <div className="text-center sm:text-left flex-grow">
+                                        <h3 className="font-extrabold text-slate-900 dark:text-white text-xl mb-1">School Administrator</h3>
+                                        <p className="text-sm text-slate-500 dark:text-slate-400">Complete institution deployment & analytics</p>
+                                    </div>
+                                    <div className="w-full sm:w-auto mt-4 sm:mt-0">
+                                        <button className="w-full sm:w-auto bg-[#1a2b5e] dark:bg-slate-800 text-white font-bold text-sm px-6 py-3.5 rounded-xl uppercase tracking-wider flex items-center justify-center gap-2 group-hover:bg-[#111c3d] dark:group-hover:bg-slate-700 transition-colors shadow-md hover:shadow-lg">
+                                            Admin Panel <ArrowRight className="w-4 h-4" />
+                                        </button>
+                                    </div>
+                                </motion.div>
                             </div>
                         </div>
                     </motion.div>
