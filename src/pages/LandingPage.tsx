@@ -413,50 +413,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                             <div className="h-[2px] bg-slate-200 dark:bg-slate-800 w-12 md:w-24 rounded-full"></div>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-                            {/* Student Lane */}
-                            <motion.button
-                                whileHover={{ y: -6, scale: 1.02 }}
-                                whileTap={{ scale: 0.98 }}
-                                onClick={() => handleRoleSelect(UserRole.LEARNER)}
-                                className="bg-gradient-to-br from-white/95 to-blue-50/50 dark:from-slate-900/95 dark:to-blue-950/20 backdrop-blur rounded-[2rem] p-6 border-2 border-slate-100 dark:border-slate-800 shadow-xl shadow-slate-300/50 dark:shadow-black/20 hover:shadow-2xl hover:shadow-blue-500/20 hover:border-blue-400 dark:hover:border-blue-500 transition-all duration-300 text-left group relative overflow-hidden flex flex-col h-full min-h-[260px]"
-                            >
-                                <div className="absolute -right-4 -bottom-4 opacity-[0.03] group-hover:opacity-[0.06] transition-opacity">
-                                    <Baby className="w-32 h-32" />
-                                </div>
-                                <div className="w-14 h-14 bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 rounded-2xl flex items-center justify-center mb-5 group-hover:scale-110 transition-transform">
-                                    <Baby className="w-7 h-7" />
-                                </div>
-                                <h3 className="font-extrabold text-slate-900 dark:text-white text-xl mb-2">Student</h3>
-                                <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed mb-6 flex-grow font-medium">Scan homework, get instant AI explanations</p>
-                                <div className="mt-auto relative z-10">
-                                    <span className="text-sm font-black text-white bg-blue-500 px-4 py-3.5 rounded-[1rem] uppercase tracking-wider flex items-center justify-between group-hover:bg-blue-600 transition-colors w-full shadow-md shadow-blue-500/20">
-                                        START FREE <ArrowRight className="w-4 h-4" />
-                                    </span>
-                                </div>
-                            </motion.button>
-
-                            {/* Candidate Lane (Revision Hub) */}
-                            <motion.button
-                                whileHover={{ y: -6, scale: 1.02 }}
-                                whileTap={{ scale: 0.98 }}
-                                onClick={() => navigate('/revision')}
-                                className="bg-gradient-to-br from-white/95 to-amber-50/70 dark:from-slate-900/95 dark:to-amber-950/20 backdrop-blur rounded-[2rem] p-6 border-2 border-amber-300 dark:border-amber-700 shadow-xl hover:shadow-2xl hover:shadow-amber-500/30 hover:border-amber-500 transition-all duration-300 text-left group relative overflow-hidden flex flex-col h-full min-h-[260px] ring-4 ring-amber-50 dark:ring-amber-900/10"
-                            >
-                                <div className="absolute -right-4 -bottom-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                                    <Zap className="w-32 h-32 text-amber-500" />
-                                </div>
-                                <div className="w-14 h-14 bg-amber-500 text-white rounded-2xl flex items-center justify-center mb-5 group-hover:rotate-12 transition-transform shadow-lg shadow-orange-200 dark:shadow-none">
-                                    <Sparkles className="w-7 h-7" />
-                                </div>
-                                <h3 className="font-black text-slate-900 dark:text-white text-xl mb-2">Candidates</h3>
-                                <p className="text-sm text-slate-600 dark:text-slate-300 font-bold leading-relaxed mb-6 flex-grow">Smart Exam Hub: KCSE, KPSEA & JSS Revision</p>
-                                <div className="mt-auto relative z-10">
-                                    <span className="text-sm font-black text-white bg-gradient-to-r from-amber-600 to-orange-600 px-4 py-3.5 rounded-[1rem] uppercase tracking-wider flex items-center justify-between group-hover:from-amber-700 group-hover:to-orange-700 transition-colors w-full shadow-lg shadow-orange-500/20">
-                                        OPEN HUB <Zap className="w-4 h-4 fill-current" />
-                                    </span>
-                                </div>
-                            </motion.button>
-
                             {/* Teacher Lane */}
                             <motion.button
                                 whileHover={{ y: -6, scale: 1.02 }}
@@ -475,6 +431,50 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                 <div className="mt-auto relative z-10">
                                     <span className="text-sm font-black text-white bg-indigo-500 px-4 py-3.5 rounded-[1rem] uppercase tracking-wider flex items-center justify-between group-hover:bg-indigo-600 transition-colors w-full shadow-md shadow-indigo-500/20">
                                         FOR FREE <ArrowRight className="w-4 h-4" />
+                                    </span>
+                                </div>
+                            </motion.button>
+
+                            {/* Parent Lane */}
+                            <motion.button
+                                whileHover={{ y: -6, scale: 1.02 }}
+                                whileTap={{ scale: 0.98 }}
+                                onClick={() => handleRoleSelect(UserRole.PARENT)}
+                                className="bg-gradient-to-br from-white/95 to-emerald-50/50 dark:from-slate-900/95 dark:to-emerald-950/20 backdrop-blur rounded-[2rem] p-6 border-2 border-slate-100 dark:border-slate-800 shadow-xl shadow-slate-300/50 dark:shadow-black/20 hover:shadow-2xl hover:shadow-emerald-500/20 hover:border-emerald-400 transition-all duration-300 text-left group relative overflow-hidden flex flex-col h-full min-h-[260px]"
+                            >
+                                <div className="absolute -right-4 -bottom-4 opacity-[0.03] group-hover:opacity-[0.06] transition-opacity">
+                                    <Users className="w-32 h-32" />
+                                </div>
+                                <div className="w-14 h-14 bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 rounded-2xl flex items-center justify-center mb-5 group-hover:scale-110 transition-transform">
+                                    <Users className="w-7 h-7" />
+                                </div>
+                                <h3 className="font-extrabold text-slate-900 dark:text-white text-xl mb-2">Parent</h3>
+                                <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed mb-6 flex-grow font-medium">Track your child's learning & competency progress</p>
+                                <div className="mt-auto relative z-10">
+                                    <span className="text-sm font-black text-white bg-emerald-500 px-4 py-3.5 rounded-[1rem] uppercase tracking-wider flex items-center justify-between group-hover:bg-emerald-600 transition-colors w-full shadow-md shadow-emerald-500/20">
+                                        VIEW NOW <ArrowRight className="w-4 h-4" />
+                                    </span>
+                                </div>
+                            </motion.button>
+
+                            {/* School Lane */}
+                            <motion.button
+                                whileHover={{ y: -6, scale: 1.02 }}
+                                whileTap={{ scale: 0.98 }}
+                                onClick={() => handleRoleSelect(UserRole.SCHOOL)}
+                                className="bg-gradient-to-br from-white/95 to-blue-50/50 dark:from-slate-900/95 dark:to-blue-950/20 backdrop-blur rounded-[2rem] p-6 border-2 border-slate-100 dark:border-slate-800 shadow-xl shadow-slate-300/50 dark:shadow-black/20 hover:shadow-2xl hover:shadow-blue-900/20 hover:border-blue-900 transition-all duration-300 text-left group relative overflow-hidden flex flex-col h-full min-h-[260px]"
+                            >
+                                <div className="absolute -right-4 -bottom-4 opacity-[0.03] group-hover:opacity-[0.06] transition-opacity">
+                                    <School className="w-32 h-32" />
+                                </div>
+                                <div className="w-14 h-14 bg-slate-100 dark:bg-slate-900/40 text-[#1a2b5e] dark:text-blue-400 rounded-2xl flex items-center justify-center mb-5 group-hover:scale-110 transition-transform">
+                                    <School className="w-7 h-7" />
+                                </div>
+                                <h3 className="font-extrabold text-slate-900 dark:text-white text-xl mb-2">School</h3>
+                                <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed mb-6 flex-grow font-medium">Complete institution deployment & analytics</p>
+                                <div className="mt-auto relative z-10">
+                                    <span className="text-sm font-black text-white bg-[#1a2b5e] px-4 py-3.5 rounded-[1rem] uppercase tracking-wider flex items-center justify-between group-hover:bg-[#111c3d] transition-colors w-full shadow-md">
+                                        ADMIN PANEL <ArrowRight className="w-4 h-4" />
                                     </span>
                                 </div>
                             </motion.button>
