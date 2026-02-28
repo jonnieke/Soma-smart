@@ -3,6 +3,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { LogIn, UserPlus, CheckCircle, Smartphone, Award, ChartBar, BookOpen, Clock, ChevronRight, Star, ArrowRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import logoImg from '../assets/images/main_logo.png';
 
 interface TeacherLandingProps {
     onLogin: () => void;
@@ -56,8 +57,8 @@ export const TeacherLanding: React.FC<TeacherLandingProps> = ({ onLogin, onRegis
                             className="flex items-center gap-3 cursor-pointer group"
                             onClick={() => navigate('/')}
                         >
-                            <div className="w-10 h-10 bg-white rounded-xl shadow-lg flex items-center justify-center text-blue-700 font-black text-xl group-hover:scale-105 transition-transform">S</div>
-                            <h1 className="text-xl font-bold text-white tracking-tight group-hover:text-blue-100 transition-colors">Soma Smart <span className="opacity-80 font-normal">Teacher</span></h1>
+                            <img src={logoImg} alt="Somo Smart Teacher" className="h-10 w-auto object-contain brightness-0 invert group-hover:scale-105 transition-transform" />
+                            <span className="opacity-80 font-normal text-white">Teacher</span>
                         </div>
                         <button
                             onClick={() => navigate('/')}

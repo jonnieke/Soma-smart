@@ -22,6 +22,7 @@ import { TeacherRequestModal } from '../../components/TeacherRequestModal';
 import { TutoringRequest } from '../../types';
 
 import { useNavigate, useLocation } from 'react-router-dom';
+import logoImg from '../../assets/images/main_logo.png';
 
 interface TeacherProps {
     onNavigate: (view: ViewState) => void;
@@ -513,13 +514,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                 <div className="max-w-[1440px] mx-auto px-4 md:px-8 h-[72px] flex items-center justify-between">
                     {/* Left: Logo — clickable to go home */}
                     <div className="flex items-center gap-3 cursor-pointer group" onClick={() => navigate('/')}>
-                        <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-indigo-200 group-hover:scale-110 transition-transform">
-                            <Brain className="w-6 h-6" />
-                        </div>
-                        <div>
-                            <h1 className="text-xl font-black text-slate-900 tracking-tight leading-none">Soma<span className="text-indigo-600">Smart</span></h1>
-                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Teacher Studio</p>
-                        </div>
+                        <img src={logoImg} alt="Somo Smart Logo" className="h-10 w-auto object-contain group-hover:scale-105 transition-transform" />
                     </div>
 
                     {/* Center: Navigation */}

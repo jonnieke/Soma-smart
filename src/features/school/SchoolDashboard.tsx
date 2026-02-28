@@ -20,6 +20,7 @@ import { useApp } from '../../context/AppContext';
 import { supabase } from '../../lib/supabase';
 import { NavItem } from './DashboardComponents';
 import { OverviewTab, TeachersTab, StudentsTab, MaterialsTab, AnalyticsTab, SettingsTab } from './DashboardTabs';
+import logoImg from '../../assets/images/main_logo.png';
 
 export const SchoolDashboard: React.FC = () => {
     const {
@@ -155,14 +156,8 @@ export const SchoolDashboard: React.FC = () => {
         <div className="min-h-screen bg-slate-50 flex">
             {/* Sidebar */}
             <aside className="w-72 bg-white/80 backdrop-blur-xl border-r border-slate-200/50 flex flex-col hidden lg:flex m-4 rounded-[2.5rem] shadow-2xl shadow-slate-200/50 sticky top-4 h-[calc(100vh-2rem)]">
-                <div className="p-8 border-b border-slate-100/50 flex items-center gap-4">
-                    <div className="w-12 h-12 bg-gradient-to-tr from-blue-600 to-indigo-700 rounded-2xl flex items-center justify-center text-white shadow-xl shadow-blue-200 ring-4 ring-blue-50">
-                        <SchoolIcon className="w-7 h-7" />
-                    </div>
-                    <div>
-                        <h2 className="font-black text-slate-900 text-lg leading-tight tracking-tight">Somo Smart</h2>
-                        <p className="text-[10px] text-blue-600 font-black tracking-widest uppercase">Institutional Hub</p>
-                    </div>
+                <div className="p-8 border-b border-slate-100/50 flex items-center justify-center">
+                    <img src={logoImg} alt="Somo Smart" className="h-12 w-auto object-contain" />
                 </div>
 
                 <nav className="flex-1 p-6 space-y-2">

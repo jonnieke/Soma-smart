@@ -15,7 +15,7 @@ import { useApp } from '../context/AppContext';
 import learnerImg from '../assets/images/learner.png';
 import teacherImg from '../assets/images/teacher.png';
 import parentImg from '../assets/images/parent.png';
-import logoImg from '../assets/images/logo.png';
+import logoImg from '../assets/images/main_logo.png';
 import heroBannerImg from '../assets/images/soma_smart_hero_graphic_with_teacher.png';
 import stepScanImg from '../assets/images/step_scan.png';
 import stepExplainImg from '../assets/images/step_explain.png';
@@ -279,11 +279,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                     <div className="flex justify-between items-center py-3">
                         {/* Logo */}
                         <div className="flex items-center gap-3 cursor-pointer" onClick={() => window.scrollTo(0, 0)}>
-                            <img src={logoImg} alt="Somo Smart Logo" className="w-14 h-14 object-contain" />
-                            <div className="hidden sm:block">
-                                <h1 className="text-2xl font-bold text-blue-900 dark:text-blue-400 leading-none tracking-tight">Somo Smart</h1>
-                                <p className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold tracking-wide uppercase mt-0.5">Smart Study Assistant</p>
-                            </div>
+                            <img src={logoImg} alt="Somo Smart Logo" className="h-14 sm:h-16 w-auto object-contain" />
                         </div>
 
                         {/* Desktop Nav â€” 3 items + CTA */}

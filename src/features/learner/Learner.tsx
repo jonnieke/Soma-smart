@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import logoImg from '../../assets/images/main_logo.png';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Sparkles, Home, X, XCircle, Camera, ScanLine, Mic, Upload, Clock,
@@ -1966,10 +1967,7 @@ ${explanation.explanation}
           <div className="flex justify-between items-center px-6 py-4 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl sticky top-0 z-50 border-b border-slate-100/50 dark:border-slate-800/50 transition-colors">
             {/* Logo */}
             <div className="flex items-center gap-2 cursor-pointer group" onClick={() => navigate('/')}>
-              <div className="bg-blue-600 rounded-xl p-2 text-white shadow-lg shadow-blue-200 dark:shadow-blue-900/40 group-hover:scale-110 transition-transform">
-                <Sparkles className="w-5 h-5 fill-current" />
-              </div>
-              <span className="font-black text-slate-900 dark:text-white tracking-tight text-xl">Somo</span>
+              <img src={logoImg} alt="Somo Smart" className="h-10 w-auto object-contain group-hover:scale-105 transition-transform" />
             </div>
 
             {/* Navigation - Centered Desktop */}
