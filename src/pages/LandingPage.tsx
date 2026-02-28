@@ -279,21 +279,21 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                     <div className="flex justify-between items-center py-3">
                         {/* Logo */}
                         <div className="flex items-center gap-3 cursor-pointer" onClick={() => window.scrollTo(0, 0)}>
-                            <img src={logoImg} alt="Somo Smart Logo" className="h-20 sm:h-24 lg:h-28 w-auto object-contain transition-all hover:scale-[1.02]" />
+                            <img src={logoImg} alt="Somo Smart Logo" className="h-10 sm:h-12 w-auto object-contain transition-all hover:scale-[1.02]" />
                         </div>
 
                         {/* Desktop Nav */}
-                        <nav className="hidden md:flex items-center gap-8">
-                            <a href="#how-it-works" className="text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors text-sm">How It Works</a>
-                            <button onClick={() => navigate('/pricing')} className="text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors text-sm">Pricing</button>
-                            <button onClick={() => setShowLogin(true)} className="text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors text-sm">Login</button>
-                            <button onClick={toggleLanguage} className="text-slate-400 hover:text-slate-600 transition-colors" title="Switch language">
-                                <Globe className="w-4 h-4" />
+                        <nav className="hidden md:flex items-center gap-10">
+                            <a href="#how-it-works" className="text-slate-700 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 font-semibold transition-colors text-base">How It Works</a>
+                            <button onClick={() => navigate('/pricing')} className="text-slate-700 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 font-semibold transition-colors text-base">Pricing</button>
+                            <button onClick={() => setShowLogin(true)} className="text-slate-700 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 font-semibold transition-colors text-base">Login</button>
+                            <button onClick={toggleLanguage} className="text-slate-500 dark:text-slate-400 hover:text-blue-600 transition-colors p-1" title="Switch language">
+                                <Globe className="w-5 h-5" />
                             </button>
                             <ThemeToggle />
                             <button
                                 onClick={() => handleRoleSelect(UserRole.LEARNER)}
-                                className="bg-[#5b61de] text-white px-6 py-2.5 rounded-xl font-bold text-sm hover:bg-[#4a50d0] transition-all shadow-md shadow-indigo-200 hover:-translate-y-0.5"
+                                className="bg-[#5b61de] text-white px-7 py-3 rounded-xl font-bold text-base hover:bg-[#4a50d0] transition-all shadow-md shadow-indigo-200 hover:-translate-y-0.5"
                             >
                                 Get Started Free
                             </button>
@@ -365,6 +365,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                         transition={{ duration: 0.6 }}
                         className="py-12 md:py-20"
                     >
+                        <div className="flex justify-center mb-8 md:mb-12">
+                            <img src={logoImg} alt="Somo Smart Logo" className="h-24 sm:h-32 md:h-40 lg:h-48 w-auto object-contain drop-shadow-2xl hover:scale-[1.03] transition-transform duration-300" />
+                        </div>
+
                         <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 text-blue-600 dark:text-blue-300 text-xs font-bold mb-8 uppercase tracking-widest shadow-sm">
                             <Star className="w-3.5 h-3.5 fill-current" />
                             Trusted by 1,200+ Kenyan learners and 15+ schools
