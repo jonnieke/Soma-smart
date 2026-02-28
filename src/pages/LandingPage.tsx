@@ -5,7 +5,7 @@ import {
     GraduationCap, Users, Baby, ChevronRight, MessageSquare,
     ScanLine, CheckCircle, Menu, X, CheckSquare, Play, BookOpen, LogOut,
     CreditCard, AlertCircle, FileText, Clock, Award, ArrowRight, School,
-    Sparkles, Zap, Building2, TrendingUp, Quote, Globe, ShieldCheck, BarChart
+    Sparkles, Zap, Building2, TrendingUp, Quote, Globe, ShieldCheck, BarChart, Star
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { UserRole } from '../types';
