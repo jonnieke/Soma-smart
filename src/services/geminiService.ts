@@ -291,9 +291,18 @@ export const explainTopic = async (
             }
           },
           summaryPoints: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
-          relatedTopics: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } }
+          relatedTopics: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
+          flashcard: {
+            type: SchemaType.OBJECT,
+            description: "A single, high-yield Q&A flashcard for Spaced Repetition",
+            properties: {
+              question: { type: SchemaType.STRING, description: "Clear, exam-style question" },
+              answer: { type: SchemaType.STRING, description: "Concise, accurate answer" }
+            },
+            required: ["question", "answer"]
+          }
         },
-        required: ["topic", "explanation", "subtopics", "recapNodes", "summaryPoints", "relatedTopics"]
+        required: ["topic", "explanation", "subtopics", "recapNodes", "summaryPoints", "relatedTopics", "flashcard"]
       }
     }
   });
@@ -365,6 +374,7 @@ export const explainTopic = async (
 
     7. Provide EXACTLY 3 short bullet points summarizing the most critical takeaways for "stickiness" in the 'summaryPoints' field.
     8. Suggest EXACTLY 3 short related topics for further learning.
+    9. FLASHCARD GENERATION: Create EXACTLY ONE high-yield Spaced Repetition flashcard in the 'flashcard' field representing the most commonly tested or misunderstood concept in this topic.
     
     Output JSON.
   `;

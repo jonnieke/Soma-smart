@@ -70,6 +70,7 @@ interface AppContextType {
   dueForReview: SpacedRepetitionItem[];
   weakTopics: string[];
   processQuizCompletion: (topic: string, score: number, subject?: string, grade?: string) => void;
+  addSpacedRepetitionItem: (item: SpacedRepetitionItem) => void;
   getPersonalizedDailyChallenge: () => { topic: string; title: string; quiz: string; isPersonalized: boolean };
   // Super Teacher Phase 3: Evolutionary Educator
   teachingStrategies: TeachingStrategy[];
@@ -1387,6 +1388,16 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setSpacedRepetitionItems(result.srItems);
   };
 
+  const addSpacedRepetitionItem = (item: SpacedRepetitionItem) => {
+    setSpacedRepetitionItems(prev => {
+      const exists = prev.find(i => i.topic === item.topic);
+      if (exists) return prev;
+      const newList = [...prev, item];
+      localStorage.setItem('soma_sr_items', JSON.stringify(newList));
+      return newList;
+    });
+  };
+
   const dueForReview = getDueTopics(spacedRepetitionItems);
   const weakTopics = getWeakTopics(masteryGraph);
 
@@ -2422,7 +2433,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     downloadUsageCount, incrementDownloadUsage, extraDownloads, grantExtraDownloads,
     theme, toggleTheme,
     masteryGraph, spacedRepetitionItems, dueForReview, weakTopics,
-    processQuizCompletion, getPersonalizedDailyChallenge,
+    processQuizCompletion, getPersonalizedDailyChallenge, addSpacedRepetitionItem,
     teachingStrategies, activeStrategies, pendingStrategies,
     pedagogicalAnalytics, isAdminAgentRunning,
     runAdminAgent, approveTeachingStrategy, rejectTeachingStrategy

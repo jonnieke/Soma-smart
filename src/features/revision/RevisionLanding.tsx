@@ -1,10 +1,11 @@
 import React, { useState, useRef, useCallback, useMemo } from 'react';
 import { useApp } from '../../context/AppContext';
-import { Upload, BookOpen, Brain, TrendingUp, ArrowRight, ScanLine, X, Camera, Zap, CheckCircle, Smartphone, LogOut, Search, FileText, ChevronRight, ChevronDown, Shield, Users, Sparkles, Filter, GraduationCap, Unlock } from 'lucide-react';
+import { Upload, BookOpen, Brain, TrendingUp, ArrowRight, ScanLine, X, Camera, Zap, CheckCircle, Smartphone, LogOut, Search, FileText, ChevronRight, ChevronDown, Shield, Users, Sparkles, Filter, GraduationCap, Unlock, Target, BarChart2 } from 'lucide-react';
 import { ViewState, RevisionMode, TeacherActivity } from '../../types';
 import { motion, AnimatePresence } from 'framer-motion';
 import { LogoutModal } from '../../components/LogoutModal';
 import { ThemeToggle } from '../../components/ThemeToggle';
+import { Button } from '../../components/Shared';
 
 interface Props {
     onStartSession: (data: File | TeacherActivity, mode: RevisionMode) => void;
@@ -14,7 +15,7 @@ interface Props {
 type TabKey = 'papers' | 'notes' | 'syllabus' | 'community';
 
 export const RevisionLanding: React.FC<Props> = ({ onStartSession, onNavigate }) => {
-    const { logout, availableQuizzes, fetchAvailableQuizzes, isOnline, studentProfile, resources, fetchResources } = useApp();
+    const { logout, availableQuizzes, fetchAvailableQuizzes, isOnline, studentProfile, resources, fetchResources, masteryGraph, weakTopics } = useApp();
     const [dragActive, setDragActive] = useState(false);
     const [selectedMode, setSelectedMode] = useState<RevisionMode>(RevisionMode.LEARN);
     const [loadingQuizzes, setLoadingQuizzes] = useState(false);
@@ -46,16 +47,20 @@ export const RevisionLanding: React.FC<Props> = ({ onStartSession, onNavigate })
     }, [availableQuizzes, resources]);
 
     // Split resources into papers, syllabus, and notes
-    const isPaper = (title?: string) => {
-        const t = title?.toLowerCase() || '';
+    const isPaper = (item: any) => {
+        if (item.type === 'PAST_PAPER') return true;
+        const t = item.title?.toLowerCase() || '';
         return t.includes('paper') || t.includes('exam') || t.includes('test') || t.includes('mock') ||
             t.includes('kpsea') || t.includes('kcse') || t.includes('kjsea') || t.includes('kilea') || t.includes('kcpe');
     };
-    const isSyllabus = (title?: string) => (title?.toLowerCase() || '').includes('syllabus');
+    const isSyllabus = (item: any) => {
+        if (item.type === 'SYLLABUS') return true;
+        return (item.title?.toLowerCase() || '').includes('syllabus');
+    };
 
-    const papers = useMemo(() => resources.filter(r => isPaper(r.title)), [resources]);
-    const syllabus = useMemo(() => resources.filter(r => isSyllabus(r.title) && !isPaper(r.title)), [resources]);
-    const notes = useMemo(() => resources.filter(r => !isPaper(r.title) && !isSyllabus(r.title)), [resources]);
+    const papers = useMemo(() => resources.filter(r => isPaper(r)), [resources]);
+    const syllabus = useMemo(() => resources.filter(r => isSyllabus(r) && !isPaper(r)), [resources]);
+    const notes = useMemo(() => resources.filter(r => !isPaper(r) && !isSyllabus(r)), [resources]);
 
     // Filter by subject + search
     const filterItems = useCallback(<T extends { title?: string; subject?: string }>(items: T[]) => {
@@ -283,6 +288,94 @@ export const RevisionLanding: React.FC<Props> = ({ onStartSession, onNavigate })
                     </div>
                 </div>
 
+                {/* Mastery Dashboard */}
+                {Object.keys(masteryGraph).length > 0 && (
+                    <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 mb-8 border border-slate-200 dark:border-slate-800 shadow-sm transition-colors">
+                        <div className="flex items-center justify-between mb-6">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-xl bg-rose-50 dark:bg-rose-900/30 flex items-center justify-center text-rose-600 dark:text-rose-400">
+                                    <Target className="w-5 h-5" />
+                                </div>
+                                <div>
+                                    <h2 className="text-lg font-black text-slate-800 dark:text-white">Mastery Focus Areas</h2>
+                                    <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Powered by your recent performance</p>
+                                </div>
+                            </div>
+                            <Button variant="outline" className="py-1.5 px-3 text-xs" onClick={() => onNavigate(ViewState.DASHBOARD)}>
+                                <span className="flex items-center gap-2"><BarChart2 className="w-4 h-4" /> View Full Analytics</span>
+                            </Button>
+                        </div>
+
+                        {/* Suggested Next Step */}
+                        {weakTopics.length > 0 && (
+                            <div className="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-950/30 dark:to-purple-950/30 border border-indigo-100 dark:border-indigo-900/50 rounded-2xl p-5 mb-6 flex flex-col md:flex-row items-center justify-between gap-4">
+                                <div>
+                                    <div className="flex items-center gap-2 mb-1">
+                                        <Sparkles className="w-4 h-4 text-purple-500 dark:text-purple-400" />
+                                        <span className="text-xs font-black text-purple-600 dark:text-purple-400 uppercase tracking-wider">Suggested Next Step</span>
+                                    </div>
+                                    <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200">
+                                        Let's tackle your weakest area: <span className="text-indigo-600 dark:text-indigo-400">"{weakTopics[0]}"</span>
+                                    </h3>
+                                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Your mastery is currently at {masteryGraph[weakTopics[0]] || 0}%. A quick revision session can boost this significantly!</p>
+                                </div>
+                                <Button
+                                    className="shrink-0 font-bold shadow-md shadow-indigo-200 dark:shadow-none"
+                                    onClick={() => {
+                                        setSearchQuery(weakTopics[0]);
+                                        setActiveTab('notes');
+                                    }}
+                                >
+                                    <span className="flex items-center gap-2">Start Revision <ArrowRight className="w-3.5 h-3.5" /></span>
+                                </Button>
+                            </div>
+                        )}
+
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            {weakTopics.slice(0, 3).map((topic, idx) => {
+                                const score = masteryGraph[topic] || 0;
+                                return (
+                                    <div key={idx} className="bg-slate-50 dark:bg-slate-950 p-4 rounded-2xl border border-slate-100 dark:border-slate-800/60 relative overflow-hidden group hover:border-indigo-200 dark:hover:border-indigo-800 transition-colors">
+                                        <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-rose-100/50 to-transparent dark:from-rose-900/20 rounded-bl-full pointer-events-none" />
+
+                                        <div className="flex justify-between items-start mb-3">
+                                            <h3 className="font-bold text-slate-800 dark:text-slate-200 text-sm leading-tight max-w-[80%]">{topic}</h3>
+                                            <span className="text-xs font-black text-rose-500 dark:text-rose-400 bg-rose-100 dark:bg-rose-950 px-2 py-0.5 rounded-lg">{score}%</span>
+                                        </div>
+
+                                        <div className="w-full bg-slate-200 dark:bg-slate-800 h-2 rounded-full mb-4 overflow-hidden">
+                                            <motion.div
+                                                initial={{ width: 0 }}
+                                                animate={{ width: `${score}%` }}
+                                                transition={{ duration: 1, ease: "easeOut" }}
+                                                className="h-full rounded-full bg-gradient-to-r from-rose-500 to-rose-400 dark:from-rose-600 dark:to-rose-500"
+                                            />
+                                        </div>
+
+                                        <button
+                                            onClick={() => {
+                                                setSearchQuery(topic);
+                                                setActiveTab('notes');
+                                            }}
+                                            className="w-full py-2 text-xs font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/20 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 rounded-xl transition-colors flex items-center justify-center gap-1.5"
+                                        >
+                                            <Brain className="w-3.5 h-3.5" /> Start Revision
+                                        </button>
+                                    </div>
+                                );
+                            })}
+
+                            {weakTopics.length === 0 && (
+                                <div className="col-span-3 text-center py-6 bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-100 dark:border-slate-800 border-dashed">
+                                    <CheckCircle className="w-8 h-8 text-emerald-500 mx-auto mb-2" />
+                                    <p className="text-slate-600 dark:text-slate-300 font-bold">You are fully caught up!</p>
+                                    <p className="text-sm text-slate-400 dark:text-slate-500">Take an Exam Mode test to expose new weak areas.</p>
+                                </div>
+                            )}
+                        </div>
+                    </div >
+                )}
+
                 {/* Search + Filters */}
                 <div className="mb-6 space-y-4">
                     {/* Search Bar */}
@@ -422,16 +515,18 @@ export const RevisionLanding: React.FC<Props> = ({ onStartSession, onNavigate })
                         </>
                     )}
                 </div>
-            </main>
+            </main >
 
             {/* Logout Modal */}
-            {showLogoutModal && (
-                <LogoutModal
-                    isOpen={showLogoutModal}
-                    onConfirm={logout}
-                    onClose={() => setShowLogoutModal(false)}
-                />
-            )}
+            {
+                showLogoutModal && (
+                    <LogoutModal
+                        isOpen={showLogoutModal}
+                        onConfirm={logout}
+                        onClose={() => setShowLogoutModal(false)}
+                    />
+                )
+            }
 
             {/* CAMERA MODAL */}
             <AnimatePresence>
@@ -468,6 +563,6 @@ export const RevisionLanding: React.FC<Props> = ({ onStartSession, onNavigate })
                     </motion.div>
                 )}
             </AnimatePresence>
-        </div>
+        </div >
     );
 };

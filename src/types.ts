@@ -52,6 +52,7 @@ export interface ExplanationResult {
   level: 'Simple' | 'Exam';
   relatedTopics?: string[];
   transcript?: string;
+  flashcard?: { question: string; answer: string }; // Spaced Repetition AI Q&A Pair
 }
 
 export interface QuizQuestion {
@@ -457,6 +458,8 @@ export interface SpacedRepetitionItem {
   easeFactor: number;      // SM-2 ease factor (default 2.5)
   lastScore: number;       // 0-100
   reviewCount: number;
+  question?: string;       // AI generated Flashcard question
+  answer?: string;         // AI generated Flashcard answer
 }
 
 export interface SuperTeacherMemory {

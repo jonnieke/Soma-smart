@@ -59,7 +59,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
     extraDownloads, grantExtraDownloads,
     verifySubscription,
     // Phase 2/3: Adaptive Tutoring & Evolutionary Educator
-    masteryGraph, dueForReview, weakTopics, processQuizCompletion,
+    masteryGraph, dueForReview, weakTopics, processQuizCompletion, addSpacedRepetitionItem,
     getPersonalizedDailyChallenge, activeStrategies
   } = useApp();
   const t = translations[language];
@@ -692,6 +692,21 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
       );
       setStudyChat(prev => [...prev, { role: 'model' as const, text: result.explanation }]);
       setPendingMedia(null);
+
+      if (result.flashcard) {
+        addSpacedRepetitionItem({
+          topic: result.topic,
+          subject: currentDocument.subject || 'General',
+          grade: studentProfile?.grade || currentDocument.grade || '',
+          nextReviewDate: new Date().toISOString(),
+          intervalDays: 1,
+          easeFactor: 2.5,
+          lastScore: 0,
+          reviewCount: 0,
+          question: result.flashcard.question,
+          answer: result.flashcard.answer
+        });
+      }
     } catch (err: any) {
       console.error("Study Buddy error:", err);
       if (!isOnline || !navigator.onLine || err.message?.includes('network') || err.message?.includes('Failed to fetch')) {
@@ -1121,6 +1136,22 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
       if (result) {
         setExplanation(result);
         setLevel(newLevel);
+
+        if (result.flashcard) {
+          addSpacedRepetitionItem({
+            topic: result.topic,
+            subject: currentDocument?.subject || 'General',
+            grade: studentProfile?.grade || currentDocument?.grade || '',
+            nextReviewDate: new Date().toISOString(),
+            intervalDays: 1,
+            easeFactor: 2.5,
+            lastScore: 0,
+            reviewCount: 0,
+            question: result.flashcard.question,
+            answer: result.flashcard.answer
+          });
+        }
+
         setStickyQuizTaken(false); // Reset since content changed/refreshed
         setStickyQuizData(null);
         setPodcastScript(null); // Clear podcast script
@@ -1166,6 +1197,22 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
         activeStrategies
       );
       setExplanation(result);
+
+      if (result.flashcard) {
+        addSpacedRepetitionItem({
+          topic: result.topic,
+          subject: currentDocument?.subject || 'General',
+          grade: studentProfile?.grade || currentDocument?.grade || '',
+          nextReviewDate: new Date().toISOString(),
+          intervalDays: 1,
+          easeFactor: 2.5,
+          lastScore: 0,
+          reviewCount: 0,
+          question: result.flashcard.question,
+          answer: result.flashcard.answer
+        });
+      }
+
       setStickyQuizTaken(false); // Reset sticky quiz
       setStickyQuizData(null);
       setPodcastScript(null); // Clear podcast script

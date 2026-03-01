@@ -1,97 +1,72 @@
--- Super Teacher Phase 2 & 3: Adaptive Tutoring & Evolutionary Educator
--- Creates tables for mastery tracking, spaced repetition, and teaching strategies
--- ============================================================
--- 1. LEARNER MASTERY: Per-topic mastery data for each student
--- ============================================================
-CREATE TABLE IF NOT EXISTS public.learner_mastery (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    student_id TEXT NOT NULL,
-    topic TEXT NOT NULL,
-    subject TEXT,
-    sub_strand TEXT,
-    grade TEXT,
-    mastery_level NUMERIC DEFAULT 0 CHECK (
-        mastery_level >= 0
-        AND mastery_level <= 100
-    ),
-    times_tested INTEGER DEFAULT 0,
-    last_tested TIMESTAMPTZ DEFAULT timezone('utc'::text, now()),
-    created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL,
-    updated_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL,
-    UNIQUE(student_id, topic)
-);
-ALTER TABLE public.learner_mastery ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "Users can manage their own mastery" ON public.learner_mastery;
-CREATE POLICY "Users can manage their own mastery" ON public.learner_mastery FOR ALL USING (true);
-CREATE INDEX IF NOT EXISTS idx_learner_mastery_student ON public.learner_mastery(student_id);
-CREATE INDEX IF NOT EXISTS idx_learner_mastery_topic ON public.learner_mastery(topic);
-CREATE INDEX IF NOT EXISTS idx_learner_mastery_level ON public.learner_mastery(mastery_level);
--- ============================================================
--- 2. SPACED REPETITION: SM-2 schedule data for each student
--- ============================================================
-CREATE TABLE IF NOT EXISTS public.spaced_repetition (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    student_id TEXT NOT NULL,
+-- Supabase Migration: Super Teacher Phase 3 (The Evolutionary Educator)
+-- Create tables for teaching analytics, AI-generated strategies, and prompt refinements.
+-- 1. Aggregated teaching effectiveness (computed periodically)
+CREATE TABLE IF NOT EXISTS teaching_analytics (
+    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
     topic TEXT NOT NULL,
     subject TEXT,
     grade TEXT,
-    next_review_date TIMESTAMPTZ NOT NULL,
-    interval_days INTEGER DEFAULT 1,
-    ease_factor NUMERIC DEFAULT 2.5,
-    last_score NUMERIC DEFAULT 0,
-    review_count INTEGER DEFAULT 0,
-    created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL,
-    updated_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL,
-    UNIQUE(student_id, topic)
+    avg_mastery NUMERIC,
+    student_count INTEGER,
+    avg_attempts_to_mastery NUMERIC,
+    most_effective_style TEXT,
+    -- 'Simple' | 'Exam'
+    avg_score_after_simple NUMERIC,
+    avg_score_after_exam NUMERIC,
+    computed_at TIMESTAMPTZ DEFAULT NOW()
 );
-ALTER TABLE public.spaced_repetition ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "Users can manage their own SR data" ON public.spaced_repetition;
-CREATE POLICY "Users can manage their own SR data" ON public.spaced_repetition FOR ALL USING (true);
-CREATE INDEX IF NOT EXISTS idx_sr_student ON public.spaced_repetition(student_id);
-CREATE INDEX IF NOT EXISTS idx_sr_next_review ON public.spaced_repetition(next_review_date);
-CREATE INDEX IF NOT EXISTS idx_sr_last_score ON public.spaced_repetition(last_score);
--- ============================================================
--- 3. TEACHING STRATEGIES: AI-generated prompt refinements
--- ============================================================
-CREATE TABLE IF NOT EXISTS public.teaching_strategies (
+-- 2. AI-generated strategy refinements
+CREATE TABLE IF NOT EXISTS teaching_strategies (
     id TEXT PRIMARY KEY,
+    -- Use generated ID from client side as PK
     insight TEXT NOT NULL,
     root_cause TEXT,
     strategy TEXT NOT NULL,
+    -- The actual prompt instruction
     expected_impact TEXT,
     target_grade TEXT,
     target_topic TEXT,
     target_subject TEXT,
-    priority TEXT DEFAULT 'MEDIUM' CHECK (priority IN ('HIGH', 'MEDIUM', 'LOW')),
-    status TEXT DEFAULT 'PENDING' CHECK (
-        status IN ('PENDING', 'APPROVED', 'REJECTED', 'ACTIVE')
-    ),
+    priority TEXT DEFAULT 'MEDIUM',
+    -- 'HIGH' | 'MEDIUM' | 'LOW'
+    status TEXT DEFAULT 'PENDING',
+    -- 'PENDING' | 'APPROVED' | 'REJECTED' | 'ACTIVE'
     effectiveness_score NUMERIC,
-    created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL,
+    -- Measured after deployment
+    created_at TIMESTAMPTZ DEFAULT NOW(),
     approved_at TIMESTAMPTZ,
-    approved_by TEXT
+    approved_by UUID REFERENCES auth.users(id)
 );
-ALTER TABLE public.teaching_strategies ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "Anyone can read active strategies" ON public.teaching_strategies;
-CREATE POLICY "Anyone can read active strategies" ON public.teaching_strategies FOR
-SELECT USING (true);
-DROP POLICY IF EXISTS "Authenticated users can manage strategies" ON public.teaching_strategies;
-CREATE POLICY "Authenticated users can manage strategies" ON public.teaching_strategies FOR ALL USING (true);
-CREATE INDEX IF NOT EXISTS idx_strategies_status ON public.teaching_strategies(status);
-CREATE INDEX IF NOT EXISTS idx_strategies_topic ON public.teaching_strategies(target_topic);
-CREATE INDEX IF NOT EXISTS idx_strategies_priority ON public.teaching_strategies(priority);
--- ============================================================
--- 4. PROMPT REFINEMENTS: Audit trail for strategy changes
--- ============================================================
-CREATE TABLE IF NOT EXISTS public.prompt_refinements (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    strategy_id TEXT REFERENCES public.teaching_strategies(id) ON DELETE CASCADE,
+-- 3. Prompt refinement history (audit trail)
+CREATE TABLE IF NOT EXISTS prompt_refinements (
+    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    strategy_id TEXT REFERENCES teaching_strategies(id) ON DELETE CASCADE,
     original_prompt TEXT,
     refined_prompt TEXT,
-    applied_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL,
-    rolled_back_at TIMESTAMPTZ
+    applied_at TIMESTAMPTZ DEFAULT NOW(),
+    rollback_at TIMESTAMPTZ -- If rolled back
 );
-ALTER TABLE public.prompt_refinements ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "Authenticated can access refinements" ON public.prompt_refinements;
-CREATE POLICY "Authenticated can access refinements" ON public.prompt_refinements FOR ALL USING (true);
-CREATE INDEX IF NOT EXISTS idx_refinements_strategy ON public.prompt_refinements(strategy_id);
+-- RLS Policies
+-- Enable RLS
+ALTER TABLE teaching_analytics ENABLE ROW LEVEL SECURITY;
+ALTER TABLE teaching_strategies ENABLE ROW LEVEL SECURITY;
+ALTER TABLE prompt_refinements ENABLE ROW LEVEL SECURITY;
+-- teaching_analytics: Admins can read/write. Authenticated users can only read (for UI dashboard purposes, if needed).
+CREATE POLICY "Public read access for authenticated users to analytics" ON teaching_analytics FOR
+SELECT TO authenticated USING (true);
+CREATE POLICY "Admin write access for analytics" ON teaching_analytics FOR ALL TO authenticated USING (auth.jwt()->>'email' = 'admin@soma.app') WITH CHECK (auth.jwt()->>'email' = 'admin@soma.app');
+-- teaching_strategies:
+-- Authenticated users (students) need to read ACTIVE strategies to apply them in prompts.
+-- Admins can read, update, and delete all strategies.
+CREATE POLICY "Public read access for active strategies" ON teaching_strategies FOR
+SELECT TO authenticated USING (true);
+-- Allow reading all to sync pending vs active in client side.
+CREATE POLICY "Admin full access for strategies" ON teaching_strategies FOR ALL TO authenticated USING (auth.jwt()->>'email' = 'admin@soma.app') WITH CHECK (auth.jwt()->>'email' = 'admin@soma.app');
+-- Allow inserting strategies (since the client Admin Agent generates them)
+CREATE POLICY "Authenticated users can insert strategies" ON teaching_strategies FOR
+INSERT TO authenticated WITH CHECK (true);
+-- Allow admins to update strategies (approve/reject)
+CREATE POLICY "Authenticated users can update strategies" ON teaching_strategies FOR
+UPDATE TO authenticated USING (true);
+-- prompt_refinements: Admins only
+CREATE POLICY "Admin full access for prompt_refinements" ON prompt_refinements FOR ALL TO authenticated USING (auth.jwt()->>'email' = 'admin@soma.app') WITH CHECK (auth.jwt()->>'email' = 'admin@soma.app');
