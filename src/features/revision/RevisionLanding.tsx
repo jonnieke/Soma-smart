@@ -1,6 +1,6 @@
 import React, { useState, useRef, useCallback, useMemo } from 'react';
 import { useApp } from '../../context/AppContext';
-import { Upload, BookOpen, Brain, TrendingUp, ArrowRight, ScanLine, X, Camera, Zap, CheckCircle, Smartphone, LogOut, Search, FileText, ChevronRight, ChevronDown, Shield, Users, Sparkles, Filter, GraduationCap, Unlock, Target, BarChart2 } from 'lucide-react';
+import { Upload, BookOpen, Brain, TrendingUp, ArrowRight, ScanLine, X, Camera, Zap, CheckCircle, Smartphone, LogOut, Search, FileText, ChevronRight, ChevronDown, Shield, Users, Sparkles, Filter, GraduationCap, Unlock, Target, BarChart2, ZapOff, Wifi } from 'lucide-react';
 import { ViewState, RevisionMode, TeacherActivity } from '../../types';
 import { motion, AnimatePresence } from 'framer-motion';
 import { LogoutModal } from '../../components/LogoutModal';
@@ -15,7 +15,7 @@ interface Props {
 type TabKey = 'papers' | 'notes' | 'syllabus' | 'community';
 
 export const RevisionLanding: React.FC<Props> = ({ onStartSession, onNavigate }) => {
-    const { logout, availableQuizzes, fetchAvailableQuizzes, isOnline, studentProfile, resources, fetchResources, masteryGraph, weakTopics } = useApp();
+    const { logout, availableQuizzes, fetchAvailableQuizzes, isOnline, studentProfile, resources, fetchResources, masteryGraph, weakTopics, lowDataMode, toggleLowDataMode, learnerHistory } = useApp();
     const [dragActive, setDragActive] = useState(false);
     const [selectedResource, setSelectedResource] = useState<any>(null); // Replaced selectedMode
     const [loadingQuizzes, setLoadingQuizzes] = useState(false);
@@ -198,6 +198,16 @@ export const RevisionLanding: React.FC<Props> = ({ onStartSession, onNavigate })
                             </div>
                         </div>
                         <div className="flex items-center gap-2">
+                            <button
+                                onClick={toggleLowDataMode}
+                                title={lowDataMode ? "Low Data Mode: ON" : "Low Data Mode: OFF"}
+                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-black tracking-wider uppercase transition-all border ${lowDataMode
+                                    ? 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800'
+                                    : 'bg-white text-slate-400 border-slate-200 hover:border-indigo-200 hover:text-indigo-600 dark:bg-slate-900 dark:border-slate-800'}`}
+                            >
+                                {lowDataMode ? <ZapOff className="w-3 h-3" /> : <Zap className="w-3 h-3" />}
+                                {lowDataMode ? "Low Data" : "Standard"}
+                            </button>
                             <div className="hidden md:flex items-center gap-1 bg-indigo-50 text-indigo-600 px-3 py-1.5 rounded-xl text-xs font-bold dark:bg-indigo-900/20 dark:text-indigo-300">
                                 <Shield className="w-3 h-3" /> {studentProfile?.name?.split(' ')[0] || 'Candidate'}
                             </div>
@@ -210,7 +220,7 @@ export const RevisionLanding: React.FC<Props> = ({ onStartSession, onNavigate })
                 </div>
 
                 {/* Sliding Notification Belt for New Materials */}
-                {latestUploads.length > 0 && (
+                {latestUploads.length > 0 && !lowDataMode && (
                     <div className="bg-gradient-to-r from-indigo-600 to-indigo-700 text-white overflow-hidden py-2.5 relative flex items-center">
                         <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-indigo-600 to-transparent z-10"></div>
                         <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-indigo-700 to-transparent z-10"></div>
@@ -444,6 +454,11 @@ export const RevisionLanding: React.FC<Props> = ({ onStartSession, onNavigate })
                                             {activeTab === 'syllabus' && (
                                                 <div className="absolute top-0 right-0 bg-emerald-600 dark:bg-emerald-500 text-white text-[8px] font-black px-2.5 py-1 rounded-bl-xl flex items-center gap-1">
                                                     <Unlock className="w-2.5 h-2.5" /> OPEN ACCESS
+                                                </div>
+                                            )}
+                                            {learnerHistory.some(h => h.topic === item.title) && (
+                                                <div className="absolute top-0 left-0 bg-amber-500 dark:bg-amber-600 text-white text-[8px] font-black px-2.5 py-1 rounded-br-xl flex items-center gap-1 shadow-sm">
+                                                    <Wifi className="w-2.5 h-2.5" /> OFFLINE READY
                                                 </div>
                                             )}
                                             <div className="flex items-start gap-3 mb-3">

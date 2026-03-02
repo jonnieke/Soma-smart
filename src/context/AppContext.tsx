@@ -127,6 +127,9 @@ interface AppContextType {
   // Theme
   theme: 'light' | 'dark';
   toggleTheme: () => void;
+  // Performance
+  lowDataMode: boolean;
+  toggleLowDataMode: () => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -134,12 +137,34 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 import { supabase } from '../lib/supabase';
 import { checkSubscriptionAccess, updateSubscription, verifyAndFixSubscription } from '../services/subscriptionService';
 import { offlineService } from '../services/offlineService';
+import { dbService } from '../services/dbService';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
 
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [role, setRole] = useState<UserRole>(UserRole.NONE);
 
-  const [learnerHistory, setLearnerHistory] = useState<LearnerActivity[]>(offlineService.getLearnerHistory());
+  const [learnerHistory, setLearnerHistory] = useState<LearnerActivity[]>([]);
+
+  // Load history from IndexedDB on mount
+  useEffect(() => {
+    const loadHistory = async () => {
+      const history = await dbService.getLearnerActivities();
+      if (history.length > 0) {
+        setLearnerHistory(history);
+      } else {
+        // Fallback to localStorage for migration
+        setLearnerHistory(offlineService.getLearnerHistory());
+      }
+    };
+    loadHistory();
+
+    const loadTeacherHistoryDB = async () => {
+      const history = await dbService.getTeacherActivities();
+      if (history.length > 0) setTeacherHistory(history);
+      else setTeacherHistory(offlineService.getTeacherHistory());
+    };
+    loadTeacherHistoryDB();
+  }, [role]);
 
   // Duplicate functions removed. Using async versions defined below.
 
@@ -278,6 +303,18 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [resources, setResources] = useState<any[]>([]);
 
   const [sessionError, setSessionError] = useState<'MULTI_DEVICE' | 'SINGLE_DEVICE' | null>(null);
+
+  const [lowDataMode, setLowDataMode] = useState<boolean>(() => {
+    return localStorage.getItem('soma_low_data_mode') === 'true';
+  });
+
+  const toggleLowDataMode = () => {
+    setLowDataMode(prev => {
+      const newVal = !prev;
+      localStorage.setItem('soma_low_data_mode', String(newVal));
+      return newVal;
+    });
+  };
 
   const refreshProfile = async () => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -1386,6 +1423,18 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const result = processQuizResult(topic, score, masteryGraph, spacedRepetitionItems, subject, grade);
     setMasteryGraph(result.mastery);
     setSpacedRepetitionItems(result.srItems);
+
+    // Trigger Celebration on Perfect Score
+    if (score === 100) {
+      import('canvas-confetti').then(confetti => {
+        confetti.default({
+          particleCount: 150,
+          spread: 70,
+          origin: { y: 0.6 },
+          colors: ['#4f46e5', '#10b981', '#f59e0b']
+        });
+      });
+    }
   };
 
   const addSpacedRepetitionItem = (item: SpacedRepetitionItem) => {
@@ -1533,6 +1582,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     // Optimistic UI Update + Local Save
     const internalActivity = { ...activity, pendingSync: !isOnline };
     setTeacherHistory(prev => [internalActivity, ...prev]);
+
+    // High Capacity Save (IndexedDB)
+    await dbService.putTeacherActivity(internalActivity);
+    // Legacy localStorage sync (Trimmed)
     offlineService.saveTeacherHistory([internalActivity, ...teacherHistory]);
 
     // Persist to Supabase if Online
@@ -1832,6 +1885,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     // Optimistic UI Update
     setTeacherHistory(prev => prev.filter(item => item.id !== id));
 
+    // High Capacity Delete (IndexedDB)
+    await dbService.deleteTeacherActivity(id);
+    // Legacy localStorage sync
+    offlineService.saveTeacherHistory(teacherHistory.filter(item => item.id !== id));
+
     try {
       const { error } = await supabase.from('activities').delete().eq('id', id);
       if (error) throw error;
@@ -1851,6 +1909,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       pendingSync: !isOnline
     };
     setLearnerHistory(prev => [newActivity, ...prev]);
+
+    // High Capacity Save (IndexedDB)
+    await dbService.putLearnerActivity(newActivity);
+    // Legacy localStorage sync (Trimmed)
     offlineService.saveLearnerHistory([newActivity, ...learnerHistory]);
 
     // Persist to Supabase if Online
@@ -1874,6 +1936,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const deleteActivity = async (id: string) => {
     // Optimistic Delete
     setLearnerHistory(prev => prev.filter(item => item.id !== id));
+
+    // High Capacity Delete (IndexedDB)
+    await dbService.deleteLearnerActivity(id);
+    // Legacy localStorage sync
+    offlineService.saveLearnerHistory(learnerHistory.filter(item => item.id !== id));
 
     if (studentCode) {
       try {
@@ -2432,6 +2499,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     sessionError, resolveSessionConflict, setSessionError, refreshProfile,
     downloadUsageCount, incrementDownloadUsage, extraDownloads, grantExtraDownloads,
     theme, toggleTheme,
+    lowDataMode, toggleLowDataMode,
     masteryGraph, spacedRepetitionItems, dueForReview, weakTopics,
     processQuizCompletion, getPersonalizedDailyChallenge, addSpacedRepetitionItem,
     teachingStrategies, activeStrategies, pendingStrategies,

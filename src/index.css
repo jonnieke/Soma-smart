@@ -2,9 +2,21 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Fluid Typography & Responsive Scales */
+html {
+  font-size: 16px;
+}
+
+@media (max-width: 768px) {
+  html {
+    font-size: 14px;
+  }
+}
+
 :root {
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
   --primary: #4f46e5;
+  --slate-950: #020617;
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -27,7 +39,7 @@ body {
 }
 
 .dark body {
-  @apply bg-slate-950 text-slate-100;
+  @apply bg-[#020617] text-slate-100;
 }
 
 /* Custom Scrollbar */
@@ -41,11 +53,11 @@ body {
 }
 
 .dark ::-webkit-scrollbar-thumb {
-  background: #334155;
+  background: #1e293b;
 }
 
 .dark ::-webkit-scrollbar-thumb:hover {
-  background: #475569;
+  background: #334155;
 }
 
 ::-webkit-scrollbar-thumb {
@@ -63,7 +75,7 @@ body {
 }
 
 .dark .glass {
-  @apply bg-slate-900/70 border-slate-700/50 shadow-2xl;
+  @apply bg-slate-900/80 border-slate-800/50 shadow-2xl;
 }
 
 /* Animation Utilities */

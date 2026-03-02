@@ -78,7 +78,7 @@ export const Header: React.FC<{ title: string; onBack?: () => void; onHome?: () 
           <ArrowLeft className="h-6 w-6 text-gray-600 dark:text-gray-400" />
         </button>
       )}
-      <h1 className="text-xl font-bold text-gray-800 dark:text-white truncate">{title} items-center</h1>
+      <h1 className="text-xl font-bold text-gray-800 dark:text-white truncate">{title}</h1>
     </div>
     {onHome && (
       <button onClick={onHome} className="p-2 hover:bg-gray-100 rounded-full text-gray-600">
