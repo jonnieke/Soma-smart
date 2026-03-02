@@ -17,7 +17,7 @@ type TabKey = 'papers' | 'notes' | 'syllabus' | 'community';
 export const RevisionLanding: React.FC<Props> = ({ onStartSession, onNavigate }) => {
     const { logout, availableQuizzes, fetchAvailableQuizzes, isOnline, studentProfile, resources, fetchResources, masteryGraph, weakTopics } = useApp();
     const [dragActive, setDragActive] = useState(false);
-    const [selectedMode, setSelectedMode] = useState<RevisionMode>(RevisionMode.LEARN);
+    const [selectedResource, setSelectedResource] = useState<any>(null); // Replaced selectedMode
     const [loadingQuizzes, setLoadingQuizzes] = useState(false);
     const [showLogoutModal, setShowLogoutModal] = useState(false);
     const [activeSubject, setActiveSubject] = useState<string>('All');
@@ -108,14 +108,14 @@ export const RevisionLanding: React.FC<Props> = ({ onStartSession, onNavigate })
         e.preventDefault(); e.stopPropagation();
         setDragActive(false);
         if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-            onStartSession(e.dataTransfer.files[0], selectedMode);
+            onStartSession(e.dataTransfer.files[0], RevisionMode.LEARN);
         }
     };
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         e.preventDefault();
         if (e.target.files && e.target.files[0]) {
-            onStartSession(e.target.files[0], selectedMode);
+            onStartSession(e.target.files[0], RevisionMode.LEARN);
         }
     };
 
@@ -160,7 +160,7 @@ export const RevisionLanding: React.FC<Props> = ({ onStartSession, onNavigate })
                     if (blob) {
                         const file = new File([blob], `scan-${Date.now()}.png`, { type: 'image/png' });
                         stopCamera();
-                        onStartSession(file, selectedMode);
+                        onStartSession(file, RevisionMode.LEARN);
                     }
                 }, 'image/png');
             }
@@ -224,7 +224,7 @@ export const RevisionLanding: React.FC<Props> = ({ onStartSession, onNavigate })
                                     {latestUploads.map((u, i) => (
                                         <button
                                             key={`${loopIdx}-${i}`}
-                                            onClick={() => onStartSession(u, RevisionMode.LEARN)}
+                                            onClick={() => setSelectedResource(u)}
                                             className="flex items-center gap-2 hover:text-amber-300 transition-colors"
                                         >
                                             <Sparkles className="w-3.5 h-3.5 text-amber-300" />
@@ -240,51 +240,26 @@ export const RevisionLanding: React.FC<Props> = ({ onStartSession, onNavigate })
 
             <main className="max-w-5xl mx-auto px-4 md:px-6 pt-6 pb-24">
 
-                {/* Mode + Upload Row */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-                    {/* Mode Selection */}
-                    <div className="md:col-span-2 bg-white dark:bg-slate-900 p-1.5 rounded-2xl border border-slate-100 dark:border-slate-800 flex gap-1.5 transition-colors">
-                        {[
-                            { mode: RevisionMode.LEARN, icon: BookOpen, label: 'Learn Mode', desc: 'Guided study', color: 'indigo' },
-                            { mode: RevisionMode.EXAM, icon: Brain, label: 'Exam Mode', desc: 'Test yourself', color: 'orange' },
-                            { mode: RevisionMode.WEAK_AREAS, icon: TrendingUp, label: 'Weakness', desc: 'Focus areas', color: 'rose' }
-                        ].map((item) => (
-                            <button
-                                key={item.mode}
-                                onClick={() => setSelectedMode(item.mode)}
-                                className={`flex-1 py-3 px-3 rounded-xl flex items-center justify-center gap-2 transition-all text-sm font-bold ${selectedMode === item.mode
-                                    ? 'bg-indigo-600 dark:bg-indigo-500 text-white shadow-md shadow-indigo-200 dark:shadow-none'
-                                    : 'hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-400 dark:text-slate-500'}`}
-                            >
-                                <item.icon className="w-4 h-4" />
-                                <span className="hidden sm:inline">{item.label}</span>
-                                <span className="sm:hidden text-xs">{item.label.split(' ')[0]}</span>
-                            </button>
-                        ))}
-                    </div>
-
-                    {/* Quick Actions */}
-                    <div className="flex gap-2">
-                        <button
-                            onClick={startCamera}
-                            className="flex-1 bg-indigo-600 dark:bg-indigo-500 text-white rounded-2xl flex items-center justify-center gap-2 py-3 font-bold text-sm hover:bg-indigo-700 dark:hover:bg-indigo-600 transition-colors shadow-md shadow-indigo-200 dark:shadow-none"
-                        >
-                            <Camera className="w-4 h-4" /> Scan
-                        </button>
-                        <div
-                            className={`flex-1 relative cursor-pointer border-2 border-dashed rounded-2xl flex items-center justify-center gap-2 py-3 transition-all ${dragActive
-                                ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20'
-                                : 'border-slate-200 dark:border-slate-800 hover:border-indigo-300 dark:hover:border-indigo-700 bg-white dark:bg-slate-900'}`}
-                            onDragEnter={handleDrag}
-                            onDragLeave={handleDrag}
-                            onDragOver={handleDrag}
-                            onDrop={handleDrop}
-                            onClick={() => document.getElementById('file-upload')?.click()}
-                        >
-                            <input id="file-upload" type="file" className="hidden" onChange={handleChange} accept="image/*" />
-                            <Upload className="w-4 h-4 text-slate-400" />
-                            <span className="text-sm font-bold text-slate-500">Upload</span>
-                        </div>
+                {/* Quick Actions Row */}
+                <div className="flex gap-4 mb-8">
+                    <button
+                        onClick={startCamera}
+                        className="flex-1 bg-indigo-600 dark:bg-indigo-500 text-white rounded-2xl flex items-center justify-center gap-2 py-3 font-bold text-sm hover:bg-indigo-700 dark:hover:bg-indigo-600 transition-colors shadow-md shadow-indigo-200 dark:shadow-none"
+                    >
+                        <Camera className="w-4 h-4" /> Scan
+                    </button>
+                    <div
+                        className={`flex-1 relative cursor-pointer border-2 border-dashed rounded-2xl flex items-center justify-center gap-2 py-3 transition-all ${dragActive
+                            ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20'
+                            : 'border-slate-200 dark:border-slate-800 hover:border-indigo-300 dark:hover:border-indigo-700 bg-white dark:bg-slate-900'}`}
+                        onDragEnter={handleDrag}
+                        onDragLeave={handleDrag}
+                        onDragOver={handleDrag}
+                        onDrop={handleDrop}
+                        onClick={() => document.getElementById('file-upload')?.click()}
+                    >
+                        <input id="file-upload" type="file" className="hidden" onChange={handleChange} accept="image/*" />
+                        <Upload className="w-4 h-4 text-slate-400" />
                     </div>
                 </div>
 
@@ -374,7 +349,8 @@ export const RevisionLanding: React.FC<Props> = ({ onStartSession, onNavigate })
                             )}
                         </div>
                     </div >
-                )}
+                )
+                }
 
                 {/* Search + Filters */}
                 <div className="mb-6 space-y-4">
@@ -457,7 +433,7 @@ export const RevisionLanding: React.FC<Props> = ({ onStartSession, onNavigate })
                                             initial={{ opacity: 0, y: 8 }}
                                             animate={{ opacity: 1, y: 0 }}
                                             transition={{ delay: idx * 0.03 }}
-                                            onClick={() => onStartSession(item, selectedMode)}
+                                            onClick={() => setSelectedResource(item)}
                                             className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200/70 dark:border-slate-800/80 text-left hover:border-indigo-300 dark:hover:border-indigo-700 hover:shadow-lg dark:hover:shadow-black/40 hover:-translate-y-0.5 transition-all group relative overflow-hidden"
                                         >
                                             {isOfficial && activeTab !== 'syllabus' && (
@@ -563,6 +539,109 @@ export const RevisionLanding: React.FC<Props> = ({ onStartSession, onNavigate })
                     </motion.div>
                 )}
             </AnimatePresence>
+
+            {/* ACTION MODAL FOR RESOURCE SELECTION */}
+            <AnimatePresence>
+                {selectedResource && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                            transition={{ duration: 0.2 }}
+                            className="bg-white dark:bg-slate-900 w-full max-w-lg rounded-3xl overflow-hidden shadow-2xl border border-slate-100 dark:border-slate-800"
+                        >
+                            {/* Header */}
+                            <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-start relative overflow-hidden">
+                                <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-50 dark:bg-indigo-900/20 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
+                                <div className="relative z-10 w-full">
+                                    <div className="flex justify-between items-start w-full">
+                                        <div className="flex items-center gap-3 mb-2">
+                                            <div className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
+                                                <FileText className="w-5 h-5" />
+                                            </div>
+                                            <div>
+                                                <p className="text-[10px] font-black text-indigo-500 uppercase tracking-widest">{selectedResource.subject}</p>
+                                                <h3 className="font-bold text-slate-800 dark:text-slate-100 text-lg leading-tight w-11/12 truncate" title={selectedResource.title}>{selectedResource.title}</h3>
+                                            </div>
+                                        </div>
+                                        <button onClick={() => setSelectedResource(null)} className="p-2 bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full text-slate-400 dark:text-slate-500 transition-colors shrink-0">
+                                            <X className="w-4 h-4" />
+                                        </button>
+                                    </div>
+                                    <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mt-2">How would you like to interact with this resource?</p>
+                                </div>
+                            </div>
+
+                            {/* Mode Options */}
+                            <div className="p-6 space-y-3 bg-slate-50/50 dark:bg-slate-950">
+                                {/* Learn Guided */}
+                                <button
+                                    onClick={() => {
+                                        onStartSession(selectedResource, RevisionMode.LEARN);
+                                        setSelectedResource(null);
+                                    }}
+                                    className="w-full text-left bg-white dark:bg-slate-900 p-4 rounded-2xl border border-indigo-100 dark:border-indigo-900/40 hover:border-indigo-300 dark:hover:border-indigo-700 hover:shadow-lg shadow-indigo-100/30 dark:shadow-none transition-all group flex items-start gap-4"
+                                >
+                                    <div className="w-12 h-12 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+                                        <BookOpen className="w-6 h-6" />
+                                    </div>
+                                    <div className="flex-1">
+                                        <h4 className="font-bold text-slate-800 dark:text-slate-100 text-base mb-0.5">Learn Guided</h4>
+                                        <p className="text-xs text-slate-500 dark:text-slate-400 leading-snug">Study with Super Teacher. Get explanations step-by-step and ask questions.</p>
+                                    </div>
+                                    <div className="self-center">
+                                        <ChevronRight className="w-5 h-5 text-indigo-300 group-hover:text-indigo-600 transition-colors" />
+                                    </div>
+                                </button>
+
+                                {/* Take as Exam */}
+                                <button
+                                    onClick={() => {
+                                        onStartSession(selectedResource, RevisionMode.EXAM);
+                                        setSelectedResource(null);
+                                    }}
+                                    className="w-full text-left bg-white dark:bg-slate-900 p-4 rounded-2xl border border-amber-100 dark:border-amber-900/40 hover:border-amber-300 dark:hover:border-amber-700 hover:shadow-lg shadow-amber-100/30 dark:shadow-none transition-all group flex items-start gap-4"
+                                >
+                                    <div className="w-12 h-12 rounded-xl bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+                                        <Brain className="w-6 h-6" />
+                                    </div>
+                                    <div className="flex-1">
+                                        <h4 className="font-bold text-slate-800 dark:text-slate-100 text-base mb-0.5">Take as Exam</h4>
+                                        <p className="text-xs text-slate-500 dark:text-slate-400 leading-snug">Test yourself under timed conditions without immediate hints.</p>
+                                    </div>
+                                    <div className="self-center">
+                                        <ChevronRight className="w-5 h-5 text-amber-300 group-hover:text-amber-600 transition-colors" />
+                                    </div>
+                                </button>
+
+                                {/* Just Read */}
+                                {(selectedResource.fileUrl || selectedResource.file_url) && (
+                                    <button
+                                        onClick={() => {
+                                            window.open(selectedResource.fileUrl || selectedResource.file_url, '_blank');
+                                            setSelectedResource(null);
+                                        }}
+                                        className="w-full text-left bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800/80 transition-all group flex items-start gap-4"
+                                    >
+                                        <div className="w-12 h-12 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+                                            <FileText className="w-6 h-6" />
+                                        </div>
+                                        <div className="flex-1">
+                                            <h4 className="font-bold text-slate-800 dark:text-slate-100 text-base mb-0.5">Just Read Document</h4>
+                                            <p className="text-xs text-slate-500 dark:text-slate-400 leading-snug">Open the file directly in a new tab without AI assistance.</p>
+                                        </div>
+                                        <div className="self-center">
+                                            <ArrowRight className="w-5 h-5 text-slate-300 group-hover:text-slate-600 transition-colors" />
+                                        </div>
+                                    </button>
+                                )}
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
         </div >
     );
 };

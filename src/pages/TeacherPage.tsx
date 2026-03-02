@@ -9,10 +9,11 @@ export const TeacherPage: React.FC = () => {
     const location = useLocation();
 
     // Determine initial tab based on route
-    let initialTab: 'DASHBOARD' | 'MAGIC_CLASSROOM' | 'STUDENTS' | 'MARKING' | 'EARNINGS' | 'LIBRARY' | 'CONVERT' | 'VOICE' | 'QUIZ' | 'HOME' | 'MARKETPLACE' = 'DASHBOARD';
+    let initialTab: 'DASHBOARD' | 'CREATION_HUB' | 'MAGIC_CLASSROOM' | 'STUDENTS' | 'MARKING' | 'EARNINGS' | 'LIBRARY' | 'CONVERT' | 'VOICE' | 'QUIZ' | 'HOME' | 'MARKETPLACE' | 'DARASA_MODE' = 'DASHBOARD';
     if (location.pathname === '/teacher/notes') initialTab = 'HOME'; // Stay on Home (Studio) to see note tools
     if (location.pathname === '/teacher/homework') initialTab = 'HOME'; // Stay on Home (Studio) to see quiz tools
     if (location.pathname === '/teacher/marking') initialTab = 'MARKING';
+    if (location.pathname === '/teacher/darasa') initialTab = 'DARASA_MODE';
 
     const handleNavigate = (view: ViewState) => {
         if (view === ViewState.DASHBOARD) {

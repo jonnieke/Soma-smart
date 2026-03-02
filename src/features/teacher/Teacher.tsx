@@ -13,20 +13,28 @@ import { LogoutModal } from '../../components/LogoutModal';
 import { RegistrationModal } from '../../components/RegistrationModal';
 import { TeacherLanding } from '../../components/TeacherLanding';
 import { useApp } from '../../context/AppContext';
-import { convertNotes, processVoiceNote, generateTeacherQuiz, generateAdvancedTeacherQuiz, fileToGenerativePart } from '../../services/geminiService';
+import { convertNotes, processVoiceNote, generateTeacherQuiz, generateAdvancedTeacherQuiz, fileToGenerativePart, processDarasaRecording } from '../../services/geminiService';
 import { ViewState, TeacherNote, QuizData, TeacherActivity, SubscriptionPlan, ChatMessage } from '../../types';
 import { PdfPageSelector } from '../../components/PdfPageSelector';
 import { PaymentFlow } from '../subscription/PaymentFlow';
 import { translations } from '../../data/translations';
 import { TeacherRequestModal } from '../../components/TeacherRequestModal';
 import { TutoringRequest } from '../../types';
+import { DarasaMode } from './DarasaMode';
+import { MyClassroom } from './MyClassroom';
+import { CreationHub } from './CreationHub';
+import { MarketplaceManager } from './MarketplaceManager';
+import { WelcomeOnboard } from './WelcomeOnboard';
+import { MarkingManager } from './MarkingManager';
+import { TeacherReports } from './TeacherReports';
+import { TeacherDashboardOverview } from './TeacherDashboardOverview';
 
 import { useNavigate, useLocation } from 'react-router-dom';
 import logoImg from '../../assets/images/main_logo.png';
 
 interface TeacherProps {
     onNavigate: (view: ViewState) => void;
-    initialTab?: 'DASHBOARD' | 'MAGIC_CLASSROOM' | 'STUDENTS' | 'MARKING' | 'EARNINGS' | 'LIBRARY' | 'HOME' | 'CONVERT' | 'VOICE' | 'QUIZ' | 'MARKETPLACE' | 'PROFILE' | 'REPORTS';
+    initialTab?: 'DASHBOARD' | 'MAGIC_CLASSROOM' | 'CREATION_HUB' | 'STUDENTS' | 'MARKING' | 'EARNINGS' | 'LIBRARY' | 'HOME' | 'CONVERT' | 'VOICE' | 'QUIZ' | 'MARKETPLACE' | 'PROFILE' | 'REPORTS' | 'DARASA_MODE';
 }
 
 export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTab }) => {
@@ -115,7 +123,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
     const [paymentPlan, setPaymentPlan] = useState<SubscriptionPlan | null>(null);
     const [showLoginModal, setShowLoginModal] = useState(false);
     const [showLogoutModal, setShowLogoutModal] = useState(false);
-    const [activeTab, setActiveTab] = useState<'DASHBOARD' | 'MAGIC_CLASSROOM' | 'STUDENTS' | 'MARKING' | 'EARNINGS' | 'LIBRARY' | 'CONVERT' | 'VOICE' | 'QUIZ' | 'HOME' | 'MARKETPLACE' | 'PROFILE' | 'REPORTS'>(initialTab || 'DASHBOARD');
+    const [activeTab, setActiveTab] = useState<'DASHBOARD' | 'MAGIC_CLASSROOM' | 'CREATION_HUB' | 'STUDENTS' | 'MARKING' | 'EARNINGS' | 'LIBRARY' | 'CONVERT' | 'VOICE' | 'QUIZ' | 'HOME' | 'MARKETPLACE' | 'PROFILE' | 'REPORTS' | 'DARASA_MODE'>(initialTab || 'DASHBOARD');
     const [loading, setLoading] = useState(false);
 
     // Selection State
@@ -388,6 +396,12 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
         }
     };
 
+    const handleAssignQuiz = (studentIds: string[], topic: string) => {
+        // In a real backend, this would loop through studentIds and dispatch
+        // assignment notifications or write to their 'pendingAssignments' DB.
+        console.log(`Assigned quiz on ${topic} to students:`, studentIds);
+    };
+
     // --- Render ---
 
     // If not authenticated, show Landing Page
@@ -526,10 +540,10 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                             Dashboard
                         </button>
                         <button
-                            onClick={() => setActiveTab('MAGIC_CLASSROOM')}
-                            className={`pb-1 text-lg tracking-wide font-black transition-all ${activeTab === 'MAGIC_CLASSROOM' ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-slate-500 hover:text-slate-900'}`}
+                            onClick={() => setActiveTab('CREATION_HUB')}
+                            className={`pb-1 text-lg tracking-wide font-black transition-all ${activeTab === 'CREATION_HUB' ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-slate-500 hover:text-slate-900'}`}
                         >
-                            Classroom
+                            Creation Hub
                         </button>
                         <button
                             onClick={() => setActiveTab('MARKING')}
@@ -544,10 +558,22 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                             Students
                         </button>
                         <button
+                            onClick={() => setActiveTab('DARASA_MODE')}
+                            className={`pb-1 text-lg tracking-wide font-black transition-all flex items-center gap-1 ${activeTab === 'DARASA_MODE' ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-slate-500 hover:text-slate-900'}`}
+                        >
+                            <Mic className="w-4 h-4" /> Darasa Mode
+                        </button>
+                        <button
                             onClick={() => setActiveTab('REPORTS')}
                             className={`pb-1 text-lg tracking-wide font-black transition-all ${activeTab === 'REPORTS' ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-slate-500 hover:text-slate-900'}`}
                         >
                             Reports
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('MARKETPLACE')}
+                            className={`pb-1 text-lg tracking-wide font-black transition-all flex items-center gap-1 ${activeTab === 'MARKETPLACE' ? 'text-emerald-600 border-b-2 border-emerald-600' : 'text-slate-500 hover:text-slate-900'}`}
+                        >
+                            <Store className="w-4 h-4" /> Storefront
                         </button>
                     </div>
 
@@ -587,565 +613,68 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
 
             <div className="max-w-5xl mx-auto px-6 pt-8 pb-24">
 
-
-
-                {/* --- DASHBOARD VIEW --- */}
-                {activeTab === 'DASHBOARD' && (
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-8">
-                        {/* Hero Section */}
-                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                            {/* AI Priority Strip (Hero Section) */}
-                            <div className="lg:col-span-2 bg-gradient-to-r from-indigo-900 to-indigo-800 rounded-[2rem] p-8 shadow-xl border border-indigo-700/50 flex flex-col md:flex-row justify-between items-center relative overflow-hidden gap-8">
-                                <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/20 rounded-full blur-3xl -mr-16 -mt-16"></div>
-                                <div className="absolute bottom-0 left-0 w-48 h-48 bg-purple-500/20 rounded-full blur-3xl -ml-12 -mb-12"></div>
-
-                                {/* LEFT: Today's Teaching Focus */}
-                                <div className="relative z-10 flex-1 w-full text-white">
-                                    <h2 className="text-xl font-black tracking-tight mb-6 flex items-center gap-2">
-                                        <Sparkles className="w-5 h-5 text-indigo-300" />
-                                        Today's Teaching Focus
-                                    </h2>
-
-                                    <div className="space-y-4 font-bold text-sm">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-8 h-8 rounded-xl bg-red-500/20 flex items-center justify-center border border-red-500/30">
-                                                <AlertCircle className="w-4 h-4 text-red-400" />
-                                            </div>
-                                            <p className="text-indigo-50">
-                                                <span className="text-white font-black text-base">8 students</span> at risk in {selectedSubject}
-                                            </p>
-                                        </div>
-
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-8 h-8 rounded-xl bg-amber-500/20 flex items-center justify-center border border-amber-500/30">
-                                                <FileText className="w-4 h-4 text-amber-400" />
-                                            </div>
-                                            <p className="text-indigo-50">
-                                                <span className="text-white font-black text-base">{activeTutoringRequests.filter(r => r.status === 'PENDING').length} assignments</span> need marking
-                                            </p>
-                                        </div>
-
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-8 h-8 rounded-xl bg-emerald-500/20 flex items-center justify-center border border-emerald-500/30">
-                                                <TrendingUp className="w-4 h-4 text-emerald-400" />
-                                            </div>
-                                            <p className="text-indigo-50">
-                                                <span className="text-white font-black text-base">{selectedClass} improving</span> <span className="text-emerald-400">+6%</span>
-                                            </p>
-                                        </div>
-
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-8 h-8 rounded-xl bg-purple-500/20 flex items-center justify-center border border-purple-500/30">
-                                                <Lightbulb className="w-4 h-4 text-purple-400" />
-                                            </div>
-                                            <p className="text-indigo-50">
-                                                Suggested remedial: <span className="text-white font-black text-base">Decimals</span>
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* RIGHT: Primary CTA Panel */}
-                                <div className="relative z-10 w-full md:w-auto flex flex-col gap-4 min-w-[240px]">
-                                    <button
-                                        onClick={() => setActiveTab('MAGIC_CLASSROOM')}
-                                        className="w-full bg-white text-indigo-900 px-8 py-4 rounded-2xl font-black text-lg shadow-2xl shadow-indigo-900/50 hover:scale-105 hover:bg-slate-50 transition-all flex items-center justify-center gap-2 group"
-                                    >
-                                        🚀 Fix Today's Gaps
-                                        <ChevronRight className="w-5 h-5 text-indigo-400 group-hover:text-indigo-600 transition-colors" />
-                                    </button>
-                                    <button
-                                        onClick={() => setActiveTab('MAGIC_CLASSROOM')}
-                                        className="w-full bg-indigo-800/50 text-indigo-100 border border-indigo-500/30 px-8 py-3.5 rounded-2xl font-bold hover:bg-indigo-700/50 hover:text-white transition-all flex items-center justify-center gap-2"
-                                    >
-                                        <Plus className="w-5 h-5" />
-                                        Create Resource
-                                    </button>
-                                </div>
-                            </div>
-
-                            {/* Pending Requests Card */}
-                            <div
-                                onClick={() => {
-                                    if (activeTutoringRequests.filter(r => r.status === 'PENDING').length > 0) {
-                                        // Open modal with first pending request, or show list (for now just open first)
-                                        // Ideally we show a list.
-                                        // For now, let's open a Request List view or modal.
-                                        // Let's reuse 'STUDENTS' tab or similar? 
-                                        // Better: Open the RequestModal with the first pending request to demo.
-                                        const first = activeTutoringRequests.find(r => r.status === 'PENDING');
-                                        if (first) {
-                                            setSelectedRequest(first);
-                                            setIsRequestModalOpen(true);
-                                        }
-                                    }
-                                }}
-                                className="bg-white rounded-[2rem] p-6 shadow-sm border border-slate-100 flex flex-col justify-between cursor-pointer hover:shadow-md transition-all group"
-                            >
-                                <div className="flex items-start justify-between mb-4">
-                                    <div className="w-12 h-12 bg-amber-50 text-amber-600 rounded-2xl flex items-center justify-center group-hover:bg-amber-100 transition-colors">
-                                        <div className="relative">
-                                            <Bell className="w-6 h-6" />
-                                            {activeTutoringRequests.filter(r => r.status === 'PENDING').length > 0 && (
-                                                <span className="absolute -top-1 -right-1 flex h-3 w-3">
-                                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-                                                    <span className="relative inline-flex rounded-full h-3 w-3 bg-amber-500"></span>
-                                                </span>
-                                            )}
-                                        </div>
-                                    </div>
-                                    <div className="bg-amber-50 text-amber-700 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider">
-                                        Action Required
-                                    </div>
-                                </div>
-                                <div>
-                                    <h3 className="text-3xl font-black text-slate-900 mb-1">{activeTutoringRequests.filter(r => r.status === 'PENDING').length}</h3>
-                                    <p className="text-slate-500 font-medium text-sm">Pending Student Requests</p>
-                                </div>
-                            </div>
-
-                            {/* Metrics Cards */}
-                            <div className="flex gap-4">
-                                <div className="flex-1 bg-white rounded-[2rem] p-6 shadow-sm border border-slate-100 flex items-center gap-4">
-                                    <div className="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center">
-                                        <DollarSign className="w-6 h-6" />
-                                    </div>
-                                    <div>
-                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Earnings Today</p>
-                                        <p className="text-2xl font-black text-slate-900">
-                                            {teacherWallet?.transactions
-                                                .filter(t => new Date(t.date).toLocaleDateString() === new Date().toLocaleDateString())
-                                                .reduce((acc, t) => acc + (t.type === 'EARNING' ? t.amount : 0), 0) || 0}
-                                        </p>
-                                    </div>
-                                </div>
-                                <div className="flex-1 bg-white rounded-[2rem] p-6 shadow-sm border border-slate-100 flex items-center gap-4">
-                                    <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center">
-                                        <FileText className="w-6 h-6" />
-                                    </div>
-                                    <div>
-                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">History</p>
-                                        <p className="text-2xl font-black text-slate-900">{teacherHistory.length} <span className="text-xs text-slate-400 font-bold">Items</span></p>
-                                    </div>
-                                </div>
-                                <div className="flex-1 bg-white rounded-[2rem] p-6 shadow-sm border border-slate-100 flex items-center gap-4">
-                                    <div className="w-12 h-12 bg-amber-50 text-amber-600 rounded-2xl flex items-center justify-center">
-                                        <Clock className="w-6 h-6" />
-                                    </div>
-                                    <div>
-                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Pending</p>
-                                        <p className="text-2xl font-black text-slate-900">{activeTutoringRequests.filter(r => r.status === 'PENDING').length} <span className="text-xs text-slate-400 font-bold">Requests</span></p>
-                                    </div>
-                                    <button
-                                        onClick={() => {
-                                            const pending = activeTutoringRequests.find(r => r.status === 'PENDING');
-                                            if (pending) handleRequestClick(pending);
-                                        }}
-                                        className="ml-auto p-2 hover:bg-slate-50 rounded-full transition-colors"
-                                    >
-                                        <ChevronRight className="w-5 h-5 text-slate-300" />
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Middle Row: AI Insights & Class Performance */}
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                            {/* AI Insights */}
-                            <div className="bg-white rounded-[2rem] p-8 shadow-sm border border-slate-100 relative overflow-hidden">
-                                <div className="absolute right-0 bottom-0 opacity-10 pointer-events-none">
-                                    <Brain className="w-64 h-64 text-indigo-600 -mr-12 -mb-12" />
-                                </div>
-                                <h3 className="text-lg font-black text-slate-900 mb-6">Soma AI Insights</h3>
-                                <div className="space-y-4 relative z-10">
-                                    <div className="flex items-start gap-3">
-                                        <TrendingUp className="w-5 h-5 text-emerald-500 mt-0.5" />
-                                        <p className="text-sm font-bold text-slate-700">
-                                            <span className="text-emerald-600 font-black">60%</span> of {selectedClass} struggling with {selectedSubject}
-                                        </p>
-                                    </div>
-                                    <div className="flex items-start gap-3">
-                                        <AlertCircle className="w-5 h-5 text-red-500 mt-0.5" />
-                                        <p className="text-sm font-bold text-slate-700">
-                                            <span className="text-red-600 font-black">12 students</span> did not complete {selectedSubject} homework
-                                        </p>
-                                    </div>
-                                    <div className="flex items-start gap-3">
-                                        <Layers className="w-5 h-5 text-blue-500 mt-0.5" />
-                                        <p className="text-sm font-bold text-slate-700">
-                                            Suggested revision topic: <span className="text-blue-600 font-black">Decimals</span>
-                                        </p>
-                                    </div>
-                                </div>
-                                <button className="mt-8 bg-emerald-600 text-white px-6 py-3 rounded-full font-bold text-xs uppercase tracking-wider hover:bg-emerald-700 transition-colors shadow-lg shadow-emerald-200">
-                                    Generate Revision Worksheet
-                                </button>
-                            </div>
-
-                            {/* Class Performance */}
-                            <div className="bg-white rounded-[2rem] p-8 shadow-sm border border-slate-100">
-                                <div className="flex justify-between items-center mb-6">
-                                    <h3 className="text-lg font-black text-slate-900">Class Performance</h3>
-                                    <button className="text-[10px] font-black text-indigo-600 uppercase tracking-widest bg-indigo-50 px-3 py-1 rounded-full">
-                                        Report
-                                    </button>
-                                </div>
-                                <p className="text-sm font-black text-slate-500 uppercase tracking-wider mb-2">{selectedClass} {selectedSubject}</p>
-
-                                <div className="bg-slate-50 rounded-2xl p-6 mb-6">
-                                    <div className="flex justify-between items-end mb-2">
-                                        <div>
-                                            <p className="text-xs font-bold text-slate-400 uppercase">Average Score</p>
-                                            <p className="text-3xl font-black text-slate-900">62%</p>
-                                        </div>
-                                        <div className="text-right">
-                                            <p className="text-xs font-bold text-emerald-600 flex items-center gap-1">
-                                                <TrendingUp className="w-3 h-3" /> +8%
-                                            </p>
-                                            <p className="text-[10px] font-bold text-slate-400 uppercase">Improvement</p>
-                                        </div>
-                                    </div>
-                                    <div className="h-3 w-full bg-slate-200 rounded-full overflow-hidden">
-                                        <div className="h-full bg-indigo-500 w-[62%] rounded-full"></div>
-                                    </div>
-                                </div>
-
-                                <button onClick={() => setActiveTab('MARKING')} className="w-full bg-indigo-50 text-indigo-600 px-6 py-3 rounded-xl font-bold text-xs uppercase tracking-wider hover:bg-indigo-100 transition-colors">
-                                    Mark Now
-                                </button>
-                            </div>
-                        </div>
-
-                        {/* Bottom Lists */}
-                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                            {/* Homework Queue */}
-                            <div className="lg:col-span-2 bg-white rounded-[2rem] p-8 shadow-sm border border-slate-100">
-                                <div className="flex justify-between items-center mb-6">
-                                    <h3 className="text-lg font-black text-slate-900">Homework & Marking Queue</h3>
-                                    <button className="text-xs font-bold text-slate-400 hover:text-indigo-600">View All</button>
-                                </div>
-                                <div className="space-y-4">
-                                    {teacherHistory.length === 0 ? (
-                                        <div className="p-6 text-center text-slate-400 text-xs font-bold bg-slate-50 rounded-2xl border-2 border-dashed border-slate-100">
-                                            No items in queue. Create your first resource!
-                                        </div>
-                                    ) : (
-                                        teacherHistory.slice(0, 4).map((item, i) => (
-                                            <div key={i} className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100 hover:bg-white hover:shadow-md transition-all cursor-pointer" onClick={() => loadHistoryItem(item)}>
-                                                <div className="flex items-center gap-4">
-                                                    <div className={`w-10 h-10 rounded-xl shadow-sm flex items-center justify-center ${item.type === 'NOTE' ? 'bg-blue-50 text-blue-600' : 'bg-indigo-50 text-indigo-600'}`}>
-                                                        {item.type === 'NOTE' ? <FileText className="w-5 h-5" /> : <Brain className="w-5 h-5" />}
-                                                    </div>
-                                                    <div>
-                                                        <h4 className="font-bold text-slate-900 text-sm line-clamp-1">{item.title}</h4>
-                                                        <p className="text-xs text-slate-500 font-semibold">{item.type === 'NOTE' ? 'Study Notes' : 'Quiz Assessment'} • {item.date}</p>
-                                                    </div>
-                                                </div>
-                                                <div className="flex items-center gap-3">
-                                                    <span className="text-xs font-black text-emerald-600 flex items-center gap-1 bg-emerald-50 px-2 py-1 rounded"><CheckCircle2 className="w-3 h-3" /> Ready</span>
-                                                    <ChevronRight className="w-4 h-4 text-slate-300" />
-                                                </div>
-                                            </div>
-                                        ))
-                                    )}
-                                </div>
-                            </div>
-
-                            {/* Quick Access Library */}
-                            <div className="bg-white rounded-[2rem] p-8 shadow-sm border border-slate-100">
-                                <div className="flex justify-between items-center mb-6">
-                                    <h3 className="text-lg font-black text-slate-900">Quick Access Library</h3>
-                                    <Library className="w-5 h-5 text-slate-400" />
-                                </div>
-                                <div className="space-y-4">
-                                    {teacherHistory.length > 0 ? teacherHistory.slice(0, 4).map((item, i) => (
-                                        <div key={i} className="flex items-center justify-between cursor-pointer hover:bg-slate-50 p-2 rounded-xl transition-colors" onClick={() => loadHistoryItem(item)}>
-                                            <div className="flex items-center gap-3">
-                                                <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 border-white shadow-sm ${item.type === 'NOTE' ? 'bg-blue-100 text-blue-600' : 'bg-purple-100 text-purple-600'}`}>
-                                                    {item.type === 'NOTE' ? <FileText className="w-5 h-5" /> : <Sparkles className="w-5 h-5" />}
-                                                </div>
-                                                <div>
-                                                    <h4 className="font-bold text-slate-900 text-sm line-clamp-1">{item.title}</h4>
-                                                    <p className="text-[10px] font-black uppercase tracking-wider text-slate-500">{item.subject}</p>
-                                                </div>
-                                            </div>
-                                            <button className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center hover:bg-slate-100">
-                                                <ChevronRight className="w-4 h-4 text-slate-400" />
-                                            </button>
-                                        </div>
-                                    )) : (
-                                        <div className="text-center py-8">
-                                            <p className="text-slate-400 text-xs font-bold">Library is empty.</p>
-                                        </div>
-                                    )}
-                                </div>
-                                <button onClick={() => setActiveTab('LIBRARY')} className="w-full mt-6 py-3 text-xs font-black text-indigo-600 uppercase tracking-widest bg-indigo-50 rounded-xl hover:bg-indigo-100">
-                                    View Full Library
-                                </button>
-                            </div>
-                        </div>
+                {activeTab === 'DARASA_MODE' && (
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                        <DarasaMode
+                            onSaveToLibrary={handleSaveToHistory}
+                            checkLimit={checkLimit}
+                            incrementUsage={incrementTeacherUsage}
+                            selectedSubject={selectedSubject}
+                            selectedClass={selectedClass}
+                            language={language}
+                            processAudioFile={processDarasaRecording}
+                        />
                     </motion.div>
                 )}
 
-                {/* --- MAGIC CLASSROOM (Tools) --- */}
-                {activeTab === 'MAGIC_CLASSROOM' && (
-                    <div className="space-y-8">
-                        {/* Header for Magic Classroom */}
-                        <div className="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-[2.5rem] p-8 text-white relative overflow-hidden shadow-xl shadow-indigo-200 mb-8">
-                            <div className="absolute top-0 right-0 w-96 h-96 bg-white/10 rounded-full blur-3xl -mr-32 -mt-32"></div>
-                            <div className="relative z-10">
-                                <h2 className="text-3xl font-black mb-2">Magic Classroom Tools</h2>
-                                <p className="text-indigo-100 font-medium max-w-xl">
-                                    Access your AI-powered teaching assistants. Generate quizzes, convert notes, and manage your live classes.
-                                </p>
-                            </div>
-                        </div>
-
-                        {/* Sub-tab Switcher for Tools */}
-                        <div className="flex p-1.5 bg-slate-100 rounded-2xl w-fit mb-4 mx-auto md:mx-0">
-                            <button
-                                onClick={() => setShowExamGen(false)}
-                                className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 ${!showExamGen ? 'bg-white text-indigo-600 shadow-md ring-1 ring-slate-200' : 'text-slate-500 hover:text-slate-700'}`}
-                            >
-                                Magic Tools
-                            </button>
-                            <button
-                                onClick={() => setShowExamGen(true)}
-                                className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 ${showExamGen ? 'bg-white text-indigo-600 shadow-md ring-1 ring-slate-200' : 'text-slate-500 hover:text-slate-700'}`}
-                            >
-                                Exam Center
-                            </button>
-                        </div>
-
-                        {!showExamGen ? (
-                            <motion.div
-                                initial="hidden"
-                                animate="visible"
-                                variants={{
-                                    hidden: { opacity: 0 },
-                                    visible: {
-                                        opacity: 1,
-                                        transition: {
-                                            staggerChildren: 0.1
-                                        }
-                                    }
-                                }}
-                                className="grid grid-cols-1 md:grid-cols-2 gap-6"
-                            >
-                                {/* Tool: Darasa Mode (Featured) */}
-                                <motion.div
-                                    variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}
-                                    whileHover={{ y: -5 }}
-                                    onClick={() => navigate('/teacher/darasa')}
-                                    className="md:col-span-2 bg-slate-900 text-white p-8 rounded-[2.5rem] shadow-xl shadow-slate-200 relative overflow-hidden cursor-pointer group"
-                                >
-                                    <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/20 rounded-full blur-3xl -mr-16 -mt-16 group-hover:scale-110 transition-transform duration-700"></div>
-
-                                    <div className="relative z-10 flex items-center justify-between">
-                                        <div className="flex items-center gap-6">
-                                            <div className="w-16 h-16 bg-white/10 backdrop-blur-md rounded-2xl flex items-center justify-center border border-white/10 shadow-inner">
-                                                <MonitorPlay className="w-8 h-8 text-white" />
-                                            </div>
-                                            <div>
-                                                <h3 className="text-2xl font-black tracking-tight mb-1 flex items-center gap-3">
-                                                    {t.teacher.tools.darasa.title}
-                                                    <span className="text-[10px] bg-indigo-500 text-white px-2 py-0.5 rounded-full font-black uppercase tracking-wider">Live Studio</span>
-                                                </h3>
-                                                <p className="text-slate-300 font-medium max-w-md">{t.teacher.tools.darasa.desc}</p>
-                                            </div>
-                                        </div>
-                                        <div className="w-12 h-12 bg-white text-slate-900 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg">
-                                            <ArrowRight className="w-6 h-6" />
-                                        </div>
-                                    </div>
-                                </motion.div>
-
-                                {/* Tool: Notes Converter */}
-                                <motion.div
-                                    variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}
-                                    whileHover={isOnline ? { y: -5 } : {}}
-                                    className={`bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-xl hover:shadow-indigo-50/50 transition-all group relative overflow-hidden ${!isOnline && 'opacity-60 grayscale'}`}
-                                >
-                                    <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-50 rounded-full blur-2xl -mr-10 -mt-10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-
-                                    <div className="w-14 h-14 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
-                                        <FileText className="w-7 h-7" />
-                                    </div>
-
-                                    <h3 className="text-xl font-black text-slate-900 mb-2">{t.teacher.tools.converter.title}</h3>
-                                    <p className="text-sm text-slate-500 font-medium mb-8 leading-relaxed">
-                                        {isOnline ? `${t.teacher.tools.converter.desc} ${selectedClass}.` : "Connect to internet to convert."}
-                                    </p>
-
-                                    <Button
-                                        fullWidth
-                                        onClick={isOnline ? () => document.getElementById('file-upload')?.click() : undefined}
-                                        disabled={!isOnline}
-                                        className="bg-slate-900 text-white hover:bg-slate-800 rounded-xl py-4 font-black uppercase tracking-widest text-xs shadow-lg shadow-slate-200"
-                                    >
-                                        {isOnline ? (language === 'FR' ? "Télécharger" : "Upload Photo") : "Offline"}
-                                    </Button>
-                                    <input type="file" id="file-upload" className="hidden" accept="image/*,.pdf" onChange={handleFileUpload} />
-                                </motion.div>
-
-                                {/* Tool: Voice Notes */}
-                                <motion.div
-                                    variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}
-                                    whileHover={isOnline ? { y: -5 } : {}}
-                                    className={`bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-xl hover:shadow-purple-50/50 transition-all group relative overflow-hidden ${!isOnline && 'opacity-60 grayscale'}`}
-                                >
-                                    <div className="absolute top-0 right-0 w-32 h-32 bg-purple-50 rounded-full blur-2xl -mr-10 -mt-10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-
-                                    <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-6 transition-transform duration-300 ${isRecording ? 'bg-red-50 text-red-500 animate-pulse' : 'bg-purple-50 text-purple-600 group-hover:scale-110'}`}>
-                                        <Mic className="w-7 h-7" />
-                                    </div>
-
-                                    <h3 className="text-xl font-black text-slate-900 mb-2">{t.teacher.tools.voice.title}</h3>
-                                    <p className="text-sm text-slate-500 font-medium mb-8 leading-relaxed">
-                                        {isOnline ? `${t.teacher.tools.voice.desc} ${selectedSubject}.` : "Connect to internet for voice."}
-                                    </p>
-
-                                    <Button
-                                        fullWidth
-                                        onClick={isOnline ? (isRecording ? stopRecording : startRecording) : undefined}
-                                        disabled={!isOnline}
-                                        className={`rounded-xl py-4 font-black uppercase tracking-widest text-xs shadow-lg transition-all ${isRecording ? 'bg-red-500 hover:bg-red-600 text-white shadow-red-200' : '!bg-white border-2 border-purple-100 !text-purple-600 hover:!bg-purple-50'}`}
-                                    >
-                                        {isRecording ? (language === 'FR' ? "Arrêter" : "Stop Recording") : (language === 'FR' ? "Enregistrer" : "Record Audio")}
-                                    </Button>
-                                </motion.div>
-
-                                {/* Tool: Automatic Marking */}
-                                <motion.div
-                                    variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}
-                                    whileHover={{ y: -5 }}
-                                    onClick={() => setActiveTab('MARKING')}
-                                    className="md:col-span-2 bg-emerald-50/50 p-6 rounded-[2.5rem] border border-emerald-100 flex items-center justify-between cursor-pointer group hover:bg-emerald-50 transition-colors"
-                                >
-                                    <div className="flex items-center gap-5">
-                                        <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center shadow-sm text-emerald-600 group-hover:scale-110 transition-transform">
-                                            <ScanLine className="w-7 h-7" />
-                                        </div>
-                                        <div>
-                                            <h3 className="text-lg font-black text-slate-900 mb-1 flex items-center gap-2">
-                                                {t.teacher.tools.marking.title}
-                                                <span className="text-[9px] bg-emerald-200 text-emerald-800 px-2 py-0.5 rounded-full font-black uppercase tracking-wider">Beta</span>
-                                            </h3>
-                                            <p className="text-sm text-slate-500 font-medium">{t.teacher.tools.marking.desc}</p>
-                                        </div>
-                                    </div>
-                                    <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-sm text-emerald-600 group-hover:translate-x-1 transition-transform">
-                                        <ArrowRight className="w-5 h-5" />
-                                    </div>
-                                </motion.div>
-                            </motion.div>
-                        ) : (
-                            /* Advanced Quiz Generator (Exam Center) */
-                            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bg-white rounded-[2.5rem] shadow-xl p-8 relative overflow-hidden border border-slate-100">
-                                <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-50 rounded-full blur-3xl -mr-16 -mt-16"></div>
-                                <div className="relative z-10 flex justify-between items-center mb-8">
-                                    <h3 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-3">
-                                        <Sparkles className="w-6 h-6 text-indigo-500" />
-                                        {t.teacher.tools.exam.title}
-                                    </h3>
-                                    <Button variant="ghost" onClick={() => setShowExamGen(false)} className="rounded-full w-10 h-10 p-0 text-slate-400 hover:text-slate-600">
-                                        <X className="w-6 h-6" />
-                                    </Button>
-                                </div>
-
-                                <div className="flex flex-col md:flex-row gap-8">
-                                    <div className="flex-1 space-y-6">
-                                        <div>
-                                            <label className="text-xs font-black text-slate-900 uppercase tracking-[0.1em] mb-2 block">{t.teacher.tools.exam.topicLabel}</label>
-                                            <input
-                                                type="text"
-                                                value={advTopic}
-                                                onChange={(e) => setAdvTopic(e.target.value)}
-                                                className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 text-slate-900 font-bold focus:border-indigo-500 focus:bg-white transition-all outline-none"
-                                                placeholder="e.g. Introduction to Calculus"
-                                            />
-                                        </div>
-
-                                        <div className="bg-blue-50 p-4 rounded-2xl border border-blue-100 hidden md:block">
-                                            <div className="flex items-start gap-3">
-                                                <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 shrink-0 mt-1">
-                                                    <Lightbulb className="w-4 h-4" />
-                                                </div>
-                                                <div>
-                                                    <h4 className="font-black text-blue-900 text-xs uppercase tracking-wider mb-1">AI Tip</h4>
-                                                    <p className="text-xs text-blue-700 font-medium">
-                                                        Upload clear images or PDFs. The AI works best with typed notes rather than handwritten ones.
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div className="flex-1 border-t md:border-t-0 md:border-l-2 border-slate-100 md:pl-10 pt-8 md:pt-0 flex flex-col justify-between">
-                                        <div className="space-y-4">
-                                            <label className="text-xs font-black text-slate-900 uppercase tracking-[0.1em] mb-2 block">{t.teacher.tools.exam.sourceLabel}</label>
-
-                                            <div className="border-2 border-dashed border-slate-200 rounded-[2rem] bg-slate-50/50 p-6 text-center hover:bg-white hover:border-indigo-400 hover:shadow-xl hover:shadow-indigo-50 transition-all group relative cursor-pointer">
-                                                <input
-                                                    type="file"
-                                                    multiple
-                                                    accept="image/*,application/pdf"
-                                                    onChange={handleAdvFileUpload}
-                                                    className="absolute inset-0 opacity-0 cursor-pointer z-10"
-                                                />
-                                                <div className="w-12 h-12 bg-white rounded-xl shadow-md border border-slate-100 flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
-                                                    <Upload className="w-6 h-6 text-indigo-500" />
-                                                </div>
-                                                <p className="text-sm font-black text-slate-900 mb-0.5">
-                                                    {advFiles.length > 0 ? t.teacher.tools.exam.uploadSelected.replace('{count}', advFiles.length.toString()) : "Import Source Materials"}
-                                                </p>
-                                                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
-                                                    {advFiles.length > 0 ? "Add More Documents" : "Upload PDFs or Images"}
-                                                </p>
-                                            </div>
-
-                                            {advFiles.length > 0 && (
-                                                <div className="space-y-2 max-h-40 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-slate-200">
-                                                    {advFiles.map((file, idx) => (
-                                                        <div key={idx} className="flex items-center justify-between bg-white p-3 rounded-xl border border-slate-100 shadow-sm">
-                                                            <div className="flex items-center gap-3">
-                                                                <div className="w-8 h-8 bg-indigo-50 rounded-lg flex items-center justify-center text-indigo-600">
-                                                                    <FileText className="w-4 h-4" />
-                                                                </div>
-                                                                <div className="text-left">
-                                                                    <p className="text-[10px] font-black text-slate-900 truncate max-w-[120px]">{file.name}</p>
-                                                                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
-                                                                </div>
-                                                            </div>
-                                                            <button
-                                                                onClick={() => setAdvFiles(prev => prev.filter((_, i) => i !== idx))}
-                                                                className="p-1.5 hover:bg-red-50 text-slate-300 hover:text-red-500 rounded-lg transition-colors"
-                                                            >
-                                                                <Trash2 className="w-4 h-4" />
-                                                            </button>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            )}
-                                        </div>
-
-                                        <div className="mt-8">
-                                            <Button
-                                                fullWidth
-                                                variant={isOnline && advTopic && advFiles.length > 0 ? "primary" : "outline"}
-                                                onClick={isOnline ? handleAdvancedQuizGen : undefined}
-                                                disabled={!isOnline || !advTopic || advFiles.length === 0}
-                                                className={`py-5 text-base font-black rounded-2xl shadow-xl transition-all tracking-tight ${isOnline && advTopic && advFiles.length > 0 ? 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-indigo-200 scale-[1.02]' : 'bg-slate-50 text-black border-slate-100 cursor-not-allowed shadow-none'}`}
-                                            >
-                                                <Sparkles className="w-5 h-5 mr-3" /> {isOnline ? t.teacher.tools.exam.generateBtn : t.teacher.common.internetReq}
-                                            </Button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </motion.div>
-                        )}
-                    </div>
+                {activeTab === 'STUDENTS' && (
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                        <MyClassroom
+                            teacherProfile={teacherProfile}
+                            selectedClass={selectedClass}
+                            selectedSubject={selectedSubject}
+                            onAssignQuiz={handleAssignQuiz}
+                        />
+                    </motion.div>
                 )}
+
+                {activeTab === 'MARKETPLACE' && (
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                        <MarketplaceManager
+                            teacherProfile={teacherProfile}
+                            earnings={teacherWallet?.balance || 0}
+                            onPublishNew={() => setActiveTab('CREATION_HUB')}
+                        />
+                    </motion.div>
+                )}
+
+                {activeTab === 'CREATION_HUB' && (
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                        <CreationHub onNavigateToTool={(tool) => setActiveTab(tool)} />
+                    </motion.div>
+                )}
+
+                {/* --- DASHBOARD VIEW --- */}
+                {activeTab === 'DASHBOARD' && (
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                        <TeacherDashboardOverview
+                            teacherProfile={teacherProfile}
+                            selectedSubject={selectedSubject}
+                            selectedClass={selectedClass}
+                            activeTutoringRequests={activeTutoringRequests}
+                            teacherHistory={teacherHistory}
+                            teacherWallet={teacherWallet}
+                            onNavigate={(tab) => setActiveTab(tab)}
+                            onRequestClick={(req) => {
+                                setSelectedRequest(req);
+                                setIsRequestModalOpen(true);
+                            }}
+                            onHistoryItemClick={loadHistoryItem}
+                        />
+                    </motion.div>
+                )}
+
+
 
                 {
                     activeTab === 'LIBRARY' && (
@@ -1228,41 +757,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                 }
                 {
                     activeTab === 'MARKING' && (
-                        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-white rounded-[3rem] shadow-sm border-2 border-slate-100 p-8 md:p-16 text-center min-h-[500px] flex flex-col items-center justify-center relative overflow-hidden">
-                            <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-50 rounded-full blur-[100px] -mr-32 -mt-32 opacity-40"></div>
-
-                            <div className="relative z-10 max-w-2xl mx-auto flex flex-col items-center">
-                                <div className="w-24 h-24 bg-emerald-600 text-white rounded-[2.5rem] flex items-center justify-center mb-8 shadow-xl shadow-emerald-100">
-                                    <ScanLine className="w-12 h-12" />
-                                </div>
-                                <h2 className="text-4xl md:text-5xl font-black text-slate-900 mb-6 tracking-tight leading-none">{t.teacher.tools.marking.almostHere}</h2>
-                                <p className="text-slate-500 font-bold text-lg mb-12 leading-relaxed">
-                                    {t.teacher.tools.marking.markingDesc.replace('{subject}', selectedSubject)}
-                                </p>
-
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 w-full mb-12">
-                                    <div className="p-8 bg-slate-50/50 rounded-[2.5rem] border-2 border-slate-100 text-left group hover:border-emerald-200 hover:bg-white hover:shadow-xl hover:shadow-emerald-50/50 transition-all">
-                                        <div className="w-12 h-12 bg-white rounded-2xl shadow-md border border-slate-100 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                                            <ClipboardCheck className="w-6 h-6 text-emerald-600" />
-                                        </div>
-                                        <h4 className="font-black text-slate-900 text-md uppercase tracking-wider mb-2">{t.teacher.tools.marking.ocrTitle}</h4>
-                                        <p className="text-xs text-slate-500 font-bold tracking-tight leading-relaxed">{t.teacher.tools.marking.ocrDesc}</p>
-                                    </div>
-                                    <div className="p-8 bg-slate-50/50 rounded-[2.5rem] border-2 border-slate-100 text-left group hover:border-emerald-200 hover:bg-white hover:shadow-xl hover:shadow-emerald-50/50 transition-all">
-                                        <div className="w-12 h-12 bg-white rounded-2xl shadow-md border border-slate-100 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                                            <Sparkles className="w-6 h-6 text-emerald-600" />
-                                        </div>
-                                        <h4 className="font-black text-slate-900 text-md uppercase tracking-wider mb-2">{t.teacher.tools.marking.cbeTitle}</h4>
-                                        <p className="text-xs text-slate-500 font-bold tracking-tight leading-relaxed">{t.teacher.tools.marking.cbeDesc}</p>
-                                    </div>
-                                </div>
-
-                                <Button variant="secondary" className="px-12 py-5 rounded-2xl transition-all scale-[1.05] border-none font-black">
-                                    {t.teacher.tools.marking.waitlistBtn.replace('{class}', selectedClass)}
-                                </Button>
-                                <p className="mt-8 text-[10px] text-slate-400 font-black uppercase tracking-[0.3em]">{t.teacher.tools.marking.earlyAccess}</p>
-                            </div>
-                        </motion.div>
+                        <MarkingManager />
                     )
                 }
                 {
@@ -1467,6 +962,11 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                                 </div>
                             </div>
                         </motion.div>
+                    )
+                }
+                {
+                    activeTab === 'REPORTS' && (
+                        <TeacherReports />
                     )
                 }
                 {

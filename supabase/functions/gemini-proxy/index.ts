@@ -2,10 +2,12 @@
 // The client sends the prompt/model config, this function adds the key and forwards to Google.
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { encode as encodeBase64 } from "https://deno.land/std@0.168.0/encoding/base64.ts";
 
 const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Access-Control-Allow-Methods': 'POST, GET, OPTIONS, PUT, DELETE',
 };
 
 serve(async (req) => {
@@ -31,6 +33,82 @@ serve(async (req) => {
             );
         }
 
+        // Gemini expects contents to be an array of objects with { role: "user|model", parts: [...] }
+        // The client often sends an array of strings or simple objects for generateContent.
+        // We need to normalize it here before sending to the generative API.
+        let normalizedContents = contents;
+
+        if (Array.isArray(contents)) {
+            // Check if it's an array of raw elements (strings / inline fetchObjects)
+            // or if it's already properly formatted as {role, parts}
+            const isRawElements = contents.every(c => typeof c === 'string' || (typeof c === 'object' && !c.role && !c.parts));
+
+            if (isRawElements) {
+                const parts = [];
+                for (const item of contents) {
+                    if (typeof item === 'string') {
+                        parts.push({ text: item });
+                    } else if (typeof item === 'object' && item.fetchUrl) {
+                        try {
+                            const targetUrl = typeof item.fetchUrl === 'string' ? item.fetchUrl : item.fetchUrl.url;
+                            const targetMime = typeof item.fetchUrl === 'object' ? item.fetchUrl.mimeType : 'application/pdf';
+
+                            if (!targetUrl) throw new Error("fetchUrl object missing 'url' property");
+
+                            const fileRes = await fetch(targetUrl);
+                            if (!fileRes.ok) throw new Error(`Failed to fetch URL: ${fileRes.statusText}`);
+                            const arrayBuffer = await fileRes.arrayBuffer();
+                            const bytes = new Uint8Array(arrayBuffer);
+                            const base64 = encodeBase64(bytes);
+
+                            parts.push({
+                                inlineData: {
+                                    mimeType: targetMime || 'application/pdf',
+                                    data: base64
+                                }
+                            });
+                        } catch (e) {
+                            console.error('Error fetching remote file:', e);
+                            throw new Error('Could not download file for analysis: ' + e.message);
+                        }
+                    } else {
+                        // Other object, presumably a part object already
+                        parts.push(item);
+                    }
+                }
+                normalizedContents = [{ role: "user", parts }];
+            } else {
+                // It might already be formatted as [{ role, parts }], 
+                // but we still need to process any fetchUrls deeply
+                for (const content of normalizedContents) {
+                    if (content.parts && Array.isArray(content.parts)) {
+                        for (const part of content.parts) {
+                            if (part.fetchUrl) {
+                                try {
+                                    const fileRes = await fetch(part.fetchUrl.url);
+                                    if (!fileRes.ok) throw new Error(`Failed to fetch URL: ${fileRes.statusText}`);
+                                    const arrayBuffer = await fileRes.arrayBuffer();
+                                    const bytes = new Uint8Array(arrayBuffer);
+                                    const base64 = encodeBase64(bytes);
+
+                                    part.inlineData = {
+                                        mimeType: part.fetchUrl.mimeType || 'application/pdf',
+                                        data: base64
+                                    };
+                                    delete part.fetchUrl;
+                                } catch (e) {
+                                    console.error('Error fetching remote file deeply:', e);
+                                    throw new Error('Could not download file for analysis deeply: ' + e.message);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        } else if (typeof contents === 'string') {
+            normalizedContents = [{ role: 'user', parts: [{ text: contents }] }];
+        }
+
         // Build the Gemini API request based on model type
         let geminiUrl;
         let geminiBody: Record<string, unknown> = {};
@@ -38,11 +116,11 @@ serve(async (req) => {
         if (model.includes('embedding')) {
             // For embeddings, use embedContent endpoint
             geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:embedContent?key=${GEMINI_API_KEY}`;
-            geminiBody = { content: contents[0] }; // Embeddings take a single content object
+            geminiBody = { content: normalizedContents[0] }; // Embeddings take a single content object
         } else {
             // For generation, use generateContent endpoint
             geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
-            geminiBody = { contents };
+            geminiBody = { contents: normalizedContents };
             if (generationConfig) geminiBody.generationConfig = generationConfig;
             if (systemInstruction) geminiBody.systemInstruction = systemInstruction;
         }

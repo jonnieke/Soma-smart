@@ -11,7 +11,7 @@ import {
     QuestionExplanation
 } from '../../types';
 import {
-    analyzeExamPaper, fileToGenerativePart, markStudentAnswer,
+    analyzeExamPaper, analyzeExamPaperUrl, fileToGenerativePart, markStudentAnswer,
     predictLikelyQuestions, getPaperGuidance, explainQuestion
 } from '../../services/geminiService';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -113,28 +113,17 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
                     setAnalysis(result);
                 } else if ('file_path' in (data as any)) {
                     const res = data as any;
-                    const docUrl = `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/syllabus-docs/${res.file_path}`;
+                    // Exams are actually stored in knowledge-base, not syllabus-docs
+                    const bucket = res.category === 'SYLLABUS' ? 'syllabus-docs' : 'knowledge-base';
+                    const docUrl = `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/${bucket}/${res.file_path}`;
                     setLoadingText('Fetching and analyzing document...');
 
                     try {
-                        const response = await fetch(docUrl);
-                        if (response.ok) {
-                            const blob = await response.blob();
-                            const reader = new FileReader();
-                            const base64Data: string = await new Promise((resolve) => {
-                                reader.onloadend = () => {
-                                    const result = reader.result as string;
-                                    resolve(result.split(',')[1] || '');
-                                };
-                                reader.readAsDataURL(blob);
-                            });
-                            if (base64Data) {
-                                const result = await analyzeExamPaper(base64Data, blob.type || 'image/png');
-                                setAnalysis(result);
-                            } else throw new Error('Conversion failed');
-                        } else throw new Error('Fetch failed');
-                    } catch (fetchErr) {
-                        console.warn('Fallback to metadata:', fetchErr);
+                        const result = await analyzeExamPaperUrl(docUrl, 'application/pdf');
+                        setAnalysis(result);
+                    } catch (fetchErr: any) {
+                        console.error('[RevisionSession] Fallback triggered due to:', fetchErr);
+                        console.error('[RevisionSession] Error name:', fetchErr?.name, 'message:', fetchErr?.message);
                         setAnalysis({
                             subject: res.subject,
                             grade: res.grade,

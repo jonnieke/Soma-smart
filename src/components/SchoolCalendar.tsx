@@ -20,85 +20,89 @@ const calendarData = [
 
 export const SchoolCalendar: React.FC = () => {
     return (
-        <section className="py-20 bg-slate-50 relative overflow-hidden">
-            <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-                <div className="text-center mb-16">
-                    <span className="bg-blue-100 text-blue-700 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest mb-4 inline-block">
-                        Academic Year
-                    </span>
-                    <h2 className="text-3xl md:text-5xl font-black text-slate-900 mb-6 tracking-tight">
-                        2026 School Calendar
-                    </h2>
-                    <p className="text-slate-500 text-lg max-w-2xl mx-auto">
-                        Key dates for terms, exams, and holidays as released by the Ministry of Education.
-                    </p>
-                </div>
-
-                <div className="bg-white rounded-3xl shadow-xl border border-slate-100 overflow-hidden">
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left border-collapse">
-                            <thead>
-                                <tr className="bg-slate-50 border-b border-slate-100">
-                                    <th className="p-6 text-xs font-black text-slate-400 uppercase tracking-widest">Event</th>
-                                    <th className="p-6 text-xs font-black text-slate-400 uppercase tracking-widest">Opening</th>
-                                    <th className="p-6 text-xs font-black text-slate-400 uppercase tracking-widest">Closing</th>
-                                    <th className="p-6 text-xs font-black text-slate-400 uppercase tracking-widest text-right">Duration</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {calendarData.map((item, idx) => (
-                                    <motion.tr
-                                        key={idx}
-                                        initial={{ opacity: 0, y: 10 }}
-                                        whileInView={{ opacity: 1, y: 0 }}
-                                        viewport={{ once: true }}
-                                        transition={{ delay: idx * 0.05 }}
-                                        className={`border-b border-slate-50 hover:bg-slate-50/50 transition-colors ${item.type === 'TERM' ? 'bg-blue-50/30' : ''
-                                            }`}
-                                    >
-                                        <td className="p-6">
-                                            <div className="flex items-center gap-3">
-                                                <div className={`w-2 h-2 rounded-full ${item.type === 'TERM' ? 'bg-blue-500' :
-                                                        item.type === 'EXAM' ? 'bg-orange-500' :
-                                                            item.type === 'HOLIDAY' ? 'bg-slate-300' :
-                                                                'bg-emerald-400'
-                                                    }`} />
-                                                <span className={`font-bold ${item.type === 'TERM' ? 'text-blue-900' :
-                                                        item.type === 'EXAM' ? 'text-orange-700' : 'text-slate-700'
-                                                    }`}>
-                                                    {item.event}
-                                                </span>
-                                                {item.type === 'EXAM' && (
-                                                    <span className="px-2 py-0.5 bg-orange-100 text-orange-700 text-[10px] font-bold rounded uppercase">Exam</span>
-                                                )}
-                                            </div>
-                                        </td>
-                                        <td className="p-6 text-slate-600 font-medium whitespace-nowrap">
-                                            {item.opening}
-                                        </td>
-                                        <td className="p-6 text-slate-600 font-medium whitespace-nowrap">
-                                            {item.closing}
-                                        </td>
-                                        <td className="p-6 text-right">
-                                            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-100 text-slate-600 text-xs font-bold">
-                                                <Clock className="w-3 h-3" />
-                                                {item.duration}
-                                            </div>
-                                        </td>
-                                    </motion.tr>
-                                ))}
-                            </tbody>
-                        </table>
+        <section className="py-16 bg-white dark:bg-slate-900 relative overflow-hidden transition-colors border-t border-slate-100 dark:border-slate-800">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+                <div className="flex flex-col md:flex-row items-center justify-between mb-10 gap-6">
+                    <div>
+                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 text-blue-700 font-bold text-xs mb-3 uppercase tracking-wider dark:bg-blue-900/30 dark:text-blue-400">
+                            <Calendar className="w-4 h-4" /> Academic Year
+                        </div>
+                        <h2 className="text-3xl font-extrabold text-[#1a2b5e] dark:text-white tracking-tight">
+                            2026 School Calendar
+                        </h2>
+                    </div>
+                    <div className="flex items-start gap-3 bg-blue-50/50 dark:bg-blue-900/20 p-4 rounded-xl border border-blue-100 dark:border-blue-800/50 max-w-md">
+                        <AlertCircle className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+                        <p className="text-xs text-blue-800 dark:text-blue-300 leading-relaxed font-medium">
+                            Dates are subject to change. December Holiday for non-candidates begins <strong>26th Oct 2026</strong>.
+                        </p>
                     </div>
                 </div>
 
-                <div className="mt-8 flex items-start gap-3 bg-indigo-50 p-4 rounded-xl border border-indigo-100">
-                    <AlertCircle className="w-5 h-5 text-indigo-600 flex-shrink-0 mt-0.5" />
-                    <p className="text-sm text-indigo-800 leading-relaxed">
-                        <strong>Note:</strong> Dates are subject to change by the Ministry of Education. The December Holiday for non-candidate classes begins on <strong>26th Oct 2026</strong> while national exams are in progress.
-                    </p>
+                <div className="flex overflow-x-auto pb-8 gap-5 snap-x snap-mandatory hide-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0">
+                    {calendarData.map((item, idx) => (
+                        <motion.div
+                            key={idx}
+                            initial={{ opacity: 0, x: 20 }}
+                            whileInView={{ opacity: 1, x: 0 }}
+                            viewport={{ once: true }}
+                            transition={{ delay: idx * 0.05 }}
+                            className={`min-w-[280px] snap-center bg-white dark:bg-slate-950 rounded-3xl p-6 border shadow-sm group hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between
+                                ${item.type === 'TERM' ? 'border-blue-200 dark:border-blue-800/50' :
+                                    item.type === 'EXAM' ? 'border-orange-200 dark:border-orange-800/50' :
+                                        'border-slate-200 dark:border-slate-800/50'}`}
+                        >
+                            <div>
+                                <div className="flex items-center justify-between mb-4">
+                                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center
+                                        ${item.type === 'TERM' ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/40 dark:text-blue-400' :
+                                            item.type === 'EXAM' ? 'bg-orange-100 text-orange-600 dark:bg-orange-900/40 dark:text-orange-400' :
+                                                item.type === 'HOLIDAY' ? 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400' :
+                                                    'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-400'}`}
+                                    >
+                                        <Calendar className="w-5 h-5" />
+                                    </div>
+                                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-50 dark:bg-slate-900 text-slate-600 dark:text-slate-400 text-xs font-bold border border-slate-100 dark:border-slate-800">
+                                        <Clock className="w-3.5 h-3.5" />
+                                        {item.duration}
+                                    </div>
+                                </div>
+                                <h3 className={`text-xl font-bold mb-1 ${item.type === 'TERM' ? 'text-blue-900 dark:text-blue-100' :
+                                    item.type === 'EXAM' ? 'text-orange-700 dark:text-orange-300' : 'text-slate-800 dark:text-slate-200'}`}>
+                                    {item.event}
+                                </h3>
+                                {item.type === 'EXAM' && (
+                                    <span className="inline-block mb-3 px-2 py-0.5 bg-orange-100 dark:bg-orange-900/50 text-orange-700 dark:text-orange-400 text-[10px] font-black rounded uppercase tracking-widest">National Exam</span>
+                                )}
+                            </div>
+
+                            <div className={`mt-6 pt-4 border-t flex flex-col gap-2 ${item.type === 'TERM' ? 'border-blue-100 dark:border-blue-800/30' :
+                                item.type === 'EXAM' ? 'border-orange-100 dark:border-orange-800/30' :
+                                    'border-slate-100 dark:border-slate-800'}`}>
+                                <div className="flex justify-between items-center text-sm">
+                                    <span className="text-slate-500 dark:text-slate-500 font-medium">Opens</span>
+                                    <span className="font-bold text-slate-800 dark:text-slate-300">{item.opening}</span>
+                                </div>
+                                <div className="flex justify-between items-center text-sm">
+                                    <span className="text-slate-500 dark:text-slate-500 font-medium">Closes</span>
+                                    <span className="font-bold text-slate-800 dark:text-slate-300">{item.closing}</span>
+                                </div>
+                            </div>
+                        </motion.div>
+                    ))}
                 </div>
             </div>
+
+            <style dangerouslySetInnerHTML={{
+                __html: `
+                .hide-scrollbar::-webkit-scrollbar {
+                    display: none;
+                }
+                .hide-scrollbar {
+                    -ms-overflow-style: none;
+                    scrollbar-width: none;
+                }
+            `}} />
         </section>
     );
 };

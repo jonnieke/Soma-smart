@@ -203,6 +203,92 @@ export const explainAudio = async (base64Audio: string, mimeType: string, level:
   }
 };
 
+export const processDarasaRecording = async (audioBlob: Blob, mimeType: string, subject: string, grade: string, language: 'EN' | 'FR' = 'EN'): Promise<{ note: TeacherNote, quiz: QuizData }> => {
+  const base64Audio = await fileToGenerativePart(new File([audioBlob], 'darasa.webm', { type: mimeType }));
+
+  const model = genAI.getGenerativeModel({
+    model: MODEL_NAME,
+    generationConfig: {
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: SchemaType.OBJECT,
+        properties: {
+          note: {
+            type: SchemaType.OBJECT,
+            properties: {
+              topic: { type: SchemaType.STRING },
+              explanation: { type: SchemaType.STRING, description: "Markdown formatted student notes" },
+              summaryPoints: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
+              relatedTopics: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } }
+            },
+            required: ["topic", "explanation", "summaryPoints", "relatedTopics"]
+          },
+          quiz: {
+            type: SchemaType.OBJECT,
+            properties: {
+              topic: { type: SchemaType.STRING },
+              questions: {
+                type: SchemaType.ARRAY,
+                items: {
+                  type: SchemaType.OBJECT,
+                  properties: {
+                    number: { type: SchemaType.STRING },
+                    text: { type: SchemaType.STRING },
+                    options: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
+                    correctAnswer: { type: SchemaType.STRING },
+                    topic: { type: SchemaType.STRING },
+                    marks: { type: SchemaType.NUMBER }
+                  },
+                  required: ["number", "text", "options", "correctAnswer", "topic", "marks"]
+                }
+              }
+            },
+            required: ["topic", "questions"]
+          }
+        },
+        required: ["note", "quiz"]
+      }
+    }
+  });
+
+  const prompt = `
+    Listen to this audio recording of a live class lesson.
+    The subject is ${subject}, intended for ${grade} students in the Kenyan education system.
+    
+    TASK 1: Create Structured Student Notes
+    - Extract the core topic of the lesson.
+    - Write a detailed, beautifully formatted markdown note using H3 headers (###) and bullet points.
+    - Ensure the tone is educational and aligned with CBC standards.
+    - Provide 3 sticky summary points.
+    - Provide 3 related study topics.
+    
+    TASK 2: Generate a Revision Quiz
+    - Based EXACTLY on the material covered in the audio, generate a 10-question multiple-choice quiz.
+    - Give 4 plausible options per question, with exactly 1 correct answer.
+    - Assign realistic marks per question (usually 1 or 2).
+    
+    LANGUAGE RULE: Use ${language === 'FR' ? 'French' : 'English'}, except if the subject is Swahili.
+    
+    Output JSON containing both "note" and "quiz" objects.
+  `;
+
+  try {
+    const result = await model.generateContent([
+      prompt,
+      { inlineData: { data: base64Audio.split(',')[1] || base64Audio, mimeType: mimeType } }
+    ]);
+
+    const text = result.response.text();
+    if (!text) throw new Error("No response from AI");
+
+    const json = JSON.parse(text);
+    return json as { note: TeacherNote, quiz: QuizData };
+  } catch (error) {
+    console.error("Error processing darasa recording:", error);
+    throw error;
+  }
+};
+
 import { getContext } from './contextService';
 
 // --- RAG HELPER ---
@@ -1185,6 +1271,79 @@ export const analyzeExamPaper = async (base64Image: string, mimeType: string): P
   }
 };
 
+export const analyzeExamPaperUrl = async (fileUrl: string, mimeType: string): Promise<ExamAnalysis> => {
+  const model = genAI.getGenerativeModel({
+    model: MODEL_NAME,
+    generationConfig: {
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: SchemaType.OBJECT,
+        properties: {
+          subject: { type: SchemaType.STRING },
+          grade: { type: SchemaType.STRING },
+          questions: {
+            type: SchemaType.ARRAY,
+            items: {
+              type: SchemaType.OBJECT,
+              properties: {
+                id: { type: SchemaType.INTEGER },
+                number: { type: SchemaType.STRING },
+                text: { type: SchemaType.STRING },
+                topic: { type: SchemaType.STRING },
+                subStrand: { type: SchemaType.STRING },
+                competency: { type: SchemaType.STRING },
+                marks: { type: SchemaType.INTEGER }
+              },
+              required: ["id", "number", "text", "topic", "competency"]
+            }
+          }
+        },
+        required: ["subject", "grade", "questions"]
+      }
+    }
+  });
+
+  const prompt = `
+    Analyze this exam paper document.
+    1. Identify the Subject and Grade Level.
+    2. Extract all visible questions.
+    3. For each question, identify the Topic, Sub-Strand(CBC), and Competency being tested.
+    
+    Output JSON structure:
+    {
+      "subject": "string",
+      "grade": "string",
+      "questions": [
+        {
+          "id": number,
+          "number": "string (e.g. 1a)",
+          "text": "string content",
+          "topic": "string",
+          "subStrand": "string",
+          "competency": "string",
+          "marks": number (or 0 if not shown)
+        }
+      ]
+    }
+  `;
+
+  try {
+    const result = await model.generateContent([
+      prompt,
+      // @ts-ignore - fetchUrl is our custom property handled by gemini-proxy
+      { fetchUrl: { url: fileUrl, mimeType: mimeType } }
+    ]);
+
+    const text = result.response.text();
+    if (!text) throw new Error("No response from AI");
+
+    return JSON.parse(text) as ExamAnalysis;
+  } catch (error) {
+    console.error("Error analyzing exam from URL:", error);
+    throw error;
+  }
+};
+
 export const getRevisionTutorResponse = async (
   question: ExamQuestion,
   currentStep: TutoringStep,
@@ -2110,6 +2269,71 @@ Material:
     return JSON.parse(text);
   } catch (error) {
     console.error("Error generating podcast script:", error);
+    throw error;
+  }
+};
+
+// --- AUTOMATED EVALUATION FEATURE ---
+
+export const gradeStudentSubmission = async (
+  imageBase64: string,
+  mimeType: string,
+  assignmentTitle: string,
+  assignmentContext: string,
+  totalMarks: number,
+  rubric: string
+): Promise<{ extractedText: string, score: number, feedback: string }> => {
+  // We use gemini-1.5-pro or gemini-2.0-flash here for complex handwriting + reasoning
+  const model = genAI.getGenerativeModel({
+    model: MODEL_NAME, // Assuming this maps to a capable vision model like gemini-2.0-flash
+    generationConfig: {
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: SchemaType.OBJECT,
+        properties: {
+          extractedText: { type: SchemaType.STRING, description: "The raw text extracted from the student's handwritten or typed submission" },
+          score: { type: SchemaType.NUMBER, description: "The final computed score out of the total available marks" },
+          feedback: { type: SchemaType.STRING, description: "Constructive feedback explaining the grade and highlighting areas for improvement, formatted in Markdown" }
+        },
+        required: ["extractedText", "score", "feedback"]
+      }
+    }
+  });
+
+  const prompt = `
+    You are an expert, meticulous Kenyan CBE/8-4-4 teacher tasked with grading a student's submission.
+    
+    ASSIGNMENT CONTEXT:
+    Title: ${assignmentTitle}
+    Context: ${assignmentContext}
+    Total Available Marks: ${totalMarks}
+    
+    GRADING RUBRIC / ANSWER KEY:
+    ${rubric}
+    
+    INSTRUCTIONS:
+    1. EXTRACT: Read the handwritten or typed text in the provided image as accurately as possible.
+    2. EVALUATE: Compare the extracted text strictly against the GRADING RUBRIC. Check for correct methodology and final answers.
+    3. GRADE: Assign a final numerical score out of ${totalMarks}. Be fair but strict, acting like a KNEC examiner.
+    4. FEEDBACK: Provide detailed, constructive feedback directly to the student answering:
+       - What they did well.
+       - Where they lost marks.
+       - How they can improve next time.
+    
+    Use a motivating and educational tone for the feedback. Format the feedback using Markdown (bullet points, bold text).
+  `;
+
+  try {
+    const result = await model.generateContent([
+      prompt,
+      { inlineData: { data: imageBase64, mimeType: mimeType } }
+    ]);
+
+    const text = result.response.text();
+    if (!text) throw new Error("No response from AI auto-grader");
+    return JSON.parse(text);
+  } catch (error) {
+    console.error("Error grading student submission:", error);
     throw error;
   }
 };

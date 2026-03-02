@@ -18,7 +18,6 @@ const AdminDashboard = React.lazy(() => import('./features/admin/Admin').then(mo
 const AdminKnowledgeBase = React.lazy(() => import('./features/admin/KnowledgeBase').then(module => ({ default: module.AdminKnowledgeBase })));
 const RevisionPortal = React.lazy(() => import('./features/revision/RevisionPortal').then(module => ({ default: module.RevisionPortal })));
 const RevisionDashboard = React.lazy(() => import('./features/revision/RevisionDashboard').then(module => ({ default: module.RevisionDashboard })));
-const DarasaMode = React.lazy(() => import('./features/darasa-mode/DarasaMode').then(module => ({ default: module.DarasaMode })));
 const ResetPassword = React.lazy(() => import('./pages/ResetPassword').then(module => ({ default: module.ResetPassword })));
 const PricingPage = React.lazy(() => import('./pages/PricingPage').then(module => ({ default: module.PricingPage })));
 const SchoolDashboard = React.lazy(() => import('./features/school/SchoolDashboard').then(module => ({ default: module.SchoolDashboard })));
@@ -33,11 +32,6 @@ const PageLoader = () => (
         </div>
     </div>
 );
-
-const DarasaPage = () => {
-    const navigate = useNavigate();
-    return <DarasaMode onBack={() => navigate('/teacher')} />;
-};
 
 const App: React.FC = () => {
     const navigate = useNavigate();
@@ -92,7 +86,7 @@ const App: React.FC = () => {
                             <Route path="/admin/knowledge" element={<AdminKnowledgeBase />} />
                             <Route path="/revision" element={<RevisionPortal />} />
                             <Route path="/revision/dashboard" element={<RevisionDashboard />} />
-                            <Route path="/teacher/darasa" element={<DarasaPage />} />
+                            <Route path="/teacher/darasa" element={<TeacherPage />} />
                             <Route path="/reset-password" element={<ResetPassword />} />
                             <Route path="/pricing" element={<PricingPage />} />
                             <Route path="/school" element={<SchoolDashboard />} />

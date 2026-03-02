@@ -516,3 +516,25 @@ export interface StrategyRefinement {
   rolledBackAt?: string;
 }
 
+// --- AUTOMATED EVALUATION TYPES ---
+export interface Assignment {
+  id: string;
+  title: string;
+  subject: string;
+  className: string;
+  totalMarks: number;
+  rubric: string; // The correct answers/expectations
+  createdAt: string;
+}
+
+export interface StudentSubmission {
+  id: string;
+  assignmentId: string;
+  studentName: string;
+  imageUrl: string; // the raw uploaded photo
+  extractedText?: string;
+  score?: number;
+  feedback?: string;
+  status: 'PENDING' | 'GRADED' | 'FAILED';
+  gradedAt?: string;
+}
