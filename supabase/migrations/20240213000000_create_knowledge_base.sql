@@ -8,12 +8,46 @@ create table if not exists knowledge_base (
     -- e.g., "Grade 4", "Grade 5"
     subject text not null,
     -- e.g., "Math", "English"
-    type text not null check (type in ('SYLLABUS', 'PAST_PAPER', 'NOTES')),
+    type text not null check (
+        type in (
+            'SYLLABUS',
+            'PAST_PAPER',
+            'NOTES',
+            'LESSON_PLAN',
+            'ASSIGNMENT',
+            'REPORT_BOOK',
+            'ASSESSMENT_REPORT',
+            'SCHEME_OF_WORK',
+            'DEVELOPMENT_MODULE',
+            'TRAINING_NOTE'
+        )
+    ),
     file_url text not null,
     file_path text not null,
     -- path in storage bucket
     created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
+-- Enable RLS for knowledge_base
+alter table knowledge_base enable row level security;
+-- Allow public access to knowledge_base (read only)
+DO $$ BEGIN IF NOT EXISTS (
+    SELECT 1
+    FROM pg_policies
+    WHERE policyname = 'Public Access'
+        AND tablename = 'knowledge_base'
+) THEN create policy "Public Access" on knowledge_base for
+select using (true);
+END IF;
+END $$;
+-- Allow authenticated users to perform all actions (for admins)
+DO $$ BEGIN IF NOT EXISTS (
+    SELECT 1
+    FROM pg_policies
+    WHERE policyname = 'Admin Full Access'
+        AND tablename = 'knowledge_base'
+) THEN create policy "Admin Full Access" on knowledge_base for all using (auth.role() = 'authenticated');
+END IF;
+END $$;
 -- Create a table to store the actual text chunks and their embeddings
 create table if not exists knowledge_vectors (
     id bigint primary key generated always as identity,
