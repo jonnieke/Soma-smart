@@ -583,6 +583,40 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                 </div>
             </section>
 
+            {/* --- EXAM ASSISTANT CTA --- */}
+            <section className="py-20 relative overflow-hidden bg-white dark:bg-slate-900 transition-colors">
+                <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+                    <div className="bg-gradient-to-br from-orange-500 to-rose-600 rounded-[2.5rem] p-10 md:p-14 shadow-2xl overflow-hidden relative group">
+                        {/* Decorative background blur */}
+                        <div className="absolute top-[-50%] right-[-10%] w-[150%] h-[200%] bg-gradient-to-bl from-rose-400/30 to-transparent blur-3xl pointer-events-none transform group-hover:rotate-12 transition-transform duration-1000"></div>
+
+                        <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-10">
+                            <div className="flex-1 text-center md:text-left">
+                                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/20 backdrop-blur-md text-white font-bold text-xs mb-6 uppercase tracking-wider border border-white/20 shadow-sm">
+                                    <Star className="w-4 h-4 text-amber-300 fill-current" />
+                                    New Feature
+                                </div>
+                                <h2 className="text-3xl md:text-4xl lg:text-5xl font-extrabold text-white mb-4 tracking-tight leading-tight">
+                                    Meet your powerful new Exam Assistant.
+                                </h2>
+                                <p className="text-orange-100 text-lg md:text-xl font-medium max-w-2xl leading-relaxed">
+                                    Generate CBE-aligned lesson plans, and get auto-generated step-by-step solutions to past KCSE & KPSEA papers instantly.
+                                </p>
+                            </div>
+
+                            <div className="flex-shrink-0">
+                                <button
+                                    onClick={() => navigate('/revision')}
+                                    className="bg-white text-rose-600 hover:bg-orange-50 font-extrabold text-lg px-8 py-5 rounded-2xl shadow-xl hover:-translate-y-1 transition-all flex items-center gap-3 border border-orange-100"
+                                >
+                                    Try it now <ChevronRight className="w-6 h-6" />
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
             {/* --- SCHOOL CALENDAR --- */}
             <SchoolCalendar />
 

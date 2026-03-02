@@ -37,7 +37,10 @@ const genAI = {
       if (typeof parts === 'string') {
         contents = [{ role: 'user', parts: [{ text: parts }] }];
       } else if (Array.isArray(parts)) {
-        contents = [{ role: 'user', parts }];
+        // The parts array might contain mixed primitive strings and objects (like inlineData).
+        // Since Gemini API requires array elements within `parts` to be objects, map strings into `{ text: str }`.
+        const normalizedParts = parts.map(p => typeof p === 'string' ? { text: p } : p);
+        contents = [{ role: 'user', parts: normalizedParts }];
       } else {
         contents = parts.contents;
       }

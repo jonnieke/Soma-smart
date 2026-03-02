@@ -1,7 +1,7 @@
 
-import React from 'react';
+import React, { useRef } from 'react';
 import { motion } from 'framer-motion';
-import { Calendar, Clock, AlertCircle } from 'lucide-react';
+import { Calendar, Clock, AlertCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 
 const calendarData = [
     { event: "Term I", opening: "5th Jan 2026", closing: "2nd Apr 2026", duration: "13 Weeks", type: "TERM" },
@@ -19,6 +19,20 @@ const calendarData = [
 ];
 
 export const SchoolCalendar: React.FC = () => {
+    const scrollRef = useRef<HTMLDivElement>(null);
+
+    const scroll = (direction: 'left' | 'right') => {
+        if (scrollRef.current) {
+            const { current } = scrollRef;
+            const scrollAmount = 320; // Approximately one card width + gap
+            if (direction === 'left') {
+                current.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
+            } else {
+                current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+            }
+        }
+    };
+
     return (
         <section className="py-16 bg-white dark:bg-slate-900 relative overflow-hidden transition-colors border-t border-slate-100 dark:border-slate-800">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
@@ -31,15 +45,28 @@ export const SchoolCalendar: React.FC = () => {
                             2026 School Calendar
                         </h2>
                     </div>
-                    <div className="flex items-start gap-3 bg-blue-50/50 dark:bg-blue-900/20 p-4 rounded-xl border border-blue-100 dark:border-blue-800/50 max-w-md">
-                        <AlertCircle className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
-                        <p className="text-xs text-blue-800 dark:text-blue-300 leading-relaxed font-medium">
-                            Dates are subject to change. December Holiday for non-candidates begins <strong>26th Oct 2026</strong>.
-                        </p>
+                    <div className="flex flex-col sm:flex-row items-center gap-4">
+                        <div className="flex items-start gap-3 bg-blue-50/50 dark:bg-blue-900/20 p-4 rounded-xl border border-blue-100 dark:border-blue-800/50 max-w-md">
+                            <AlertCircle className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+                            <p className="text-xs text-blue-800 dark:text-blue-300 leading-relaxed font-medium">
+                                Dates are subject to change. December Holiday for non-candidates begins <strong>26th Oct 2026</strong>.
+                            </p>
+                        </div>
+                        <div className="flex gap-2 self-end sm:self-center shrink-0">
+                            <button onClick={() => scroll('left')} className="p-3 rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition-colors shadow-sm cursor-pointer" aria-label="Scroll left">
+                                <ChevronLeft className="w-5 h-5" />
+                            </button>
+                            <button onClick={() => scroll('right')} className="p-3 rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition-colors shadow-sm cursor-pointer" aria-label="Scroll right">
+                                <ChevronRight className="w-5 h-5" />
+                            </button>
+                        </div>
                     </div>
                 </div>
 
-                <div className="flex overflow-x-auto pb-8 gap-5 snap-x snap-mandatory hide-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0">
+                <div
+                    ref={scrollRef}
+                    className="flex overflow-x-auto pb-8 gap-5 snap-x snap-mandatory hide-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0"
+                >
                     {calendarData.map((item, idx) => (
                         <motion.div
                             key={idx}
