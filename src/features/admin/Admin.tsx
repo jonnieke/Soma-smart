@@ -17,42 +17,54 @@ interface AdminProps {
 }
 
 export const AdminDashboard: React.FC<AdminProps> = ({ onNavigate }) => {
-    // 1. Security Logic
-    const [unlocked, setUnlocked] = useState(false);
-    const [pass, setPass] = useState("");
-    const [activeTab, setActiveTab] = useState('OVERVIEW');
+    const [authStatus, setAuthStatus] = useState<'idle' | 'authenticating' | 'authenticated' | 'failed'>('idle');
 
     const handleUnlock = async () => {
         const adminPass = import.meta.env.VITE_ADMIN_PASS;
         const input = pass.trim().toLowerCase();
         const isValid = (adminPass && input === adminPass.toLowerCase()) || input === 'somo_smart@2025' || input === 'somo_smart @2025';
+
         if (isValid) {
+            setUnlocked(true);
+            setAuthStatus('authenticating');
+
             try {
                 const adminEmail = import.meta.env.VITE_ADMIN_EMAIL;
                 const adminAuthPass = import.meta.env.VITE_ADMIN_AUTH_PASS;
 
                 if (!adminEmail || !adminAuthPass) {
                     console.error("Admin credentials (Email/AuthPass) missing in environment.");
-                    setUnlocked(true); // Still unlock UI if local pass matched
+                    setAuthStatus('failed');
                     return;
                 }
-                // Ensure the admin has a valid Supabase session to bypass RLS and Edge Function 401s
-                const { error: signInError } = await supabase.auth.signInWithPassword({
+
+                // Ensure the admin has a valid Supabase session to bypass RLS
+                const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
                     email: adminEmail,
                     password: adminAuthPass
                 });
 
                 if (signInError) {
-                    // Create it if it doesn't exist
-                    await supabase.auth.signUp({
+                    console.warn("Silent sign-in failed, attempting sign-up...", signInError.message);
+                    const { error: signUpError } = await supabase.auth.signUp({
                         email: adminEmail,
                         password: adminAuthPass
                     });
+
+                    if (signUpError) {
+                        console.error("Admin silent sign-up failed:", signUpError.message);
+                        setAuthStatus('failed');
+                    } else {
+                        setAuthStatus('authenticated');
+                    }
+                } else {
+                    console.log("Admin silent auth successful");
+                    setAuthStatus('authenticated');
                 }
             } catch (e) {
-                console.error("Admin silent auth failed:", e);
+                console.error("Admin silent auth critical error:", e);
+                setAuthStatus('failed');
             }
-            setUnlocked(true);
         } else {
             alert("Access Denied");
         }
@@ -101,9 +113,11 @@ export const AdminDashboard: React.FC<AdminProps> = ({ onNavigate }) => {
         <AdminLayout
             activeTab={activeTab}
             onTabChange={setActiveTab}
+            authStatus={authStatus}
             onLogout={async () => {
                 await supabase.auth.signOut();
                 setUnlocked(false);
+                setAuthStatus('idle');
             }}
         >
             {activeTab === 'OVERVIEW' && <Overview />}

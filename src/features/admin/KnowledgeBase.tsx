@@ -68,6 +68,12 @@ export const AdminKnowledgeBase: React.FC = () => {
         try {
             setUploading(true);
 
+            // 0. Defensive Session Check
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) {
+                throw new Error('No active admin session. Please refresh the dashboard or re-enter your password.');
+            }
+
             // 1. Upload file to Storage
             const fileExt = file.name.split('.').pop();
             const fileName = `${Date.now()}.${fileExt}`;
@@ -77,7 +83,12 @@ export const AdminKnowledgeBase: React.FC = () => {
                 .from('syllabus-docs')
                 .upload(filePath, file);
 
-            if (uploadError) throw uploadError;
+            if (uploadError) {
+                if ((uploadError as any).status === 401 || (uploadError as any).message?.includes('Unauthorized')) {
+                    throw new Error('Session expired or unauthorized for storage. Please re-login.');
+                }
+                throw uploadError;
+            }
 
             // 2. Get Public URL
             const { data: { publicUrl } } = supabase.storage
@@ -96,7 +107,12 @@ export const AdminKnowledgeBase: React.FC = () => {
                     file_path: filePath
                 }]);
 
-            if (dbError) throw dbError;
+            if (dbError) {
+                if (dbError.code === '42501') {
+                    throw new Error('Permission denied (RLS). Ensure your admin account is correctly authorized.');
+                }
+                throw dbError;
+            }
 
             // 4. Trigger Ingestion (Edge Function)
             // We pass the new record so the backend can index it
@@ -111,7 +127,7 @@ export const AdminKnowledgeBase: React.FC = () => {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
+                        'Authorization': `Bearer ${session.access_token}`
                     },
                     body: JSON.stringify({ record: newRecord })
                 }).catch(err => console.error("Ingestion trigger failed:", err));
@@ -126,7 +142,8 @@ export const AdminKnowledgeBase: React.FC = () => {
 
         } catch (error: any) {
             console.error('Upload failed:', error);
-            alert(`Upload failed: ${error.message}`);
+            const message = error.message || 'Check connection and permissions';
+            alert(`Upload failed: ${message}`);
         } finally {
             setUploading(false);
         }
@@ -136,6 +153,12 @@ export const AdminKnowledgeBase: React.FC = () => {
         if (!confirm('Are you sure you want to delete this document?')) return;
 
         try {
+            // 0. Defensive Session Check
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) {
+                throw new Error('No active admin session. Please re-login.');
+            }
+
             // Delete from Storage
             const { error: storageError } = await supabase.storage
                 .from('syllabus-docs')
@@ -149,12 +172,15 @@ export const AdminKnowledgeBase: React.FC = () => {
                 .delete()
                 .eq('id', id);
 
-            if (dbError) throw dbError;
+            if (dbError) {
+                if (dbError.code === '42501') throw new Error('Permission denied (RLS).');
+                throw dbError;
+            }
 
             setDocuments(documents.filter(doc => doc.id !== id));
-        } catch (error) {
+        } catch (error: any) {
             console.error('Delete failed:', error);
-            alert('Failed to delete document');
+            alert(`Delete failed: ${error.message}`);
         }
     };
 
@@ -164,13 +190,22 @@ export const AdminKnowledgeBase: React.FC = () => {
             return;
         }
         try {
+            // 0. Defensive Session Check
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) {
+                throw new Error('No active admin session. Please re-login.');
+            }
+
             const { error } = await supabase.from('knowledge_base').update({ title: editTitle }).eq('id', id);
-            if (error) throw error;
+            if (error) {
+                if (error.code === '42501') throw new Error('Permission denied (RLS).');
+                throw error;
+            }
             setDocuments(documents.map(d => d.id === id ? { ...d, title: editTitle } : d));
             setEditingId(null);
-        } catch (error) {
+        } catch (error: any) {
             console.error('Update failed:', error);
-            alert('Failed to update title');
+            alert(`Update failed: ${error.message}`);
         }
     };
 

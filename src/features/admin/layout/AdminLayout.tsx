@@ -8,9 +8,10 @@ interface AdminLayoutProps {
     activeTab: string;
     onTabChange: (tab: string) => void;
     onLogout: () => void;
+    authStatus?: 'idle' | 'authenticating' | 'authenticated' | 'failed';
 }
 
-export const AdminLayout: React.FC<AdminLayoutProps> = ({ children, activeTab, onTabChange, onLogout }) => {
+export const AdminLayout: React.FC<AdminLayoutProps> = ({ children, activeTab, onTabChange, onLogout, authStatus = 'idle' }) => {
     const [isSidebarOpen, setIsSidebarOpen] = React.useState(true);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
 
@@ -170,6 +171,22 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children, activeTab, o
                         </h2>
                     </div>
                     <div className="flex items-center gap-4">
+                        {/* Auth Status Badge */}
+                        <div className={`hidden sm:flex items-center gap-2 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${authStatus === 'authenticated' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' :
+                                authStatus === 'authenticating' ? 'bg-amber-50 text-amber-600 border border-amber-100 animate-pulse' :
+                                    authStatus === 'failed' ? 'bg-red-50 text-red-600 border border-red-100' :
+                                        'bg-slate-50 text-slate-400 border border-slate-100'
+                            }`}>
+                            <div className={`w-1.5 h-1.5 rounded-full ${authStatus === 'authenticated' ? 'bg-emerald-500' :
+                                    authStatus === 'authenticating' ? 'bg-amber-500' :
+                                        authStatus === 'failed' ? 'bg-red-500' :
+                                            'bg-slate-300'
+                                }`} />
+                            {authStatus === 'authenticated' ? 'Secure Session' :
+                                authStatus === 'authenticating' ? 'Authenticating...' :
+                                    authStatus === 'failed' ? 'Auth Failed (401 Risk)' : 'No Session'}
+                        </div>
+
                         <button className="p-2 text-slate-400 hover:bg-slate-50 rounded-full relative">
                             <Bell className="w-5 h-5" />
                             <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border border-white"></span>
