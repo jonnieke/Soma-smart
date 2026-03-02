@@ -34,6 +34,7 @@ import { QuizRunner } from './QuizRunner';
 import { jsPDF } from 'jspdf';
 import heroSectionImage from '../../assets/images/herosection.jpg';
 import { ThemeToggle } from '../../components/ThemeToggle';
+import { RevisionLanding } from '../revision/RevisionLanding';
 
 interface LearnerProps {
   onNavigate: (view: ViewState) => void;
@@ -352,7 +353,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
       // 2. Subject Filter
       if (subjectFilter !== 'ALL' && m.subject !== subjectFilter) return false;
       // 3. Grade Filter
-      if (selectedGrade !== 'ALL' && m.grade !== selectedGrade) return false;
+      if (selectedGrade !== 'ALL' && normalizeGrade(m.grade) !== normalizeGrade(selectedGrade)) return false;
       // 4. Source Filter
       if (selectedSource === 'SOMO' && !m.isVerified) return false;
       if (selectedSource === 'TEACHERS' && m.isVerified) return false;
@@ -1430,6 +1431,10 @@ ${explanation.explanation}
 
   // --- VIEWS ---
   const renderMode = () => {
+    if (mode === 'REVISION') {
+      return <RevisionLanding onBack={() => setMode('MENU')} />;
+    }
+
     if (showCamera) {
       return (
         <div className="fixed inset-0 z-[60] bg-slate-900/80 backdrop-blur-md flex flex-col items-center justify-center p-4 md:p-6 animate-in fade-in duration-200">
