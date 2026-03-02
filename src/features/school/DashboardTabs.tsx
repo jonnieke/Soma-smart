@@ -14,7 +14,15 @@ import {
     Lock,
     ArrowUpRight,
     TrendingUp,
-    ChevronRight
+    ChevronRight,
+    BarChart,
+    PieChart,
+    Activity,
+    CheckCircle2,
+    AlertTriangle,
+    Zap,
+    Clock,
+    Sparkles
 } from 'lucide-react';
 import { motion, AnimatePresence, Variants } from 'framer-motion';
 import { Button } from '../../components/Shared';
@@ -366,34 +374,201 @@ export const MaterialsTab = ({ materials, onUpload, onDelete }: { materials: Sch
     </motion.div>
 );
 
-export const AnalyticsTab = ({ stats, teachers }: { stats: SchoolStats, teachers: SchoolTeacher[] }) => (
-    <motion.div
-        variants={itemVariants}
-        initial="hidden"
-        animate="visible"
-        className="bg-white/70 backdrop-blur-xl rounded-[3rem] border border-white/40 shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-24 text-center max-w-4xl mx-auto"
-    >
-        <div className="w-32 h-32 bg-blue-50 text-blue-600 rounded-[2.5rem] flex items-center justify-center mx-auto mb-10 shadow-inner group overflow-hidden relative">
-            <motion.div
-                animate={{ rotate: [0, 10, -10, 0] }}
-                transition={{ duration: 4, repeat: Infinity }}
-            >
-                <TrendingUp className="w-16 h-16 relative z-10" />
-            </motion.div>
-            <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-transparent" />
-        </div>
-        <h2 className="text-4xl font-black text-slate-900 mb-4 tracking-tight">Intelligence Engine</h2>
-        <p className="text-slate-400 font-bold uppercase tracking-[0.25em] text-xs mb-8">System Integration in Progress</p>
-        <p className="text-slate-500 max-w-md mx-auto font-medium text-xl leading-relaxed">
-            We are architecting a world-class analytics suite for deep institutional insights. Live tracking will be available in the next terminal update.
-        </p>
-        <div className="mt-12 flex items-center justify-center gap-4">
-            <div className="w-2 h-2 rounded-full bg-blue-600 animate-pulse" />
-            <div className="w-2 h-2 rounded-full bg-blue-600/60 animate-pulse delay-75" />
-            <div className="w-2 h-2 rounded-full bg-blue-600/30 animate-pulse delay-150" />
-        </div>
-    </motion.div>
-);
+export const AnalyticsTab = ({ stats, teachers }: { stats: SchoolStats, teachers: SchoolTeacher[] }) => {
+    // Mock data for the "Intelligence" feel
+    const projectedMean = 9.4; // B+ 
+    const meanTrend = "+0.6";
+    const overallCompliance = 88;
+
+    return (
+        <motion.div
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+            className="space-y-10"
+        >
+            {/* Intelligence Header */}
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+                <div>
+                    <div className="flex items-center gap-2 mb-2 text-blue-600">
+                        <Zap className="w-5 h-5 fill-current" />
+                        <span className="text-[10px] font-black uppercase tracking-[0.3em]">Neural Engine v2.0</span>
+                    </div>
+                    <h2 className="text-4xl font-black text-slate-900 tracking-tight">School Intelligence Center</h2>
+                    <p className="text-slate-500 font-medium text-lg">Predictive forecasting and institutional health metrics.</p>
+                </div>
+                <div className="flex gap-4">
+                    <button className="px-6 py-3 bg-white border border-slate-200 rounded-2xl text-[10px] font-black uppercase tracking-widest text-slate-500 hover:bg-slate-50 transition-all flex items-center gap-2 shadow-sm">
+                        <Download className="w-4 h-4" /> Export Report
+                    </button>
+                    <button className="px-6 py-3 bg-slate-900 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-600 transition-all shadow-xl shadow-slate-200 flex items-center gap-2">
+                        Run Full Audit
+                    </button>
+                </div>
+            </div>
+
+            {/* Top Level Intelligence Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <motion.div variants={itemVariants} className="bg-slate-950 rounded-[2.5rem] p-8 text-white relative overflow-hidden group">
+                    <div className="relative z-10">
+                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-400 mb-6">Projected KCSE Mean</p>
+                        <div className="flex items-end gap-3 mb-2">
+                            <span className="text-6xl font-black">{projectedMean}</span>
+                            <span className="text-2xl font-bold text-blue-400 mb-2">(B+)</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-emerald-400 text-xs font-bold">
+                            <TrendingUp className="w-4 h-4" /> {meanTrend} since Term 1
+                        </div>
+                    </div>
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-blue-600/20 blur-3xl rounded-full translate-x-12 -translate-y-12" />
+                    <div className="absolute bottom-4 right-8 opacity-20 group-hover:opacity-40 transition-opacity">
+                        <BarChart className="w-20 h-20" />
+                    </div>
+                </motion.div>
+
+                <motion.div variants={itemVariants} className="bg-white/80 backdrop-blur-xl rounded-[2.5rem] p-8 border border-white/50 shadow-xl shadow-slate-200/50">
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-6">Syllabus Compliance</p>
+                    <div className="flex items-end gap-3 mb-4">
+                        <span className="text-6xl font-black text-slate-900">{overallCompliance}%</span>
+                        <div className="w-12 h-12 rounded-full border-4 border-emerald-500 border-t-transparent animate-spin-slow mb-2" />
+                    </div>
+                    <div className="space-y-3">
+                        <div className="flex justify-between text-[10px] font-black uppercase tracking-widest text-slate-400">
+                            <span>Target: 100%</span>
+                            <span>Remaining: 12%</span>
+                        </div>
+                        <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+                            <motion.div
+                                initial={{ width: 0 }}
+                                animate={{ width: `${overallCompliance}%` }}
+                                transition={{ duration: 1.5, ease: "easeOut" }}
+                                className="h-full bg-emerald-500 rounded-full"
+                            />
+                        </div>
+                    </div>
+                </motion.div>
+
+                <motion.div variants={itemVariants} className="bg-white/80 backdrop-blur-xl rounded-[2.5rem] p-8 border border-white/50 shadow-xl shadow-slate-200/50">
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-6">Growth Trajectory</p>
+                    <div className="flex items-center gap-6 mb-8">
+                        <div className="flex-1">
+                            <div className="text-4xl font-black text-slate-900">+14%</div>
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Efficiency Index</p>
+                        </div>
+                        <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center">
+                            <Activity className="w-8 h-8" />
+                        </div>
+                    </div>
+                    <button className="w-full py-4 text-[10px] font-black uppercase tracking-widest text-blue-600 border border-blue-100 rounded-2xl hover:bg-blue-600 hover:text-white transition-all">
+                        View Detailed Insights
+                    </button>
+                </motion.div>
+            </div>
+
+            {/* Compliance Matrix & AI Insights */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {/* Syllabus Matrix */}
+                <motion.div variants={itemVariants} className="bg-white/80 backdrop-blur-xl rounded-[2.5rem] p-10 border border-white/50 shadow-xl shadow-slate-200/50 flex flex-col">
+                    <div className="flex items-center justify-between mb-10">
+                        <h3 className="text-2xl font-black text-slate-900 tracking-tight">Syllabus Radar</h3>
+                        <div className="px-3 py-1 bg-slate-100 rounded-lg text-[9px] font-black uppercase tracking-widest text-slate-500">Form 4 Tracking</div>
+                    </div>
+
+                    <div className="space-y-8 flex-1">
+                        {[
+                            { subject: 'Mathematics (P1)', compliance: 92, status: 'On Track' },
+                            { subject: 'Chemistry (Form 4)', compliance: 78, status: 'At Risk' },
+                            { subject: 'English (Literature)', compliance: 95, status: 'Advanced' },
+                            { subject: 'Biology (Practical)', compliance: 84, status: 'On Track' }
+                        ].map((item, idx) => (
+                            <div key={idx} className="space-y-3">
+                                <div className="flex justify-between items-center text-xs">
+                                    <span className="font-black text-slate-700">{item.subject}</span>
+                                    <span className={`font-black uppercase tracking-widest text-[9px] ${item.status === 'At Risk' ? 'text-amber-500' :
+                                        item.status === 'Advanced' ? 'text-emerald-500' : 'text-blue-500'
+                                        }`}>{item.status}</span>
+                                </div>
+                                <div className="flex items-center gap-4">
+                                    <div className="flex-1 bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                                        <div
+                                            className={`h-full rounded-full ${item.status === 'At Risk' ? 'bg-amber-500' :
+                                                item.status === 'Advanced' ? 'bg-emerald-500' : 'bg-blue-500'
+                                                }`}
+                                            style={{ width: `${item.compliance}%` }}
+                                        />
+                                    </div>
+                                    <span className="text-xs font-black text-slate-400 w-8">{item.compliance}%</span>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
+                    <div className="mt-10 pt-8 border-t border-slate-100 flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                            <div className="w-10 h-10 bg-amber-50 text-amber-600 rounded-xl flex items-center justify-center">
+                                <AlertTriangle className="w-5 h-5" />
+                            </div>
+                            <div>
+                                <p className="text-xs font-black text-slate-800">2 Subjects Lagging</p>
+                                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Review required in Form 3 Chem</p>
+                            </div>
+                        </div>
+                        <button className="text-blue-600 text-[10px] font-black uppercase tracking-widest hover:underline">Reassign Staff</button>
+                    </div>
+                </motion.div>
+
+                {/* AI Predictive Insight Card */}
+                <motion.div variants={itemVariants} className="bg-gradient-to-br from-indigo-600 to-blue-700 rounded-[2.5rem] p-10 text-white shadow-2xl shadow-blue-900/20 relative overflow-hidden flex flex-col">
+                    <div className="relative z-10">
+                        <div className="flex items-center gap-3 mb-10">
+                            <div className="w-12 h-12 bg-white/20 backdrop-blur-xl rounded-2xl flex items-center justify-center border border-white/20">
+                                <Sparkles className="w-6 h-6 text-blue-200" />
+                            </div>
+                            <div>
+                                <h3 className="text-2xl font-black tracking-tight leading-none">Neural Insights</h3>
+                                <p className="text-[10px] text-blue-200 font-black uppercase tracking-[0.2em] mt-1">AI Recommendation System</p>
+                            </div>
+                        </div>
+
+                        <div className="space-y-6">
+                            <div className="bg-white/10 backdrop-blur-xl rounded-3xl p-6 border border-white/10">
+                                <div className="flex items-start gap-4">
+                                    <div className="w-8 h-8 bg-blue-400 rounded-full flex items-center justify-center flex-shrink-0">
+                                        <CheckCircle2 className="w-4 h-4 text-white" />
+                                    </div>
+                                    <p className="text-blue-50 font-medium text-sm leading-relaxed">
+                                        "Form 4 candidate performance in Math Paper 1 has increased by **12.4%** since you deployed the new revision kits. We project an average of **7.4 (B-)** for this group."
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div className="bg-white/10 backdrop-blur-xl rounded-3xl p-6 border border-white/10 opacity-60">
+                                <div className="flex items-start gap-4">
+                                    <div className="w-8 h-8 bg-amber-400 rounded-full flex items-center justify-center flex-shrink-0">
+                                        <AlertTriangle className="w-4 h-4 text-white" />
+                                    </div>
+                                    <p className="text-blue-50 font-medium text-sm leading-relaxed">
+                                        "Warning: Grade 8 English results show a downward trend in composition. AI suggest allocating 2 extra hours to Darasa Mode recording for this unit."
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="mt-12">
+                            <button className="w-full py-5 bg-white text-blue-700 text-xs font-black uppercase tracking-[0.2em] rounded-2xl shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all">
+                                Deploy Remedial Strategy
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Background Graphic */}
+                    <div className="absolute -right-20 -bottom-20 w-80 h-80 bg-white/10 rounded-full blur-[100px]" />
+                    <div className="absolute -left-10 top-0 w-40 h-40 bg-blue-300 opacity-10 rounded-full blur-[60px]" />
+                </motion.div>
+            </div>
+        </motion.div>
+    );
+};
 
 export const SettingsTab = ({
     profile,

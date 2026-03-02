@@ -484,6 +484,64 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
 
 
             {/* --- CBE/KCSE CURRICULUM ALIGNMENT --- */}
+
+            {/* --- HOW IT WORKS: 4 EASY STEPS --- */}
+            <section id="how-it-works" className="py-20 bg-slate-50 dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800 transition-colors">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div className="text-center mb-16">
+                        <h2 className="text-3xl md:text-5xl font-extrabold text-[#1a2b5e] dark:text-blue-100 mb-4 tracking-tight">Learning Made Simple</h2>
+                        <p className="text-slate-600 dark:text-slate-400 text-lg">Get from a confused student to a subject master in 4 easy steps.</p>
+                    </div>
+
+                    <div className="relative">
+                        {/* Connecting Line */}
+                        <div className="hidden md:block absolute top-[88px] left-[10%] right-[10%] h-0.5 bg-gradient-to-r from-blue-200 via-orange-200 to-emerald-200 dark:from-blue-800 dark:via-orange-800 dark:to-emerald-800 z-0"></div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 relative z-10">
+                            {/* Step 1 */}
+                            <div className="flex flex-col items-center text-center">
+                                <div className="w-32 h-32 bg-white dark:bg-slate-800 rounded-[2rem] shadow-xl border border-slate-100 dark:border-slate-700 flex items-center justify-center relative mb-6 group hover:-translate-y-2 transition-transform duration-300">
+                                    <div className="absolute -top-3 -right-3 w-8 h-8 bg-blue-600 text-white rounded-full font-bold flex items-center justify-center border-4 border-slate-50 dark:border-slate-900 z-10">1</div>
+                                    <img src={stepScanImg} alt="Scan or Upload" className="w-20 h-20 object-contain group-hover:scale-110 transition-transform duration-300" />
+                                </div>
+                                <h3 className="font-extrabold text-[#1a2b5e] dark:text-white mb-2 text-lg">Scan or Upload</h3>
+                                <p className="text-sm text-slate-500 dark:text-slate-400">Snap a photo of your textbook, notes or homework.</p>
+                            </div>
+
+                            {/* Step 2 */}
+                            <div className="flex flex-col items-center text-center">
+                                <div className="w-32 h-32 bg-white dark:bg-slate-800 rounded-[2rem] shadow-xl border border-slate-100 dark:border-slate-700 flex items-center justify-center relative mb-6 group hover:-translate-y-2 transition-transform duration-300">
+                                    <div className="absolute -top-3 -right-3 w-8 h-8 bg-orange-500 text-white rounded-full font-bold flex items-center justify-center border-4 border-slate-50 dark:border-slate-900 z-10">2</div>
+                                    <img src={stepExplainImg} alt="Get Explanations" className="w-20 h-20 object-contain group-hover:scale-110 transition-transform duration-300" />
+                                </div>
+                                <h3 className="font-extrabold text-[#1a2b5e] dark:text-white mb-2 text-lg">Get Explanations</h3>
+                                <p className="text-sm text-slate-500 dark:text-slate-400">Somo Smart breaks it down into simple terms you understand.</p>
+                            </div>
+
+                            {/* Step 3 */}
+                            <div className="flex flex-col items-center text-center">
+                                <div className="w-32 h-32 bg-white dark:bg-slate-800 rounded-[2rem] shadow-xl border border-slate-100 dark:border-slate-700 flex items-center justify-center relative mb-6 group hover:-translate-y-2 transition-transform duration-300">
+                                    <div className="absolute -top-3 -right-3 w-8 h-8 bg-emerald-500 text-white rounded-full font-bold flex items-center justify-center border-4 border-slate-50 dark:border-slate-900 z-10">3</div>
+                                    <img src={stepQuizImg} alt="Smart Quizzes" className="w-20 h-20 object-contain group-hover:scale-110 transition-transform duration-300" />
+                                </div>
+                                <h3 className="font-extrabold text-[#1a2b5e] dark:text-white mb-2 text-lg">Smart Quizzes</h3>
+                                <p className="text-sm text-slate-500 dark:text-slate-400">Test your knowledge with your smart study companion's practice questions.</p>
+                            </div>
+
+                            {/* Step 4 */}
+                            <div className="flex flex-col items-center text-center">
+                                <div className="w-32 h-32 bg-white dark:bg-slate-800 rounded-[2rem] shadow-xl border border-slate-100 dark:border-slate-700 flex items-center justify-center relative mb-6 group hover:-translate-y-2 transition-transform duration-300">
+                                    <div className="absolute -top-3 -right-3 w-8 h-8 bg-indigo-500 text-white rounded-full font-bold flex items-center justify-center border-4 border-slate-50 dark:border-slate-900 z-10">4</div>
+                                    <img src={stepAudioImg} alt="Listen & Revise" className="w-20 h-20 object-contain group-hover:scale-110 transition-transform duration-300" />
+                                </div>
+                                <h3 className="font-extrabold text-[#1a2b5e] dark:text-white mb-2 text-lg">Listen & Revise</h3>
+                                <p className="text-sm text-slate-500 dark:text-slate-400">Listen to simplified lessons on the go to remember more.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
             {/* --- CORE FEATURES BENTO BOX --- */}
             <section className="py-24 bg-white dark:bg-slate-950 relative overflow-hidden transition-colors border-t border-slate-100 dark:border-slate-800/50">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
@@ -492,7 +550,19 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                             <Zap className="w-4 h-4" /> Powered by Super Teacher OS
                         </div>
                         <h2 className="text-4xl md:text-5xl font-extrabold text-slate-900 dark:text-white mb-6 tracking-tight">Everything you need to <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-emerald-500">excel</span>. As a Teacher.</h2>
-                        <p className="text-lg text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">A fully integrated suite of tools designed specifically for the Kenyan curriculum.</p>
+                        <p className="text-lg text-slate-600 dark:text-slate-400 max-w-2xl mx-auto mb-10">A fully integrated suite of tools designed specifically for the Kenyan curriculum.</p>
+
+                        <div className="flex justify-center mb-16">
+                            <button
+                                onClick={() => {
+                                    setLoginTab('TEACHER');
+                                    handleRoleSelect(UserRole.TEACHER);
+                                }}
+                                className="px-10 py-5 bg-blue-600 text-white font-black text-xs uppercase tracking-[0.2em] rounded-2xl shadow-2xl shadow-blue-500/30 hover:bg-blue-700 hover:-translate-y-1 transition-all flex items-center gap-3"
+                            >
+                                Enter Teacher Dashboard <ChevronRight className="w-5 h-5" />
+                            </button>
+                        </div>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 auto-rows-[320px]">
@@ -583,6 +653,120 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                 </div>
             </section>
 
+            {/* --- SUPER SCHOOL OS BENTO BOX --- */}
+            <section className="py-24 bg-slate-50 dark:bg-slate-900/50 relative overflow-hidden transition-colors border-t border-slate-100 dark:border-slate-800/50">
+                {/* Background Decor for School Section */}
+                <div className="absolute left-0 top-0 w-full h-full overflow-hidden pointer-events-none">
+                    <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-500/5 dark:bg-blue-500/5 rounded-full blur-3xl"></div>
+                    <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-indigo-500/5 dark:bg-indigo-500/5 rounded-full blur-3xl"></div>
+                </div>
+
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+                    <div className="text-center mb-16">
+                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-200 text-slate-700 font-bold text-xs mb-6 uppercase tracking-wider dark:bg-slate-800 dark:text-slate-300 border border-slate-300 dark:border-slate-700 shadow-sm">
+                            <Building2 className="w-4 h-4" /> For School Administrators
+                        </div>
+                        <h2 className="text-4xl md:text-5xl font-extrabold text-[#1a2b5e] dark:text-white mb-6 tracking-tight">Meet the new <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-700 to-indigo-600 dark:from-blue-400 dark:to-indigo-400">Super School OS</span>.</h2>
+                        <p className="text-lg text-slate-600 dark:text-slate-400 max-w-2xl mx-auto mb-10 font-medium">Stop guessing your results. Get real-time syllabus tracking, automated grading, and predictive analytics for your entire school.</p>
+
+                        <div className="flex justify-center mb-16">
+                            <button
+                                onClick={() => {
+                                    setLoginTab('SCHOOL');
+                                    handleRoleSelect(UserRole.SCHOOL);
+                                }}
+                                className="px-10 py-5 bg-slate-900 text-white font-black text-xs uppercase tracking-[0.2em] rounded-2xl shadow-2xl shadow-slate-900/10 hover:bg-slate-800 hover:-translate-y-1 transition-all flex items-center gap-3 border border-slate-700"
+                            >
+                                Launch School Intelligence <ChevronRight className="w-5 h-5" />
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 auto-rows-[340px]">
+                        {/* 1. Large Feature: Predictive Mean Score (Span 2 cols) */}
+                        <div className="md:col-span-2 bg-gradient-to-br from-slate-900 to-slate-800 dark:from-slate-950 dark:to-slate-900 rounded-[2rem] p-8 md:p-10 border border-slate-700 shadow-2xl relative overflow-hidden group hover:shadow-blue-900/20 transition-all duration-300">
+                            <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl group-hover:bg-blue-500/20 transition-all duration-500"></div>
+
+                            <div className="relative z-10 h-full flex flex-col justify-center w-full md:w-[50%]">
+                                <div className="w-12 h-12 bg-blue-500 text-white rounded-xl flex items-center justify-center mb-6 shadow-lg shadow-blue-500/30">
+                                    <TrendingUp className="w-6 h-6" />
+                                </div>
+                                <h3 className="text-2xl font-extrabold text-white mb-3">Predictive Analytics</h3>
+                                <p className="text-slate-300 leading-relaxed font-medium">Aggregating live data from Smart Marking and student quizzes to project your school's KCSE/KPSEA Mean Score in real-time.</p>
+                            </div>
+
+                            {/* Dramatic Mock UI Element */}
+                            <div className="absolute right-[-2%] bottom-[-5%] lg:right-6 lg:bottom-10 w-[300px] lg:w-[350px] bg-slate-800/80 backdrop-blur-xl rounded-2xl border border-slate-700 shadow-2xl p-6 hidden md:block transform group-hover:-translate-y-2 lg:group-hover:-translate-x-2 transition-transform duration-500">
+                                <div className="flex items-center justify-between mb-4">
+                                    <div className="text-xs font-bold text-slate-400 uppercase tracking-widest">Projected Mean</div>
+                                    <div className="flex items-center gap-1 text-emerald-400 text-xs font-bold bg-emerald-400/10 px-2 py-1 rounded-full">
+                                        <TrendingUp className="w-3 h-3" /> +0.4
+                                    </div>
+                                </div>
+                                <div className="flex items-end gap-3 mb-6">
+                                    <div className="text-5xl font-black text-white leading-none">9.2</div>
+                                    <div className="text-2xl font-bold text-blue-400 mb-1">(B-)</div>
+                                </div>
+
+                                {/* Mini Bar Chart */}
+                                <div className="flex items-end justify-between h-16 gap-2">
+                                    <div className="w-full bg-slate-700 rounded-t-sm h-8 relative group-hover:bg-blue-500/40 transition-colors"><div className="absolute -top-5 left-1/2 -translate-x-1/2 text-[9px] text-slate-400 font-bold opacity-0 group-hover:opacity-100 transition-opacity">T1</div></div>
+                                    <div className="w-full bg-slate-700 rounded-t-sm h-10 relative group-hover:bg-blue-500/60 transition-colors"><div className="absolute -top-5 left-1/2 -translate-x-1/2 text-[9px] text-slate-400 font-bold opacity-0 group-hover:opacity-100 transition-opacity">T2</div></div>
+                                    <div className="w-full bg-blue-500 rounded-t-sm h-14 relative shadow-[0_0_15px_rgba(59,130,246,0.5)]"><div className="absolute -top-5 left-1/2 -translate-x-1/2 text-[9px] text-blue-300 font-bold">NOW</div></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* 2. Vertical Feature: Global Syllabus Tracking */}
+                        <div className="bg-white dark:bg-slate-900 rounded-[2rem] p-8 border border-slate-200 dark:border-slate-800 shadow-sm relative overflow-hidden group hover:shadow-xl transition-all duration-300">
+                            <div className="relative z-10 flex flex-col h-full">
+                                <div className="w-12 h-12 bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 rounded-xl flex items-center justify-center mb-6">
+                                    <ShieldCheck className="w-6 h-6" />
+                                </div>
+                                <h3 className="text-xl font-extrabold text-slate-900 dark:text-white mb-3">Global Syllabus Tracking</h3>
+                                <p className="text-slate-600 dark:text-slate-400 text-sm leading-relaxed font-medium mb-6">Guarantee complete KNEC & KICD compliance digitally. See instantly if Form 4 Chemistry is lagging behind schedule without chasing teachers.</p>
+
+                                <div className="mt-auto bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-100 dark:border-slate-700 transform group-hover:scale-[1.02] transition-transform duration-300">
+                                    <div className="flex justify-between items-center mb-2">
+                                        <div className="text-xs font-bold text-slate-700 dark:text-slate-300">Form 4 Compliance</div>
+                                        <div className="text-xs font-black text-emerald-600 dark:text-emerald-400">94%</div>
+                                    </div>
+                                    <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2 overflow-hidden">
+                                        <div className="bg-emerald-500 h-2 rounded-full w-[94%]"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* 3. Horizontal Feature: Automated Exam Production */}
+                        <div className="md:col-span-3 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-[2rem] p-8 lg:p-10 border border-blue-100 dark:border-blue-800/30 shadow-sm flex flex-col md:flex-row items-center justify-between gap-8 group hover:shadow-md transition-all">
+                            <div className="flex-1 max-w-2xl text-center md:text-left">
+                                <div className="inline-flex items-center justify-center w-12 h-12 bg-white dark:bg-slate-800 rounded-xl shadow-sm mb-6 text-indigo-600 dark:text-indigo-400">
+                                    <FileText className="w-6 h-6" />
+                                </div>
+                                <h3 className="text-2xl font-extrabold text-slate-900 dark:text-white mb-3">Automated Exam Production</h3>
+                                <p className="text-slate-600 dark:text-slate-400 font-medium leading-relaxed">Stop spending thousands on external examiners. Generate bespoke, KNEC-standard exams localized exactly to your school's current syllabus coverage in one click.</p>
+                            </div>
+                            <div className="flex-shrink-0 w-full md:w-auto relative">
+                                <div className="absolute inset-0 bg-indigo-500/20 blur-2xl rounded-full"></div>
+                                <div className="relative bg-white dark:bg-slate-800 px-6 py-4 rounded-2xl border border-indigo-100 dark:border-indigo-700 shadow-xl flex items-center gap-4 group-hover:-translate-y-1 transition-transform">
+                                    <div className="w-10 h-10 rounded-full bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
+                                        <Sparkles className="w-5 h-5" />
+                                    </div>
+                                    <div>
+                                        <div className="text-sm font-bold text-slate-900 dark:text-white">Form 3 Mid-Term</div>
+                                        <div className="text-xs text-slate-500 dark:text-slate-400">Math, Eng, Kisw • Generated</div>
+                                    </div>
+                                    <div className="ml-2 w-8 h-8 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-green-600 dark:text-green-400">
+                                        <CheckCircle className="w-4 h-4" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
             {/* --- EXAM ASSISTANT CTA --- */}
             <section className="py-20 relative overflow-hidden bg-white dark:bg-slate-900 transition-colors">
                 <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
@@ -594,13 +778,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                             <div className="flex-1 text-center md:text-left">
                                 <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/20 backdrop-blur-md text-white font-bold text-xs mb-6 uppercase tracking-wider border border-white/20 shadow-sm">
                                     <Star className="w-4 h-4 text-amber-300 fill-current" />
-                                    New Feature
+                                    For Candidates
                                 </div>
                                 <h2 className="text-3xl md:text-4xl lg:text-5xl font-extrabold text-white mb-4 tracking-tight leading-tight">
                                     Meet your powerful new Exam Assistant.
                                 </h2>
                                 <p className="text-orange-100 text-lg md:text-xl font-medium max-w-2xl leading-relaxed">
-                                    Generate CBE-aligned lesson plans, and get auto-generated step-by-step solutions to past KCSE & KPSEA papers instantly.
+                                    Crush your KCSE & KPSEA exams with instant access to verified past papers, complete with auto-generated, step-by-step solutions mapping to KNEC rubrics.
                                 </p>
                             </div>
 
