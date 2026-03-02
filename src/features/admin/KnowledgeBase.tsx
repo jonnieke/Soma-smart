@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { Upload, FileText, Trash2, CheckCircle, Search, Filter, BookOpen, AlertTriangle, Edit2, X, Check } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { Button, Card } from '../../components/Shared';
-
+import { AdminLayout } from './layout/AdminLayout';
 
 interface Document {
     id: number;
@@ -17,7 +17,11 @@ interface Document {
     file_url: string;
 }
 
-export const AdminKnowledgeBase: React.FC = () => {
+interface AdminKnowledgeBaseProps {
+    authStatus?: 'idle' | 'authenticating' | 'authenticated' | 'failed';
+}
+
+export const AdminKnowledgeBase: React.FC<AdminKnowledgeBaseProps> = ({ authStatus = 'idle' }) => {
     const navigate = useNavigate();
     const [documents, setDocuments] = useState<Document[]>([]);
     const [loading, setLoading] = useState(true);
@@ -216,9 +220,17 @@ export const AdminKnowledgeBase: React.FC = () => {
     );
 
     return (
-        <div className="min-h-screen bg-slate-50 p-8">
-            <div className="max-w-6xl mx-auto">
-                <div className="flex justify-between items-center mb-8">
+        <AdminLayout
+            activeTab="KNOWLEDGE"
+            onTabChange={() => navigate('/admin')}
+            authStatus={authStatus}
+            onLogout={async () => {
+                await supabase.auth.signOut();
+                window.location.href = '/';
+            }}
+        >
+            <div className="max-w-7xl mx-auto">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
                     <div>
                         <h1 className="text-3xl font-bold text-slate-900 flex items-center gap-3">
                             <BookOpen className="w-8 h-8 text-blue-600" />
@@ -548,6 +560,6 @@ export const AdminKnowledgeBase: React.FC = () => {
 
                 </div>
             </div>
-        </div>
+        </AdminLayout>
     );
 };

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { LayoutDashboard, Users, CreditCard, Settings, LogOut, Menu, X, Bell, BookOpen, ClipboardCheck, BarChart3, Brain } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ViewState } from '../../../types';
 
@@ -12,6 +13,7 @@ interface AdminLayoutProps {
 }
 
 export const AdminLayout: React.FC<AdminLayoutProps> = ({ children, activeTab, onTabChange, onLogout, authStatus = 'idle' }) => {
+    const navigate = useNavigate();
     const [isSidebarOpen, setIsSidebarOpen] = React.useState(true);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
 
@@ -52,7 +54,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children, activeTab, o
                             key={item.id}
                             onClick={() => {
                                 if (item.id === 'KNOWLEDGE') {
-                                    window.location.href = '/admin/knowledge';
+                                    navigate('/admin/knowledge');
                                 } else {
                                     onTabChange(item.id);
                                 }
@@ -173,14 +175,14 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children, activeTab, o
                     <div className="flex items-center gap-4">
                         {/* Auth Status Badge */}
                         <div className={`hidden sm:flex items-center gap-2 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${authStatus === 'authenticated' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' :
-                                authStatus === 'authenticating' ? 'bg-amber-50 text-amber-600 border border-amber-100 animate-pulse' :
-                                    authStatus === 'failed' ? 'bg-red-50 text-red-600 border border-red-100' :
-                                        'bg-slate-50 text-slate-400 border border-slate-100'
+                            authStatus === 'authenticating' ? 'bg-amber-50 text-amber-600 border border-amber-100 animate-pulse' :
+                                authStatus === 'failed' ? 'bg-red-50 text-red-600 border border-red-100' :
+                                    'bg-slate-50 text-slate-400 border border-slate-100'
                             }`}>
                             <div className={`w-1.5 h-1.5 rounded-full ${authStatus === 'authenticated' ? 'bg-emerald-500' :
-                                    authStatus === 'authenticating' ? 'bg-amber-500' :
-                                        authStatus === 'failed' ? 'bg-red-500' :
-                                            'bg-slate-300'
+                                authStatus === 'authenticating' ? 'bg-amber-500' :
+                                    authStatus === 'failed' ? 'bg-red-500' :
+                                        'bg-slate-300'
                                 }`} />
                             {authStatus === 'authenticated' ? 'Secure Session' :
                                 authStatus === 'authenticating' ? 'Authenticating...' :

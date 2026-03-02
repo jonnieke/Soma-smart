@@ -6,6 +6,7 @@ import { AskSomo } from './components/AskSomo';
 import { SessionConflictModal } from './components/SessionConflictModal';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { supabase } from './lib/supabase';
+import { AdminGuard } from './components/AdminGuard';
 import ReactGA from "react-ga4";
 import { useLocation } from 'react-router-dom';
 
@@ -82,8 +83,8 @@ const App: React.FC = () => {
                             <Route path="/teacher/homework" element={<TeacherPage />} />
                             <Route path="/teacher/marking" element={<TeacherPage />} />
                             <Route path="/parent" element={<ParentPage />} />
-                            <Route path="/admin" element={<AdminDashboard onNavigate={() => window.location.href = '/'} />} />
-                            <Route path="/admin/knowledge" element={<AdminKnowledgeBase />} />
+                            <Route path="/admin" element={<AdminGuard onNavigateBack={() => navigate('/')}><AdminDashboard onNavigate={() => navigate('/')} /></AdminGuard>} />
+                            <Route path="/admin/knowledge" element={<AdminGuard onNavigateBack={() => navigate('/')}><AdminKnowledgeBase /></AdminGuard>} />
                             <Route path="/revision" element={<RevisionPortal />} />
                             <Route path="/revision/dashboard" element={<RevisionDashboard />} />
                             <Route path="/teacher/darasa" element={<TeacherPage />} />
