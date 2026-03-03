@@ -21,17 +21,25 @@ export const AdminGuard: React.FC<AdminGuardProps> = ({ children, onNavigateBack
 
     useEffect(() => {
         const checkExistingSession = async () => {
-            if (!ADMIN_EMAIL) return; // Don't check if config is missing
-
             setCheckingSession(true);
-            const { data: { session } } = await supabase.auth.getSession();
+            try {
+                if (!ADMIN_EMAIL) {
+                    console.warn("Admin configuration missing, skipping session check.");
+                    return;
+                }
 
-            if (session?.user?.email === ADMIN_EMAIL) {
-                console.log("Verified admin session found");
-                setUnlocked(true);
-                setAuthStatus('authenticated');
+                const { data: { session } } = await supabase.auth.getSession();
+
+                if (session?.user?.email === ADMIN_EMAIL) {
+                    console.log("Verified admin session found");
+                    setUnlocked(true);
+                    setAuthStatus('authenticated');
+                }
+            } catch (e) {
+                console.error("Error checking existing admin session:", e);
+            } finally {
+                setCheckingSession(false);
             }
-            setCheckingSession(false);
         };
         checkExistingSession();
     }, [ADMIN_EMAIL]);
