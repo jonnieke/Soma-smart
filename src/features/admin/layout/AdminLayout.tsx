@@ -200,7 +200,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children, activeTab, o
                 </header>
 
                 {/* Content Area */}
-                <main className="flex-1 overflow-y-auto p-8 relative">
+                <main className="flex-1 overflow-y-auto p-8 relative bg-slate-50 text-slate-900">
                     {children}
                 </main>
             </div>

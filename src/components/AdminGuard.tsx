@@ -21,17 +21,15 @@ export const AdminGuard: React.FC<AdminGuardProps> = ({ children, onNavigateBack
 
     useEffect(() => {
         const checkExistingSession = async () => {
+            if (!ADMIN_EMAIL) return; // Don't check if config is missing
+
             setCheckingSession(true);
             const { data: { session } } = await supabase.auth.getSession();
 
-            // If already authenticated as admin (we check email if possible, or just trust the session for now)
             if (session?.user?.email === ADMIN_EMAIL) {
-                console.log("Existing admin session found");
+                console.log("Verified admin session found");
                 setUnlocked(true);
                 setAuthStatus('authenticated');
-            } else if (session) {
-                // If logged in as someone else, we might need to re-auth
-                console.log("Logged in as non-admin user:", session.user.email);
             }
             setCheckingSession(false);
         };
@@ -40,41 +38,30 @@ export const AdminGuard: React.FC<AdminGuardProps> = ({ children, onNavigateBack
 
     const handleUnlock = async () => {
         const input = pass.trim().toLowerCase();
-        const isValid = (ADMIN_PASS && input === ADMIN_PASS.toLowerCase()) ||
-            input === 'somo_smart@2025' ||
-            input === 'somo_smart @2025';
+
+        if (!ADMIN_PASS || !ADMIN_EMAIL || !ADMIN_AUTH_PASS) {
+            alert("System Configuration Error: Admin environment variables are missing. Please check your .env file.");
+            setAuthStatus('failed');
+            return;
+        }
+
+        const isValid = input === ADMIN_PASS.toLowerCase();
 
         if (isValid) {
             setUnlocked(true);
             setAuthStatus('authenticating');
 
             try {
-                if (!ADMIN_EMAIL || !ADMIN_AUTH_PASS) {
-                    console.error("Admin credentials missing in environment.");
-                    setAuthStatus('failed');
-                    return;
-                }
-
-                // Silent sign-in to ensure RLS bypass via service role or admin profile
+                // Silent sign-in to ensure RLS bypass via admin profile
                 const { error: signInError } = await supabase.auth.signInWithPassword({
                     email: ADMIN_EMAIL,
                     password: ADMIN_AUTH_PASS
                 });
 
                 if (signInError) {
-                    console.warn("Silent sign-in failed, checking if we need to sign up...", signInError.message);
-                    // Fallback to sign up if first time
-                    const { error: signUpError } = await supabase.auth.signUp({
-                        email: ADMIN_EMAIL,
-                        password: ADMIN_AUTH_PASS
-                    });
-
-                    if (signUpError) {
-                        console.error("Admin silent sign-up failed:", signUpError.message);
-                        setAuthStatus('failed');
-                    } else {
-                        setAuthStatus('authenticated');
-                    }
+                    console.error("Admin silent auth failed:", signInError.message);
+                    setAuthStatus('failed');
+                    alert("Authentication Error: " + signInError.message);
                 } else {
                     console.log("Admin silent auth successful");
                     setAuthStatus('authenticated');
@@ -84,7 +71,7 @@ export const AdminGuard: React.FC<AdminGuardProps> = ({ children, onNavigateBack
                 setAuthStatus('failed');
             }
         } else {
-            alert("Access Denied");
+            alert("Access Denied: Incorrect password.");
         }
     };
 
