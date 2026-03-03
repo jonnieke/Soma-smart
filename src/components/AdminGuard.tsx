@@ -32,7 +32,8 @@ export const AdminGuard: React.FC<AdminGuardProps> = ({ children, onNavigateBack
 
                 if (session?.user?.email === ADMIN_EMAIL) {
                     console.log("Verified admin session found");
-                    setUnlocked(true);
+                    // We don't auto-unlock anymore as per user request for security
+                    // But we set the status so the dashboard knows it's authenticated
                     setAuthStatus('authenticated');
                 }
             } catch (e) {
@@ -48,7 +49,13 @@ export const AdminGuard: React.FC<AdminGuardProps> = ({ children, onNavigateBack
         const input = pass.trim().toLowerCase();
 
         if (!ADMIN_PASS || !ADMIN_EMAIL || !ADMIN_AUTH_PASS) {
-            alert("System Configuration Error: Admin environment variables are missing. Please check your .env file.");
+            const missing = [
+                !ADMIN_PASS && 'VITE_ADMIN_PASS',
+                !ADMIN_EMAIL && 'VITE_ADMIN_EMAIL',
+                !ADMIN_AUTH_PASS && 'VITE_ADMIN_AUTH_PASS'
+            ].filter(Boolean).join(', ');
+
+            alert(`System Configuration Error: Missing ${missing}. This usually means your Dev Server needs a full restart (Kill and Restart npm run dev) to pick up new .env variables.`);
             setAuthStatus('failed');
             return;
         }
