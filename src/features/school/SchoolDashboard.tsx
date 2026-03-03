@@ -13,13 +13,16 @@ import {
     FileText,
     BarChart3,
     Upload,
-    Download
+    Download,
+    Activity,
+    ChevronRight
 } from 'lucide-react';
 import { Button } from '../../components/Shared';
 import { useApp } from '../../context/AppContext';
 import { supabase } from '../../lib/supabase';
 import { NavItem } from './DashboardComponents';
 import { OverviewTab, TeachersTab, StudentsTab, MaterialsTab, AnalyticsTab, SettingsTab } from './DashboardTabs';
+import { GradebookView } from './GradebookView';
 import logoImg from '../../assets/images/main_logo.png';
 
 export const SchoolDashboard: React.FC = () => {
@@ -165,6 +168,7 @@ export const SchoolDashboard: React.FC = () => {
                     <NavItem icon={<Users className="w-5 h-5" />} label="Faculty" active={activeTab === 'Teachers'} onClick={() => setActiveTab('Teachers')} />
                     <NavItem icon={<GraduationCap className="w-5 h-5" />} label="Learners" active={activeTab === 'Students'} onClick={() => setActiveTab('Students')} />
                     <NavItem icon={<FileText className="w-5 h-5" />} label="Resources" active={activeTab === 'Materials'} onClick={() => setActiveTab('Materials')} />
+                    <NavItem icon={<Activity className="w-5 h-5" />} label="Gradebook" active={activeTab === 'Gradebook'} onClick={() => setActiveTab('Gradebook')} />
                     <NavItem icon={<BarChart3 className="w-5 h-5" />} label="Analytics" active={activeTab === 'Analytics'} onClick={() => setActiveTab('Analytics')} />
                     <div className="pt-4 mt-4 border-t border-slate-100/50">
                         <NavItem icon={<Settings className="w-5 h-5" />} label="Settings" active={activeTab === 'Settings'} onClick={() => setActiveTab('Settings')} />
@@ -336,6 +340,14 @@ export const SchoolDashboard: React.FC = () => {
                             onUpload={() => setIsUploadModalOpen(true)}
                             onDelete={async (id) => {
                                 if (confirm("Delete this material?")) deleteSchoolMaterial(id);
+                            }}
+                        />
+                    ) : activeTab === 'Gradebook' ? (
+                        <GradebookView
+                            students={schoolStudents}
+                            onViewDetail={(id) => {
+                                // For now, just a placeholder detail view
+                                alert(`Viewing detailed performance for ${id}. (Feature coming in next phase)`);
                             }}
                         />
                     ) : activeTab === 'Analytics' ? (

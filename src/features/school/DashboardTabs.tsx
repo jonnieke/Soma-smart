@@ -467,40 +467,46 @@ export const AnalyticsTab = ({ stats, teachers }: { stats: SchoolStats, teachers
 
             {/* Compliance Matrix & AI Insights */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                {/* Syllabus Matrix */}
+                {/* Syllabus Matrix / Heatmap */}
                 <motion.div variants={itemVariants} className="bg-white/80 backdrop-blur-xl rounded-[2.5rem] p-10 border border-white/50 shadow-xl shadow-slate-200/50 flex flex-col">
                     <div className="flex items-center justify-between mb-10">
-                        <h3 className="text-2xl font-black text-slate-900 tracking-tight">Syllabus Radar</h3>
-                        <div className="px-3 py-1 bg-slate-100 rounded-lg text-[9px] font-black uppercase tracking-widest text-slate-500">Form 4 Tracking</div>
+                        <div>
+                            <h3 className="text-2xl font-black text-slate-900 tracking-tight">Syllabus Compliance Heatmap</h3>
+                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Real-time curriculum coverage</p>
+                        </div>
+                        <div className="px-3 py-1 bg-slate-100 rounded-lg text-[9px] font-black uppercase tracking-widest text-slate-500">Term 1 Overview</div>
                     </div>
 
-                    <div className="space-y-8 flex-1">
-                        {[
-                            { subject: 'Mathematics (P1)', compliance: 92, status: 'On Track' },
-                            { subject: 'Chemistry (Form 4)', compliance: 78, status: 'At Risk' },
-                            { subject: 'English (Literature)', compliance: 95, status: 'Advanced' },
-                            { subject: 'Biology (Practical)', compliance: 84, status: 'On Track' }
-                        ].map((item, idx) => (
-                            <div key={idx} className="space-y-3">
-                                <div className="flex justify-between items-center text-xs">
-                                    <span className="font-black text-slate-700">{item.subject}</span>
-                                    <span className={`font-black uppercase tracking-widest text-[9px] ${item.status === 'At Risk' ? 'text-amber-500' :
-                                        item.status === 'Advanced' ? 'text-emerald-500' : 'text-blue-500'
-                                        }`}>{item.status}</span>
-                                </div>
-                                <div className="flex items-center gap-4">
-                                    <div className="flex-1 bg-slate-100 rounded-full h-1.5 overflow-hidden">
-                                        <div
-                                            className={`h-full rounded-full ${item.status === 'At Risk' ? 'bg-amber-500' :
-                                                item.status === 'Advanced' ? 'bg-emerald-500' : 'bg-blue-500'
-                                                }`}
-                                            style={{ width: `${item.compliance}%` }}
-                                        />
+                    <div className="grid grid-cols-4 gap-4 mb-10">
+                        {['Math', 'Eng', 'Kisw', 'Sci', 'Soc', 'CRE', 'Art', 'PE'].map((sub, i) => {
+                            const compliance = 60 + (i * 5) % 40;
+                            return (
+                                <div key={sub} className="flex flex-col items-center gap-2">
+                                    <div
+                                        className={`w-full aspect-square rounded-2xl border-2 flex items-center justify-center transition-all hover:scale-105 cursor-help ${compliance > 90 ? 'bg-emerald-500/10 border-emerald-500 text-emerald-700' :
+                                                compliance > 75 ? 'bg-blue-500/10 border-blue-500 text-blue-700' :
+                                                    'bg-amber-500/10 border-amber-500 text-amber-700'
+                                            }`}
+                                        title={`${sub}: ${compliance}% Covered`}
+                                    >
+                                        <span className="font-black text-xs">{compliance}%</span>
                                     </div>
-                                    <span className="text-xs font-black text-slate-400 w-8">{item.compliance}%</span>
+                                    <span className="text-[9px] font-black uppercase text-slate-400">{sub}</span>
                                 </div>
+                            );
+                        })}
+                    </div>
+
+                    <div className="space-y-6 flex-1">
+                        <div className="p-6 bg-slate-50 rounded-[2rem] border border-slate-100/50">
+                            <div className="flex items-center justify-between mb-4">
+                                <span className="text-xs font-black text-slate-700">Critical Path: Chemistry Form 4</span>
+                                <span className="text-[10px] font-black text-red-500 bg-red-50 px-2 py-0.5 rounded-lg">3 Weeks Lag</span>
                             </div>
-                        ))}
+                            <div className="w-full bg-slate-200 rounded-full h-1.5 overflow-hidden">
+                                <div className="h-full bg-red-500 w-[62%] rounded-full" />
+                            </div>
+                        </div>
                     </div>
 
                     <div className="mt-10 pt-8 border-t border-slate-100 flex items-center justify-between">
@@ -509,11 +515,11 @@ export const AnalyticsTab = ({ stats, teachers }: { stats: SchoolStats, teachers
                                 <AlertTriangle className="w-5 h-5" />
                             </div>
                             <div>
-                                <p className="text-xs font-black text-slate-800">2 Subjects Lagging</p>
-                                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Review required in Form 3 Chem</p>
+                                <p className="text-xs font-black text-slate-800">Resource Gap Detected</p>
+                                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Physics Lab Manuals missing for Form 3</p>
                             </div>
                         </div>
-                        <button className="text-blue-600 text-[10px] font-black uppercase tracking-widest hover:underline">Reassign Staff</button>
+                        <button className="text-blue-600 text-[10px] font-black uppercase tracking-widest hover:underline">Auto-Assign Materials</button>
                     </div>
                 </motion.div>
 
@@ -525,7 +531,7 @@ export const AnalyticsTab = ({ stats, teachers }: { stats: SchoolStats, teachers
                                 <Sparkles className="w-6 h-6 text-blue-200" />
                             </div>
                             <div>
-                                <h3 className="text-2xl font-black tracking-tight leading-none">Neural Insights</h3>
+                                <h3 className="text-2xl font-black tracking-tight leading-none">Neural Forecast v2.0</h3>
                                 <p className="text-[10px] text-blue-200 font-black uppercase tracking-[0.2em] mt-1">AI Recommendation System</p>
                             </div>
                         </div>
@@ -533,30 +539,30 @@ export const AnalyticsTab = ({ stats, teachers }: { stats: SchoolStats, teachers
                         <div className="space-y-6">
                             <div className="bg-white/10 backdrop-blur-xl rounded-3xl p-6 border border-white/10">
                                 <div className="flex items-start gap-4">
-                                    <div className="w-8 h-8 bg-blue-400 rounded-full flex items-center justify-center flex-shrink-0">
+                                    <div className="w-8 h-8 bg-blue-400 rounded-full flex items-center justify-center flex-shrink-0 shadow-lg shadow-blue-900/20">
                                         <CheckCircle2 className="w-4 h-4 text-white" />
                                     </div>
                                     <p className="text-blue-50 font-medium text-sm leading-relaxed">
-                                        "Form 4 candidate performance in Math Paper 1 has increased by **12.4%** since you deployed the new revision kits. We project an average of **7.4 (B-)** for this group."
+                                        "Candidate readiness for **English Paper 3** is at an all-time high (**89%**). Suggest shifting teacher focus to Oral Literature for the next 5 days."
                                     </p>
                                 </div>
                             </div>
 
-                            <div className="bg-white/10 backdrop-blur-xl rounded-3xl p-6 border border-white/10 opacity-60">
+                            <div className="bg-white/10 backdrop-blur-xl rounded-3xl p-6 border border-white/10 opacity-60 grayscale hover:grayscale-0 hover:opacity-100 transition-all cursor-default">
                                 <div className="flex items-start gap-4">
-                                    <div className="w-8 h-8 bg-amber-400 rounded-full flex items-center justify-center flex-shrink-0">
+                                    <div className="w-8 h-8 bg-amber-400 rounded-full flex items-center justify-center flex-shrink-0 shadow-lg shadow-amber-900/20">
                                         <AlertTriangle className="w-4 h-4 text-white" />
                                     </div>
                                     <p className="text-blue-50 font-medium text-sm leading-relaxed">
-                                        "Warning: Grade 8 English results show a downward trend in composition. AI suggest allocating 2 extra hours to Darasa Mode recording for this unit."
+                                        "Strategy Suggestion: Average Math scores in Grade 8 are drifting down. Deploying **Visual Master** mode for 'Geometry' sub-strand is recommended."
                                     </p>
                                 </div>
                             </div>
                         </div>
 
                         <div className="mt-12">
-                            <button className="w-full py-5 bg-white text-blue-700 text-xs font-black uppercase tracking-[0.2em] rounded-2xl shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all">
-                                Deploy Remedial Strategy
+                            <button className="w-full py-5 bg-white text-blue-700 text-xs font-black uppercase tracking-[0.2em] rounded-2xl shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-3">
+                                <Zap className="w-4 h-4 fill-current" /> Auto-Deploy Remedial Plan
                             </button>
                         </div>
                     </div>

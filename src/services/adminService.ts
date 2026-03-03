@@ -40,17 +40,22 @@ export const fetchDashboardStats = async (): Promise<DashboardStats> => {
         const verifiedUsers = Math.floor(totalUsers * 0.8);
 
         // 3. Activity Feed (Real from activities table)
-        const { data: recentActivities } = await supabase
+        // Note: profiles(...) join requires the FK created in 20260303121500_fix_activities_relationship.sql
+        const { data: recentActivities, error: activityError } = await supabase
             .from('activities')
             .select('*, profiles(full_name, role)')
             .order('created_at', { ascending: false })
             .limit(10);
 
+        if (activityError) {
+            console.warn("Activities fetch failed (likely relationship missing):", activityError.message);
+        }
+
         const recentActivity: FeedItem[] = recentActivities?.map((act: any) => ({
             id: act.id,
-            title: `${act.profiles?.full_name || 'User'} completed a ${act.type.toLowerCase()}`,
+            title: `${act.profiles?.full_name || 'System User'} completed a ${act.type.toLowerCase()}`,
             time: new Date(act.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            type: act.profiles?.role === 'TEACHER' ? 'teacher' : 'student'
+            type: act.profiles?.role === 'TEACHER' ? 'teacher' : (act.profiles?.role === 'LEARNER' ? 'student' : 'system')
         })) || [];
 
         // 4. Activity Trend (Real-ish: Group by created_at date)

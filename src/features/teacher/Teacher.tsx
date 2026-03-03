@@ -24,10 +24,12 @@ import { DarasaMode } from './DarasaMode';
 import { MyClassroom } from './MyClassroom';
 import { CreationHub } from './CreationHub';
 import { MarketplaceManager } from './MarketplaceManager';
-import { WelcomeOnboard } from './WelcomeOnboard';
 import { MarkingManager } from './MarkingManager';
 import { TeacherReports } from './TeacherReports';
 import { TeacherDashboardOverview } from './TeacherDashboardOverview';
+import { SchemesView } from './SchemesView';
+import { LessonPolisherView } from './LessonPolisherView';
+import { DigitalBlackboard } from './DigitalBlackboard';
 
 import { useNavigate, useLocation } from 'react-router-dom';
 import logoImg from '../../assets/images/main_logo.png';
@@ -123,7 +125,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
     const [paymentPlan, setPaymentPlan] = useState<SubscriptionPlan | null>(null);
     const [showLoginModal, setShowLoginModal] = useState(false);
     const [showLogoutModal, setShowLogoutModal] = useState(false);
-    const [activeTab, setActiveTab] = useState<'DASHBOARD' | 'MAGIC_CLASSROOM' | 'CREATION_HUB' | 'STUDENTS' | 'MARKING' | 'EARNINGS' | 'LIBRARY' | 'CONVERT' | 'VOICE' | 'QUIZ' | 'HOME' | 'MARKETPLACE' | 'PROFILE' | 'REPORTS' | 'DARASA_MODE'>(initialTab || 'DASHBOARD');
+    const [activeTab, setActiveTab] = useState<'DASHBOARD' | 'MAGIC_CLASSROOM' | 'CREATION_HUB' | 'STUDENTS' | 'MARKING' | 'EARNINGS' | 'LIBRARY' | 'CONVERT' | 'VOICE' | 'QUIZ' | 'HOME' | 'MARKETPLACE' | 'PROFILE' | 'REPORTS' | 'DARASA_MODE' | 'SCHEMES' | 'LESSON_POLISH' | 'BLACKBOARD'>(initialTab || 'DASHBOARD');
     const [loading, setLoading] = useState(false);
 
     // Selection State
@@ -654,6 +656,26 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                     </motion.div>
                 )}
 
+                {activeTab === 'SCHEMES' && (
+                    <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
+                        <SchemesView
+                            onBack={() => setActiveTab('CREATION_HUB')}
+                            subject={selectedSubject}
+                            grade={selectedClass}
+                        />
+                    </motion.div>
+                )}
+
+                {activeTab === 'LESSON_POLISH' && (
+                    <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
+                        <LessonPolisherView
+                            onBack={() => setActiveTab('CREATION_HUB')}
+                            subject={selectedSubject}
+                            grade={selectedClass}
+                        />
+                    </motion.div>
+                )}
+
                 {/* --- DASHBOARD VIEW --- */}
                 {activeTab === 'DASHBOARD' && (
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
@@ -1071,6 +1093,9 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                                 <ArrowRight className="w-4 h-4 mr-2 rotate-180" /> {t.teacher.results.backToStudio}
                             </Button>
                             <div className="flex gap-3">
+                                <Button variant="outline" onClick={() => setActiveTab('BLACKBOARD')} className="rounded-xl border-2 font-black uppercase tracking-widest text-xs bg-slate-900 text-white border-slate-900 hover:bg-slate-800">
+                                    <MonitorPlay className="w-4 h-4 mr-2" /> Digital Blackboard
+                                </Button>
                                 <Button variant="outline" onClick={() => window.print()} className="rounded-xl border-2 font-black uppercase tracking-widest text-xs">
                                     <Download className="w-4 h-4 mr-2" /> {t.teacher.results.exportPdf}
                                 </Button>
@@ -1820,6 +1845,17 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                         </motion.div>
                     );
                 })()}
+            </AnimatePresence>
+
+            <AnimatePresence>
+                {activeTab === 'BLACKBOARD' && generatedNote && (
+                    <DigitalBlackboard
+                        onClose={() => setActiveTab('CONVERT')}
+                        title={generatedNote.topic}
+                        content={generatedNote.structuredNotes}
+                        simplifiedContent={generatedNote.simplifiedNotes}
+                    />
+                )}
             </AnimatePresence>
         </div>
     );

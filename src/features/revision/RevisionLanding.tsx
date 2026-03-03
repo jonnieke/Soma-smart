@@ -6,6 +6,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { LogoutModal } from '../../components/LogoutModal';
 import { ThemeToggle } from '../../components/ThemeToggle';
 import { Button } from '../../components/Shared';
+import { CandidateCountdown } from './CandidateCountdown';
+import { MasteryHeatmap } from './MasteryHeatmap';
+import { ExamGuruChat } from './ExamGuruChat';
 
 interface Props {
     onStartSession: (data: File | TeacherActivity, mode: RevisionMode) => void;
@@ -24,6 +27,7 @@ export const RevisionLanding: React.FC<Props> = ({ onStartSession, onNavigate })
     const [activeTab, setActiveTab] = useState<TabKey>('papers');
     const [searchQuery, setSearchQuery] = useState('');
     const [showCount, setShowCount] = useState(6);
+    const [showExamGuru, setShowExamGuru] = useState(false);
 
     // Fetch quizzes & resources on mount
     React.useEffect(() => {
@@ -249,6 +253,54 @@ export const RevisionLanding: React.FC<Props> = ({ onStartSession, onNavigate })
             </div>
 
             <main className="max-w-5xl mx-auto px-4 md:px-6 pt-6 pb-24">
+
+                {/* Candidate Success Pulse - Phase 18 */}
+                {!lowDataMode && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="space-y-8 mb-12"
+                    >
+                        <CandidateCountdown />
+                        <MasteryHeatmap data={Object.entries(masteryGraph).map(([topic, score]) => ({
+                            topic,
+                            mastery: score,
+                            frequency: 70 + (Math.random() * 30), // Frequency can be pseudo-random or weighted for now
+                            subject: "Your Subjects"
+                        }))} />
+
+                        {/* Daily Candidate Pulse - Phase 18 */}
+                        <div className="bg-gradient-to-br from-indigo-900 via-indigo-950 to-slate-950 rounded-[2rem] p-6 sm:p-8 text-white relative overflow-hidden shadow-2xl border border-white/5">
+                            <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none -translate-y-1/2 translate-x-1/2" />
+                            <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8">
+                                <div className="space-y-4">
+                                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-[10px] font-black uppercase tracking-widest text-indigo-300">
+                                        <Zap className="w-3 h-3 fill-current" /> Daily Candidate Pulse
+                                    </div>
+                                    <h3 className="text-2xl sm:text-3xl font-black tracking-tight leading-tight">
+                                        Ready for your <span className="text-indigo-400">Micro-Quiz</span>?
+                                    </h3>
+                                    <p className="text-indigo-100/60 font-medium text-xs sm:text-sm max-w-md">
+                                        3 high-impact questions on <span className="text-white font-bold">"Matrices"</span>. Today's most predicted exam topic. Take 2 minutes to stay sharp.
+                                    </p>
+                                </div>
+                                <Button
+                                    className="bg-white text-indigo-900 hover:bg-indigo-50 px-8 sm:px-10 py-5 sm:py-6 rounded-2xl font-black text-sm sm:text-base shadow-xl shadow-black/20 shrink-0 group w-full md:w-auto"
+                                    onClick={() => {
+                                        // Trigger a specialized quiz
+                                        onStartSession({
+                                            title: "Daily Pulse: Matrices",
+                                            subject: "Mathematics",
+                                            type: "PAST_PAPER"
+                                        } as any, RevisionMode.EXAM);
+                                    }}
+                                >
+                                    <span className="flex items-center gap-3">Start Pulse Quiz <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" /></span>
+                                </Button>
+                            </div>
+                        </div>
+                    </motion.div>
+                )}
 
                 {/* Quick Actions Row */}
                 <div className="flex gap-4 mb-8">
@@ -657,6 +709,22 @@ export const RevisionLanding: React.FC<Props> = ({ onStartSession, onNavigate })
                 )}
             </AnimatePresence>
 
-        </div >
+            {/* Exam Guru FAB */}
+            <button
+                onClick={() => setShowExamGuru(true)}
+                className="fixed right-6 bottom-24 md:bottom-32 z-40 w-16 h-16 bg-indigo-600 dark:bg-indigo-500 text-white rounded-2xl shadow-2xl flex items-center justify-center hover:scale-110 active:scale-95 transition-all group border-4 border-white dark:border-slate-800"
+            >
+                <Sparkles className="w-8 h-8 group-hover:animate-spin-slow" />
+                <div className="absolute right-full mr-4 bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+                    Exam Guru Chat
+                </div>
+            </button>
+
+            <AnimatePresence>
+                {showExamGuru && (
+                    <ExamGuruChat onClose={() => setShowExamGuru(false)} />
+                )}
+            </AnimatePresence>
+        </div>
     );
 };

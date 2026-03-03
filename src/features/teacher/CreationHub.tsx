@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { Sparkles, FileText, Brain, Mic, ScanLine, FileUp, Zap, ChevronRight } from 'lucide-react';
 
 interface CreationHubProps {
-    onNavigateToTool: (tool: 'CONVERT' | 'QUIZ' | 'DARASA_MODE' | 'MARKING') => void;
+    onNavigateToTool: (tool: 'CONVERT' | 'QUIZ' | 'DARASA_MODE' | 'MARKING' | 'SCHEMES' | 'LESSON_POLISH') => void;
 }
 
 export const CreationHub: React.FC<CreationHubProps> = ({ onNavigateToTool }) => {
@@ -28,10 +28,26 @@ export const CreationHub: React.FC<CreationHubProps> = ({ onNavigateToTool }) =>
             </div>
 
             {/* Tool Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-
+            <motion.div
+                initial="hidden"
+                animate="visible"
+                variants={{
+                    hidden: { opacity: 0 },
+                    visible: {
+                        opacity: 1,
+                        transition: {
+                            staggerChildren: 0.1
+                        }
+                    }
+                }}
+                className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-12"
+            >
                 {/* Darasa Mode Card */}
                 <motion.div
+                    variants={{
+                        hidden: { opacity: 0, y: 20 },
+                        visible: { opacity: 1, y: 0 }
+                    }}
                     whileHover={{ y: -5, scale: 1.02 }}
                     onClick={() => onNavigateToTool('DARASA_MODE')}
                     className="cursor-pointer bg-white p-8 rounded-[2rem] border-2 border-indigo-100 relative overflow-hidden group shadow-sm hover:shadow-xl hover:shadow-indigo-50/50 transition-all"
@@ -51,6 +67,10 @@ export const CreationHub: React.FC<CreationHubProps> = ({ onNavigateToTool }) =>
 
                 {/* Exam Generator */}
                 <motion.div
+                    variants={{
+                        hidden: { opacity: 0, y: 20 },
+                        visible: { opacity: 1, y: 0 }
+                    }}
                     whileHover={{ y: -5, scale: 1.02 }}
                     onClick={() => onNavigateToTool('QUIZ')}
                     className="cursor-pointer bg-white p-8 rounded-[2rem] border-2 border-purple-100 relative overflow-hidden group shadow-sm hover:shadow-xl hover:shadow-purple-50/50 transition-all"
@@ -70,6 +90,10 @@ export const CreationHub: React.FC<CreationHubProps> = ({ onNavigateToTool }) =>
 
                 {/* Document Convert */}
                 <motion.div
+                    variants={{
+                        hidden: { opacity: 0, y: 20 },
+                        visible: { opacity: 1, y: 0 }
+                    }}
                     whileHover={{ y: -5, scale: 1.02 }}
                     onClick={() => onNavigateToTool('CONVERT')}
                     className="cursor-pointer bg-white p-8 rounded-[2rem] border-2 border-blue-100 relative overflow-hidden group shadow-sm hover:shadow-xl hover:shadow-blue-50/50 transition-all"
@@ -89,6 +113,10 @@ export const CreationHub: React.FC<CreationHubProps> = ({ onNavigateToTool }) =>
 
                 {/* Auto Grader (Coming Soon) */}
                 <motion.div
+                    variants={{
+                        hidden: { opacity: 0, y: 20 },
+                        visible: { opacity: 1, y: 0 }
+                    }}
                     whileHover={{ y: -5, scale: 1.02 }}
                     onClick={() => onNavigateToTool('MARKING')}
                     className="cursor-pointer bg-white p-8 rounded-[2rem] border-2 border-emerald-100 relative overflow-hidden group shadow-sm hover:shadow-xl hover:shadow-emerald-50/50 transition-all opacity-80"
@@ -106,7 +134,53 @@ export const CreationHub: React.FC<CreationHubProps> = ({ onNavigateToTool }) =>
                         Scan & Mark <ChevronRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
                     </div>
                 </motion.div>
-            </div>
+
+                {/* AI Schemes of Work */}
+                <motion.div
+                    variants={{
+                        hidden: { opacity: 0, y: 20 },
+                        visible: { opacity: 1, y: 0 }
+                    }}
+                    whileHover={{ y: -5, scale: 1.02 }}
+                    onClick={() => onNavigateToTool('SCHEMES')}
+                    className="cursor-pointer bg-gradient-to-br from-slate-900 to-slate-800 p-8 rounded-[2rem] border-2 border-slate-700 relative overflow-hidden group shadow-xl transition-all"
+                >
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-bl-[100px] -z-10 group-hover:bg-white/10 transition-colors"></div>
+                    <div className="w-14 h-14 bg-blue-500 text-white rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-blue-400/20 group-hover:scale-110 transition-transform">
+                        <Zap className="w-7 h-7" />
+                    </div>
+                    <h3 className="text-2xl font-black text-white tracking-tight mb-2">AI Schemes of Work</h3>
+                    <p className="text-slate-400 font-medium text-sm mb-6 leading-relaxed">
+                        Generate comprehensive, KICD-compliant schemes for any term. Includes automated time-allocation and resource mapping.
+                    </p>
+                    <div className="flex items-center text-sm font-black text-blue-400 tracking-wider uppercase">
+                        Generate Now <ChevronRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
+                    </div>
+                </motion.div>
+
+                {/* Lesson Plan Polisher */}
+                <motion.div
+                    variants={{
+                        hidden: { opacity: 0, y: 20 },
+                        visible: { opacity: 1, y: 0 }
+                    }}
+                    whileHover={{ y: -5, scale: 1.02 }}
+                    onClick={() => onNavigateToTool('LESSON_POLISH')}
+                    className="cursor-pointer bg-white p-8 rounded-[2rem] border-2 border-amber-100 relative overflow-hidden group shadow-sm hover:shadow-xl hover:shadow-amber-50/50 transition-all"
+                >
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-amber-50 rounded-bl-[100px] -z-10 group-hover:bg-amber-100 transition-colors"></div>
+                    <div className="w-14 h-14 bg-amber-500 text-white rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-amber-200 group-hover:scale-110 transition-transform">
+                        <FileText className="w-7 h-7" />
+                    </div>
+                    <h3 className="text-2xl font-black text-slate-900 tracking-tight mb-2">Lesson Polisher</h3>
+                    <p className="text-slate-500 font-medium text-sm mb-6 leading-relaxed">
+                        Paste your lesson plan. We will cross-reference it with your student's recorded weak points to suggest remedial focus areas.
+                    </p>
+                    <div className="flex items-center text-sm font-black text-amber-600 tracking-wider uppercase">
+                        Refine Plan <ChevronRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
+                    </div>
+                </motion.div>
+            </motion.div>
         </div>
     );
 };

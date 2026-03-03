@@ -2341,5 +2341,178 @@ export const gradeStudentSubmission = async (
   }
 };
 
+// --- TEACHER & CANDIDATE PERFECTION FEATURES ---
+
+export const generateSchemeOfWork = async (subject: string, grade: string, term: string, year: string, language: 'EN' | 'FR' = 'EN'): Promise<any> => {
+  const model = genAI.getGenerativeModel({
+    model: MODEL_NAME,
+    generationConfig: {
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: SchemaType.OBJECT,
+        properties: {
+          title: { type: SchemaType.STRING },
+          term: { type: SchemaType.STRING },
+          weeks: {
+            type: SchemaType.ARRAY,
+            items: {
+              type: SchemaType.OBJECT,
+              properties: {
+                week: { type: SchemaType.INTEGER },
+                strand: { type: SchemaType.STRING },
+                subStrand: { type: SchemaType.STRING },
+                outcomes: { type: SchemaType.STRING },
+                resources: { type: SchemaType.STRING }
+              },
+              required: ["week", "strand", "subStrand", "outcomes", "resources"]
+            }
+          }
+        },
+        required: ["title", "term", "weeks"]
+      }
+    }
+  });
+
+  const prompt = `
+    You are a Kenyan KICD curriculum specialist. 
+    Generate a full, professional Scheme of Work for:
+    Subject: ${subject}
+    Grade: ${grade}
+    Term: ${term}
+    Year: ${year}
+
+    Follow the official Kenyan Competency-Based Curriculum (CBC) or 8-4-4 standards as applicable.
+    Provide a week-by-week breakdown for a standard 13-week term.
+    Include Strands, Sub-strands, specific learning outcomes, and suggested resources.
+    Language: ${language === 'FR' ? 'French' : 'English (with Kiswahili specific terms if needed)'}.
+
+    Output as JSON.
+  `;
+
+  try {
+    const result = await model.generateContent(prompt);
+    const text = result.response.text();
+    if (!text) throw new Error("No response from AI");
+    return JSON.parse(text);
+  } catch (error) {
+    console.error("Error generating scheme of work:", error);
+    throw error;
+  }
+};
+
+export const polishLessonPlan = async (
+  rawPlan: string,
+  subject: string,
+  grade: string,
+  studentWeakPoints: string[] = [],
+  language: 'EN' | 'FR' = 'EN'
+): Promise<any> => {
+  const model = genAI.getGenerativeModel({
+    model: MODEL_NAME,
+    generationConfig: {
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: SchemaType.OBJECT,
+        properties: {
+          score: { type: SchemaType.INTEGER },
+          weaknessMatch: {
+            type: SchemaType.ARRAY,
+            items: {
+              type: SchemaType.OBJECT,
+              properties: {
+                topic: { type: SchemaType.STRING },
+                impact: { type: SchemaType.STRING },
+                recommendation: { type: SchemaType.STRING }
+              }
+            }
+          },
+          strengths: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
+          suggestedResources: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
+          polishedContent: { type: SchemaType.STRING, description: "The full, refined lesson plan in markdown" }
+        },
+        required: ["score", "weaknessMatch", "strengths", "suggestedResources", "polishedContent"]
+      }
+    }
+  });
+
+  const context = studentWeakPoints.length > 0
+    ? `IMPORTANT: Recent quiz data shows students are struggling with: ${studentWeakPoints.join(', ')}.`
+    : '';
+
+  const prompt = `
+    You are an expert pedagogical coach for Kenyan teachers.
+    Analyze this lesson plan and provide actionable refinements.
+    
+    Subject: ${subject}
+    Grade: ${grade}
+    Raw Plan: "${rawPlan}"
+    ${context}
+
+    1. Score the plan out of 100 based on CBC compliance.
+    2. Identify "Remedial Matches" - specifically how the teacher can address the stated student weak points within this lesson.
+    3. List general strengths.
+    4. Suggest resources from the Kenyan context (KICD books, Somo Smart videos, local environment).
+    5. Provide a "Polished Content" version of the plan that is more engaging and data-driven.
+
+    Output as JSON.
+  `;
+
+  try {
+    const result = await model.generateContent(prompt);
+    const text = result.response.text();
+    if (!text) throw new Error("No response from AI");
+    return JSON.parse(text);
+  } catch (error) {
+    console.error("Error polishing lesson plan:", error);
+    throw error;
+  }
+};
+
+export const getExamGuruResponse = async (
+  userQuery: string,
+  chatHistory: { role: 'user' | 'guru', content: string }[],
+  language: 'EN' | 'FR' = 'EN'
+): Promise<string> => {
+  const model = genAI.getGenerativeModel({
+    model: MODEL_NAME,
+    generationConfig: {
+      maxOutputTokens: 1000,
+    }
+  });
+
+  const history = chatHistory.map(m => `${m.role === 'guru' ? 'Exam Guru' : 'Candidate'}: ${m.content}`).join('\n');
+
+  const prompt = `
+    You are the "Exam Guru" (Somo Smart's specialized persona for candidate strategy).
+    Your goal is NOT to teach subject facts, but to teach EXAM STRATEGY, TIME MANAGEMENT, and MENTAL PREPARATION.
+    
+    Target Exams: KCSE, KPSEA, KCPE (Kenya).
+    Tone: Encouraging, strategic, street-smart, and elite.
+    
+    CHART HISTORY:
+    ${history}
+    
+    NEW CANDIDATE QUESTION: "${userQuery}"
+    
+    STRATEGY RULES:
+    1. Focus on KNEC marking patterns.
+    2. Give "Paper Traps" warnings.
+    3. Provide time-management hacks (e.g. "Spend only 20 mins on Section A").
+    4. Use local Kenyan context (e.g. referencing specific paper numbers like P1, P2, P3).
+    5. Be punchy and motivating.
+    
+    Respond directly to the candidate.
+  `;
+
+  try {
+    const result = await model.generateContent(prompt);
+    const text = result.response.text();
+    return text || "I am currently calculating your strategy. Please try again.";
+  } catch (error) {
+    console.error("Error getting guru response:", error);
+    return "The Guru is momentarily meditating on exam patterns. Ask me again in a second.";
+  }
+};
+
 // Backward compatibility for cached files
 export const askSoma = askSomo;
