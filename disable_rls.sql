@@ -1,1 +1,0 @@
-ALTER TABLE public.knowledge_base DISABLE ROW LEVEL SECURITY;

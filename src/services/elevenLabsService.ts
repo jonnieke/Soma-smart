@@ -5,6 +5,19 @@ const API_KEY = import.meta.env.VITE_ELEVEN_LABS_API_KEY;
 const VOICE_ID = "21m00Tcm4TlvDq8ikWAM";
 const BASE_URL = `https://api.elevenlabs.io/v1/text-to-speech/${VOICE_ID}`;
 
+// --- VOICE CONFIGS FOR TALKBACK & LANGUAGE TUTOR ---
+// Rachel (warm, clear English) for English mode
+// Adam (deep, natural multilingual) for Kiswahili — excellent Swahili pronunciation on eleven_multilingual_v2
+export const TALKBACK_VOICES = {
+    en: "21m00Tcm4TlvDq8ikWAM", // Rachel — warm, friendly, clear English
+    sw: "pNInz6obpgDQGcFmaJgB", // Adam — deep, natural African accent, excellent Kiswahili
+} as const;
+
+export const LANGUAGE_TUTOR_VOICES = {
+    en: "ErXwobaYiN019PkySvjV", // Antoni — encouraging male teacher voice
+    sw: "pNInz6obpgDQGcFmaJgB", // Adam — best Kiswahili pronunciation
+} as const;
+
 // Keep track of current audio to allow stopping
 let currentAudio: HTMLAudioElement | null = null;
 
@@ -121,8 +134,6 @@ export const playPodcast = async (
 
     if (!useElevenLabs) {
         console.warn("ElevenLabs API Key is missing or invalid. Falling back to browser TTS.");
-    } else {
-        console.log(`[ElevenLabs] Starting podcast playback. Key starts with: ${API_KEY.substring(0, 4)}... (Length: ${API_KEY.length})`);
     }
 
     const VOICES = {
@@ -243,4 +254,68 @@ export const playPodcast = async (
             onComplete();
         }
     }
+};
+
+// --- CONVERSATIONAL TTS (for Talkback / Language Tutor) ---
+export const speakConversational = async (text: string, voiceId: string): Promise<void> => {
+    stopSpeech(); // Stop any existing speech
+
+    if (API_KEY && API_KEY.length > 10) {
+        try {
+            const response = await axios.post(
+                `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`,
+                {
+                    text,
+                    model_id: "eleven_multilingual_v2",
+                    voice_settings: {
+                        stability: 0.6,
+                        similarity_boost: 0.8,
+                        style: 0.3,
+                        use_speaker_boost: true,
+                    },
+                },
+                {
+                    headers: {
+                        'xi-api-key': API_KEY,
+                        'Content-Type': 'application/json',
+                    },
+                    responseType: 'blob',
+                }
+            );
+
+            const audioUrl = URL.createObjectURL(response.data);
+            const audio = new Audio(audioUrl);
+            currentAudio = audio;
+
+            return new Promise((resolve, reject) => {
+                audio.onended = () => {
+                    URL.revokeObjectURL(audioUrl);
+                    currentAudio = null;
+                    resolve();
+                };
+                audio.onerror = (e) => {
+                    URL.revokeObjectURL(audioUrl);
+                    currentAudio = null;
+                    reject(e);
+                };
+                audio.play().catch(reject);
+            });
+        } catch (error) {
+            console.error("ElevenLabs conversational TTS failed, using browser fallback:", error);
+        }
+    }
+
+    // Fallback: Browser native TTS
+    return new Promise((resolve, reject) => {
+        if (!window.speechSynthesis) {
+            resolve();
+            return;
+        }
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = voiceId.includes('pNInz') ? 'sw' : 'en-US';
+        utterance.rate = 1.0;
+        utterance.onend = () => resolve();
+        utterance.onerror = (e) => reject(e);
+        window.speechSynthesis.speak(utterance);
+    });
 };

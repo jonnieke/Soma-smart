@@ -6,10 +6,10 @@ import {
   Sparkles, Home, X, XCircle, Camera, ScanLine, Mic, Upload, Clock,
   CheckCircle, Play, Pause, ChevronRight, Star, BookOpen, Brain, Lightbulb, Lock, Volume2, CreditCard,
   ArrowRight, UserCircle, Download, ImageIcon, Trash2, AlertTriangle, LogOut, Users, DollarSign, FileText, ShoppingBag, Library, Layers,
-  Calculator, FlaskConical, Globe, Languages, Loader2, Headphones, PenTool, Zap, ListChecks, Trophy, Hand
+  Calculator, FlaskConical, Globe, Languages, Loader2, Headphones, PenTool, Zap, ListChecks, Trophy, Hand, ClipboardList
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
-import { ExplanationResult, QuizData, ViewState, SubscriptionPlan, LearnerProfile, LearnerActivity, UserRole, PodcastScript, ChatMessage } from '../../types';
+import { ExplanationResult, QuizData, ViewState, SubscriptionPlan, LearnerProfile, LearnerActivity, UserRole, PodcastScript, ChatMessage, RevisionMode, TeacherActivity, EducationLevel } from '../../types';
 import { PricingPage } from '../subscription/PricingPage';
 import { PaymentFlow } from '../subscription/PaymentFlow';
 import { STUDENT_PLANS, TEACHER_PLANS, DOWNLOAD_PASS } from '../../data/pricing';
@@ -35,6 +35,10 @@ import { jsPDF } from 'jspdf';
 import heroSectionImage from '../../assets/images/herosection.jpg';
 import { ThemeToggle } from '../../components/ThemeToggle';
 import { RevisionLanding } from '../revision/RevisionLanding';
+import { DashboardSidebar, SidebarTab } from '../../components/DashboardSidebar';
+import { Community } from '../community/Community';
+import { LearnerAnalytics } from './LearnerAnalytics';
+import { ConversationalTutor } from './ConversationalTutor';
 
 interface LearnerProps {
   onNavigate: (view: ViewState) => void;
@@ -61,10 +65,18 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
     verifySubscription,
     // Phase 2/3: Adaptive Tutoring & Evolutionary Educator
     masteryGraph, dueForReview, weakTopics, processQuizCompletion, addSpacedRepetitionItem,
-    getPersonalizedDailyChallenge, activeStrategies
+    getPersonalizedDailyChallenge, activeStrategies, educationLevel
   } = useApp();
   const t = translations[language];
   const location = useLocation();
+
+  // Read target tab from navigation state if coming from another route (like /exam-rooms)
+  const initialTab = (location.state as any)?.targetTab as SidebarTab || 'HOME';
+  const initialMode = initialTab === 'SMART_TUTOR' || initialTab === 'HOMEWORK' ? 'SCAN_EXPLAIN' :
+    initialTab === 'RESOURCES' ? 'MARKETPLACE' :
+      initialTab === 'PROGRESS' ? 'HISTORY' :
+        initialTab === 'SUBJECTS' ? 'REVISION' :
+          initialTab === 'COMMUNITY' ? 'COMMUNITY' : 'MENU';
 
   // Find active plan details
   const activePlanDetails = React.useMemo(() => {
@@ -121,7 +133,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
     }
   }, [isRegistered, role, navigate, location]);
 
-  const [mode, setMode] = useState<'MENU' | 'SCAN' | 'RESULT' | 'QUIZ' | 'RECAP_RESULT' | 'PROFILE' | 'PRICING' | 'PAYMENT' | 'MARKETPLACE' | 'LIBRARY' | 'HISTORY' | 'SCAN_EXPLAIN' | 'STUDY' | 'REQUESTS'>('MENU');
+  const [mode, setMode] = useState<'MENU' | 'SCAN' | 'RESULT' | 'QUIZ' | 'RECAP_RESULT' | 'PROFILE' | 'PRICING' | 'PAYMENT' | 'MARKETPLACE' | 'LIBRARY' | 'HISTORY' | 'SCAN_EXPLAIN' | 'STUDY' | 'REQUESTS' | 'COMMUNITY' | 'REVISION' | 'ANALYTICS' | 'TALKBACK'>(initialMode as any);
   const [studyTab, setStudyTab] = useState<'LESSON' | 'RECAP' | 'QNA' | 'QUIZ'>('LESSON');
   const [expandedRecaps, setExpandedRecaps] = useState<number[]>([]);
   const [recapData, setRecapData] = useState<any>(null); // Store LessonRecap
@@ -293,14 +305,17 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
       setMaterialCategory('ALL');
       setSubjectFilter('ALL');
     }
-  }, [mode]);
+  }, [mode, educationLevel]);
 
   const unifiedMaterials = React.useMemo(() => {
     const verified = (resources || []).map((r: any) => ({
       id: `v-${r.id}`,
       realId: r.id,
       title: r.title,
-      description: `Official ${r.subject} ${r.type.toLowerCase().replace('_', ' ')} aligned with CBC/KCSE.`,
+      description: `Official ${r.subject} ${r.type.toLowerCase().replace('_', ' ')} aligned with ${educationLevel === EducationLevel.JUNIOR ? 'CBC/KPSEA' :
+        educationLevel === EducationLevel.CAMPUS ? 'University curriculum' :
+          'CBC/KCSE'
+        }.`,
       teacherName: 'Somo Smart Verified',
       isVerified: true,
       price: r.type === 'SYLLABUS' ? 0 : 0, // In logic, if it's premium verified, we check Pro
@@ -318,24 +333,39 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
     return [...verified, ...teacher];
   }, [resources, marketplaceMaterials]);
 
+  const getGradeLevel = (grade: string): EducationLevel => {
+    const g = (grade || '').toUpperCase();
+    if (g.includes('UNIVERSITY') || g.includes('COLLEGE') || g.includes('YEAR') || g.includes('CAMPUS') || g.includes('DEGREE') || g.includes('DIPLOMA')) {
+      return EducationLevel.CAMPUS;
+    }
+    const juniorGrades = ['PP1', 'PP2', 'GRADE 1', 'GRADE 2', 'GRADE 3', 'GRADE 4', 'GRADE 5', 'GRADE 6'];
+    if (juniorGrades.some(jg => g.includes(jg))) {
+      return EducationLevel.JUNIOR;
+    }
+    return EducationLevel.SENIOR;
+  };
+
   const normalizeGrade = (g: any) => {
     const str = String(g || "").toLowerCase();
     return str.replace(/\s*grade\s*/g, '').replace(/\s*\(jss\)\s*/g, '').trim() || "";
   };
 
   const gradeFilteredMaterials = React.useMemo(() => {
+    // First filter by education level to prevent cross-level content
+    const levelFiltered = unifiedMaterials.filter(m => getGradeLevel(m.grade || '') === educationLevel);
+
     const studentGrade = normalizeGrade(studentProfile?.grade || "");
-    const exactMatches = unifiedMaterials.filter(m => {
+    const exactMatches = levelFiltered.filter(m => {
       if (!studentGrade) return true;
       return normalizeGrade(m.grade) === studentGrade;
     });
 
     // If we have exact matches for student's grade, show only those.
-    // If NOT, show everything as a fallback so the screen isn't empty.
-    const result = exactMatches.length > 0 ? exactMatches : unifiedMaterials;
+    // If NOT, show level-filtered materials as a fallback so the screen isn't empty.
+    const result = exactMatches.length > 0 ? exactMatches : levelFiltered;
 
     return result;
-  }, [unifiedMaterials, studentProfile?.grade]);
+  }, [unifiedMaterials, studentProfile?.grade, educationLevel]);
 
   const subjects = React.useMemo(() => {
     const subs = new Set(['ALL']);
@@ -348,6 +378,10 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
 
   const filteredMaterials = React.useMemo(() => {
     return unifiedMaterials.filter(m => {
+      // 0. Education Level Filter — prevent cross-level content leakage
+      const materialLevel = getGradeLevel(m.grade || '');
+      if (materialLevel !== educationLevel) return false;
+
       // 1. Category Filter
       if (materialCategory !== 'ALL' && m.category !== materialCategory) return false;
       // 2. Subject Filter
@@ -360,7 +394,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
 
       return true;
     });
-  }, [unifiedMaterials, materialCategory, subjectFilter, selectedGrade, selectedSource]);
+  }, [unifiedMaterials, materialCategory, subjectFilter, selectedGrade, selectedSource, educationLevel]);
 
   // Check for subscription intent & Auto-open material intent
   React.useEffect(() => {
@@ -867,6 +901,43 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
   const [showRegistration, setShowRegistration] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
   const [showLimitModal, setShowLimitModal] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarTab, setSidebarTab] = useState<SidebarTab>(initialTab);
+
+  const handleSidebarTabChange = (tab: SidebarTab) => {
+    setSidebarTab(tab);
+    switch (tab) {
+      case 'HOME':
+        setMode('MENU');
+        break;
+      case 'SMART_TUTOR':
+        setMode('SCAN_EXPLAIN');
+        break;
+      case 'RESOURCES':
+        setMode('MARKETPLACE');
+        break;
+      case 'PROGRESS':
+        setMode('ANALYTICS');
+        break;
+      case 'HOMEWORK':
+        setMode('SCAN_EXPLAIN');
+        break;
+      case 'SUBJECTS':
+        setMode('REVISION');
+        break;
+      case 'EXAM_ROOMS':
+        navigate('/exam-rooms');
+        break;
+      case 'COMMUNITY':
+        setMode('COMMUNITY');
+        break;
+      case 'TALKBACK':
+        setMode('TALKBACK');
+        break;
+      default:
+        break;
+    }
+  };
 
   const checkLimit = (): boolean => {
     // Pro = Unlimited Checks
@@ -1182,6 +1253,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
     setError(null);
     setLoadingText(topic ? `Exploring ${topic}...` : "Analyzing your attachment...");
     setMode('SCAN'); // Show loading
+    const purpose = sidebarTab === 'HOMEWORK' ? 'HOMEWORK' : 'TUTOR';
     try {
       setAudioData(null);
       setImageData(null);
@@ -1195,7 +1267,8 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
         currentDocument?.grade,
         multimedia,
         { masteryGraph, recentHurdles: weakTopics },
-        activeStrategies
+        activeStrategies,
+        purpose
       );
       setExplanation(result);
 
@@ -1236,11 +1309,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
         .then(data => setStickyQuizData(data))
         .catch(err => console.error("Background quiz gen failed", err));
 
-    } catch (e) {
-      setError({
-        title: "Topic Error",
-        message: "We couldn't load this topic. Please check your connection."
-      });
+      setMode('SCAN_EXPLAIN');
     } finally {
       setLoading(false);
     }
@@ -1432,7 +1501,37 @@ ${explanation.explanation}
   // --- VIEWS ---
   const renderMode = () => {
     if (mode === 'REVISION') {
-      return <RevisionLanding onBack={() => setMode('MENU')} />;
+      return (
+        <RevisionLanding
+          onBack={() => setMode('MENU')}
+          onNavigate={onNavigate}
+          onStartSession={(data, mode) => {
+            // If data is a Past Paper (File or TeacherActivity with content),
+            // navigate to SCAN_EXPLAIN or specialized viewer if we had one.
+            // For now, satisfy the interface and log.
+            console.log("Starting revision session", { data, mode });
+          }}
+        />
+      );
+    }
+
+    if (mode === 'TALKBACK') {
+      return (
+        <ConversationalTutor
+          onBack={() => {
+            setMode('MENU');
+            setSidebarTab('HOME');
+          }}
+        />
+      );
+    }
+
+    if (mode === 'COMMUNITY') {
+      return (
+        <div className="p-4 md:p-8 animate-in fade-in pb-24">
+          <Community />
+        </div>
+      );
     }
 
     if (showCamera) {
@@ -2073,7 +2172,7 @@ ${explanation.explanation}
               )}
 
               <div
-                onClick={() => setMode('PROFILE')}
+                onClick={() => isRegistered ? setMode('PROFILE') : setShowLogin(true)}
                 className="flex items-center gap-3 pl-1.5 pr-5 py-1.5 bg-white dark:bg-slate-900 rounded-full border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-md hover:border-blue-200 dark:hover:border-blue-700 transition-all cursor-pointer group"
               >
                 <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-blue-600 rounded-full flex items-center justify-center text-white font-black shadow-md ring-4 ring-indigo-50 dark:ring-indigo-900/50 group-hover:scale-105 transition-transform">
@@ -2099,13 +2198,19 @@ ${explanation.explanation}
               className="w-full mt-8 md:mt-16 mb-8 md:mb-12 text-center relative z-10"
             >
               <h1 className="text-4xl md:text-[4rem] font-black text-slate-900 dark:text-white mb-6 tracking-tight leading-[1.1]">
-                Good Morning, {profile?.name.split(' ')[0] || 'Friend'}
+                {educationLevel === EducationLevel.JUNIOR ? `Hello, ${profile?.name.split(' ')[0] || 'Friend'}! 🎈` :
+                  educationLevel === EducationLevel.CAMPUS ? `Welcome Back, ${profile?.name.split(' ')[0] || 'Scholar'}` :
+                    `Good Morning, ${profile?.name.split(' ')[0] || 'Friend'}`}
                 <span className="bg-clip-text text-transparent bg-gradient-to-r from-emerald-500 to-teal-600 block sm:inline mt-2 sm:mt-0 sm:ml-3">
-                  Improve Your Marks Today.
+                  {educationLevel === EducationLevel.JUNIOR ? "Time for a Fun Lesson!" :
+                    educationLevel === EducationLevel.CAMPUS ? "Accelerate Your Research." :
+                      "Improve Your Marks Today."}
                 </span>
               </h1>
               <p className="text-slate-500 dark:text-slate-400 font-medium text-lg md:text-xl max-w-2xl mx-auto block leading-relaxed mt-4 opacity-90">
-                Snap a photo of your homework, ask a tricky question, or dive straight into personalized revision.
+                {educationLevel === EducationLevel.JUNIOR ? "Snap a picture of your book, ask your Buddy a question, or play a learning game!" :
+                  educationLevel === EducationLevel.CAMPUS ? "Upload your lecture notes, ask a complex research question, or analyze your course progress." :
+                    "Snap a photo of your homework, ask a tricky question, or dive straight into personalized revision."}
               </p>
 
 
@@ -2116,7 +2221,7 @@ ${explanation.explanation}
               initial={{ opacity: 0, scale: 0.98 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.2 }}
-              className="w-full max-w-[75%] relative z-30 mb-10 md:mb-14 mx-auto"
+              className="w-full md:max-w-[75%] relative z-30 mb-10 md:mb-14 mx-auto px-4 md:px-0"
             >
               <div className="bg-white/95 dark:bg-slate-900/95 rounded-[2rem] md:rounded-[3rem] shadow-[0_30px_70px_-15px_rgba(79,70,229,0.25)] dark:shadow-black/40 border-2 border-slate-300/80 dark:border-slate-800/80 p-1.5 md:p-2.5 flex flex-col md:flex-row items-stretch md:items-center gap-1 md:gap-2 px-3 md:pl-8 md:pr-3 focus-within:ring-4 focus-within:ring-indigo-100/70 dark:focus-within:ring-indigo-900/30 focus-within:border-indigo-500/60 transition-all duration-300 hover:shadow-[0_40px_80px_-15px_rgba(79,70,229,0.3)] dark:hover:shadow-black/50 hover:border-indigo-400/80 backdrop-blur-md">
                 <textarea
@@ -2128,7 +2233,11 @@ ${explanation.explanation}
                       handlePromptSubmit();
                     }
                   }}
-                  placeholder="your homework or revision question here"
+                  placeholder={
+                    educationLevel === EducationLevel.JUNIOR ? "Ask your Buddy a question here..." :
+                      educationLevel === EducationLevel.CAMPUS ? "Search or ask a research question..." :
+                        "your homework or revision question here"
+                  }
                   rows={1}
                   className="flex-1 bg-transparent border-0 focus:ring-0 text-slate-800 dark:text-slate-100 text-base md:text-lg font-bold py-3 md:py-5 px-1 min-h-[50px] md:min-h-[70px] max-h-40 resize-none placeholder:text-slate-400 dark:placeholder:text-slate-600 placeholder:font-medium outline-none overflow-hidden"
                   style={{ height: 'auto' }}
@@ -2187,9 +2296,27 @@ ${explanation.explanation}
               className="w-full flex flex-wrap justify-center gap-3 md:gap-4 mb-10"
             >
               {[
-                { onClick: isOnline ? startCamera : undefined, icon: <Camera className="w-4 h-4" />, text: "Scan Homework", color: "bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 border-emerald-100 dark:border-emerald-900/50 hover:bg-emerald-100 dark:hover:bg-emerald-900/50", aria: "Scan homework using camera" },
-                { onClick: () => setShowTutoringModal(true), icon: <Users className="w-4 h-4" />, text: "Ask a Question", color: "bg-indigo-50 dark:bg-indigo-950/30 text-indigo-700 dark:text-indigo-400 border-indigo-100 dark:border-indigo-900/50 hover:bg-indigo-100 dark:hover:bg-indigo-900/50", aria: "Ask a question to a teacher" },
-                { onClick: () => navigate('/revision'), icon: <Brain className="w-4 h-4" />, text: "Revision & Exams", color: "bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 border-amber-100 dark:border-amber-900/50 hover:bg-amber-100 dark:hover:bg-amber-900/50", aria: "Open revision and exams portal" }
+                {
+                  onClick: isOnline ? startCamera : undefined,
+                  icon: <Camera className="w-4 h-4" />,
+                  text: educationLevel === EducationLevel.JUNIOR ? "Snap Book" : educationLevel === EducationLevel.CAMPUS ? "Scan Notes" : "Scan Homework",
+                  color: "bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 border-emerald-100 dark:border-emerald-900/50 hover:bg-emerald-100 dark:hover:bg-emerald-900/50",
+                  aria: "Scan content using camera"
+                },
+                {
+                  onClick: () => setShowTutoringModal(true),
+                  icon: <Users className="w-4 h-4" />,
+                  text: educationLevel === EducationLevel.JUNIOR ? "Ask Buddy" : educationLevel === EducationLevel.CAMPUS ? "Ask Expert" : "Ask a Question",
+                  color: "bg-indigo-50 dark:bg-indigo-950/30 text-indigo-700 dark:text-indigo-400 border-indigo-100 dark:border-indigo-900/50 hover:bg-indigo-100 dark:hover:bg-indigo-900/50",
+                  aria: "Ask a question"
+                },
+                {
+                  onClick: () => navigate('/revision'),
+                  icon: <Brain className="w-4 h-4" />,
+                  text: educationLevel === EducationLevel.JUNIOR ? "Play & Learn" : educationLevel === EducationLevel.CAMPUS ? "Resource Hub" : "Revision & Exams",
+                  color: "bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 border-amber-100 dark:border-amber-900/50 hover:bg-amber-100 dark:hover:bg-amber-900/50",
+                  aria: "Open resources"
+                }
               ].map((pill, i) => (
                 <button
                   key={i}
@@ -2211,8 +2338,16 @@ ${explanation.explanation}
               {(() => {
                 const validPerformances = subjectPerformance.filter(s => s.hasData);
                 let overallAvg = 0;
-                let strongest = { subject: 'Science', score: 84 };
-                let needsAtten = { subject: 'Fractions', score: 45 };
+                let strongest = educationLevel === EducationLevel.JUNIOR
+                  ? { subject: 'Storytelling', score: 84 }
+                  : educationLevel === EducationLevel.CAMPUS
+                    ? { subject: 'Algorithms', score: 88 }
+                    : { subject: 'Chemistry', score: 84 };
+                let needsAtten = educationLevel === EducationLevel.JUNIOR
+                  ? { subject: 'Colouring', score: 45 }
+                  : educationLevel === EducationLevel.CAMPUS
+                    ? { subject: 'Ethics', score: 52 }
+                    : { subject: 'Kiswahili', score: 45 };
 
                 if (validPerformances.length > 0) {
                   const totalScore = validPerformances.reduce((acc, curr) => acc + curr.score, 0);
@@ -2220,15 +2355,26 @@ ${explanation.explanation}
                   strongest = validPerformances.reduce((prev, current) => (prev.score > current.score) ? prev : current);
                   needsAtten = validPerformances.reduce((prev, current) => (prev.score < current.score) ? prev : current);
                 } else {
-                  overallAvg = 72;
+                  overallAvg = educationLevel === EducationLevel.JUNIOR ? 78 : educationLevel === EducationLevel.CAMPUS ? 68 : 72;
                 }
 
                 const totalMins = history.length * 15 || 200;
                 const hrs = Math.floor(totalMins / 60);
                 const mins = totalMins % 60;
 
+                // Level-specific stat labels
+                const statLabels = educationLevel === EducationLevel.JUNIOR
+                  ? { avg: 'My Score', top: 'Best Class', weak: 'Keep Trying', time: 'Play Time', weakAction: 'Try Again! 💪' }
+                  : educationLevel === EducationLevel.CAMPUS
+                    ? { avg: 'GPA Estimate', top: 'Strongest Module', weak: 'Focus Area', time: 'Research Hours', weakAction: 'Needs Depth' }
+                    : { avg: 'Overall Avg', top: 'Top Subject', weak: 'Needs Work', time: 'Study Time', weakAction: 'Practice More' };
+
                 const recentTopics = [...new Set(history.map(h => h.topic))].slice(0, 3);
-                const defaultSubjects = ['Science', 'English', 'Mathematics'];
+                const defaultSubjects = educationLevel === EducationLevel.JUNIOR
+                  ? ['Fun Science', 'Our Story', 'Big Maths']
+                  : educationLevel === EducationLevel.CAMPUS
+                    ? ['Advanced Theory', 'Core Research', 'Ethics']
+                    : ['Physics', 'Chemistry', 'Biology'];
                 const subject1 = recentTopics[0] || defaultSubjects[0];
                 const subject2 = recentTopics[1] || defaultSubjects[1];
                 const subject3 = recentTopics[2] || defaultSubjects[2];
@@ -2238,7 +2384,7 @@ ${explanation.explanation}
                     {/* ROW 1: Stats */}
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                       <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200/70 dark:border-slate-800/80 hover:shadow-md dark:hover:shadow-black/40 transition-all">
-                        <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">Overall Avg</p>
+                        <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">{statLabels.avg}</p>
                         <div className="flex items-end gap-2">
                           <span className="text-3xl font-black text-slate-900 dark:text-white">{overallAvg}%</span>
                           <span className="text-xs font-bold text-emerald-500 mb-1">+5%</span>
@@ -2248,17 +2394,17 @@ ${explanation.explanation}
                         </div>
                       </div>
                       <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200/70 dark:border-slate-800/80 hover:shadow-md dark:hover:shadow-black/40 transition-all">
-                        <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">Top Subject</p>
+                        <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">{statLabels.top}</p>
                         <span className="text-xl font-black text-slate-900 dark:text-white">{strongest.subject}</span>
                         <p className="text-sm font-bold text-emerald-600 mt-1">{strongest.score}%</p>
                       </div>
                       <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200/70 dark:border-slate-800/80 hover:shadow-md dark:hover:shadow-black/40 transition-all">
-                        <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">Needs Work</p>
+                        <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">{statLabels.weak}</p>
                         <span className="text-xl font-black text-slate-900 dark:text-white">{needsAtten.subject}</span>
-                        <p className="text-sm font-bold text-amber-500 mt-1">Practice More</p>
+                        <p className="text-sm font-bold text-amber-500 mt-1">{statLabels.weakAction}</p>
                       </div>
                       <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200/70 dark:border-slate-800/80 hover:shadow-md dark:hover:shadow-black/40 transition-all">
-                        <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">Study Time</p>
+                        <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">{statLabels.time}</p>
                         <span className="text-2xl font-black text-indigo-600 dark:text-indigo-400">{hrs}h {mins}m</span>
                       </div>
                     </div>
@@ -2272,10 +2418,10 @@ ${explanation.explanation}
                         <div className="absolute top-0 right-0 w-28 h-28 bg-white/10 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
                         <div className="relative z-10">
                           <div className="w-11 h-11 bg-white/20 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                            <span className="text-lg">🎓</span>
+                            <span className="text-lg">{educationLevel === EducationLevel.JUNIOR ? '📖' : '📜'}</span>
                           </div>
-                          <h3 className="font-black text-lg mb-1">End-Term Prep</h3>
-                          <p className="text-indigo-200 text-sm font-medium">Targeted study materials</p>
+                          <h3 className="font-black text-lg mb-1">{educationLevel === EducationLevel.JUNIOR ? "Story Time" : educationLevel === EducationLevel.CAMPUS ? "Seminar Prep" : "End-Term Prep"}</h3>
+                          <p className="text-indigo-200 text-sm font-medium">{educationLevel === EducationLevel.JUNIOR ? "Explore fun books" : "Advanced research materials"}</p>
                         </div>
                       </div>
 
@@ -2286,7 +2432,7 @@ ${explanation.explanation}
                         <div className="w-11 h-11 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-xl flex items-center justify-center mb-4 group-hover:bg-emerald-500 group-hover:text-white transition-colors">
                           <CheckCircle className="w-5 h-5" />
                         </div>
-                        <h3 className="font-black text-slate-800 dark:text-white text-lg mb-1">Homework Scan</h3>
+                        <h3 className="font-black text-slate-800 dark:text-white text-lg mb-1">{educationLevel === EducationLevel.JUNIOR ? "Buddy Check" : educationLevel === EducationLevel.CAMPUS ? "Assignment Scan" : "Homework Scan"}</h3>
                         <p className="text-slate-400 dark:text-slate-500 text-sm font-medium">Snap & get instant help</p>
                       </button>
 
@@ -2297,13 +2443,13 @@ ${explanation.explanation}
                         <div className="absolute top-0 right-0 w-28 h-28 bg-indigo-500/20 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
                         <div className="relative z-10">
                           <div className="flex items-start justify-between mb-4">
-                            <span className="text-indigo-400 font-black text-[10px] uppercase tracking-widest">Daily Challenge</span>
+                            <span className="text-indigo-400 font-black text-[10px] uppercase tracking-widest">{educationLevel === EducationLevel.JUNIOR ? "Fun Game" : "Daily Challenge"}</span>
                             <span className="text-lg">🏆</span>
                           </div>
-                          <h3 className="font-black text-lg mb-1">Sprint Quiz</h3>
-                          <p className="text-slate-400 dark:text-slate-500 text-sm font-medium mb-3">5 questions for <strong className="text-white">+50 XP</strong></p>
+                          <h3 className="font-black text-lg mb-1">{educationLevel === EducationLevel.JUNIOR ? "Super Quiz" : "Sprint Quiz"}</h3>
+                          <p className="text-slate-400 dark:text-slate-500 text-sm font-medium mb-3">{educationLevel === EducationLevel.JUNIOR ? "Win stars for playing" : "5 questions for +50 XP"}</p>
                           <div className="w-full py-2.5 bg-white/10 dark:bg-white/5 border border-white/10 dark:border-white/5 text-white rounded-xl text-center text-sm font-bold group-hover:bg-white/20 transition-colors">
-                            Start →
+                            {educationLevel === EducationLevel.JUNIOR ? "Play Now →" : "Start →"}
                           </div>
                         </div>
                       </div>
@@ -2320,9 +2466,30 @@ ${explanation.explanation}
                         </div>
                         <div className="space-y-3">
                           {[
-                            { title: `${(subject1 as string).split('•')[0].trim()} Recap`, type: "Revision", color: "bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400", icon: <Brain className="w-4 h-4" />, prompt: `Give me a concise 5-minute revision summary for ${subject1}.` },
-                            { title: `${(subject2 as string).split('•')[0].trim()} Practice`, type: "Practice", color: "bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400", icon: <BookOpen className="w-4 h-4" />, prompt: `Generate 5 practice questions for ${subject2}.` },
-                            { title: "KPSEA Mock", type: "Exams", color: "bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400", icon: <PenTool className="w-4 h-4" />, prompt: `Generate 3 KPSEA style exam questions for ${subject3}.` }
+                            {
+                              title: `${(subject1 as string).split('•')[0].trim()} ${educationLevel === EducationLevel.JUNIOR ? 'Recap' : 'Deep Dive'}`,
+                              type: educationLevel === EducationLevel.JUNIOR ? "Fun Learning" : "Revision",
+                              color: "bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400",
+                              icon: <Brain className="w-4 h-4" />,
+                              prompt: `Give me a concise ${educationLevel === EducationLevel.CAMPUS ? 'abstract' : '5-minute revision summary'} for ${subject1}.`
+                            },
+                            {
+                              title: `${(subject2 as string).split('•')[0].trim()} ${educationLevel === EducationLevel.JUNIOR ? 'Fun' : 'Practice'}`,
+                              type: "Practice",
+                              color: "bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400",
+                              icon: <BookOpen className="w-4 h-4" />,
+                              prompt: `Generate ${educationLevel === EducationLevel.JUNIOR ? '3 easy' : '5 practice'} questions for ${subject2}.`
+                            },
+                            {
+                              title: educationLevel === EducationLevel.CAMPUS ? "Colloquium Prep" : "Exams Mock",
+                              type: "Exams",
+                              color: "bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400",
+                              icon: <PenTool className="w-4 h-4" />,
+                              prompt: `Generate ${educationLevel === EducationLevel.CAMPUS ? 'complex discussion questions' :
+                                educationLevel === EducationLevel.JUNIOR ? 'KPSEA style exam questions' :
+                                  'KCSE style exam questions'
+                                } for ${subject3}.`
+                            }
                           ].map((item, i) => (
                             <div
                               key={i}
@@ -2457,6 +2624,19 @@ ${explanation.explanation}
       )
     }
 
+    if (mode === 'ANALYTICS' as any) {
+      return (
+        <LearnerAnalytics
+          history={history}
+          totalXP={totalXP}
+          levelInfo={levelInfo}
+          subjectPerformance={subjectPerformance}
+          masteryGraph={masteryGraph}
+          weakTopics={weakTopics}
+        />
+      );
+    }
+
     if (mode === 'PROFILE') {
       // PRO GUARD: If no student profile is active, redirect to menu or show login prompt
       if (!isRegistered && role !== UserRole.REVISION) {
@@ -2564,6 +2744,10 @@ ${explanation.explanation}
                         <option value="Form 2">Form 2</option>
                         <option value="Form 3">Form 3</option>
                         <option value="Form 4">Form 4</option>
+                        <option value="1st Year (University)">1st Year (University)</option>
+                        <option value="2nd Year (University)">2nd Year (University)</option>
+                        <option value="3rd Year (University)">3rd Year (University+)</option>
+                        <option value="Diploma / Certificate">Diploma / Certificate</option>
                       </select>
                     </div>
                   </div>
@@ -2786,7 +2970,7 @@ ${explanation.explanation}
               <Library className="w-6 h-6" />
               <span className="text-[10px] font-black uppercase tracking-tighter">Library</span>
             </button>
-            <button onClick={() => setMode('PROFILE')} className="flex flex-col items-center gap-1 text-indigo-600 scale-110">
+            <button onClick={() => isRegistered ? setMode('PROFILE') : setShowLogin(true)} className="flex flex-col items-center gap-1 text-indigo-600 scale-110">
               <UserCircle className="w-6 h-6" />
               <span className="text-[10px] font-black uppercase tracking-tighter">Me</span>
             </button>
@@ -3294,6 +3478,168 @@ ${explanation.explanation}
       );
     }
 
+    if (mode === 'SCAN_EXPLAIN') {
+      return (
+        <div className="bg-slate-50 dark:bg-slate-950 min-h-screen flex flex-col items-center justify-center p-6 w-full animate-in fade-in duration-300">
+          <div className="w-full max-w-2xl bg-white dark:bg-slate-900 rounded-[3rem] shadow-2xl border border-slate-100 dark:border-slate-800 p-8 md:p-12 relative overflow-hidden">
+            {/* Background decorations */}
+            <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500"></div>
+            <div className="absolute -top-24 -right-24 w-48 h-48 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+            <div className="flex flex-col items-center text-center relative z-10 mb-8">
+              <div className="w-20 h-20 bg-indigo-50 dark:bg-indigo-900/30 rounded-full flex items-center justify-center mb-6 shadow-inner border border-indigo-100 dark:border-indigo-800/50">
+                {sidebarTab === 'HOMEWORK' ? (
+                  <ClipboardList className="w-10 h-10 text-indigo-600 dark:text-indigo-400" />
+                ) : (
+                  <Brain className="w-10 h-10 text-indigo-600 dark:text-indigo-400" />
+                )}
+              </div>
+              <h2 className="text-3xl md:text-4xl font-black text-slate-800 dark:text-white mb-4 tracking-tight">
+                {educationLevel === EducationLevel.JUNIOR
+                  ? (sidebarTab === 'HOMEWORK' ? 'Task Buddy' : 'Helper Buddy')
+                  : educationLevel === EducationLevel.CAMPUS
+                    ? (sidebarTab === 'HOMEWORK' ? 'Assignments' : 'AI Researcher')
+                    : (sidebarTab === 'HOMEWORK' ? 'Homework Assistant' : 'Smart Tutor')}
+              </h2>
+              <p className="text-slate-500 dark:text-slate-400 text-lg max-w-md mx-auto">
+                {imageData
+                  ? (educationLevel === EducationLevel.JUNIOR ? "I see your picture! What's next?" : "Image attached! What would you like to know about it?")
+                  : sidebarTab === 'HOMEWORK'
+                    ? (educationLevel === EducationLevel.JUNIOR ? "Show me your task or tell me about it!" : "Upload your homework question or record audio to get structured guidance.")
+                    : (educationLevel === EducationLevel.JUNIOR ? "Ask me anything, show me a picture, or talk to me!" : "Type a question, upload an image, or record an audio clip to get started.")}
+              </p>
+            </div>
+
+            {imageData && (
+              <div className="relative w-full max-w-sm mx-auto h-48 mb-8 rounded-2xl overflow-hidden bg-slate-100 dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 group shadow-md text-center flex items-center justify-center">
+                <img src={`data:${imageData.mimeType};base64,${imageData.base64}`} alt="Uploaded content" className="max-w-full max-h-full object-contain" />
+                <button
+                  onClick={() => setImageData(null)}
+                  className="absolute top-3 right-3 p-2 bg-black/50 hover:bg-red-500 text-white rounded-full backdrop-blur-md transition-colors shadow-sm"
+                  title="Remove image"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            )}
+
+            <div className="w-full relative z-10">
+              <div className="bg-slate-50 dark:bg-slate-800/80 rounded-[2rem] p-2 flex flex-col md:flex-row items-stretch md:items-center gap-2 border-2 border-slate-200 dark:border-slate-700 focus-within:border-indigo-500 focus-within:ring-4 focus-within:ring-indigo-100 dark:focus-within:ring-indigo-900/30 transition-all shadow-inner">
+                <textarea
+                  value={promptText}
+                  onChange={(e) => setPromptText(e.target.value)}
+                  onInput={(e) => {
+                    const target = e.target as HTMLTextAreaElement;
+                    target.style.height = 'auto';
+                    target.style.height = `${target.scrollHeight}px`;
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      if (imageData) {
+                        // If we already have an image, trigger explaining the image
+                        setLoading(true);
+                        setLoadingText("Analyzing your content...");
+                        setMode('SCAN');
+                        const purpose = sidebarTab === 'HOMEWORK' ? 'HOMEWORK' : 'TUTOR';
+                        explainImage(imageData.base64, imageData.mimeType, level, language, purpose)
+                          .then(result => {
+                            setExplanation(result);
+                            setPodcastScript(null);
+                            setIsPodcastPlaying(false);
+                            setMode('RESULT');
+                          })
+                          .catch(err => {
+                            console.error(err);
+                            setError({ title: "Analysis Failed", message: "Failed to analyze the image." });
+                            setMode('SCAN_EXPLAIN');
+                          })
+                          .finally(() => setLoading(false));
+                      } else {
+                        handlePromptSubmit();
+                      }
+                    }
+                  }}
+                  placeholder={
+                    imageData
+                      ? (educationLevel === EducationLevel.JUNIOR ? "Tell your Buddy about this picture!" : "Ask about the image...")
+                      : (educationLevel === EducationLevel.JUNIOR ? "Ask your Buddy anything!" :
+                        educationLevel === EducationLevel.CAMPUS ? "Analyze your course materials..." :
+                          "Ask your revision question...")
+                  }
+                  rows={1}
+                  className="flex-1 bg-transparent border-0 focus:ring-0 text-slate-800 dark:text-slate-100 text-lg font-bold py-4 px-5 min-h-[60px] max-h-[200px] resize-none placeholder:text-slate-400 dark:placeholder:text-slate-500 outline-none"
+                />
+                <div className="flex items-center justify-end gap-2 pr-2 pb-2 md:pb-0">
+                  {!imageData && (
+                    <>
+                      <button
+                        onClick={() => fileInputRef.current?.click()}
+                        className="p-3 text-slate-400 hover:text-indigo-600 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl transition-colors"
+                        title="Upload Image"
+                      >
+                        <ImageIcon className="w-6 h-6" />
+                      </button>
+                      <button
+                        onClick={isRecording ? stopRecording : startRecording}
+                        className={`p-3 rounded-xl transition-colors ${isRecording ? 'text-red-500 bg-red-100 dark:bg-red-900/30 animate-pulse' : 'text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20'}`}
+                        title="Record Audio"
+                      >
+                        <Mic className="w-6 h-6" />
+                      </button>
+                      <button
+                        onClick={startCamera}
+                        className="p-3 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-xl transition-colors"
+                        title="Open Camera"
+                      >
+                        <Camera className="w-6 h-6" />
+                      </button>
+                    </>
+                  )}
+                  <button
+                    onClick={() => {
+                      if (imageData) {
+                        setLoading(true);
+                        setLoadingText("Analyzing your content...");
+                        setMode('SCAN');
+                        explainImage(imageData.base64, imageData.mimeType, level, language)
+                          .then(result => {
+                            setExplanation(result);
+                            setMode('RESULT');
+                          })
+                          .catch(err => {
+                            console.error(err);
+                            setError({ title: "Analysis Failed", message: "Failed to analyze the image." });
+                            setMode('MENU');
+                          })
+                          .finally(() => setLoading(false));
+                      } else {
+                        handlePromptSubmit();
+                      }
+                    }}
+                    disabled={(!promptText.trim() && !imageData) || loading}
+                    className="p-4 bg-indigo-600 text-white rounded-2xl hover:bg-indigo-700 transition-transform active:scale-95 disabled:opacity-50 disabled:active:scale-100 ml-2 shadow-md"
+                  >
+                    <ArrowRight className="w-6 h-6" />
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <button
+              onClick={() => {
+                setImageData(null);
+                setMode('MENU');
+              }}
+              className="mt-8 mx-auto block text-sm font-bold text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300 transition-colors"
+            >
+              Cancel and go back
+            </button>
+          </div>
+        </div>
+      );
+    }
+
     if (mode === 'RESULT' && explanation) {
       return (
         <div className="bg-slate-50 dark:bg-slate-950 min-h-screen pb-32 max-w-4xl mx-auto shadow-2xl border-x border-slate-100 dark:border-slate-800">
@@ -3461,7 +3807,7 @@ ${explanation.explanation}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
-              className="bg-white dark:bg-slate-900 p-6 rounded-3xl shadow-sm border border-slate-200 dark:border-slate-800 prose prose-slate dark:prose-invert max-w-none prose-p:text-slate-600 dark:prose-p:text-slate-300 prose-headings:text-slate-800 dark:prose-headings:text-slate-100 prose-strong:text-slate-900 dark:prose-strong:text-white"
+              className="bg-white dark:bg-slate-900 p-6 rounded-3xl shadow-sm border border-slate-200 dark:border-slate-800 prose prose-sm md:prose-base prose-slate dark:prose-invert max-w-none prose-p:text-slate-600 dark:prose-p:text-slate-300 prose-headings:text-slate-800 dark:prose-headings:text-slate-100 prose-strong:text-slate-900 dark:prose-strong:text-white"
             >
               <MarkdownText content={explanation.explanation} />
               {/* ACTION FOOTER */}
@@ -3629,7 +3975,7 @@ ${explanation.explanation}
               <Library className="w-6 h-6" />
               <span className="text-[10px] font-black uppercase tracking-tighter">Library</span>
             </button>
-            <button onClick={() => setMode('PROFILE')} className="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-600">
+            <button onClick={() => isRegistered ? setMode('PROFILE') : setShowLogin(true)} className="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-600">
               <UserCircle className="w-6 h-6" />
               <span className="text-[10px] font-black uppercase tracking-tighter">Me</span>
             </button>
@@ -3770,7 +4116,11 @@ ${explanation.explanation}
                   </div>
                   <h3 className="text-2xl font-black tracking-tight leading-tight mb-1">Elite Library.</h3>
                   <p className="opacity-80 text-xs font-medium max-w-[200px] mx-auto md:mx-0 leading-relaxed">
-                    Verified CBC past papers & professional revision notes.
+                    {educationLevel === EducationLevel.CAMPUS
+                      ? 'University lecture notes & course materials.'
+                      : educationLevel === EducationLevel.JUNIOR
+                        ? 'KPSEA prep & fun learning notes.'
+                        : 'Verified CBC past papers & professional revision notes.'}
                   </p>
                 </div>
 
@@ -4047,7 +4397,7 @@ ${explanation.explanation}
               <Library className="w-6 h-6" />
               <span className="text-[10px] font-black uppercase tracking-tighter">Library</span>
             </button>
-            <button onClick={() => setMode('PROFILE')} className="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-600">
+            <button onClick={() => isRegistered ? setMode('PROFILE') : setShowLogin(true)} className="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-600">
               <UserCircle className="w-6 h-6" />
               <span className="text-[10px] font-black uppercase tracking-tighter">Me</span>
             </button>
@@ -4134,7 +4484,7 @@ ${explanation.explanation}
               <Library className="w-6 h-6" />
               <span className="text-[10px] font-black uppercase tracking-tighter">Library</span>
             </button>
-            <button onClick={() => setMode('PROFILE')} className="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-600">
+            <button onClick={() => isRegistered ? setMode('PROFILE') : setShowLogin(true)} className="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-600">
               <UserCircle className="w-6 h-6" />
               <span className="text-[10px] font-black uppercase tracking-tighter">Me</span>
             </button>
@@ -4281,8 +4631,21 @@ ${explanation.explanation}
   };
 
   return (
-    <div className="relative">
-      {renderMode()}
+    <div className="relative min-h-screen bg-slate-50 dark:bg-slate-950">
+      {/* Sidebar */}
+      <DashboardSidebar
+        isOpen={sidebarOpen}
+        onToggle={() => setSidebarOpen(!sidebarOpen)}
+        activeTab={sidebarTab}
+        onTabChange={handleSidebarTabChange}
+        onLogout={() => setShowLogoutModal(true)}
+        onProfile={() => setMode('PROFILE')}
+      />
+
+      {/* Main Content */}
+      <div className="lg:ml-[260px] min-h-screen overflow-x-hidden min-w-0">
+        {renderMode()}
+      </div>
 
       {/* Global Modals - Available in ALL modes */}
       <RegistrationModal

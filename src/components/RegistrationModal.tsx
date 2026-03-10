@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { User, CheckCircle, X } from 'lucide-react';
+import { User, CheckCircle, X, GraduationCap, BookOpen, School } from 'lucide-react';
 import { useApp } from '../context/AppContext';
+import { EducationLevel } from '../types';
 import confetti from 'canvas-confetti';
 
 interface RegistrationModalProps {
@@ -20,6 +21,8 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
     const [grade, setGrade] = useState("");
     const [pin, setPin] = useState("");
     const [parentPhone, setParentPhone] = useState("");
+    const [educationLevel, setEducationLevel] = useState<EducationLevel | ''>('');
+    const [institutionName, setInstitutionName] = useState("");
 
     // School State
     const [schoolName, setSchoolName] = useState("");
@@ -49,6 +52,8 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
             setGrade("");
             setPin("");
             setParentPhone("");
+            setEducationLevel('');
+            setInstitutionName("");
             setSchoolName("");
             setSchoolEmail("");
             setSchoolPassword("");
@@ -64,8 +69,22 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
         }
     }, [isOpen, initialRole]);
 
-    // Kenyan Grade Options (CBC System + PP)
-    const gradeOptions = [
+    // Grade options per education level
+    const getGradeOptions = () => {
+        switch (educationLevel) {
+            case EducationLevel.JUNIOR:
+                return ["Play Group", "PP1", "PP2", "Grade 1", "Grade 2", "Grade 3", "Grade 4", "Grade 5", "Grade 6"];
+            case EducationLevel.SENIOR:
+                return ["Grade 7 (JSS)", "Grade 8 (JSS)", "Grade 9 (JSS)", "Form 1", "Form 2", "Form 3", "Form 4"];
+            case EducationLevel.CAMPUS:
+                return ["Year 1", "Year 2", "Year 3", "Year 4", "Year 5", "Postgraduate"];
+            default:
+                return [];
+        }
+    };
+
+    // All grade options for teacher (unchanged)
+    const allGradeOptions = [
         "Play Group", "PP1", "PP2",
         "Grade 1", "Grade 2", "Grade 3",
         "Grade 4", "Grade 5", "Grade 6",
@@ -77,13 +96,52 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
         "Mathematics", "English", "Kiswahili", "Science&Tech", "Social Studies", "CRE", "IRE", "Home Science", "Agriculture", "Computer Studies", "Business Studies", "History", "Geography", "Chemistry", "Biology", "Physics", "Indigenous Language", "French", "German", "Arabic", "Integrated Science", "Physical Education (PE)", "Music"
     ];
 
+    const levelCards: { level: EducationLevel; icon: React.ReactNode; title: string; subtitle: string; gradient: string; border: string }[] = [
+        {
+            level: EducationLevel.JUNIOR,
+            icon: <BookOpen className="w-6 h-6" />,
+            title: "Junior",
+            subtitle: "PP1 – Grade 6",
+            gradient: "from-emerald-50 to-green-50",
+            border: "border-emerald-300 ring-emerald-200"
+        },
+        {
+            level: EducationLevel.SENIOR,
+            icon: <School className="w-6 h-6" />,
+            title: "Senior",
+            subtitle: "Grade 7 – Form 4",
+            gradient: "from-blue-50 to-indigo-50",
+            border: "border-blue-400 ring-blue-200"
+        },
+        {
+            level: EducationLevel.CAMPUS,
+            icon: <GraduationCap className="w-6 h-6" />,
+            title: "Campus",
+            subtitle: "College / University",
+            gradient: "from-purple-50 to-violet-50",
+            border: "border-purple-400 ring-purple-200"
+        }
+    ];
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
 
         if (role === 'STUDENT') {
+            if (!educationLevel) {
+                alert("Please select your education level.");
+                setLoading(false);
+                return;
+            }
             if (name && grade && pin.length >= 4 && parentPhone) {
-                const result = await registerStudent(name, grade, pin, parentPhone);
+                const result = await registerStudent(
+                    name,
+                    grade,
+                    pin,
+                    parentPhone,
+                    educationLevel as EducationLevel,
+                    educationLevel === EducationLevel.CAMPUS ? institutionName : undefined
+                );
 
                 if (result.success) {
                     triggerConfetti();
@@ -113,10 +171,6 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
             const result = await registerSchool(schoolName, schoolEmail, schoolPassword);
             if (result.success) {
                 triggerConfetti();
-                // Close and redirect is handled by onSuccess usually, but for school we might just want to show success message or auto-login
-                // registerSchool in AppContext handles auto-login and navigation usually? 
-                // Wait, AppContext registerSchool signs up and sets state. 
-                // We should show a success message then close.
                 setStep('SUCCESS');
             } else {
                 alert("Registration Failed: " + result.message);
@@ -132,9 +186,6 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
                 setLoading(false);
                 return;
             }
-
-            // Fallback for school selection if needed, currently string
-            // We can append school to profile or just ignore if not in backend signature yet
 
             const result = await registerTeacher(teacherName, teacherEmail, teacherPassword, teacherClasses, teacherSubjects, teacherPhone);
             if (result.success) {
@@ -174,12 +225,12 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.95 }}
                     onClick={(e) => e.stopPropagation()}
-                    className="bg-white rounded-2xl shadow-2xl w-full max-w-md relative flex flex-col max-h-[calc(100vh-2rem)] sm:max-h-[90vh] my-auto overflow-hidden"
+                    className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-md relative flex flex-col max-h-[calc(100vh-2rem)] sm:max-h-[90vh] my-auto overflow-hidden"
                 >
 
                     <button
                         onClick={onClose}
-                        className="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors z-10"
+                        className="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-full transition-colors z-10"
                     >
                         <X className="w-5 h-5" />
                     </button>
@@ -191,10 +242,10 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
                                 <div className={`w-16 h-16 ${role === 'SCHOOL' ? 'bg-blue-900/10 text-blue-900' : 'bg-blue-100 text-blue-600'} rounded-full flex items-center justify-center mx-auto mb-4 transition-colors`}>
                                     <User className="w-8 h-8" />
                                 </div>
-                                <h2 className="text-2xl font-bold text-gray-900">
+                                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
                                     {role === 'SCHOOL' ? 'Register Your School' : role === 'TEACHER' ? 'Teacher Registration' : 'Create Student Profile'}
                                 </h2>
-                                <p className="text-gray-500 mt-2">
+                                <p className="text-gray-500 dark:text-gray-400 mt-2">
                                     {role === 'SCHOOL' ? 'Join the Somo Smart network and empower your teachers.' : role === 'TEACHER' ? 'Create your professional profile to start teaching.' : 'Register to start your personalized learning journey!'}
                                 </p>
                             </div>
@@ -202,28 +253,90 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
                             <form onSubmit={handleSubmit} className="space-y-4">
                                 {role === 'STUDENT' ? (
                                     <>
+                                        {/* Education Level Selector */}
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">Student Name</label>
+                                            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">I am a...</label>
+                                            <div className="grid grid-cols-3 gap-2">
+                                                {levelCards.map(card => (
+                                                    <button
+                                                        type="button"
+                                                        key={card.level}
+                                                        onClick={() => {
+                                                            setEducationLevel(card.level);
+                                                            setGrade(""); // Reset grade when level changes
+                                                        }}
+                                                        className={`relative flex flex-col items-center p-3 rounded-xl border-2 transition-all duration-200 ${educationLevel === card.level
+                                                                ? `${card.border} ring-2 bg-gradient-to-br ${card.gradient} shadow-md scale-[1.02]`
+                                                                : 'border-gray-200 dark:border-slate-700 hover:border-gray-300 bg-white dark:bg-slate-800'
+                                                            }`}
+                                                    >
+                                                        <div className={`mb-1.5 ${educationLevel === card.level ? 'text-blue-600' : 'text-gray-400'}`}>
+                                                            {card.icon}
+                                                        </div>
+                                                        <span className={`text-xs font-bold ${educationLevel === card.level ? 'text-gray-900 dark:text-white' : 'text-gray-600 dark:text-gray-400'}`}>
+                                                            {card.title}
+                                                        </span>
+                                                        <span className="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">{card.subtitle}</span>
+                                                        {educationLevel === card.level && (
+                                                            <motion.div
+                                                                initial={{ scale: 0 }}
+                                                                animate={{ scale: 1 }}
+                                                                className="absolute -top-1 -right-1 w-5 h-5 bg-blue-600 rounded-full flex items-center justify-center"
+                                                            >
+                                                                <CheckCircle className="w-3.5 h-3.5 text-white" />
+                                                            </motion.div>
+                                                        )}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Student Name</label>
                                             <input
                                                 type="text"
                                                 required
                                                 value={name}
                                                 onChange={(e) => setName(e.target.value)}
-                                                className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none"
+                                                className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-slate-600 dark:bg-slate-800 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
                                                 placeholder="e.g. John Doe"
                                             />
                                         </div>
+
+                                        {/* Institution Name (Campus only) */}
+                                        {educationLevel === EducationLevel.CAMPUS && (
+                                            <motion.div
+                                                initial={{ opacity: 0, height: 0 }}
+                                                animate={{ opacity: 1, height: 'auto' }}
+                                                exit={{ opacity: 0, height: 0 }}
+                                            >
+                                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Institution Name 🏛️</label>
+                                                <input
+                                                    type="text"
+                                                    value={institutionName}
+                                                    onChange={(e) => setInstitutionName(e.target.value)}
+                                                    className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-slate-600 dark:bg-slate-800 dark:text-white focus:ring-2 focus:ring-purple-500 outline-none"
+                                                    placeholder="e.g. University of Nairobi"
+                                                />
+                                            </motion.div>
+                                        )}
+
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">Grade / Class</label>
+                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                                {educationLevel === EducationLevel.CAMPUS ? 'Year of Study' : 'Grade / Class'}
+                                            </label>
                                             <div className="relative">
                                                 <select
                                                     required
                                                     value={grade}
                                                     onChange={(e) => setGrade(e.target.value)}
-                                                    className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none appearance-none bg-white cursor-pointer"
+                                                    disabled={!educationLevel}
+                                                    className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-slate-600 dark:bg-slate-800 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none appearance-none bg-white cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                                                 >
-                                                    <option value="" disabled>Select your Grade</option>
-                                                    {gradeOptions.map(g => (
+                                                    <option value="" disabled>
+                                                        {!educationLevel ? 'Select your level first ☝️' : 'Select your Grade'}
+                                                    </option>
+                                                    {getGradeOptions().map(g => (
                                                         <option key={g} value={g}>{g}</option>
                                                     ))}
                                                 </select>
@@ -233,7 +346,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
                                             </div>
                                         </div>
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">Secret PIN (For Recovery) 🔐</label>
+                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Secret PIN (For Recovery) 🔐</label>
                                             <input
                                                 type="text"
                                                 inputMode="numeric"
@@ -241,25 +354,25 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
                                                 required
                                                 value={pin}
                                                 onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))}
-                                                className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none tracking-widest text-lg font-mono text-center"
+                                                className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-slate-600 dark:bg-slate-800 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none tracking-widest text-lg font-mono text-center"
                                                 placeholder="0000"
                                             />
-                                            <p className="text-xs text-orange-600 mt-1 font-medium bg-orange-50 p-2 rounded">
+                                            <p className="text-xs text-orange-600 mt-1 font-medium bg-orange-50 dark:bg-orange-900/20 p-2 rounded">
                                                 Write this down! You will need it if you forget your Student ID.
                                             </p>
                                         </div>
 
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">Parent Phone Number 📱</label>
+                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Parent Phone Number 📱</label>
                                             <input
                                                 type="tel"
                                                 required
                                                 value={parentPhone}
                                                 onChange={(e) => setParentPhone(e.target.value)}
-                                                className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none"
+                                                className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-slate-600 dark:bg-slate-800 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
                                                 placeholder="e.g. 0712345678"
                                             />
-                                            <p className="text-[10px] text-gray-500 mt-1">
+                                            <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-1">
                                                 Parents will use this number to access your performance dashboard.
                                             </p>
                                         </div>
@@ -267,46 +380,46 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
                                 ) : role === 'SCHOOL' ? (
                                     <>
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">School Name</label>
+                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">School Name</label>
                                             <input
                                                 type="text"
                                                 required
                                                 value={schoolName}
                                                 onChange={(e) => setSchoolName(e.target.value)}
-                                                className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none"
+                                                className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-slate-600 dark:bg-slate-800 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
                                                 placeholder="e.g. Nairobi Primary School"
                                             />
                                         </div>
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">School Email (Admin)</label>
+                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">School Email (Admin)</label>
                                             <input
                                                 type="email"
                                                 required
                                                 value={schoolEmail}
                                                 onChange={(e) => setSchoolEmail(e.target.value)}
-                                                className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none"
+                                                className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-slate-600 dark:bg-slate-800 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
                                                 placeholder="admin@school.edu"
                                             />
                                         </div>
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">Create Password</label>
+                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Create Password</label>
                                             <input
                                                 type="password"
                                                 required
                                                 value={schoolPassword}
                                                 onChange={(e) => setSchoolPassword(e.target.value)}
-                                                className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none"
+                                                className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-slate-600 dark:bg-slate-800 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
                                                 placeholder="******"
                                             />
                                         </div>
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">Confirm Password</label>
+                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Confirm Password</label>
                                             <input
                                                 type="password"
                                                 required
                                                 value={confirmPassword}
                                                 onChange={(e) => setConfirmPassword(e.target.value)}
-                                                className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none"
+                                                className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-slate-600 dark:bg-slate-800 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
                                                 placeholder="******"
                                             />
                                         </div>
@@ -314,88 +427,88 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
                                 ) : ( // TEACHER
                                     <>
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">Your Full Name</label>
+                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Your Full Name</label>
                                             <input
                                                 type="text"
                                                 required
                                                 value={teacherName}
                                                 onChange={(e) => setTeacherName(e.target.value)}
-                                                className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none"
+                                                className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-slate-600 dark:bg-slate-800 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
                                                 placeholder="e.g. Jane Doe"
                                             />
                                         </div>
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
+                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email Address</label>
                                             <input
                                                 type="email"
                                                 required
                                                 value={teacherEmail}
                                                 onChange={(e) => setTeacherEmail(e.target.value)}
-                                                className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none"
+                                                className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-slate-600 dark:bg-slate-800 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
                                                 placeholder="jane.doe@example.com"
                                             />
                                         </div>
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number (Optional)</label>
+                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Phone Number (Optional)</label>
                                             <input
                                                 type="tel"
                                                 value={teacherPhone}
                                                 onChange={(e) => setTeacherPhone(e.target.value)}
-                                                className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none"
+                                                className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-slate-600 dark:bg-slate-800 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
                                                 placeholder="e.g. 0712345678"
                                             />
                                         </div>
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">Create Password</label>
+                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Create Password</label>
                                             <input
                                                 type="password"
                                                 required
                                                 value={teacherPassword}
                                                 onChange={(e) => setTeacherPassword(e.target.value)}
-                                                className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none"
+                                                className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-slate-600 dark:bg-slate-800 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
                                                 placeholder="******"
                                             />
                                         </div>
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">Confirm Password</label>
+                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Confirm Password</label>
                                             <input
                                                 type="password"
                                                 required
                                                 value={teacherConfirmPassword}
                                                 onChange={(e) => setTeacherConfirmPassword(e.target.value)}
-                                                className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none"
+                                                className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-slate-600 dark:bg-slate-800 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
                                                 placeholder="******"
                                             />
                                         </div>
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">Classes You Teach (Optional)</label>
+                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Classes You Teach (Optional)</label>
                                             <select
                                                 multiple
                                                 value={teacherClasses}
                                                 onChange={(e) => setTeacherClasses(Array.from(e.target.selectedOptions, (option: any) => option.value))}
 
-                                                className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none appearance-none bg-white cursor-pointer h-32"
+                                                className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-slate-600 dark:bg-slate-800 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none appearance-none bg-white cursor-pointer h-32"
                                             >
-                                                {gradeOptions.map(g => (
+                                                {allGradeOptions.map(g => (
                                                     <option key={g} value={g}>{g}</option>
                                                 ))}
                                             </select>
-                                            <p className="text-xs text-gray-500 mt-1">Hold Ctrl/Cmd to select multiple classes.</p>
+                                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Hold Ctrl/Cmd to select multiple classes.</p>
                                         </div>
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">Subjects You Teach (Optional)</label>
+                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Subjects You Teach (Optional)</label>
                                             <select
                                                 multiple
                                                 value={teacherSubjects}
                                                 onChange={(e) => setTeacherSubjects(Array.from(e.target.selectedOptions, (option: any) => option.value))}
 
-                                                className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none appearance-none bg-white cursor-pointer h-32"
+                                                className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-slate-600 dark:bg-slate-800 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none appearance-none bg-white cursor-pointer h-32"
                                             >
                                                 {subjectOptions.map(s => (
                                                     <option key={s} value={s}>{s}</option>
                                                 ))}
                                             </select>
-                                            <p className="text-xs text-gray-500 mt-1">Hold Ctrl/Cmd to select multiple subjects.</p>
+                                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Hold Ctrl/Cmd to select multiple subjects.</p>
                                         </div>
                                     </>
                                 )}
@@ -412,7 +525,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
                             <div className="mt-6 text-center">
                                 <button
                                     onClick={onSwitchToLogin}
-                                    className="text-sm font-medium text-slate-500 hover:text-slate-800 underline transition-colors"
+                                    className="text-sm font-medium text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 underline transition-colors"
                                 >
                                     Already have an ID? Login here
                                 </button>
@@ -429,19 +542,19 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
                                 </div>
                                 {role === 'SCHOOL' ? (
                                     <>
-                                        <h2 className="text-2xl font-bold text-gray-900 mb-2">School Registered!</h2>
-                                        <p className="text-gray-600 mb-6">Your school dashboard is ready.</p>
+                                        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">School Registered!</h2>
+                                        <p className="text-gray-600 dark:text-gray-400 mb-6">Your school dashboard is ready.</p>
                                         <p className="text-sm text-blue-800 bg-blue-50 border border-blue-200 p-4 rounded-lg mb-6">
                                             ✅ You can now login using your email <strong>{schoolEmail}</strong>.
                                         </p>
                                     </>
                                 ) : (
                                     <>
-                                        <h2 className="text-2xl font-bold text-gray-900 mb-2">Registration Complete!</h2>
-                                        <p className="text-gray-600 mb-6">Your unique Student ID has been generated.</p>
+                                        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Registration Complete!</h2>
+                                        <p className="text-gray-600 dark:text-gray-400 mb-6">Your unique Student ID has been generated.</p>
 
-                                        <div className="bg-white border-2 border-dashed border-blue-300 rounded-xl p-6 mb-6 shadow-sm">
-                                            <p className="text-sm text-gray-500 uppercase font-bold tracking-wide mb-2">Your Student ID</p>
+                                        <div className="bg-white dark:bg-slate-800 border-2 border-dashed border-blue-300 rounded-xl p-6 mb-6 shadow-sm">
+                                            <p className="text-sm text-gray-500 dark:text-gray-400 uppercase font-bold tracking-wide mb-2">Your Student ID</p>
                                             <p className="text-4xl font-mono font-bold text-blue-600 tracking-wider copy select-all">{studentCode}</p>
                                             <p className="text-xs text-blue-400 mt-2 font-medium">We&apos;ll remember you on this device!</p>
                                         </div>

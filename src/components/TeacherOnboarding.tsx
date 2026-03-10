@@ -55,7 +55,7 @@ export const TeacherOnboarding: React.FC<TeacherOnboardingProps> = ({ onComplete
 
         if (name && email && password && classes.length > 0 && subjects.length > 0) {
             setLoading(true);
-            const result = await registerTeacher(name, email, password, classes, subjects);
+            const result = await registerTeacher(name, email, password, classes, subjects, '');
 
             if (result.success) {
                 onComplete({ id: 'new', name, classes, subjects: subjects, email });

@@ -5,7 +5,7 @@ import { Header, Card, Button } from '../../components/Shared';
 import { ViewState, LearnerActivity } from '../../types';
 import { calculateTotalXP, calculateLevel } from '../../services/gamificationService';
 import { LogoutModal } from '../../components/LogoutModal';
-import { Book, CheckCircle, Clock, Lock, User, TrendingUp, Award, AlertCircle, ChevronRight, Activity, Calendar, Star, Zap, Home, X, LogOut, CreditCard } from 'lucide-react';
+import { Book, CheckCircle, Clock, Lock, User, TrendingUp, Award, AlertCircle, ChevronRight, Activity, Calendar, Star, Zap, Home, X, LogOut, CreditCard, Sparkles } from 'lucide-react';
 
 interface ParentProps {
     onNavigate: (view: ViewState) => void;
@@ -73,6 +73,13 @@ export const ParentDashboard: React.FC<ParentProps> = ({ onNavigate, activityLog
         const totalXP = calculateTotalXP(activityLog);
         const levelInfo = calculateLevel(totalXP);
 
+        // Weak areas (topics where score < 60)
+        const weakAreas = quizzes.filter(q => (q.score || 0) < 60).map(q => q.topic);
+        const uniqueWeakAreas = [...new Set(weakAreas)];
+
+        // AI Usage
+        const aiUses = activityLog.filter(a => a.type === 'STUDY' || a.type === 'QUIZ').length;
+
         return {
             totalQuizzes,
             avgScore,
@@ -82,7 +89,9 @@ export const ParentDashboard: React.FC<ParentProps> = ({ onNavigate, activityLog
             graphData,
             level: levelInfo.level,
             xp: levelInfo.totalXP,
-            nextLevelProgress: levelInfo.progressPercent
+            nextLevelProgress: levelInfo.progressPercent,
+            weakAreas: uniqueWeakAreas,
+            aiUses
         };
     }, [activityLog]);
 
@@ -250,9 +259,9 @@ export const ParentDashboard: React.FC<ParentProps> = ({ onNavigate, activityLog
                 {/* 2. STATS GRID */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <StatsCard
-                        icon={<Book className="w-5 h-5 text-blue-600" />}
-                        label="Topics Scanned"
-                        value={stats.totalTopics}
+                        icon={<Activity className="w-5 h-5 text-blue-600" />}
+                        label="AI Tutor Sessions"
+                        value={stats.aiUses}
                         color="bg-blue-50"
                     />
                     <StatsCard
@@ -363,6 +372,59 @@ export const ParentDashboard: React.FC<ParentProps> = ({ onNavigate, activityLog
                     </div>
                 </div>
 
+                {/* 3.5 AI INSIGHTS & HOMEWORK TRACKING */}
+                <div className="grid md:grid-cols-2 gap-6">
+                    {/* Insights & Weak Areas */}
+                    <div className="bg-gradient-to-br from-indigo-50 to-white rounded-[2rem] p-6 shadow-sm border border-indigo-100 flex flex-col justify-between">
+                        <div>
+                            <h3 className="font-bold text-indigo-900 mb-4 flex items-center gap-2">
+                                <Sparkles className="w-5 h-5 text-indigo-500" /> Soma AI Insights
+                            </h3>
+                            {stats.weakAreas.length > 0 ? (
+                                <div className="space-y-3">
+                                    <p className="text-sm text-slate-700 leading-relaxed font-medium">
+                                        Your child is doing well overall, but seems to be struggling slightly with these topics:
+                                    </p>
+                                    <div className="flex flex-wrap gap-2 mt-2">
+                                        {stats.weakAreas.slice(0, 3).map((area, idx) => (
+                                            <span key={idx} className="bg-indigo-100/50 text-indigo-700 text-xs font-bold px-3 py-1 rounded-full border border-indigo-200">
+                                                {area}
+                                            </span>
+                                        ))}
+                                    </div>
+                                    <p className="text-xs text-slate-500 mt-2">
+                                        We have automatically added targeted remedial exercises to their dashboard.
+                                    </p>
+                                </div>
+                            ) : (
+                                <p className="text-sm text-slate-700 leading-relaxed font-medium">
+                                    Excellent progress! Your child is showing consistent mastery across all tested subjects this week. SOMA AI is tracking their pace to provide more advanced challenges.
+                                </p>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Homework Tracker */}
+                    <div className="bg-white rounded-[2rem] p-6 shadow-sm border border-slate-100">
+                        <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2">
+                            <Book className="w-5 h-5 text-emerald-500" /> Pending Homework
+                        </h3>
+                        <div className="space-y-3">
+                            <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
+                                <span className="text-sm font-bold text-slate-700">Math: Fractions Remedial</span>
+                                <span className="bg-amber-100 text-amber-600 text-[10px] font-black uppercase px-2 py-1 rounded-full">Due Tomorrow</span>
+                            </div>
+                            <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
+                                <span className="text-sm font-bold text-slate-700">Science: Plant Systems</span>
+                                <span className="bg-slate-200 text-slate-600 text-[10px] font-black uppercase px-2 py-1 rounded-full">Completed</span>
+                            </div>
+                            <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
+                                <span className="text-sm font-bold text-slate-700">English: Comprehension</span>
+                                <span className="bg-emerald-100 text-emerald-600 text-[10px] font-black uppercase px-2 py-1 rounded-full">Completed</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
                 {/* 4. ACTIVITY FEED */}
                 <div>

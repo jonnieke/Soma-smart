@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import {
@@ -836,10 +836,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                         </div>
                     </div>
                 </div>
-            </section >
+            </section>
 
             {/* --- EXAM ASSISTANT CTA --- */}
-            < section className="py-20 relative overflow-hidden bg-white dark:bg-slate-900 transition-colors" >
+            <section className="py-20 relative overflow-hidden bg-white dark:bg-slate-900 transition-colors">
                 <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
                     <div className="bg-gradient-to-br from-orange-500 to-rose-600 rounded-[2.5rem] p-10 md:p-14 shadow-2xl overflow-hidden relative group">
                         {/* Decorative background blur */}
@@ -870,10 +870,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                         </div>
                     </div>
                 </div>
-            </section >
+            </section>
 
             {/* --- SCHOOL CALENDAR --- */}
-            < SchoolCalendar />
+            <SchoolCalendar />
 
             <div className="w-full h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent opacity-20"></div>
 
@@ -1120,6 +1120,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                     <span>Save Marking Time</span>
                 </button>
             </div>
-        </div >
+        </div>
     );
 };

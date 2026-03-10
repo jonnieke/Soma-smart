@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { Sparkles, FileText, Brain, Mic, ScanLine, FileUp, Zap, ChevronRight } from 'lucide-react';
 
 interface CreationHubProps {
-    onNavigateToTool: (tool: 'CONVERT' | 'QUIZ' | 'DARASA_MODE' | 'MARKING' | 'SCHEMES' | 'LESSON_POLISH') => void;
+    onNavigateToTool: (tool: 'CONVERT' | 'QUIZ' | 'DARASA_MODE' | 'MARKING' | 'SCHEMES' | 'LESSON_POLISH' | 'HOMEWORK') => void;
 }
 
 export const CreationHub: React.FC<CreationHubProps> = ({ onNavigateToTool }) => {
@@ -178,6 +178,29 @@ export const CreationHub: React.FC<CreationHubProps> = ({ onNavigateToTool }) =>
                     </p>
                     <div className="flex items-center text-sm font-black text-amber-600 tracking-wider uppercase">
                         Refine Plan <ChevronRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
+                    </div>
+                </motion.div>
+
+                {/* Homework Creator */}
+                <motion.div
+                    variants={{
+                        hidden: { opacity: 0, y: 20 },
+                        visible: { opacity: 1, y: 0 }
+                    }}
+                    whileHover={{ y: -5, scale: 1.02 }}
+                    onClick={() => onNavigateToTool('HOMEWORK')}
+                    className="cursor-pointer bg-white p-8 rounded-[2rem] border-2 border-rose-100 relative overflow-hidden group shadow-sm hover:shadow-xl hover:shadow-rose-50/50 transition-all"
+                >
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-rose-50 rounded-bl-[100px] -z-10 group-hover:bg-rose-100 transition-colors"></div>
+                    <div className="w-14 h-14 bg-rose-500 text-white rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-rose-200 group-hover:scale-110 transition-transform">
+                        <Sparkles className="w-7 h-7" />
+                    </div>
+                    <h3 className="text-2xl font-black text-slate-900 tracking-tight mb-2">Homework Generator</h3>
+                    <p className="text-slate-500 font-medium text-sm mb-6 leading-relaxed">
+                        Instantly create engaging, CBC-aligned homework assignments based on today's lesson, mapped to your class profile.
+                    </p>
+                    <div className="flex items-center text-sm font-black text-rose-600 tracking-wider uppercase">
+                        Create Task <ChevronRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
                     </div>
                 </motion.div>
             </motion.div>

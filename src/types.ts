@@ -8,6 +8,12 @@ export enum UserRole {
   NONE = 'NONE'
 }
 
+export enum EducationLevel {
+  JUNIOR = 'JUNIOR',   // PP1 – Grade 6
+  SENIOR = 'SENIOR',   // Grade 7 – 12
+  CAMPUS = 'CAMPUS',   // College / University
+}
+
 export enum ViewState {
   DASHBOARD = 'DASHBOARD',
   SCAN_EXPLAIN = 'SCAN_EXPLAIN',
@@ -104,6 +110,8 @@ export interface LearnerProfile {
   chatApproved?: boolean; // Whether parent has approved learner-teacher chat
   sessionId?: string; // For backward compatibility? Or primary current session?
   activeSessions?: string[]; // New: list of active session IDs (max 2)
+  educationLevel?: EducationLevel; // Junior, Senior, or Campus
+  institutionName?: string; // University/College name (Campus level)
 }
 
 export interface TeacherProfile {
@@ -131,6 +139,61 @@ export interface TeacherActivity {
   date: string;
   content: any; // The full Note or Quiz object
   pendingSync?: boolean;
+}
+
+// ---------------------------------------------------------------------------
+// Exam Rooms Types
+// ---------------------------------------------------------------------------
+
+export type ExamRoomType = 'EXAM_PREP' | 'SUBJECT_STUDY' | 'UNIVERSITY_COURSE' | 'GENERAL';
+
+export interface ExamRoom {
+  id: string;
+  name: string;
+  description?: string;
+  room_type: ExamRoomType;
+  education_level?: EducationLevel; // Which tier holds this room (Junior/Senior/Campus)
+  subject?: string;                 // e.g. "Mathematics", "CS101"
+  exam_target?: string;             // e.g. "KCSE 2024", "End of Semester"
+  created_by: string;               // User ID of creator
+  created_at: string;
+  is_active: boolean;
+  member_count: number;             // Cached count of participants
+  tags?: string[];
+  banner_url?: string;
+  pinned_message_id?: string;
+}
+
+export type MessageType = 'TEXT' | 'IMAGE' | 'AI_EXPLANATION' | 'SYSTEM';
+
+export interface ExamRoomMessage {
+  id: string;
+  room_id: string;
+  user_id: string;           // Sender ID ('system' for AI/system)
+  user_name: string;         // Cached sender name (for easy UI)
+  user_role: UserRole;       // To show teacher/admin badges
+  message_type: MessageType;
+  content: string;           // The text message or AI response
+  image_url?: string;        // If message_type is IMAGE
+  parent_id?: string;        // For replying to specific messages
+  created_at: string;
+  upvotes: number;           // Cached vote count
+  is_pinned?: boolean;
+}
+
+export interface ExamRoomMember {
+  room_id: string;
+  user_id: string;
+  joined_at: string;
+  role: 'MEMBER' | 'MODERATOR' | 'ADMIN';
+  last_read_at?: string;
+}
+
+export interface ExamRoomVote {
+  message_id: string;
+  user_id: string;
+  vote_type: 'UP' | 'DOWN';
+  created_at: string;
 }
 
 export interface SchoolProfile {
@@ -537,4 +600,29 @@ export interface StudentSubmission {
   feedback?: string;
   status: 'PENDING' | 'GRADED' | 'FAILED';
   gradedAt?: string;
+}
+
+// --- COMMUNITY FEATURE TYPES ---
+export interface Post {
+  id: string;
+  authorId: string;
+  authorName: string;
+  educationLevel: EducationLevel;
+  content: string;
+  subject?: string;
+  imageUrl?: string;
+  createdAt: string;
+  upvotes: number;
+  commentCount: number;
+  isPinned: boolean;
+}
+
+export interface Comment {
+  id: string;
+  postId: string;
+  authorId: string;
+  authorName: string;
+  content: string;
+  createdAt: string;
+  upvotes: number;
 }

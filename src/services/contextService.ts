@@ -17,7 +17,7 @@ export const setContext = (name: string, grade?: string, subject?: string) => {
         grade,
         subject
     };
-    console.log(`Context set for RAG routing: ${name} (Grade: ${grade}, Subject: ${subject})`);
+
 };
 
 export const getContext = () => activeContext;

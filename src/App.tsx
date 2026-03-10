@@ -24,9 +24,16 @@ const PricingPage = React.lazy(() => import('./pages/PricingPage').then(module =
 const SchoolDashboard = React.lazy(() => import('./features/school/SchoolDashboard').then(module => ({ default: module.SchoolDashboard })));
 const OfflinePage = React.lazy(() => import('./pages/OfflinePage').then(module => ({ default: module.OfflinePage })));
 
+// Exam Rooms Pages
+const ExamRoomsListPage = React.lazy(() => import('./pages/ExamRoomsListPage').then(module => ({ default: module.ExamRoomsListPage })));
+const ExamRoomChatPage = React.lazy(() => import('./pages/ExamRoomChatPage').then(module => ({ default: module.ExamRoomChatPage })));
+
+// Campus Pages
+const CampusPage = React.lazy(() => import('./pages/CampusPage').then(module => ({ default: module.CampusPage })));
+
 // Loading Fallback Component
 const PageLoader = () => (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50">
+    <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
         <div className="flex flex-col items-center gap-4">
             <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
             <p className="text-slate-500 font-medium animate-pulse">Loading Somo Smart...</p>
@@ -43,7 +50,6 @@ const App: React.FC = () => {
         const gaId = import.meta.env.VITE_GA_MEASUREMENT_ID;
         if (gaId && gaId !== 'G-CHECK_GA_DASHBOARD') {
             ReactGA.initialize(gaId);
-            console.log("Analytics Initialized");
         }
     }, []);
 
@@ -87,6 +93,9 @@ const App: React.FC = () => {
                             <Route path="/admin/knowledge" element={<AdminGuard onNavigateBack={() => navigate('/')}><AdminKnowledgeBase /></AdminGuard>} />
                             <Route path="/revision" element={<RevisionPortal />} />
                             <Route path="/revision/dashboard" element={<RevisionDashboard />} />
+                            <Route path="/exam-rooms" element={<ExamRoomsListPage />} />
+                            <Route path="/exam-rooms/:id" element={<ExamRoomChatPage />} />
+                            <Route path="/campus" element={<CampusPage />} />
                             <Route path="/teacher/darasa" element={<TeacherPage />} />
                             <Route path="/reset-password" element={<ResetPassword />} />
                             <Route path="/pricing" element={<PricingPage />} />

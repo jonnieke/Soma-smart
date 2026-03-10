@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Users, TrendingDown, TrendingUp, AlertCircle, Sparkles, User, Brain, Plus, Share2, ClipboardList, Send, FileText, CheckCircle } from 'lucide-react';
+import { Users, TrendingDown, TrendingUp, AlertCircle, Sparkles, User, Brain, Plus, Share2, ClipboardList, Send, FileText, CheckCircle, MessageCircle, UploadCloud } from 'lucide-react';
 import { TeacherProfile } from '../../types';
 
 interface StudentData {
@@ -74,7 +74,15 @@ export const MyClassroom: React.FC<MyClassroomProps> = ({ teacherProfile, select
                         <Users className="w-6 h-6 text-indigo-500" />
                         {selectedClass}
                     </h2>
-                    <p className="text-slate-500 font-medium">{selectedSubject} • {MOCK_STUDENTS.length} Students</p>
+                    <p className="text-slate-500 font-medium mb-3">{selectedSubject} • {MOCK_STUDENTS.length} Students</p>
+                    <div className="flex gap-2">
+                        <button className="text-xs font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-lg flex items-center gap-1 transition-colors">
+                            <MessageCircle className="w-4 h-4" /> Discussion Room
+                        </button>
+                        <button className="text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-lg flex items-center gap-1 transition-colors">
+                            <UploadCloud className="w-4 h-4" /> Upload Material
+                        </button>
+                    </div>
                 </div>
 
                 <div className="flex gap-4">

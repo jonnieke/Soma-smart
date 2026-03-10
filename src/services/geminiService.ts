@@ -69,6 +69,14 @@ CRITICAL: MANDATORY EXAM CROSS-LINK (Super Teacher Mode)
 - Provide one 'Killer Tip' for scoring full marks based on official KNEC marking patterns.
 `;
 
+const SUBJECT_SPECIFIC_INSTRUCTION = `
+SUBJECT-SPECIFIC EXPLANATION MODES:
+- If the subject is Math or Physics: You MUST provide step-by-step logical calculations. State the formula clearly before substituting any values.
+- If the subject is Science/Biology/Chemistry: Focus on core principles, use relatable real-world analogies, and explain any scientific terminology.
+- If the subject is Humanities (History/Geography/CRE): Provide clear cause-and-effect relationships, historical context, and bulleted timelines or locations.
+- If the subject is Languages (English/Kiswahili): Focus on grammar rules, vocabulary definitions, and structural formatting.
+`;
+
 // --- SUPER TEACHER PHASE 2: ADAPTIVE SCAFFOLDING ---
 const ADAPTIVE_SCAFFOLDING_INSTRUCTION = `
 ADAPTIVE TUTORING MODE (Super Teacher Phase 2):
@@ -78,6 +86,25 @@ ADAPTIVE TUTORING MODE (Super Teacher Phase 2):
 - If mastery is HIGH: Go straight to advanced/exam content, edge cases, and past paper practice.
 - Include a scaffolded "🤔 Think About It" checkpoint before revealing complex answers when mastery < 70%.
 - Always end with one follow-up question to reinforce learning.
+`;
+
+const SOCRATIC_TUTOR_INSTRUCTION = `
+SOCRATIC TUTORING MODE:
+- You are a helpful, encouraging mentor. 
+- DO NOT provide the full answer immediately. 
+- Instead, break the problem down. Ask the student what they already know. 
+- Provide small logical hints that nudge them toward the answer.
+- Focus on conceptual understanding ("Why does this happen?") rather than just facts.
+- Use a friendly, conversational tone.
+`;
+
+const SOLUTION_ASSISTANT_INSTRUCTION = `
+SOLUTION ASSISTANT MODE:
+- You are a precise academic helper.
+- Provide a DIRECT and COMPLETE answer immediately.
+- For math/science, show the step-by-step calculation clearly.
+- For humanities, provide structured model answers with clear formatting.
+- Focus on accuracy and efficiency so the student can check their work.
 `;
 
 // --- Helper: File to Base64 ---
@@ -96,7 +123,13 @@ export const fileToGenerativePart = async (file: File): Promise<string> => {
 
 // --- LEARNER FEATURES ---
 
-export const explainImage = async (base64Image: string, mimeType: string, level: 'Simple' | 'Exam', language: 'EN' | 'FR' = 'EN'): Promise<ExplanationResult> => {
+export const explainImage = async (
+  base64Image: string,
+  mimeType: string,
+  level: 'Simple' | 'Exam',
+  language: 'EN' | 'FR' = 'EN',
+  purpose: 'TUTOR' | 'HOMEWORK' = 'TUTOR'
+): Promise<ExplanationResult> => {
   const model = genAI.getGenerativeModel({
     model: MODEL_NAME,
     generationConfig: {
@@ -116,19 +149,22 @@ export const explainImage = async (base64Image: string, mimeType: string, level:
 
   const langInstruction = language === 'FR'
     ? "LANGUAGE RULE: You MUST respond in French (Français). Translate specific educational terms if needed, but keep the explanation natural in French."
-    : "LANGUAGE RULE: If the subject is 'Kiswahili' or 'Swahili', you MUST respond in Swahili. For ALL other subjects, you MUST respond ONLY in English.";
+    : "LANGUAGE RULE: If the subject is 'Kiswahili' or 'Swahili' or the question/content is in Swahili, you MUST respond exclusively in Swahili. For ALL other subjects and questions, you MUST respond exclusively in English.";
 
   const prompt = `
-    Analyze this image. It is likely a textbook page, homework, or notes.
-    1. Extract the main topic and identify the subject.
+    Analyze this image carefully. It is likely a textbook page, homework question, or student notes.
+    1. Extract the main topic and identify the underlying subject.
     2. ${langInstruction}
-    3. **DIRECT ANSWER**: If this is a question, answer it DIRECTLY and IMMEDIATELY. Do NOT ask follow-up questions. Do NOT answer with a question.
-    4. **FORMAT**: Use neat bullet points for steps, lists, or distinct ideas. Keep paragraphs short.
-    5. Explain the content in ${level === 'Simple' ? 'very simple language for a young student' : 'exam-ready academic language'}.
-    6. Suggest 3 short related topics for further learning.
+    3. **IMAGE QUESTION SOLVING**: Read ALL text, diagrams, and numbers from the image accurately. Double-check your reading before formulating an answer.
+    4. **DIRECT ANSWER**: If this is a question, answer it DIRECTLY and IMMEDIATELY. Break down complex math or science problems into extremely clear, numbered steps.
+    5. **FORMAT**: Use neat bullet points for steps, lists, or distinct ideas. Keep paragraphs short and visually appealing.
+    6. Explain the content in ${level === 'Simple' ? 'very simple language for a young student' : 'exam-ready academic language'}.
+    7. Suggest 3 short related topics for further learning.
     
     ${SYLLABUS_GROUNDING_INSTRUCTION}
     ${EXAM_CROSS_LINK_INSTRUCTION}
+    ${SUBJECT_SPECIFIC_INSTRUCTION}
+    ${purpose === 'HOMEWORK' ? SOLUTION_ASSISTANT_INSTRUCTION : SOCRATIC_TUTOR_INSTRUCTION}
 
     Output JSON.
   `;
@@ -171,20 +207,21 @@ export const explainAudio = async (base64Audio: string, mimeType: string, level:
 
   const langInstruction = language === 'FR'
     ? "LANGUAGE RULE: You MUST respond in French (Français). Translate specific educational terms if needed, but keep the explanation natural in French."
-    : "LANGUAGE RULE: If the subject is 'Kiswahili' or 'Swahili', you MUST respond in Swahili. For ALL other subjects, you MUST respond ONLY in English.";
+    : "LANGUAGE RULE: If the subject is 'Kiswahili' or 'Swahili' or the question/content is in Swahili, you MUST respond exclusively in Swahili. For ALL other subjects and questions, you MUST respond exclusively in English.";
 
   const prompt = `
     Listen to this audio. It is likely a student asking a homework question or reading study material.
     1. Transcribe the audio to text.
     2. Extract the main topic and identify the subject.
     3. ${langInstruction}
-    4. **DIRECT ANSWER**: Answer the question DIRECTLY. Do NOT ask follow-up questions to the student.
+    4. **DIRECT ANSWER**: Answer the question DIRECTLY. For math or science queries, provide a step-by-step breakdown of how to reach the final answer.
     5. **FORMAT**: Use neat bullet points for the explanation/answer.
     6. Explain the content in ${level === 'Simple' ? 'very simple language for a young student' : 'exam-ready academic language'}.
     7. Suggest 3 short related topics for further learning.
     
     ${SYLLABUS_GROUNDING_INSTRUCTION}
     ${EXAM_CROSS_LINK_INSTRUCTION}
+    ${SUBJECT_SPECIFIC_INSTRUCTION}
 
     Output JSON.
   `;
@@ -334,7 +371,8 @@ export const explainTopic = async (
   grade?: string,
   multimedia?: { data: string, mimeType: string },
   masteryData?: { masteryGraph: Record<string, number>, recentHurdles?: string[] },
-  teachingStrategies?: TeachingStrategy[]
+  teachingStrategies?: TeachingStrategy[],
+  purpose: 'TUTOR' | 'HOMEWORK' = 'TUTOR'
 ): Promise<ExplanationResult> => {
   const model = genAI.getGenerativeModel({
     model: MODEL_NAME,
@@ -420,7 +458,7 @@ export const explainTopic = async (
 
   const langInstruction = language === 'FR'
     ? "LANGUAGE RULE: You MUST respond in French (Français). Translate specific educational terms if needed, but keep the explanation natural in French."
-    : "LANGUAGE RULE: If the subject is 'Kiswahili' or 'Swahili', you MUST respond in Swahili. For ALL other subjects, you MUST respond ONLY in English.";
+    : "LANGUAGE RULE: If the subject is 'Kiswahili' or 'Swahili' or the question/content is in Swahili, you MUST respond exclusively in Swahili. For ALL other subjects and questions, you MUST respond exclusively in English.";
 
   // Build adaptive scaffolding context if mastery data is available
   const adaptiveContext = masteryData
@@ -460,6 +498,8 @@ export const explainTopic = async (
 
     ${SYLLABUS_GROUNDING_INSTRUCTION}
     ${EXAM_CROSS_LINK_INSTRUCTION}
+    ${SUBJECT_SPECIFIC_INSTRUCTION}
+    ${purpose === 'HOMEWORK' ? SOLUTION_ASSISTANT_INSTRUCTION : SOCRATIC_TUTOR_INSTRUCTION}
 
     7. Provide EXACTLY 3 short bullet points summarizing the most critical takeaways for "stickiness" in the 'summaryPoints' field.
     8. Suggest EXACTLY 3 short related topics for further learning.
@@ -703,7 +743,7 @@ export const continueResearch = async (
 
   const langInstruction = language === 'FR'
     ? "LANGUAGE RULE: You MUST respond in French (Français)."
-    : "LANGUAGE RULE: If the subject is 'Kiswahili' or 'Swahili', you MUST respond in Swahili. For ALL other subjects, you MUST respond ONLY in English.";
+    : "LANGUAGE RULE: If the subject is 'Kiswahili' or 'Swahili' or the question/content is in Swahili, you MUST respond exclusively in Swahili. For ALL other subjects and questions, you MUST respond exclusively in English.";
 
   const prompt = `
 CONTEXT: The student is learning about "${currentTopic}".
@@ -765,7 +805,7 @@ export const generateQuiz = async (content: string, topic: string, language: 'EN
 
   const langInstruction = language === 'FR'
     ? "LANGUAGE RULE: You MUST generate the quiz in French (Français)."
-    : "LANGUAGE RULE: If the subject is 'Kiswahili' or 'Swahili', you MUST generate the quiz in Swahili. For ALL other subjects, generate the quiz ONLY in English.";
+    : "LANGUAGE RULE: If the subject is 'Kiswahili' or 'Swahili' or the content is in Swahili, you MUST generate the quiz exclusively in Swahili. For ALL other subjects and content, you MUST generate the quiz exclusively in English.";
 
   const prompt = `
     Based on the following content about "${topic}":
@@ -824,7 +864,7 @@ export const generateQuickQuiz = async (content: string, topic: string, language
 
   const langInstruction = language === 'FR'
     ? "LANGUAGE RULE: You MUST generate the quiz in French (Français)."
-    : "LANGUAGE RULE: If the subject is 'Kiswahili' or 'Swahili', you MUST generate the quiz in Swahili. For ALL other subjects, generate the quiz ONLY in English.";
+    : "LANGUAGE RULE: If the subject is 'Kiswahili' or 'Swahili' or the content is in Swahili, you MUST generate the quiz exclusively in Swahili. For ALL other subjects and content, you MUST generate the quiz exclusively in English.";
 
   const prompt = `
     Based on the explanation of "${topic}", generate a quick "Sticky Quiz" to test immediate retention.
@@ -879,7 +919,7 @@ export const convertNotes = async (base64Data: string, mimeType: string, subject
 
   const langInstruction = language === 'FR'
     ? "LANGUAGE RULE: You MUST respond in French (Français)."
-    : "LANGUAGE RULE: If the subject is 'Kiswahili' or 'Swahili', you MUST respond in Swahili. For ALL other subjects, you MUST respond ONLY in English.";
+    : "LANGUAGE RULE: If the subject is 'Kiswahili' or 'Swahili' or the question/content is in Swahili, you MUST respond exclusively in Swahili. For ALL other subjects and questions, you MUST respond exclusively in English.";
 
   const prompt = `
     Analyze this document. 
@@ -931,7 +971,7 @@ export const processVoiceNote = async (audioBase64: string, mimeType: string = "
 
   const langInstruction = language === 'FR'
     ? "LANGUAGE RULE: You MUST respond in French (Français)."
-    : "LANGUAGE RULE: If the subject is 'Kiswahili' or 'Swahili', you MUST respond in Swahili. For ALL other subjects, you MUST respond ONLY in English.";
+    : "LANGUAGE RULE: If the subject is 'Kiswahili' or 'Swahili' or the question/content is in Swahili, you MUST respond exclusively in Swahili. For ALL other subjects and questions, you MUST respond exclusively in English.";
 
   const prompt = `
         You are an expert Study Companion(like NotebookLM) for a Kenyan classroom.
@@ -1040,7 +1080,7 @@ export const generateAdvancedTeacherQuiz = async (
 
   const langInstruction = language === 'FR'
     ? "LANGUAGE RULE: You MUST generate the quiz in French (Français)."
-    : "LANGUAGE RULE: If the subject is 'Kiswahili' or 'Swahili', you MUST generate the quiz in Swahili. For ALL other subjects, generate the quiz ONLY in English.";
+    : "LANGUAGE RULE: If the subject is 'Kiswahili' or 'Swahili' or the content is in Swahili, you MUST generate the quiz exclusively in Swahili. For ALL other subjects and content, you MUST generate the quiz exclusively in English.";
 
   const prompt = `
     You are an expert Kenyan Competency - Based Curriculum(CBC) Developer.
@@ -1373,7 +1413,7 @@ export const getRevisionTutorResponse = async (
 
   const langInstruction = language === 'FR'
     ? "LANGUAGE RULE: Respond in French (Français). Translate educational concepts where appropriate."
-    : "LANGUAGE RULE: If the subject is 'Kiswahili' or 'Swahili', you MUST respond in Swahili. For ALL other subjects, you MUST respond ONLY in English.";
+    : "LANGUAGE RULE: If the subject is 'Kiswahili' or 'Swahili' or the question/content is in Swahili, you MUST respond exclusively in Swahili. For ALL other subjects and questions, you MUST respond exclusively in English.";
 
   const systemInstruction = `
     ${SYLLABUS_GROUNDING_INSTRUCTION}
@@ -1485,7 +1525,7 @@ Questions:
   const finalPrompt = `
     ${prompt}
     
-    ${language === 'FR' ? "LANGUAGE RULE: You MUST respond in French (Français)." : "LANGUAGE RULE: If the subject is 'Kiswahili' or 'Swahili', you MUST respond in Swahili. For ALL other subjects, you MUST respond ONLY in English."}
+    ${language === 'FR' ? "LANGUAGE RULE: You MUST respond in French (Français)." : "LANGUAGE RULE: If the subject is 'Kiswahili' or 'Swahili' or the question/content is in Swahili, you MUST respond exclusively in Swahili. For ALL other subjects and questions, you MUST respond exclusively in English."}
 `;
 
   try {
@@ -1528,7 +1568,7 @@ export const markStudentAnswer = async (
 
   const langInstruction = language === 'FR'
     ? "LANGUAGE RULE: Respond in French."
-    : "LANGUAGE RULE: If the subject is 'Kiswahili' or 'Swahili', respond in Swahili. Otherwise respond in English.";
+    : "LANGUAGE RULE: If the subject is 'Kiswahili' or 'Swahili' or the question/content is in Swahili, you MUST respond exclusively in Swahili. For ALL other subjects and questions, you MUST respond exclusively in English.";
 
   const prompt = `
     You are a STRICT Kenyan National Exam Marker(KNEC standard).
@@ -1613,7 +1653,7 @@ export const generateExamQuestions = async (
 
   const langInstruction = language === 'FR'
     ? "LANGUAGE RULE: Generate questions in French."
-    : "LANGUAGE RULE: If the subject is 'Kiswahili' or 'Swahili', generate in Swahili. Otherwise use English.";
+    : "LANGUAGE RULE: If the subject is 'Kiswahili' or 'Swahili' or the content is in Swahili, you MUST generate exclusively in Swahili. For ALL other subjects and content, you MUST generate exclusively in English.";
 
   const prompt = `
     You are a KNEC - level Exam Setter for Kenyan national examinations(KPSEA, KCSE).
@@ -1772,7 +1812,7 @@ export const extractStructuredNotes = async (
 
   const langInstruction = language === 'FR'
     ? "LANGUAGE RULE: Respond in French."
-    : "LANGUAGE RULE: If the subject is 'Kiswahili' or 'Swahili', respond in Swahili. Otherwise respond in English.";
+    : "LANGUAGE RULE: If the subject is 'Kiswahili' or 'Swahili' or the question/content is in Swahili, you MUST respond exclusively in Swahili. For ALL other subjects and questions, you MUST respond exclusively in English.";
 
   const prompt = `
     ${SYLLABUS_GROUNDING_INSTRUCTION}
@@ -1992,7 +2032,7 @@ export const generateLessonRecap = async (inputBase64: string, mimeType: string,
   const learnerPrompt = `
     You are an expert tutor helping a student understand a live lesson they just attended.
     1. Analyze the recording / notes and identify the subject.
-    2. ${language === 'FR' ? "LANGUAGE RULE: You MUST respond in French (Français)." : "LANGUAGE RULE: If the subject is 'Kiswahili' or 'Swahili', you MUST respond in Swahili. For ALL other subjects, you MUST respond ONLY in English."}
+    2. ${language === 'FR' ? "LANGUAGE RULE: You MUST respond in French (Français)." : "LANGUAGE RULE: If the subject is 'Kiswahili' or 'Swahili' or the question/content is in Swahili, you MUST respond exclusively in Swahili. For ALL other subjects and questions, you MUST respond exclusively in English."}
 3. Extract the Main Topic.
     4. Write a fun, simple Summary(2 - 3 sentences).
     5. List 5 Key Points(Bullet points).
@@ -2005,7 +2045,7 @@ export const generateLessonRecap = async (inputBase64: string, mimeType: string,
   const teacherPrompt = `
     You are a curriculum expert summarizing a lesson for a fellow teacher.
     1. Analyze the recording / notes and identify the subject.
-    2. ${language === 'FR' ? "LANGUAGE RULE: You MUST respond in French (Français)." : "LANGUAGE RULE: If the subject is 'Kiswahili' or 'Swahili', you MUST respond in Swahili. For ALL other subjects, you MUST respond ONLY in English."}
+    2. ${language === 'FR' ? "LANGUAGE RULE: You MUST respond in French (Français)." : "LANGUAGE RULE: If the subject is 'Kiswahili' or 'Swahili' or the question/content is in Swahili, you MUST respond exclusively in Swahili. For ALL other subjects and questions, you MUST respond exclusively in English."}
 3. Extract Topic and Competencies covered.
     4. Provide a professional Summary.
     5. List Key Teaching Points.
@@ -2085,7 +2125,7 @@ export const generateDarasaLesson = async (audioBase64: string, mimeType: string
     
     TASK 2: COMPREHENSIVE NOTES
     Create detailed, professional - grade teacher notes.
-    - ${language === 'FR' ? "LANGUAGE RULE: You MUST respond in French (Français)." : "LANGUAGE RULE: If the subject is 'Kiswahili' or 'Swahili', you MUST respond in Swahili. For ALL other subjects, you MUST respond ONLY in English."}
+    - ${language === 'FR' ? "LANGUAGE RULE: You MUST respond in French (Français)." : "LANGUAGE RULE: If the subject is 'Kiswahili' or 'Swahili' or the question/content is in Swahili, you MUST respond exclusively in Swahili. For ALL other subjects and questions, you MUST respond exclusively in English."}
     - ** Introduction **: Briefly introduce the topic.
     - ** Core Concepts **: Explain 3 - 5 main concepts covered in depth.
     - ** Examples **: Provide 2 - 3 real - world examples mentioned or relevant to the context.
@@ -2171,7 +2211,7 @@ export const generateDarasaRevision = async (imageBase64: string, mimeType: stri
   const prompt = `
 TASK: REVISION FROM IMAGE
 1. Analyze this image of lesson notes or a textbook page.Identify the subject.
-    2. ${language === 'FR' ? "LANGUAGE RULE: You MUST respond in French (Français)." : "LANGUAGE RULE: If the subject is 'Kiswahili' or 'Swahili', you MUST respond in Swahili. For ALL other subjects, you MUST respond ONLY in English."}
+    2. ${language === 'FR' ? "LANGUAGE RULE: You MUST respond in French (Français)." : "LANGUAGE RULE: If the subject is 'Kiswahili' or 'Swahili' or the question/content is in Swahili, you MUST respond exclusively in Swahili. For ALL other subjects and questions, you MUST respond exclusively in English."}
 3. Extract the Main Topic.
     4. Write a clear, simple Summary(2 - 3 sentences).
     5. Create "Simplified Notes" broken into logical sections(Title + Content).
@@ -2511,6 +2551,219 @@ export const getExamGuruResponse = async (
   } catch (error) {
     console.error("Error getting guru response:", error);
     return "The Guru is momentarily meditating on exam patterns. Ask me again in a second.";
+  }
+};
+
+// --- TALKBACK & LANGUAGE TUTOR ---
+
+export interface TalkbackMessage {
+  role: 'user' | 'ai';
+  text: string;
+  timestamp: number;
+}
+
+export interface LanguageTutorResponse {
+  reply: string;
+  correction: string;
+  pronunciationTip: string;
+  encouragement: string;
+  exampleSentence: string;
+  storySegment?: string;
+}
+
+export const chatTalkback = async (
+  userMessage: string,
+  chatHistory: TalkbackMessage[],
+  language: 'en' | 'sw' = 'en'
+): Promise<string> => {
+  const model = genAI.getGenerativeModel({
+    model: MODEL_NAME,
+    generationConfig: {
+      maxOutputTokens: 500,
+    }
+  });
+
+  const history = chatHistory.slice(-10).map(m =>
+    `${m.role === 'ai' ? 'Somo Buddy' : 'Learner'}: ${m.text}`
+  ).join('\n');
+
+  const langLabel = language === 'sw' ? 'Kiswahili' : 'English';
+
+  const prompt = `
+    You are "Somo Buddy", a super fun, friendly, and encouraging AI conversation partner for young learners.
+    You speak ${langLabel}. ALWAYS respond in ${langLabel}.
+    YOUR PERSONALITY:
+    - Warm, playful, and enthusiastic (use emojis sparingly but joyfully 🎉)
+    - You love learning and exploring topics together
+    - You keep answers SHORT (2-4 sentences max) and age-appropriate
+    - You ask fun follow-up questions to keep the conversation going
+    - You celebrate the learner's curiosity
+    - If they seem confused, you simplify and encourage
+    - You can tell short stories, riddles, and fun facts
+    - NEVER use inappropriate, violent, or scary content
+    
+    CONVERSATION HISTORY:
+    ${history}
+    
+    LEARNER SAYS: "${userMessage}"
+    
+    Respond naturally as Somo Buddy. Keep it short, fun, and engaging!
+  `;
+
+  try {
+    const result = await model.generateContent(prompt);
+    const text = result.response.text();
+    return text || (language === 'sw' ? "Samahani, sijaisikia vizuri. Sema tena? 😊" : "Oops, I didn't catch that! Can you say it again? 😊");
+  } catch (error) {
+    console.error("Talkback error:", error);
+    return language === 'sw' ? "Pole, kuna tatizo dogo. Jaribu tena! 🌟" : "Hmm, I had a little hiccup. Let's try again! 🌟";
+  }
+};
+
+export const transcribeAudioForChat = async (
+  base64Audio: string,
+  mimeType: string,
+  language: 'en' | 'sw' = 'en'
+): Promise<string> => {
+  const model = genAI.getGenerativeModel({
+    model: MODEL_NAME,
+    generationConfig: {
+      maxOutputTokens: 300,
+    }
+  });
+
+  const prompt = `
+    Listen to this audio recording carefully.
+    The speaker is a young learner speaking in ${language === 'sw' ? 'Kiswahili' : 'English'}.
+    Transcribe EXACTLY what they said. Keep it as-is including any grammar mistakes.
+    Return ONLY the transcription text, nothing else.
+  `;
+
+  try {
+    const result = await model.generateContent([
+      prompt,
+      { inlineData: { data: base64Audio, mimeType } }
+    ]);
+    return result.response.text() || '';
+  } catch (error) {
+    console.error("Transcription error:", error);
+    return '';
+  }
+};
+
+export const chatLanguageTutor = async (
+  userMessage: string,
+  chatHistory: TalkbackMessage[],
+  language: 'en' | 'sw' = 'en',
+  mode: 'conversation' | 'pronunciation' | 'sentences' | 'story' = 'conversation'
+): Promise<LanguageTutorResponse> => {
+  const model = genAI.getGenerativeModel({
+    model: MODEL_NAME,
+    generationConfig: {
+      responseMimeType: "application/json",
+      maxOutputTokens: 800,
+      responseSchema: {
+        type: SchemaType.OBJECT,
+        properties: {
+          reply: { type: SchemaType.STRING, description: "The tutor's direct conversational reply" },
+          correction: { type: SchemaType.STRING, description: "Gentle grammar/vocabulary correction of the learner's message. Empty if no correction needed." },
+          pronunciationTip: { type: SchemaType.STRING, description: "A pronunciation tip related to a word they used or should learn. Use phonetic spelling." },
+          encouragement: { type: SchemaType.STRING, description: "A short encouraging phrase to motivate the learner" },
+          exampleSentence: { type: SchemaType.STRING, description: "An example sentence using a word from the conversation for practice" },
+          storySegment: { type: SchemaType.STRING, description: "If in story mode, the next segment of an interactive story. Otherwise empty." }
+        },
+        required: ["reply", "correction", "pronunciationTip", "encouragement", "exampleSentence"]
+      }
+    }
+  });
+
+  const history = chatHistory.slice(-8).map(m =>
+    `${m.role === 'ai' ? 'Language Coach' : 'Learner'}: ${m.text}`
+  ).join('\n');
+
+  const langName = language === 'sw' ? 'Kiswahili' : 'English';
+  const otherLang = language === 'sw' ? 'English' : 'Kiswahili';
+
+  const modeInstructions: Record<string, string> = {
+    conversation: `
+      MODE: FREE CONVERSATION
+      - Have a natural, fun conversation in ${langName}
+      - Gently correct grammar and vocabulary mistakes
+      - Introduce new vocabulary naturally
+      - Ask questions to keep the conversation flowing
+    `,
+    pronunciation: `
+      MODE: PRONUNCIATION PRACTICE
+      - Focus on how words are pronounced in ${langName}
+      - Break down difficult words into syllables
+      - Use phonetic guides (e.g., "Habari" → "ha-BA-ri")
+      - Practice tongue twisters and rhymes
+      - Compare pronunciation with ${otherLang} equivalents
+    `,
+    sentences: `
+      MODE: SENTENCE CONSTRUCTION
+      - Help the learner build proper sentences in ${langName}
+      - Show sentence structure patterns (Subject-Verb-Object)
+      - For Kiswahili: explain verb conjugation, noun classes, and tenses
+      - For English: explain tenses, articles, and prepositions
+      - Give fill-in-the-blank style challenges
+    `,
+    story: `
+      MODE: INTERACTIVE STORYTELLING
+      - Build an exciting story together in ${langName}!
+      - You start or continue a story segment (2-3 sentences)
+      - Ask the learner "What happens next?" to keep them engaged
+      - Introduce new vocabulary through the story
+      - Use vivid, age-appropriate descriptions
+      - Include a moral or lesson at the end
+      - Put the story continuation in the storySegment field
+    `
+  };
+
+  const prompt = `
+    You are "Mwalimu Somo" (Teacher Somo), an expert, fun, and patient language tutor.
+    You are teaching a young learner ${langName}.
+    ALWAYS respond primarily in ${langName}, with occasional ${otherLang} translations in parentheses to help understanding.
+    
+    YOUR TEACHING STYLE:
+    - Patient, warm, and encouraging like a favorite teacher
+    - Use age-appropriate language (ages 6-16)
+    - Make learning feel like a game, not a chore
+    - Celebrate every attempt, even incorrect ones
+    - Use cultural context (East African culture and daily life)
+    
+    ${modeInstructions[mode]}
+    
+    CONVERSATION HISTORY:
+    ${history}
+    
+    LEARNER SAYS: "${userMessage}"
+    
+    Provide your response as JSON. Be encouraging and make learning fun!
+    If the learner's ${langName} is perfect, still provide a pronunciation tip for a NEW word to expand their vocabulary.
+    Keep the reply SHORT (2-4 sentences). Keep corrections GENTLE.
+  `;
+
+  try {
+    const result = await model.generateContent(prompt);
+    const text = result.response.text();
+    if (!text) throw new Error("No response from AI");
+    return JSON.parse(text) as LanguageTutorResponse;
+  } catch (error) {
+    console.error("Language tutor error:", error);
+    return {
+      reply: language === 'sw'
+        ? "Samahani! Hebu jaribu tena. Unafanya vizuri sana! 🌟"
+        : "Oops! Let's try that again. You're doing amazing! 🌟",
+      correction: '',
+      pronunciationTip: language === 'sw'
+        ? '"Jaribu" inasemwa "ja-RI-bu" (try)'
+        : '"Amazing" is said "uh-MAY-zing"',
+      encouragement: language === 'sw' ? "Endelea hivyo! 💪" : "Keep going! 💪",
+      exampleSentence: language === 'sw'
+        ? "Mimi ninajaribu kujifunza Kiswahili. (I am trying to learn Kiswahili.)"
+        : "I am learning something new every day!"
+    };
   }
 };
 

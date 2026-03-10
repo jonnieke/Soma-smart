@@ -1,8 +1,9 @@
 import React, { useState, useRef, useCallback, useMemo } from 'react';
 import { useApp } from '../../context/AppContext';
 import { Upload, BookOpen, Brain, TrendingUp, ArrowRight, ScanLine, X, Camera, Zap, CheckCircle, Smartphone, LogOut, Search, FileText, ChevronRight, ChevronDown, Shield, Users, Sparkles, Filter, GraduationCap, Unlock, Target, BarChart2, ZapOff, Wifi } from 'lucide-react';
-import { ViewState, RevisionMode, TeacherActivity } from '../../types';
+import { ViewState, RevisionMode, TeacherActivity, EducationLevel } from '../../types';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Helmet } from 'react-helmet-async';
 import { LogoutModal } from '../../components/LogoutModal';
 import { ThemeToggle } from '../../components/ThemeToggle';
 import { Button } from '../../components/Shared';
@@ -13,12 +14,13 @@ import { ExamGuruChat } from './ExamGuruChat';
 interface Props {
     onStartSession: (data: File | TeacherActivity, mode: RevisionMode) => void;
     onNavigate: (view: ViewState) => void;
+    onBack?: () => void;
 }
 
 type TabKey = 'papers' | 'notes' | 'syllabus' | 'community';
 
-export const RevisionLanding: React.FC<Props> = ({ onStartSession, onNavigate }) => {
-    const { logout, availableQuizzes, fetchAvailableQuizzes, isOnline, studentProfile, resources, fetchResources, masteryGraph, weakTopics, lowDataMode, toggleLowDataMode, learnerHistory } = useApp();
+export const RevisionLanding: React.FC<Props> = ({ onStartSession, onNavigate, onBack }) => {
+    const { logout, availableQuizzes, fetchAvailableQuizzes, isOnline, studentProfile, resources, fetchResources, masteryGraph, weakTopics, lowDataMode, toggleLowDataMode, learnerHistory, educationLevel } = useApp();
     const [dragActive, setDragActive] = useState(false);
     const [selectedResource, setSelectedResource] = useState<any>(null); // Replaced selectedMode
     const [loadingQuizzes, setLoadingQuizzes] = useState(false);
@@ -186,16 +188,21 @@ export const RevisionLanding: React.FC<Props> = ({ onStartSession, onNavigate })
 
     return (
         <div className="min-h-screen bg-slate-50 dark:bg-slate-950 font-sans text-slate-800 dark:text-slate-100 transition-colors duration-300">
+            <Helmet>
+                <title>{educationLevel === EducationLevel.CAMPUS ? 'Course Hub | Somo Smart - University & College Study' : 'Revision Hub | Somo Smart - AI-Powered KCSE & KPSEA Prep'}</title>
+                <meta name="description" content={educationLevel === EducationLevel.CAMPUS ? 'Access lecture notes, past exam papers, and study materials for university and college courses.' : 'Access thousands of verified past papers, revision notes, and syllabus guides. Personalized AI-powered revision for Kenyan students.'} />
+                <meta name="keywords" content={educationLevel === EducationLevel.CAMPUS ? 'university study, college notes, degree revision, Somo Smart' : 'KCSE past papers, KPSEA revision, JSS notes, Somo Smart revision hub, Kenyan exam prep'} />
+            </Helmet>
             {/* Compact Header */}
             <div className="bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 sticky top-0 z-30 transition-colors">
-                <div className="max-w-5xl mx-auto px-4 md:px-6">
+                <div className="max-w-7xl mx-auto px-4 md:px-6">
                     <div className="flex items-center justify-between py-3">
                         <div className="flex items-center gap-3">
-                            <button onClick={() => onNavigate(ViewState.DASHBOARD)} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors text-slate-500 dark:text-slate-400">
+                            <button onClick={onBack || (() => onNavigate(ViewState.DASHBOARD))} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors text-slate-500 dark:text-slate-400">
                                 <ArrowRight className="w-5 h-5 rotate-180" />
                             </button>
                             <div>
-                                <h1 className="font-black text-slate-900 dark:text-white text-lg tracking-tight">Revision Hub</h1>
+                                <h1 className="font-black text-slate-900 dark:text-white text-lg tracking-tight">{educationLevel === EducationLevel.CAMPUS ? 'Course Hub' : 'Revision Hub'}</h1>
                                 <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
                                     {studentProfile?.grade || 'All Grades'} • {resources.length + availableQuizzes.length} resources
                                 </p>
@@ -252,10 +259,10 @@ export const RevisionLanding: React.FC<Props> = ({ onStartSession, onNavigate })
                 )}
             </div>
 
-            <main className="max-w-5xl mx-auto px-4 md:px-6 pt-6 pb-24">
+            <main className="max-w-7xl mx-auto px-4 md:px-6 pt-6 pb-24">
 
                 {/* Candidate Success Pulse - Phase 18 */}
-                {!lowDataMode && (
+                {!lowDataMode && educationLevel !== EducationLevel.CAMPUS && (
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
@@ -284,8 +291,8 @@ export const RevisionLanding: React.FC<Props> = ({ onStartSession, onNavigate })
                                         3 high-impact questions on <span className="text-white font-bold">"Matrices"</span>. Today's most predicted exam topic. Take 2 minutes to stay sharp.
                                     </p>
                                 </div>
-                                <Button
-                                    className="bg-white text-indigo-900 hover:bg-indigo-50 px-8 sm:px-10 py-5 sm:py-6 rounded-2xl font-black text-sm sm:text-base shadow-xl shadow-black/20 shrink-0 group w-full md:w-auto"
+                                <button
+                                    className="bg-white text-indigo-900 hover:bg-indigo-50 px-8 sm:px-10 py-5 sm:py-6 rounded-2xl font-black text-sm sm:text-base shadow-xl shadow-black/20 shrink-0 group w-full md:w-auto inline-flex items-center justify-center transition-all active:scale-95"
                                     onClick={() => {
                                         // Trigger a specialized quiz
                                         onStartSession({
@@ -296,7 +303,7 @@ export const RevisionLanding: React.FC<Props> = ({ onStartSession, onNavigate })
                                     }}
                                 >
                                     <span className="flex items-center gap-3">Start Pulse Quiz <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" /></span>
-                                </Button>
+                                </button>
                             </div>
                         </div>
                     </motion.div>

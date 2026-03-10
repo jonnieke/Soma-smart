@@ -24,6 +24,6 @@ export const registerSchool = async (name: string, teacherLimit: number): Promis
 export const onboardBulkTeachers = async (schoolId: string, teachers: { name: string, email: string }[]) => {
     // This would typically call a Supabase Edge function or bulk upsert profiles
     // For now, we simulate profile creation
-    console.log(`Onboarding ${teachers.length} teachers for school ${schoolId}`);
+
     return { success: true };
 };

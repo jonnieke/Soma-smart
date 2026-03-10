@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { LearnerActivity, UserRole, TeacherProfile, TeacherActivity, SchoolProfile, SchoolStats, SchoolTeacher, SchoolMaterial, TeacherWallet, TutoringRequest, MaterialListing, SubscriptionPlan, SubscriptionTier, ChatMessage, SpacedRepetitionItem, TeachingStrategy, PedagogicalAnalytics } from '../types';
+import { LearnerActivity, UserRole, TeacherProfile, TeacherActivity, SchoolProfile, SchoolStats, SchoolTeacher, SchoolMaterial, TeacherWallet, TutoringRequest, MaterialListing, SubscriptionPlan, SubscriptionTier, ChatMessage, SpacedRepetitionItem, TeachingStrategy, PedagogicalAnalytics, EducationLevel } from '../types';
 import { processQuizResult, getDueTopics, getWeakTopics, loadSRFromLocal, loadMasteryFromLocal, getPersonalizedChallenge } from '../services/spacedRepetitionService';
 import { loadStrategiesFromLocal, approveStrategy as approveStrategyFn, rejectStrategy as rejectStrategyFn, addStrategies, getActiveStrategies, getPendingStrategies } from '../services/strategyService';
 import { fetchPedagogicalAnalytics, generateTeachingStrategies } from '../services/adminAgentService';
@@ -15,11 +15,11 @@ interface AppContextType {
   studentCode: string;
   setStudentCode: (code: string) => void;
   isRegistered: boolean;
-  studentProfile: { id: string, name: string, grade: string, schoolId?: string, schoolName?: string, email?: string, parentPhone?: string, parentPin?: string, chatApproved?: boolean, sessionId?: string } | null;
-  updateStudentProfile: (updates: { name?: string, grade?: string, parentPhone?: string }) => Promise<{ success: boolean; message?: string }>;
+  studentProfile: { id: string, name: string, grade: string, schoolId?: string, schoolName?: string, email?: string, parentPhone?: string, parentPin?: string, chatApproved?: boolean, sessionId?: string, educationLevel?: EducationLevel, institutionName?: string } | null;
+  updateStudentProfile: (updates: { name?: string, grade?: string, parentPhone?: string, educationLevel?: EducationLevel, institutionName?: string }) => Promise<{ success: boolean; message?: string }>;
   usageCount: number;
   incrementUsage: () => void;
-  registerStudent: (name: string, grade: string, pin: string, parentPhone?: string) => Promise<{ success: boolean; message?: string; data?: string }>;
+  registerStudent: (name: string, grade: string, pin: string, parentPhone?: string, educationLevel?: EducationLevel, institutionName?: string) => Promise<{ success: boolean; message?: string; data?: string }>;
   registerTeacher: (name: string, email: string, password: string, classes: string[], subjects: string[], phone: string) => Promise<{ success: boolean; message?: string }>;
   login: (code: string) => Promise<boolean>;
   loginParent: (code: string, phone: string) => Promise<{ success: boolean; message?: string }>;
@@ -130,6 +130,9 @@ interface AppContextType {
   // Performance
   lowDataMode: boolean;
   toggleLowDataMode: () => void;
+  // Education Level
+  educationLevel: EducationLevel;
+  setEducationLevel: (level: EducationLevel) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -188,8 +191,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   });
   // studyUsageCount removed
   const [isRegistered, setIsRegistered] = useState<boolean>(false);
-  const [studentProfile, setStudentProfile] = useState<{ id: string, name: string, grade: string, schoolId?: string, schoolName?: string, email?: string, parentPhone?: string, parentPin?: string, chatApproved?: boolean, sessionId?: string } | null>(null);
+  const [studentProfile, setStudentProfile] = useState<{ id: string, name: string, grade: string, schoolId?: string, schoolName?: string, email?: string, parentPhone?: string, parentPin?: string, chatApproved?: boolean, sessionId?: string, educationLevel?: EducationLevel, institutionName?: string } | null>(null);
   const [chatApproved, setChatApproved] = useState<boolean>(false);
+  const [educationLevel, setEducationLevelState] = useState<EducationLevel>(() => {
+    return (localStorage.getItem('soma_education_level') as EducationLevel) || EducationLevel.SENIOR;
+  });
 
   // Teacher State
   const [teacherUsageCount, setTeacherUsageCount] = useState<number>(0);
@@ -200,36 +206,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [teacherWallet, setTeacherWallet] = useState<TeacherWallet | null>(null);
   const [isAvailableForTutoring, setIsAvailableForTutoring] = useState<boolean>(false);
 
-  const [activeTutoringRequests, setActiveTutoringRequests] = useState<TutoringRequest[]>([
-    {
-      id: '1',
-      studentId: 'st-1',
-      studentName: 'Faith K.',
-      topic: 'Quadratic Equations',
-      description: 'I am stuck on completing the square method. Can you explain step by step?',
-      grade: 'Form 2',
-      subject: 'Mathematics',
-      status: 'PENDING',
-      price: 0,
-      pricingType: 'FREE',
-      createdAt: '2 hrs ago',
-      rating: 4.5
-    },
-    {
-      id: '2',
-      studentId: 'st-2',
-      studentName: 'Brian M.',
-      topic: 'Photosynthesis',
-      description: 'Need help understanding the light-dependent stage. Diagram would be great!',
-      grade: 'Grade 7',
-      subject: 'Science',
-      status: 'PENDING',
-      price: 50,
-      pricingType: 'FIXED',
-      createdAt: '5 hrs ago',
-      rating: 4.8
-    }
-  ]);
+  const [activeTutoringRequests, setActiveTutoringRequests] = useState<TutoringRequest[]>([]);
 
   // School State
   const [schoolProfile, setSchoolProfile] = useState<SchoolProfile | null>(null);
@@ -280,7 +257,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     const saved = localStorage.getItem('soma_theme') as 'light' | 'dark';
     if (saved) return saved;
-    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    return 'light';
   });
 
   useEffect(() => {
@@ -314,6 +291,32 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       localStorage.setItem('soma_low_data_mode', String(newVal));
       return newVal;
     });
+  };
+
+  const getEducationLevelFromGrade = (grade: string): EducationLevel => {
+    const g = grade.toUpperCase();
+    if (g.includes('UNIVERSITY') || g.includes('COLLEGE') || g.includes('YEAR') || g.includes('CAMPUS')) {
+      return EducationLevel.CAMPUS;
+    }
+    const juniorGrades = ['PP1', 'PP2', 'GRADE 1', 'GRADE 2', 'GRADE 3', 'GRADE 4', 'GRADE 5', 'GRADE 6'];
+    if (juniorGrades.some(jg => g.includes(jg))) {
+      return EducationLevel.JUNIOR;
+    }
+    // Default to Senior for Grade 7-12, Form 1-4, KCSE, KPSEA
+    return EducationLevel.SENIOR;
+  };
+
+  const setEducationLevel = (level: EducationLevel) => {
+    if (isRegistered) {
+      console.warn("Cannot switch education level for registered user.");
+      return;
+    }
+    setEducationLevelState(level);
+    localStorage.setItem('soma_education_level', level);
+    // Also persist to Supabase if user is logged in
+    if (userId) {
+      supabase.from('profiles').update({ education_level: level }).eq('id', userId);
+    }
   };
 
   const refreshProfile = async () => {
@@ -352,11 +355,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             parentPhone: profile.parent_phone,
             parentPin: profile.parent_pin,
             chatApproved: profile.chat_approved,
-            sessionId: profile.session_id
+            sessionId: profile.session_id,
+            educationLevel: profile.education_level || EducationLevel.SENIOR,
+            institutionName: profile.institution_name
           });
           setChatApproved(!!profile.chat_approved);
           setIsRegistered(true);
           setRole(profile.role === 'REVISION' ? UserRole.REVISION : UserRole.LEARNER);
+          setEducationLevelState(profile.education_level || EducationLevel.SENIOR);
         } else if (profile.role === 'TEACHER') {
           setRole(UserRole.TEACHER);
           setTeacherProfile({
@@ -550,6 +556,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           // We need to persist browserSessionId in sessionStorage to survive refresh!
 
           if (profile.role === 'LEARNER' || profile.role === 'REVISION') {
+            const level = getEducationLevelFromGrade(profile.grade || '');
             setStudentProfile({
               id: profile.id,
               name: profile.full_name,
@@ -557,9 +564,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
               schoolName: profile.school_name,
               email: profile.email,
               parentPhone: profile.parent_phone,
-              sessionId: profile.session_id
+              sessionId: profile.session_id,
+              educationLevel: level,
+              institutionName: profile.institution_name
             });
             setRole(profile.role === 'REVISION' ? UserRole.REVISION : UserRole.LEARNER);
+            setEducationLevelState(level);
+            localStorage.setItem('soma_education_level', level);
           } else if (profile.role === 'TEACHER') {
             setRole(UserRole.TEACHER);
             setTeacherProfile({
@@ -631,8 +642,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
               schoolId: profile.school_id,
               email: profile.email,
               parentPhone: profile.parent_phone,
-              sessionId: profile.session_id
+              sessionId: profile.session_id,
+              educationLevel: profile.education_level || EducationLevel.SENIOR,
+              institutionName: profile.institution_name
             });
+            setEducationLevelState(profile.education_level || EducationLevel.SENIOR);
             // Claim session if missing OR if not in active_sessions (Defensive)
             if ('active_sessions' in profile) {
               const activeSessions = (profile.active_sessions as string[]) || [];
@@ -694,7 +708,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
 
 
-  const registerStudent = async (name: string, grade: string, pin: string, parentPhone?: string): Promise<{ success: boolean; message?: string; data?: string }> => {
+  const registerStudent = async (name: string, grade: string, pin: string, parentPhone?: string, regEducationLevel?: EducationLevel, institutionName?: string): Promise<{ success: boolean; message?: string; data?: string }> => {
     try {
       // CLEAR ANY EXISTING SESSIONS FIRST
       // Note: registerStudent uses signUp which might auto-sign in, but if a Teacher is logged in, 
@@ -736,15 +750,18 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         recovery_pin: pin,
         parent_phone: parentPhone,
         session_id: browserSessionId,
-        active_sessions: [browserSessionId] // Init with current
+        active_sessions: [browserSessionId], // Init with current
+        education_level: regEducationLevel || EducationLevel.SENIOR,
+        institution_name: institutionName || null
       });
 
       if (dbError) throw dbError;
 
       setStudentCode(newCode);
-      setStudentProfile({ id: userId, name, grade, parentPhone });
+      setStudentProfile({ id: userId, name, grade, parentPhone, educationLevel: regEducationLevel || EducationLevel.SENIOR, institutionName });
       setIsRegistered(true);
       setRole(UserRole.LEARNER);
+      setEducationLevel(regEducationLevel || EducationLevel.SENIOR);
 
       localStorage.setItem('soma_active_student', newCode);
 
@@ -1502,9 +1519,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       if (subject) query = query.eq('subject', subject);
 
       const { data, error } = await query;
-      console.log("FETCHED RESOURCES:", data, "ERROR:", error);
       if (error) throw error;
-      const filteredData = (data || []).filter(item => !/^\d{13}$/.test(item.title));
+
+      // Filter based on educationLevel
+      const filteredData = (data || []).filter(item => {
+        const itemLevel = getEducationLevelFromGrade(item.grade || '');
+        return itemLevel === educationLevel;
+      }).filter(item => !/^\d{13}$/.test(item.title));
+
       setResources(filteredData);
     } catch (e) {
       console.error("Error fetching resources:", e);
@@ -1618,20 +1640,28 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     try {
       if (!studentProfile?.id) throw new Error("No active student session");
 
+      const newLevel = updates.grade ? getEducationLevelFromGrade(updates.grade) : undefined;
       const { error } = await supabase.from('profiles').update({
         full_name: updates.name,
         grade: updates.grade,
-        parent_phone: updates.parentPhone
+        parent_phone: updates.parentPhone,
+        education_level: newLevel
       }).eq('id', studentProfile.id);
 
       if (error) throw error;
 
       // Update local state
+      if (newLevel) {
+        setEducationLevelState(newLevel);
+        localStorage.setItem('soma_education_level', newLevel);
+      }
+
       setStudentProfile(prev => prev ? {
         ...prev,
         name: updates.name ?? prev.name,
         grade: updates.grade ?? prev.grade,
-        parentPhone: updates.parentPhone ?? prev.parentPhone
+        parentPhone: updates.parentPhone ?? prev.parentPhone,
+        educationLevel: newLevel ?? prev.educationLevel
       } : null);
 
       return { success: true };
@@ -1800,13 +1830,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   // Sync History on Login
   useEffect(() => {
     const loadHistory = async () => {
-      if (!studentCode) return;
+      if (!userId) return;
 
       try {
         const { data, error } = await supabase
           .from('activities')
           .select('*')
-          .eq('student_id', studentCode)
+          .eq('student_id', userId)
           .order('created_at', { ascending: false });
 
         if (error) {
@@ -1835,10 +1865,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       }
     };
 
-    if (isRegistered && studentCode) {
+    if (isRegistered && userId) {
       loadHistory();
     }
-  }, [isRegistered, studentCode]);
+  }, [isRegistered, userId]);
 
   // Sync Teacher History
   useEffect(() => {
@@ -1916,10 +1946,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     offlineService.saveLearnerHistory([newActivity, ...learnerHistory]);
 
     // Persist to Supabase if Online
-    if (isOnline && studentCode) {
+    if (isOnline && userId) {
       try {
         const { error } = await supabase.from('activities').insert({
-          student_id: studentCode,
+          student_id: userId,
           type: activity.type,
           topic: activity.topic,
           score: activity.score,
@@ -1958,7 +1988,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         for (const activity of pendingLearner) {
           try {
             const { error } = await supabase.from('activities').insert({
-              student_id: studentCode,
+              student_id: userId,
               type: activity.type,
               topic: activity.topic,
               score: activity.score,
@@ -2396,7 +2426,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       const { data, error } = await supabase.from('marketplace_materials').select('*').order('created_at', { ascending: false });
       if (error) throw error;
       if (data) {
-        setMarketplaceMaterials(data.map((m: any) => ({
+        // Filter based on educationLevel
+        const filtered = data.filter((m: any) => {
+          const itemLevel = getEducationLevelFromGrade(m.grade || '');
+          return itemLevel === educationLevel;
+        });
+
+        setMarketplaceMaterials(filtered.map((m: any) => ({
           id: m.id,
           teacherId: m.teacher_id,
           teacherName: m.teacher_name,
@@ -2467,7 +2503,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       }
     }, 30000); // Poll every 30s
     return () => clearInterval(interval);
-  }, [role, userId]);
+  }, [role, userId, educationLevel]);
 
   const verifySubscription = async () => {
     if (!userId) return;
@@ -2504,7 +2540,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     processQuizCompletion, getPersonalizedDailyChallenge, addSpacedRepetitionItem,
     teachingStrategies, activeStrategies, pendingStrategies,
     pedagogicalAnalytics, isAdminAgentRunning,
-    runAdminAgent, approveTeachingStrategy, rejectTeachingStrategy
+    runAdminAgent, approveTeachingStrategy, rejectTeachingStrategy,
+    educationLevel, setEducationLevel
   };
 
   return (

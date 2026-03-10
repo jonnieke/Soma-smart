@@ -30,13 +30,14 @@ import { TeacherDashboardOverview } from './TeacherDashboardOverview';
 import { SchemesView } from './SchemesView';
 import { LessonPolisherView } from './LessonPolisherView';
 import { DigitalBlackboard } from './DigitalBlackboard';
+import { HomeworkCreator } from './HomeworkCreator';
 
 import { useNavigate, useLocation } from 'react-router-dom';
 import logoImg from '../../assets/images/main_logo.png';
 
 interface TeacherProps {
     onNavigate: (view: ViewState) => void;
-    initialTab?: 'DASHBOARD' | 'MAGIC_CLASSROOM' | 'CREATION_HUB' | 'STUDENTS' | 'MARKING' | 'EARNINGS' | 'LIBRARY' | 'HOME' | 'CONVERT' | 'VOICE' | 'QUIZ' | 'MARKETPLACE' | 'PROFILE' | 'REPORTS' | 'DARASA_MODE';
+    initialTab?: 'DASHBOARD' | 'MAGIC_CLASSROOM' | 'CREATION_HUB' | 'STUDENTS' | 'MARKING' | 'EARNINGS' | 'LIBRARY' | 'HOME' | 'CONVERT' | 'VOICE' | 'QUIZ' | 'MARKETPLACE' | 'PROFILE' | 'REPORTS' | 'DARASA_MODE' | 'HOMEWORK';
 }
 
 export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTab }) => {
@@ -125,7 +126,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
     const [paymentPlan, setPaymentPlan] = useState<SubscriptionPlan | null>(null);
     const [showLoginModal, setShowLoginModal] = useState(false);
     const [showLogoutModal, setShowLogoutModal] = useState(false);
-    const [activeTab, setActiveTab] = useState<'DASHBOARD' | 'MAGIC_CLASSROOM' | 'CREATION_HUB' | 'STUDENTS' | 'MARKING' | 'EARNINGS' | 'LIBRARY' | 'CONVERT' | 'VOICE' | 'QUIZ' | 'HOME' | 'MARKETPLACE' | 'PROFILE' | 'REPORTS' | 'DARASA_MODE' | 'SCHEMES' | 'LESSON_POLISH' | 'BLACKBOARD'>(initialTab || 'DASHBOARD');
+    const [activeTab, setActiveTab] = useState<'DASHBOARD' | 'MAGIC_CLASSROOM' | 'CREATION_HUB' | 'STUDENTS' | 'MARKING' | 'EARNINGS' | 'LIBRARY' | 'CONVERT' | 'VOICE' | 'QUIZ' | 'HOME' | 'MARKETPLACE' | 'PROFILE' | 'REPORTS' | 'DARASA_MODE' | 'SCHEMES' | 'LESSON_POLISH' | 'BLACKBOARD' | 'HOMEWORK'>(initialTab || 'DASHBOARD');
     const [loading, setLoading] = useState(false);
 
     // Selection State
@@ -672,6 +673,16 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                             onBack={() => setActiveTab('CREATION_HUB')}
                             subject={selectedSubject}
                             grade={selectedClass}
+                        />
+                    </motion.div>
+                )}
+
+                {activeTab === 'HOMEWORK' && (
+                    <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
+                        <HomeworkCreator
+                            onBack={() => setActiveTab('CREATION_HUB')}
+                            subjects={teacherProfile?.subjects || []}
+                            classes={teacherProfile?.classes || []}
                         />
                     </motion.div>
                 )}

@@ -127,7 +127,7 @@ export const verifyAndFixSubscription = async (userId: string): Promise<boolean>
 
         // If expiry is in the future, FIX the profile
         if (expiryDate > now) {
-            console.log("Found valid transaction, fixing profile...");
+
             await supabase.from('profiles').update({
                 subscription_tier: duration,
                 subscription_expiry: expiryDate.toISOString()

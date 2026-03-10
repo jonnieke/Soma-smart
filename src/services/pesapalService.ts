@@ -47,7 +47,7 @@ export const pesapalService = {
             }
         });
 
-        console.log("Pesapal Initiate Response Data:", data);
+
         if (error) {
             console.error("Supabase Function Error:", error);
             throw error;
