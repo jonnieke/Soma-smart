@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import {
@@ -383,136 +383,119 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
             </motion.header>
 
             {/* --- HERO SECTION --- */}
-            {/* --- HERO SECTION --- */}
-            <section className="relative overflow-hidden bg-gradient-to-b from-slate-50 to-white dark:from-slate-950 dark:to-slate-900 pt-20 pb-16 md:pt-32 md:pb-24 transition-colors">
-                {/* Abstract Background Shapes */}
-                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[500px] opacity-30 dark:opacity-20 pointer-events-none">
-                    <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-indigo-500 rounded-full blur-[100px] mix-blend-multiply dark:mix-blend-lighten animate-pulse-slow"></div>
-                    <div className="absolute top-20 left-20 w-72 h-72 bg-gradient-to-r from-emerald-400 to-teal-500 rounded-full blur-[80px] mix-blend-multiply dark:mix-blend-lighten opacity-80 animate-pulse"></div>
+            <section className="relative overflow-hidden bg-gradient-to-b from-slate-50 to-white dark:from-slate-950 dark:to-slate-900 pt-20 pb-16 md:pt-28 md:pb-20 transition-colors">
+                {/* Soft ambient background blobs */}
+                <div className="absolute inset-0 pointer-events-none overflow-hidden">
+                    <div className="absolute top-[-20%] left-[-10%] w-[600px] h-[600px] opacity-20 dark:opacity-10 bg-gradient-to-r from-blue-400 to-indigo-500 rounded-full blur-[120px]" />
+                    <div className="absolute bottom-[-20%] right-[-5%] w-[500px] h-[500px] opacity-15 dark:opacity-10 bg-gradient-to-r from-emerald-400 to-teal-500 rounded-full blur-[100px]" />
                 </div>
 
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 flex flex-col lg:flex-row items-center gap-16">
-                    {/* Faded Mascot Background: Centered between text and right widgets, moved slightly up and left */}
-                    {!lowDataMode && (
-                        <div className="absolute top-[-5%] left-[45%] lg:left-[50%] -translate-x-1/2 pointer-events-none -z-10 w-[500px] h-auto flex items-center justify-center">
-                            <img src={mascotImg} alt="" className="w-full h-full object-contain opacity-20 dark:opacity-20 mix-blend-multiply dark:mix-blend-screen" />
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+                    <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-16">
+
+                        {/* LEFT: Headline, copy and role selector */}
+                        <div className="flex-1 text-center lg:text-left max-w-xl mx-auto lg:mx-0">
+                            <motion.div
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ duration: 0.6 }}
+                            >
+                                <div
+                                    className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-50/80 dark:bg-blue-900/40 border border-blue-100/50 dark:border-blue-800/50 text-blue-700 dark:text-blue-300 text-xs font-bold mb-6 uppercase tracking-widest backdrop-blur-sm shadow-sm group hover:bg-blue-100 dark:hover:bg-blue-900/60 transition-colors cursor-pointer"
+                                    onClick={() => navigate('/revision')}
+                                >
+                                    <Star className="w-3.5 h-3.5 fill-current text-amber-400" />
+                                    Trusted by 1,200+ Kenyan learners &amp; schools
+                                    <ChevronRight className="w-4 h-4 ml-1 opacity-50 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
+                                </div>
+
+                                <h1 className="text-5xl md:text-6xl lg:text-7xl font-black text-slate-900 dark:text-white tracking-tight leading-[1.05] mb-6">
+                                    Smarter Learning.<br />
+                                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400">Better Results.</span>
+                                </h1>
+
+                                <p className="text-lg md:text-xl text-slate-600 dark:text-slate-400 leading-relaxed mb-10 font-medium">
+                                    The ultimate SMART ecosystem for Kenyan education. Master concepts instantly with materials strictly aligned to{' '}
+                                    <strong className="text-slate-900 dark:text-slate-200">CBE, KCSE, KPSEA &amp; KJSEA</strong> standards.
+                                </p>
+
+                                {/* Role Selector */}
+                                <div className="bg-white/70 dark:bg-slate-900/70 p-2 rounded-2xl flex flex-col sm:flex-row gap-2 border border-slate-200 dark:border-slate-800 backdrop-blur-md shadow-lg mb-8">
+                                    <button onClick={() => handleRoleSelect(UserRole.LEARNER)} className="flex-1 py-3 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold transition-all flex justify-center items-center gap-2 shadow-md hover:shadow-lg hover:-translate-y-0.5">
+                                        <GraduationCap className="w-5 h-5" /> I'm a Learner
+                                    </button>
+                                    <button onClick={() => handleRoleSelect(UserRole.TEACHER)} className="flex-1 py-3 px-4 rounded-xl bg-slate-50/80 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold transition-all flex justify-center items-center gap-2 border border-slate-200/50 dark:border-slate-700/50 hover:-translate-y-0.5">
+                                        <Users className="w-5 h-5" /> I'm a Teacher
+                                    </button>
+                                    <button onClick={() => handleRoleSelect(UserRole.PARENT)} className="flex-1 py-3 px-4 rounded-xl bg-slate-50/80 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold transition-all flex justify-center items-center gap-2 border border-slate-200/50 dark:border-slate-700/50 hover:-translate-y-0.5">
+                                        <Baby className="w-5 h-5" /> I'm a Parent
+                                    </button>
+                                </div>
+
+                                <div className="flex items-center justify-center lg:justify-start gap-6 text-sm font-bold text-slate-500 dark:text-slate-400">
+                                    <div className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-emerald-500" /> Start free</div>
+                                    <div className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-emerald-500" /> No card required</div>
+                                </div>
+                            </motion.div>
                         </div>
-                    )}
-                    {/* Left: Copy & CTAs */}
-                    <div className="flex-1 text-center lg:text-left relative">
 
+                        {/* RIGHT: Hero Image with anchored floating cards */}
                         <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.6 }}
-                            className="relative z-10"
-                        >
-                            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-50/80 dark:bg-blue-900/40 border border-blue-100/50 dark:border-blue-800/50 text-blue-700 dark:text-blue-300 text-xs font-bold mb-8 uppercase tracking-widest backdrop-blur-sm shadow-sm group hover:bg-blue-100 dark:hover:bg-blue-900/60 transition-colors cursor-pointer" onClick={() => navigate('/revision')}>
-                                <Star className="w-3.5 h-3.5 fill-current text-amber-400" />
-                                Trusted by 1,200+ Kenyan learners & schools <ChevronRight className="w-4 h-4 ml-1 opacity-50 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
-                            </div>
-
-                            <h1 className="text-5xl md:text-6xl lg:text-7xl font-black text-slate-900 dark:text-white tracking-tight leading-[1.05] mb-6 drop-shadow-sm">
-                                Smarter Learning.<br />
-                                <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400">Better Results.</span>
-                            </h1>
-
-                            <p className="text-lg md:text-xl text-slate-600 dark:text-slate-400 max-w-2xl mx-auto lg:mx-0 leading-relaxed mb-10 font-medium">
-                                The ultimate SMART ecosystem for Kenyan education. Master concepts instantly with materials strictly aligned to <strong className="text-slate-900 dark:text-slate-200">CBE, KCSE, KPSEA & KJSEA</strong> standards.
-                            </p>
-
-                            {/* Tabbed Role Selector inline */}
-                            <div className="bg-white/60 dark:bg-slate-900/60 p-2 rounded-2xl flex flex-col sm:flex-row gap-2 border border-slate-200 dark:border-slate-800 backdrop-blur-md max-w-xl mx-auto lg:mx-0 shadow-lg mb-8">
-                                <button onClick={() => handleRoleSelect(UserRole.LEARNER)} className="flex-1 py-3 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold transition-all flex justify-center items-center gap-2 shadow-md hover:shadow-lg hover:-translate-y-0.5">
-                                    <GraduationCap className="w-5 h-5" /> I'm a Learner
-                                </button>
-                                <button onClick={() => handleRoleSelect(UserRole.TEACHER)} className="flex-1 py-3 px-4 rounded-xl bg-slate-50/80 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold transition-all flex justify-center items-center gap-2 border border-slate-200/50 dark:border-slate-700/50 hover:border-slate-300 dark:hover:border-slate-600 hover:-translate-y-0.5">
-                                    <Users className="w-5 h-5" /> I'm a Teacher
-                                </button>
-                                <button onClick={() => handleRoleSelect(UserRole.PARENT)} className="flex-1 py-3 px-4 rounded-xl bg-slate-50/80 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold transition-all flex justify-center items-center gap-2 border border-slate-200/50 dark:border-slate-700/50 hover:border-slate-300 dark:hover:border-slate-600 hover:-translate-y-0.5">
-                                    <Baby className="w-5 h-5" /> I'm a Parent
-                                </button>
-                            </div>
-
-                            <div className="flex items-center justify-center lg:justify-start gap-6 text-sm font-bold text-slate-500 dark:text-slate-400">
-                                <div className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-emerald-500" /> Start free</div>
-                                <div className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-emerald-500" /> No card required</div>
-                            </div>
-                        </motion.div>
-                    </div>
-
-                    {/* Right: Floating UI Mocks */}
-                    <div className="flex-1 relative w-full h-[500px] hidden lg:block perspective-1000">
-                        <motion.div
-                            initial={{ opacity: 0, x: 20 }}
+                            initial={{ opacity: 0, x: 40 }}
                             animate={{ opacity: 1, x: 0 }}
                             transition={{ duration: 0.8, delay: 0.2 }}
-                            className="absolute inset-0"
-                            style={{ perspective: "1000px" }}
+                            className="flex-1 relative w-full max-w-lg lg:max-w-none mx-auto px-8 lg:px-4"
                         >
-                            {/* Main Try-It Mock */}
-                            <div className="absolute -top-4 right-10 w-[440px] bg-white/95 dark:bg-slate-900/95 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl backdrop-blur-xl overflow-hidden transition-transform duration-700 hover:rotate-y-0 hover:rotate-x-0" style={{ transform: "rotateY(-10deg) rotateX(5deg)" }}>
-                                <div className="bg-slate-50 dark:bg-slate-950 p-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
-                                    <div className="flex items-center gap-2">
-                                        <div className="w-3 h-3 rounded-full bg-rose-400"></div>
-                                        <div className="w-3 h-3 rounded-full bg-amber-400"></div>
-                                        <div className="w-3 h-3 rounded-full bg-emerald-400"></div>
+                            <div className="relative">
+                                {/* Hero teacher image - main visual */}
+                                <img
+                                    src={heroBannerImg}
+                                    alt="Somo Smart AI teacher helping students"
+                                    className="w-full h-auto object-contain drop-shadow-2xl"
+                                />
+
+                                {/* Mascot badge - bottom-left corner of image */}
+                                {!lowDataMode && (
+                                    <div className="absolute -bottom-4 -left-4 w-20 h-20 bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-100 dark:border-slate-700 flex items-center justify-center p-2 z-20">
+                                        <img src={mascotImg} alt="Somo mascot" className="w-full h-full object-contain" />
                                     </div>
-                                    <div className="text-[10px] font-black uppercase text-slate-400 tracking-widest bg-slate-200/50 dark:bg-slate-800/80 px-3 py-1 rounded-full border border-slate-200 dark:border-slate-700">Soma AI Tutor</div>
-                                </div>
-                                <div className="p-6 space-y-5 text-sm">
-                                    <div className="flex gap-4">
-                                        <div className="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center text-indigo-600 dark:text-indigo-400 shrink-0 font-bold text-xs ring-2 ring-indigo-50 dark:ring-indigo-900/30">Me</div>
-                                        <div className="bg-slate-100 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 p-4 rounded-2xl rounded-tl-none font-medium text-[13px] shadow-sm">Explain how to solve quadratic equations for my KCSE.</div>
+                                )}
+
+                                {/* Floating Card: KCSE Target - top-left of image */}
+                                <motion.div
+                                    animate={{ y: [0, -10, 0] }}
+                                    transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
+                                    className="absolute top-6 -left-8 bg-white/95 dark:bg-slate-900/95 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xl flex items-center gap-4 backdrop-blur-md z-20"
+                                >
+                                    <div className="w-12 h-12 bg-emerald-100 dark:bg-emerald-900/40 rounded-xl flex items-center justify-center text-emerald-600 border border-emerald-200 dark:border-emerald-800/50">
+                                        <TrendingUp className="w-6 h-6" />
                                     </div>
-                                    <div className="flex gap-4">
-                                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-600 to-indigo-600 text-white flex items-center justify-center shrink-0 shadow-md transform -scale-x-100"><Sparkles className="w-4 h-4" /></div>
-                                        <div className="bg-blue-50/80 dark:bg-blue-900/20 text-slate-700 dark:text-slate-200 border border-blue-100 dark:border-blue-800/50 p-5 rounded-2xl rounded-tr-none shadow-sm text-[13px]">
-                                            <p className="font-bold mb-3 text-slate-900 dark:text-white flex items-center gap-2">Here's exactly how it appears in KCSE Paper 1:</p>
-                                            <p className="mb-3 font-medium opacity-90">We use the formula:</p>
-                                            <div className="bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-700 px-3 py-2 rounded-lg font-mono text-center text-blue-700 dark:text-blue-400 shadow-inner mb-3">
-                                                x = (-b ± √(b² - 4ac)) / 2a
-                                            </div>
-                                            <div className="flex gap-1">
-                                                <div className="h-1.5 w-1.5 bg-blue-500 rounded-full animate-bounce"></div>
-                                                <div className="h-1.5 w-1.5 bg-blue-500 rounded-full animate-bounce delay-75"></div>
-                                                <div className="h-1.5 w-1.5 bg-blue-500 rounded-full animate-bounce delay-150"></div>
-                                            </div>
+                                    <div>
+                                        <div className="text-2xl font-black text-slate-900 dark:text-white leading-none mb-1">A-</div>
+                                        <div className="text-[10px] font-bold uppercase tracking-widest text-slate-500">KCSE Target</div>
+                                    </div>
+                                </motion.div>
+
+                                {/* Floating Card: Auto-Graded - top-right of image */}
+                                <motion.div
+                                    animate={{ y: [0, 10, 0] }}
+                                    transition={{ repeat: Infinity, duration: 5, ease: "easeInOut", delay: 1 }}
+                                    className="absolute top-6 -right-8 bg-white/95 dark:bg-slate-900/95 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xl flex items-center gap-3 backdrop-blur-md z-20"
+                                >
+                                    <div className="w-10 h-10 bg-indigo-100 dark:bg-indigo-900/40 rounded-xl flex items-center justify-center text-indigo-600 border border-indigo-200 dark:border-indigo-800/50">
+                                        <CheckCircle className="w-5 h-5" />
+                                    </div>
+                                    <div>
+                                        <div className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-2">
+                                            Auto-Graded
+                                            <span className="bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-400 text-[10px] font-bold tracking-wider px-2 py-0.5 rounded-md">8.5/10</span>
                                         </div>
+                                        <div className="text-[10px] font-bold text-slate-500 mt-0.5">Assignment Marked</div>
                                     </div>
-                                </div>
+                                </motion.div>
                             </div>
-
-                            {/* Floating Stats */}
-                            <motion.div
-                                animate={{ y: [0, -10, 0] }}
-                                transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
-                                className="absolute bottom-16 -left-4 bg-white/95 dark:bg-slate-900/95 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xl flex items-center gap-4 backdrop-blur-md z-20"
-                            >
-                                <div className="w-12 h-12 bg-emerald-100 dark:bg-emerald-900/40 rounded-xl flex items-center justify-center text-emerald-600 border border-emerald-200 dark:border-emerald-800/50">
-                                    <TrendingUp className="w-6 h-6" />
-                                </div>
-                                <div>
-                                    <div className="text-2xl font-black text-slate-900 dark:text-white leading-none mb-1">A-</div>
-                                    <div className="text-[10px] font-bold uppercase tracking-widest text-slate-500">KCSE Target</div>
-                                </div>
-                            </motion.div>
-
-                            {/* Floating Marking */}
-                            <motion.div
-                                animate={{ y: [0, 10, 0] }}
-                                transition={{ repeat: Infinity, duration: 5, ease: "easeInOut", delay: 1 }}
-                                className="absolute top-1/3 -right-8 bg-white/95 dark:bg-slate-900/95 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xl flex items-center gap-3 backdrop-blur-md z-20"
-                            >
-                                <div className="w-10 h-10 bg-indigo-100 dark:bg-indigo-900/40 rounded-xl flex items-center justify-center text-indigo-600 border border-indigo-200 dark:border-indigo-800/50">
-                                    <CheckCircle className="w-5 h-5" />
-                                </div>
-                                <div>
-                                    <div className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-2">Auto-Graded <span className="bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-400 text-[10px] font-bold tracking-wider px-2 py-0.5 rounded-md">8.5/10</span></div>
-                                    <div className="text-[10px] font-bold text-slate-500 mt-0.5">Assignment Marked</div>
-                                </div>
-                            </motion.div>
                         </motion.div>
+
                     </div>
                 </div>
             </section>
