@@ -392,7 +392,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
             </motion.header>
 
             {/* --- HERO SECTION --- */}
-            <section className="relative overflow-hidden bg-gradient-to-b from-slate-50 to-white dark:from-slate-950 dark:to-slate-900 pt-20 pb-16 md:pt-28 md:pb-20 transition-colors">
+            <section className="relative overflow-hidden bg-gradient-to-b from-slate-50 to-white dark:from-slate-950 dark:to-slate-900 pt-10 pb-16 md:pt-14 md:pb-20 transition-colors">
                 {/* Soft ambient background blobs */}
                 <div className="absolute inset-0 pointer-events-none overflow-hidden">
                     <div className="absolute top-[-20%] left-[-10%] w-[600px] h-[600px] opacity-20 dark:opacity-10 bg-gradient-to-r from-blue-400 to-indigo-500 rounded-full blur-[120px]" />
@@ -474,7 +474,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                 <motion.div
                                     animate={{ y: [0, -10, 0] }}
                                     transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
-                                    className="absolute top-6 -left-8 bg-white/95 dark:bg-slate-900/95 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xl flex items-center gap-4 backdrop-blur-md z-20"
+                                    className="absolute -top-12 -left-8 bg-white/95 dark:bg-slate-900/95 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xl flex items-center gap-4 backdrop-blur-md z-20"
                                 >
                                     <div className="w-12 h-12 bg-emerald-100 dark:bg-emerald-900/40 rounded-xl flex items-center justify-center text-emerald-600 border border-emerald-200 dark:border-emerald-800/50">
                                         <TrendingUp className="w-6 h-6" />
@@ -489,7 +489,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                 <motion.div
                                     animate={{ y: [0, 10, 0] }}
                                     transition={{ repeat: Infinity, duration: 5, ease: "easeInOut", delay: 1 }}
-                                    className="absolute top-6 -right-8 bg-white/95 dark:bg-slate-900/95 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xl flex items-center gap-3 backdrop-blur-md z-20"
+                                    className="absolute -top-12 -right-8 bg-white/95 dark:bg-slate-900/95 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xl flex items-center gap-3 backdrop-blur-md z-20"
                                 >
                                     <div className="w-10 h-10 bg-indigo-100 dark:bg-indigo-900/40 rounded-xl flex items-center justify-center text-indigo-600 border border-indigo-200 dark:border-indigo-800/50">
                                         <CheckCircle className="w-5 h-5" />
