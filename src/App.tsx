@@ -31,6 +31,10 @@ const ExamRoomChatPage = React.lazy(() => import('./pages/ExamRoomChatPage').the
 // Campus Pages
 const CampusPage = React.lazy(() => import('./pages/CampusPage').then(module => ({ default: module.CampusPage })));
 
+// Blog Pages
+const BlogIndex = React.lazy(() => import('./pages/Blog/BlogIndex').then(module => ({ default: module.BlogIndex })));
+const BlogPost = React.lazy(() => import('./pages/Blog/BlogPost').then(module => ({ default: module.BlogPost })));
+
 // Loading Fallback Component
 const PageLoader = () => (
     <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
@@ -101,6 +105,8 @@ const App: React.FC = () => {
                             <Route path="/pricing" element={<PricingPage />} />
                             <Route path="/school" element={<SchoolDashboard />} />
                             <Route path="/offline" element={<OfflinePage />} />
+                            <Route path="/blog" element={<BlogIndex />} />
+                            <Route path="/blog/:slug" element={<BlogPost />} />
                             <Route path="*" element={<Navigate to="/" replace />} />
                         </Routes>
                     </main>

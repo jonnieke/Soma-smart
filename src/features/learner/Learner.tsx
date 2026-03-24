@@ -39,6 +39,7 @@ import { DashboardSidebar, SidebarTab } from '../../components/DashboardSidebar'
 import { Community } from '../community/Community';
 import { LearnerAnalytics } from './LearnerAnalytics';
 import { ConversationalTutor } from './ConversationalTutor';
+import { ReferralView } from './ReferralView';
 
 interface LearnerProps {
   onNavigate: (view: ViewState) => void;
@@ -133,7 +134,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
     }
   }, [isRegistered, role, navigate, location]);
 
-  const [mode, setMode] = useState<'MENU' | 'SCAN' | 'RESULT' | 'QUIZ' | 'RECAP_RESULT' | 'PROFILE' | 'PRICING' | 'PAYMENT' | 'MARKETPLACE' | 'LIBRARY' | 'HISTORY' | 'SCAN_EXPLAIN' | 'STUDY' | 'REQUESTS' | 'COMMUNITY' | 'REVISION' | 'ANALYTICS' | 'TALKBACK'>(initialMode as any);
+  const [mode, setMode] = useState<'MENU' | 'SCAN' | 'RESULT' | 'QUIZ' | 'RECAP_RESULT' | 'PROFILE' | 'PRICING' | 'PAYMENT' | 'MARKETPLACE' | 'LIBRARY' | 'HISTORY' | 'SCAN_EXPLAIN' | 'STUDY' | 'REQUESTS' | 'COMMUNITY' | 'REVISION' | 'ANALYTICS' | 'TALKBACK' | 'REFERRAL'>(initialMode as any);
   const [studyTab, setStudyTab] = useState<'LESSON' | 'RECAP' | 'QNA' | 'QUIZ'>('LESSON');
   const [expandedRecaps, setExpandedRecaps] = useState<number[]>([]);
   const [recapData, setRecapData] = useState<any>(null); // Store LessonRecap
@@ -931,6 +932,9 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
       case 'COMMUNITY':
         setMode('COMMUNITY');
         break;
+      case 'REFERRAL':
+        setMode('REFERRAL');
+        break;
       case 'TALKBACK':
         setMode('TALKBACK');
         break;
@@ -1530,6 +1534,14 @@ ${explanation.explanation}
       return (
         <div className="p-4 md:p-8 animate-in fade-in pb-24">
           <Community />
+        </div>
+      );
+    }
+
+    if (mode === 'REFERRAL') {
+      return (
+        <div className="p-4 md:p-8 animate-in fade-in pb-24">
+          <ReferralView />
         </div>
       );
     }

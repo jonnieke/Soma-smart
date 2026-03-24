@@ -1,11 +1,12 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import {
     GraduationCap, Users, Baby, ChevronRight, MessageSquare,
     ScanLine, CheckCircle, Menu, X, CheckSquare, Play, BookOpen, LogOut,
     CreditCard, AlertCircle, FileText, Clock, Award, ArrowRight, School,
-    Sparkles, Zap, Building2, TrendingUp, Quote, Globe, ShieldCheck, BarChart, Star
+    Sparkles, Zap, Building2, TrendingUp, Quote, Globe, ShieldCheck, BarChart, Star,
+    Facebook, Twitter, Instagram, Linkedin, MapPin, Store
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { UserRole } from '../types';
@@ -320,8 +321,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
 
                         {/* Desktop Nav */}
                         <nav className="hidden md:flex items-center gap-8">
-                            <a href="#how-it-works" className="text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors text-sm">How It Works</a>
+                            <button onClick={() => handleRoleSelect(UserRole.LEARNER)} className="text-slate-800 dark:text-slate-200 hover:text-blue-600 dark:hover:text-blue-400 font-bold transition-colors text-sm">For Learners</button>
+                            <button onClick={() => handleRoleSelect(UserRole.TEACHER)} className="text-slate-800 dark:text-slate-200 hover:text-blue-600 dark:hover:text-blue-400 font-bold transition-colors text-sm">For Teachers</button>
                             <button onClick={() => navigate('/pricing')} className="text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors text-sm">Pricing</button>
+                            <button onClick={() => navigate('/blog')} className="text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors text-sm flex items-center gap-1"><BookOpen className="w-3.5 h-3.5"/> Blog</button>
                             <button onClick={() => setShowLogin(true)} className="text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors text-sm">Login</button>
                             <button onClick={toggleLanguage} className="text-slate-400 hover:text-slate-600 transition-colors" title="Switch language">
                                 <Globe className="w-4 h-4" />
@@ -361,13 +364,19 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                             className="md:hidden border-t border-slate-100 overflow-hidden bg-white"
                         >
                             <nav className="flex flex-col p-4 space-y-3">
-                                <a href="#how-it-works" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 text-slate-600 font-medium">
-                                    <BookOpen className="w-5 h-5 text-blue-500" /> How It Works
-                                </a>
-                                <button onClick={() => { navigate('/pricing'); setMobileMenuOpen(false); }} className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 text-slate-600 font-medium">
+                                <button onClick={() => { handleRoleSelect(UserRole.LEARNER); setMobileMenuOpen(false); }} className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 font-bold">
+                                    <GraduationCap className="w-5 h-5 text-blue-500" /> For Learners
+                                </button>
+                                <button onClick={() => { handleRoleSelect(UserRole.TEACHER); setMobileMenuOpen(false); }} className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 font-bold">
+                                    <Users className="w-5 h-5 text-emerald-500" /> For Teachers
+                                </button>
+                                <button onClick={() => { navigate('/pricing'); setMobileMenuOpen(false); }} className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 font-medium">
                                     <CreditCard className="w-5 h-5 text-indigo-500" /> Pricing
                                 </button>
-                                <button onClick={() => { setShowLogin(true); setMobileMenuOpen(false); }} className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 text-slate-600 font-medium">
+                                <button onClick={() => { navigate('/blog'); setMobileMenuOpen(false); }} className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 font-medium">
+                                    <BookOpen className="w-5 h-5 text-indigo-500" /> Blog
+                                </button>
+                                <button onClick={() => { setShowLogin(true); setMobileMenuOpen(false); }} className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 font-medium">
                                     <Users className="w-5 h-5 text-slate-400" /> Login
                                 </button>
                                 <button onClick={() => { toggleLanguage(); setMobileMenuOpen(false); }} className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 text-slate-400 font-medium text-sm">
@@ -861,39 +870,110 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
             <div className="w-full h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent opacity-20"></div>
 
             {/* --- TESTIMONIALS --- */}
-            <section className="py-24 bg-white dark:bg-slate-900 transition-colors">
+            <section className="py-24 bg-slate-50 dark:bg-slate-950 transition-colors border-t border-slate-100 dark:border-slate-800/50">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="text-center mb-16">
-                        <h2 className="text-3xl md:text-5xl font-extrabold text-[#1a2b5e] dark:text-blue-100 mb-6 tracking-tight">Voices of Success</h2>
-                        <p className="text-lg text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">See how Somo Smart is transforming the educational landscape for Kenyan students and teachers.</p>
+                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 text-blue-700 font-bold text-xs mb-6 uppercase tracking-wider dark:bg-blue-900/30 dark:text-blue-300 border border-blue-100 dark:border-blue-800">
+                            <Star className="w-4 h-4" /> Rated 4.9/5 by 10,000+ Users
+                        </div>
+                        <h2 className="text-4xl md:text-5xl font-extrabold text-slate-900 dark:text-white mb-6 tracking-tight">Voices of <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-500">Success</span></h2>
+                        <p className="text-lg text-slate-600 dark:text-slate-400 max-w-2xl mx-auto font-medium">See how Somo Smart is transforming the educational landscape for Kenyan students, teachers, and parents.</p>
                     </div>
 
                     <div className="grid md:grid-cols-3 gap-8">
-
-                        {/* Parent Testimonial */}
+                        {/* Learner Testimonial */}
                         <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            viewport={{ once: true }}
+                            transition={{ duration: 0.5 }}
                             whileHover={{ y: -5 }}
-                            className="bg-white p-8 rounded-3xl shadow-xl shadow-slate-100 border border-slate-100 relative"
+                            className="bg-white dark:bg-slate-900 p-8 rounded-[2rem] shadow-xl shadow-slate-200/50 dark:shadow-none border border-slate-100 dark:border-slate-800 relative group"
                         >
-                            <div className="absolute top-8 right-8 text-orange-100">
+                            <div className="absolute top-8 right-8 text-blue-100 dark:text-blue-900/30 group-hover:text-blue-200 dark:group-hover:text-blue-800/50 transition-colors">
                                 <Quote className="w-12 h-12" />
                             </div>
                             <div className="flex items-center gap-4 mb-6">
-                                <div className="w-14 h-14 rounded-full bg-orange-100 flex items-center justify-center text-orange-600 font-bold text-xl border-2 border-white shadow-lg">
-                                    MN
+                                <div className="w-14 h-14 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-blue-600 dark:text-blue-400 font-bold text-xl border-2 border-white dark:border-slate-800 shadow-sm relative z-10">
+                                    BK
                                 </div>
-                                <div>
-                                    <h4 className="font-bold text-slate-900">Mrs. Njeri</h4>
-                                    <p className="text-xs font-semibold text-orange-600 uppercase tracking-wider">Parent</p>
+                                <div className="relative z-10">
+                                    <h4 className="font-bold text-slate-900 dark:text-white">Brian K.</h4>
+                                    <div className="flex items-center gap-1 mt-1">
+                                        {[...Array(5)].map((_, i) => <Star key={i} className="w-3 h-3 fill-amber-400 text-amber-400" />)}
+                                    </div>
                                 </div>
                             </div>
-                            <p className="text-slate-600 italic leading-relaxed relative z-10">
-                                "My child's grades have improved significantly since we started using Somo. The detailed progress tracking helps me stay involved in their education."
+                            <p className="text-slate-600 dark:text-slate-400 italic leading-relaxed relative z-10 font-medium">
+                                "Somo Smart explained Chemistry concepts that I struggled with for months. I moved from a C+ to an A- in my latest mocks. The AI breakdown is just like having a personal tutor."
                             </p>
-                            <div className="mt-6 pt-6 border-t border-slate-50 flex items-center gap-2 text-xs font-bold text-slate-400">
-                                <Users className="w-4 h-4" /> Parent of Grade 4 Student
+                            <div className="mt-6 pt-6 border-t border-slate-50 dark:border-slate-800/50 flex items-center gap-2 text-xs font-bold text-blue-600 dark:text-blue-400">
+                                <GraduationCap className="w-4 h-4" /> Form 4 Candidate
                             </div>
                         </motion.div>
+
+                        {/* Teacher Testimonial */}
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            viewport={{ once: true }}
+                            transition={{ duration: 0.5, delay: 0.1 }}
+                            whileHover={{ y: -5 }}
+                            className="bg-white dark:bg-slate-900 p-8 rounded-[2rem] shadow-xl shadow-slate-200/50 dark:shadow-none border border-slate-100 dark:border-slate-800 relative group"
+                        >
+                            <div className="absolute top-8 right-8 text-emerald-100 dark:text-emerald-900/30 group-hover:text-emerald-200 dark:group-hover:text-emerald-800/50 transition-colors">
+                                <Quote className="w-12 h-12" />
+                            </div>
+                            <div className="flex items-center gap-4 mb-6">
+                                <div className="w-14 h-14 rounded-full bg-emerald-100 dark:bg-emerald-900 flex items-center justify-center text-emerald-600 dark:text-emerald-400 font-bold text-xl border-2 border-white dark:border-slate-800 shadow-sm relative z-10">
+                                    MO
+                                </div>
+                                <div className="relative z-10">
+                                    <h4 className="font-bold text-slate-900 dark:text-white">Mr. Ochieng</h4>
+                                    <div className="flex items-center gap-1 mt-1">
+                                        {[...Array(5)].map((_, i) => <Star key={i} className="w-3 h-3 fill-amber-400 text-amber-400" />)}
+                                    </div>
+                                </div>
+                            </div>
+                            <p className="text-slate-600 dark:text-slate-400 italic leading-relaxed relative z-10 font-medium">
+                                "The defining feature for me is the Smart Marking. I used to spend my entire weekend marking 80 Mathematics papers. Now, Somo does the heavy lifting according to KNEC rubrics, saving me 15+ hours weekly."
+                            </p>
+                            <div className="mt-6 pt-6 border-t border-slate-50 dark:border-slate-800/50 flex items-center gap-2 text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                                <School className="w-4 h-4" /> Mathematics HOD
+                            </div>
+                        </motion.div>
+
+                        {/* Parent Testimonial */}
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            viewport={{ once: true }}
+                            transition={{ duration: 0.5, delay: 0.2 }}
+                            whileHover={{ y: -5 }}
+                            className="bg-white dark:bg-slate-900 p-8 rounded-[2rem] shadow-xl shadow-slate-200/50 dark:shadow-none border border-slate-100 dark:border-slate-800 relative group"
+                        >
+                            <div className="absolute top-8 right-8 text-orange-100 dark:text-orange-900/30 group-hover:text-orange-200 dark:group-hover:text-orange-800/50 transition-colors">
+                                <Quote className="w-12 h-12" />
+                            </div>
+                            <div className="flex items-center gap-4 mb-6">
+                                <div className="w-14 h-14 rounded-full bg-orange-100 dark:bg-orange-900 flex items-center justify-center text-orange-600 dark:text-orange-400 font-bold text-xl border-2 border-white dark:border-slate-800 shadow-sm relative z-10">
+                                    JN
+                                </div>
+                                <div className="relative z-10">
+                                    <h4 className="font-bold text-slate-900 dark:text-white">Jane N.</h4>
+                                    <div className="flex items-center gap-1 mt-1">
+                                        {[...Array(5)].map((_, i) => <Star key={i} className="w-3 h-3 fill-amber-400 text-amber-400" />)}
+                                    </div>
+                                </div>
+                            </div>
+                            <p className="text-slate-600 dark:text-slate-400 italic leading-relaxed relative z-10 font-medium">
+                                "Since subscribing to Somo Smart, I can finally track exactly where my daughter is struggling. The predictive analytics told me she needed help in Algebra weeks before her midterm exams."
+                            </p>
+                            <div className="mt-6 pt-6 border-t border-slate-50 dark:border-slate-800/50 flex items-center gap-2 text-xs font-bold text-orange-600 dark:text-orange-400">
+                                <Users className="w-4 h-4" /> Parent of JSS Student
+                            </div>
+                        </motion.div>
+
                     </div>
                 </div>
             </section>
@@ -938,19 +1018,69 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
             </section>
 
             {/* --- BOTTOM FOOTER --- */}
-            <footer className="bg-white py-8 border-t border-slate-100">
-                <div className="max-w-7xl mx-auto px-4 flex flex-col md:flex-row justify-center items-center gap-8 text-sm text-slate-500">
-                    <p>&copy; {new Date().getFullYear()} Somo Smart</p>
-                    <div className="w-px h-4 bg-slate-300 hidden md:block"></div>
-                    <button onClick={() => setShowPrivacy(true)} className="hover:text-blue-600 transition-colors">Privacy</button>
-                    <div className="w-px h-4 bg-slate-300 hidden md:block"></div>
-                    <button onClick={() => setShowTerms(true)} className="hover:text-blue-600 transition-colors">Terms</button>
-                    <div className="w-px h-4 bg-slate-300 hidden md:block"></div>
-                    <button onClick={() => setShowContact(true)} className="hover:text-blue-600 transition-colors">Contact</button>
-                    <div className="w-px h-4 bg-slate-300 hidden md:block"></div>
-                    <button onClick={() => navigate('/admin')} className="text-slate-400 hover:text-slate-600 transition-colors text-xs flex items-center gap-1">
-                        <span className="w-2 h-2 rounded-full bg-emerald-500"></span> Admin
-                    </button>
+            <footer className="bg-white dark:bg-slate-950 py-12 border-t border-slate-100 dark:border-slate-800 transition-colors">
+                <div className="max-w-7xl mx-auto px-4">
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8 pb-8 border-b border-slate-100 dark:border-slate-800">
+                        {/* Column 1: Brand & Local SEO */}
+                        <div className="md:col-span-2">
+                            <div className="flex items-center gap-2 cursor-pointer mb-4" onClick={() => window.scrollTo(0, 0)}>
+                                <img src={logoImg} alt="Somo Smart Logo" className="h-12 w-auto object-contain grayscale opacity-80 hover:grayscale-0 hover:opacity-100 transition-all dark:invert dark:opacity-60 dark:hover:invert-0 dark:hover:opacity-100" />
+                            </div>
+                            <p className="text-slate-500 dark:text-slate-400 text-sm mb-6 max-w-sm leading-relaxed">
+                                Kenya's leading AI-powered learning platform. Empowering students, teachers, and parents with strictly aligned CBC and KCSE educational tools.
+                            </p>
+                            
+                            {/* Google Business Profile Action */}
+                            <a href="https://g.page/somosmart/" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors group">
+                                <Store className="w-5 h-5 text-indigo-600 dark:text-indigo-400 group-hover:scale-110 transition-transform" />
+                                <div>
+                                    <div className="text-xs font-bold text-slate-800 dark:text-slate-200">Review us on Google</div>
+                                    <div className="text-[10px] text-slate-500 dark:text-slate-400 flex items-center gap-1"><MapPin className="w-3 h-3" /> Nairobi, Kenya</div>
+                                </div>
+                            </a>
+                        </div>
+                        
+                        {/* Column 2: Quick Links */}
+                        <div>
+                            <h4 className="font-bold text-slate-900 dark:text-white mb-4 tracking-wide uppercase text-sm">Platform</h4>
+                            <ul className="space-y-3 text-sm text-slate-500 dark:text-slate-400">
+                                <li><button onClick={() => navigate('/pricing')} className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">Pricing</button></li>
+                                <li><a href="#how-it-works" className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">How it Works</a></li>
+                                <li><button onClick={() => setShowLogin(true)} className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">Login</button></li>
+                                <li><button onClick={() => navigate('/admin')} className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> System Admin</button></li>
+                            </ul>
+                        </div>
+                        
+                        {/* Column 3: Legal & Support */}
+                        <div>
+                            <h4 className="font-bold text-slate-900 dark:text-white mb-4 tracking-wide uppercase text-sm">Support</h4>
+                            <ul className="space-y-3 text-sm text-slate-500 dark:text-slate-400">
+                                <li><button onClick={() => setShowContact(true)} className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">Contact Us</button></li>
+                                <li><button onClick={() => setShowPrivacy(true)} className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">Privacy Policy</button></li>
+                                <li><button onClick={() => setShowTerms(true)} className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">Terms of Service</button></li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-slate-500 dark:text-slate-400">
+                        <p>&copy; {new Date().getFullYear()} Somo Smart. All rights reserved.</p>
+                        
+                        {/* Social Links */}
+                        <div className="flex items-center gap-4">
+                            <a href="https://facebook.com/somosmart" target="_blank" rel="noopener noreferrer" className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 dark:text-slate-400 hover:bg-blue-100 dark:hover:bg-blue-900/50 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+                                <Facebook className="w-4 h-4" />
+                            </a>
+                            <a href="https://twitter.com/somosmart" target="_blank" rel="noopener noreferrer" className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 dark:text-slate-400 hover:bg-sky-100 dark:hover:bg-sky-900/50 hover:text-sky-500 dark:hover:text-sky-400 transition-colors">
+                                <Twitter className="w-4 h-4" />
+                            </a>
+                            <a href="https://instagram.com/somosmart" target="_blank" rel="noopener noreferrer" className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 dark:text-slate-400 hover:bg-pink-100 dark:hover:bg-pink-900/50 hover:text-pink-600 dark:hover:text-pink-400 transition-colors">
+                                <Instagram className="w-4 h-4" />
+                            </a>
+                            <a href="https://linkedin.com/company/somosmart" target="_blank" rel="noopener noreferrer" className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 dark:text-slate-400 hover:bg-blue-100 dark:hover:bg-blue-900/50 hover:text-blue-700 dark:hover:text-blue-400 transition-colors">
+                                <Linkedin className="w-4 h-4" />
+                            </a>
+                        </div>
+                    </div>
                 </div>
             </footer>
             {/* --- MODALS --- */}

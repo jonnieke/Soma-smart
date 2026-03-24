@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
     Home, Brain, BookOpen, Users, ClipboardList, FolderOpen, BarChart3,
     MessageCircle, X, Menu, GraduationCap, School, ChevronDown, LogOut,
-    UserCircle, Sparkles, Settings, Crown, Star, ScanLine, Lock, Mic
+    UserCircle, Sparkles, Settings, Crown, Star, ScanLine, Lock, Mic, Gift, ChevronRight
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { EducationLevel } from '../types';
@@ -17,7 +17,8 @@ export type SidebarTab =
     | 'RESOURCES'
     | 'PROGRESS'
     | 'COMMUNITY'
-    | 'TALKBACK';
+    | 'TALKBACK'
+    | 'REFERRAL';
 
 interface NavItem {
     id: SidebarTab;
@@ -235,6 +236,28 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
                     );
                 })}
             </nav>
+
+            {/* Referral CTA */}
+            {!isPro && isRegistered && (
+                <div className="px-4 pb-2">
+                    <button
+                        onClick={() => {
+                            onTabChange('REFERRAL');
+                            if (window.innerWidth < 1024) onToggle();
+                        }}
+                        className="w-full flex items-center justify-between gap-3 px-3 py-3 rounded-xl bg-gradient-to-r from-orange-500 to-rose-500 text-white shadow-lg shadow-orange-500/20 hover:-translate-y-0.5 transition-all group"
+                    >
+                        <div className="flex items-center gap-2">
+                            <Gift className="w-5 h-5 text-orange-100 group-hover:scale-110 transition-transform" />
+                            <div className="flex flex-col items-start">
+                                <span className="text-xs font-black uppercase tracking-wider">Earn Free Pro</span>
+                                <span className="text-[10px] text-orange-100 font-medium">Invite 1 Friend</span>
+                            </div>
+                        </div>
+                        <ChevronRight className="w-4 h-4 text-orange-200 group-hover:translate-x-1 transition-transform" />
+                    </button>
+                </div>
+            )}
 
             {/* Pro Badge / User Section */}
             <div className="px-4 py-4 border-t border-slate-100 dark:border-slate-800 space-y-2">
