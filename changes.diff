@@ -1,0 +1,497 @@
+diff --git a/src/features/learner/ConversationalTutor.tsx b/src/features/learner/ConversationalTutor.tsx
+index 8246b13..53946bd 100644
+--- a/src/features/learner/ConversationalTutor.tsx
++++ b/src/features/learner/ConversationalTutor.tsx
+@@ -8,11 +8,13 @@ import {
+ } from 'lucide-react';
+ import {
+     chatTalkback, chatLanguageTutor, transcribeAudioForChat,
+-    TalkbackMessage, LanguageTutorResponse
++    TalkbackMessage, LanguageTutorResponse,
++    chatTalkbackStream, processStream
+ } from '../../services/geminiService';
+ import {
+     speakConversational, stopSpeech,
+-    TALKBACK_VOICES, LANGUAGE_TUTOR_VOICES
++    TALKBACK_VOICES, LANGUAGE_TUTOR_VOICES,
++    queueSpeak, clearSpeechQueue
+ } from '../../services/elevenLabsService';
+ 
+ // Premium Assets
+@@ -293,6 +295,83 @@ export const ConversationalTutor: React.FC<ConversationalTutorProps> = ({ onBack
+         };
+     }, []);
+ 
++    // ─── Recording ───────────────────────────────────────────────
++    // ─── Send Message ────────────────────────────────────────────
++    const handleSendMessage = useCallback(async (text: string) => {
++        if (!text.trim()) return;
++        const userMsg: TalkbackMessage = { role: 'user', text: text.trim(), timestamp: Date.now() };
++        setMessages(prev => [...prev, userMsg]);
++        setInputText('');
++        setIsLoading(true);
++
++        try {
++            if (screen === 'TALKBACK') {
++                const voiceId = TALKBACK_VOICES[chatLang];
++                setIsSpeaking(true);
++                clearSpeechQueue();
++
++                const stream = await chatTalkbackStream(text, messages, chatLang);
++                let fullText = "";
++                let spokenText = "";
++
++                // Add an initial empty AI message
++                const aiMsgId = Date.now();
++                setMessages(prev => [...prev, { role: 'ai', text: '', timestamp: aiMsgId }]);
++
++                await processStream(stream, (chunk) => {
++                    fullText = chunk;
++                    // Update UI
++                    setMessages(prev => {
++                        const newMessages = [...prev];
++                        const lastMsg = newMessages[newMessages.length - 1];
++                        if (lastMsg && lastMsg.role === 'ai') {
++                            lastMsg.text = fullText;
++                        }
++                        return newMessages;
++                    });
++
++                    // Detect sentences for speech
++                    const untranslated = fullText.slice(spokenText.length);
++                    const sentenceMatch = untranslated.match(/[^.!?]+[.!?]/g);
++                    if (sentenceMatch) {
++                        for (const sentence of sentenceMatch) {
++                            queueSpeak(sentence.trim(), voiceId);
++                            spokenText += sentence;
++                        }
++                    }
++                });
++
++                // Final remaining text
++                const finalRemaining = fullText.slice(spokenText.length).trim();
++                if (finalRemaining) {
++                    queueSpeak(finalRemaining, voiceId);
++                }
++
++            } else if (screen === 'LANGUAGE_TUTOR') {
++                const response = await chatLanguageTutor(text, messages, chatLang, tutorMode);
++                const aiMsg: TalkbackMessage = { role: 'ai', text: response.reply, timestamp: Date.now() };
++                setMessages(prev => [...prev, aiMsg]);
++                setTutorResponses(prev => new Map(prev).set(aiMsg.timestamp, response));
++                const voiceId = LANGUAGE_TUTOR_VOICES[chatLang];
++                setIsSpeaking(true);
++                try { await speakConversational(response.reply, voiceId); } catch { /* silent */ } finally { setIsSpeaking(false); }
++            }
++        } catch (error) {
++            console.error("Chat error:", error);
++            const errorMsg: TalkbackMessage = {
++                role: 'ai',
++                text: chatLang === 'sw' ? 'Pole, kuna tatizo. Jaribu tena! 😊' : "Oops, something went wrong. Let's try again! 😊",
++                timestamp: Date.now()
++            };
++            setMessages(prev => [...prev, errorMsg]);
++        } finally {
++            setIsLoading(false);
++            // We keep isSpeaking true until the user manually stops or eventually times out 
++            // but for better UX we could reset it. 
++            // In Talkback mode, it's better to keep the visualizer active while the queue is processing.
++        }
++    }, [screen, messages, chatLang, tutorMode]);
++
+     // ─── Recording ───────────────────────────────────────────────
+     const startRecording = useCallback(async () => {
+         try {
+@@ -310,6 +389,7 @@ export const ConversationalTutor: React.FC<ConversationalTutorProps> = ({ onBack
+ 
+             mediaRecorder.onstop = async () => {
+                 const blob = new Blob(chunksRef.current, { type: mimeType });
++                console.log("Recording stopped. Blob size:", blob.size, "Mime:", mimeType);
+                 stream.getTracks().forEach(t => t.stop());
+                 if (timerRef.current) clearInterval(timerRef.current);
+                 setRecordingTime(0);
+@@ -319,10 +399,16 @@ export const ConversationalTutor: React.FC<ConversationalTutorProps> = ({ onBack
+                 reader.readAsDataURL(blob);
+                 reader.onloadend = async () => {
+                     const base64 = (reader.result as string).split(',')[1];
++                    console.log("Sending for transcription...");
+                     setIsLoading(true);
+                     try {
+                         const transcript = await transcribeAudioForChat(base64, mimeType, chatLang);
+-                        if (transcript.trim()) await handleSendMessage(transcript.trim());
++                        console.log("Received transcript:", transcript);
++                        if (transcript && transcript.trim()) {
++                            await handleSendMessage(transcript.trim());
++                        } else {
++                            console.warn("Empty transcript received.");
++                        }
+                     } catch (err) {
+                         console.error('Transcription failed:', err);
+                     } finally {
+@@ -338,7 +424,7 @@ export const ConversationalTutor: React.FC<ConversationalTutorProps> = ({ onBack
+         } catch (err) {
+             console.error('Microphone error:', err);
+         }
+-    }, [chatLang]);
++    }, [chatLang, handleSendMessage]);
+ 
+     const stopRecording = useCallback(() => {
+         if (mediaRecorderRef.current && isRecording) {
+@@ -347,45 +433,12 @@ export const ConversationalTutor: React.FC<ConversationalTutorProps> = ({ onBack
+         }
+     }, [isRecording]);
+ 
+-    // ─── Send Message ────────────────────────────────────────────
+-    const handleSendMessage = useCallback(async (text: string) => {
+-        if (!text.trim()) return;
+-        const userMsg: TalkbackMessage = { role: 'user', text: text.trim(), timestamp: Date.now() };
+-        setMessages(prev => [...prev, userMsg]);
+-        setInputText('');
+-        setIsLoading(true);
+-
+-        try {
+-            if (screen === 'TALKBACK') {
+-                const reply = await chatTalkback(text, messages, chatLang);
+-                const aiMsg: TalkbackMessage = { role: 'ai', text: reply, timestamp: Date.now() };
+-                setMessages(prev => [...prev, aiMsg]);
+-                const voiceId = TALKBACK_VOICES[chatLang];
+-                setIsSpeaking(true);
+-                try { await speakConversational(reply, voiceId); } catch { /* silent */ } finally { setIsSpeaking(false); }
+-            } else if (screen === 'LANGUAGE_TUTOR') {
+-                const response = await chatLanguageTutor(text, messages, chatLang, tutorMode);
+-                const aiMsg: TalkbackMessage = { role: 'ai', text: response.reply, timestamp: Date.now() };
+-                setMessages(prev => [...prev, aiMsg]);
+-                setTutorResponses(prev => new Map(prev).set(aiMsg.timestamp, response));
+-                const voiceId = LANGUAGE_TUTOR_VOICES[chatLang];
+-                setIsSpeaking(true);
+-                try { await speakConversational(response.reply, voiceId); } catch { /* silent */ } finally { setIsSpeaking(false); }
+-            }
+-        } catch {
+-            const errorMsg: TalkbackMessage = {
+-                role: 'ai',
+-                text: chatLang === 'sw' ? 'Pole, kuna tatizo. Jaribu tena! 😊' : "Oops, something went wrong. Let's try again! 😊",
+-                timestamp: Date.now()
+-            };
+-            setMessages(prev => [...prev, errorMsg]);
+-        } finally {
+-            setIsLoading(false);
+-        }
+-    }, [screen, messages, chatLang, tutorMode]);
+-
+     const handleSpeak = useCallback(async (text: string) => {
+-        if (isSpeaking) { stopSpeech(); setIsSpeaking(false); return; }
++        if (isSpeaking) { 
++            clearSpeechQueue(); 
++            setIsSpeaking(false); 
++            return; 
++        }
+         const voiceId = screen === 'TALKBACK' ? TALKBACK_VOICES[chatLang] : LANGUAGE_TUTOR_VOICES[chatLang];
+         setIsSpeaking(true);
+         try { await speakConversational(text, voiceId); } catch { /* silent */ } finally { setIsSpeaking(false); }
+diff --git a/src/services/elevenLabsService.ts b/src/services/elevenLabsService.ts
+index 5db1cce..76503ac 100644
+--- a/src/services/elevenLabsService.ts
++++ b/src/services/elevenLabsService.ts
+@@ -42,10 +42,12 @@ export const speak = async (text: string): Promise<void> => {
+                 BASE_URL,
+                 {
+                     text,
+-                    model_id: "eleven_multilingual_v2",
++                    model_id: "eleven_flash_v2_5",
+                     voice_settings: {
+                         stability: 0.5,
+-                        similarity_boost: 0.75,
++                        similarity_boost: 0.8,
++                        style: 0.0,
++                        use_speaker_boost: true
+                     },
+                 },
+                 {
+@@ -74,8 +76,8 @@ export const speak = async (text: string): Promise<void> => {
+                 };
+                 audio.play().catch(reject);
+             });
+-        } catch (error) {
+-            console.error("ElevenLabs failed, falling back to browser TTS:", error);
++        } catch (error: any) {
++            console.error("ElevenLabs failed (General Speak):", error.response?.data || error.message);
+         }
+     }
+ 
+@@ -147,8 +149,8 @@ export const playPodcast = async (
+             `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`,
+             {
+                 text,
+-                model_id: "eleven_multilingual_v2",
+-                voice_settings: { stability: 0.5, similarity_boost: 0.75 },
++                model_id: "eleven_flash_v2_5",
++                voice_settings: { stability: 0.5, similarity_boost: 0.8, style: 0.0, use_speaker_boost: true },
+             },
+             {
+                 headers: { 'xi-api-key': API_KEY, 'Content-Type': 'application/json' },
+@@ -266,11 +268,11 @@ export const speakConversational = async (text: string, voiceId: string): Promis
+                 `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`,
+                 {
+                     text,
+-                    model_id: "eleven_multilingual_v2",
++                    model_id: "eleven_flash_v2_5",
+                     voice_settings: {
+-                        stability: 0.6,
++                        stability: 0.5,
+                         similarity_boost: 0.8,
+-                        style: 0.3,
++                        style: 0.1,
+                         use_speaker_boost: true,
+                     },
+                 },
+@@ -300,8 +302,8 @@ export const speakConversational = async (text: string, voiceId: string): Promis
+                 };
+                 audio.play().catch(reject);
+             });
+-        } catch (error) {
+-            console.error("ElevenLabs conversational TTS failed, using browser fallback:", error);
++        } catch (error: any) {
++            console.error("ElevenLabs Conversational TTS failed:", error.response?.data || error.message);
+         }
+     }
+ 
+@@ -319,3 +321,33 @@ export const speakConversational = async (text: string, voiceId: string): Promis
+         window.speechSynthesis.speak(utterance);
+     });
+ };
++
++// --- SPEECH QUEUEING FOR STREAMING ---
++let speechQueue: string[] = [];
++let isProcessingQueue = false;
++
++const processQueue = async (voiceId: string) => {
++    if (isProcessingQueue || speechQueue.length === 0) return;
++    isProcessingQueue = true;
++    try {
++        while (speechQueue.length > 0) {
++            const nextText = speechQueue.shift();
++            if (nextText) {
++                await speakConversational(nextText, voiceId);
++            }
++        }
++    } finally {
++        isProcessingQueue = false;
++    }
++};
++
++export const queueSpeak = (text: string, voiceId: string) => {
++    speechQueue.push(text);
++    processQueue(voiceId);
++};
++
++export const clearSpeechQueue = () => {
++    speechQueue = [];
++    isProcessingQueue = false;
++    stopSpeech();
++};
+diff --git a/src/services/geminiService.ts b/src/services/geminiService.ts
+index 2770755..512f3b0 100644
+--- a/src/services/geminiService.ts
++++ b/src/services/geminiService.ts
+@@ -11,24 +11,86 @@ import { buildPersonaInstruction, recommendPersona } from "./adminAgentService";
+ import { supabase } from "../lib/supabase";
+ 
+ const callGeminiProxy = async (model: string, contents: any, generationConfig: any = {}, systemInstruction: any = null) => {
+-  const { data, error } = await supabase.functions.invoke('gemini-proxy', {
+-    body: { model, contents, generationConfig, systemInstruction }
++  const { data: { session } } = await supabase.auth.getSession();
++  const token = session?.access_token;
++
++  const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/gemini-proxy`, {
++    method: 'POST',
++    headers: {
++      'Content-Type': 'application/json',
++      'Authorization': `Bearer ${token}`
++    },
++    body: JSON.stringify({ model, contents, generationConfig, systemInstruction, stream: false })
+   });
+ 
+-  if (error) {
++  if (!response.ok) {
++    const error = await response.json();
+     console.error("Gemini Proxy Error:", error);
+     throw new Error(error.message || "Failed to call AI proxy");
+   }
+ 
++  const data = await response.json();
++
+   // Convert the raw response to match the structure expected by the rest of the file
+   return {
+     response: {
+       text: () => data.candidates[0].content.parts[0].text,
+-      // Add other helpers if needed by existing code
+     }
+   };
+ };
+ 
++// --- STREAMING PROXY HELPER ---
++const callGeminiProxyStream = async (model: string, contents: any, generationConfig: any = {}, systemInstruction: any = null) => {
++  const { data: { session } } = await supabase.auth.getSession();
++  const token = session?.access_token;
++
++  const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/gemini-proxy`, {
++    method: 'POST',
++    headers: {
++      'Content-Type': 'application/json',
++      'Authorization': `Bearer ${token}`
++    },
++    body: JSON.stringify({ model, contents, generationConfig, systemInstruction, stream: true })
++  });
++
++  if (!response.ok) {
++    const error = await response.json();
++    throw new Error(error.message || "Failed to call AI proxy");
++  }
++
++  return response.body as ReadableStream<Uint8Array>;
++};
++
++export const processStream = async (stream: ReadableStream<Uint8Array>, onChunk: (text: string) => void) => {
++  const reader = stream.getReader();
++  const decoder = new TextDecoder();
++  let buffer = "";
++
++  while (true) {
++    const { done, value } = await reader.read();
++    if (done) break;
++
++    buffer += decoder.decode(value, { stream: true });
++
++    // Try to find any "text" content in the buffer
++    // Gemini stream chunks look like: 
++    // [
++    //   {"candidates": [{"content": {"parts": [{"text": "chunk1"}]}} ]},
++    //   {"candidates": [{"content": {"parts": [{"text": "chunk2"}]}} ]}
++    // ]
++    // Regex to find all text parts in the buffer so far
++    const textMatches = buffer.match(/"text":\s*"((?:\\.|[^"\\])*)"/g);
++    if (textMatches) {
++        const fullText = textMatches.map(m => {
++            const inner = m.match(/"text":\s*"(.*)"/);
++            return inner ? JSON.parse(`"${inner[1]}"`) : "";
++        }).join("");
++        
++        onChunk(fullText);
++    }
++  }
++};
++
+ const genAI = {
+   getGenerativeModel: (config: any) => ({
+     generateContent: async (parts: any) => {
+@@ -2569,6 +2631,7 @@ export interface LanguageTutorResponse {
+   encouragement: string;
+   exampleSentence: string;
+   storySegment?: string;
++  stream?: boolean;
+ }
+ 
+ export const chatTalkback = async (
+@@ -2620,6 +2683,41 @@ export const chatTalkback = async (
+   }
+ };
+ 
++export const chatTalkbackStream = async (
++  userMessage: string,
++  chatHistory: TalkbackMessage[],
++  language: 'en' | 'sw' = 'en'
++): Promise<ReadableStream<Uint8Array>> => {
++  const history = chatHistory.slice(-10).map(m =>
++    `${m.role === 'ai' ? 'Somo Buddy' : 'Learner'}: ${m.text}`
++  ).join('\n');
++
++  const langLabel = language === 'sw' ? 'Kiswahili' : 'English';
++
++  const prompt = `
++    You are "Somo Buddy", a super fun, friendly, and encouraging AI conversation partner for young learners.
++    You speak ${langLabel}. ALWAYS respond in ${langLabel}.
++    YOUR PERSONALITY:
++    - Warm, playful, and enthusiastic (use emojis sparingly but joyfully 🎉)
++    - You love learning and exploring topics together
++    - You keep answers SHORT (2-4 sentences max) and age-appropriate
++    - You ask fun follow-up questions to keep the conversation going
++    - You celebrate the learner's curiosity
++    - If they seem confused, you simplify and encourage
++    - You can tell short stories, riddles, and fun facts
++    - NEVER use inappropriate, violent, or scary content
++    
++    CONVERSATION HISTORY:
++    ${history}
++    
++    LEARNER SAYS: "${userMessage}"
++    
++    Respond naturally as Somo Buddy. Keep it short, fun, and engaging!
++  `;
++
++  return callGeminiProxyStream(MODEL_NAME, [{ role: 'user', parts: [{ text: prompt }] }], { maxOutputTokens: 500 });
++};
++
+ export const transcribeAudioForChat = async (
+   base64Audio: string,
+   mimeType: string,
+@@ -2640,11 +2738,14 @@ export const transcribeAudioForChat = async (
+   `;
+ 
+   try {
++    console.log("Transcribing audio...", { mimeType, size: base64Audio.length });
+     const result = await model.generateContent([
+       prompt,
+       { inlineData: { data: base64Audio, mimeType } }
+     ]);
+-    return result.response.text() || '';
++    const text = result.response.text();
++    console.log("Transcription result:", text);
++    return text || '';
+   } catch (error) {
+     console.error("Transcription error:", error);
+     return '';
+diff --git a/supabase/functions/gemini-proxy/index.ts b/supabase/functions/gemini-proxy/index.ts
+index 9871966..26ee0c8 100644
+--- a/supabase/functions/gemini-proxy/index.ts
++++ b/supabase/functions/gemini-proxy/index.ts
+@@ -24,7 +24,7 @@ serve(async (req) => {
+             );
+         }
+ 
+-        const { model, contents, generationConfig, systemInstruction } = await req.json();
++        const { model, contents, generationConfig, systemInstruction, stream } = await req.json();
+ 
+         if (!contents || !model) {
+             return new Response(
+@@ -118,8 +118,9 @@ serve(async (req) => {
+             geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:embedContent?key=${GEMINI_API_KEY}`;
+             geminiBody = { content: normalizedContents[0] }; // Embeddings take a single content object
+         } else {
+-            // For generation, use generateContent endpoint
+-            geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
++            // For generation, use generateContent or streamGenerateContent endpoint
++            const endpoint = stream ? 'streamGenerateContent' : 'generateContent';
++            geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:${endpoint}?key=${GEMINI_API_KEY}`;
+             geminiBody = { contents: normalizedContents };
+             if (generationConfig) geminiBody.generationConfig = generationConfig;
+             if (systemInstruction) geminiBody.systemInstruction = systemInstruction;
+@@ -140,6 +141,19 @@ serve(async (req) => {
+             );
+         }
+ 
++        // Handle streaming response
++        if (stream) {
++            return new Response(geminiRes.body, {
++                headers: { 
++                    ...corsHeaders, 
++                    'Content-Type': 'text/event-stream',
++                    'Cache-Control': 'no-cache',
++                    'Connection': 'keep-alive'
++                },
++                status: 200
++            });
++        }
++
+         const data = await geminiRes.json();
+ 
+         return new Response(

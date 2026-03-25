@@ -11,22 +11,84 @@ import { buildPersonaInstruction, recommendPersona } from "./adminAgentService";
 import { supabase } from "../lib/supabase";
 
 const callGeminiProxy = async (model: string, contents: any, generationConfig: any = {}, systemInstruction: any = null) => {
-  const { data, error } = await supabase.functions.invoke('gemini-proxy', {
-    body: { model, contents, generationConfig, systemInstruction }
+  const { data: { session } } = await supabase.auth.getSession();
+  const token = session?.access_token;
+
+  const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/gemini-proxy`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify({ model, contents, generationConfig, systemInstruction, stream: false })
   });
 
-  if (error) {
+  if (!response.ok) {
+    const error = await response.json();
     console.error("Gemini Proxy Error:", error);
     throw new Error(error.message || "Failed to call AI proxy");
   }
+
+  const data = await response.json();
 
   // Convert the raw response to match the structure expected by the rest of the file
   return {
     response: {
       text: () => data.candidates[0].content.parts[0].text,
-      // Add other helpers if needed by existing code
     }
   };
+};
+
+// --- STREAMING PROXY HELPER ---
+const callGeminiProxyStream = async (model: string, contents: any, generationConfig: any = {}, systemInstruction: any = null) => {
+  const { data: { session } } = await supabase.auth.getSession();
+  const token = session?.access_token;
+
+  const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/gemini-proxy`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify({ model, contents, generationConfig, systemInstruction, stream: true })
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || "Failed to call AI proxy");
+  }
+
+  return response.body as ReadableStream<Uint8Array>;
+};
+
+export const processStream = async (stream: ReadableStream<Uint8Array>, onChunk: (text: string) => void) => {
+  const reader = stream.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+
+    buffer += decoder.decode(value, { stream: true });
+
+    // Try to find any "text" content in the buffer
+    // Gemini stream chunks look like: 
+    // [
+    //   {"candidates": [{"content": {"parts": [{"text": "chunk1"}]}} ]},
+    //   {"candidates": [{"content": {"parts": [{"text": "chunk2"}]}} ]}
+    // ]
+    // Regex to find all text parts in the buffer so far
+    const textMatches = buffer.match(/"text":\s*"((?:\\.|[^"\\])*)"/g);
+    if (textMatches) {
+        const fullText = textMatches.map(m => {
+            const inner = m.match(/"text":\s*"(.*)"/);
+            return inner ? JSON.parse(`"${inner[1]}"`) : "";
+        }).join("");
+        
+        onChunk(fullText);
+    }
+  }
 };
 
 const genAI = {
@@ -2569,6 +2631,7 @@ export interface LanguageTutorResponse {
   encouragement: string;
   exampleSentence: string;
   storySegment?: string;
+  stream?: boolean;
 }
 
 export const chatTalkback = async (
@@ -2620,6 +2683,41 @@ export const chatTalkback = async (
   }
 };
 
+export const chatTalkbackStream = async (
+  userMessage: string,
+  chatHistory: TalkbackMessage[],
+  language: 'en' | 'sw' = 'en'
+): Promise<ReadableStream<Uint8Array>> => {
+  const history = chatHistory.slice(-10).map(m =>
+    `${m.role === 'ai' ? 'Somo Buddy' : 'Learner'}: ${m.text}`
+  ).join('\n');
+
+  const langLabel = language === 'sw' ? 'Kiswahili' : 'English';
+
+  const prompt = `
+    You are "Somo Buddy", a super fun, friendly, and encouraging AI conversation partner for young learners.
+    You speak ${langLabel}. ALWAYS respond in ${langLabel}.
+    YOUR PERSONALITY:
+    - Warm, playful, and enthusiastic (use emojis sparingly but joyfully 🎉)
+    - You love learning and exploring topics together
+    - You keep answers SHORT (2-4 sentences max) and age-appropriate
+    - You ask fun follow-up questions to keep the conversation going
+    - You celebrate the learner's curiosity
+    - If they seem confused, you simplify and encourage
+    - You can tell short stories, riddles, and fun facts
+    - NEVER use inappropriate, violent, or scary content
+    
+    CONVERSATION HISTORY:
+    ${history}
+    
+    LEARNER SAYS: "${userMessage}"
+    
+    Respond naturally as Somo Buddy. Keep it short, fun, and engaging!
+  `;
+
+  return callGeminiProxyStream(MODEL_NAME, [{ role: 'user', parts: [{ text: prompt }] }], { maxOutputTokens: 500 });
+};
+
 export const transcribeAudioForChat = async (
   base64Audio: string,
   mimeType: string,
@@ -2640,11 +2738,14 @@ export const transcribeAudioForChat = async (
   `;
 
   try {
+    console.log("Transcribing audio...", { mimeType, size: base64Audio.length });
     const result = await model.generateContent([
       prompt,
       { inlineData: { data: base64Audio, mimeType } }
     ]);
-    return result.response.text() || '';
+    const text = result.response.text();
+    console.log("Transcription result:", text);
+    return text || '';
   } catch (error) {
     console.error("Transcription error:", error);
     return '';

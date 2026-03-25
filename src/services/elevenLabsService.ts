@@ -42,10 +42,12 @@ export const speak = async (text: string): Promise<void> => {
                 BASE_URL,
                 {
                     text,
-                    model_id: "eleven_multilingual_v2",
+                    model_id: "eleven_flash_v2_5",
                     voice_settings: {
                         stability: 0.5,
-                        similarity_boost: 0.75,
+                        similarity_boost: 0.8,
+                        style: 0.0,
+                        use_speaker_boost: true
                     },
                 },
                 {
@@ -74,8 +76,8 @@ export const speak = async (text: string): Promise<void> => {
                 };
                 audio.play().catch(reject);
             });
-        } catch (error) {
-            console.error("ElevenLabs failed, falling back to browser TTS:", error);
+        } catch (error: any) {
+            console.error("ElevenLabs failed (General Speak):", error.response?.data || error.message);
         }
     }
 
@@ -147,8 +149,8 @@ export const playPodcast = async (
             `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`,
             {
                 text,
-                model_id: "eleven_multilingual_v2",
-                voice_settings: { stability: 0.5, similarity_boost: 0.75 },
+                model_id: "eleven_flash_v2_5",
+                voice_settings: { stability: 0.5, similarity_boost: 0.8, style: 0.0, use_speaker_boost: true },
             },
             {
                 headers: { 'xi-api-key': API_KEY, 'Content-Type': 'application/json' },
@@ -266,11 +268,11 @@ export const speakConversational = async (text: string, voiceId: string): Promis
                 `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`,
                 {
                     text,
-                    model_id: "eleven_multilingual_v2",
+                    model_id: "eleven_flash_v2_5",
                     voice_settings: {
-                        stability: 0.6,
+                        stability: 0.5,
                         similarity_boost: 0.8,
-                        style: 0.3,
+                        style: 0.1,
                         use_speaker_boost: true,
                     },
                 },
@@ -300,8 +302,8 @@ export const speakConversational = async (text: string, voiceId: string): Promis
                 };
                 audio.play().catch(reject);
             });
-        } catch (error) {
-            console.error("ElevenLabs conversational TTS failed, using browser fallback:", error);
+        } catch (error: any) {
+            console.error("ElevenLabs Conversational TTS failed:", error.response?.data || error.message);
         }
     }
 
@@ -318,4 +320,34 @@ export const speakConversational = async (text: string, voiceId: string): Promis
         utterance.onerror = (e) => reject(e);
         window.speechSynthesis.speak(utterance);
     });
+};
+
+// --- SPEECH QUEUEING FOR STREAMING ---
+let speechQueue: string[] = [];
+let isProcessingQueue = false;
+
+const processQueue = async (voiceId: string) => {
+    if (isProcessingQueue || speechQueue.length === 0) return;
+    isProcessingQueue = true;
+    try {
+        while (speechQueue.length > 0) {
+            const nextText = speechQueue.shift();
+            if (nextText) {
+                await speakConversational(nextText, voiceId);
+            }
+        }
+    } finally {
+        isProcessingQueue = false;
+    }
+};
+
+export const queueSpeak = (text: string, voiceId: string) => {
+    speechQueue.push(text);
+    processQueue(voiceId);
+};
+
+export const clearSpeechQueue = () => {
+    speechQueue = [];
+    isProcessingQueue = false;
+    stopSpeech();
 };

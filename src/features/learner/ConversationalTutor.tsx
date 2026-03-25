@@ -8,11 +8,13 @@ import {
 } from 'lucide-react';
 import {
     chatTalkback, chatLanguageTutor, transcribeAudioForChat,
-    TalkbackMessage, LanguageTutorResponse
+    TalkbackMessage, LanguageTutorResponse,
+    chatTalkbackStream, processStream
 } from '../../services/geminiService';
 import {
     speakConversational, stopSpeech,
-    TALKBACK_VOICES, LANGUAGE_TUTOR_VOICES
+    TALKBACK_VOICES, LANGUAGE_TUTOR_VOICES,
+    queueSpeak, clearSpeechQueue
 } from '../../services/elevenLabsService';
 
 // Premium Assets
@@ -294,6 +296,83 @@ export const ConversationalTutor: React.FC<ConversationalTutorProps> = ({ onBack
     }, []);
 
     // ─── Recording ───────────────────────────────────────────────
+    // ─── Send Message ────────────────────────────────────────────
+    const handleSendMessage = useCallback(async (text: string) => {
+        if (!text.trim()) return;
+        const userMsg: TalkbackMessage = { role: 'user', text: text.trim(), timestamp: Date.now() };
+        setMessages(prev => [...prev, userMsg]);
+        setInputText('');
+        setIsLoading(true);
+
+        try {
+            if (screen === 'TALKBACK') {
+                const voiceId = TALKBACK_VOICES[chatLang];
+                setIsSpeaking(true);
+                clearSpeechQueue();
+
+                const stream = await chatTalkbackStream(text, messages, chatLang);
+                let fullText = "";
+                let spokenText = "";
+
+                // Add an initial empty AI message
+                const aiMsgId = Date.now();
+                setMessages(prev => [...prev, { role: 'ai', text: '', timestamp: aiMsgId }]);
+
+                await processStream(stream, (chunk) => {
+                    fullText = chunk;
+                    // Update UI
+                    setMessages(prev => {
+                        const newMessages = [...prev];
+                        const lastMsg = newMessages[newMessages.length - 1];
+                        if (lastMsg && lastMsg.role === 'ai') {
+                            lastMsg.text = fullText;
+                        }
+                        return newMessages;
+                    });
+
+                    // Detect sentences for speech
+                    const untranslated = fullText.slice(spokenText.length);
+                    const sentenceMatch = untranslated.match(/[^.!?]+[.!?]/g);
+                    if (sentenceMatch) {
+                        for (const sentence of sentenceMatch) {
+                            queueSpeak(sentence.trim(), voiceId);
+                            spokenText += sentence;
+                        }
+                    }
+                });
+
+                // Final remaining text
+                const finalRemaining = fullText.slice(spokenText.length).trim();
+                if (finalRemaining) {
+                    queueSpeak(finalRemaining, voiceId);
+                }
+
+            } else if (screen === 'LANGUAGE_TUTOR') {
+                const response = await chatLanguageTutor(text, messages, chatLang, tutorMode);
+                const aiMsg: TalkbackMessage = { role: 'ai', text: response.reply, timestamp: Date.now() };
+                setMessages(prev => [...prev, aiMsg]);
+                setTutorResponses(prev => new Map(prev).set(aiMsg.timestamp, response));
+                const voiceId = LANGUAGE_TUTOR_VOICES[chatLang];
+                setIsSpeaking(true);
+                try { await speakConversational(response.reply, voiceId); } catch { /* silent */ } finally { setIsSpeaking(false); }
+            }
+        } catch (error) {
+            console.error("Chat error:", error);
+            const errorMsg: TalkbackMessage = {
+                role: 'ai',
+                text: chatLang === 'sw' ? 'Pole, kuna tatizo. Jaribu tena! 😊' : "Oops, something went wrong. Let's try again! 😊",
+                timestamp: Date.now()
+            };
+            setMessages(prev => [...prev, errorMsg]);
+        } finally {
+            setIsLoading(false);
+            // We keep isSpeaking true until the user manually stops or eventually times out 
+            // but for better UX we could reset it. 
+            // In Talkback mode, it's better to keep the visualizer active while the queue is processing.
+        }
+    }, [screen, messages, chatLang, tutorMode]);
+
+    // ─── Recording ───────────────────────────────────────────────
     const startRecording = useCallback(async () => {
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -310,6 +389,7 @@ export const ConversationalTutor: React.FC<ConversationalTutorProps> = ({ onBack
 
             mediaRecorder.onstop = async () => {
                 const blob = new Blob(chunksRef.current, { type: mimeType });
+                console.log("Recording stopped. Blob size:", blob.size, "Mime:", mimeType);
                 stream.getTracks().forEach(t => t.stop());
                 if (timerRef.current) clearInterval(timerRef.current);
                 setRecordingTime(0);
@@ -319,10 +399,16 @@ export const ConversationalTutor: React.FC<ConversationalTutorProps> = ({ onBack
                 reader.readAsDataURL(blob);
                 reader.onloadend = async () => {
                     const base64 = (reader.result as string).split(',')[1];
+                    console.log("Sending for transcription...");
                     setIsLoading(true);
                     try {
                         const transcript = await transcribeAudioForChat(base64, mimeType, chatLang);
-                        if (transcript.trim()) await handleSendMessage(transcript.trim());
+                        console.log("Received transcript:", transcript);
+                        if (transcript && transcript.trim()) {
+                            await handleSendMessage(transcript.trim());
+                        } else {
+                            console.warn("Empty transcript received.");
+                        }
                     } catch (err) {
                         console.error('Transcription failed:', err);
                     } finally {
@@ -338,7 +424,7 @@ export const ConversationalTutor: React.FC<ConversationalTutorProps> = ({ onBack
         } catch (err) {
             console.error('Microphone error:', err);
         }
-    }, [chatLang]);
+    }, [chatLang, handleSendMessage]);
 
     const stopRecording = useCallback(() => {
         if (mediaRecorderRef.current && isRecording) {
@@ -347,45 +433,12 @@ export const ConversationalTutor: React.FC<ConversationalTutorProps> = ({ onBack
         }
     }, [isRecording]);
 
-    // ─── Send Message ────────────────────────────────────────────
-    const handleSendMessage = useCallback(async (text: string) => {
-        if (!text.trim()) return;
-        const userMsg: TalkbackMessage = { role: 'user', text: text.trim(), timestamp: Date.now() };
-        setMessages(prev => [...prev, userMsg]);
-        setInputText('');
-        setIsLoading(true);
-
-        try {
-            if (screen === 'TALKBACK') {
-                const reply = await chatTalkback(text, messages, chatLang);
-                const aiMsg: TalkbackMessage = { role: 'ai', text: reply, timestamp: Date.now() };
-                setMessages(prev => [...prev, aiMsg]);
-                const voiceId = TALKBACK_VOICES[chatLang];
-                setIsSpeaking(true);
-                try { await speakConversational(reply, voiceId); } catch { /* silent */ } finally { setIsSpeaking(false); }
-            } else if (screen === 'LANGUAGE_TUTOR') {
-                const response = await chatLanguageTutor(text, messages, chatLang, tutorMode);
-                const aiMsg: TalkbackMessage = { role: 'ai', text: response.reply, timestamp: Date.now() };
-                setMessages(prev => [...prev, aiMsg]);
-                setTutorResponses(prev => new Map(prev).set(aiMsg.timestamp, response));
-                const voiceId = LANGUAGE_TUTOR_VOICES[chatLang];
-                setIsSpeaking(true);
-                try { await speakConversational(response.reply, voiceId); } catch { /* silent */ } finally { setIsSpeaking(false); }
-            }
-        } catch {
-            const errorMsg: TalkbackMessage = {
-                role: 'ai',
-                text: chatLang === 'sw' ? 'Pole, kuna tatizo. Jaribu tena! 😊' : "Oops, something went wrong. Let's try again! 😊",
-                timestamp: Date.now()
-            };
-            setMessages(prev => [...prev, errorMsg]);
-        } finally {
-            setIsLoading(false);
-        }
-    }, [screen, messages, chatLang, tutorMode]);
-
     const handleSpeak = useCallback(async (text: string) => {
-        if (isSpeaking) { stopSpeech(); setIsSpeaking(false); return; }
+        if (isSpeaking) { 
+            clearSpeechQueue(); 
+            setIsSpeaking(false); 
+            return; 
+        }
         const voiceId = screen === 'TALKBACK' ? TALKBACK_VOICES[chatLang] : LANGUAGE_TUTOR_VOICES[chatLang];
         setIsSpeaking(true);
         try { await speakConversational(text, voiceId); } catch { /* silent */ } finally { setIsSpeaking(false); }

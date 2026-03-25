@@ -24,7 +24,7 @@ serve(async (req) => {
             );
         }
 
-        const { model, contents, generationConfig, systemInstruction } = await req.json();
+        const { model, contents, generationConfig, systemInstruction, stream } = await req.json();
 
         if (!contents || !model) {
             return new Response(
@@ -118,8 +118,9 @@ serve(async (req) => {
             geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:embedContent?key=${GEMINI_API_KEY}`;
             geminiBody = { content: normalizedContents[0] }; // Embeddings take a single content object
         } else {
-            // For generation, use generateContent endpoint
-            geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
+            // For generation, use generateContent or streamGenerateContent endpoint
+            const endpoint = stream ? 'streamGenerateContent' : 'generateContent';
+            geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:${endpoint}?key=${GEMINI_API_KEY}`;
             geminiBody = { contents: normalizedContents };
             if (generationConfig) geminiBody.generationConfig = generationConfig;
             if (systemInstruction) geminiBody.systemInstruction = systemInstruction;
@@ -138,6 +139,19 @@ serve(async (req) => {
                 JSON.stringify({ error: 'Gemini API request failed', details: errText }),
                 { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: geminiRes.status }
             );
+        }
+
+        // Handle streaming response
+        if (stream) {
+            return new Response(geminiRes.body, {
+                headers: { 
+                    ...corsHeaders, 
+                    'Content-Type': 'text/event-stream',
+                    'Cache-Control': 'no-cache',
+                    'Connection': 'keep-alive'
+                },
+                status: 200
+            });
         }
 
         const data = await geminiRes.json();
