@@ -15,6 +15,10 @@ import {
     TALKBACK_VOICES, LANGUAGE_TUTOR_VOICES
 } from '../../services/elevenLabsService';
 
+// Premium Assets
+import somoBuddyImg from '../../assets/images/somo_buddy_avatar.png';
+import mwalimuSomoImg from '../../assets/images/mwalimu_somo_avatar.png';
+
 // ─── Types ───────────────────────────────────────────────────────
 type FeatureScreen = 'HOME' | 'TALKBACK' | 'LANGUAGE_TUTOR';
 type TutorMode = 'conversation' | 'pronunciation' | 'sentences' | 'story';
@@ -62,6 +66,38 @@ const MODE_CONFIG: Record<TutorMode, { icon: React.ReactNode; en: string; sw: st
     }
 };
 
+// ─── Premium UI Elements ─────────────────────────────────────────
+const PremiumBackground: React.FC = () => (
+    <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
+        <motion.div
+            animate={{
+                scale: [1, 1.2, 1],
+                x: [0, 100, 0],
+                y: [0, 50, 0],
+            }}
+            transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+            className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-indigo-500/10 blur-[100px] rounded-full"
+        />
+        <motion.div
+            animate={{
+                scale: [1, 1.3, 1],
+                x: [0, -100, 0],
+                y: [0, -50, 0],
+            }}
+            transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
+            className="absolute bottom-[-10%] right-[-10%] w-[600px] h-[600px] bg-purple-500/10 blur-[120px] rounded-full"
+        />
+        <motion.div
+            animate={{
+                scale: [1, 1.1, 1],
+                opacity: [0.3, 0.5, 0.3],
+            }}
+            transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
+            className="absolute top-[20%] right-[10%] w-[300px] h-[300px] bg-blue-500/5 blur-[80px] rounded-full"
+        />
+    </div>
+);
+
 // ─── Audio Visualizer ────────────────────────────────────────────
 const AudioWaveVisualizer: React.FC<{ isActive: boolean; color?: string }> = ({ isActive, color = '#6366f1' }) => (
     <div className="flex items-center justify-center gap-[3px] h-8">
@@ -86,21 +122,38 @@ const AudioWaveVisualizer: React.FC<{ isActive: boolean; color?: string }> = ({ 
 );
 
 // ─── AI Avatar ───────────────────────────────────────────────────
-const AIAvatar: React.FC<{ size?: 'sm' | 'md' | 'lg'; isTutor?: boolean; isAnimated?: boolean }> = ({
+const AIAvatar: React.FC<{ size?: 'sm' | 'md' | 'lg' | 'xl'; isTutor?: boolean; isAnimated?: boolean }> = ({
     size = 'md', isTutor = false, isAnimated = false
 }) => {
-    const sizeMap = { sm: 'w-8 h-8 text-base', md: 'w-11 h-11 text-xl', lg: 'w-20 h-20 text-4xl' };
-    const gradient = isTutor
-        ? 'from-emerald-400 via-teal-500 to-cyan-500'
-        : 'from-indigo-400 via-purple-500 to-pink-500';
-
+    const sizeMap = { 
+        sm: 'w-10 h-10', 
+        md: 'w-16 h-16', 
+        lg: 'w-24 h-24',
+        xl: 'w-32 h-32'
+    };
+    
     return (
         <motion.div
-            className={`${sizeMap[size]} rounded-2xl bg-gradient-to-br ${gradient} flex items-center justify-center shadow-lg flex-shrink-0`}
-            animate={isAnimated ? { scale: [1, 1.05, 1] } : {}}
-            transition={isAnimated ? { duration: 2, repeat: Infinity, ease: 'easeInOut' } : {}}
+            className={`${sizeMap[size]} rounded-3xl overflow-hidden shadow-2xl flex-shrink-0 relative group`}
+            animate={isAnimated ? { 
+                scale: [1, 1.05, 1],
+                rotate: [0, 1, -1, 0] 
+            } : {}}
+            transition={isAnimated ? { duration: 4, repeat: Infinity, ease: 'easeInOut' } : {}}
         >
-            <span>{isTutor ? '🎓' : '🤖'}</span>
+            <div className={`absolute inset-0 bg-gradient-to-br ${isTutor ? 'from-emerald-400/20 to-teal-600/20' : 'from-indigo-400/20 to-purple-600/20'} opacity-50 group-hover:opacity-100 transition-opacity`} />
+            <img 
+                src={isTutor ? mwalimuSomoImg : somoBuddyImg} 
+                alt="AI Avatar" 
+                className="w-full h-full object-cover relative z-10"
+            />
+            {isAnimated && (
+                <motion.div 
+                    className="absolute inset-0 border-2 border-white/30 rounded-3xl z-20"
+                    animate={{ opacity: [0.3, 0.6, 0.3] }}
+                    transition={{ duration: 2, repeat: Infinity }}
+                />
+            )}
         </motion.div>
     );
 };
@@ -126,29 +179,29 @@ const ChatBubble: React.FC<{
                 <AIAvatar size="sm" isTutor={isLanguageTutor} />
             )}
 
-            <div className={`max-w-[80%] ${isUser ? '' : ''}`}>
+            <div className={`max-w-[85%] ${isUser ? '' : ''}`}>
                 {/* Main bubble */}
-                <div className={`px-4 py-3 rounded-2xl text-sm leading-relaxed ${isUser
-                    ? 'bg-gradient-to-br from-indigo-500 to-purple-600 text-white rounded-br-none shadow-md shadow-indigo-200 dark:shadow-indigo-900/30'
-                    : 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 rounded-tl-none shadow-md shadow-slate-200/80 dark:shadow-slate-900/30 border border-slate-100 dark:border-slate-700'
+                <div className={`px-5 py-4 rounded-[2rem] text-sm leading-relaxed ${isUser
+                    ? 'bg-gradient-to-br from-indigo-600 to-violet-700 text-white rounded-br-sm shadow-xl shadow-indigo-500/20'
+                    : 'bg-white/80 dark:bg-slate-800/80 backdrop-blur-md text-slate-800 dark:text-slate-100 rounded-tl-sm shadow-xl shadow-slate-200/50 dark:shadow-slate-950/50 border border-white/40 dark:border-slate-700/40 relative'
                 }`}
                 >
-                    <p className="whitespace-pre-wrap">{message.text}</p>
+                    <p className="whitespace-pre-wrap font-medium">{message.text}</p>
+                    
+                    {!isUser && (
+                        <div className="absolute -left-1.5 top-0 w-3 h-3 bg-white/80 dark:bg-slate-800/80 backdrop-blur-md border-l border-t border-white/40 dark:border-slate-700/40 transform rotate-[-45deg] rounded-tl-sm" />
+                    )}
 
-                    {/* Speaker button for AI messages */}
                     {!isUser && (
                         <button
                             onClick={() => onSpeak?.(message.text)}
-                            className={`mt-2 flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all ${isSpeaking
-                                ? 'bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400'
-                                : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700'
+                            className={`mt-3 flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-bold tracking-tight transition-all ${isSpeaking
+                                ? 'bg-indigo-100/50 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400'
+                                : 'bg-slate-50 dark:bg-slate-900/50 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
                             }`}
-                            title="Listen"
                         >
-                            {isSpeaking
-                                ? <><VolumeX className="w-3.5 h-3.5" /> Stop</>
-                                : <><Volume2 className="w-3.5 h-3.5" /> Listen</>
-                            }
+                            {isSpeaking ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
+                            {isSpeaking ? 'Stopping' : 'Listen Lesson'}
                         </button>
                     )}
                 </div>
@@ -361,44 +414,45 @@ export const ConversationalTutor: React.FC<ConversationalTutorProps> = ({ onBack
     // ─── HOME SCREEN ─────────────────────────────────────────────
     if (screen === 'HOME') {
         return (
-            <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col overflow-x-hidden">
-                {/* Hero Header */}
-                <div className="relative overflow-hidden bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 px-5 pt-14 pb-28">
-                    {/* Decorative blobs */}
-                    <div className="absolute top-0 right-0 w-56 h-56 bg-white/10 rounded-full -translate-y-20 translate-x-20 blur-2xl" />
-                    <div className="absolute bottom-0 left-0 w-40 h-40 bg-pink-400/20 rounded-full translate-y-16 -translate-x-12 blur-xl" />
+            <div className="min-h-screen bg-white dark:bg-slate-950 flex flex-col overflow-x-hidden relative">
+                <PremiumBackground />
 
+                {/* Hero Header */}
+                <div className="relative px-5 pt-14 pb-32">
                     <button
                         onClick={onBack}
-                        className="absolute top-5 left-4 p-2 rounded-xl bg-white/20 hover:bg-white/30 backdrop-blur transition-colors"
+                        className="absolute top-5 left-4 z-50 p-2.5 rounded-2xl bg-white/20 hover:bg-white/40 backdrop-blur-xl border border-white/20 transition-all shadow-lg"
                     >
-                        <ArrowLeft className="w-5 h-5 text-white" />
+                        <ArrowLeft className="w-5 h-5 text-indigo-900 dark:text-white" />
                     </button>
 
-                    <div className="relative z-10 text-center">
-                        {/* AI Avatar */}
+                    <div className="relative z-10 text-center flex flex-col items-center">
+                        <AIAvatar size="xl" isAnimated />
+
                         <motion.div
-                            className="w-20 h-20 mx-auto mb-4 rounded-3xl bg-white/20 backdrop-blur-md border-2 border-white/30 flex items-center justify-center shadow-2xl"
-                            animate={{ scale: [1, 1.04, 1] }}
-                            transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+                            initial={{ opacity: 0, scale: 0.9 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            className="mt-6 inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-300 border border-indigo-100 dark:border-indigo-800 text-[10px] font-black uppercase tracking-[0.2em]"
                         >
-                            <span className="text-4xl">🤖</span>
+                            <Sparkles className="w-3 h-3" />
+                            Premium AI Experience
                         </motion.div>
 
-                        <h1 className="text-2xl font-extrabold text-white mb-1 tracking-tight">Talk &amp; Learn</h1>
-                        <p className="text-sm text-white/75 max-w-xs mx-auto">
-                            Your AI-powered speaking and language coach — available 24/7
+                        <h1 className="text-4xl font-black text-slate-900 dark:text-white mt-4 mb-2 tracking-tight">
+                            Talk &amp; <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600">Learn</span>
+                        </h1>
+                        <p className="text-base text-slate-500 dark:text-slate-400 max-w-xs font-medium leading-relaxed">
+                            Your high-fidelity AI conversation partner. Master fluency anytime, anywhere.
                         </p>
 
-                        {/* Stats row */}
-                        <div className="flex justify-center gap-3 mt-5">
+                        <div className="flex justify-center flex-wrap gap-2 mt-8">
                             {[
-                                { icon: <Flame className="w-3.5 h-3.5" />, label: 'AI-Powered' },
-                                { icon: <Globe className="w-3.5 h-3.5" />, label: '2 Languages' },
-                                { icon: <Zap className="w-3.5 h-3.5" />, label: 'Voice Input' },
+                                { icon: <Headphones className="w-3.5 h-3.5" />, label: 'Professional Audio' },
+                                { icon: <Globe className="w-3.5 h-3.5" />, label: 'Multilingual' },
+                                { icon: <Flame className="w-3.5 h-3.5" />, label: 'Real-time' },
                             ].map(({ icon, label }) => (
-                                <div key={label} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/15 backdrop-blur text-white text-[11px] font-semibold border border-white/20">
-                                    {icon} {label}
+                                <div key={label} className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/60 dark:bg-slate-900/40 backdrop-blur border border-white/40 dark:border-slate-800/40 shadow-sm text-slate-700 dark:text-slate-300 text-[11px] font-bold">
+                                    <span className="text-indigo-500">{icon}</span> {label}
                                 </div>
                             ))}
                         </div>
@@ -406,72 +460,68 @@ export const ConversationalTutor: React.FC<ConversationalTutorProps> = ({ onBack
                 </div>
 
                 {/* Cards pulled up over the hero */}
-                <div className="px-4 -mt-16 pb-24 space-y-4 relative z-10">
+                <div className="px-4 -mt-16 pb-24 space-y-4 relative z-10 max-w-2xl mx-auto w-full">
 
                     {/* Language Toggle */}
-                    <div className="flex gap-2 bg-white dark:bg-slate-900 p-1.5 rounded-2xl shadow-lg shadow-slate-200/60 dark:shadow-slate-900/60 border border-slate-100 dark:border-slate-800">
+                    <div className="flex gap-2 bg-white/40 dark:bg-slate-900/40 backdrop-blur-2xl p-2 rounded-[2rem] shadow-2xl border border-white/40 dark:border-slate-800/20">
                         {(['en', 'sw'] as ChatLang[]).map(lang => (
                             <button
                                 key={lang}
                                 onClick={() => setChatLang(lang)}
-                                className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl font-bold text-sm transition-all ${chatLang === lang
-                                    ? lang === 'en'
-                                        ? 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-md shadow-blue-200 dark:shadow-blue-900/40'
-                                        : 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-md shadow-emerald-200 dark:shadow-emerald-900/40'
-                                    : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
+                                className={`flex-1 flex items-center justify-center gap-3 py-3 rounded-[1.5rem] font-black text-xs uppercase tracking-widest transition-all ${chatLang === lang
+                                    ? 'bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-xl'
+                                    : 'text-slate-400 dark:text-slate-500 hover:bg-white/40 dark:hover:bg-slate-800/40'
                                     }`}
                             >
                                 <Globe className="w-4 h-4" />
-                                {lang === 'en' ? '🇬🇧 English' : '🇰🇪 Kiswahili'}
+                                {lang === 'en' ? 'English' : 'Kiswahili'}
                             </button>
                         ))}
                     </div>
 
                     {/* Talkback Card */}
                     <motion.button
-                        whileHover={{ y: -3, scale: 1.01 }}
+                        whileHover={{ y: -5, scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
                         onClick={() => openChat('TALKBACK')}
                         className="w-full text-left"
                     >
-                        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-500 via-purple-600 to-pink-500 p-1 shadow-xl shadow-purple-300/40 dark:shadow-purple-900/50">
-                            <div className="bg-white/10 backdrop-blur rounded-[20px] p-5">
-                                <div className="flex items-start justify-between mb-4">
-                                    <div className="w-14 h-14 rounded-2xl bg-white/20 flex items-center justify-center text-3xl">
-                                        🤖
+                        <div className="relative overflow-hidden rounded-[2.5rem] bg-indigo-600/5 dark:bg-indigo-400/5 p-1 border border-indigo-100/50 dark:border-indigo-800/30 group">
+                            <div className="bg-white/80 dark:bg-slate-900/60 backdrop-blur-xl rounded-[2.25rem] p-7 transition-all group-hover:bg-white/100 dark:group-hover:bg-slate-900/80">
+                                <div className="flex items-start justify-between mb-6">
+                                    <div className="relative">
+                                        <div className="absolute inset-0 bg-indigo-500/20 blur-xl rounded-full" />
+                                        <img src={somoBuddyImg} alt="Buddy" className="w-16 h-16 rounded-2xl relative z-10 border-2 border-white/50 dark:border-slate-800/50 object-cover" />
                                     </div>
-                                    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/20 text-white text-[10px] font-bold uppercase tracking-wider">
-                                        <div className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
-                                        Live AI
+                                    <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-50 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 text-[10px] font-black uppercase tracking-wider">
+                                        <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse" />
+                                        Interactive
                                     </div>
                                 </div>
 
-                                <h2 className="text-xl font-extrabold text-white mb-1">Somo Buddy Talkback</h2>
-                                <p className="text-sm text-white/80 mb-4 leading-relaxed">
+                                <h2 className="text-2xl font-black text-slate-800 dark:text-white mb-2">Somo Buddy Talkback</h2>
+                                <p className="text-sm text-slate-500 dark:text-slate-400 mb-6 leading-relaxed font-medium">
                                     {chatLang === 'sw'
                                         ? 'Zungumza na AI kwa sauti au maandishi. Uliza maswali, simulia hadithi, na ujifunze kwa mazungumzo ya asili!'
-                                        : 'Speak or type to your AI buddy. Ask questions, explore topics, and build confidence through natural conversations!'}
+                                        : 'Master fluency through natural, high-fidelity AI conversations. Speak or type to your personal study buddy anytime.'}
                                 </p>
 
-                                {/* Feature chips */}
-                                <div className="flex flex-wrap gap-2 mb-5">
-                                    {[
-                                        { icon: <Mic className="w-3 h-3" />, label: chatLang === 'sw' ? 'Kurekodi Sauti' : 'Voice Recording' },
-                                        { icon: <Headphones className="w-3 h-3" />, label: chatLang === 'sw' ? 'Jibu la Sauti' : 'Audio Replies' },
-                                        { icon: <Globe className="w-3 h-3" />, label: chatLang === 'sw' ? 'Kiswahili + Kiingereza' : 'EN + SW' },
-                                    ].map(({ icon, label }) => (
-                                        <span key={label} className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/20 text-white text-[10px] font-semibold">
-                                            {icon} {label}
-                                        </span>
-                                    ))}
-                                </div>
-
                                 <div className="flex items-center justify-between">
-                                    <span className="text-sm font-bold text-white">
-                                        {chatLang === 'sw' ? 'Anza Sasa' : 'Start Chatting'}
-                                    </span>
-                                    <div className="w-8 h-8 rounded-xl bg-white/25 flex items-center justify-center">
-                                        <ChevronRight className="w-4 h-4 text-white" />
+                                    <div className="flex -space-x-2">
+                                        {[1, 2, 3].map(i => (
+                                            <div key={i} className="w-8 h-8 rounded-full border-2 border-white dark:border-slate-900 bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center">
+                                                <Sparkles className="w-3.5 h-3.5 text-indigo-500" />
+                                            </div>
+                                        ))}
+                                        <div className="w-8 h-8 rounded-full border-2 border-white dark:border-slate-900 bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-[10px] font-bold text-slate-500">
+                                            +
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                        <span className="text-xs font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-widest">Open Hub</span>
+                                        <div className="w-10 h-10 rounded-2xl bg-indigo-600 text-white shadow-lg shadow-indigo-200 dark:shadow-indigo-900/40 flex items-center justify-center transition-transform group-hover:translate-x-1">
+                                            <ChevronRight className="w-5 h-5" />
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -480,48 +530,46 @@ export const ConversationalTutor: React.FC<ConversationalTutorProps> = ({ onBack
 
                     {/* Language Coach Card */}
                     <motion.button
-                        whileHover={{ y: -3, scale: 1.01 }}
+                        whileHover={{ y: -5, scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
                         onClick={() => openChat('LANGUAGE_TUTOR')}
                         className="w-full text-left"
                     >
-                        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-500 via-teal-500 to-cyan-500 p-1 shadow-xl shadow-emerald-300/40 dark:shadow-emerald-900/50">
-                            <div className="bg-white/10 backdrop-blur rounded-[20px] p-5">
-                                <div className="flex items-start justify-between mb-4">
-                                    <div className="w-14 h-14 rounded-2xl bg-white/20 flex items-center justify-center text-3xl">
-                                        🎓
+                        <div className="relative overflow-hidden rounded-[2.5rem] bg-emerald-600/5 dark:bg-emerald-400/5 p-1 border border-emerald-100/50 dark:border-emerald-800/30 group">
+                            <div className="bg-white/80 dark:bg-slate-900/60 backdrop-blur-xl rounded-[2.25rem] p-7 transition-all group-hover:bg-white/100 dark:group-hover:bg-slate-900/80">
+                                <div className="flex items-start justify-between mb-6">
+                                    <div className="relative">
+                                        <div className="absolute inset-0 bg-emerald-500/20 blur-xl rounded-full" />
+                                        <img src={mwalimuSomoImg} alt="Tutor" className="w-16 h-16 rounded-2xl relative z-10 border-2 border-white/50 dark:border-slate-800/50 object-cover" />
                                     </div>
-                                    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/20 text-white text-[10px] font-bold uppercase tracking-wider">
+                                    <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 text-[10px] font-black uppercase tracking-wider">
                                         <Sparkles className="w-3 h-3" />
-                                        Coaching
+                                        Academic
                                     </div>
                                 </div>
 
-                                <h2 className="text-xl font-extrabold text-white mb-1">
-                                    {chatLang === 'sw' ? 'Kocha wa Lugha' : 'Language Coach'}
+                                <h2 className="text-2xl font-black text-slate-800 dark:text-white mb-2">
+                                    {chatLang === 'sw' ? 'Mwalimu Somo' : 'Professional Coach'}
                                 </h2>
-                                <p className="text-sm text-white/80 mb-4 leading-relaxed">
+                                <p className="text-sm text-slate-500 dark:text-slate-400 mb-6 leading-relaxed font-medium">
                                     {chatLang === 'sw'
                                         ? 'Jifunze kutamka vizuri, kujenga sentensi nzuri, na kusimulia hadithi kwa ujasiri wa kipekee!'
-                                        : 'Master pronunciation, build perfect sentences, and tell amazing stories — guided by your personal AI language coach!'}
+                                        : 'A world-class academic engine designed to perfect your pronunciation, grammar, and storytelling skills.'}
                                 </p>
 
-                                {/* Mode chips */}
-                                <div className="grid grid-cols-2 gap-2 mb-5">
-                                    {(Object.entries(MODE_CONFIG) as [TutorMode, typeof MODE_CONFIG[TutorMode]][]).map(([mode, config]) => (
-                                        <div key={mode} className="flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-white/20">
-                                            <span className="text-white">{config.icon}</span>
-                                            <span className="text-white text-[11px] font-semibold">{config[chatLang]}</span>
-                                        </div>
-                                    ))}
-                                </div>
-
                                 <div className="flex items-center justify-between">
-                                    <span className="text-sm font-bold text-white">
-                                        {chatLang === 'sw' ? 'Anza Kujifunza' : 'Start Learning'}
-                                    </span>
-                                    <div className="w-8 h-8 rounded-xl bg-white/25 flex items-center justify-center">
-                                        <ChevronRight className="w-4 h-4 text-white" />
+                                    <div className="flex gap-2">
+                                        {[MODE_CONFIG.pronunciation, MODE_CONFIG.sentences].map((m, idx) => (
+                                            <div key={idx} className="w-8 h-8 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-600">
+                                                {m.icon}
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                        <span className="text-xs font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest">Start Training</span>
+                                        <div className="w-10 h-10 rounded-2xl bg-emerald-600 text-white shadow-lg shadow-emerald-200 dark:shadow-indigo-900/40 flex items-center justify-center transition-transform group-hover:translate-x-1">
+                                            <ChevronRight className="w-5 h-5" />
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -533,20 +581,20 @@ export const ConversationalTutor: React.FC<ConversationalTutorProps> = ({ onBack
                         initial={{ opacity: 0, y: 16 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.4 }}
-                        className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-sm"
+                        className="p-6 rounded-[2rem] bg-white/40 dark:bg-slate-900/40 backdrop-blur-xl border border-white/40 dark:border-slate-800/20 shadow-xl max-w-2xl mx-auto"
                     >
-                        <div className="flex items-center gap-2 mb-2">
-                            <div className="w-7 h-7 rounded-lg bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
-                                <Sparkles className="w-4 h-4 text-amber-500" />
+                        <div className="flex items-center gap-3 mb-3">
+                            <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
+                                <Sparkles className="w-5 h-5 text-amber-500" />
                             </div>
-                            <p className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                                {chatLang === 'sw' ? 'Ukweli wa Kuvutia' : 'Did You Know?'}
+                            <p className="text-[10px] font-black text-slate-700 dark:text-slate-300 uppercase tracking-widest">
+                                {chatLang === 'sw' ? 'Ukweli wa Kuvutia' : 'Expert Insight'}
                             </p>
                         </div>
-                        <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
+                        <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed font-medium">
                             {chatLang === 'sw'
                                 ? '🌍 Kiswahili kinazungumzwa na watu zaidi ya milioni 200 Afrika Mashariki. Ni lugha ya kweli ya bara!'
-                                : '🌍 Swahili is spoken by over 200 million people in East Africa — and practice with AI has been shown to boost fluency by up to 40%!'}
+                                : '🌍 Swahili is spoken by over 200 million people — and practice with AI has been shown to boost fluency by up to 40%!'}
                         </p>
                     </motion.div>
                 </div>
@@ -558,20 +606,23 @@ export const ConversationalTutor: React.FC<ConversationalTutorProps> = ({ onBack
     const isTutor = screen === 'LANGUAGE_TUTOR';
 
     return (
-        <div className="flex flex-col bg-slate-50 dark:bg-slate-950" style={{ height: '100dvh' }}>
+        <div className="flex flex-col bg-slate-50 dark:bg-slate-950 relative" style={{ height: '100dvh' }}>
+            <PremiumBackground />
 
             {/* ── Chat Header ── */}
-            <div className={`flex-shrink-0 bg-gradient-to-r ${isTutor
-                ? 'from-emerald-500 via-teal-500 to-cyan-600'
-                : 'from-indigo-500 via-purple-500 to-pink-600'
-            } shadow-lg`}>
-                <div className="px-4 pt-4 pb-3">
+            <div className="flex-shrink-0 relative z-50">
+                <div className={`absolute inset-0 bg-gradient-to-r ${isTutor
+                    ? 'from-emerald-600/90 to-teal-700/90'
+                    : 'from-indigo-600/90 to-purple-700/90'
+                } backdrop-blur-xl border-b border-white/10`} />
+                
+                <div className="relative px-4 pt-4 pb-4">
                     <div className="flex items-center justify-between">
                         {/* Left: Back + identity */}
                         <div className="flex items-center gap-3">
                             <button
                                 onClick={() => { stopSpeech(); setScreen('HOME'); }}
-                                className="p-2 rounded-xl bg-white/20 hover:bg-white/30 transition-colors flex-shrink-0"
+                                className="p-2.5 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/10 transition-all flex-shrink-0"
                             >
                                 <ArrowLeft className="w-4 h-4 text-white" />
                             </button>
@@ -579,17 +630,17 @@ export const ConversationalTutor: React.FC<ConversationalTutorProps> = ({ onBack
                             <AIAvatar size="sm" isTutor={isTutor} isAnimated={isLoading} />
 
                             <div>
-                                <h2 className="text-sm font-extrabold text-white leading-tight">
+                                <h2 className="text-[13px] font-black text-white leading-tight tracking-tight uppercase">
                                     {isTutor
-                                        ? (chatLang === 'sw' ? 'Mwalimu Somo' : 'Language Coach')
+                                        ? (chatLang === 'sw' ? 'Mwalimu Somo' : 'Professional Coach')
                                         : 'Somo Buddy'}
                                 </h2>
-                                <div className="flex items-center gap-1.5 mt-0.5">
-                                    <div className={`w-1.5 h-1.5 rounded-full ${isLoading ? 'bg-amber-400 animate-bounce' : 'bg-green-400 animate-pulse'}`} />
-                                    <span className="text-[10px] text-white/80 font-medium">
+                                <div className="flex items-center gap-1.5 mt-1">
+                                    <div className={`w-1.5 h-1.5 rounded-full ${isLoading ? 'bg-amber-400 animate-bounce' : 'bg-emerald-400 animate-pulse'}`} />
+                                    <span className="text-[10px] text-white/70 font-bold uppercase tracking-widest leading-none">
                                         {isLoading
-                                            ? (chatLang === 'sw' ? 'Inafikiri...' : 'Thinking...')
-                                            : (chatLang === 'sw' ? 'Mtandaoni' : 'Online')}
+                                            ? (chatLang === 'sw' ? 'Inafikiri...' : 'Thinking')
+                                            : (chatLang === 'sw' ? 'Mtandaoni' : 'System Active')}
                                     </span>
                                 </div>
                             </div>
@@ -599,26 +650,26 @@ export const ConversationalTutor: React.FC<ConversationalTutorProps> = ({ onBack
                         <div className="flex items-center gap-2">
                             <button
                                 onClick={() => setChatLang(l => l === 'en' ? 'sw' : 'en')}
-                                className="px-3 py-1.5 rounded-xl bg-white/20 text-white text-[11px] font-bold hover:bg-white/30 transition-colors"
+                                className="px-3.5 py-1.5 rounded-xl bg-white/10 border border-white/10 text-white text-[10px] font-black hover:bg-white/20 transition-all uppercase tracking-widest"
                             >
-                                {chatLang === 'en' ? '🇰🇪 SW' : '🇬🇧 EN'}
+                                {chatLang === 'en' ? '🇬🇧 EN' : '🇰🇪 SW'}
                             </button>
-                            <button onClick={resetChat} className="p-2 rounded-xl bg-white/20 hover:bg-white/30 transition-colors" title="New Chat">
-                                <RefreshCw className="w-3.5 h-3.5 text-white" />
+                            <button onClick={resetChat} className="p-2.5 rounded-xl bg-white/10 border border-white/10 hover:bg-white/20 transition-all" title="New Session">
+                                <RefreshCw className="w-4 h-4 text-white" />
                             </button>
                         </div>
                     </div>
 
                     {/* Mode pills — Language Tutor only */}
                     {isTutor && (
-                        <div className="flex gap-2 mt-3 overflow-x-auto pb-1 scrollbar-none">
+                        <div className="flex gap-2 mt-4 overflow-x-auto pb-1 scrollbar-none">
                             {(Object.entries(MODE_CONFIG) as [TutorMode, typeof MODE_CONFIG[TutorMode]][]).map(([mode, config]) => (
                                 <button
                                     key={mode}
                                     onClick={() => setTutorMode(mode)}
-                                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-bold whitespace-nowrap transition-all flex-shrink-0 ${tutorMode === mode
-                                        ? 'bg-white text-emerald-700 shadow-md'
-                                        : 'bg-white/20 text-white hover:bg-white/30'
+                                    className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest whitespace-nowrap transition-all flex-shrink-0 border ${tutorMode === mode
+                                        ? 'bg-white text-emerald-800 border-white shadow-xl shadow-emerald-900/40'
+                                        : 'bg-white/10 text-white border-white/10 hover:bg-white/20'
                                     }`}
                                 >
                                     {config.icon}
@@ -631,7 +682,7 @@ export const ConversationalTutor: React.FC<ConversationalTutorProps> = ({ onBack
             </div>
 
             {/* ── Messages ── */}
-            <div className="flex-1 overflow-y-auto px-4 py-5">
+            <div className="flex-1 overflow-y-auto px-4 py-5 relative z-10">
                 <AnimatePresence>
                     {messages.map((msg) => (
                         <ChatBubble
@@ -652,9 +703,9 @@ export const ConversationalTutor: React.FC<ConversationalTutorProps> = ({ onBack
                         className="flex items-center gap-3 mb-4"
                     >
                         <AIAvatar size="sm" isTutor={isTutor} />
-                        <div className="px-4 py-3 rounded-2xl rounded-tl-none bg-white dark:bg-slate-800 shadow-md border border-slate-100 dark:border-slate-700 flex items-center gap-2.5">
+                        <div className="px-5 py-4 rounded-[1.5rem] rounded-tl-none bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl shadow-xl border border-white/40 dark:border-slate-700/40 flex items-center gap-3">
                             <Loader2 className={`w-4 h-4 animate-spin ${isTutor ? 'text-emerald-500' : 'text-indigo-500'}`} />
-                            <span className="text-xs text-slate-400">
+                            <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">
                                 {chatLang === 'sw' ? 'Inafikiri...' : 'Thinking...'}
                             </span>
                         </div>
@@ -665,51 +716,62 @@ export const ConversationalTutor: React.FC<ConversationalTutorProps> = ({ onBack
             </div>
 
             {/* ── Input Area — fixed to bottom, always fully visible ── */}
-            <div className="flex-shrink-0 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 shadow-[0_-4px_24px_rgba(0,0,0,0.06)]">
-
-                {/* Recording indicator */}
-                <AnimatePresence>
-                    {isRecording && (
-                        <motion.div
-                            initial={{ opacity: 0, height: 0 }}
-                            animate={{ opacity: 1, height: 'auto' }}
-                            exit={{ opacity: 0, height: 0 }}
-                            className="flex items-center justify-center gap-3 py-2.5 border-b border-slate-100 dark:border-slate-800"
-                        >
-                            <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-                            <AudioWaveVisualizer isActive={true} color={isTutor ? '#10b981' : '#6366f1'} />
-                            <span className="text-xs font-mono font-bold text-slate-500">
-                                {Math.floor(recordingTime / 60)}:{(recordingTime % 60).toString().padStart(2, '0')}
-                            </span>
-                        </motion.div>
-                    )}
-                </AnimatePresence>
-
-                {/* Speaking indicator */}
-                <AnimatePresence>
-                    {isSpeaking && !isRecording && (
-                        <motion.div
-                            initial={{ opacity: 0, height: 0 }}
-                            animate={{ opacity: 1, height: 'auto' }}
-                            exit={{ opacity: 0, height: 0 }}
-                            className="flex items-center justify-center gap-3 py-2.5 border-b border-slate-100 dark:border-slate-800"
-                        >
-                            <Volume2 className={`w-4 h-4 ${isTutor ? 'text-emerald-500' : 'text-indigo-500'}`} />
-                            <AudioWaveVisualizer isActive={true} color={isTutor ? '#10b981' : '#6366f1'} />
-                            <button
-                                onClick={() => { stopSpeech(); setIsSpeaking(false); }}
-                                className="text-[11px] font-bold text-slate-400 hover:text-red-500 transition-colors"
+            <div className="flex-shrink-0 bg-white/40 dark:bg-slate-900/40 backdrop-blur-2xl border-t border-white/20 dark:border-slate-800/20 relative z-50 px-4 pt-3 pb-6">
+                
+                {/* Status indicators */}
+                <div className="flex justify-center h-8 relative mb-2">
+                    <AnimatePresence mode="wait">
+                        {isRecording ? (
+                            <motion.div
+                                key="recording"
+                                initial={{ opacity: 0, scale: 0.9 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                exit={{ opacity: 0, scale: 0.9 }}
+                                className="flex items-center gap-3 px-4 py-1.5 rounded-full bg-red-100 dark:bg-red-900/30 border border-red-200 dark:border-red-800"
                             >
-                                {chatLang === 'sw' ? 'Simama' : 'Stop'}
-                            </button>
-                        </motion.div>
-                    )}
-                </AnimatePresence>
+                                <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+                                <span className="text-[10px] font-black text-red-600 dark:text-red-400 uppercase tracking-widest">
+                                    Recording {Math.floor(recordingTime / 60)}:{(recordingTime % 60).toString().padStart(2, '0')}
+                                </span>
+                            </motion.div>
+                        ) : isSpeaking ? (
+                            <motion.div
+                                key="speaking"
+                                initial={{ opacity: 0, scale: 0.9 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                exit={{ opacity: 0, scale: 0.9 }}
+                                className="flex items-center gap-3 px-4 py-1.5 rounded-full bg-indigo-100 dark:bg-indigo-900/30 border border-indigo-200 dark:border-indigo-800"
+                            >
+                                <Volume2 className="w-3.5 h-3.5 text-indigo-600" />
+                                <span className="text-[10px] font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-widest">AI is Speaking</span>
+                                <button
+                                    onClick={() => { stopSpeech(); setIsSpeaking(false); }}
+                                    className="ml-2 pl-2 border-l border-indigo-200 dark:border-indigo-800 text-[9px] font-black text-red-500 uppercase tracking-widest"
+                                >
+                                    Stop
+                                </button>
+                            </motion.div>
+                        ) : (
+                            <motion.div
+                                key="hint"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                className="flex items-center gap-1.5"
+                            >
+                                <Sparkles className="w-3 h-3 text-slate-400" />
+                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.15em]">
+                                    {chatLang === 'sw' ? 'Gusa 🎤 kusema' : 'TAP 🎤 TO SPEAK OR TYPE'}
+                                </span>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+                </div>
 
                 {/* Input row */}
-                <div className="px-4 py-3 flex items-end gap-2">
-                    {/* Text input */}
-                    <div className="flex-1 relative min-w-0">
+                <div className="flex items-end gap-3 max-w-2xl mx-auto">
+                    {/* Text input container */}
+                    <div className="flex-1 relative group">
+                        <div className={`absolute inset-0 bg-gradient-to-r ${isTutor ? 'from-emerald-500/10 to-teal-600/10' : 'from-indigo-500/10 to-purple-600/10'} rounded-[1.75rem] blur opacity-0 group-focus-within:opacity-100 transition-opacity`} />
                         <input
                             ref={inputRef}
                             type="text"
@@ -721,55 +783,53 @@ export const ConversationalTutor: React.FC<ConversationalTutorProps> = ({ onBack
                                     handleSendMessage(inputText);
                                 }
                             }}
-                            placeholder={chatLang === 'sw' ? 'Andika ujumbe...' : 'Type a message...'}
-                            className={`w-full px-4 py-3 rounded-2xl text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 transition bg-slate-100 dark:bg-slate-800 border border-transparent focus:border-indigo-200 dark:focus:border-indigo-800 ${isTutor ? 'focus:ring-emerald-300 dark:focus:ring-emerald-800' : 'focus:ring-indigo-300 dark:focus:ring-indigo-800'}`}
+                            placeholder={chatLang === 'sw' ? 'Andika ujumbe...' : 'Type your message...'}
+                            className={`w-full px-6 py-4 rounded-[1.75rem] text-sm text-slate-900 dark:text-white placeholder:text-slate-400 bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl border-2 transition-all focus:outline-none focus:bg-white dark:focus:bg-slate-800 ${
+                                isTutor 
+                                    ? 'border-emerald-100 dark:border-emerald-900/30 focus:border-emerald-500/50' 
+                                    : 'border-indigo-100 dark:border-indigo-900/30 focus:border-indigo-500/50'
+                            }`}
                             disabled={isLoading || isRecording}
                         />
                     </div>
 
-                    {/* Send button — shows when text is present */}
-                    <AnimatePresence>
-                        {inputText.trim() && (
-                            <motion.button
-                                initial={{ scale: 0, opacity: 0 }}
-                                animate={{ scale: 1, opacity: 1 }}
-                                exit={{ scale: 0, opacity: 0 }}
-                                onClick={() => handleSendMessage(inputText)}
-                                disabled={isLoading}
-                                className={`flex-shrink-0 p-3 rounded-2xl bg-gradient-to-r ${isTutor
-                                    ? 'from-emerald-500 to-teal-600 shadow-emerald-200 dark:shadow-emerald-900/40'
-                                    : 'from-indigo-500 to-purple-600 shadow-indigo-200 dark:shadow-indigo-900/40'
-                                } text-white shadow-md hover:shadow-lg transition-all`}
-                            >
-                                <Send className="w-4 h-4" />
-                            </motion.button>
-                        )}
-                    </AnimatePresence>
+                    {/* Action buttons */}
+                    <div className="flex gap-2">
+                        <AnimatePresence>
+                            {inputText.trim() && (
+                                <motion.button
+                                    initial={{ scale: 0.5, opacity: 0 }}
+                                    animate={{ scale: 1, opacity: 1 }}
+                                    exit={{ scale: 0.5, opacity: 0 }}
+                                    onClick={() => handleSendMessage(inputText)}
+                                    disabled={isLoading}
+                                    className={`w-14 h-14 rounded-[1.5rem] flex items-center justify-center text-white shadow-2xl transition-all hover:scale-105 active:scale-95 ${
+                                        isTutor 
+                                            ? 'bg-gradient-to-br from-emerald-500 to-teal-600 shadow-emerald-500/20' 
+                                            : 'bg-gradient-to-br from-indigo-500 to-purple-600 shadow-indigo-500/20'
+                                    }`}
+                                >
+                                    <Send className="w-5 h-5 mx-auto" />
+                                </motion.button>
+                            )}
+                        </AnimatePresence>
 
-                    {/* Mic button */}
-                    <motion.button
-                        whileTap={{ scale: 0.9 }}
-                        onClick={isRecording ? stopRecording : startRecording}
-                        disabled={isLoading}
-                        className={`flex-shrink-0 p-3 rounded-2xl transition-all shadow-md ${isRecording
-                            ? 'bg-gradient-to-r from-red-500 to-rose-600 text-white shadow-red-200 dark:shadow-red-900/40 animate-pulse'
-                            : `bg-gradient-to-r ${isTutor
-                                ? 'from-emerald-500 to-teal-600 shadow-emerald-200 dark:shadow-emerald-900/40'
-                                : 'from-indigo-500 to-purple-600 shadow-indigo-200 dark:shadow-indigo-900/40'
-                            } text-white hover:shadow-lg`
-                        } ${isLoading ? 'opacity-40 cursor-not-allowed' : ''}`}
-                    >
-                        {isRecording ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
-                    </motion.button>
+                        <motion.button
+                            whileTap={{ scale: 0.9 }}
+                            onClick={isRecording ? stopRecording : startRecording}
+                            disabled={isLoading}
+                            className={`w-14 h-14 rounded-[1.5rem] flex items-center justify-center shadow-2xl transition-all hover:scale-105 active:scale-95 ${
+                                isRecording
+                                    ? 'bg-red-500 text-white shadow-red-500/30 animate-pulse'
+                                    : isTutor
+                                        ? 'bg-emerald-500 text-white shadow-emerald-500/20'
+                                        : 'bg-indigo-500 text-white shadow-indigo-500/20'
+                            } ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        >
+                            {isRecording ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
+                        </motion.button>
+                    </div>
                 </div>
-
-                {/* Helper hint */}
-                <p className="text-center text-[10px] text-slate-400 pb-3">
-                    {isRecording
-                        ? (chatLang === 'sw' ? '🔴 Inarekodiwa — gusa kuacha' : '🔴 Recording — tap mic to stop')
-                        : (chatLang === 'sw' ? 'Gusa 🎤 kusema au andika ujumbe' : 'Tap 🎤 to speak or type a message')
-                    }
-                </p>
             </div>
         </div>
     );
