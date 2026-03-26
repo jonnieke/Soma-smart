@@ -270,30 +270,30 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
             </AnimatePresence>
 
             <Helmet>
-                <title>Somo Smart | Kenya's #1 AI Exam & Revision Assistant (KCSE, KPSEA, JSS)</title>
-                <meta name="description" content="Master your exams with Somo Smart. Kenya's premier AI platform for KCSE, KPSEA, and Junior School revision. Get instant explanations, auto-marked past papers, and personalized study notes." />
-                <meta name="keywords" content="Somo Smart, KCSE revision 2024, KPSEA past papers, JSS revision notes, AI tutor Kenya, Kenyan curriculum AI, SomoSmart app, KILEA revision, CBE study assistant" />
+                <title>Somo Smart | Kenya's #1 Smart Exam & Revision Assistant (KCSE, KPSEA, JSS)</title>
+                <meta name="description" content="Master your exams with Somo Smart. Kenya's premier Smart platform for KCSE, KPSEA, and Junior School revision. Get instant explanations, auto-marked past papers, and personalized study notes." />
+                <meta name="keywords" content="Somo Smart, KCSE revision 2024, KPSEA past papers, JSS revision notes, Smart tutor Kenya, Kenyan curriculum Smart tool, SomoSmart app, KILEA revision, CBE study assistant" />
 
                 {/* AIO/SEO specific meta tags */}
-                <meta name="ai-search-index" content="index" />
-                <meta name="ai-knowledge-base" content="official" />
+                <meta name="smart-search-index" content="index" />
+                <meta name="smart-knowledge-base" content="official" />
                 <meta name="educational-framework" content="CBE, 8-4-4, KCSE, KPSEA, KJSEA" />
                 <meta name="target-audience" content="Learners, Teachers, Parents, School Administrators" />
-                <meta name="core-features" content="AI Smart Exam Assistant, Instant Explanations, Auto-Grading, Topical Quizzes, CBE Notes" />
+                <meta name="core-features" content="Smart Exam Assistant, Instant Explanations, Auto-Grading, Topical Quizzes, CBE Notes" />
 
                 {/* Search Engine Optimization */}
                 <meta name="robots" content="index, follow" />
                 <meta name="author" content="Somo Smart" />
                 <meta property="og:title" content="Somo Smart | Your Smart Exam Assistant - Improve Grades NOW!" />
-                <meta property="og:description" content="Transform your revision with AI. Access verified KCSE, KPSEA, and JSS materials with instant smart feedback." />
+                <meta property="og:description" content="Transform your revision with our Smart Assistant. Access verified KCSE, KPSEA, and JSS materials with instant smart feedback." />
                 <meta property="og:image" content="https://somaai.co.ke/og-image.jpg" />
                 <meta property="og:type" content="website" />
                 <meta property="og:url" content="https://somaai.co.ke/" />
 
                 {/* Twitter Meta */}
                 <meta name="twitter:card" content="summary_large_image" />
-                <meta name="twitter:title" content="Somo Smart | Kenya's Best AI Study App" />
-                <meta name="twitter:description" content="Improve your grades with AI. All Kenyan exams supported: KCSE, KPSEA, JSS." />
+                <meta name="twitter:title" content="Somo Smart | Kenya's Best Smart Study App" />
+                <meta name="twitter:description" content="Improve your grades with our Smart Assistant. All Kenyan exams supported: KCSE, KPSEA, JSS." />
 
                 <link rel="canonical" href="https://somaai.co.ke/" />
 
@@ -305,7 +305,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                         "name": "Somo Smart",
                         "url": "https://somaai.co.ke",
                         "logo": "https://somaai.co.ke/main_logo.png",
-                        "description": "Kenya's #1 AI Exam & Revision Assistant for KCSE, KPSEA, and JSS.",
+                        "description": "Kenya's #1 Smart Exam & Revision Assistant for KCSE, KPSEA, and JSS.",
                         "sameAs": [
                             "https://twitter.com/somasmart",
                             "https://facebook.com/somasmart"
@@ -446,7 +446,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                 </div>
 
                                 <h1 className="text-5xl md:text-6xl lg:text-[5rem] font-black text-slate-900 dark:text-white tracking-tight leading-[1.05] mb-6">
-                                    The AI Super Teacher for <br className="hidden lg:block" />
+                                    The Smart Super Teacher for <br className="hidden lg:block" />
                                     <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-indigo-500 to-purple-600 dark:from-blue-400 dark:via-indigo-400 dark:to-purple-400">KCSE &amp; KPSEA.</span>
                                 </h1>
 
@@ -486,7 +486,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                 {/* Hero teacher image - main visual */}
                                 <img
                                     src={heroBannerImg}
-                                    alt="Somo Smart AI teacher helping students"
+                                    alt="Somo Smart teacher helping students"
                                     className="w-full h-auto object-contain drop-shadow-2xl"
                                 />
 
@@ -547,10 +547,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                         className="flex items-center justify-around flex-nowrap shrink-0 gap-8 sm:gap-20 px-4 min-w-[200%]"
                     >
                         {[
-                            "Alliance High", "Kenya High", "Mang'u High", "Maseno School",
-                            "Pangani Girls", "Lenana School", "Starehe Boys", "Maryhill Girls",
-                            "Alliance High*", "Kenya High*", "Mang'u High*", "Maseno School*",
-                            "Pangani Girls*", "Lenana School*", "Starehe Boys*", "Maryhill Girls*"
+                            "KNEC Aligned", "CBC Compliant", "8-4-4 Ready", "KPSEA Approved",
+                            "JSS Integrated", "1M+ Questions Solved", "Instant Auto-Grading", "Teacher Recommended",
+                            "KNEC Aligned*", "CBC Compliant*", "8-4-4 Ready*", "KPSEA Approved*",
+                            "JSS Integrated*", "1M+ Questions Solved*", "Instant Auto-Grading*", "Teacher Recommended*"
                         ].map((school, i) => (
                             <div key={i} className="flex items-center gap-3 opacity-40 dark:opacity-30 grayscale hover:grayscale-0 hover:opacity-100 transition-all cursor-default shrink-0">
                                 <School className="w-6 h-6 sm:w-8 sm:h-8 text-slate-700 dark:text-slate-300" />
@@ -560,7 +560,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                     </motion.div>
                 </div>
                 <div className="text-center mt-6">
-                    <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-[0.3em]">Trusted by candidates from top tier schools</span>
+                    <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-[0.3em]">Built to Kenyan Curriculum Standards</span>
                 </div>
             </div>
             {/* --- EXAM ASSISTANT CTA --- */}
@@ -641,7 +641,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                 </div>
                                 <div className="absolute top-6 right-6 text-5xl font-black text-white/5 pointer-events-none group-hover:text-purple-500/10 transition-colors">2</div>
                                 <h3 className="font-extrabold text-white text-xl mb-3">AI Analyzes</h3>
-                                <p className="text-sm text-slate-400 leading-relaxed">Our KNEC-aligned AI breaks down the problem step-by-step instantly.</p>
+                                <p className="text-sm text-slate-400 leading-relaxed">Our KNEC-aligned Smart Assistant breaks down the problem step-by-step instantly.</p>
                             </motion.div>
 
                             {/* Step 3 */}
@@ -956,7 +956,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                 </div>
                             </div>
                             <p className="text-slate-600 dark:text-slate-400 italic leading-relaxed relative z-10 font-medium">
-                                "Somo Smart explained Chemistry concepts that I struggled with for months. I moved from a C+ to an A- in my latest mocks. The AI breakdown is just like having a personal tutor."
+                                "Somo Smart explained Chemistry concepts that I struggled with for months. I moved from a C+ to an A- in my latest mocks. The Smart breakdown is just like having a personal tutor."
                             </p>
                             <div className="mt-6 pt-6 border-t border-slate-50 dark:border-slate-800/50 flex items-center gap-2 text-xs font-bold text-blue-600 dark:text-blue-400">
                                 <GraduationCap className="w-4 h-4" /> Form 4 Candidate
@@ -1078,7 +1078,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                 <img src={logoImg} alt="Somo Smart Logo" className="h-12 w-auto object-contain grayscale opacity-80 hover:grayscale-0 hover:opacity-100 transition-all dark:invert dark:opacity-60 dark:hover:invert-0 dark:hover:opacity-100" />
                             </div>
                             <p className="text-slate-500 dark:text-slate-400 text-sm mb-6 max-w-sm leading-relaxed">
-                                Kenya's leading AI-powered learning platform. Empowering students, teachers, and parents with strictly aligned CBC and KCSE educational tools.
+                                Kenya's leading Smart learning platform. Empowering students, teachers, and parents with strictly aligned CBC and KCSE educational tools.
                             </p>
                             
                             {/* Google Business Profile Action */}
@@ -1203,7 +1203,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                             <h3 className="text-lg font-bold text-slate-900 mb-2">2. How We Use Your Data</h3>
                             <p>All data is used strictly to provide the educational service:</p>
                             <ul className="list-disc pl-5 space-y-1 mt-2">
-                                <li>To generate AI explanations relevant to your grade level.</li>
+                                <li>To generate Smart explanations relevant to your grade level.</li>
                                 <li>To track learning progress for Parents and Teachers.</li>
                                 <li>To improve the accuracy of our educational content.</li>
                             </ul>
@@ -1211,7 +1211,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
 
                         <section>
                             <h3 className="text-lg font-bold text-slate-900 mb-2">3. Data Safety & AI</h3>
-                            <p>We use Google&apos;s Gemini AI to process text and images. </p>
+                            <p>We use Google&apos;s Gemini Models to process text and images. </p>
                             <ul className="list-disc pl-5 space-y-1 mt-2">
                                 <li>We do <strong>not</strong> use your personal data to train public AI models.</li>
                                 <li>Your data is processed ephemerally for the purpose of the immediate query.</li>
@@ -1243,7 +1243,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
 
                         <section>
                             <h3 className="text-lg font-bold text-slate-900 mb-2">2. Educational Disclaimer</h3>
-                            <p>The content provided by Somo Smart is generated by Artificial Intelligence. While we strive for accuracy:</p>
+                            <p>The content provided by Somo Smart is generated by our Smart Engine. While we strive for accuracy:</p>
                             <ul className="list-disc pl-5 space-y-1 mt-2">
                                 <li>Information should be verified with official textbooks.</li>
                                 <li>We are not liable for any inaccuracies in exam preparation materials.</li>
@@ -1255,7 +1255,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                             <p>You agree to use this platform responsibly:</p>
                             <ul className="list-disc pl-5 space-y-1 mt-2">
                                 <li>Do not upload inappropriate, harmful, or copyright-infringing content.</li>
-                                <li>Do not attempt to reverse-engineer or &quot;jailbreak&quot; the AI assistant.</li>
+                                <li>Do not attempt to reverse-engineer or &quot;jailbreak&quot; the Smart Assistant.</li>
                             </ul>
                         </section>
 
