@@ -43,7 +43,7 @@ interface LandingPageProps {
 export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuthError }) => {
     const navigate = useNavigate();
     const location = useLocation();
-    const { setRole, role, logout, isRegistered, isPro, language, toggleLanguage, startGuestSession, teacherUsageCount, lowDataMode } = useApp();
+    const { setRole, role, logout, isRegistered, isPro, language, toggleLanguage, startGuestSession, teacherUsageCount, lowDataMode, toggleLowDataMode } = useApp();
     const [authError, setAuthError] = useState<{ code: string, description: string } | null>(initialAuthError || null);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [showRegistration, setShowRegistration] = useState(false);
@@ -59,6 +59,33 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
     const t = translations[language];
     const [registrationRole, setRegistrationRole] = useState<'STUDENT' | 'TEACHER' | 'SCHOOL'>('STUDENT');
     const [pendingRoute, setPendingRoute] = useState<string | null>(null);
+
+    // Auto-enable Low-Data Mode on slow networks (2G/slow-2G common on Kenyan mobile networks)
+    React.useEffect(() => {
+        try {
+            const connection = (navigator as any).connection ||
+                (navigator as any).mozConnection ||
+                (navigator as any).webkitConnection;
+            if (connection && !lowDataMode) {
+                const slowTypes = ['2g', 'slow-2g'];
+                if (slowTypes.includes(connection.effectiveType)) {
+                    toggleLowDataMode();
+                    console.info('[Somo Smart] Slow network detected, enabling Low-Data Mode automatically.');
+                }
+                // Also listen for changes during the session
+                const onChange = () => {
+                    if (slowTypes.includes(connection.effectiveType) && !lowDataMode) {
+                        toggleLowDataMode();
+                    }
+                };
+                connection.addEventListener('change', onChange);
+                return () => connection.removeEventListener('change', onChange);
+            }
+        } catch (_) {
+            // Network Information API not supported — safe to ignore
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     // Handle incoming plan selection from PricingPage
     React.useEffect(() => {

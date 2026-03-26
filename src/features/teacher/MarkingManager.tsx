@@ -4,6 +4,7 @@ import { ScanLine, Upload, CheckCircle2, AlertCircle, FileText, ArrowLeft, Loade
 import { gradeStudentSubmission, fileToGenerativePart } from '../../services/geminiService';
 import { useApp } from '../../context/AppContext';
 import { Assignment, StudentSubmission } from '../../types';
+import { AIFeedbackButtons } from '../../components/AIFeedbackButtons';
 
 export const MarkingManager: React.FC = () => {
     const { isOnline } = useApp();
@@ -223,7 +224,17 @@ export const MarkingManager: React.FC = () => {
                                     </div>
                                 </div>
 
-                                <div className="pt-6 mt-6 border-t border-slate-100 flex gap-4">
+                                {/* AI Feedback Buttons — teacher corrections build the KNEC training dataset */}
+                                <AIFeedbackButtons
+                                    aiResponse={result.feedback}
+                                    originalPrompt={`Assignment: ${assignmentTitle} | Context: ${assignmentContext}`}
+                                    source="MARKING"
+                                    subject={assignmentContext}
+                                    grade={assignmentContext}
+                                    className="mb-4"
+                                />
+
+                                <div className="pt-4 flex gap-4">
                                     <button onClick={handleClearFile} className="flex-1 py-3 px-4 rounded-xl border-2 border-slate-200 font-bold text-slate-600 hover:bg-slate-50 transition-colors">Grade Next Paper</button>
                                     <button onClick={() => setView('OVERVIEW')} className="flex-1 py-3 px-4 rounded-xl bg-slate-900 text-white font-bold transition-all hover:bg-slate-800 shadow-xl shadow-slate-200">Save & Close</button>
                                 </div>

@@ -11,6 +11,7 @@ import { AnalyticsView } from './views/Analytics';
 import { StrategyLabView } from './views/StrategyLab';
 import { Lock } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
+import { Helmet } from 'react-helmet-async';
 
 interface AdminProps {
     onNavigate: (view: ViewState) => void;
@@ -30,6 +31,18 @@ export const AdminDashboard: React.FC<AdminProps> = ({ onNavigate, authStatus = 
                 window.location.reload();
             }}
         >
+            <Helmet>
+                <script async src="https://www.googletagmanager.com/gtag/js?id=G-B49HNQCQTY"></script>
+                <script>
+                    {`
+                      window.dataLayer = window.dataLayer || [];
+                      function gtag(){dataLayer.push(arguments);}
+                      gtag('js', new Date());
+
+                      gtag('config', 'G-B49HNQCQTY');
+                    `}
+                </script>
+            </Helmet>
             {activeTab === 'OVERVIEW' && <Overview />}
             {activeTab === 'USERS' && <UsersView />}
             {activeTab === 'FINANCE' && <FinancialsView />}

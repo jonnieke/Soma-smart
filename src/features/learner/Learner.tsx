@@ -15,6 +15,7 @@ import { PaymentFlow } from '../subscription/PaymentFlow';
 import { STUDENT_PLANS, TEACHER_PLANS, DOWNLOAD_PASS } from '../../data/pricing';
 import { RegistrationModal } from '../../components/RegistrationModal'; // Assuming path
 import { LoginModal } from '../../components/LoginModal'; // Assuming path
+import { AIFeedbackButtons } from '../../components/AIFeedbackButtons';
 import { LogoutModal } from '../../components/LogoutModal';
 import { ParentPinModal } from '../../components/ParentPinModal';
 import { MarkdownText, Button, Card } from '../../components/Shared';
@@ -450,17 +451,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
   // --- STUDY CENTER (NotebookLM) ---
   const startStudySession = async (material: any) => {
     // Paywall Check: 3 free usages for non-pro users
-    if (!isPro && usageCount >= 3) {
-      if (!isRegistered) {
-        setShowRegistration(true);
-        return;
-      }
-      setShowLimitModal(true);
-      return;
-    }
-
-    // Increment usage
-    incrementUsage();
+    if (!checkLimit({ type: 'STUDY_SESSION', material, materialName: material.title })) return;
 
     setCurrentDocument(material);
     setMode('STUDY');
@@ -905,6 +896,14 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarTab, setSidebarTab] = useState<SidebarTab>(initialTab);
 
+  type PendingPaywallAction = 
+    | { type: 'PROCESS_FILE', file: File }
+    | { type: 'AUDIO_EXPLANATION', blob: Blob, mimeType: string }
+    | { type: 'TOPIC_CLICK', topic: string, multimedia?: { data: string, mimeType: string } }
+    | { type: 'STUDY_SESSION', material: any, materialName: string };
+  const [pendingPaywallAction, setPendingPaywallAction] = useState<PendingPaywallAction | null>(null);
+
+
   const handleSidebarTabChange = (tab: SidebarTab) => {
     setSidebarTab(tab);
     switch (tab) {
@@ -943,7 +942,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
     }
   };
 
-  const checkLimit = (): boolean => {
+  const checkLimit = (action?: PendingPaywallAction): boolean => {
     // Pro = Unlimited Checks
     if (isPro) return true;
 
@@ -951,6 +950,10 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
     // we should still allow access if usage is below limit.
     // If usage is ABOVE limit, and we are registered, we show limit modal.
     if (usageCount >= 3) {
+      if (action) {
+        setPendingPaywallAction(action);
+      }
+
       // Second chance: refresh profile once if we think we might be pro but usage is high
       // (This is a bit heavy, but safe for users who just paid)
 
@@ -972,7 +975,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
   };
 
   const processFile = async (file: File) => {
-    if (!checkLimit()) return;
+    if (!checkLimit({ type: 'PROCESS_FILE', file })) return;
 
     setLoading(true);
     setError(null);
@@ -1135,7 +1138,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
   };
 
   const handleAudioExplanation = async (blob: Blob, mimeType: string) => {
-    if (!checkLimit()) return;
+    if (!checkLimit({ type: 'AUDIO_EXPLANATION', blob, mimeType })) return;
 
     setLoading(true);
     setError(null);
@@ -1251,7 +1254,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
   };
 
   const handleTopicClick = async (topic: string, multimedia?: { data: string, mimeType: string }) => {
-    if (!checkLimit()) return;
+    if (!checkLimit({ type: 'TOPIC_CLICK', topic, multimedia })) return;
 
     setLoading(true);
     setError(null);
@@ -3115,6 +3118,7 @@ ${explanation.explanation}
                       <div className="h-4 bg-slate-100 rounded w-full"></div>
                     </div>
                   ) : explanation ? (
+                    <React.Fragment>
                     <div className="prose prose-slate prose-lg max-w-none prose-headings:font-semibold prose-headings:tracking-tight prose-a:text-indigo-600 prose-li:marker:text-indigo-400 prose-strong:font-semibold">
                       <div className="mb-10 border-b border-indigo-100 pb-6">
                         <div className="flex items-center gap-3 mb-5">
@@ -3224,6 +3228,20 @@ ${explanation.explanation}
                         <MarkdownText content={explanation.explanation} />
                       )}
                     </div>
+
+                    {/* AI Feedback — crowdsource corrections to build KNEC training dataset */}
+                    <AIFeedbackButtons
+                      aiResponse={
+                        explanation.subtopics && explanation.subtopics.length > 0
+                          ? explanation.subtopics.map(s => s.content || s.blocks?.map(b => b.text || '').join(' ') || '').join(' ')
+                          : (explanation.explanation || '')
+                      }
+                      originalPrompt={explanation.topic}
+                      source="EXPLANATION"
+                      subject={currentDocument?.subject}
+                      grade={studentProfile?.grade || currentDocument?.grade}
+                    />
+                    </React.Fragment>
                   ) : (
                     <div className="text-center py-32 flex flex-col items-center">
                       <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mb-6">
@@ -4048,8 +4066,18 @@ ${explanation.explanation}
             await verifySubscription();
             setMode('MENU');
             setSelectedPlan(null);
-            // Auto-open if we have a pending material
-            if (pendingMaterialId) {
+            
+            // Resume pending paywall action
+            if (pendingPaywallAction) {
+              const action = pendingPaywallAction;
+              setPendingPaywallAction(null);
+              setTimeout(() => {
+                if (action.type === 'PROCESS_FILE') processFile(action.file);
+                else if (action.type === 'AUDIO_EXPLANATION') handleAudioExplanation(action.blob, action.mimeType);
+                else if (action.type === 'TOPIC_CLICK') handleTopicClick(action.topic, action.multimedia);
+                else if (action.type === 'STUDY_SESSION') startStudySession(action.material);
+              }, 100);
+            } else if (pendingMaterialId) {
               const material = unifiedMaterials.find(m => m.id === pendingMaterialId || (m as any).realId === pendingMaterialId);
               if (material?.fileUrl) window.open(material.fileUrl, '_blank');
               setPendingMaterialId(null);
@@ -4754,7 +4782,20 @@ ${explanation.explanation}
 
                 <h3 className="text-xl font-black text-slate-800 mb-2">Free Trials Exhausted</h3>
                 <p className="text-slate-500 text-sm leading-relaxed mb-6">
-                  You have exhausted your free trials. Click here to continue enjoying <span className="text-indigo-600 font-bold">unlimited access</span> to learning for as low as <span className="text-indigo-600 font-bold">20 KES</span>.
+                  {pendingPaywallAction ? (
+                    <>
+                      You've used your 3 free credits today. <span className="font-bold text-slate-700">
+                      {pendingPaywallAction.type === 'PROCESS_FILE' && "Subscribe to analyze this image."}
+                      {pendingPaywallAction.type === 'AUDIO_EXPLANATION' && "Subscribe to process this audio."}
+                      {pendingPaywallAction.type === 'TOPIC_CLICK' && `Subscribe to explore "${pendingPaywallAction.topic || 'this topic'}".`}
+                      {pendingPaywallAction.type === 'STUDY_SESSION' && `Subscribe to study "${pendingPaywallAction.materialName}".`}
+                      </span> Subscribe now for <span className="text-indigo-600 font-bold">unlimited access</span> from 20 KES.
+                    </>
+                  ) : (
+                    <>
+                      You have exhausted your free trials. Click here to continue enjoying <span className="text-indigo-600 font-bold">unlimited access</span> to learning for as low as <span className="text-indigo-600 font-bold">20 KES</span>.
+                    </>
+                  )}
                 </p>
 
                 <div className="space-y-3">
