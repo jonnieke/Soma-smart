@@ -445,9 +445,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                     <ChevronRight className="w-4 h-4 ml-1 opacity-50 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
                                 </div>
 
-                                <h1 className="text-5xl md:text-6xl lg:text-7xl font-black text-slate-900 dark:text-white tracking-tight leading-[1.05] mb-6">
-                                    Smarter Learning.<br />
-                                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400">Better Results.</span>
+                                <h1 className="text-5xl md:text-6xl lg:text-[5rem] font-black text-slate-900 dark:text-white tracking-tight leading-[1.05] mb-6">
+                                    The AI Super Teacher for <br className="hidden lg:block" />
+                                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-indigo-500 to-purple-600 dark:from-blue-400 dark:via-indigo-400 dark:to-purple-400">KCSE &amp; KPSEA.</span>
                                 </h1>
 
                                 <p className="text-lg md:text-xl text-slate-600 dark:text-slate-400 leading-relaxed mb-10 font-medium">
@@ -536,9 +536,33 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                 </div>
             </section>
 
-            <div className="w-full h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent"></div>
-
-
+            {/* --- PRESTIGE TICKER --- */}
+            <div className="border-y border-slate-200/50 dark:border-slate-800/80 bg-white/50 dark:bg-slate-950/50 py-6 sm:py-8 overflow-hidden relative backdrop-blur-sm">
+                <div className="absolute left-0 top-0 bottom-0 w-20 sm:w-40 bg-gradient-to-r from-slate-50 dark:from-slate-950 to-transparent z-10 pointer-events-none" />
+                <div className="absolute right-0 top-0 bottom-0 w-20 sm:w-40 bg-gradient-to-l from-slate-50 dark:from-slate-950 to-transparent z-10 pointer-events-none" />
+                <div className="flex w-full">
+                    <motion.div
+                        animate={{ x: ["0%", "-50%"] }}
+                        transition={{ ease: "linear", duration: 30, repeat: Infinity }}
+                        className="flex items-center justify-around flex-nowrap shrink-0 gap-8 sm:gap-20 px-4 min-w-[200%]"
+                    >
+                        {[
+                            "Alliance High", "Kenya High", "Mang'u High", "Maseno School",
+                            "Pangani Girls", "Lenana School", "Starehe Boys", "Maryhill Girls",
+                            "Alliance High*", "Kenya High*", "Mang'u High*", "Maseno School*",
+                            "Pangani Girls*", "Lenana School*", "Starehe Boys*", "Maryhill Girls*"
+                        ].map((school, i) => (
+                            <div key={i} className="flex items-center gap-3 opacity-40 dark:opacity-30 grayscale hover:grayscale-0 hover:opacity-100 transition-all cursor-default shrink-0">
+                                <School className="w-6 h-6 sm:w-8 sm:h-8 text-slate-700 dark:text-slate-300" />
+                                <span className="text-lg sm:text-2xl font-black tracking-widest uppercase text-slate-700 dark:text-slate-300 whitespace-nowrap">{school.replace('*', '')}</span>
+                            </div>
+                        ))}
+                    </motion.div>
+                </div>
+                <div className="text-center mt-6">
+                    <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-[0.3em]">Trusted by candidates from top tier schools</span>
+                </div>
+            </div>
             {/* --- EXAM ASSISTANT CTA --- */}
             <section className="py-12 relative overflow-hidden bg-white dark:bg-slate-950 transition-colors">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
@@ -576,73 +600,71 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
             {/* --- CBE/KCSE CURRICULUM ALIGNMENT --- */}
 
             {/* --- HOW IT WORKS: 4 EASY STEPS --- */}
-            <section id="how-it-works" className="py-20 bg-slate-50 dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800 transition-colors">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="text-center mb-16">
-                        <h2 className="text-3xl md:text-5xl font-extrabold text-[#1a2b5e] dark:text-blue-100 mb-4 tracking-tight">Learning Made Simple</h2>
-                        <p className="text-slate-600 dark:text-slate-400 text-lg">Get from a confused student to a subject master in 4 easy steps.</p>
+            <section id="how-it-works" className="py-24 bg-slate-950 dark:bg-black relative overflow-hidden transition-colors">
+                {/* Glow effects */}
+                <div className="absolute inset-0 pointer-events-none overflow-hidden">
+                    <div className="absolute top-1/4 left-1/4 w-[400px] h-[400px] opacity-20 bg-blue-600 rounded-full blur-[100px]" />
+                    <div className="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] opacity-20 bg-purple-600 rounded-full blur-[100px]" />
+                </div>
+
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+                    <div className="text-center mb-20">
+                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md text-slate-300 font-bold text-xs mb-6 uppercase tracking-wider border border-white/10 shadow-sm">
+                            <Sparkles className="w-4 h-4 text-purple-400" /> Zero Friction
+                        </div>
+                        <h2 className="text-4xl md:text-6xl font-black text-white mb-6 tracking-tight">Learning Made <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400">Simple</span></h2>
+                        <p className="text-slate-400 text-lg md:text-xl font-medium max-w-2xl mx-auto">Get from a confused student to a subject master in 4 incredibly easy steps.</p>
                     </div>
 
                     <div className="relative">
-                        {/* Connecting Line */}
-                        <div className="hidden md:block absolute top-[88px] left-[10%] right-[10%] h-0.5 bg-gradient-to-r from-blue-200 via-orange-200 to-emerald-200 dark:from-blue-800 dark:via-orange-800 dark:to-emerald-800 z-0"></div>
+                        {/* Connecting Glow Line connecting items horizontally */}
+                        <div className="hidden lg:block absolute top-1/2 left-[10%] right-[10%] h-1 bg-gradient-to-r from-blue-500/0 via-purple-500/50 to-blue-500/0 -translate-y-1/2 blur-sm z-0"></div>
+                        <div className="hidden lg:block absolute top-1/2 left-[10%] right-[10%] h-[1px] bg-gradient-to-r from-blue-500/0 via-white/50 to-blue-500/0 -translate-y-1/2 z-0"></div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 relative z-10">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 relative z-10">
                             {/* Step 1 */}
-                            <div className="flex flex-col items-center text-center">
-                                <div className="w-32 h-32 bg-white dark:bg-slate-800 rounded-[2rem] shadow-xl border border-slate-100 dark:border-slate-700 flex items-center justify-center relative mb-6 group hover:-translate-y-2 transition-transform duration-300">
-                                    <div className="absolute -top-3 -right-3 w-8 h-8 bg-blue-600 text-white rounded-full font-bold flex items-center justify-center border-4 border-slate-50 dark:border-slate-900 z-10">1</div>
-                                    {!lowDataMode ? (
-                                        <img src={stepScanImg} alt="Scan or Upload" className="w-20 h-20 object-contain group-hover:scale-110 transition-transform duration-300" />
-                                    ) : (
-                                        <ScanLine className="w-12 h-12 text-blue-500" />
-                                    )}
+                            <motion.div whileHover={{ y: -10 }} className="flex flex-col relative items-center text-center bg-white/5 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-8 shadow-2xl overflow-hidden group">
+                                <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                                <div className="w-16 h-16 bg-blue-500/20 text-blue-400 rounded-2xl flex items-center justify-center mb-6 border border-blue-500/30 group-hover:scale-110 group-hover:-rotate-3 transition-transform duration-300">
+                                    <ScanLine className="w-8 h-8" />
                                 </div>
-                                <h3 className="font-extrabold text-[#1a2b5e] dark:text-white mb-2 text-lg">Scan or Upload</h3>
-                                <p className="text-sm text-slate-500 dark:text-slate-400">Snap a photo of your textbook, notes or homework.</p>
-                            </div>
+                                <div className="absolute top-6 right-6 text-5xl font-black text-white/5 pointer-events-none group-hover:text-blue-500/10 transition-colors">1</div>
+                                <h3 className="font-extrabold text-white text-xl mb-3">Snap a Photo</h3>
+                                <p className="text-sm text-slate-400 leading-relaxed">Take a photo of any exam paper, homework problem, or textbook page.</p>
+                            </motion.div>
 
                             {/* Step 2 */}
-                            <div className="flex flex-col items-center text-center">
-                                <div className="w-32 h-32 bg-white dark:bg-slate-800 rounded-[2rem] shadow-xl border border-slate-100 dark:border-slate-700 flex items-center justify-center relative mb-6 group hover:-translate-y-2 transition-transform duration-300">
-                                    <div className="absolute -top-3 -right-3 w-8 h-8 bg-orange-500 text-white rounded-full font-bold flex items-center justify-center border-4 border-slate-50 dark:border-slate-900 z-10">2</div>
-                                    {!lowDataMode ? (
-                                        <img src={stepExplainImg} alt="Get Explanations" className="w-20 h-20 object-contain group-hover:scale-110 transition-transform duration-300" />
-                                    ) : (
-                                        <MessageSquare className="w-12 h-12 text-orange-500" />
-                                    )}
+                            <motion.div whileHover={{ y: -10 }} className="flex flex-col relative items-center text-center bg-white/5 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-8 shadow-2xl overflow-hidden group lg:translate-y-8">
+                                <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                                <div className="w-16 h-16 bg-purple-500/20 text-purple-400 rounded-2xl flex items-center justify-center mb-6 border border-purple-500/30 group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300">
+                                    <MessageSquare className="w-8 h-8" />
                                 </div>
-                                <h3 className="font-extrabold text-[#1a2b5e] dark:text-white mb-2 text-lg">Get Explanations</h3>
-                                <p className="text-sm text-slate-500 dark:text-slate-400">Somo Smart breaks it down into simple terms you understand.</p>
-                            </div>
+                                <div className="absolute top-6 right-6 text-5xl font-black text-white/5 pointer-events-none group-hover:text-purple-500/10 transition-colors">2</div>
+                                <h3 className="font-extrabold text-white text-xl mb-3">AI Analyzes</h3>
+                                <p className="text-sm text-slate-400 leading-relaxed">Our KNEC-aligned AI breaks down the problem step-by-step instantly.</p>
+                            </motion.div>
 
                             {/* Step 3 */}
-                            <div className="flex flex-col items-center text-center">
-                                <div className="w-32 h-32 bg-white dark:bg-slate-800 rounded-[2rem] shadow-xl border border-slate-100 dark:border-slate-700 flex items-center justify-center relative mb-6 group hover:-translate-y-2 transition-transform duration-300">
-                                    <div className="absolute -top-3 -right-3 w-8 h-8 bg-emerald-500 text-white rounded-full font-bold flex items-center justify-center border-4 border-slate-50 dark:border-slate-900 z-10">3</div>
-                                    {!lowDataMode ? (
-                                        <img src={stepQuizImg} alt="Smart Quizzes" className="w-20 h-20 object-contain group-hover:scale-110 transition-transform duration-300" />
-                                    ) : (
-                                        <CheckSquare className="w-12 h-12 text-emerald-500" />
-                                    )}
+                            <motion.div whileHover={{ y: -10 }} className="flex flex-col relative items-center text-center bg-white/5 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-8 shadow-2xl overflow-hidden group">
+                                <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                                <div className="w-16 h-16 bg-emerald-500/20 text-emerald-400 rounded-2xl flex items-center justify-center mb-6 border border-emerald-500/30 group-hover:scale-110 group-hover:-rotate-3 transition-transform duration-300">
+                                    <CheckSquare className="w-8 h-8" />
                                 </div>
-                                <h3 className="font-extrabold text-[#1a2b5e] dark:text-white mb-2 text-lg">Smart Quizzes</h3>
-                                <p className="text-sm text-slate-500 dark:text-slate-400">Test your knowledge with your smart study companion's practice questions.</p>
-                            </div>
+                                <div className="absolute top-6 right-6 text-5xl font-black text-white/5 pointer-events-none group-hover:text-emerald-500/10 transition-colors">3</div>
+                                <h3 className="font-extrabold text-white text-xl mb-3">Practice Quizzes</h3>
+                                <p className="text-sm text-slate-400 leading-relaxed">Test your understanding with automatically generated follow-up questions.</p>
+                            </motion.div>
 
                             {/* Step 4 */}
-                            <div className="flex flex-col items-center text-center">
-                                <div className="w-32 h-32 bg-white dark:bg-slate-800 rounded-[2rem] shadow-xl border border-slate-100 dark:border-slate-700 flex items-center justify-center relative mb-6 group hover:-translate-y-2 transition-transform duration-300">
-                                    <div className="absolute -top-3 -right-3 w-8 h-8 bg-indigo-500 text-white rounded-full font-bold flex items-center justify-center border-4 border-slate-50 dark:border-slate-900 z-10">4</div>
-                                    {!lowDataMode ? (
-                                        <img src={stepAudioImg} alt="Listen & Revise" className="w-20 h-20 object-contain group-hover:scale-110 transition-transform duration-300" />
-                                    ) : (
-                                        <Play className="w-12 h-12 text-indigo-500 translate-x-1" />
-                                    )}
+                            <motion.div whileHover={{ y: -10 }} className="flex flex-col relative items-center text-center bg-white/5 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-8 shadow-2xl overflow-hidden group lg:translate-y-8">
+                                <div className="absolute inset-0 bg-gradient-to-br from-orange-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                                <div className="w-16 h-16 bg-orange-500/20 text-orange-400 rounded-2xl flex items-center justify-center mb-6 border border-orange-500/30 group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300">
+                                    <Award className="w-8 h-8" />
                                 </div>
-                                <h3 className="font-extrabold text-[#1a2b5e] dark:text-white mb-2 text-lg">Listen & Revise</h3>
-                                <p className="text-sm text-slate-500 dark:text-slate-400">Listen to simplified lessons on the go to remember more.</p>
-                            </div>
+                                <div className="absolute top-6 right-6 text-5xl font-black text-white/5 pointer-events-none group-hover:text-orange-500/10 transition-colors">4</div>
+                                <h3 className="font-extrabold text-white text-xl mb-3">Master & Pass</h3>
+                                <p className="text-sm text-slate-400 leading-relaxed">Retain knowledge permanently and dramatically boost your KCSE mean grade.</p>
+                            </motion.div>
                         </div>
                     </div>
                 </div>
@@ -675,9 +697,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                         {/* 1. Large Feature: Darasa Mode (Span 2 cols) */}
                         <motion.div
                             whileHover={{ y: -8, scale: 1.01 }}
-                            className="md:col-span-2 bg-gradient-to-br from-indigo-50 to-blue-50 dark:from-indigo-950/40 dark:to-blue-900/40 rounded-[2rem] p-8 md:p-10 border border-indigo-100 dark:border-indigo-800/50 shadow-sm relative overflow-hidden group hover:shadow-2xl hover:shadow-indigo-500/10 transition-all duration-500"
+                            className="md:col-span-2 bg-white/50 dark:bg-slate-900/50 backdrop-blur-xl rounded-[2rem] p-8 md:p-10 border border-white/40 dark:border-slate-800 shadow-xl shadow-indigo-100/20 dark:shadow-none relative overflow-hidden group hover:shadow-2xl hover:shadow-indigo-500/10 transition-all duration-500"
                         >
-                            <div className="absolute top-0 right-0 w-64 h-64 bg-blue-400/10 dark:bg-blue-400/5 rounded-full blur-3xl group-hover:bg-blue-400/20 transition-all duration-500"></div>
+                            <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl group-hover:bg-indigo-500/20 transition-all duration-500"></div>
                             <div className="relative z-10 h-full flex flex-col justify-center w-full md:w-[60%] lg:w-[50%]">
                                 <div className="w-12 h-12 bg-indigo-600 text-white rounded-xl flex items-center justify-center mb-6 shadow-md shadow-indigo-200 dark:shadow-indigo-900/50">
                                     <MessageSquare className="w-6 h-6" />
@@ -707,7 +729,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                         {/* 2. Vertical Feature: Marking Manager */}
                         <motion.div
                             whileHover={{ y: -8, scale: 1.01 }}
-                            className="bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/40 dark:to-teal-900/40 rounded-[2rem] p-8 border border-emerald-100 dark:border-emerald-800/50 shadow-sm relative overflow-hidden group hover:shadow-2xl hover:shadow-emerald-500/10 transition-all duration-500"
+                            className="bg-white/50 dark:bg-slate-900/50 backdrop-blur-xl rounded-[2rem] p-8 border border-white/40 dark:border-slate-800 shadow-xl shadow-emerald-100/20 dark:shadow-none relative overflow-hidden group hover:shadow-2xl hover:shadow-emerald-500/10 transition-all duration-500"
                         >
                             <div className="relative z-10 flex flex-col h-full">
                                 <div className="w-12 h-12 bg-emerald-600 text-white rounded-xl flex items-center justify-center mb-6 shadow-md shadow-emerald-200 dark:shadow-emerald-900/50">
@@ -732,7 +754,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                         {/* 3. Horizontal Feature 1: Revision Hub */}
                         <motion.div
                             whileHover={{ y: -8, scale: 1.01 }}
-                            className="bg-gradient-to-br from-orange-50 to-rose-50 dark:from-orange-950/40 dark:to-rose-900/40 rounded-[2rem] p-8 border border-orange-100 dark:border-orange-800/50 shadow-sm relative overflow-hidden group hover:shadow-2xl hover:shadow-orange-500/10 transition-all duration-500"
+                            className="bg-white/50 dark:bg-slate-900/50 backdrop-blur-xl rounded-[2rem] p-8 border border-white/40 dark:border-slate-800 shadow-xl shadow-orange-100/20 dark:shadow-none relative overflow-hidden group hover:shadow-2xl hover:shadow-orange-500/10 transition-all duration-500"
                         >
                             <div className="relative z-10 h-full flex flex-col justify-between">
                                 <div className="flex items-center justify-between mb-4">
@@ -751,7 +773,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                         {/* 4. Horizontal Feature 2: Analytics Span 2 */}
                         <motion.div
                             whileHover={{ y: -8, scale: 1.01 }}
-                            className="md:col-span-2 bg-gradient-to-br from-slate-50 to-gray-100 dark:from-slate-900 dark:to-slate-800/50 rounded-[2rem] p-8 border border-slate-200 dark:border-slate-700 shadow-sm relative overflow-hidden group hover:shadow-2xl hover:shadow-slate-500/10 transition-all duration-500"
+                            className="md:col-span-2 bg-white/50 dark:bg-slate-900/50 backdrop-blur-xl rounded-[2rem] p-8 border border-white/40 dark:border-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-none relative overflow-hidden group hover:shadow-2xl hover:shadow-slate-500/10 transition-all duration-500"
                         >
                             <div className="relative z-10 w-full h-full flex items-center justify-between gap-6">
                                 <div className="flex-1 max-w-lg">
@@ -1246,20 +1268,16 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
             />
 
             {/* --- MOBILE STICKY CTA --- */}
-            <div className="md:hidden fixed bottom-0 left-0 right-0 p-3 bg-white/95 backdrop-blur-md border-t border-slate-200 shadow-2xl z-50 flex gap-3">
+            <div className="md:hidden fixed bottom-6 left-4 right-4 p-2 bg-slate-900/95 dark:bg-slate-800/95 backdrop-blur-xl border border-slate-700/50 shadow-2xl z-50 rounded-2xl flex items-center justify-between pointer-events-auto">
+                <div className="flex flex-col pl-3">
+                    <span className="text-white text-sm font-black tracking-tight leading-none mb-0.5">Ready to pass?</span>
+                    <span className="text-blue-300 text-[10px] font-bold uppercase tracking-widest">Join 12k+ Students</span>
+                </div>
                 <button
                     onClick={() => handleRoleSelect(UserRole.LEARNER)}
-                    className="flex-1 bg-[#5b61de] text-white py-3 px-2 rounded-xl font-bold flex flex-col items-center justify-center leading-tight shadow-md"
+                    className="bg-blue-600 hover:bg-blue-500 text-white py-3 px-6 rounded-xl font-bold shadow-md shadow-blue-500/20 active:scale-95 transition-all flex items-center gap-2"
                 >
-                    <span className="text-[10px] opacity-90 uppercase tracking-wider">Start Learning</span>
-                    <span>For Free</span>
-                </button>
-                <button
-                    onClick={() => handleRoleSelect(UserRole.TEACHER)}
-                    className="flex-1 bg-[#2cb674] text-white py-3 px-2 rounded-xl font-bold flex flex-col items-center justify-center leading-tight shadow-md"
-                >
-                    <span className="text-[10px] opacity-90 uppercase tracking-wider">Teacher Access</span>
-                    <span>Save Marking Time</span>
+                    Start Free <ChevronRight className="w-4 h-4 text-blue-200" />
                 </button>
             </div>
 
