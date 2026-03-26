@@ -1,7 +1,7 @@
 import React, { useState, useRef, useCallback, useMemo } from 'react';
 import { useApp } from '../../context/AppContext';
 import { Upload, BookOpen, Brain, TrendingUp, ArrowRight, ScanLine, X, Camera, Zap, CheckCircle, Smartphone, LogOut, Search, FileText, ChevronRight, ChevronDown, Shield, Users, Sparkles, Filter, GraduationCap, Unlock, Target, BarChart2, ZapOff, Wifi } from 'lucide-react';
-import { ViewState, RevisionMode, TeacherActivity, EducationLevel } from '../../types';
+import { ViewState, RevisionMode, TeacherActivity, EducationLevel, UserRole } from '../../types';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Helmet } from 'react-helmet-async';
 import { LogoutModal } from '../../components/LogoutModal';
@@ -20,7 +20,8 @@ interface Props {
 type TabKey = 'papers' | 'notes' | 'syllabus' | 'community';
 
 export const RevisionLanding: React.FC<Props> = ({ onStartSession, onNavigate, onBack }) => {
-    const { logout, availableQuizzes, fetchAvailableQuizzes, isOnline, studentProfile, resources, fetchResources, masteryGraph, weakTopics, lowDataMode, toggleLowDataMode, learnerHistory, educationLevel } = useApp();
+    const { logout, availableQuizzes, fetchAvailableQuizzes, isOnline, studentProfile, resources, fetchResources, masteryGraph, weakTopics, lowDataMode, toggleLowDataMode, learnerHistory, educationLevel, role, revisionUsageCount } = useApp();
+    const streakDays = 3; // Mock streak for gamification
     const [dragActive, setDragActive] = useState(false);
     const [selectedResource, setSelectedResource] = useState<any>(null); // Replaced selectedMode
     const [loadingQuizzes, setLoadingQuizzes] = useState(false);
@@ -212,13 +213,30 @@ export const RevisionLanding: React.FC<Props> = ({ onStartSession, onNavigate, o
                             <button
                                 onClick={toggleLowDataMode}
                                 title={lowDataMode ? "Low Data Mode: ON" : "Low Data Mode: OFF"}
-                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-black tracking-wider uppercase transition-all border ${lowDataMode
+                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-black tracking-wider uppercase transition-all border hidden sm:flex ${lowDataMode
                                     ? 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800'
                                     : 'bg-white text-slate-400 border-slate-200 hover:border-indigo-200 hover:text-indigo-600 dark:bg-slate-900 dark:border-slate-800'}`}
                             >
                                 {lowDataMode ? <ZapOff className="w-3 h-3" /> : <Zap className="w-3 h-3" />}
                                 {lowDataMode ? "Low Data" : "Standard"}
                             </button>
+                            
+                            {/* Gamification: Streak */}
+                            <div className="flex items-center gap-1.5 bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 px-3 py-1.5 rounded-xl text-xs font-black border border-orange-100 dark:border-orange-800/50 cursor-pointer hover:scale-105 transition-transform" title="Current Study Streak">
+                                🔥 {streakDays} <span className="hidden sm:inline">Days</span>
+                            </div>
+
+                            {/* Free vs Pro Usage Tracker */}
+                            {role === UserRole.GUEST && (
+                                <button onClick={() => window.open('/pricing', '_self')} className="hidden md:flex items-center gap-2 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-3 py-1.5 rounded-xl hover:border-indigo-300 dark:hover:border-indigo-600 transition-colors group">
+                                    <div className="w-16 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                                        <div className="h-full bg-indigo-500 rounded-full" style={{ width: `${(revisionUsageCount / 3) * 100}%` }} />
+                                    </div>
+                                    <span className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest group-hover:text-indigo-600 dark:group-hover:text-indigo-400">
+                                        {revisionUsageCount}/3 Free
+                                    </span>
+                                </button>
+                            )}
                             <div className="hidden md:flex items-center gap-1 bg-indigo-50 text-indigo-600 px-3 py-1.5 rounded-xl text-xs font-bold dark:bg-indigo-900/20 dark:text-indigo-300">
                                 <Shield className="w-3 h-3" /> {studentProfile?.name?.split(' ')[0] || 'Candidate'}
                             </div>
@@ -284,11 +302,11 @@ export const RevisionLanding: React.FC<Props> = ({ onStartSession, onNavigate, o
                                     <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-[10px] font-black uppercase tracking-widest text-indigo-300">
                                         <Zap className="w-3 h-3 fill-current" /> Daily Candidate Pulse
                                     </div>
-                                    <h3 className="text-2xl sm:text-3xl font-black tracking-tight leading-tight">
-                                        Ready for your <span className="text-indigo-400">Micro-Quiz</span>?
+                                    <h3 className="text-2xl sm:text-4xl font-black tracking-tight leading-tight">
+                                        Ready for your <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-300 to-purple-300">Micro-Quiz</span>?
                                     </h3>
-                                    <p className="text-indigo-100/60 font-medium text-xs sm:text-sm max-w-md">
-                                        3 high-impact questions on <span className="text-white font-bold">"Matrices"</span>. Today's most predicted exam topic. Take 2 minutes to stay sharp.
+                                    <p className="text-indigo-100/80 font-medium text-xs sm:text-sm max-w-md leading-relaxed">
+                                        3 high-impact questions on <span className="text-white font-bold bg-white/10 px-2 py-0.5 rounded-md">"Matrices"</span>. Today's most predicted exam topic. Complete it to earn <strong className="text-amber-300">+50 XP</strong>.
                                     </p>
                                 </div>
                                 <button
@@ -334,7 +352,8 @@ export const RevisionLanding: React.FC<Props> = ({ onStartSession, onNavigate, o
 
                 {/* Mastery Dashboard */}
                 {Object.keys(masteryGraph).length > 0 && (
-                    <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 mb-8 border border-slate-200 dark:border-slate-800 shadow-sm transition-colors">
+                    <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl rounded-3xl p-6 mb-8 border border-white/40 dark:border-slate-800 shadow-xl shadow-indigo-100/20 dark:shadow-none transition-colors relative overflow-hidden">
+                        <div className="absolute -top-32 -right-32 w-64 h-64 bg-indigo-400/10 dark:bg-indigo-500/10 rounded-full blur-[80px] pointer-events-none" />
                         <div className="flex items-center justify-between mb-6">
                             <div className="flex items-center gap-3">
                                 <div className="w-10 h-10 rounded-xl bg-rose-50 dark:bg-rose-900/30 flex items-center justify-center text-rose-600 dark:text-rose-400">
@@ -379,7 +398,7 @@ export const RevisionLanding: React.FC<Props> = ({ onStartSession, onNavigate, o
                             {weakTopics.slice(0, 3).map((topic, idx) => {
                                 const score = masteryGraph[topic] || 0;
                                 return (
-                                    <div key={idx} className="bg-slate-50 dark:bg-slate-950 p-4 rounded-2xl border border-slate-100 dark:border-slate-800/60 relative overflow-hidden group hover:border-indigo-200 dark:hover:border-indigo-800 transition-colors">
+                                    <div key={idx} className="bg-white/50 dark:bg-slate-950/50 backdrop-blur-md p-4 rounded-2xl border border-slate-200/50 dark:border-slate-800/60 relative overflow-hidden group hover:border-indigo-300 dark:hover:border-indigo-700 transition-colors shadow-sm">
                                         <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-rose-100/50 to-transparent dark:from-rose-900/20 rounded-bl-full pointer-events-none" />
 
                                         <div className="flex justify-between items-start mb-3">
@@ -502,8 +521,20 @@ export const RevisionLanding: React.FC<Props> = ({ onStartSession, onNavigate, o
                                             initial={{ opacity: 0, y: 8 }}
                                             animate={{ opacity: 1, y: 0 }}
                                             transition={{ delay: idx * 0.03 }}
-                                            onClick={() => setSelectedResource(item)}
-                                            className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200/70 dark:border-slate-800/80 text-left hover:border-indigo-300 dark:hover:border-indigo-700 hover:shadow-lg dark:hover:shadow-black/40 hover:-translate-y-0.5 transition-all group relative overflow-hidden"
+                                            onClick={() => {
+                                                // If GUEST and item represents a "PRO" item (e.g., 1st or 2nd item mocked as high value)
+                                                if (role === UserRole.GUEST && idx % 4 === 1) {
+                                                    // Trigger paywall visually via parent container by simulating a limit event
+                                                    onStartSession(item, RevisionMode.LEARN); 
+                                                } else {
+                                                    setSelectedResource(item);
+                                                }
+                                            }}
+                                            className={`bg-white dark:bg-slate-900 p-5 rounded-2xl border text-left transition-all group relative overflow-hidden flex flex-col ${
+                                                idx % 4 === 1 
+                                                ? 'border-indigo-200 dark:border-indigo-800 hover:border-indigo-400 hover:shadow-indigo-100 shadow-sm' 
+                                                : 'border-slate-200/70 dark:border-slate-800/80 hover:border-indigo-300 dark:hover:border-indigo-700 hover:shadow-lg dark:hover:shadow-black/40'
+                                            } hover:-translate-y-0.5`}
                                         >
                                             {isOfficial && activeTab !== 'syllabus' && (
                                                 <div className="absolute top-0 right-0 bg-indigo-600 dark:bg-indigo-500 text-white text-[8px] font-black px-2.5 py-1 rounded-bl-xl flex items-center gap-1">
@@ -540,10 +571,16 @@ export const RevisionLanding: React.FC<Props> = ({ onStartSession, onNavigate, o
                                                 </div>
                                             </div>
                                             <div className="flex items-center justify-between">
-                                                <span className="text-[10px] font-bold text-slate-300 dark:text-slate-600 uppercase tracking-wider">
-                                                    {isOfficial ? 'Somo Verified' : 'Community'}
-                                                </span>
-                                                <ChevronRight className="w-4 h-4 text-slate-300 dark:text-slate-600 group-hover:text-indigo-500 dark:group-hover:text-indigo-400 group-hover:translate-x-0.5 transition-all" />
+                                                {idx % 4 === 1 ? (
+                                                    <span className="text-[10px] font-black text-indigo-500 bg-indigo-50 dark:bg-indigo-900/30 px-2 py-0.5 rounded-lg flex items-center gap-1">
+                                                        <Sparkles className="w-3 h-3" /> PRO PREDICTED
+                                                    </span>
+                                                ) : (
+                                                    <span className="text-[10px] font-bold text-slate-300 dark:text-slate-600 uppercase tracking-wider">
+                                                        {isOfficial ? 'Somo Verified' : 'Community'}
+                                                    </span>
+                                                )}
+                                                <ChevronRight className={`w-4 h-4 transition-all ${idx % 4 === 1 ? 'text-indigo-400 group-hover:translate-x-1' : 'text-slate-300 dark:text-slate-600 group-hover:text-indigo-500 dark:group-hover:text-indigo-400 group-hover:translate-x-0.5'}`} />
                                             </div>
                                         </motion.button>
                                     );
