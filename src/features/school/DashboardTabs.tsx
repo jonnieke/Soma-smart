@@ -91,14 +91,14 @@ export const OverviewTab = ({
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-            <motion.div variants={itemVariants} className="lg:col-span-2 bg-white/70 backdrop-blur-xl rounded-[2.5rem] border border-white/40 shadow-[0_8px_30px_rgb(0,0,0,0.04)] overflow-hidden flex flex-col">
+            <motion.div variants={itemVariants} className="lg:col-span-2 bg-white/70 backdrop-blur-xl rounded-[2.5rem] border border-white/50 shadow-[0_8px_32px_rgba(0,0,0,0.04)] overflow-hidden flex flex-col">
                 <div className="p-8 border-b border-slate-100/50 flex items-center justify-between bg-white/50">
                     <div>
                         <h3 className="font-black text-slate-900 text-2xl tracking-tight">Active Faculty</h3>
                         <p className="text-xs text-slate-400 font-black uppercase tracking-[0.2em] mt-1">Top performing staff members</p>
                     </div>
                     <button
-                        className="text-blue-600 text-[10px] font-black uppercase tracking-widest px-6 py-2.5 bg-blue-50/50 border border-blue-100/50 rounded-xl hover:bg-blue-600 hover:text-white transition-all shadow-sm"
+                        className="text-blue-600 text-[10px] font-black uppercase tracking-widest px-6 py-2.5 bg-blue-50/50 border border-blue-100/50 rounded-xl hover:bg-blue-600 hover:text-slate-900 transition-all shadow-sm"
                         onClick={onViewAllTeachers}
                     >
                         Directory
@@ -123,7 +123,7 @@ export const OverviewTab = ({
                 </div>
             </motion.div>
 
-            <motion.div variants={itemVariants} className="bg-white/70 backdrop-blur-xl rounded-[2.5rem] border border-white/40 shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-10 flex flex-col">
+            <motion.div variants={itemVariants} className="bg-white/70 backdrop-blur-xl rounded-[2.5rem] border border-white/50 shadow-[0_8px_32px_rgba(0,0,0,0.04)] p-10 flex flex-col">
                 <h3 className="font-black text-slate-900 text-2xl mb-10 tracking-tight">Capacity Metrics</h3>
                 <div className="space-y-12 flex-1">
                     <UsageBar label="Authorized Staff" current={schoolStats.teachers} max={schoolProfile.teacherLimit} color="bg-gradient-to-r from-blue-600 to-indigo-600" />
@@ -137,11 +137,11 @@ export const OverviewTab = ({
                         >
                             <div className="relative z-10">
                                 <div className="flex items-center gap-4 mb-4">
-                                    <div className="w-12 h-12 bg-blue-600 text-white rounded-2xl flex items-center justify-center shadow-2xl shadow-blue-500/40 transform group-hover:rotate-12 transition-transform duration-500">
+                                    <div className="w-12 h-12 bg-blue-600 text-slate-900 rounded-2xl flex items-center justify-center shadow-2xl shadow-blue-500/40 transform group-hover:rotate-12 transition-transform duration-500">
                                         <TrendingUp className="w-6 h-6" />
                                     </div>
                                     <div>
-                                        <p className="font-black text-white text-lg">Scale Up</p>
+                                        <p className="font-black text-slate-900 text-lg">Scale Up</p>
                                         <p className="text-[10px] text-blue-400 font-bold uppercase tracking-widest">Enterprise Upgrade</p>
                                     </div>
                                 </div>
@@ -162,7 +162,7 @@ export const TeachersTab = ({ teachers, onInvite, onRemove }: { teachers: any[],
         variants={containerVariants}
         initial="hidden"
         animate="visible"
-        className="bg-white/70 backdrop-blur-xl rounded-[2.5rem] border border-white/40 shadow-[0_8px_30px_rgb(0,0,0,0.04)] overflow-hidden min-h-[500px] flex flex-col"
+        className="bg-white/70 backdrop-blur-xl rounded-[2.5rem] border border-white/50 shadow-[0_8px_32px_rgba(0,0,0,0.04)] overflow-hidden min-h-[500px] flex flex-col"
     >
         <div className="p-10 border-b border-slate-100/50 flex flex-col md:flex-row md:items-center justify-between gap-6 bg-white/50">
             <div>
@@ -210,7 +210,7 @@ export const StudentsTab = ({ students, onAdd, onRemove, onImport }: { students:
         variants={containerVariants}
         initial="hidden"
         animate="visible"
-        className="bg-white/70 backdrop-blur-xl rounded-[2.5rem] border border-white/40 shadow-[0_8px_30px_rgb(0,0,0,0.04)] overflow-hidden min-h-[500px] flex flex-col"
+        className="bg-white/70 backdrop-blur-xl rounded-[2.5rem] border border-white/50 shadow-[0_8px_32px_rgba(0,0,0,0.04)] overflow-hidden min-h-[500px] flex flex-col"
     >
         <div className="p-10 border-b border-slate-100/50 flex flex-col md:flex-row md:items-center justify-between gap-6 bg-white/50">
             <div>
@@ -238,7 +238,7 @@ export const StudentsTab = ({ students, onAdd, onRemove, onImport }: { students:
                         >
                             <div className="flex items-center gap-6">
                                 <div className="relative group/avatar">
-                                    <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-indigo-600 text-white rounded-[1.5rem] flex items-center justify-center font-black text-2xl shadow-xl shadow-purple-200 group-hover/avatar:rotate-6 transition-transform">
+                                    <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-indigo-600 text-slate-900 rounded-[1.5rem] flex items-center justify-center font-black text-2xl shadow-xl shadow-purple-200 group-hover/avatar:rotate-6 transition-transform">
                                         {student.full_name.charAt(0)}
                                     </div>
                                     <div className="absolute -right-1 -bottom-1 w-6 h-6 bg-emerald-500 border-4 border-white rounded-full shadow-sm" />
@@ -294,7 +294,7 @@ export const MaterialsTab = ({ materials, onUpload, onDelete }: { materials: Sch
         variants={containerVariants}
         initial="hidden"
         animate="visible"
-        className="bg-white/70 backdrop-blur-xl rounded-[2.5rem] border border-white/40 shadow-[0_8px_30px_rgb(0,0,0,0.04)] overflow-hidden min-h-[500px] flex flex-col"
+        className="bg-white/70 backdrop-blur-xl rounded-[2.5rem] border border-white/50 shadow-[0_8px_32px_rgba(0,0,0,0.04)] overflow-hidden min-h-[500px] flex flex-col"
     >
         <div className="p-10 border-b border-slate-100/50 flex flex-col md:flex-row md:items-center justify-between gap-6 bg-white/50">
             <div>
@@ -344,7 +344,7 @@ export const MaterialsTab = ({ materials, onUpload, onDelete }: { materials: Sch
                                         href={item.file_url}
                                         target="_blank"
                                         rel="noreferrer"
-                                        className="flex-1 py-4 bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-blue-600 transition-all text-center flex items-center justify-center gap-2 shadow-xl shadow-slate-900/10"
+                                        className="flex-1 py-4 bg-slate-900 text-slate-900 text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-blue-600 transition-all text-center flex items-center justify-center gap-2 shadow-xl shadow-slate-900/10"
                                     >
                                         <Download className="w-4 h-4" /> Download
                                     </a>
@@ -401,7 +401,7 @@ export const AnalyticsTab = ({ stats, teachers }: { stats: SchoolStats, teachers
                     <button className="px-6 py-3 bg-white border border-slate-200 rounded-2xl text-[10px] font-black uppercase tracking-widest text-slate-500 hover:bg-slate-50 transition-all flex items-center gap-2 shadow-sm">
                         <Download className="w-4 h-4" /> Export Report
                     </button>
-                    <button className="px-6 py-3 bg-slate-900 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-600 transition-all shadow-xl shadow-slate-200 flex items-center gap-2">
+                    <button className="px-6 py-3 bg-slate-900 text-slate-900 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-600 transition-all shadow-xl shadow-slate-200 flex items-center gap-2">
                         Run Full Audit
                     </button>
                 </div>
@@ -409,7 +409,7 @@ export const AnalyticsTab = ({ stats, teachers }: { stats: SchoolStats, teachers
 
             {/* Top Level Intelligence Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                <motion.div variants={itemVariants} className="bg-slate-950 rounded-[2.5rem] p-8 text-white relative overflow-hidden group">
+                <motion.div variants={itemVariants} className="bg-slate-950 rounded-[2.5rem] p-8 text-slate-900 relative overflow-hidden group">
                     <div className="relative z-10">
                         <p className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-400 mb-6">Projected KCSE Mean</p>
                         <div className="flex items-end gap-3 mb-2">
@@ -459,16 +459,16 @@ export const AnalyticsTab = ({ stats, teachers }: { stats: SchoolStats, teachers
                             <Activity className="w-8 h-8" />
                         </div>
                     </div>
-                    <button className="w-full py-4 text-[10px] font-black uppercase tracking-widest text-blue-600 border border-blue-100 rounded-2xl hover:bg-blue-600 hover:text-white transition-all">
+                    <button className="w-full py-4 text-[10px] font-black uppercase tracking-widest text-blue-600 border border-blue-100 rounded-2xl hover:bg-blue-600 hover:text-slate-900 transition-all">
                         View Detailed Insights
                     </button>
                 </motion.div>
             </div>
 
-            {/* Compliance Matrix & AI Insights */}
+            {/* Compliance Matrix & Smart Insights */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 {/* Syllabus Matrix / Heatmap */}
-                <motion.div variants={itemVariants} className="bg-white/80 backdrop-blur-xl rounded-[2.5rem] p-10 border border-white/50 shadow-xl shadow-slate-200/50 flex flex-col">
+                <motion.div variants={itemVariants} className="bg-white/70 backdrop-blur-xl rounded-[2.5rem] border border-white/50 shadow-[0_8px_32px_rgba(0,0,0,0.04)] flex flex-col">
                     <div className="flex items-center justify-between mb-10">
                         <div>
                             <h3 className="text-2xl font-black text-slate-900 tracking-tight">Syllabus Compliance Heatmap</h3>
@@ -523,46 +523,83 @@ export const AnalyticsTab = ({ stats, teachers }: { stats: SchoolStats, teachers
                     </div>
                 </motion.div>
 
-                {/* AI Predictive Insight Card */}
-                <motion.div variants={itemVariants} className="bg-gradient-to-br from-indigo-600 to-blue-700 rounded-[2.5rem] p-10 text-white shadow-2xl shadow-blue-900/20 relative overflow-hidden flex flex-col">
-                    <div className="relative z-10">
-                        <div className="flex items-center gap-3 mb-10">
-                            <div className="w-12 h-12 bg-white/20 backdrop-blur-xl rounded-2xl flex items-center justify-center border border-white/20">
-                                <Sparkles className="w-6 h-6 text-blue-200" />
+                {/* Smart Interventions Feed */}
+                <motion.div variants={itemVariants} className="bg-gradient-to-br from-indigo-600 to-blue-700 rounded-[2.5rem] p-10 shadow-[0_20px_50px_-12px_rgba(59,130,246,0.3)] relative overflow-hidden flex flex-col h-[500px]">
+                    <div className="relative z-10 flex flex-col h-full">
+                        <div className="flex items-center gap-4 mb-8">
+                            <div className="w-14 h-14 bg-white rounded-[1.2rem] flex items-center justify-center shadow-xl shadow-black/10 relative">
+                                <Zap className="w-6 h-6 text-blue-600" />
+                                <span className="absolute -top-1 -right-1 flex h-4 w-4">
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                                    <span className="relative inline-flex rounded-full h-4 w-4 bg-red-500 border-2 border-white"></span>
+                                </span>
                             </div>
                             <div>
-                                <h3 className="text-2xl font-black tracking-tight leading-none">Neural Forecast v2.0</h3>
-                                <p className="text-[10px] text-blue-200 font-black uppercase tracking-[0.2em] mt-1">AI Recommendation System</p>
+                                <h3 className="text-2xl font-black text-white tracking-tight">Smart Feed</h3>
+                                <p className="text-[10px] font-bold text-blue-200 uppercase tracking-[0.2em] mt-1">Live Interventions</p>
                             </div>
                         </div>
 
-                        <div className="space-y-6">
-                            <div className="bg-white/10 backdrop-blur-xl rounded-3xl p-6 border border-white/10">
-                                <div className="flex items-start gap-4">
-                                    <div className="w-8 h-8 bg-blue-400 rounded-full flex items-center justify-center flex-shrink-0 shadow-lg shadow-blue-900/20">
-                                        <CheckCircle2 className="w-4 h-4 text-white" />
+                        <div className="space-y-3 overflow-y-auto pr-2 flex-1 scrollbar-hide -mx-2 px-2">
+                            {/* Critical Alert */}
+                            <motion.div whileHover={{ scale: 1.02 }} className="bg-white rounded-3xl p-5 shadow-lg border border-red-100 cursor-pointer group">
+                                <div className="flex gap-4">
+                                    <div className="w-10 h-10 bg-red-50 rounded-full flex items-center justify-center flex-shrink-0 group-hover:bg-red-500 transition-colors">
+                                        <AlertTriangle className="w-4 h-4 text-red-600 group-hover:text-white" />
                                     </div>
-                                    <p className="text-blue-50 font-medium text-sm leading-relaxed">
-                                        "Candidate readiness for **English Paper 3** is at an all-time high (**89%**). Suggest shifting teacher focus to Oral Literature for the next 5 days."
-                                    </p>
+                                    <div>
+                                        <p className="text-[10px] text-red-500 font-black uppercase tracking-widest mb-1 flex justify-between">
+                                            <span>Critical Drop</span>
+                                            <span>2m ago</span>
+                                        </p>
+                                        <p className="text-slate-900 font-medium text-sm leading-snug">
+                                            Grade 8 Mathematics average has drifted below <span className="font-black text-red-600">65%</span>. 
+                                            Action: Deploy <strong>Visual Master mode</strong> for 'Geometry' sub-strand immediately.
+                                        </p>
+                                    </div>
                                 </div>
-                            </div>
+                            </motion.div>
 
-                            <div className="bg-white/10 backdrop-blur-xl rounded-3xl p-6 border border-white/10 opacity-60 grayscale hover:grayscale-0 hover:opacity-100 transition-all cursor-default">
-                                <div className="flex items-start gap-4">
-                                    <div className="w-8 h-8 bg-amber-400 rounded-full flex items-center justify-center flex-shrink-0 shadow-lg shadow-amber-900/20">
-                                        <AlertTriangle className="w-4 h-4 text-white" />
+                            {/* Positive Insight */}
+                            <motion.div whileHover={{ scale: 1.02 }} className="bg-white/10 backdrop-blur-xl rounded-3xl p-5 border border-white/20 cursor-pointer group hover:bg-white/20 transition-all">
+                                <div className="flex gap-4">
+                                    <div className="w-10 h-10 bg-emerald-500/20 rounded-full flex items-center justify-center flex-shrink-0">
+                                        <CheckCircle2 className="w-4 h-4 text-emerald-300" />
                                     </div>
-                                    <p className="text-blue-50 font-medium text-sm leading-relaxed">
-                                        "Strategy Suggestion: Average Math scores in Grade 8 are drifting down. Deploying **Visual Master** mode for 'Geometry' sub-strand is recommended."
-                                    </p>
+                                    <div>
+                                        <p className="text-[10px] text-emerald-300 font-black uppercase tracking-widest mb-1 flex justify-between">
+                                            <span>On Track</span>
+                                            <span>1hr ago</span>
+                                        </p>
+                                        <p className="text-blue-50 font-medium text-sm leading-snug">
+                                            Candidate readiness for <strong>English Paper 3</strong> is at an all-time high (89%). Suggest shifting instructional focus to Oral Literature.
+                                        </p>
+                                    </div>
                                 </div>
-                            </div>
+                            </motion.div>
+
+                            {/* Systemic Action */}
+                            <motion.div whileHover={{ scale: 1.02 }} className="bg-white/10 backdrop-blur-xl rounded-3xl p-5 border border-white/20 cursor-pointer group hover:bg-white/20 transition-all">
+                                <div className="flex gap-4">
+                                    <div className="w-10 h-10 bg-purple-500/20 rounded-full flex items-center justify-center flex-shrink-0">
+                                        <Settings className="w-4 h-4 text-purple-300" />
+                                    </div>
+                                    <div>
+                                        <p className="text-[10px] text-purple-300 font-black uppercase tracking-widest mb-1 flex justify-between">
+                                            <span>System Config</span>
+                                            <span>2hrs ago</span>
+                                        </p>
+                                        <p className="text-blue-50 font-medium text-sm leading-snug">
+                                            You have exactly 24 unassigned Teacher Invitations. Click here to auto-provision based on your current roster gap.
+                                        </p>
+                                    </div>
+                                </div>
+                            </motion.div>
                         </div>
-
-                        <div className="mt-12">
-                            <button className="w-full py-5 bg-white text-blue-700 text-xs font-black uppercase tracking-[0.2em] rounded-2xl shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-3">
-                                <Zap className="w-4 h-4 fill-current" /> Auto-Deploy Remedial Plan
+                        
+                        <div className="pt-6 mt-2 border-t border-white/10">
+                            <button className="w-full py-5 bg-white text-blue-600 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:scale-[1.02] active:scale-[0.98] transition-all shadow-xl shadow-blue-900/20 flex items-center justify-center gap-2">
+                                Review & Apply 3 Actions
                             </button>
                         </div>
                     </div>
@@ -610,7 +647,7 @@ export const SettingsTab = ({
             animate="visible"
             className="max-w-5xl mx-auto space-y-12"
         >
-            <motion.div variants={itemVariants} className="bg-white/70 backdrop-blur-xl rounded-[2.5rem] border border-white/40 shadow-[0_8px_30px_rgb(0,0,0,0.04)] overflow-hidden">
+            <motion.div variants={itemVariants} className="bg-white/70 backdrop-blur-xl rounded-[2.5rem] border border-white/50 shadow-[0_8px_32px_rgba(0,0,0,0.04)] overflow-hidden">
                 <div className="p-10 border-b border-slate-100/50 bg-white/50">
                     <h3 className="font-black text-slate-900 text-3xl tracking-tight">Institutional Profile</h3>
                     <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.25em] mt-1">Authorized Command Center</p>
@@ -622,7 +659,7 @@ export const SettingsTab = ({
                             animate={{ opacity: 1, x: 0 }}
                             className={`p-6 rounded-[1.5rem] border ${message.type === 'success' ? 'bg-emerald-50/50 border-emerald-100 text-emerald-700' : 'bg-red-50/50 border-red-100 text-red-700'} font-black text-sm flex items-center gap-4`}
                         >
-                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${message.type === 'success' ? 'bg-emerald-500 text-white' : 'bg-red-500 text-white shadow-lg shadow-red-200'}`}>
+                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${message.type === 'success' ? 'bg-emerald-500 text-slate-900' : 'bg-red-500 text-slate-900 shadow-lg shadow-red-200'}`}>
                                 {message.type === 'success' ? <ShieldCheck className="w-5 h-5" /> : <Lock className="w-5 h-5" />}
                             </div>
                             {message.text}
@@ -665,7 +702,7 @@ export const SettingsTab = ({
                         <Button
                             type="submit"
                             isLoading={loading}
-                            className="bg-blue-600 hover:bg-blue-700 text-white shadow-2xl shadow-blue-500/20 px-12 py-5 text-[10px] font-black uppercase tracking-[0.2em] rounded-2xl hover:scale-105 active:scale-95 transition-all"
+                            className="bg-blue-600 hover:bg-blue-700 text-slate-900 shadow-2xl shadow-blue-500/20 px-12 py-5 text-[10px] font-black uppercase tracking-[0.2em] rounded-2xl hover:scale-105 active:scale-95 transition-all"
                         >
                             Commit Changes
                         </Button>
@@ -677,7 +714,7 @@ export const SettingsTab = ({
                 <motion.div
                     variants={itemVariants}
                     whileHover={{ y: -8 }}
-                    className="bg-white/70 backdrop-blur-xl rounded-[2.5rem] border border-white/40 shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-10 group cursor-pointer"
+                    className="bg-white/70 backdrop-blur-xl rounded-[2.5rem] border border-white/50 shadow-[0_8px_32px_rgba(0,0,0,0.04)] p-10 group cursor-pointer"
                 >
                     <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mb-8 shadow-inner border border-blue-100/50 group-hover:rotate-12 transition-transform duration-500">
                         <Lock className="w-8 h-8" />
@@ -692,7 +729,7 @@ export const SettingsTab = ({
                 <motion.div
                     variants={itemVariants}
                     whileHover={{ y: -8 }}
-                    className="bg-white/70 backdrop-blur-xl rounded-[2.5rem] border border-white/40 shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-10 group cursor-pointer"
+                    className="bg-white/70 backdrop-blur-xl rounded-[2.5rem] border border-white/50 shadow-[0_8px_32px_rgba(0,0,0,0.04)] p-10 group cursor-pointer"
                 >
                     <div className="w-16 h-16 bg-purple-50 text-purple-600 rounded-2xl flex items-center justify-center mb-8 shadow-inner border border-purple-100/50 group-hover:rotate-12 transition-transform duration-500">
                         <Settings className="w-8 h-8" />

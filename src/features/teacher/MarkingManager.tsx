@@ -191,7 +191,7 @@ export const MarkingManager: React.FC = () => {
                                         </div>
                                         <div>
                                             <h3 className="font-black text-slate-900 tracking-tight text-xl">Grading Complete</h3>
-                                            <p className="text-[10px] font-black uppercase tracking-widest text-emerald-600">AI Verified</p>
+                                            <p className="text-[10px] font-black uppercase tracking-widest text-emerald-600">Smart Verified</p>
                                         </div>
                                     </div>
                                     <div className="text-right">
@@ -253,7 +253,7 @@ export const MarkingManager: React.FC = () => {
                 <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
                     <div>
                         <h2 className="text-3xl font-black mb-2 tracking-tight">Assignment Marking</h2>
-                        <p className="opacity-90 font-medium max-w-sm">Grade handwritten tests automatically using our CBE-aligned Vision AI.</p>
+                        <p className="opacity-90 font-medium max-w-sm">Grade handwritten tests automatically using our CBE-aligned Smart Vision.</p>
                     </div>
                     <button
                         onClick={() => setView('GRADE')}

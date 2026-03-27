@@ -56,7 +56,7 @@ export const SchemesView: React.FC<SchemesViewProps> = ({ onBack, subject, grade
                     <div className="w-20 h-20 bg-indigo-600 text-white rounded-[1.5rem] flex items-center justify-center mx-auto mb-8 shadow-xl shadow-indigo-100">
                         <Zap className="w-10 h-10" />
                     </div>
-                    <h2 className="text-3xl font-black text-slate-900 tracking-tight mb-4">AI Schemes of Work Generator</h2>
+                    <h2 className="text-3xl font-black text-slate-900 tracking-tight mb-4">Smart Schemes of Work Generator</h2>
                     <p className="text-slate-500 font-medium max-w-lg mx-auto mb-10 text-lg">
                         We will generate a full, KICD-compliant scheme of work for **{subject}** ({grade}) based on the latest syllabus.
                     </p>

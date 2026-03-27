@@ -99,7 +99,7 @@ export const MyClassroom: React.FC<MyClassroomProps> = ({ teacherProfile, select
                 </div>
             </div>
 
-            {/* AI Insights Bar */}
+            {/* Smart Insights Bar */}
             <div className="bg-gradient-to-r from-indigo-50 to-purple-50 p-6 rounded-[2rem] border border-indigo-100 flex flex-col md:flex-row items-center gap-6 justify-between">
                 <div className="flex gap-4 items-start flex-1">
                     <div className="w-12 h-12 bg-indigo-600 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-lg shadow-indigo-200">
@@ -107,7 +107,7 @@ export const MyClassroom: React.FC<MyClassroomProps> = ({ teacherProfile, select
                     </div>
                     <div>
                         <h3 className="font-bold text-indigo-900 flex items-center gap-2">
-                            Soma AI Class Insight <Sparkles className="w-4 h-4 text-amber-500" />
+                            Somo Smart Class Insight <Sparkles className="w-4 h-4 text-amber-500" />
                         </h3>
                         <p className="text-sm text-slate-700 leading-relaxed mt-1">
                             <strong>Algebra</strong> is the top struggle area this week, affecting {MOCK_STUDENTS.filter(s => s.weakTopics.includes('Algebra')).length} students.

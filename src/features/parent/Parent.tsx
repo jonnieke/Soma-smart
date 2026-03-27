@@ -77,7 +77,7 @@ export const ParentDashboard: React.FC<ParentProps> = ({ onNavigate, activityLog
         const weakAreas = quizzes.filter(q => (q.score || 0) < 60).map(q => q.topic);
         const uniqueWeakAreas = [...new Set(weakAreas)];
 
-        // AI Usage
+        // Smart Usage
         const aiUses = activityLog.filter(a => a.type === 'STUDY' || a.type === 'QUIZ').length;
 
         return {
@@ -99,13 +99,16 @@ export const ParentDashboard: React.FC<ParentProps> = ({ onNavigate, activityLog
     // --- LOGIN VIEW ---
     if (!isAuthenticated) {
         return (
-            <div className="min-h-screen bg-white flex flex-col">
+            <div className="min-h-screen bg-slate-900 flex flex-col relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-500/20 rounded-full blur-3xl -mr-32 -mt-32 pointer-events-none"></div>
+                <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-purple-500/20 rounded-full blur-3xl -ml-40 -mb-40 pointer-events-none"></div>
+
                 <Header title="Parent Access" onHome={() => onNavigate(ViewState.DASHBOARD)} />
-                <div className="flex-1 flex flex-col items-center justify-center p-6 bg-gradient-to-br from-indigo-50 via-white to-puple-50">
+                <div className="flex-1 flex flex-col items-center justify-center p-6 relative z-10">
                     <motion.div
-                        initial={{ opacity: 0, y: 20 }}
+                        initial={{ opacity: 0, y: 30 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="w-full max-w-xl bg-white rounded-[2rem] shadow-2xl border border-indigo-100 p-8 text-center relative overflow-hidden"
+                        className="w-full max-w-xl bg-white/10 backdrop-blur-3xl rounded-[2.5rem] shadow-2xl border border-white/20 p-8 md:p-12 text-center relative overflow-hidden"
                     >
                         <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500"></div>
 
@@ -117,60 +120,60 @@ export const ParentDashboard: React.FC<ParentProps> = ({ onNavigate, activityLog
                             <X className="w-5 h-5" />
                         </button>
 
-                        <div className="bg-indigo-50 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner">
-                            <Lock className="w-10 h-10 text-indigo-600" />
+                        <div className="bg-indigo-500/20 border border-indigo-400/30 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner">
+                            <Lock className="w-10 h-10 text-indigo-300" />
                         </div>
 
-                        <h2 className="text-3xl font-bold text-slate-900 mb-2">Welcome, Parent!</h2>
-                        <p className="text-slate-500 mb-8 px-4">
+                        <h2 className="text-3xl font-black text-white tracking-tight mb-2">Welcome, Parent!</h2>
+                        <p className="text-indigo-100/80 mb-8 px-4 font-medium leading-relaxed">
                             Unlock real-time insights into your child&apos;s learning journey. Enter their Student ID to begin.
                         </p>
 
                         <div className="space-y-6">
                             <div className="relative group">
-                                <User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5 group-focus-within:text-indigo-500 transition-colors" />
+                                <User className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5 group-focus-within:text-indigo-400 transition-colors" />
                                 <input
                                     type="text"
                                     placeholder="SOMA-XXXX"
-                                    className="w-full pl-12 pr-4 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl text-xl font-bold tracking-widest uppercase focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-50 outline-none transition-all placeholder:text-slate-300"
+                                    className="w-full pl-14 pr-4 py-4.5 bg-slate-900/50 border border-slate-700/50 rounded-2xl text-xl font-bold tracking-widest text-white uppercase focus:border-indigo-500 focus:bg-slate-800 focus:ring-4 focus:ring-indigo-500/20 outline-none transition-all placeholder:text-slate-500"
                                     value={inputCode}
                                     onChange={(e) => setInputCode(e.target.value)}
                                 />
                             </div>
 
                             <div className="relative group">
-                                <Activity className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5 group-focus-within:text-indigo-500 transition-colors" />
+                                <Activity className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5 group-focus-within:text-indigo-400 transition-colors" />
                                 <input
                                     type="tel"
                                     placeholder="Parent Phone Number"
-                                    className="w-full pl-12 pr-4 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl text-lg font-bold focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-50 outline-none transition-all placeholder:text-slate-300"
+                                    className="w-full pl-14 pr-4 py-4.5 bg-slate-900/50 border border-slate-700/50 rounded-2xl text-lg font-bold text-white focus:border-indigo-500 focus:bg-slate-800 focus:ring-4 focus:ring-indigo-500/20 outline-none transition-all placeholder:text-slate-500"
                                     value={inputPhone}
                                     onChange={(e) => setInputPhone(e.target.value)}
                                 />
                             </div>
 
                             {error && (
-                                <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} className="text-red-500 text-sm font-medium bg-red-50 p-3 rounded-xl flex items-center justify-center gap-2">
+                                <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} className="text-red-300 text-sm font-medium bg-red-500/10 border border-red-500/20 p-3 rounded-xl flex items-center justify-center gap-2">
                                     <AlertCircle className="w-4 h-4" /> {error}
                                 </motion.div>
                             )}
 
-                            <Button fullWidth onClick={handleLogin} disabled={loading} className="py-4 text-lg shadow-xl shadow-indigo-200">
-                                {loading ? 'Checking...' : 'View Progress'}
+                            <Button fullWidth onClick={handleLogin} disabled={loading} className="py-4.5 text-lg shadow-xl shadow-indigo-500/20 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-400 hover:to-purple-500 border-none text-white font-black">
+                                {loading ? 'Authenticating...' : 'View Progress'}
                             </Button>
                         </div>
 
                         {validStudentCode ? (
-                            <div className="mt-8 pt-6 border-t border-dashed border-slate-200">
-                                <p className="text-xs text-indigo-400 uppercase font-bold tracking-widest mb-3">Login Help</p>
-                                <p className="text-[10px] text-slate-400">
-                                    Use the Student ID (SOMA-XXXX) and the Phone Number used during registration.
+                            <div className="mt-8 pt-6 border-t border-dashed border-white/20">
+                                <p className="text-xs text-indigo-300 uppercase font-black tracking-widest mb-3">Login Help</p>
+                                <p className="text-[11px] font-medium text-slate-400 max-w-xs mx-auto">
+                                    Use the Student ID (SOMA-XXXX) and the Phone Number associated with the account during registration.
                                 </p>
                             </div>
                         ) : (
                             <div className="mt-8">
-                                <p className="text-xs text-slate-400 bg-slate-50 py-2 px-4 rounded-full inline-block">
-                                    Hint: <span onClick={() => navigate('/learner')} className="text-indigo-500 font-bold hover:underline cursor-pointer">Register</span> a student profile first to generate an ID.
+                                <p className="text-xs font-semibold text-slate-300 bg-slate-800/50 py-2.5 px-5 rounded-full inline-block border border-slate-700">
+                                    Hint: <span onClick={() => navigate('/learner')} className="text-indigo-400 font-bold hover:text-indigo-300 transition-colors cursor-pointer">Register</span> a student profile first to generate an ID.
                                 </p>
                             </div>
                         )}
@@ -182,28 +185,28 @@ export const ParentDashboard: React.FC<ParentProps> = ({ onNavigate, activityLog
 
     // --- DASHBOARD VIEW ---
     return (
-        <div className="min-h-screen bg-slate-50 pb-20 font-sans max-w-4xl mx-auto shadow-2xl border-x border-slate-100 relative">
+        <div className="min-h-screen bg-slate-50 dark:bg-slate-900 pb-20 font-sans max-w-5xl mx-auto shadow-2xl border-x border-slate-100 dark:border-slate-800 relative transition-colors">
 
             {/* --- CUSTOM HEADER --- */}
-            <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b border-slate-200 px-6 py-4 flex items-center justify-between">
+            <header className="sticky top-0 z-30 bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl border-b border-white/20 dark:border-slate-800 px-6 py-4 flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-gradient-to-tr from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center text-white font-bold shadow-lg shadow-indigo-200">
+                    <div className="w-10 h-10 bg-gradient-to-tr from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center text-white font-bold shadow-lg shadow-indigo-500/20">
                         <User className="w-6 h-6" />
                     </div>
                     <div>
-                        <h1 className="text-lg font-bold text-slate-800 leading-tight">Student Overview</h1>
-                        <p className="text-xs text-slate-500 font-medium">ID: {validStudentCode}</p>
+                        <h1 className="text-lg font-black text-slate-900 dark:text-white leading-tight tracking-tight">Student Overview</h1>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 font-semibold tracking-wider uppercase">ID: {validStudentCode}</p>
                     </div>
                 </div>
                 <div className="flex gap-2">
-                    <button onClick={() => onNavigate(ViewState.DASHBOARD)} className="p-2 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors group" title="Back to Home">
-                        <Home className="w-6 h-6 text-slate-500 group-hover:text-indigo-600" />
+                    <button onClick={() => onNavigate(ViewState.DASHBOARD)} className="p-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl transition-colors group" title="Back to Home">
+                        <Home className="w-6 h-6 text-slate-500 dark:text-slate-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400" />
                     </button>
-                    <button onClick={() => navigate('/pricing')} className="p-2 bg-indigo-50 hover:bg-indigo-100 rounded-xl transition-colors group" title="Pricing Plans">
-                        <CreditCard className="w-6 h-6 text-indigo-600" />
+                    <button onClick={() => navigate('/pricing')} className="p-2 bg-indigo-50 dark:bg-indigo-900/30 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 rounded-xl transition-colors border border-indigo-100 dark:border-indigo-800/50 group" title="Pricing Plans">
+                        <CreditCard className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
                     </button>
-                    <button onClick={() => setShowLogoutModal(true)} className="p-2 bg-red-50 hover:bg-red-100 rounded-xl transition-colors group" title="Logout">
-                        <LogOut className="w-6 h-6 text-red-500 group-hover:text-red-600" />
+                    <button onClick={() => setShowLogoutModal(true)} className="p-2 bg-red-50 dark:bg-red-900/30 hover:bg-red-100 dark:hover:bg-red-900/50 rounded-xl transition-colors border border-red-100 dark:border-red-800/50 group" title="Logout">
+                        <LogOut className="w-6 h-6 text-red-500 dark:text-red-400 group-hover:text-red-600 dark:group-hover:text-red-300" />
                     </button>
                 </div>
             </header>
@@ -222,34 +225,34 @@ export const ParentDashboard: React.FC<ParentProps> = ({ onNavigate, activityLog
             <main className="p-6 space-y-8">
 
                 {/* 1. HERO GREETING */}
-                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="relative bg-gradient-to-br from-indigo-600 to-purple-700 rounded-[2.5rem] p-8 text-white shadow-xl shadow-indigo-200 overflow-hidden">
-                    <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -mr-16 -mt-16"></div>
-                    <div className="absolute bottom-0 left-0 w-32 h-32 bg-indigo-900/30 rounded-full blur-2xl -ml-10 -mb-10"></div>
+                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="relative bg-gradient-to-br from-indigo-600 via-indigo-700 to-purple-800 rounded-[2.5rem] p-8 md:p-10 text-white shadow-2xl shadow-indigo-600/20 overflow-hidden">
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
+                    <div className="absolute bottom-0 left-0 w-32 h-32 bg-indigo-400/30 rounded-full blur-2xl -ml-10 -mb-10 pointer-events-none"></div>
 
-                    <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+                    <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-8">
                         <div>
-                            <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-md rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wider mb-3 border border-white/10">
-                                <Activity className="w-3 h-3" /> Live Updates
+                            <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-md rounded-full px-4 py-1.5 text-xs font-black uppercase tracking-widest mb-4 border border-white/20 shadow-inner">
+                                <Activity className="w-3 h-3 text-emerald-300" /> Live Updates
                             </div>
-                            <h2 className="text-3xl font-extrabold mb-2">
+                            <h2 className="text-4xl md:text-5xl font-black mb-3 tracking-tight">
                                 {stats.avgScore >= 80 ? "Flying High! 🦅" : stats.avgScore >= 50 ? "Making Progress! 🌱" : "Ready to Grow! 🚀"}
                             </h2>
-                            <p className="text-indigo-100 max-w-sm">
+                            <p className="text-indigo-100 font-medium max-w-md text-lg leading-relaxed">
                                 {stats.avgScore >= 80
-                                    ? "Your child is showing excellent mastery of recent topics."
-                                    : "Consistent practice is paying off. Keep up the momentum!"}
+                                    ? "Your child is demonstrating outstanding mastery across their recent assessments."
+                                    : "Consistent practice is paying off! Keep the momentum going."}
                             </p>
                         </div>
-                        <div className="flex gap-4">
-                            <div className="bg-white/10 backdrop-blur-md p-4 rounded-2xl border border-white/10 text-center min-w-[100px]">
-                                <p className="text-indigo-200 text-xs font-bold uppercase mb-1">Avg Score</p>
-                                <p className="text-3xl font-extrabold text-white">{stats.avgScore}%</p>
+                        <div className="flex gap-4 w-full md:w-auto">
+                            <div className="bg-white/10 backdrop-blur-xl p-5 rounded-[2rem] border border-white/20 flex-1 md:flex-none text-center min-w-[110px] shadow-lg">
+                                <p className="text-indigo-200 text-[10px] font-black uppercase tracking-widest mb-1">Avg Score</p>
+                                <p className="text-4xl font-black text-white">{stats.avgScore}%</p>
                             </div>
-                            <div className="bg-white/10 backdrop-blur-md p-4 rounded-2xl border border-white/10 text-center min-w-[100px]">
-                                <p className="text-indigo-200 text-xs font-bold uppercase mb-1 flex items-center justify-center gap-1">
-                                    <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" /> Level
+                            <div className="bg-white/10 backdrop-blur-xl p-5 rounded-[2rem] border border-white/20 flex-1 md:flex-none text-center min-w-[110px] shadow-lg">
+                                <p className="text-indigo-200 text-[10px] font-black uppercase tracking-widest mb-1 flex items-center justify-center gap-1">
+                                    <Star className="w-3 h-3 text-amber-400 fill-amber-400" /> Level
                                 </p>
-                                <p className="text-3xl font-extrabold text-white">{stats.level}</p>
+                                <p className="text-4xl font-black text-white">{stats.level}</p>
                             </div>
                         </div>
                     </div>
@@ -257,46 +260,46 @@ export const ParentDashboard: React.FC<ParentProps> = ({ onNavigate, activityLog
 
 
                 {/* 2. STATS GRID */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                     <StatsCard
-                        icon={<Activity className="w-5 h-5 text-blue-600" />}
-                        label="AI Tutor Sessions"
+                        icon={<Activity className="w-5 h-5 text-blue-600 dark:text-blue-400" />}
+                        label="Smart Assists"
                         value={stats.aiUses}
-                        color="bg-blue-50"
+                        color="bg-blue-50 dark:bg-blue-900/30 border-blue-100 dark:border-blue-800/50"
                     />
                     <StatsCard
-                        icon={<CheckCircle className="w-5 h-5 text-green-600" />}
+                        icon={<CheckCircle className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />}
                         label="Quizzes Taken"
                         value={stats.totalQuizzes}
-                        color="bg-green-50"
+                        color="bg-emerald-50 dark:bg-emerald-900/30 border-emerald-100 dark:border-emerald-800/50"
                     />
                     <StatsCard
-                        icon={<Award className="w-5 h-5 text-amber-600" />}
+                        icon={<Award className="w-5 h-5 text-amber-600 dark:text-amber-400" />}
                         label="Mastery Level"
                         value={stats.masteryLevel}
-                        color="bg-amber-50"
+                        color="bg-amber-50 dark:bg-amber-900/30 border-amber-100 dark:border-amber-800/50"
                         isText
                     />
                     <StatsCard
-                        icon={<Zap className="w-5 h-5 text-purple-600" />}
+                        icon={<Zap className="w-5 h-5 text-purple-600 dark:text-purple-400" />}
                         label="Streak"
                         value="3 Days"
-                        color="bg-purple-50"
+                        color="bg-purple-50 dark:bg-purple-900/30 border-purple-100 dark:border-purple-800/50"
                         isText
                     />
                 </div>
 
 
                 {/* 3. PERFORMANCE & SUBJECTS ROW */}
-                <div className="grid md:grid-cols-3 gap-6">
+                <div className="grid lg:grid-cols-3 gap-6">
 
                     {/* Performance Graph */}
-                    <div className="md:col-span-2 bg-white rounded-[2rem] p-6 shadow-sm border border-slate-100">
-                        <div className="flex items-center justify-between mb-6">
-                            <h3 className="font-bold text-slate-800 flex items-center gap-2">
-                                <TrendingUp className="w-5 h-5 text-indigo-500" /> Performance Trend
+                    <div className="lg:col-span-2 bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl rounded-[2.5rem] p-8 shadow-xl shadow-slate-200/50 dark:shadow-none border border-white/50 dark:border-slate-800 transition-colors">
+                        <div className="flex items-center justify-between mb-8">
+                            <h3 className="text-xl font-black text-slate-900 dark:text-white flex items-center gap-2">
+                                <TrendingUp className="w-6 h-6 text-indigo-500" /> Performance Trend
                             </h3>
-                            <span className="text-xs font-bold text-slate-400 bg-slate-50 px-2 py-1 rounded-full">Last 7 Quizzes</span>
+                            <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-3 py-1.5 rounded-full shadow-sm">Last 7 Quizzes</span>
                         </div>
 
                         {/* Custom SVG Line Chart */}
@@ -339,9 +342,9 @@ export const ParentDashboard: React.FC<ParentProps> = ({ onNavigate, activityLog
                     </div>
 
                     {/* Subject Breakdown */}
-                    <div className="bg-white rounded-[2rem] p-6 shadow-sm border border-slate-100">
-                        <h3 className="font-bold text-slate-800 mb-6 flex items-center gap-2">
-                            <Book className="w-5 h-5 text-purple-500" /> Interests
+                    <div className="bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl rounded-[2.5rem] p-8 shadow-xl shadow-slate-200/50 dark:shadow-none border border-white/50 dark:border-slate-800 transition-colors">
+                        <h3 className="text-xl font-black text-slate-900 dark:text-white mb-8 flex items-center gap-2">
+                            <Book className="w-6 h-6 text-purple-500" /> Interests
                         </h3>
                         <div className="space-y-4">
                             {Object.entries(stats.subjects).map(([subject, count], i) => {
@@ -372,55 +375,58 @@ export const ParentDashboard: React.FC<ParentProps> = ({ onNavigate, activityLog
                     </div>
                 </div>
 
-                {/* 3.5 AI INSIGHTS & HOMEWORK TRACKING */}
-                <div className="grid md:grid-cols-2 gap-6">
+                {/* 3.5 SMART INSIGHTS & HOMEWORK TRACKING */}
+                <div className="grid lg:grid-cols-2 gap-6">
                     {/* Insights & Weak Areas */}
-                    <div className="bg-gradient-to-br from-indigo-50 to-white rounded-[2rem] p-6 shadow-sm border border-indigo-100 flex flex-col justify-between">
-                        <div>
-                            <h3 className="font-bold text-indigo-900 mb-4 flex items-center gap-2">
-                                <Sparkles className="w-5 h-5 text-indigo-500" /> Soma AI Insights
+                    <div className="bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl rounded-[2.5rem] p-8 shadow-xl shadow-slate-200/50 dark:shadow-none border border-white/50 dark:border-slate-800 flex flex-col justify-between relative overflow-hidden group transition-colors">
+                        <div className="absolute right-0 bottom-0 opacity-[0.03] group-hover:opacity-10 transition-opacity pointer-events-none">
+                            <Sparkles className="w-64 h-64 text-indigo-500 -mr-12 -mb-12" />
+                        </div>
+                        <div className="relative z-10">
+                            <h3 className="text-xl font-black text-slate-900 dark:text-white mb-6 flex items-center gap-2">
+                                <Sparkles className="w-6 h-6 text-indigo-500" /> Somo Smart Insights
                             </h3>
                             {stats.weakAreas.length > 0 ? (
-                                <div className="space-y-3">
-                                    <p className="text-sm text-slate-700 leading-relaxed font-medium">
+                                <div className="space-y-4">
+                                    <p className="text-[15px] text-slate-600 dark:text-slate-300 leading-relaxed font-semibold">
                                         Your child is doing well overall, but seems to be struggling slightly with these topics:
                                     </p>
                                     <div className="flex flex-wrap gap-2 mt-2">
                                         {stats.weakAreas.slice(0, 3).map((area, idx) => (
-                                            <span key={idx} className="bg-indigo-100/50 text-indigo-700 text-xs font-bold px-3 py-1 rounded-full border border-indigo-200">
+                                            <span key={idx} className="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 text-[11px] uppercase tracking-widest font-black px-4 py-2 rounded-full border border-indigo-200 dark:border-indigo-800/50 shadow-sm">
                                                 {area}
                                             </span>
                                         ))}
                                     </div>
-                                    <p className="text-xs text-slate-500 mt-2">
+                                    <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mt-4">
                                         We have automatically added targeted remedial exercises to their dashboard.
                                     </p>
                                 </div>
                             ) : (
-                                <p className="text-sm text-slate-700 leading-relaxed font-medium">
-                                    Excellent progress! Your child is showing consistent mastery across all tested subjects this week. SOMA AI is tracking their pace to provide more advanced challenges.
+                                <p className="text-[15px] text-slate-600 dark:text-slate-300 leading-relaxed font-semibold">
+                                    Excellent progress! Your child is showing consistent mastery across all tested subjects this week. Our Smart Engine is tracking their pace to provide more advanced challenges automatically.
                                 </p>
                             )}
                         </div>
                     </div>
 
                     {/* Homework Tracker */}
-                    <div className="bg-white rounded-[2rem] p-6 shadow-sm border border-slate-100">
-                        <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2">
-                            <Book className="w-5 h-5 text-emerald-500" /> Pending Homework
+                    <div className="bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl rounded-[2.5rem] p-8 shadow-xl shadow-slate-200/50 dark:shadow-none border border-white/50 dark:border-slate-800 transition-colors">
+                        <h3 className="text-xl font-black text-slate-900 dark:text-white mb-6 flex items-center gap-2">
+                            <Book className="w-6 h-6 text-emerald-500" /> Pending Homework
                         </h3>
-                        <div className="space-y-3">
-                            <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
-                                <span className="text-sm font-bold text-slate-700">Math: Fractions Remedial</span>
-                                <span className="bg-amber-100 text-amber-600 text-[10px] font-black uppercase px-2 py-1 rounded-full">Due Tomorrow</span>
+                        <div className="space-y-4">
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm gap-3">
+                                <span className="text-[15px] font-bold text-slate-800 dark:text-slate-200">Math: Fractions Remedial</span>
+                                <span className="bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full border border-amber-200 dark:border-amber-800/50 w-fit">Due Tomorrow</span>
                             </div>
-                            <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
-                                <span className="text-sm font-bold text-slate-700">Science: Plant Systems</span>
-                                <span className="bg-slate-200 text-slate-600 text-[10px] font-black uppercase px-2 py-1 rounded-full">Completed</span>
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm gap-3">
+                                <span className="text-[15px] font-bold text-slate-800 dark:text-slate-200 line-through opacity-70">Science: Plant Systems</span>
+                                <span className="bg-slate-100 dark:bg-slate-900/50 text-slate-500 dark:text-slate-400 text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full border border-slate-200 dark:border-slate-800 w-fit">Completed</span>
                             </div>
-                            <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
-                                <span className="text-sm font-bold text-slate-700">English: Comprehension</span>
-                                <span className="bg-emerald-100 text-emerald-600 text-[10px] font-black uppercase px-2 py-1 rounded-full">Completed</span>
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm gap-3">
+                                <span className="text-[15px] font-bold text-slate-800 dark:text-slate-200 line-through opacity-70">English: Comprehension</span>
+                                <span className="bg-emerald-50 dark:bg-emerald-900/10 text-emerald-600 dark:text-emerald-500 text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full border border-emerald-100 dark:border-emerald-900/30 w-fit">Completed</span>
                             </div>
                         </div>
                     </div>
@@ -428,8 +434,8 @@ export const ParentDashboard: React.FC<ParentProps> = ({ onNavigate, activityLog
 
                 {/* 4. ACTIVITY FEED */}
                 <div>
-                    <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2 text-lg">
-                        <Calendar className="w-5 h-5 text-indigo-500" /> Recent Activity
+                    <h3 className="text-xl font-black text-slate-900 dark:text-white mb-6 flex items-center gap-2">
+                        <Calendar className="w-6 h-6 text-indigo-500" /> Recent Activity
                     </h3>
                     <div className="space-y-3">
                         {activityLog.length === 0 ? (
@@ -443,7 +449,7 @@ export const ParentDashboard: React.FC<ParentProps> = ({ onNavigate, activityLog
                                     animate={{ opacity: 1, x: 0 }}
                                     transition={{ delay: i * 0.05 }}
                                     key={item.id}
-                                    className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-4"
+                                    className="bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl p-5 rounded-[2rem] border border-white/50 dark:border-slate-800 shadow-md hover:shadow-xl hover:-translate-y-1 transition-all flex items-center gap-5"
                                 >
                                     <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 font-bold text-lg ${item.type === 'QUIZ'
                                         ? (item.score || 0) >= 80 ? 'bg-green-100 text-green-600' : (item.score || 0) >= 50 ? 'bg-blue-100 text-blue-600' : 'bg-amber-100 text-amber-600'
@@ -453,8 +459,8 @@ export const ParentDashboard: React.FC<ParentProps> = ({ onNavigate, activityLog
                                     </div>
 
                                     <div className="flex-1 min-w-0">
-                                        <h4 className="font-bold text-slate-800 truncate">{item.topic}</h4>
-                                        <p className="text-xs text-slate-500 flex items-center gap-1.5">
+                                        <h4 className="text-[15px] font-bold text-slate-900 dark:text-white truncate">{item.topic}</h4>
+                                        <p className="text-xs font-semibold tracking-wide text-slate-500 dark:text-slate-400 flex items-center gap-1.5 mt-1">
                                             {item.type === 'QUIZ' ? 'Assessment' : 'Lesson Study'} • {item.date}
                                         </p>
                                     </div>
@@ -481,13 +487,13 @@ export const ParentDashboard: React.FC<ParentProps> = ({ onNavigate, activityLog
 // --- HELPER COMPONENTS ---
 
 const StatsCard = ({ icon, label, value, color, isText = false }: any) => (
-    <motion.div whileHover={{ y: -5 }} className="bg-white p-5 rounded-[1.5rem] shadow-sm border border-slate-100 flex flex-col items-start gap-3">
-        <div className={`p-3 rounded-xl ${color}`}>
+    <motion.div whileHover={{ y: -5 }} className="bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl p-6 rounded-[2rem] shadow-xl shadow-slate-200/50 dark:shadow-none border border-white/50 dark:border-slate-800 flex flex-col items-start gap-4 transition-colors">
+        <div className={`p-4 rounded-2xl border ${color} shadow-sm`}>
             {icon}
         </div>
         <div>
-            <p className="text-xs font-bold text-slate-400 uppercase tracking-wide">{label}</p>
-            <p className={`font-extrabold text-slate-800 ${isText ? 'text-lg' : 'text-2xl'}`}>{value}</p>
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{label}</p>
+            <p className={`font-black text-slate-900 dark:text-white mt-1 ${isText ? 'text-xl' : 'text-3xl'}`}>{value}</p>
         </div>
     </motion.div>
 );

@@ -590,7 +590,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                             )}
                         </div>
 
-                        {/* AI Action */}
+                        {/* Smart Action */}
                         <div className="cursor-pointer text-slate-500 hover:text-indigo-600 transition-colors">
                             <Sparkles className="w-5 h-5" />
                         </div>
@@ -1634,7 +1634,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                                         <p className="text-slate-400 max-w-md">
                                             {isPro
                                                 ? `You are on the ${selectedPlan?.name || 'Pro'} Plan. Your next billing date is ${new Date().toLocaleDateString()}.`
-                                                : "You are currently on the Free Plan with limited access to Somo AI tools."}
+                                                : "You are currently on the Free Plan with limited access to Somo Smart tools."}
                                         </p>
                                     </div>
                                     <div className="flex gap-4">

@@ -1,5 +1,5 @@
 import React from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
     Users,
     TrendingUp,
@@ -15,7 +15,10 @@ import {
     Upload,
     Download,
     Activity,
-    ChevronRight
+    ChevronRight,
+    ArrowRight,
+    Target,
+    Clock
 } from 'lucide-react';
 import { Button } from '../../components/Shared';
 import { useApp } from '../../context/AppContext';
@@ -45,6 +48,21 @@ export const SchoolDashboard: React.FC = () => {
     const [isProcessing, setIsProcessing] = React.useState(false);
     const [schoolStudents, setSchoolStudents] = React.useState<any[]>([]);
     const [searchQuery, setSearchQuery] = React.useState('');
+    const [isSearchModalOpen, setIsSearchModalOpen] = React.useState(false);
+
+    React.useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+                e.preventDefault();
+                setIsSearchModalOpen(true);
+            }
+            if (e.key === 'Escape') {
+                setIsSearchModalOpen(false);
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, []);
 
     React.useEffect(() => {
         if (schoolProfile) {
@@ -156,9 +174,93 @@ export const SchoolDashboard: React.FC = () => {
     }
 
     return (
-        <div className="min-h-screen bg-slate-50 flex">
+        <div className="relative min-h-screen flex text-slate-900 overflow-hidden bg-[#F8FAFC] font-sans">
+            {/* Command-K Search Modal */}
+            <AnimatePresence>
+                {isSearchModalOpen && (
+                    <div className="fixed inset-0 z-[100] flex items-start justify-center pt-[10vh]">
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="absolute inset-0 bg-slate-900/20 backdrop-blur-sm"
+                            onClick={() => setIsSearchModalOpen(false)}
+                        />
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95, y: -20 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95, y: -20 }}
+                            className="relative w-full max-w-2xl bg-white/90 backdrop-blur-3xl rounded-[2.5rem] shadow-[0_30px_100px_rgba(0,0,0,0.1)] border border-white overflow-hidden flex flex-col mx-4"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <div className="p-8 border-b border-slate-100/50 flex items-center gap-4">
+                                <Search className="w-6 h-6 text-blue-600" />
+                                <input
+                                    autoFocus
+                                    type="text"
+                                    placeholder="Search student records, faculty, or materials..."
+                                    className="bg-transparent border-none outline-none text-xl w-full font-black text-slate-900 placeholder:text-slate-300 focus:ring-0"
+                                />
+                                <div className="px-3 py-1.5 bg-slate-50 border border-slate-200/50 rounded-xl text-[10px] font-black text-slate-400 uppercase tracking-widest shadow-sm">ESC</div>
+                            </div>
+                            
+                            <div className="p-6 bg-slate-50/50 max-h-[60vh] overflow-y-auto">
+                                <div className="px-4 py-2 text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Suggested Actions</div>
+                                <div className="space-y-2">
+                                    <button 
+                                        onClick={() => { setIsSearchModalOpen(false); setActiveTab('Teachers'); setIsAddModalOpen(true); }}
+                                        className="w-full text-left px-6 py-4 rounded-2xl hover:bg-white hover:shadow-xl hover:shadow-blue-500/5 transition-all flex items-center gap-4 group"
+                                    >
+                                        <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                                            <Users className="w-5 h-5" />
+                                        </div>
+                                        <div>
+                                            <p className="font-black text-slate-900">Provision New Faculty Member</p>
+                                            <p className="text-xs text-slate-400 font-bold">Jump to Teacher Directory</p>
+                                        </div>
+                                        <ArrowRight className="w-4 h-4 text-slate-300 ml-auto group-hover:text-blue-500 group-hover:translate-x-1 transition-all" />
+                                    </button>
+                                    <button 
+                                        onClick={() => { setIsSearchModalOpen(false); setActiveTab('Analytics'); }}
+                                        className="w-full text-left px-6 py-4 rounded-2xl hover:bg-white hover:shadow-xl hover:shadow-purple-500/5 transition-all flex items-center gap-4 group"
+                                    >
+                                        <div className="w-10 h-10 bg-purple-50 text-purple-600 rounded-xl flex items-center justify-center group-hover:bg-purple-600 group-hover:text-white transition-colors">
+                                            <Target className="w-5 h-5" />
+                                        </div>
+                                        <div>
+                                            <p className="font-black text-slate-900">Run Syllabus Compliance Audit</p>
+                                            <p className="text-xs text-slate-400 font-bold">Generate PDF Report for Term 1</p>
+                                        </div>
+                                        <ArrowRight className="w-4 h-4 text-slate-300 ml-auto group-hover:text-purple-500 group-hover:translate-x-1 transition-all" />
+                                    </button>
+                                </div>
+
+                                <div className="px-4 flex items-center justify-between text-[10px] font-black text-slate-400 uppercase tracking-widest mt-8 mb-4">
+                                    <span>Recent Queries</span>
+                                    <button className="hover:text-blue-600 transition-colors">Clear History</button>
+                                </div>
+                                <div className="space-y-1">
+                                    <button className="w-full text-left px-6 py-3 rounded-xl hover:bg-slate-100 transition-colors flex items-center gap-3 text-slate-600 font-bold text-sm">
+                                        <Clock className="w-4 h-4 text-slate-400" /> Grade 8 Mathematics Performance
+                                    </button>
+                                    <button className="w-full text-left px-6 py-3 rounded-xl hover:bg-slate-100 transition-colors flex items-center gap-3 text-slate-600 font-bold text-sm">
+                                        <Clock className="w-4 h-4 text-slate-400" /> Download Form 4 Chemistry Prep
+                                    </button>
+                                </div>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
+            {/* Deep Ambient Background */}
+            <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
+                <div className="absolute top-[-20%] left-[-10%] w-[800px] h-[800px] bg-indigo-300/40 rounded-full blur-[120px] mix-blend-multiply" />
+                <div className="absolute bottom-[-10%] right-[-10%] w-[600px] h-[600px] bg-purple-300/40 rounded-full blur-[100px] mix-blend-multiply" />
+                <div className="absolute top-[40%] left-[60%] w-[500px] h-[500px] bg-blue-300/30 rounded-full blur-[100px] mix-blend-multiply" />
+            </div>
             {/* Sidebar */}
-            <aside className="w-72 bg-white/80 backdrop-blur-xl border-r border-slate-200/50 flex flex-col hidden lg:flex m-4 rounded-[2.5rem] shadow-2xl shadow-slate-200/50 sticky top-4 h-[calc(100vh-2rem)]">
+            <aside className="w-72 bg-white/70 backdrop-blur-xl border border-white/50 flex flex-col hidden lg:flex m-4 rounded-[2.5rem] shadow-[0_8px_32px_rgba(0,0,0,0.04)] relative z-10 h-[calc(100vh-2rem)] sticky top-4">
                 <div className="p-8 border-b border-slate-100/50 flex items-center justify-center">
                     <img src={logoImg} alt="Somo Smart" className="h-12 w-auto object-contain" />
                 </div>
@@ -186,18 +288,18 @@ export const SchoolDashboard: React.FC = () => {
             </aside>
 
             {/* Main Content */}
-            <main className="flex-1 overflow-y-auto p-4">
-                <header className="h-24 bg-white/70 backdrop-blur-xl border border-slate-200/50 px-8 flex items-center justify-between sticky top-0 z-50 rounded-[2.5rem] shadow-[0_8px_32px_rgba(0,0,0,0.02)]">
-                    <div className="flex items-center gap-4 bg-slate-100/50 px-6 py-3 rounded-2xl border border-slate-200/50 w-[30rem] transition-all focus-within:ring-4 focus-within:ring-blue-100 focus-within:border-blue-400 group">
+            <main className="flex-1 overflow-y-auto p-4 relative z-10">
+                <header className="h-24 bg-white/70 backdrop-blur-xl border border-white/50 px-8 flex items-center justify-between sticky top-0 z-50 rounded-[2.5rem] shadow-[0_8px_32px_rgba(0,0,0,0.02)]">
+                    <div className="flex items-center gap-4 bg-white/50 px-6 py-3 rounded-2xl border border-slate-200/50 w-[30rem] transition-all focus-within:ring-4 focus-within:ring-blue-100 focus-within:border-blue-400 group">
                         <Search className="w-5 h-5 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
                         <input
                             type="text"
                             placeholder="Universal Search (Teachers, Students, Materials...)"
                             value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className="bg-transparent border-none outline-none text-sm w-full font-bold text-slate-700 placeholder:text-slate-400 focus:ring-0"
+                            onFocus={(e) => { e.target.blur(); setIsSearchModalOpen(true); }}
+                            className="bg-transparent border-none outline-none text-sm w-full font-bold text-slate-900 placeholder:text-slate-400 focus:ring-0 cursor-pointer"
                         />
-                        <div className="px-2 py-1 bg-white border border-slate-200 rounded-md text-[10px] font-black text-slate-400 shadow-sm">⌘K</div>
+                        <button onClick={() => setIsSearchModalOpen(true)} className="px-2 py-1 bg-white border border-slate-200/50 rounded-md text-[10px] font-black text-slate-400 shadow-sm hover:text-blue-600 hover:border-blue-200 transition-colors">⌘K</button>
                     </div>
 
                     <div className="flex items-center gap-8">
@@ -208,15 +310,15 @@ export const SchoolDashboard: React.FC = () => {
                             </button>
                         </div>
 
-                        <div className="h-10 w-px bg-slate-100" />
+                        <div className="h-10 w-px bg-slate-200" />
 
                         <div className="flex items-center gap-4 group cursor-pointer">
                             <div className="text-right hidden sm:block">
                                 <p className="text-sm font-black text-slate-900 group-hover:text-blue-600 transition-colors">{schoolProfile.name}</p>
                                 <p className="text-[10px] text-blue-600 font-black uppercase tracking-widest">{schoolProfile.subscriptionStatus === 'TRIAL' ? 'Commercial Trial' : 'Institutional Pro'}</p>
                             </div>
-                            <div className="w-12 h-12 bg-gradient-to-br from-slate-100 to-slate-200 rounded-2xl p-0.5 shadow-sm border border-slate-200 group-hover:scale-105 transition-transform">
-                                <div className="w-full h-full bg-white rounded-[0.8rem] flex items-center justify-center text-blue-600 font-black text-lg">
+                            <div className="w-12 h-12 bg-white rounded-2xl p-[1px] shadow-sm border border-slate-200 group-hover:scale-105 transition-transform">
+                                <div className="w-full h-full bg-gradient-to-br from-indigo-50 to-purple-50 rounded-[0.8rem] flex items-center justify-center text-indigo-600 font-black text-lg">
                                     {schoolProfile.name.charAt(0)}
                                 </div>
                             </div>

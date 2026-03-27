@@ -36,10 +36,10 @@ export const TeacherDashboardOverview: React.FC<TeacherDashboardOverviewProps> =
         <div className="space-y-8">
             {/* Hero Section */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* AI Priority Strip (Hero Section) */}
-                <div className="lg:col-span-2 bg-gradient-to-r from-indigo-900 to-indigo-800 rounded-[2.5rem] p-8 shadow-xl border border-indigo-700/50 flex flex-col md:flex-row justify-between items-center relative overflow-hidden gap-8">
-                    <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/20 rounded-full blur-3xl -mr-16 -mt-16"></div>
-                    <div className="absolute bottom-0 left-0 w-48 h-48 bg-purple-500/20 rounded-full blur-3xl -ml-12 -mb-12"></div>
+                {/* Smart Priority Strip (Hero Section) */}
+                <div className="lg:col-span-2 bg-gradient-to-br from-indigo-900 via-slate-900 to-indigo-950 rounded-[2.5rem] p-8 shadow-2xl shadow-indigo-900/40 border border-white/10 dark:border-slate-800 flex flex-col md:flex-row justify-between items-center relative overflow-hidden gap-8 backdrop-blur-xl">
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/20 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
+                    <div className="absolute bottom-0 left-0 w-48 h-48 bg-purple-500/20 rounded-full blur-3xl -ml-12 -mb-12 pointer-events-none"></div>
 
                     {/* LEFT: Today's Teaching Focus */}
                     <div className="relative z-10 flex-1 w-full text-white">
@@ -104,7 +104,7 @@ export const TeacherDashboardOverview: React.FC<TeacherDashboardOverviewProps> =
                             onRequestClick(pendingRequests[0]);
                         }
                     }}
-                    className="bg-white rounded-[2.5rem] p-6 shadow-sm border border-slate-100 flex flex-col justify-between cursor-pointer hover:shadow-md transition-all group"
+                    className="bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl rounded-[2.5rem] p-6 shadow-xl shadow-slate-200/50 dark:shadow-none border border-white/40 dark:border-slate-800 flex flex-col justify-between cursor-pointer hover:shadow-2xl transition-all hover:-translate-y-1 group"
                 >
                     <div className="flex items-start justify-between mb-4">
                         <div className="w-14 h-14 bg-amber-50 text-amber-600 rounded-2xl flex items-center justify-center group-hover:bg-amber-100 transition-colors">
@@ -129,55 +129,55 @@ export const TeacherDashboardOverview: React.FC<TeacherDashboardOverviewProps> =
                 </div>
 
                 {/* Metrics Cards */}
-                <div className="flex gap-4 col-span-1 lg:col-span-3">
-                    <div className="flex-1 bg-white rounded-[2rem] p-6 shadow-sm border border-slate-100 flex items-center gap-4">
-                        <div className="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center">
+                <div className="flex flex-col sm:flex-row gap-4 col-span-1 lg:col-span-3">
+                    <div className="flex-1 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md rounded-[2rem] p-6 shadow-lg shadow-slate-200/50 border border-white/50 dark:border-slate-800 flex items-center gap-4 hover:-translate-y-1 transition-all">
+                        <div className="w-12 h-12 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-2xl flex items-center justify-center border border-emerald-100 dark:border-emerald-800/50">
                             <DollarSign className="w-6 h-6" />
                         </div>
                         <div>
-                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Earnings Today</p>
-                            <p className="text-2xl font-black text-slate-900">KES {todayEarnings}</p>
+                            <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Earnings Today</p>
+                            <p className="text-2xl font-black text-slate-900 dark:text-white">KES {todayEarnings}</p>
                         </div>
                     </div>
-                    <div className="flex-1 bg-white rounded-[2rem] p-6 shadow-sm border border-slate-100 flex items-center gap-4">
-                        <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center">
+                    <div className="flex-1 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md rounded-[2rem] p-6 shadow-lg shadow-slate-200/50 border border-white/50 dark:border-slate-800 flex items-center gap-4 hover:-translate-y-1 transition-all">
+                        <div className="w-12 h-12 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-2xl flex items-center justify-center border border-indigo-100 dark:border-indigo-800/50">
                             <FileText className="w-6 h-6" />
                         </div>
                         <div>
-                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Library</p>
-                            <p className="text-2xl font-black text-slate-900">{teacherHistory.length} <span className="text-xs text-slate-400 font-bold">Items</span></p>
+                            <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Library</p>
+                            <p className="text-2xl font-black text-slate-900 dark:text-white">{teacherHistory.length} <span className="text-xs text-slate-400 font-bold">Items</span></p>
                         </div>
                     </div>
-                    <div className="flex-1 bg-white rounded-[2rem] p-6 shadow-sm border border-slate-100 flex items-center gap-4">
-                        <div className="w-12 h-12 bg-amber-50 text-amber-600 rounded-2xl flex items-center justify-center">
+                    <div className="flex-1 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md rounded-[2rem] p-6 shadow-lg shadow-slate-200/50 border border-white/50 dark:border-slate-800 flex items-center gap-4 hover:-translate-y-1 transition-all">
+                        <div className="w-12 h-12 bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 rounded-2xl flex items-center justify-center border border-amber-100 dark:border-amber-800/50">
                             <Clock className="w-6 h-6" />
                         </div>
                         <div>
-                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Pending</p>
-                            <p className="text-2xl font-black text-slate-900">{pendingRequests.length} <span className="text-xs text-slate-400 font-bold">Requests</span></p>
+                            <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Pending</p>
+                            <p className="text-2xl font-black text-slate-900 dark:text-white">{pendingRequests.length} <span className="text-xs text-slate-400 font-bold">Requests</span></p>
                         </div>
                         <button
                             onClick={() => {
                                 if (pendingRequests.length > 0) onRequestClick(pendingRequests[0]);
                             }}
-                            className="ml-auto p-2 hover:bg-slate-50 rounded-full transition-colors"
+                            className="ml-auto p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors"
                         >
-                            <ChevronRight className="w-5 h-5 text-slate-300" />
+                            <ChevronRight className="w-5 h-5 text-slate-400" />
                         </button>
                     </div>
                 </div>
             </div>
 
-            {/* Middle Row: AI Insights & Class Performance */}
+            {/* Middle Row: Smart Insights & Class Performance */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* AI Insights */}
-                <div className="bg-white rounded-[2.5rem] p-8 shadow-sm border border-slate-100 relative overflow-hidden group">
+                {/* Smart Insights */}
+                <div className="bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl rounded-[2.5rem] p-8 shadow-xl shadow-slate-200/50 dark:shadow-none border border-white/50 dark:border-slate-800 relative overflow-hidden group">
                     <div className="absolute right-0 bottom-0 opacity-[0.03] group-hover:opacity-10 transition-opacity pointer-events-none">
                         <Brain className="w-64 h-64 text-indigo-600 -mr-12 -mb-12" />
                     </div>
-                    <h3 className="text-xl font-black text-slate-900 mb-6 flex items-center gap-2">
+                    <h3 className="text-xl font-black text-slate-900 dark:text-white mb-6 flex items-center gap-2">
                         <Brain className="w-6 h-6 text-indigo-500" />
-                        Soma AI Insights
+                        Smart Class Insights
                     </h3>
                     <div className="space-y-5 relative z-10">
                         <div className="flex items-start gap-4 p-4 bg-slate-50 rounded-2xl">
@@ -205,11 +205,11 @@ export const TeacherDashboardOverview: React.FC<TeacherDashboardOverviewProps> =
                 </div>
 
                 {/* Class Performance Tracker */}
-                <div className="bg-white rounded-[2.5rem] p-8 shadow-sm border border-slate-100 flex flex-col justify-between">
+                <div className="bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl rounded-[2.5rem] p-8 shadow-xl shadow-slate-200/50 dark:shadow-none border border-white/50 dark:border-slate-800 flex flex-col justify-between">
                     <div>
                         <div className="flex justify-between items-center mb-6">
-                            <h3 className="text-xl font-black text-slate-900">Performance Snapshot</h3>
-                            <button className="text-[10px] font-black text-indigo-600 uppercase tracking-widest bg-indigo-50 px-3 py-1 rounded-full">
+                            <h3 className="text-xl font-black text-slate-900 dark:text-white">Performance Snapshot</h3>
+                            <button className="text-[10px] font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-widest bg-indigo-50 dark:bg-indigo-900/30 px-3 py-1 rounded-full">
                                 Full Report
                             </button>
                         </div>
@@ -243,9 +243,9 @@ export const TeacherDashboardOverview: React.FC<TeacherDashboardOverviewProps> =
             {/* Bottom Row */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Generated Library Preview */}
-                <div className="lg:col-span-3 bg-white rounded-[2.5rem] p-8 shadow-sm border border-slate-100">
+                <div className="lg:col-span-3 bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl rounded-[2.5rem] p-8 shadow-xl shadow-slate-200/50 dark:shadow-none border border-white/50 dark:border-slate-800">
                     <div className="flex justify-between items-center mb-6">
-                        <h3 className="text-xl font-black text-slate-900 flex items-center gap-2">
+                        <h3 className="text-xl font-black text-slate-900 dark:text-white flex items-center gap-2">
                             <Library className="w-5 h-5 text-indigo-500" /> Recent Creations
                         </h3>
                         <button onClick={() => onNavigate('LIBRARY')} className="text-sm font-bold text-indigo-600 hover:text-indigo-800 transition-colors flex items-center gap-1">

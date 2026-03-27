@@ -60,7 +60,7 @@ export const LessonPolisherView: React.FC<LessonPolisherViewProps> = ({ onBack, 
                             </div>
                             <div>
                                 <h2 className="text-2xl font-black text-slate-900 tracking-tight">Lesson Plan Polisher</h2>
-                                <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mt-1">Grounding AI in student data</p>
+                                <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mt-1">Grounding Smart Engine in student data</p>
                             </div>
                         </div>
 
@@ -138,7 +138,7 @@ export const LessonPolisherView: React.FC<LessonPolisherViewProps> = ({ onBack, 
                                 </div>
                             </div>
 
-                            <h3 className="text-2xl font-black text-slate-800 mb-8">AI Refinement Report</h3>
+                            <h3 className="text-2xl font-black text-slate-800 mb-8">Smart Refinement Report</h3>
 
                             <div className="space-y-8">
                                 <div>

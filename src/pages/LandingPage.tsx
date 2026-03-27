@@ -6,7 +6,7 @@ import {
     ScanLine, CheckCircle, Menu, X, CheckSquare, Play, BookOpen, LogOut,
     CreditCard, AlertCircle, FileText, Clock, Award, ArrowRight, School,
     Sparkles, Zap, Building2, TrendingUp, Quote, Globe, ShieldCheck, BarChart, Star,
-    Facebook, Twitter, Instagram, Linkedin, MapPin, Store
+    Facebook, Twitter, Instagram, Linkedin, MapPin, Store, Mic, Send, Flame, Target, MessageCircle, Brain, CheckCheck
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { UserRole } from '../types';
@@ -59,6 +59,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
     const t = translations[language];
     const [registrationRole, setRegistrationRole] = useState<'STUDENT' | 'TEACHER' | 'SCHOOL'>('STUDENT');
     const [pendingRoute, setPendingRoute] = useState<string | null>(null);
+    const [questionInput, setQuestionInput] = useState('');
 
     // Auto-enable Low-Data Mode on slow networks (2G/slow-2G common on Kenyan mobile networks)
     React.useEffect(() => {
@@ -350,6 +351,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                         <nav className="hidden md:flex items-center gap-8">
                             <button onClick={() => handleRoleSelect(UserRole.LEARNER)} className="text-slate-800 dark:text-slate-200 hover:text-blue-600 dark:hover:text-blue-400 font-bold transition-colors text-sm">For Learners</button>
                             <button onClick={() => handleRoleSelect(UserRole.TEACHER)} className="text-slate-800 dark:text-slate-200 hover:text-blue-600 dark:hover:text-blue-400 font-bold transition-colors text-sm">For Teachers</button>
+                            <button onClick={() => handleRoleSelect(UserRole.SCHOOL)} className="text-slate-800 dark:text-slate-200 hover:text-blue-600 dark:hover:text-blue-400 font-bold transition-colors text-sm flex items-center gap-1"><School className="w-4 h-4" /> For Schools</button>
                             <button onClick={() => navigate('/pricing')} className="text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors text-sm">Pricing</button>
                             <button onClick={() => navigate('/blog')} className="text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors text-sm flex items-center gap-1"><BookOpen className="w-3.5 h-3.5"/> Blog</button>
                             <button onClick={() => setShowLogin(true)} className="text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors text-sm">Login</button>
@@ -397,6 +399,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                 <button onClick={() => { handleRoleSelect(UserRole.TEACHER); setMobileMenuOpen(false); }} className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 font-bold">
                                     <Users className="w-5 h-5 text-emerald-500" /> For Teachers
                                 </button>
+                                <button onClick={() => { handleRoleSelect(UserRole.SCHOOL); setMobileMenuOpen(false); }} className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 font-bold">
+                                    <School className="w-5 h-5 text-purple-500" /> For Schools
+                                </button>
                                 <button onClick={() => { navigate('/pricing'); setMobileMenuOpen(false); }} className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 font-medium">
                                     <CreditCard className="w-5 h-5 text-indigo-500" /> Pricing
                                 </button>
@@ -416,117 +421,169 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                         </motion.div>
                     )}
                 </AnimatePresence>
-            </motion.header>
-
-            {/* --- HERO SECTION --- */}
-            <section className="relative overflow-hidden bg-gradient-to-b from-slate-50 to-white dark:from-slate-950 dark:to-slate-900 pt-10 pb-16 md:pt-14 md:pb-20 transition-colors">
-                {/* Soft ambient background blobs */}
+            </motion.header>            {/* --- HERO SECTION --- */}
+            <section className="relative overflow-hidden bg-white dark:bg-slate-950 pt-16 pb-20 md:pt-24 md:pb-32 transition-colors">
+                {/* Soft ambient background */}
                 <div className="absolute inset-0 pointer-events-none overflow-hidden">
-                    <div className="absolute top-[-20%] left-[-10%] w-[600px] h-[600px] opacity-20 dark:opacity-10 bg-gradient-to-r from-blue-400 to-indigo-500 rounded-full blur-[120px]" />
-                    <div className="absolute bottom-[-20%] right-[-5%] w-[500px] h-[500px] opacity-15 dark:opacity-10 bg-gradient-to-r from-emerald-400 to-teal-500 rounded-full blur-[100px]" />
+                    <div className="absolute top-[-10%] left-[-5%] w-[500px] h-[500px] opacity-30 bg-blue-100 dark:bg-blue-900/20 rounded-full blur-[100px]" />
+                    <div className="absolute bottom-[-10%] right-[-5%] w-[400px] h-[400px] opacity-20 bg-emerald-100 dark:bg-emerald-900/20 rounded-full blur-[100px]" />
                 </div>
 
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-                    <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-16">
+                    <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-8">
 
-                        {/* LEFT: Headline, copy and role selector */}
-                        <div className="flex-1 text-center lg:text-left max-w-xl mx-auto lg:mx-0">
+                        {/* LEFT: Text, Input, CTAs */}
+                        <div className="flex-1 text-center lg:text-left max-w-2xl mx-auto lg:mx-0">
                             <motion.div
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ duration: 0.6 }}
                             >
-                                <div
-                                    className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-50/80 dark:bg-blue-900/40 border border-blue-100/50 dark:border-blue-800/50 text-blue-700 dark:text-blue-300 text-xs font-bold mb-6 uppercase tracking-widest backdrop-blur-sm shadow-sm group hover:bg-blue-100 dark:hover:bg-blue-900/60 transition-colors cursor-pointer"
-                                    onClick={() => navigate('/revision')}
-                                >
-                                    <Star className="w-3.5 h-3.5 fill-current text-amber-400" />
-                                    Trusted by 1,200+ Kenyan learners &amp; schools
-                                    <ChevronRight className="w-4 h-4 ml-1 opacity-50 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
+                                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 text-xs font-bold mb-6 shadow-sm">
+                                    <Star className="w-4 h-4 text-emerald-500 fill-current" />
+                                    Trusted by 12,000+ Kenyan students
                                 </div>
 
-                                <h1 className="text-5xl md:text-6xl lg:text-[5rem] font-black text-slate-900 dark:text-white tracking-tight leading-[1.05] mb-6">
-                                    The Smart Super Teacher for <br className="hidden lg:block" />
-                                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-indigo-500 to-purple-600 dark:from-blue-400 dark:via-indigo-400 dark:to-purple-400">KCSE &amp; KPSEA.</span>
+                                <h1 className="text-4xl md:text-5xl lg:text-[3.5rem] font-bold text-slate-900 dark:text-white tracking-tight leading-[1.15] mb-6">
+                                    Stuck on a KCSE question? Get the answer <span className="text-blue-600 dark:text-blue-400">instantly.</span>
                                 </h1>
 
-                                <p className="text-lg md:text-xl text-slate-600 dark:text-slate-400 leading-relaxed mb-10 font-medium">
-                                    The ultimate SMART ecosystem for Kenyan education. Master concepts instantly with materials strictly aligned to{' '}
-                                    <strong className="text-slate-900 dark:text-slate-200">CBE, KCSE, KPSEA &amp; KJSEA</strong> standards.
+                                <p className="text-lg text-slate-600 dark:text-slate-400 mb-8 font-medium">
+                                    Ask any question and get step-by-step answers immediately.
                                 </p>
 
-                                {/* Role Selector */}
-                                <div className="bg-white/70 dark:bg-slate-900/70 p-2 rounded-2xl flex flex-col sm:flex-row gap-2 border border-slate-200 dark:border-slate-800 backdrop-blur-md shadow-lg mb-8">
-                                    <button onClick={() => handleRoleSelect(UserRole.LEARNER)} className="flex-1 py-3 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold transition-all flex justify-center items-center gap-2 shadow-md hover:shadow-lg hover:-translate-y-0.5">
-                                        <GraduationCap className="w-5 h-5" /> I'm a Learner
+                                {/* Interactive Input Field */}
+                                <div className="relative max-w-xl mx-auto lg:mx-0 mb-8 z-30">
+                                    <div className="relative flex items-center bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-full shadow-lg p-2 transition-all hover:shadow-xl focus-within:ring-2 focus-within:ring-blue-500/50">
+                                        <button className="p-2 md:p-3 text-slate-400 hover:text-blue-600 transition-colors">
+                                            <Mic className="w-5 h-5" />
+                                        </button>
+                                        <input 
+                                            type="text"
+                                            value={questionInput}
+                                            onChange={(e) => setQuestionInput(e.target.value)}
+                                            placeholder="Type your question..."
+                                            className="flex-1 bg-transparent border-none focus:outline-none text-slate-800 dark:text-slate-200 px-2 placeholder-slate-400 text-sm md:text-base"
+                                            onKeyDown={(e) => {
+                                                if(e.key === 'Enter') {
+                                                    handleRoleSelect(UserRole.LEARNER);
+                                                }
+                                            }}
+                                        />
+                                        <button 
+                                            onClick={() => handleRoleSelect(UserRole.LEARNER)}
+                                            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 md:px-6 md:py-3 rounded-full font-bold text-sm shadow-md transition-colors flex items-center gap-2"
+                                        >
+                                            Solve Now <Send className="w-4 h-4" />
+                                        </button>
+                                    </div>
+
+                                    {/* Artificial Response Popover (Visible if typed) */}
+                                    <AnimatePresence>
+                                        {questionInput.length > 3 && (
+                                            <motion.div 
+                                                initial={{ opacity: 0, y: -10 }}
+                                                animate={{ opacity: 1, y: 0 }}
+                                                exit={{ opacity: 0, y: -10 }}
+                                                className="absolute top-full left-0 right-0 mt-4 bg-white dark:bg-slate-800 rounded-2xl p-5 shadow-2xl border border-blue-100 dark:border-slate-700 z-50 text-left"
+                                            >
+                                                <div className="flex items-start gap-3 mb-3">
+                                                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-emerald-400 flex items-center justify-center shrink-0">
+                                                        <Sparkles className="w-4 h-4 text-white" />
+                                                    </div>
+                                                    <div>
+                                                        <div className="text-sm text-slate-500 mb-1">Soma AI</div>
+                                                        <div className="text-slate-800 dark:text-slate-200 font-medium line-clamp-2">Here is the step-by-step solution for: <strong>{questionInput}</strong></div>
+                                                    </div>
+                                                </div>
+                                                <button 
+                                                    onClick={() => handleRoleSelect(UserRole.LEARNER)}
+                                                    className="w-full mt-2 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-blue-600 dark:text-blue-400 font-bold hover:bg-blue-50 dark:hover:bg-slate-800 transition-colors flex items-center justify-center gap-2"
+                                                >
+                                                    View Full Solution <ArrowRight className="w-4 h-4" />
+                                                </button>
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
+                                </div>
+
+                                <div className="flex flex-col sm:flex-row items-center gap-4 mb-6 relative z-10">
+                                    <button 
+                                        onClick={() => handleRoleSelect(UserRole.LEARNER)}
+                                        className="w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-emerald-500 to-blue-600 hover:from-emerald-400 hover:to-blue-500 text-white rounded-2xl font-bold text-lg shadow-xl shadow-blue-500/20 hover:shadow-2xl hover:shadow-blue-500/30 transition-all hover:-translate-y-0.5 whitespace-nowrap"
+                                    >
+                                        Try a Question FREE
                                     </button>
-                                    <button onClick={() => handleRoleSelect(UserRole.TEACHER)} className="flex-1 py-3 px-4 rounded-xl bg-slate-50/80 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold transition-all flex justify-center items-center gap-2 border border-slate-200/50 dark:border-slate-700/50 hover:-translate-y-0.5">
-                                        <Users className="w-5 h-5" /> I'm a Teacher
-                                    </button>
-                                    <button onClick={() => handleRoleSelect(UserRole.PARENT)} className="flex-1 py-3 px-4 rounded-xl bg-slate-50/80 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold transition-all flex justify-center items-center gap-2 border border-slate-200/50 dark:border-slate-700/50 hover:-translate-y-0.5">
-                                        <Baby className="w-5 h-5" /> I'm a Parent
+                                    <button 
+                                        onClick={() => handleRoleSelect(UserRole.LEARNER)}
+                                        className="w-full sm:w-auto px-8 py-4 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-800 rounded-2xl font-bold text-lg hover:bg-slate-50 dark:hover:bg-slate-800 shadow-sm transition-all flex items-center justify-center gap-2 whitespace-nowrap"
+                                    >
+                                        Start Solving Now <ArrowRight className="w-5 h-5" />
                                     </button>
                                 </div>
 
-                                <div className="flex items-center justify-center lg:justify-start gap-6 text-sm font-bold text-slate-500 dark:text-slate-400">
-                                    <div className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-emerald-500" /> Start free</div>
-                                    <div className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-emerald-500" /> No card required</div>
+                                <div className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-8">
+                                    KES 10/day after trial. Cancel anytime.
+                                </div>
+
+                                {/* Trust indicators */}
+                                <div className="grid grid-cols-2 gap-y-3 gap-x-6 text-sm font-medium text-slate-600 dark:text-slate-400 text-left">
+                                    <div className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-emerald-500" /> Used by 12,000+ students</div>
+                                    <div className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-emerald-500" /> Covers KCSE & CBC</div>
+                                    <div className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-emerald-500" /> M-Pesa supported</div>
+                                    <div className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-emerald-500" /> Works on any smartphone</div>
                                 </div>
                             </motion.div>
                         </div>
 
-                        {/* RIGHT: Hero Image with anchored floating cards */}
+                        {/* RIGHT: Hero Image with Floating Mock */}
                         <motion.div
                             initial={{ opacity: 0, x: 40 }}
                             animate={{ opacity: 1, x: 0 }}
                             transition={{ duration: 0.8, delay: 0.2 }}
-                            className="flex-1 relative w-full max-w-lg lg:max-w-none mx-auto px-8 lg:px-4"
+                            className="flex-1 relative w-full mt-10 lg:mt-0"
                         >
-                            <div className="relative">
-                                {/* Hero teacher image - main visual */}
+                            <div className="relative max-w-md mx-auto">
+                                {/* Base Image */}
                                 <img
-                                    src={heroBannerImg}
-                                    alt="Somo Smart teacher helping students"
-                                    className="w-full h-auto object-contain drop-shadow-2xl"
+                                    src={learnerImg}
+                                    alt="Soma AI Student learning"
+                                    className="w-full h-auto object-contain drop-shadow-2xl rounded-3xl"
                                 />
 
-                                {/* Mascot badge - bottom-left corner of image */}
-                                {!lowDataMode && (
-                                    <div className="absolute -bottom-4 -left-4 w-20 h-20 bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-100 dark:border-slate-700 flex items-center justify-center p-2 z-20">
-                                        <img src={mascotImg} alt="Somo mascot" className="w-full h-full object-contain" />
-                                    </div>
-                                )}
-
-                                {/* Floating Card: KCSE Target - top-left of image */}
+                                {/* Floating AI Card */}
                                 <motion.div
                                     animate={{ y: [0, -10, 0] }}
                                     transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
-                                    className="absolute -top-12 -left-8 bg-white/95 dark:bg-slate-900/95 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xl flex items-center gap-4 backdrop-blur-md z-20"
+                                    className="absolute top-1/4 -left-6 md:-left-12 bg-white dark:bg-slate-900 p-4 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl backdrop-blur-md z-20 w-64 md:w-72"
                                 >
-                                    <div className="w-12 h-12 bg-emerald-100 dark:bg-emerald-900/40 rounded-xl flex items-center justify-center text-emerald-600 border border-emerald-200 dark:border-emerald-800/50">
-                                        <TrendingUp className="w-6 h-6" />
+                                    <div className="flex items-center gap-2 mb-3 pb-3 border-b border-slate-100 dark:border-slate-800">
+                                        <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center">
+                                            <Sparkles className="w-3 h-3 text-blue-600" />
+                                        </div>
+                                        <span className="text-sm font-bold text-slate-800 dark:text-slate-200">Soma AI</span>
                                     </div>
-                                    <div>
-                                        <div className="text-2xl font-black text-slate-900 dark:text-white leading-none mb-1">A-</div>
-                                        <div className="text-[10px] font-bold uppercase tracking-widest text-slate-500">KCSE Target</div>
+                                    <div className="space-y-3">
+                                        <p className="text-xs font-semibold text-slate-500">Factorize x² - 5x + 6</p>
+                                        <div className="bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 p-3 rounded-xl border border-emerald-100 dark:border-emerald-900/50">
+                                            <div className="font-bold mb-1">(x - 2)(x - 3)</div>
+                                            <div className="text-[10px] opacity-80">Step 1. Find numbers that multiply to 6 and add to -5...</div>
+                                        </div>
                                     </div>
                                 </motion.div>
-
-                                {/* Floating Card: Auto-Graded - top-right of image */}
+                                
+                                {/* Addon Badge */}
                                 <motion.div
                                     animate={{ y: [0, 10, 0] }}
                                     transition={{ repeat: Infinity, duration: 5, ease: "easeInOut", delay: 1 }}
-                                    className="absolute -top-12 -right-8 bg-white/95 dark:bg-slate-900/95 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xl flex items-center gap-3 backdrop-blur-md z-20"
+                                    className="absolute -bottom-6 -right-4 bg-white dark:bg-slate-900 px-5 py-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xl flex items-center gap-3 backdrop-blur-md z-20"
                                 >
-                                    <div className="w-10 h-10 bg-indigo-100 dark:bg-indigo-900/40 rounded-xl flex items-center justify-center text-indigo-600 border border-indigo-200 dark:border-indigo-800/50">
-                                        <CheckCircle className="w-5 h-5" />
+                                    <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/40 rounded-full flex items-center justify-center text-blue-600">
+                                        <CheckCheck className="w-5 h-5" />
                                     </div>
                                     <div>
-                                        <div className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-2">
-                                            Auto-Graded
-                                            <span className="bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-400 text-[10px] font-bold tracking-wider px-2 py-0.5 rounded-md">8.5/10</span>
-                                        </div>
-                                        <div className="text-[10px] font-bold text-slate-500 mt-0.5">Assignment Marked</div>
+                                        <div className="text-sm font-black text-slate-900 dark:text-white">1M+ Questions</div>
+                                        <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Answered</div>
                                     </div>
                                 </motion.div>
                             </div>
@@ -534,7 +591,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
 
                     </div>
                 </div>
-            </section>
+            </section>on>
 
             {/* --- PRESTIGE TICKER --- */}
             <div className="border-y border-slate-200/50 dark:border-slate-800/80 bg-white/50 dark:bg-slate-950/50 py-6 sm:py-8 overflow-hidden relative backdrop-blur-sm">

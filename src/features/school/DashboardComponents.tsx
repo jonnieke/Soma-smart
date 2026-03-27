@@ -7,11 +7,11 @@ import {
 } from 'lucide-react';
 import { SchoolTeacher } from '../../types';
 
-export const NavItem = ({ icon, label, active = false, onClick }: { icon: React.ReactNode, label: string, active?: boolean, onClick?: () => void }) => (
+export const NavItem = ({ icon, label, active = false, onClick, isDark = false }: { icon: React.ReactNode, label: string, active?: boolean, onClick?: () => void, isDark?: boolean }) => (
     <button
         onClick={onClick}
         className={`flex items-center gap-3 px-4 py-3 rounded-2xl transition-all w-full font-bold relative group ${active
-                ? 'bg-blue-600 text-white shadow-lg shadow-blue-200'
+                ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20'
                 : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
             }`}
     >
@@ -38,7 +38,7 @@ export const StatCard = ({ icon, label, value, trend, color }: { icon: React.Rea
         className="bg-white/70 backdrop-blur-xl p-8 rounded-[2.5rem] border border-white/40 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-2xl hover:shadow-blue-500/10 transition-all group relative overflow-hidden"
     >
         <div className="flex items-center justify-between mb-8 relative z-10">
-            <div className={`w-14 h-14 ${color} rounded-2xl flex items-center justify-center text-white shadow-2xl shadow-inner-white transform group-hover:rotate-12 transition-transform duration-500`}>
+            <div className={`w-14 h-14 ${color} rounded-2xl flex items-center justify-center text-white shadow-2xl shadow-${color.split('-')[1]}-500/50 transform group-hover:rotate-12 transition-transform duration-500`}>
                 {icon}
             </div>
             <div className="text-right">
@@ -92,7 +92,7 @@ export const TeacherRow = ({ name, subject, impact, lessons, onRemove }: SchoolT
         </div>
         <div className="text-right flex items-center gap-12 relative z-10">
             <div className="hidden lg:block">
-                <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.2em] mb-1">Teaching Impact</p>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">Teaching Impact</p>
                 <div className="flex items-center gap-2 justify-end">
                     <p className="text-blue-600 font-black text-xl">{impact || '92%'}</p>
                     <div className="w-8 h-1 bg-slate-100 rounded-full overflow-hidden">
@@ -101,18 +101,18 @@ export const TeacherRow = ({ name, subject, impact, lessons, onRemove }: SchoolT
                 </div>
             </div>
             <div className="hidden md:block">
-                <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.2em] mb-1">Session Count</p>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">Session Count</p>
                 <p className="font-black text-slate-900 text-xl">{lessons || 24}</p>
             </div>
             <div className="flex items-center gap-4">
                 <motion.button
                     whileHover={{ x: 5 }}
-                    className="p-4 text-slate-300 hover:text-blue-600 hover:bg-blue-50 rounded-2xl transition-all"
+                    className="p-4 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-2xl transition-all"
                 >
                     <ChevronRight className="w-7 h-7" />
                 </motion.button>
                 {onRemove && (
-                    <button onClick={(e) => { e.stopPropagation(); onRemove(); }} className="p-4 text-slate-200 hover:text-red-500 hover:bg-red-50 rounded-2xl transition-all">
+                    <button onClick={(e) => { e.stopPropagation(); onRemove(); }} className="p-4 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-2xl transition-all">
                         <LogOut className="w-6 h-6" />
                     </button>
                 )}

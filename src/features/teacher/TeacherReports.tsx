@@ -77,10 +77,10 @@ export const TeacherReports: React.FC = () => {
                     </div>
                 </div>
 
-                {/* AI Insights & Alerts */}
+                {/* Smart Insights & Alerts */}
                 <div className="space-y-6">
                     <h3 className="font-black text-xl text-slate-900 tracking-tight flex items-center gap-2">
-                        <Brain className="w-5 h-5 text-indigo-500" /> AI Insights
+                        <Brain className="w-5 h-5 text-indigo-500" /> Smart Insights
                     </h3>
 
                     <div className="bg-gradient-to-b from-indigo-50 to-white rounded-[2rem] p-6 border-2 border-indigo-100 shadow-sm">
@@ -164,7 +164,7 @@ export const TeacherReports: React.FC = () => {
                         </div>
                         <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
                             <div className="flex items-center gap-2 mb-2 text-slate-500">
-                                <Brain className="w-4 h-4" /> <span className="text-xs font-bold uppercase tracking-wider">AI Tutor Uses</span>
+                                <Brain className="w-4 h-4" /> <span className="text-xs font-bold uppercase tracking-wider">Smart Assistant Uses</span>
                             </div>
                             <p className="text-2xl font-black text-slate-900">142 <span className="text-xs text-emerald-500 font-bold">+12%</span></p>
                         </div>
