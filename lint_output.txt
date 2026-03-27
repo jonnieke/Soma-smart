@@ -1,0 +1,6 @@
+
+D:\software\soma 17.1\somaai\Soma-smart\src\pages\LandingPage.tsx
+  603:24  error  Parsing error: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+
+??? 1 problem (1 error, 0 warnings)
+

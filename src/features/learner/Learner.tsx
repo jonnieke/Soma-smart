@@ -151,6 +151,9 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
   const [currentSegmentIndex, setCurrentSegmentIndex] = useState(-1);
   const [podcastLoading, setPodcastLoading] = useState(false);
 
+  // Faded Solution State from Hero
+  const [fadedSolutionData, setFadedSolutionData] = useState<{ query: string, answer: string | null, isGenerating: boolean, show: boolean }>({ query: '', answer: null, isGenerating: false, show: false });
+
   const [showDownloadPayment, setShowDownloadPayment] = useState(false);
   const [pendingDownloadMaterial, setPendingDownloadMaterial] = useState<any>(null);
 
@@ -400,7 +403,39 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
 
   // Check for subscription intent & Auto-open material intent
   React.useEffect(() => {
-    const state = location.state as { selectedPlan?: SubscriptionPlan; openSubscription?: boolean, initiatePaymentFor?: SubscriptionPlan, materialId?: string };
+    const state = location.state as { pendingHeroQuestion?: string; selectedPlan?: SubscriptionPlan; openSubscription?: boolean, initiatePaymentFor?: SubscriptionPlan, materialId?: string };
+
+    // Faded Solution Paywall Check
+    if (state?.pendingHeroQuestion) {
+      if (!isRegistered) {
+         setFadedSolutionData({ query: state.pendingHeroQuestion, answer: null, isGenerating: true, show: true });
+         
+         const fetchFadedAnswer = async () => {
+             try {
+                const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/gemini-proxy`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        model: 'gemini-2.0-flash',
+                        contents: [{ role: 'user', parts: [{ text: `Provide a highly detailed, step-by-step academic solution for the following question. Use Markdown formatting, bullet points, numbering, and headers. Ensure it is at least 3 paragraphs long to demonstrate the depth of the AI. Question: ${state.pendingHeroQuestion}` }] }]
+                    })
+                });
+                
+                if (!response.ok) throw new Error('API Error');
+                const data = await response.json();
+                const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+                if (text) {
+                    setFadedSolutionData({ query: state.pendingHeroQuestion, answer: text, isGenerating: false, show: true });
+                }
+             } catch(err) {
+                 setFadedSolutionData({ query: state.pendingHeroQuestion, answer: "I generated the deep step-by-step logic, but a connection error occurred. Please sign up to view.", isGenerating: false, show: true });
+             }
+         };
+         fetchFadedAnswer();
+      }
+      navigate(location.pathname, { replace: true, state: {} });
+      return;
+    }
 
     // Handle auto-opening material after successful payment
     if (state?.materialId) {
@@ -4686,6 +4721,104 @@ ${explanation.explanation}
       <div className="lg:ml-[260px] min-h-screen overflow-x-hidden min-w-0">
         {renderMode()}
       </div>
+
+      {/* Faded Solution Paywall Modal */}
+      <AnimatePresence>
+        {fadedSolutionData.show && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-md"
+          >
+            <motion.div
+              initial={{ scale: 0.95, y: 30 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.95, y: 30 }}
+              className="bg-white dark:bg-slate-900 rounded-[2rem] shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[85vh] relative"
+            >
+              {/* Header */}
+              <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-white dark:bg-slate-900 sticky top-0 z-10">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/30">
+                    <Sparkles className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-bold font-display text-slate-800 dark:text-slate-100">Full Step-by-Step Logic</h2>
+                    <p className="text-sm font-medium text-slate-500 line-clamp-1">"{fadedSolutionData.query}"</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setFadedSolutionData(prev => ({ ...prev, show: false }))}
+                  className="p-3 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors group"
+                >
+                  <X className="w-6 h-6 text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300" />
+                </button>
+              </div>
+
+              {/* Faded Content Area */}
+              <div 
+                className="relative p-8 pb-32 overflow-hidden flex-1" 
+                style={{ 
+                    maskImage: 'linear-gradient(to bottom, black 30%, transparent 95%)', 
+                    WebkitMaskImage: 'linear-gradient(to bottom, black 30%, transparent 95%)' 
+                }}
+              >
+                {fadedSolutionData.isGenerating ? (
+                  <div className="space-y-6 animate-pulse mt-4">
+                    <div className="h-8 w-2/3 bg-slate-200 dark:bg-slate-800 rounded-xl"></div>
+                    <div className="space-y-3">
+                        <div className="h-4 w-full bg-slate-200 dark:bg-slate-800 rounded-lg"></div>
+                        <div className="h-4 w-5/6 bg-slate-200 dark:bg-slate-800 rounded-lg"></div>
+                        <div className="h-4 w-11/12 bg-slate-200 dark:bg-slate-800 rounded-lg"></div>
+                    </div>
+                    <div className="h-32 w-full bg-slate-200 dark:bg-slate-800 rounded-2xl mt-8"></div>
+                    <div className="space-y-3 mt-8">
+                        <div className="h-4 w-full bg-slate-200 dark:bg-slate-800 rounded-lg"></div>
+                        <div className="h-4 w-4/5 bg-slate-200 dark:bg-slate-800 rounded-lg"></div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="prose dark:prose-invert max-w-none text-slate-700 dark:text-slate-300 pointer-events-none">
+                    <MarkdownText text={fadedSolutionData.answer || ''} />
+                  </div>
+                )}
+              </div>
+
+              {/* Paywall CTA absolute overlay */}
+              <div className="absolute bottom-0 left-0 right-0 p-8 pt-24 bg-gradient-to-t from-white via-white to-transparent dark:from-slate-900 dark:via-slate-900/90 flex flex-col items-center justify-end text-center z-20">
+                <div className="w-16 h-16 bg-blue-50 dark:bg-blue-900/30 rounded-full flex items-center justify-center mb-4 shadow-inner border border-blue-100 dark:border-blue-800/50">
+                    <Lock className="w-8 h-8 text-blue-600 dark:text-blue-400" />
+                </div>
+                <h3 className="text-2xl font-bold font-display text-slate-800 dark:text-white mb-2">View Full Solution</h3>
+                <p className="text-slate-600 dark:text-slate-400 max-w-sm mb-6 font-medium text-base">
+                  Sign up free to unlock the complete step-by-step logic. You get <span className="bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400 px-2 py-0.5 rounded-md font-bold mx-1">3 free answers</span> before KES 10/day premium access!
+                </p>
+                <div className="flex gap-3 w-full sm:w-auto">
+                    <button
+                        onClick={() => {
+                            setFadedSolutionData(prev => ({ ...prev, show: false }));
+                            setShowRegistration(true);
+                        }}
+                        className="flex-1 sm:flex-none bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 px-8 rounded-xl shadow-xl shadow-blue-600/30 transition-all hover:-translate-y-1 hover:shadow-2xl hover:shadow-blue-600/40"
+                    >
+                        Sign Up to View Free
+                    </button>
+                    <button
+                        onClick={() => {
+                            setFadedSolutionData(prev => ({ ...prev, show: false }));
+                            setShowLogin(true);
+                        }}
+                        className="flex-1 sm:flex-none bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold py-3.5 px-6 rounded-xl border-2 border-slate-200 dark:border-slate-700 transition-all"
+                    >
+                        Log In
+                    </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Global Modals - Available in ALL modes */}
       <RegistrationModal

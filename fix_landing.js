@@ -1,4 +1,4 @@
-const fs = require('fs');
+import fs from 'fs';
 const path = 'src/pages/LandingPage.tsx';
 let data = fs.readFileSync(path, 'utf8');
 
@@ -193,5 +193,12 @@ data = data.replace(footerCTARegex, `{/* --- FINAL CTA SECTION --- */}
                 </div>
             </section>
 `);
+
+// Add required imports at the top
+if (!data.includes('ArrowRight')) {
+    data = data.replace(/import \{([^}]+)\} from 'lucide-react';/, (match, p1) => {
+        return `import {${p1}, ArrowRight} from 'lucide-react';`;
+    });
+}
 
 fs.writeFileSync(path, data);

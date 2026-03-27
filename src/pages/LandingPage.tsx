@@ -60,6 +60,36 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
     const [registrationRole, setRegistrationRole] = useState<'STUDENT' | 'TEACHER' | 'SCHOOL'>('STUDENT');
     const [pendingRoute, setPendingRoute] = useState<string | null>(null);
     const [questionInput, setQuestionInput] = useState('');
+    const [showMockAnswer, setShowMockAnswer] = useState(false);
+    const [isGenerating, setIsGenerating] = useState(false);
+    const [generatedAnswer, setGeneratedAnswer] = useState<string | null>(null);
+
+    const handleGenerateAnswer = async () => {
+        if (!questionInput.trim()) return;
+        setShowMockAnswer(true);
+        setIsGenerating(true);
+        setGeneratedAnswer(null);
+
+        try {
+            const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/gemini-proxy`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    model: 'gemini-2.0-flash',
+                    contents: [{ role: 'user', parts: [{ text: `Answer this academic question in 1 or 2 concise, factual sentences for a student. Do not use markdown headers or formatting. State the answer playfully but smartly. Question: ${questionInput}` }] }]
+                })
+            });
+            
+            if (!response.ok) throw new Error('API Error');
+            const data = await response.json();
+            const text = data.candidates?.[0]?.content?.parts?.[0]?.text || 'I analyzed this but could not generate a summary.';
+            setGeneratedAnswer(text);
+        } catch(err) {
+            setGeneratedAnswer('An error occurred while generating the answer. Please check your connection.');
+        } finally {
+            setIsGenerating(false);
+        }
+    };
 
     // Auto-enable Low-Data Mode on slow networks (2G/slow-2G common on Kenyan mobile networks)
     React.useEffect(() => {
@@ -461,17 +491,20 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                         <input 
                                             type="text"
                                             value={questionInput}
-                                            onChange={(e) => setQuestionInput(e.target.value)}
+                                            onChange={(e) => {
+                                                setQuestionInput(e.target.value);
+                                                if (showMockAnswer) setShowMockAnswer(false);
+                                            }}
                                             placeholder="Type your question..."
                                             className="flex-1 bg-transparent border-none focus:outline-none text-slate-800 dark:text-slate-200 px-2 placeholder-slate-400 text-sm md:text-base"
                                             onKeyDown={(e) => {
                                                 if(e.key === 'Enter') {
-                                                    handleRoleSelect(UserRole.LEARNER);
+                                                    handleGenerateAnswer();
                                                 }
                                             }}
                                         />
                                         <button 
-                                            onClick={() => handleRoleSelect(UserRole.LEARNER)}
+                                            onClick={handleGenerateAnswer}
                                             className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 md:px-6 md:py-3 rounded-full font-bold text-sm shadow-md transition-colors flex items-center gap-2"
                                         >
                                             Solve Now <Send className="w-4 h-4" />
@@ -480,7 +513,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
 
                                     {/* Artificial Response Popover (Visible if typed) */}
                                     <AnimatePresence>
-                                        {questionInput.length > 3 && (
+                                        {showMockAnswer && (
                                             <motion.div 
                                                 initial={{ opacity: 0, y: -10 }}
                                                 animate={{ opacity: 1, y: 0 }}
@@ -491,13 +524,22 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                                     <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-emerald-400 flex items-center justify-center shrink-0">
                                                         <Sparkles className="w-4 h-4 text-white" />
                                                     </div>
-                                                    <div>
-                                                        <div className="text-sm text-slate-500 mb-1">Soma AI</div>
-                                                        <div className="text-slate-800 dark:text-slate-200 font-medium line-clamp-2">Here is the step-by-step solution for: <strong>{questionInput}</strong></div>
+                                                    <div className="flex-1 w-full overflow-hidden">
+                                                        <div className="text-sm text-slate-500 mb-2">Soma AI Answer</div>
+                                                        {isGenerating ? (
+                                                            <div className="flex flex-col gap-2 w-full mt-2">
+                                                                <div className="h-3 bg-slate-200 dark:bg-slate-700 rounded w-full animate-pulse"></div>
+                                                                <div className="h-3 bg-slate-200 dark:bg-slate-700 rounded w-3/4 animate-pulse"></div>
+                                                            </div>
+                                                        ) : (
+                                                            <div className="text-slate-800 dark:text-slate-200 font-medium text-sm">
+                                                                {generatedAnswer}
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 </div>
                                                 <button 
-                                                    onClick={() => handleRoleSelect(UserRole.LEARNER)}
+                                                    onClick={() => navigate('/learner', { state: { pendingHeroQuestion: questionInput } })}
                                                     className="w-full mt-2 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-blue-600 dark:text-blue-400 font-bold hover:bg-blue-50 dark:hover:bg-slate-800 transition-colors flex items-center justify-center gap-2"
                                                 >
                                                     View Full Solution <ArrowRight className="w-4 h-4" />
@@ -591,7 +633,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
 
                     </div>
                 </div>
-            </section>on>
+            </section>
 
             {/* --- PRESTIGE TICKER --- */}
             <div className="border-y border-slate-200/50 dark:border-slate-800/80 bg-white/50 dark:bg-slate-950/50 py-6 sm:py-8 overflow-hidden relative backdrop-blur-sm">
