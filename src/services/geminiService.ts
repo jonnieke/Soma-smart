@@ -66,28 +66,42 @@ export const processStream = async (stream: ReadableStream<Uint8Array>, onChunk:
   const decoder = new TextDecoder();
   let buffer = "";
 
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
 
-    buffer += decoder.decode(value, { stream: true });
+      buffer += decoder.decode(value, { stream: true });
 
-    // Try to find any "text" content in the buffer
-    // Gemini stream chunks look like: 
-    // [
-    //   {"candidates": [{"content": {"parts": [{"text": "chunk1"}]}} ]},
-    //   {"candidates": [{"content": {"parts": [{"text": "chunk2"}]}} ]}
-    // ]
-    // Regex to find all text parts in the buffer so far
-    const textMatches = buffer.match(/"text":\s*"((?:\\.|[^"\\])*)"/g);
-    if (textMatches) {
-        const fullText = textMatches.map(m => {
-            const inner = m.match(/"text":\s*"(.*)"/);
-            return inner ? JSON.parse(`"${inner[1]}"`) : "";
+      // Gemini streaming via proxy often returns a sequence of JSON objects.
+      // We look for all instances of "text":"..." in the current buffer.
+      // This regex handles escaped quotes and is robust to standard Gemini structures.
+      const textMatches = buffer.match(/"text":\s*"((?:\\.|[^"\\])*)"/g);
+      
+      if (textMatches) {
+        const fullTextSoFar = textMatches.map(m => {
+          // Extract the string literal part
+          const startIndex = m.indexOf(':"') + 2;
+          const endIndex = m.length - 1;
+          const escapedContent = m.substring(startIndex, endIndex);
+          
+          try {
+            // Safely unescape the JSON string
+            return JSON.parse(`"${escapedContent}"`);
+          } catch (e) {
+            return ""; 
+          }
         }).join("");
         
-        onChunk(fullText);
+        if (fullTextSoFar) {
+          onChunk(fullTextSoFar);
+        }
+      }
     }
+  } catch (err) {
+    console.error("Stream processing error:", err);
+  } finally {
+    reader.releaseLock();
   }
 };
 
@@ -111,7 +125,7 @@ const genAI = {
   })
 };
 
-const MODEL_NAME = "gemini-2.0-flash"; // Upgraded to latest available version
+const MODEL_NAME = "gemini-1.5-flash"; // Reverted to 1.5 for maximum compatibility with proxy
 
 // --- SUPER TEACHER INSTRUCTIONS ---
 const SYLLABUS_GROUNDING_INSTRUCTION = `
@@ -2679,7 +2693,7 @@ export const chatTalkback = async (
     return text || (language === 'sw' ? "Samahani, sijaisikia vizuri. Sema tena? 😊" : "Oops, I didn't catch that! Can you say it again? 😊");
   } catch (error) {
     console.error("Talkback error:", error);
-    return language === 'sw' ? "Pole, kuna tatizo dogo. Jaribu tena! 🌟" : "Hmm, I had a little hiccup. Let's try again! 🌟";
+    return language === 'sw' ? "Samahani, kuna tatizo dogo. Hebu jaribu tena baada ya muda kidogo! 🌟" : "Hmm, I had a little hiccup. Let's try again in a moment! 🌟";
   }
 };
 

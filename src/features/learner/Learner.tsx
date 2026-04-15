@@ -36,6 +36,7 @@ import { jsPDF } from 'jspdf';
 import heroSectionImage from '../../assets/images/herosection.jpg';
 import { ThemeToggle } from '../../components/ThemeToggle';
 import { RevisionLanding } from '../revision/RevisionLanding';
+import { RevisionSession } from '../revision/RevisionSession';
 import { DashboardSidebar, SidebarTab } from '../../components/DashboardSidebar';
 import { Community } from '../community/Community';
 import { LearnerAnalytics } from './LearnerAnalytics';
@@ -78,7 +79,8 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
     initialTab === 'RESOURCES' ? 'MARKETPLACE' :
       initialTab === 'PROGRESS' ? 'HISTORY' :
         initialTab === 'SUBJECTS' ? 'REVISION' :
-          initialTab === 'COMMUNITY' ? 'COMMUNITY' : 'MENU';
+          initialTab === 'COMMUNITY' ? 'COMMUNITY' :
+            initialTab === 'TALKBACK' ? 'TALKBACK' : 'MENU';
 
   // Find active plan details
   const activePlanDetails = React.useMemo(() => {
@@ -135,9 +137,10 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
     }
   }, [isRegistered, role, navigate, location]);
 
-  const [mode, setMode] = useState<'MENU' | 'SCAN' | 'RESULT' | 'QUIZ' | 'RECAP_RESULT' | 'PROFILE' | 'PRICING' | 'PAYMENT' | 'MARKETPLACE' | 'LIBRARY' | 'HISTORY' | 'SCAN_EXPLAIN' | 'STUDY' | 'REQUESTS' | 'COMMUNITY' | 'REVISION' | 'ANALYTICS' | 'TALKBACK' | 'REFERRAL'>(initialMode as any);
+  const [mode, setMode] = useState<'MENU' | 'SCAN' | 'RESULT' | 'QUIZ' | 'RECAP_RESULT' | 'PROFILE' | 'PRICING' | 'PAYMENT' | 'MARKETPLACE' | 'LIBRARY' | 'HISTORY' | 'SCAN_EXPLAIN' | 'STUDY' | 'REQUESTS' | 'COMMUNITY' | 'REVISION' | 'REVISION_SESSION' | 'ANALYTICS' | 'TALKBACK' | 'REFERRAL'>(initialMode as any);
   const [studyTab, setStudyTab] = useState<'LESSON' | 'RECAP' | 'QNA' | 'QUIZ'>('LESSON');
   const [expandedRecaps, setExpandedRecaps] = useState<number[]>([]);
+  const [activeRevisionSession, setActiveRevisionSession] = useState<{ data: any, mode: 'LEARN' | 'EXAM' } | null>(null);
   const [recapData, setRecapData] = useState<any>(null); // Store LessonRecap
 
   const [loading, setLoading] = useState(false);
@@ -1353,8 +1356,6 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
       generateQuickQuiz(result.explanation, result.topic, language)
         .then(data => setStickyQuizData(data))
         .catch(err => console.error("Background quiz gen failed", err));
-
-      setMode('SCAN_EXPLAIN');
     } finally {
       setLoading(false);
     }
@@ -1550,11 +1551,22 @@ ${explanation.explanation}
         <RevisionLanding
           onBack={() => setMode('MENU')}
           onNavigate={onNavigate}
-          onStartSession={(data, mode) => {
-            // If data is a Past Paper (File or TeacherActivity with content),
-            // navigate to SCAN_EXPLAIN or specialized viewer if we had one.
-            // For now, satisfy the interface and log.
-            console.log("Starting revision session", { data, mode });
+          onStartSession={(data, sessionMode) => {
+            setActiveRevisionSession({ data, mode: sessionMode });
+            setMode('REVISION_SESSION');
+          }}
+        />
+      );
+    }
+
+    if (mode === 'REVISION_SESSION' && activeRevisionSession) {
+      return (
+        <RevisionSession
+          data={activeRevisionSession.data}
+          mode={activeRevisionSession.mode}
+          onExit={() => {
+            setActiveRevisionSession(null);
+            setMode('REVISION');
           }}
         />
       );
@@ -2157,126 +2169,119 @@ ${explanation.explanation}
     }
 
     if (mode === 'MENU') {
-      const displayCode = profile ? profile.code : studentCode;
-      const greeting = profile ? `Hi, ${profile.name.split(' ')[0]}` : "My Learning Buddy";
+      const hour = new Date().getHours();
+      const timeOfDay = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+      const greeting = profile ? `${timeOfDay}, ${profile.name.split(' ')[0]}` : 'Welcome to Somo';
+      const recentTopics = [...new Set(history.map((h: any) => h.topic))].filter(Boolean).slice(0, 3) as string[];
+      const hasHistory = history.length > 0;
+      const hasProgress = totalXP > 0;
 
       return (
-        <div className="min-h-screen bg-[#fafbfc] dark:bg-slate-950 flex flex-col font-sans text-slate-800 dark:text-slate-100 w-full relative overflow-hidden transition-colors duration-300">
-          {/* Decorative background elements */}
-          <div className="absolute top-0 left-0 w-full h-[500px] bg-gradient-to-b from-blue-50/50 to-transparent pointer-events-none" />
-          <div className="absolute top-[-10%] right-[-5%] w-[40%] aspect-square bg-blue-100/30 rounded-full blur-[120px] pointer-events-none" />
-          <div className="absolute bottom-[20%] left-[-5%] w-[30%] aspect-square bg-indigo-100/30 rounded-full blur-[100px] pointer-events-none" />
+        <div className="min-h-screen bg-slate-50 dark:bg-slate-950 font-sans text-slate-800 dark:text-slate-100 w-full transition-colors duration-300">
 
-          {/* --- TOP BAR --- */}
-          <div className="flex justify-between items-center px-6 py-4 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl sticky top-0 z-50 border-b border-slate-100/50 dark:border-slate-800/50 transition-colors">
-            {/* Logo */}
-            <div className="flex items-center gap-2 cursor-pointer group" onClick={() => navigate('/')}>
-              <img src={logoImg} alt="Somo Smart" className="h-10 w-auto object-contain group-hover:scale-105 transition-transform" />
-            </div>
-
-            {/* Navigation - Centered Desktop */}
-            <nav className="hidden md:flex items-center gap-1 bg-slate-100/50 dark:bg-slate-800/50 p-1.5 rounded-full border border-slate-200/50 dark:border-slate-700/50">
-              <button onClick={() => setMode('HISTORY' as any)} className="flex items-center gap-2 px-5 py-2 hover:bg-white dark:hover:bg-slate-700 rounded-full transition-all text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 font-bold text-sm hover:shadow-sm">
-                <Clock className="w-4 h-4" />
-                History
-              </button>
-              {isRegistered && (
-                <>
-                  <div className="w-px h-4 bg-slate-300 dark:bg-slate-700 mx-1" />
-                  <button onClick={() => setMode('REQUESTS')} className="flex items-center gap-2 px-5 py-2 hover:bg-white dark:hover:bg-slate-700 rounded-full transition-all text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 font-bold text-sm hover:shadow-sm">
-                    <span className="relative">
-                      <div className="w-4 h-4 rounded-full border-2 border-current" />
-                      {activeTutoringRequests.some(r => r.status === 'COMPLETED') && <div className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full border border-white dark:border-slate-900" />}
-                    </span>
-                    Requests
-                  </button>
-                </>
-              )}
-              <div className="w-px h-4 bg-slate-300 dark:bg-slate-700 mx-1" />
-              <button onClick={() => setMode('MARKETPLACE')} className="flex items-center gap-2 px-5 py-2 hover:bg-white dark:hover:bg-slate-700 rounded-full transition-all text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 font-bold text-sm hover:shadow-sm">
-                <Library className="w-4 h-4" />
-                Library
-              </button>
-            </nav>
-
-            {/* Profile & Streaks */}
-            <div className="flex items-center gap-3">
-              <div className="hidden sm:flex items-center gap-1.5 bg-orange-50 px-3 py-1.5 rounded-full border border-orange-100 mr-2 shadow-sm dark:bg-orange-900/20 dark:border-orange-900/30">
-                <span className="text-orange-500 font-bold text-sm">🔥 3</span>
-                <span className="text-orange-800 dark:text-orange-300 text-[10px] font-black uppercase tracking-wider">Day Streak</span>
+          {/* ── TOP BAR ── */}
+          <div className="sticky top-0 z-50 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-b border-slate-200/70 dark:border-slate-800/70">
+            <div className="max-w-3xl mx-auto px-4 h-14 flex items-center justify-between">
+              <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/')}>
+                <img src={logoImg} alt="Somo Smart" className="h-8 w-auto object-contain" />
               </div>
-              <ThemeToggle />
-
-              {!isRegistered && (
-                <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2">
+                <ThemeToggle />
+                {!isRegistered ? (
+                  <>
+                    <button
+                      onClick={() => setShowRegistration(true)}
+                      className="hidden sm:block px-4 py-1.5 text-sm font-bold text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+                    >
+                      Register
+                    </button>
+                    <button
+                      onClick={() => setShowLogin(true)}
+                      className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all shadow-sm"
+                    >
+                      Log In
+                    </button>
+                  </>
+                ) : (
                   <button
-                    onClick={() => setShowRegistration(true)}
-                    className="hidden sm:block px-4 py-2 bg-slate-100 text-slate-700 rounded-full text-xs font-bold hover:bg-slate-200 transition-all font-sans"
+                    onClick={() => setMode('PROFILE')}
+                    className="w-9 h-9 bg-gradient-to-br from-indigo-500 to-blue-600 rounded-full flex items-center justify-center text-white font-black text-sm shadow-md hover:scale-105 transition-transform"
+                    aria-label="Open profile"
                   >
-                    Register
+                    {profile?.name?.charAt(0) || 'S'}
                   </button>
-                  <button
-                    onClick={() => setShowLogin(true)}
-                    className="px-5 py-2.5 bg-slate-900 text-white rounded-full text-xs font-bold shadow-lg shadow-slate-200 hover:bg-slate-800 transition-all hover:-translate-y-0.5"
-                  >
-                    Log In
-                  </button>
-                </div>
-              )}
-
-              <div
-                onClick={() => isRegistered ? setMode('PROFILE') : setShowLogin(true)}
-                className="flex items-center gap-3 pl-1.5 pr-5 py-1.5 bg-white dark:bg-slate-900 rounded-full border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-md hover:border-blue-200 dark:hover:border-blue-700 transition-all cursor-pointer group"
-              >
-                <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-blue-600 rounded-full flex items-center justify-center text-white font-black shadow-md ring-4 ring-indigo-50 dark:ring-indigo-900/50 group-hover:scale-105 transition-transform">
-                  {profile?.name.charAt(0) || 'G'}
-                </div>
-                <div className="hidden sm:block text-right leading-tight">
-                  <p className="text-sm font-black text-slate-900 dark:text-white">{profile?.name.split(' ')[0] || 'Guest'}</p>
-                  <p className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider flex items-center justify-end gap-1">
-                    <span className="text-amber-500">★</span> Lvl {levelInfo.level} • {totalXP} XP
-                  </p>
-                </div>
+                )}
               </div>
             </div>
           </div>
 
-          {/* --- MAIN CENTER CONTENT --- */}
-          <div className="flex-1 flex flex-col items-center px-4 md:px-8 relative z-10 pb-32 max-w-7xl mx-auto w-full">
+          {/* ── SCROLL CONTENT ── */}
+          <div className="max-w-3xl mx-auto px-4 pb-32">
 
-            {/* Premium Unified Hero */}
+            {/* ── GREETING ── */}
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
-              className="w-full mt-8 md:mt-16 mb-8 md:mb-12 text-center relative z-10"
+              className="pt-7 pb-5 flex items-start justify-between gap-4"
             >
-              <h1 className="text-4xl md:text-[4rem] font-black text-slate-900 dark:text-white mb-6 tracking-tight leading-[1.1]">
-                {educationLevel === EducationLevel.JUNIOR ? `Hello, ${profile?.name.split(' ')[0] || 'Friend'}! 🎈` :
-                  educationLevel === EducationLevel.CAMPUS ? `Welcome Back, ${profile?.name.split(' ')[0] || 'Scholar'}` :
-                    `Good Morning, ${profile?.name.split(' ')[0] || 'Friend'}`}
-                <span className="bg-clip-text text-transparent bg-gradient-to-r from-emerald-500 to-teal-600 block sm:inline mt-2 sm:mt-0 sm:ml-3">
-                  {educationLevel === EducationLevel.JUNIOR ? "Time for a Fun Lesson!" :
-                    educationLevel === EducationLevel.CAMPUS ? "Accelerate Your Research." :
-                      "Improve Your Marks Today."}
-                </span>
-              </h1>
-              <p className="text-slate-500 dark:text-slate-400 font-medium text-lg md:text-xl max-w-2xl mx-auto block leading-relaxed mt-4 opacity-90">
-                {educationLevel === EducationLevel.JUNIOR ? "Snap a picture of your book, ask your Buddy a question, or play a learning game!" :
-                  educationLevel === EducationLevel.CAMPUS ? "Upload your lecture notes, ask a complex research question, or analyze your course progress." :
-                    "Snap a photo of your homework, ask a tricky question, or dive straight into personalized revision."}
-              </p>
-
-
+              <div>
+                <p className="text-[10px] font-black text-indigo-500 uppercase tracking-[0.2em] mb-1">
+                  {educationLevel === EducationLevel.JUNIOR ? 'Learning Time 🎈'
+                    : educationLevel === EducationLevel.CAMPUS ? 'Research Hub'
+                    : 'Study Dashboard'}
+                </p>
+                <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight leading-tight">
+                  {greeting}
+                </h1>
+                <p className="text-sm text-slate-400 dark:text-slate-500 font-medium mt-1">
+                  {educationLevel === EducationLevel.JUNIOR
+                    ? 'What would you like to learn today?'
+                    : educationLevel === EducationLevel.CAMPUS
+                    ? 'Your AI-powered research companion'
+                    : 'Which subject are we tackling today?'}
+                </p>
+              </div>
+              <div className="flex flex-col items-end gap-2 shrink-0">
+                <div className="flex items-center gap-1.5 bg-orange-50 dark:bg-orange-900/20 border border-orange-100 dark:border-orange-900/30 px-3 py-1.5 rounded-full">
+                  <span className="text-sm">🔥</span>
+                  <span className="text-xs font-black text-orange-700 dark:text-orange-400">3 day streak</span>
+                </div>
+                <div className="flex items-center gap-1.5 bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-100 dark:border-indigo-900/30 px-3 py-1.5 rounded-full">
+                  <span className="text-[10px] font-black text-indigo-700 dark:text-indigo-400">⭐ Lvl {levelInfo.level} · {totalXP} XP</span>
+                </div>
+              </div>
             </motion.div>
 
-            {/* Redesigned Smart Input Bar */}
+            {/* ── DAILY CHALLENGE PILL ── */}
+            {dailyChallenge && (
+              <motion.button
+                initial={{ opacity: 0, y: -6 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.05 }}
+                onClick={() => { setPromptText(`Generate a ${dailyChallenge.quiz}`); handlePromptSubmit(); }}
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 border border-amber-200 dark:border-amber-800/40 mb-5 text-left hover:shadow-md hover:border-amber-300 dark:hover:border-amber-700 transition-all group"
+              >
+                <div className="w-9 h-9 bg-amber-100 dark:bg-amber-900/40 rounded-xl flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+                  <span className="text-base">🏆</span>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[10px] font-black text-amber-600 dark:text-amber-400 uppercase tracking-widest mb-0.5">
+                    {educationLevel === EducationLevel.JUNIOR ? 'Fun Game of the Day' : 'Daily Challenge'}
+                  </p>
+                  <p className="text-sm font-bold text-slate-800 dark:text-slate-200 truncate">{dailyChallenge.quiz}</p>
+                </div>
+                <ArrowRight className="w-4 h-4 text-amber-400 group-hover:translate-x-1 transition-transform shrink-0" />
+              </motion.button>
+            )}
+
+            {/* ── MAIN INPUT ── */}
             <motion.div
-              initial={{ opacity: 0, scale: 0.98 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.2 }}
-              className="w-full md:max-w-[75%] relative z-30 mb-10 md:mb-14 mx-auto px-4 md:px-0"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+              className="relative mb-5"
             >
-              <div className="bg-white/95 dark:bg-slate-900/95 rounded-[2rem] md:rounded-[3rem] shadow-[0_30px_70px_-15px_rgba(79,70,229,0.25)] dark:shadow-black/40 border-2 border-slate-300/80 dark:border-slate-800/80 p-1.5 md:p-2.5 flex flex-col md:flex-row items-stretch md:items-center gap-1 md:gap-2 px-3 md:pl-8 md:pr-3 focus-within:ring-4 focus-within:ring-indigo-100/70 dark:focus-within:ring-indigo-900/30 focus-within:border-indigo-500/60 transition-all duration-300 hover:shadow-[0_40px_80px_-15px_rgba(79,70,229,0.3)] dark:hover:shadow-black/50 hover:border-indigo-400/80 backdrop-blur-md">
+              <div className="bg-white dark:bg-slate-900 rounded-2xl border-2 border-slate-200 dark:border-slate-800 focus-within:border-indigo-400 dark:focus-within:border-indigo-600 focus-within:shadow-lg focus-within:shadow-indigo-100/60 dark:focus-within:shadow-indigo-900/30 transition-all shadow-sm">
                 <textarea
                   value={promptText}
                   onChange={(e) => setPromptText(e.target.value)}
@@ -2286,360 +2291,236 @@ ${explanation.explanation}
                       handlePromptSubmit();
                     }
                   }}
-                  placeholder={
-                    educationLevel === EducationLevel.JUNIOR ? "Ask your Buddy a question here..." :
-                      educationLevel === EducationLevel.CAMPUS ? "Search or ask a research question..." :
-                        "your homework or revision question here"
-                  }
-                  rows={1}
-                  className="flex-1 bg-transparent border-0 focus:ring-0 text-slate-800 dark:text-slate-100 text-base md:text-lg font-bold py-3 md:py-5 px-1 min-h-[50px] md:min-h-[70px] max-h-40 resize-none placeholder:text-slate-400 dark:placeholder:text-slate-600 placeholder:font-medium outline-none overflow-hidden"
-                  style={{ height: 'auto' }}
                   onInput={(e) => {
-                    const target = e.target as HTMLTextAreaElement;
-                    target.style.height = 'auto';
-                    target.style.height = `${target.scrollHeight}px`;
+                    const t = e.target as HTMLTextAreaElement;
+                    t.style.height = 'auto';
+                    t.style.height = `${t.scrollHeight}px`;
                   }}
+                  placeholder={
+                    educationLevel === EducationLevel.JUNIOR
+                      ? 'Ask your Buddy a question...'
+                      : educationLevel === EducationLevel.CAMPUS
+                      ? 'Ask a research question or paste lecture notes...'
+                      : 'Type your question or paste homework here...'
+                  }
+                  rows={2}
+                  className="w-full bg-transparent border-0 focus:ring-0 text-slate-800 dark:text-slate-100 text-base font-medium py-4 px-5 min-h-[80px] max-h-48 resize-none placeholder:text-slate-400 dark:placeholder:text-slate-600 outline-none"
                 />
-
-                {/* Action Buttons Container */}
-                <div className="flex items-center justify-between md:justify-end gap-1 shrink-0 pb-2 md:pb-0 border-t border-slate-100 md:border-t-0 pt-2 md:pt-0">
+                {/* Input toolbar */}
+                <div className="flex items-center justify-between px-4 pb-3 pt-1">
                   <div className="flex items-center gap-1">
                     <button
                       onClick={() => fileInputRef.current?.click()}
-                      className="p-3 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-2xl transition-all group"
-                      title="Upload Image"
+                      className="p-2.5 text-slate-400 hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-xl transition-all"
+                      title="Upload image or file"
                     >
-                      <ImageIcon className="w-5 h-5 md:w-6 md:h-6 group-hover:scale-110 transition-transform" />
+                      <ImageIcon className="w-4 h-4" />
                     </button>
                     <button
                       onClick={isRecording ? stopRecording : startRecording}
-                      className={`p-3 rounded-2xl transition-all group ${isRecording ? 'text-red-500 bg-red-50' : 'text-slate-400 hover:text-red-500 hover:bg-red-50'}`}
-                      title="Record Audio"
+                      className={`p-2.5 rounded-xl transition-all ${isRecording
+                        ? 'text-red-500 bg-red-50 dark:bg-red-900/20 animate-pulse'
+                        : 'text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20'}`}
+                      title="Record audio"
                     >
-                      {isRecording ? <div className="w-5 h-5 md:w-6 md:h-6 bg-red-500 rounded-sm animate-pulse" /> : <Mic className="w-5 h-5 md:w-6 md:h-6 group-hover:scale-110 transition-transform" />}
+                      <Mic className="w-4 h-4" />
                     </button>
+                    <button
+                      onClick={startCamera}
+                      className="p-2.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 rounded-xl transition-all"
+                      title="Scan with camera"
+                    >
+                      <Camera className="w-4 h-4" />
+                    </button>
+                    {isRecording && (
+                      <span className="text-xs font-black text-red-500 ml-1">{formatTime(recordingTime)}</span>
+                    )}
                   </div>
-
-                  <div className="hidden md:block w-px h-8 bg-slate-200 mx-2" />
-
                   <button
                     onClick={handlePromptSubmit}
                     disabled={!promptText.trim() || loading}
-                    className={`p-3.5 md:p-5 rounded-2xl md:rounded-full transition-all flex items-center justify-center ml-1 ${promptText.trim() ? 'bg-indigo-600 text-white shadow-xl shadow-indigo-200 scale-100 hover:bg-indigo-700 hover:scale-105 active:scale-95' : 'bg-slate-100 text-slate-300 scale-95 cursor-not-allowed'}`}
+                    className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition-all ${
+                      promptText.trim() && !loading
+                        ? 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-md shadow-indigo-200 dark:shadow-indigo-900/40 hover:-translate-y-0.5 active:translate-y-0'
+                        : 'bg-slate-100 dark:bg-slate-800 text-slate-400 cursor-not-allowed'
+                    }`}
                   >
-                    <ArrowRight className="w-5 h-5 md:w-6 md:h-6" />
+                    {loading
+                      ? <Loader2 className="w-4 h-4 animate-spin" />
+                      : <><span>Ask</span><ArrowRight className="w-4 h-4" /></>
+                    }
                   </button>
                 </div>
               </div>
-
-              {/* Recording Indicator Overlay */}
-              {isRecording && (
-                <div className="absolute -top-16 left-1/2 -translate-x-1/2 bg-red-500 text-white text-sm font-bold px-6 py-2.5 rounded-full animate-bounce shadow-xl shadow-red-200 flex items-center gap-3 z-40">
-                  <span className="w-2.5 h-2.5 bg-white rounded-full animate-pulse" />
-                  Listening... {formatTime(recordingTime)}
-                </div>
-              )}
+              <input
+                type="file"
+                className="hidden"
+                ref={fileInputRef}
+                onChange={handleFileUpload}
+                accept="image/*,application/pdf"
+              />
             </motion.div>
 
-            {/* Sleek Action Pills */}
+            {/* ── 4 TOOL BUTTONS (2×2) ── */}
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-              className="w-full flex flex-wrap justify-center gap-3 md:gap-4 mb-10"
+              transition={{ delay: 0.15 }}
+              className="grid grid-cols-2 gap-3 mb-8"
             >
               {[
                 {
-                  onClick: isOnline ? startCamera : undefined,
-                  icon: <Camera className="w-4 h-4" />,
-                  text: educationLevel === EducationLevel.JUNIOR ? "Snap Book" : educationLevel === EducationLevel.CAMPUS ? "Scan Notes" : "Scan Homework",
-                  color: "bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 border-emerald-100 dark:border-emerald-900/50 hover:bg-emerald-100 dark:hover:bg-emerald-900/50",
-                  aria: "Scan content using camera"
+                  icon: <Camera className="w-5 h-5" />,
+                  label: educationLevel === EducationLevel.JUNIOR ? 'Snap & Ask' : educationLevel === EducationLevel.CAMPUS ? 'Scan Notes' : 'Scan Homework',
+                  sublabel: 'Photo to instant answer',
+                  gradient: 'from-emerald-500 to-teal-600',
+                  bg: 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-100 dark:border-emerald-900/30',
+                  textColor: 'text-emerald-700 dark:text-emerald-400',
+                  onClick: startCamera,
                 },
                 {
-                  onClick: () => setShowTutoringModal(true),
-                  icon: <Users className="w-4 h-4" />,
-                  text: educationLevel === EducationLevel.JUNIOR ? "Ask Buddy" : educationLevel === EducationLevel.CAMPUS ? "Ask Expert" : "Ask a Question",
-                  color: "bg-indigo-50 dark:bg-indigo-950/30 text-indigo-700 dark:text-indigo-400 border-indigo-100 dark:border-indigo-900/50 hover:bg-indigo-100 dark:hover:bg-indigo-900/50",
-                  aria: "Ask a question"
+                  icon: <Headphones className="w-5 h-5" />,
+                  label: 'Listen & Learn',
+                  sublabel: 'AI voice tutor, any topic',
+                  gradient: 'from-indigo-500 to-purple-600',
+                  bg: 'bg-indigo-50 dark:bg-indigo-900/20 border-indigo-100 dark:border-indigo-900/30',
+                  textColor: 'text-indigo-700 dark:text-indigo-400',
+                  onClick: () => handleSidebarTabChange('TALKBACK'),
                 },
                 {
+                  icon: <Library className="w-5 h-5" />,
+                  label: educationLevel === EducationLevel.JUNIOR ? 'Books & Notes' : educationLevel === EducationLevel.CAMPUS ? 'Research Library' : 'Study Materials',
+                  sublabel: 'Notes, papers & past exams',
+                  gradient: 'from-blue-500 to-indigo-600',
+                  bg: 'bg-blue-50 dark:bg-blue-900/20 border-blue-100 dark:border-blue-900/30',
+                  textColor: 'text-blue-700 dark:text-blue-400',
+                  onClick: () => setMode('MARKETPLACE'),
+                },
+                {
+                  icon: <Brain className="w-5 h-5" />,
+                  label: educationLevel === EducationLevel.JUNIOR ? 'Practice Tests' : 'Exams & Revision',
+                  sublabel: 'Past papers & mock tests',
+                  gradient: 'from-amber-500 to-orange-500',
+                  bg: 'bg-amber-50 dark:bg-amber-900/20 border-amber-100 dark:border-amber-900/30',
+                  textColor: 'text-amber-700 dark:text-amber-400',
                   onClick: () => navigate('/revision'),
-                  icon: <Brain className="w-4 h-4" />,
-                  text: educationLevel === EducationLevel.JUNIOR ? "Play & Learn" : educationLevel === EducationLevel.CAMPUS ? "Resource Hub" : "Revision & Exams",
-                  color: "bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 border-amber-100 dark:border-amber-900/50 hover:bg-amber-100 dark:hover:bg-amber-900/50",
-                  aria: "Open resources"
-                }
-              ].map((pill, i) => (
-                <button
+                },
+              ].map((tool, i) => (
+                <motion.button
                   key={i}
-                  onClick={pill.onClick}
-                  aria-label={pill.aria}
-                  className={`${pill.color} px-5 md:px-8 py-3.5 md:py-4 rounded-2xl font-bold text-sm transition-all hover:shadow-lg dark:hover:shadow-black/30 active:scale-95 border flex items-center gap-2.5`}
+                  whileTap={{ scale: 0.96 }}
+                  onClick={tool.onClick}
+                  className={`${tool.bg} border rounded-2xl p-4 text-left hover:shadow-md dark:hover:shadow-black/30 transition-all group`}
                 >
-                  {pill.icon} {pill.text}
-                </button>
+                  <div className={`w-10 h-10 bg-gradient-to-br ${tool.gradient} rounded-xl flex items-center justify-center text-white mb-3 shadow-md group-hover:scale-110 transition-transform`}>
+                    {tool.icon}
+                  </div>
+                  <h3 className={`font-black text-sm ${tool.textColor} mb-0.5 leading-tight`}>{tool.label}</h3>
+                  <p className="text-[11px] text-slate-400 dark:text-slate-500 font-medium leading-tight">{tool.sublabel}</p>
+                </motion.button>
               ))}
             </motion.div>
 
-            {/* Top Grid Redesign */}
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="w-full mb-12 mt-8"
-            >
-              {(() => {
-                const validPerformances = subjectPerformance.filter(s => s.hasData);
-                let overallAvg = 0;
-                let strongest = educationLevel === EducationLevel.JUNIOR
-                  ? { subject: 'Storytelling', score: 84 }
-                  : educationLevel === EducationLevel.CAMPUS
-                    ? { subject: 'Algorithms', score: 88 }
-                    : { subject: 'Chemistry', score: 84 };
-                let needsAtten = educationLevel === EducationLevel.JUNIOR
-                  ? { subject: 'Colouring', score: 45 }
-                  : educationLevel === EducationLevel.CAMPUS
-                    ? { subject: 'Ethics', score: 52 }
-                    : { subject: 'Kiswahili', score: 45 };
+            {/* ── CONTINUE LEARNING (only if history exists) ── */}
+            {hasHistory && recentTopics.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+                className="mb-8"
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <h2 className="text-[11px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.18em]">
+                    Continue Learning
+                  </h2>
+                  <button
+                    onClick={() => setMode('HISTORY' as any)}
+                    className="text-[10px] font-bold text-indigo-500 hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors"
+                  >
+                    View all →
+                  </button>
+                </div>
+                <div className="space-y-2">
+                  {recentTopics.map((topic: string, i: number) => (
+                    <button
+                      key={i}
+                      onClick={() => { setPromptText(`Continue explaining: ${topic}`); handlePromptSubmit(); }}
+                      className="w-full flex items-center gap-3 px-4 py-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-indigo-200 dark:hover:border-indigo-800 hover:shadow-sm transition-all text-left group"
+                    >
+                      <div className="w-8 h-8 bg-slate-100 dark:bg-slate-800 rounded-lg flex items-center justify-center shrink-0 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-900/30 transition-colors">
+                        <BookOpen className="w-4 h-4 text-slate-400 group-hover:text-indigo-500 transition-colors" />
+                      </div>
+                      <span className="text-sm font-semibold text-slate-700 dark:text-slate-300 truncate flex-1 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                        {topic}
+                      </span>
+                      <ArrowRight className="w-3.5 h-3.5 text-slate-300 dark:text-slate-600 group-hover:text-indigo-400 group-hover:translate-x-0.5 transition-all shrink-0" />
+                    </button>
+                  ))}
+                </div>
+              </motion.div>
+            )}
 
-                if (validPerformances.length > 0) {
-                  const totalScore = validPerformances.reduce((acc, curr) => acc + curr.score, 0);
-                  overallAvg = Math.round(totalScore / validPerformances.length);
-                  strongest = validPerformances.reduce((prev, current) => (prev.score > current.score) ? prev : current);
-                  needsAtten = validPerformances.reduce((prev, current) => (prev.score < current.score) ? prev : current);
-                } else {
-                  overallAvg = educationLevel === EducationLevel.JUNIOR ? 78 : educationLevel === EducationLevel.CAMPUS ? 68 : 72;
-                }
-
-                const totalMins = history.length * 15 || 200;
-                const hrs = Math.floor(totalMins / 60);
-                const mins = totalMins % 60;
-
-                // Level-specific stat labels
-                const statLabels = educationLevel === EducationLevel.JUNIOR
-                  ? { avg: 'My Score', top: 'Best Class', weak: 'Keep Trying', time: 'Play Time', weakAction: 'Try Again! 💪' }
-                  : educationLevel === EducationLevel.CAMPUS
-                    ? { avg: 'GPA Estimate', top: 'Strongest Module', weak: 'Focus Area', time: 'Research Hours', weakAction: 'Needs Depth' }
-                    : { avg: 'Overall Avg', top: 'Top Subject', weak: 'Needs Work', time: 'Study Time', weakAction: 'Practice More' };
-
-                const recentTopics = [...new Set(history.map(h => h.topic))].slice(0, 3);
-                const defaultSubjects = educationLevel === EducationLevel.JUNIOR
-                  ? ['Fun Science', 'Our Story', 'Big Maths']
-                  : educationLevel === EducationLevel.CAMPUS
-                    ? ['Advanced Theory', 'Core Research', 'Ethics']
-                    : ['Physics', 'Chemistry', 'Biology'];
-                const subject1 = recentTopics[0] || defaultSubjects[0];
-                const subject2 = recentTopics[1] || defaultSubjects[1];
-                const subject3 = recentTopics[2] || defaultSubjects[2];
-
-                return (
-                  <>
-                    {/* ROW 1: Stats */}
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                      <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200/70 dark:border-slate-800/80 hover:shadow-md dark:hover:shadow-black/40 transition-all">
-                        <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">{statLabels.avg}</p>
-                        <div className="flex items-end gap-2">
-                          <span className="text-3xl font-black text-slate-900 dark:text-white">{overallAvg}%</span>
-                          <span className="text-xs font-bold text-emerald-500 mb-1">+5%</span>
+            {/* ── MY PROGRESS (only when real XP data exists) ── */}
+            {hasProgress && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.25 }}
+                className="mb-6"
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <h2 className="text-[11px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.18em]">My Progress</h2>
+                  <button
+                    onClick={() => setMode('ANALYTICS' as any)}
+                    className="text-[10px] font-bold text-indigo-500 hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors"
+                  >
+                    Full report →
+                  </button>
+                </div>
+                <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-black text-slate-800 dark:text-white">Level {levelInfo.level}</span>
+                    <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500">{totalXP} / {levelInfo.nextLevelXP} XP</span>
+                  </div>
+                  <div className="h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden mb-4">
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{ width: `${Math.min(100, (totalXP / levelInfo.nextLevelXP) * 100)}%` }}
+                      transition={{ duration: 1, ease: 'easeOut' }}
+                      className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full"
+                    />
+                  </div>
+                  {subjectPerformance.length > 0 && (() => {
+                    const sorted = [...subjectPerformance].sort((a, b) => b.score - a.score);
+                    const top = sorted[0];
+                    const weak = sorted[sorted.length - 1];
+                    return (
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="bg-emerald-50 dark:bg-emerald-900/20 rounded-xl px-3 py-2.5">
+                          <p className="text-[9px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest mb-0.5">Top Subject</p>
+                          <p className="text-sm font-black text-slate-800 dark:text-white truncate">{top.subject}</p>
+                          <p className="text-xs font-bold text-emerald-600 dark:text-emerald-400">{top.score}%</p>
                         </div>
-                        <div className="w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full mt-3 overflow-hidden">
-                          <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${Math.max(10, overallAvg)}%` }} />
+                        <div className="bg-amber-50 dark:bg-amber-900/20 rounded-xl px-3 py-2.5">
+                          <p className="text-[9px] font-black text-amber-600 dark:text-amber-400 uppercase tracking-widest mb-0.5">Needs Work</p>
+                          <p className="text-sm font-black text-slate-800 dark:text-white truncate">{weak.subject}</p>
+                          <p className="text-xs font-bold text-amber-600 dark:text-amber-400">{weak.score}%</p>
                         </div>
                       </div>
-                      <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200/70 dark:border-slate-800/80 hover:shadow-md dark:hover:shadow-black/40 transition-all">
-                        <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">{statLabels.top}</p>
-                        <span className="text-xl font-black text-slate-900 dark:text-white">{strongest.subject}</span>
-                        <p className="text-sm font-bold text-emerald-600 mt-1">{strongest.score}%</p>
-                      </div>
-                      <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200/70 dark:border-slate-800/80 hover:shadow-md dark:hover:shadow-black/40 transition-all">
-                        <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">{statLabels.weak}</p>
-                        <span className="text-xl font-black text-slate-900 dark:text-white">{needsAtten.subject}</span>
-                        <p className="text-sm font-bold text-amber-500 mt-1">{statLabels.weakAction}</p>
-                      </div>
-                      <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200/70 dark:border-slate-800/80 hover:shadow-md dark:hover:shadow-black/40 transition-all">
-                        <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">{statLabels.time}</p>
-                        <span className="text-2xl font-black text-indigo-600 dark:text-indigo-400">{hrs}h {mins}m</span>
-                      </div>
-                    </div>
+                    );
+                  })()}
+                </div>
+              </motion.div>
+            )}
 
-                    {/* ROW 2: Three Equal Cards */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-6">
-                      <div
-                        onClick={() => setMode('MARKETPLACE')}
-                        className="bg-gradient-to-br from-indigo-600 to-indigo-700 rounded-2xl p-6 text-white cursor-pointer hover:shadow-xl hover:shadow-indigo-200/40 hover:-translate-y-0.5 transition-all relative overflow-hidden group"
-                      >
-                        <div className="absolute top-0 right-0 w-28 h-28 bg-white/10 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
-                        <div className="relative z-10">
-                          <div className="w-11 h-11 bg-white/20 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                            <span className="text-lg">{educationLevel === EducationLevel.JUNIOR ? '📖' : '📜'}</span>
-                          </div>
-                          <h3 className="font-black text-lg mb-1">{educationLevel === EducationLevel.JUNIOR ? "Story Time" : educationLevel === EducationLevel.CAMPUS ? "Seminar Prep" : "End-Term Prep"}</h3>
-                          <p className="text-indigo-200 text-sm font-medium">{educationLevel === EducationLevel.JUNIOR ? "Explore fun books" : "Advanced research materials"}</p>
-                        </div>
-                      </div>
-
-                      <button
-                        onClick={startCamera}
-                        className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200/70 dark:border-slate-800/80 text-left hover:shadow-xl dark:hover:shadow-black/40 hover:-translate-y-0.5 hover:border-emerald-200 dark:hover:border-emerald-900/50 transition-all group"
-                      >
-                        <div className="w-11 h-11 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-xl flex items-center justify-center mb-4 group-hover:bg-emerald-500 group-hover:text-white transition-colors">
-                          <CheckCircle className="w-5 h-5" />
-                        </div>
-                        <h3 className="font-black text-slate-800 dark:text-white text-lg mb-1">{educationLevel === EducationLevel.JUNIOR ? "Buddy Check" : educationLevel === EducationLevel.CAMPUS ? "Assignment Scan" : "Homework Scan"}</h3>
-                        <p className="text-slate-400 dark:text-slate-500 text-sm font-medium">Snap & get instant help</p>
-                      </button>
-
-                      <div
-                        onClick={() => { setPromptText(`Generate a ${dailyChallenge.quiz}`); handlePromptSubmit(); }}
-                        className="bg-slate-900 dark:bg-slate-800 rounded-2xl p-6 text-white cursor-pointer hover:shadow-xl dark:hover:shadow-black/50 hover:-translate-y-0.5 transition-all relative overflow-hidden group"
-                      >
-                        <div className="absolute top-0 right-0 w-28 h-28 bg-indigo-500/20 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
-                        <div className="relative z-10">
-                          <div className="flex items-start justify-between mb-4">
-                            <span className="text-indigo-400 font-black text-[10px] uppercase tracking-widest">{educationLevel === EducationLevel.JUNIOR ? "Fun Game" : "Daily Challenge"}</span>
-                            <span className="text-lg">🏆</span>
-                          </div>
-                          <h3 className="font-black text-lg mb-1">{educationLevel === EducationLevel.JUNIOR ? "Super Quiz" : "Sprint Quiz"}</h3>
-                          <p className="text-slate-400 dark:text-slate-500 text-sm font-medium mb-3">{educationLevel === EducationLevel.JUNIOR ? "Win stars for playing" : "5 questions for +50 XP"}</p>
-                          <div className="w-full py-2.5 bg-white/10 dark:bg-white/5 border border-white/10 dark:border-white/5 text-white rounded-xl text-center text-sm font-bold group-hover:bg-white/20 transition-colors">
-                            {educationLevel === EducationLevel.JUNIOR ? "Play Now →" : "Start →"}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* ROW 3: Recommendations + Progress */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
-                      <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200/70 dark:border-slate-800/80 hover:shadow-md dark:hover:shadow-black/40 transition-all">
-                        <div className="flex items-center justify-between mb-5">
-                          <h3 className="font-black text-slate-800 dark:text-white text-base flex items-center gap-2">
-                            <Sparkles className="w-4 h-4 text-indigo-500 fill-current" /> Recommended
-                          </h3>
-                          <span className="text-[10px] font-bold uppercase tracking-widest text-slate-300 dark:text-slate-600">AI Curated</span>
-                        </div>
-                        <div className="space-y-3">
-                          {[
-                            {
-                              title: `${(subject1 as string).split('•')[0].trim()} ${educationLevel === EducationLevel.JUNIOR ? 'Recap' : 'Deep Dive'}`,
-                              type: educationLevel === EducationLevel.JUNIOR ? "Fun Learning" : "Revision",
-                              color: "bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400",
-                              icon: <Brain className="w-4 h-4" />,
-                              prompt: `Give me a concise ${educationLevel === EducationLevel.CAMPUS ? 'abstract' : '5-minute revision summary'} for ${subject1}.`
-                            },
-                            {
-                              title: `${(subject2 as string).split('•')[0].trim()} ${educationLevel === EducationLevel.JUNIOR ? 'Fun' : 'Practice'}`,
-                              type: "Practice",
-                              color: "bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400",
-                              icon: <BookOpen className="w-4 h-4" />,
-                              prompt: `Generate ${educationLevel === EducationLevel.JUNIOR ? '3 easy' : '5 practice'} questions for ${subject2}.`
-                            },
-                            {
-                              title: educationLevel === EducationLevel.CAMPUS ? "Colloquium Prep" : "Exams Mock",
-                              type: "Exams",
-                              color: "bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400",
-                              icon: <PenTool className="w-4 h-4" />,
-                              prompt: `Generate ${educationLevel === EducationLevel.CAMPUS ? 'complex discussion questions' :
-                                educationLevel === EducationLevel.JUNIOR ? 'KPSEA style exam questions' :
-                                  'KCSE style exam questions'
-                                } for ${subject3}.`
-                            }
-                          ].map((item, i) => (
-                            <div
-                              key={i}
-                              onClick={() => { setPromptText(item.prompt); }}
-                              className="flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer group/item border border-transparent hover:border-slate-100 dark:hover:border-slate-700"
-                            >
-                              <div className={`w-9 h-9 ${item.color} rounded-lg flex items-center justify-center shrink-0 group-hover/item:scale-110 transition-transform`}>
-                                {item.icon}
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <h4 className="font-bold text-slate-800 dark:text-slate-200 text-sm truncate">{item.title}</h4>
-                                <p className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider">{item.type}</p>
-                              </div>
-                              <div
-                                onClick={(e) => { e.stopPropagation(); askStudyBuddy(item.prompt); }}
-                                className="w-7 h-7 rounded-full border border-slate-100 dark:border-slate-800 flex items-center justify-center text-slate-300 dark:text-slate-600 group-hover/item:border-indigo-400 group-hover/item:text-indigo-500 transition-all shrink-0"
-                              >
-                                <ArrowRight className="w-3.5 h-3.5" />
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-
-                      <div className="bg-white rounded-2xl p-6 border border-slate-200/70 hover:shadow-md transition-all">
-                        <div className="flex justify-between items-center mb-5">
-                          <h3 className="font-black text-slate-800 dark:text-white text-base">Progress</h3>
-                          <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/40 px-2 py-1 rounded-md">{totalXP} XP</span>
-                        </div>
-                        <div className="bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 rounded-xl p-4 mb-4">
-                          <div className="flex justify-between items-center mb-2">
-                            <span className="font-black text-slate-800 dark:text-white text-sm">Level {levelInfo.level}</span>
-                            <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500">{totalXP}/{levelInfo.nextLevelXP} XP</span>
-                          </div>
-                          <div className="h-2.5 bg-slate-200/60 dark:bg-slate-700/60 rounded-full overflow-hidden">
-                            <div className="h-full bg-indigo-600 dark:bg-indigo-500 rounded-full" style={{ width: `${(totalXP / levelInfo.nextLevelXP) * 100}%` }} />
-                          </div>
-                        </div>
-                        <div className="space-y-3">
-                          {subjectPerformance.slice(0, 3).map((item, i) => (
-                            <div key={i}>
-                              <div className="flex justify-between text-xs font-bold text-slate-500 mb-1.5">
-                                <span>{item.subject}</span>
-                                <span className="text-slate-700">{item.score}%</span>
-                              </div>
-                              <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-                                <div className={`h-full rounded-full ${i === 0 ? 'bg-emerald-500' : i === 1 ? 'bg-indigo-500' : 'bg-purple-500'}`} style={{ width: `${item.score}%` }} />
-                              </div>
-                            </div>
-                          ))}
-                          {subjectPerformance.length === 0 && (
-                            <p className="text-center text-slate-400 text-sm italic py-2">Complete quizzes to track progress!</p>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* ROW 4: Quick Tools */}
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      <button onClick={() => setMode('HISTORY' as any)} className="bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 p-5 rounded-2xl border border-slate-200/70 dark:border-slate-800/80 flex flex-col items-center justify-center gap-2.5 hover:shadow-md dark:hover:shadow-black/40 hover:-translate-y-0.5 transition-all group">
-                        <div className="w-10 h-10 bg-emerald-50 dark:bg-emerald-900/30 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
-                          <Clock className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-                        </div>
-                        <span className="font-bold text-slate-700 dark:text-slate-300 text-xs">History</span>
-                      </button>
-                      <label className="bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 p-5 rounded-2xl border border-slate-200/70 dark:border-slate-800/80 flex flex-col items-center justify-center gap-2.5 hover:shadow-md dark:hover:shadow-black/40 hover:-translate-y-0.5 transition-all group cursor-pointer">
-                        <div className="w-10 h-10 bg-purple-50 dark:bg-purple-900/30 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
-                          <Upload className="w-5 h-5 text-purple-600 dark:text-purple-400" />
-                        </div>
-                        <span className="font-bold text-slate-700 dark:text-slate-300 text-xs">Upload</span>
-                        <input type="file" className="hidden" ref={fileInputRef} onChange={handleFileUpload} />
-                      </label>
-                      <button onClick={() => setMode('MARKETPLACE')} className="bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 p-5 rounded-2xl border border-slate-200/70 dark:border-slate-800/80 flex flex-col items-center justify-center gap-2.5 hover:shadow-md dark:hover:shadow-black/40 hover:-translate-y-0.5 transition-all group">
-                        <div className="w-10 h-10 bg-indigo-50 dark:bg-indigo-900/30 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
-                          <Library className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
-                        </div>
-                        <span className="font-bold text-slate-700 dark:text-slate-300 text-xs">Library</span>
-                      </button>
-                      <button onClick={() => setMode('MARKETPLACE')} className="bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 p-5 rounded-2xl border border-slate-200/70 dark:border-slate-800/80 flex flex-col items-center justify-center gap-2.5 hover:shadow-md dark:hover:shadow-black/40 hover:-translate-y-0.5 transition-all group">
-                        <div className="w-10 h-10 bg-amber-50 dark:bg-amber-900/30 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
-                          <BookOpen className="w-5 h-5 text-amber-600 dark:text-amber-400" />
-                        </div>
-                        <span className="font-bold text-slate-700 dark:text-slate-300 text-xs">Resources</span>
-                      </button>
-                    </div>
-                  </>
-                );
-              })()}
-            </motion.div>
-
-            {/* TUTORING MODAL TRIGGER */}
-            {/* The actual modal logic is shared */}
           </div>
-
         </div>
       );
     }
+
+
+
+
 
 
     // --- HISTORY VIEW ---
@@ -3547,32 +3428,38 @@ ${explanation.explanation}
     }
 
     if (mode === 'SCAN_EXPLAIN') {
+      const isHomework = sidebarTab === 'HOMEWORK';
+      const themeGradient = isHomework ? 'from-amber-400 via-orange-500 to-rose-500' : 'from-indigo-500 via-purple-500 to-pink-500';
+      const bgGlow = isHomework ? 'bg-amber-500/10' : 'bg-indigo-500/10';
+      const iconBg = isHomework ? 'bg-amber-50 dark:bg-amber-900/30 border-amber-100 dark:border-amber-800/50' : 'bg-indigo-50 dark:bg-indigo-900/30 border-indigo-100 dark:border-indigo-800/50';
+      const iconColor = isHomework ? 'text-amber-600 dark:text-amber-400' : 'text-indigo-600 dark:text-indigo-400';
+
       return (
         <div className="bg-slate-50 dark:bg-slate-950 min-h-screen flex flex-col items-center justify-center p-6 w-full animate-in fade-in duration-300">
           <div className="w-full max-w-2xl bg-white dark:bg-slate-900 rounded-[3rem] shadow-2xl border border-slate-100 dark:border-slate-800 p-8 md:p-12 relative overflow-hidden">
             {/* Background decorations */}
-            <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500"></div>
-            <div className="absolute -top-24 -right-24 w-48 h-48 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
+            <div className={`absolute top-0 left-0 w-full h-2 bg-gradient-to-r ${themeGradient}`}></div>
+            <div className={`absolute -top-24 -right-24 w-48 h-48 ${bgGlow} rounded-full blur-3xl pointer-events-none`}></div>
 
             <div className="flex flex-col items-center text-center relative z-10 mb-8">
-              <div className="w-20 h-20 bg-indigo-50 dark:bg-indigo-900/30 rounded-full flex items-center justify-center mb-6 shadow-inner border border-indigo-100 dark:border-indigo-800/50">
-                {sidebarTab === 'HOMEWORK' ? (
-                  <ClipboardList className="w-10 h-10 text-indigo-600 dark:text-indigo-400" />
+              <div className={`w-20 h-20 ${iconBg} rounded-full flex items-center justify-center mb-6 shadow-inner border`}>
+                {isHomework ? (
+                  <ClipboardList className={`w-10 h-10 ${iconColor}`} />
                 ) : (
-                  <Brain className="w-10 h-10 text-indigo-600 dark:text-indigo-400" />
+                  <Brain className={`w-10 h-10 ${iconColor}`} />
                 )}
               </div>
               <h2 className="text-3xl md:text-4xl font-black text-slate-800 dark:text-white mb-4 tracking-tight">
                 {educationLevel === EducationLevel.JUNIOR
-                  ? (sidebarTab === 'HOMEWORK' ? 'Task Buddy' : 'Helper Buddy')
+                  ? (isHomework ? 'Fun Tasks' : 'Helper Buddy')
                   : educationLevel === EducationLevel.CAMPUS
-                    ? (sidebarTab === 'HOMEWORK' ? 'Assignments' : 'AI Researcher')
-                    : (sidebarTab === 'HOMEWORK' ? 'Homework Assistant' : 'Smart Tutor')}
+                    ? (isHomework ? 'Assignments' : 'AI Researcher')
+                    : (isHomework ? 'Homework Assistant' : 'Smart Tutor')}
               </h2>
               <p className="text-slate-500 dark:text-slate-400 text-lg max-w-md mx-auto">
                 {imageData
                   ? (educationLevel === EducationLevel.JUNIOR ? "I see your picture! What's next?" : "Image attached! What would you like to know about it?")
-                  : sidebarTab === 'HOMEWORK'
+                  : isHomework
                     ? (educationLevel === EducationLevel.JUNIOR ? "Show me your task or tell me about it!" : "Upload your homework question or record audio to get structured guidance.")
                     : (educationLevel === EducationLevel.JUNIOR ? "Ask me anything, show me a picture, or talk to me!" : "Type a question, upload an image, or record an audio clip to get started.")}
               </p>

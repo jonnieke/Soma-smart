@@ -6,7 +6,7 @@ import {
     ScanLine, CheckCircle, Menu, X, CheckSquare, Play, BookOpen, LogOut,
     CreditCard, AlertCircle, FileText, Clock, Award, ArrowRight, School,
     Sparkles, Zap, Building2, TrendingUp, Quote, Globe, ShieldCheck, BarChart, Star,
-    Facebook, Twitter, Instagram, Linkedin, MapPin, Store, Mic, Send, Flame, Target, MessageCircle, Brain, CheckCheck
+    Facebook, Twitter, Instagram, Linkedin, MapPin, Store, Mic, Send, Flame, Target, MessageCircle, Brain, CheckCheck, Headphones
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { UserRole } from '../types';
@@ -453,10 +453,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                 </AnimatePresence>
             </motion.header>            {/* --- HERO SECTION --- */}
             <section className="relative overflow-hidden bg-white dark:bg-slate-950 pt-16 pb-20 md:pt-24 md:pb-32 transition-colors">
-                {/* Soft ambient background */}
+                {/* Rich ambient background */}
                 <div className="absolute inset-0 pointer-events-none overflow-hidden">
-                    <div className="absolute top-[-10%] left-[-5%] w-[500px] h-[500px] opacity-30 bg-blue-100 dark:bg-blue-900/20 rounded-full blur-[100px]" />
-                    <div className="absolute bottom-[-10%] right-[-5%] w-[400px] h-[400px] opacity-20 bg-emerald-100 dark:bg-emerald-900/20 rounded-full blur-[100px]" />
+                    <div className="absolute top-[-10%] left-[-5%] w-[600px] h-[600px] opacity-40 bg-blue-100 dark:bg-blue-900/20 rounded-full blur-[120px]" />
+                    <div className="absolute bottom-[-10%] right-[-5%] w-[500px] h-[500px] opacity-30 bg-indigo-100 dark:bg-indigo-900/20 rounded-full blur-[120px]" />
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] opacity-10 bg-emerald-200 dark:bg-emerald-900/10 rounded-full blur-[80px]" />
                 </div>
 
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
@@ -469,18 +470,52 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ duration: 0.6 }}
                             >
-                                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 text-xs font-bold mb-6 shadow-sm">
-                                    <Star className="w-4 h-4 text-emerald-500 fill-current" />
-                                    Trusted by 12,000+ Kenyan students
+                                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-200 dark:border-indigo-800 text-indigo-800 dark:text-indigo-300 text-xs font-bold mb-6 shadow-sm">
+                                    <Star className="w-4 h-4 text-amber-500 fill-current" />
+                                    Kenya's #1 Learner Experience Platform
                                 </div>
 
-                                <h1 className="text-4xl md:text-5xl lg:text-[3.5rem] font-bold text-slate-900 dark:text-white tracking-tight leading-[1.15] mb-6">
-                                    Stuck on a KCSE question? Get the answer <span className="text-blue-600 dark:text-blue-400">instantly.</span>
+                                <h1 className="text-4xl md:text-5xl lg:text-[3.5rem] font-extrabold text-slate-900 dark:text-white tracking-tight leading-[1.1] mb-4">
+                                    The smartest way to
+                                    <span className="block text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-indigo-600 to-emerald-500">
+                                        Study, Listen & Learn.
+                                    </span>
                                 </h1>
 
-                                <p className="text-lg text-slate-600 dark:text-slate-400 mb-8 font-medium">
-                                    Ask any question and get step-by-step answers immediately.
+                                <p className="text-lg text-slate-600 dark:text-slate-400 mb-6 font-medium leading-relaxed">
+                                    Get instant answers, step-by-step explanations, and learn through our <strong className="text-indigo-600 dark:text-indigo-400">AI Audio Tutor</strong> — any subject, any time.
                                 </p>
+
+                                {/* Listen & Learn Feature Pill */}
+                                <div className="inline-flex items-center gap-3 px-4 py-3 rounded-2xl bg-gradient-to-r from-indigo-600/10 to-purple-600/10 border border-indigo-200 dark:border-indigo-800/50 mb-8">
+                                    <div className="flex items-center gap-[3px] shrink-0">
+                                        {[1,2,3,4,3,2,1].map((h, i) => (
+                                            <motion.div
+                                                key={i}
+                                                animate={{ scaleY: [0.4, 1, 0.4] }}
+                                                transition={{ repeat: Infinity, duration: 1.2, delay: i * 0.1, ease: "easeInOut" }}
+                                                className="w-1 bg-indigo-500 rounded-full"
+                                                style={{ height: `${h * 6}px` }}
+                                            />
+                                        ))}
+                                    </div>
+                                    <span className="text-sm font-bold text-indigo-700 dark:text-indigo-300">New: Listen & Learn Audio Tutor is live!</span>
+                                    <button
+                                        onClick={() => {
+                                            if (isRegistered || role !== UserRole.NONE) {
+                                                setRole(UserRole.LEARNER);
+                                                navigate('/learner', { state: { targetTab: 'TALKBACK' } });
+                                            } else {
+                                                startGuestSession();
+                                                setRole(UserRole.LEARNER);
+                                                navigate('/learner', { state: { targetTab: 'TALKBACK' } });
+                                            }
+                                        }}
+                                        className="text-xs font-black text-indigo-600 dark:text-indigo-400 underline underline-offset-2 hover:text-indigo-800 transition-colors whitespace-nowrap"
+                                    >
+                                        Try it →
+                                    </button>
+                                </div>
 
                                 {/* Interactive Input Field */}
                                 <div className="relative max-w-xl mx-auto lg:mx-0 mb-8 z-30">
@@ -549,36 +584,48 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                     </AnimatePresence>
                                 </div>
 
-                                <div className="flex flex-col sm:flex-row items-center gap-4 mb-6 relative z-10">
+                                <div className="flex flex-col sm:flex-row items-center gap-4 mb-5 relative z-10">
                                     <button 
+                                        id="hero-start-cta"
                                         onClick={() => handleRoleSelect(UserRole.LEARNER)}
-                                        className="w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-emerald-500 to-blue-600 hover:from-emerald-400 hover:to-blue-500 text-white rounded-2xl font-bold text-lg shadow-xl shadow-blue-500/20 hover:shadow-2xl hover:shadow-blue-500/30 transition-all hover:-translate-y-0.5 whitespace-nowrap"
+                                        className="w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-500 hover:to-indigo-600 text-white rounded-2xl font-bold text-lg shadow-xl shadow-blue-500/25 hover:shadow-2xl hover:shadow-blue-500/35 transition-all hover:-translate-y-0.5 whitespace-nowrap"
                                     >
-                                        Try a Question FREE
+                                        Start Free — No Sign Up
                                     </button>
                                     <button 
-                                        onClick={() => handleRoleSelect(UserRole.LEARNER)}
-                                        className="w-full sm:w-auto px-8 py-4 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-800 rounded-2xl font-bold text-lg hover:bg-slate-50 dark:hover:bg-slate-800 shadow-sm transition-all flex items-center justify-center gap-2 whitespace-nowrap"
+                                        id="hero-listen-learn-cta"
+                                        onClick={() => {
+                                            if (isRegistered || role !== UserRole.NONE) {
+                                                setRole(UserRole.LEARNER);
+                                                navigate('/learner', { state: { targetTab: 'TALKBACK' } });
+                                            } else {
+                                                startGuestSession();
+                                                setRole(UserRole.LEARNER);
+                                                navigate('/learner', { state: { targetTab: 'TALKBACK' } });
+                                            }
+                                        }}
+                                        className="w-full sm:w-auto px-8 py-4 bg-white dark:bg-slate-900 border-2 border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 rounded-2xl font-bold text-lg hover:bg-indigo-50 dark:hover:bg-indigo-900/30 hover:border-indigo-400 hover:shadow-xl hover:shadow-indigo-200/40 transition-all flex items-center justify-center gap-2 whitespace-nowrap group"
                                     >
-                                        Start Solving Now <ArrowRight className="w-5 h-5" />
+                                        <Headphones className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                                        Listen & Learn
                                     </button>
                                 </div>
 
-                                <div className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-8">
-                                    KES 10/day after trial. Cancel anytime.
-                                </div>
+                                <p className="text-sm font-medium text-slate-400 dark:text-slate-500 mb-8">
+                                    Free to start. Only KES 10/day for unlimited access. Cancel anytime.
+                                </p>
 
                                 {/* Trust indicators */}
                                 <div className="grid grid-cols-2 gap-y-3 gap-x-6 text-sm font-medium text-slate-600 dark:text-slate-400 text-left">
                                     <div className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-emerald-500" /> Used by 12,000+ students</div>
-                                    <div className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-emerald-500" /> Covers KCSE & CBC</div>
+                                    <div className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-emerald-500" /> KCSE, CBC & KPSEA</div>
                                     <div className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-emerald-500" /> M-Pesa supported</div>
-                                    <div className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-emerald-500" /> Works on any smartphone</div>
+                                    <div className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-emerald-500" /> Audio Tutor included</div>
                                 </div>
                             </motion.div>
                         </div>
 
-                        {/* RIGHT: Hero Image with Floating Mock */}
+                        {/* RIGHT: Hero Image with Floating Cards */}
                         <motion.div
                             initial={{ opacity: 0, x: 40 }}
                             animate={{ opacity: 1, x: 0 }}
@@ -589,11 +636,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                 {/* Base Image */}
                                 <img
                                     src={learnerImg}
-                                    alt="Soma AI Student learning"
+                                    alt="Somo Smart student learning with AI"
                                     className="w-full h-auto object-contain drop-shadow-2xl rounded-3xl"
                                 />
 
-                                {/* Floating AI Card */}
+                                {/* Floating AI Step-by-Step Card */}
                                 <motion.div
                                     animate={{ y: [0, -10, 0] }}
                                     transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
@@ -604,6 +651,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                             <Sparkles className="w-3 h-3 text-blue-600" />
                                         </div>
                                         <span className="text-sm font-bold text-slate-800 dark:text-slate-200">Soma AI</span>
+                                        <span className="ml-auto text-[9px] font-black text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full uppercase tracking-wider">Live</span>
                                     </div>
                                     <div className="space-y-3">
                                         <p className="text-xs font-semibold text-slate-500">Factorize x² - 5x + 6</p>
@@ -613,8 +661,46 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                         </div>
                                     </div>
                                 </motion.div>
+
+                                {/* NEW: Floating Listen & Learn Audio Card */}
+                                <motion.div
+                                    animate={{ y: [0, 8, 0] }}
+                                    transition={{ repeat: Infinity, duration: 3.5, ease: "easeInOut", delay: 0.5 }}
+                                    onClick={() => {
+                                        if (isRegistered || role !== UserRole.NONE) {
+                                            setRole(UserRole.LEARNER);
+                                            navigate('/learner', { state: { targetTab: 'TALKBACK' } });
+                                        } else {
+                                            startGuestSession();
+                                            setRole(UserRole.LEARNER);
+                                            navigate('/learner', { state: { targetTab: 'TALKBACK' } });
+                                        }
+                                    }}
+                                    className="absolute top-[10%] -right-4 md:-right-10 bg-gradient-to-br from-indigo-600 to-purple-700 p-4 rounded-3xl shadow-2xl z-20 w-52 cursor-pointer hover:scale-105 transition-transform"
+                                >
+                                    <div className="flex items-center gap-2 mb-3">
+                                        <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
+                                            <Headphones className="w-4 h-4 text-white" />
+                                        </div>
+                                        <span className="text-xs font-black text-white">Listen & Learn</span>
+                                        <div className="ml-auto w-2 h-2 bg-emerald-400 rounded-full animate-pulse" />
+                                    </div>
+                                    {/* Audio wave bars */}
+                                    <div className="flex items-end gap-[3px] h-8 mb-2">
+                                        {[3,5,7,4,8,6,3,7,5,4,6,8,3].map((h, i) => (
+                                            <motion.div
+                                                key={i}
+                                                animate={{ scaleY: [0.3, 1, 0.5, 0.8, 0.3] }}
+                                                transition={{ repeat: Infinity, duration: 1.5, delay: i * 0.08, ease: "easeInOut" }}
+                                                className="flex-1 bg-white/60 rounded-full origin-bottom"
+                                                style={{ height: `${h * 3}px` }}
+                                            />
+                                        ))}
+                                    </div>
+                                    <p className="text-[10px] text-indigo-200 font-medium">AI Voice Tutor — any topic</p>
+                                </motion.div>
                                 
-                                {/* Addon Badge */}
+                                {/* Stats Badge */}
                                 <motion.div
                                     animate={{ y: [0, 10, 0] }}
                                     transition={{ repeat: Infinity, duration: 5, ease: "easeInOut", delay: 1 }}

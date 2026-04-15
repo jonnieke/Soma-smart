@@ -56,7 +56,6 @@ const getLevelSpecificNavItems = (level: EducationLevel): NavItem[] => {
                 { id: 'HOME', label: 'Home', icon: <Home className="w-5 h-5" /> },
                 { id: 'SMART_TUTOR', label: 'Helper Buddy', icon: <Sparkles className="w-5 h-5 text-amber-500" /> },
                 { id: 'TALKBACK', label: 'Talk & Play', icon: <Mic className="w-5 h-5 text-pink-500" /> },
-                { id: 'SUBJECTS', label: 'My Classes', icon: <BookOpen className="w-5 h-5" /> },
                 { id: 'HOMEWORK', label: 'Fun Tasks', icon: <ClipboardList className="w-5 h-5" /> },
                 { id: 'RESOURCES', label: 'Library', icon: <FolderOpen className="w-5 h-5" /> },
                 { id: 'PROGRESS', label: 'My Stars', icon: <Star className="w-5 h-5 text-amber-500" /> },
@@ -310,7 +309,7 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
             {/* Mobile Hamburger Button */}
             <button
                 onClick={onToggle}
-                className="lg:hidden fixed top-4 left-4 z-40 p-2.5 rounded-xl bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm shadow-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all"
+                className="lg:hidden fixed top-4 left-4 z-[60] p-2.5 rounded-xl bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm shadow-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all"
                 aria-label="Toggle menu"
             >
                 <Menu className="w-5 h-5 text-slate-700 dark:text-slate-300" />
@@ -324,7 +323,7 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         onClick={onToggle}
-                        className="lg:hidden fixed inset-0 z-40 bg-black/40 backdrop-blur-[2px]"
+                        className="lg:hidden fixed inset-0 z-[60] bg-black/40 backdrop-blur-[2px]"
                     />
                 )}
             </AnimatePresence>
@@ -337,7 +336,7 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
                         animate={{ x: 0 }}
                         exit={{ x: -280 }}
                         transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-                        className="lg:hidden fixed top-0 left-0 z-50 h-full w-[280px] bg-white dark:bg-slate-950 border-r border-slate-200 dark:border-slate-800 shadow-2xl"
+                        className="lg:hidden fixed top-0 left-0 z-[70] h-full w-[280px] bg-white dark:bg-slate-950 border-r border-slate-200 dark:border-slate-800 shadow-2xl"
                     >
                         {sidebarContent}
                     </motion.aside>
