@@ -14,6 +14,7 @@ import { useApp } from '../context/AppContext';
 
 // Import Assets
 import learnerImg from '../assets/images/learner.png';
+import heroCbeImg from '../assets/images/hero_learner_cbe.png';
 import teacherImg from '../assets/images/teacher.png';
 import parentImg from '../assets/images/parent.png';
 import logoImg from '../assets/images/main_logo.png';
@@ -451,7 +452,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                         </motion.div>
                     )}
                 </AnimatePresence>
-            </motion.header>            {/* --- HERO SECTION --- */}
+            </motion.header>
+            {/* --- HERO SECTION --- */}
             <section className="relative overflow-hidden bg-white dark:bg-slate-950 pt-16 pb-20 md:pt-24 md:pb-32 transition-colors">
                 {/* Rich ambient background */}
                 <div className="absolute inset-0 pointer-events-none overflow-hidden">
@@ -612,15 +614,15 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                 </div>
 
                                 <p className="text-sm font-medium text-slate-400 dark:text-slate-500 mb-8">
-                                    Free to start. Only KES 10/day for unlimited access. Cancel anytime.
+                                    Free to start. Only KES 20/day for unlimited access. Cancel anytime.
                                 </p>
 
                                 {/* Trust indicators */}
-                                <div className="grid grid-cols-2 gap-y-3 gap-x-6 text-sm font-medium text-slate-600 dark:text-slate-400 text-left">
-                                    <div className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-emerald-500" /> Used by 12,000+ students</div>
-                                    <div className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-emerald-500" /> KCSE, CBC & KPSEA</div>
-                                    <div className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-emerald-500" /> M-Pesa supported</div>
-                                    <div className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-emerald-500" /> Audio Tutor included</div>
+                                <div className="flex flex-wrap gap-x-6 gap-y-3 text-sm font-medium text-slate-600 dark:text-slate-400 text-left">
+                                    <div className="flex items-center gap-2 whitespace-nowrap"><CheckCircle className="w-4 h-4 text-emerald-500 shrink-0" /> Used by 12,000+ students</div>
+                                    <div className="flex items-center gap-2 whitespace-nowrap"><CheckCircle className="w-4 h-4 text-emerald-500 shrink-0" /> KCSE, CBC &amp; KPSEA</div>
+                                    <div className="flex items-center gap-2 whitespace-nowrap"><CheckCircle className="w-4 h-4 text-emerald-500 shrink-0" /> M-Pesa supported</div>
+                                    <div className="flex items-center gap-2 whitespace-nowrap"><CheckCircle className="w-4 h-4 text-emerald-500 shrink-0" /> Audio Tutor included</div>
                                 </div>
                             </motion.div>
                         </div>
@@ -635,70 +637,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                             <div className="relative max-w-md mx-auto">
                                 {/* Base Image */}
                                 <img
-                                    src={learnerImg}
-                                    alt="Somo Smart student learning with AI"
+                                    src={heroCbeImg}
+                                    alt="African student learning with AI technology — CBE-powered education"
                                     className="w-full h-auto object-contain drop-shadow-2xl rounded-3xl"
                                 />
 
-                                {/* Floating AI Step-by-Step Card */}
-                                <motion.div
-                                    animate={{ y: [0, -10, 0] }}
-                                    transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
-                                    className="absolute top-1/4 -left-6 md:-left-12 bg-white dark:bg-slate-900 p-4 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl backdrop-blur-md z-20 w-64 md:w-72"
-                                >
-                                    <div className="flex items-center gap-2 mb-3 pb-3 border-b border-slate-100 dark:border-slate-800">
-                                        <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center">
-                                            <Sparkles className="w-3 h-3 text-blue-600" />
-                                        </div>
-                                        <span className="text-sm font-bold text-slate-800 dark:text-slate-200">Soma AI</span>
-                                        <span className="ml-auto text-[9px] font-black text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full uppercase tracking-wider">Live</span>
-                                    </div>
-                                    <div className="space-y-3">
-                                        <p className="text-xs font-semibold text-slate-500">Factorize x² - 5x + 6</p>
-                                        <div className="bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 p-3 rounded-xl border border-emerald-100 dark:border-emerald-900/50">
-                                            <div className="font-bold mb-1">(x - 2)(x - 3)</div>
-                                            <div className="text-[10px] opacity-80">Step 1. Find numbers that multiply to 6 and add to -5...</div>
-                                        </div>
-                                    </div>
-                                </motion.div>
-
-                                {/* NEW: Floating Listen & Learn Audio Card */}
-                                <motion.div
-                                    animate={{ y: [0, 8, 0] }}
-                                    transition={{ repeat: Infinity, duration: 3.5, ease: "easeInOut", delay: 0.5 }}
-                                    onClick={() => {
-                                        if (isRegistered || role !== UserRole.NONE) {
-                                            setRole(UserRole.LEARNER);
-                                            navigate('/learner', { state: { targetTab: 'TALKBACK' } });
-                                        } else {
-                                            startGuestSession();
-                                            setRole(UserRole.LEARNER);
-                                            navigate('/learner', { state: { targetTab: 'TALKBACK' } });
-                                        }
-                                    }}
-                                    className="absolute top-[10%] -right-4 md:-right-10 bg-gradient-to-br from-indigo-600 to-purple-700 p-4 rounded-3xl shadow-2xl z-20 w-52 cursor-pointer hover:scale-105 transition-transform"
-                                >
-                                    <div className="flex items-center gap-2 mb-3">
-                                        <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
-                                            <Headphones className="w-4 h-4 text-white" />
-                                        </div>
-                                        <span className="text-xs font-black text-white">Listen & Learn</span>
-                                        <div className="ml-auto w-2 h-2 bg-emerald-400 rounded-full animate-pulse" />
-                                    </div>
-                                    {/* Audio wave bars */}
-                                    <div className="flex items-end gap-[3px] h-8 mb-2">
-                                        {[3,5,7,4,8,6,3,7,5,4,6,8,3].map((h, i) => (
-                                            <motion.div
-                                                key={i}
-                                                animate={{ scaleY: [0.3, 1, 0.5, 0.8, 0.3] }}
-                                                transition={{ repeat: Infinity, duration: 1.5, delay: i * 0.08, ease: "easeInOut" }}
-                                                className="flex-1 bg-white/60 rounded-full origin-bottom"
-                                                style={{ height: `${h * 3}px` }}
-                                            />
-                                        ))}
-                                    </div>
-                                    <p className="text-[10px] text-indigo-200 font-medium">AI Voice Tutor — any topic</p>
-                                </motion.div>
                                 
                                 {/* Stats Badge */}
                                 <motion.div
@@ -1466,22 +1409,18 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                 </button>
             </div>
 
-            {/* --- WHATSAPP FLOATING BUTTON --- */}
+            {/* --- WHATSAPP FLOATING BUTTON (icon-only) --- */}
             <a
                 href="https://wa.me/254722763760"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="fixed bottom-24 left-4 md:bottom-8 md:left-8 z-[60] flex items-center gap-3 bg-[#25D366] text-white p-3 md:px-5 md:py-3 rounded-full shadow-2xl hover:bg-[#20bd5a] hover:scale-105 active:scale-95 transition-all group border-4 border-white/50 backdrop-blur-sm"
+                className="fixed bottom-24 left-4 md:bottom-8 md:left-8 z-[60] flex items-center justify-center bg-[#25D366] text-white p-3.5 rounded-full shadow-2xl hover:bg-[#20bd5a] hover:scale-110 active:scale-95 transition-all border-4 border-white/50 backdrop-blur-sm"
                 title="Chat with us on WhatsApp"
+                aria-label="Chat with us on WhatsApp"
             >
-                {/* Fallback WhatsApp SVG icon */}
-                <svg viewBox="0 0 24 24" fill="currentColor" className="w-7 h-7 md:w-6 md:h-6 drop-shadow-md">
+                <svg viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6 drop-shadow-md">
                     <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 0 0-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z"/>
                 </svg>
-                <div className="hidden md:flex flex-col items-start ml-1">
-                    <span className="text-[10px] font-black uppercase tracking-widest text-[#dcf8c6]">You need answers?</span>
-                    <span className="text-sm font-bold leading-none mt-1">Chat....</span>
-                </div>
             </a>
         </div>
     );
