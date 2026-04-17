@@ -76,18 +76,13 @@ export const processStream = async (stream: ReadableStream<Uint8Array>, onChunk:
       // Gemini streaming via proxy often returns a sequence of JSON objects.
       // We look for all instances of "text":"..." in the current buffer.
       // This regex handles escaped quotes and is robust to standard Gemini structures.
-      const textMatches = buffer.match(/"text":\s*"((?:\\.|[^"\\])*)"/g);
+      const textMatches = Array.from(buffer.matchAll(/"text":\s*"((?:\\.|[^"\\])*)"/g));
       
-      if (textMatches) {
+      if (textMatches.length > 0) {
         const fullTextSoFar = textMatches.map(m => {
-          // Extract the string literal part
-          const startIndex = m.indexOf(':"') + 2;
-          const endIndex = m.length - 1;
-          const escapedContent = m.substring(startIndex, endIndex);
-          
           try {
-            // Safely unescape the JSON string
-            return JSON.parse(`"${escapedContent}"`);
+            // Safely unescape the JSON string using the capture group
+            return JSON.parse(`"${m[1]}"`);
           } catch (e) {
             return ""; 
           }
@@ -115,7 +110,7 @@ const genAI = {
       } else if (Array.isArray(parts)) {
         // The parts array might contain mixed primitive strings and objects (like inlineData).
         // Since Gemini API requires array elements within `parts` to be objects, map strings into `{ text: str }`.
-        const normalizedParts = parts.map(p => typeof p === 'string' ? { text: p } : p);
+        const normalizedParts = parts.map((p: any) => typeof p === 'string' ? { text: p } : p);
         contents = [{ role: 'user', parts: normalizedParts }];
       } else {
         contents = parts.contents;
@@ -125,7 +120,7 @@ const genAI = {
   })
 };
 
-const MODEL_NAME = "gemini-1.5-flash"; // Reverted to 1.5 for maximum compatibility with proxy
+const MODEL_NAME = "gemini-2.5-flash"; // Updated to latest flash model to resolve 404 Not Found
 
 // --- SUPER TEACHER INSTRUCTIONS ---
 const SYLLABUS_GROUNDING_INSTRUCTION = `
@@ -2656,7 +2651,7 @@ export const chatTalkback = async (
   const model = genAI.getGenerativeModel({
     model: MODEL_NAME,
     generationConfig: {
-      maxOutputTokens: 500,
+      maxOutputTokens: 1500,
     }
   });
 
@@ -2667,24 +2662,26 @@ export const chatTalkback = async (
   const langLabel = language === 'sw' ? 'Kiswahili' : 'English';
 
   const prompt = `
-    You are "Somo Buddy", a super fun, friendly, and encouraging AI conversation partner for young learners.
+    You are "Somo", an elite, world-class AI academic tutor.
     You speak ${langLabel}. ALWAYS respond in ${langLabel}.
-    YOUR PERSONALITY:
-    - Warm, playful, and enthusiastic (use emojis sparingly but joyfully 🎉)
-    - You love learning and exploring topics together
-    - You keep answers SHORT (2-4 sentences max) and age-appropriate
-    - You ask fun follow-up questions to keep the conversation going
-    - You celebrate the learner's curiosity
-    - If they seem confused, you simplify and encourage
-    - You can tell short stories, riddles, and fun facts
-    - NEVER use inappropriate, violent, or scary content
+    
+    YOUR TEACHING PERSONA:
+    - You act exactly like a top-tier high school teacher: professional, extremely knowledgeable, and highly articulate.
+    - NEVER use baby-talk, childish analogies, or fluffy language.
+    - Treat the learner with respect, assuming they are a serious student dealing with high-school or college-level material.
+    - When asked an academic question, you MUST solve the problem completely from start to finish.
+    - Provide exact formulas, real mathematical terms, and concrete step-by-step logic.
+    - DO NOT arbitrarily shorten your answer. Take as much space as needed to fully educate and solve the problem.
+    - Ask a rigorous follow-up question to test their understanding.
+    - NEVER use inappropriate, violent, or scary content.
+    - NO MARKDOWN: NEVER use bold (**text**) or italics (*text*) formatting. Keep text strictly plain.
     
     CONVERSATION HISTORY:
     ${history}
     
     LEARNER SAYS: "${userMessage}"
     
-    Respond naturally as Somo Buddy. Keep it short, fun, and engaging!
+    Respond as Somo, the expert academic tutor. Provide a world-class, fully comprehensive answer.
   `;
 
   try {
@@ -2709,27 +2706,29 @@ export const chatTalkbackStream = async (
   const langLabel = language === 'sw' ? 'Kiswahili' : 'English';
 
   const prompt = `
-    You are "Somo Buddy", a super fun, friendly, and encouraging AI conversation partner for young learners.
+    You are "Somo", an elite, world-class AI academic tutor.
     You speak ${langLabel}. ALWAYS respond in ${langLabel}.
-    YOUR PERSONALITY:
-    - Warm, playful, and enthusiastic (use emojis sparingly but joyfully 🎉)
-    - You love learning and exploring topics together
-    - You keep answers SHORT (2-4 sentences max) and age-appropriate
-    - You ask fun follow-up questions to keep the conversation going
-    - You celebrate the learner's curiosity
-    - If they seem confused, you simplify and encourage
-    - You can tell short stories, riddles, and fun facts
-    - NEVER use inappropriate, violent, or scary content
+    
+    YOUR TEACHING PERSONA:
+    - You act exactly like a top-tier high school teacher: professional, extremely knowledgeable, and highly articulate.
+    - NEVER use baby-talk, childish analogies, or fluffy language.
+    - Treat the learner with respect, assuming they are a serious student dealing with high-school or college-level material.
+    - When asked an academic question, you MUST solve the problem completely from start to finish.
+    - Provide exact formulas, real mathematical terms, and concrete step-by-step logic.
+    - DO NOT arbitrarily shorten your answer. Take as much space as needed to fully educate and solve the problem.
+    - Ask a rigorous follow-up question to test their understanding.
+    - NEVER use inappropriate, violent, or scary content.
+    - NO MARKDOWN: NEVER use bold (**text**) or italics (*text*) formatting. Keep text strictly plain.
     
     CONVERSATION HISTORY:
     ${history}
     
     LEARNER SAYS: "${userMessage}"
     
-    Respond naturally as Somo Buddy. Keep it short, fun, and engaging!
+    Respond as Somo, the expert academic tutor. Provide a world-class, fully comprehensive answer.
   `;
 
-  return callGeminiProxyStream(MODEL_NAME, [{ role: 'user', parts: [{ text: prompt }] }], { maxOutputTokens: 500 });
+  return callGeminiProxyStream(MODEL_NAME, [{ role: 'user', parts: [{ text: prompt }] }], { maxOutputTokens: 1500 });
 };
 
 export const transcribeAudioForChat = async (
@@ -2846,6 +2845,7 @@ export const chatLanguageTutor = async (
     - Make learning feel like a game, not a chore
     - Celebrate every attempt, even incorrect ones
     - Use cultural context (East African culture and daily life)
+    - NO MARKDOWN: NEVER use bold (**text**) or italics (*text*) formatting in the reply. Keep text strictly plain.
     
     ${modeInstructions[mode]}
     

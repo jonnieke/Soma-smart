@@ -4683,7 +4683,7 @@ ${explanation.explanation}
                     </div>
                     <h3 className="text-2xl font-bold font-display text-slate-800 dark:text-white mb-2">View Full Solution</h3>
                     <p className="text-slate-600 dark:text-slate-400 max-w-sm mb-6 font-medium text-base">
-                      Sign up free to unlock the complete step-by-step logic. You get <span className="bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400 px-2 py-0.5 rounded-md font-bold mx-1">3 free answers</span> before KES 10/day premium access!
+                      Sign up free to unlock the complete step-by-step logic. You get <span className="bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400 px-2 py-0.5 rounded-md font-bold mx-1">3 free answers</span> before KES 20/day premium access!
                     </p>
                     <div className="flex gap-3 w-full sm:w-auto">
                         <button

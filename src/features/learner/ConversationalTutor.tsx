@@ -121,19 +121,18 @@ const ChatBubble: React.FC<{
                     : 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 rounded-tl-sm shadow-md border border-slate-100 dark:border-slate-700/50'
                 }`}
                 >
-                    <p className="whitespace-pre-wrap font-medium">{message.text}</p>
-
+                    <p className="whitespace-pre-wrap font-medium">{message.text.replace(/\*\*/g, '')}</p>
                     {!isUser && (
                         <button
                             onClick={() => onSpeak?.(message.text)}
-                            className={`mt-2 flex items-center gap-1.5 text-[10px] font-bold tracking-wide transition-all ${isSpeaking
-                                ? 'text-indigo-500 dark:text-indigo-400'
-                                : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
+                            className={`mt-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold tracking-wide transition-all ${isSpeaking
+                                ? 'bg-indigo-50 text-indigo-600 dark:bg-indigo-900/40 dark:text-indigo-400 ring-1 ring-indigo-200 dark:ring-indigo-800'
+                                : 'bg-slate-50 text-slate-600 hover:bg-slate-100 hover:text-slate-800 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700'
                             }`}
                         >
                             {isSpeaking
-                                ? <><VolumeX className="w-3 h-3" /> Stop</>
-                                : <><Volume2 className="w-3 h-3" /> Listen</>
+                                ? <><VolumeX className="w-4 h-4" /> Stop</>
+                                : <><Volume2 className="w-4 h-4" /> Listen</>
                             }
                         </button>
                     )}
