@@ -145,7 +145,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, initial
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.95 }}
                         onClick={(e) => e.stopPropagation()}
-                        className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden"
+                        className="bg-white text-slate-900 rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden"
                     >
                         <div className="p-6">
                             <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
@@ -213,7 +213,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, initial
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.95 }}
                         onClick={(e) => e.stopPropagation()}
-                        className="bg-white rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden border-4 border-blue-100"
+                        className="bg-white text-slate-900 rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden border-4 border-blue-100"
                     >
                         <div className="bg-blue-600 p-6 text-center relative overflow-hidden">
                             <div className="absolute top-0 left-0 w-full h-full opacity-10 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]"></div>
@@ -283,7 +283,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, initial
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.95 }}
                         onClick={(e) => e.stopPropagation()}
-                        className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden"
+                        className="bg-white text-slate-900 rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden"
                     >
                         <div className="p-6">
                             <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
@@ -377,7 +377,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, initial
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.95 }}
                     onClick={(e) => e.stopPropagation()}
-                    className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden flex flex-col max-h-[90vh]"
+                    className="bg-white text-slate-900 rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden flex flex-col max-h-[90vh]"
                 >
                     <div className="flex border-b shrink-0">
                         <button

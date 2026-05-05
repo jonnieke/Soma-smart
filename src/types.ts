@@ -68,6 +68,8 @@ export interface QuizQuestion {
   options?: string[];
   correctAnswer: string | number; // For MCQ: option text/index. For Short: key phrase.
   explanation: string;
+  cognitiveLevel?: string;
+  markingScheme?: string[];
 }
 
 export interface QuizData {
@@ -264,7 +266,9 @@ export interface ExamQuestion {
   topic: string;
   subStrand?: string;
   competency?: string;
+  cognitiveLevel?: string;
   marks?: number;
+  markingScheme?: string[];
 }
 
 export interface ExamAnalysis {

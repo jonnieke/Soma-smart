@@ -8,13 +8,12 @@
  * 4. Proposes prompt updates for human approval
  */
 
-import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
+import { SchemaType } from "@google/generative-ai";
+import { callGeminiProxy } from "./geminiService";
 import { TeachingStrategy, PedagogicalAnalytics, TopicAnalytics } from "../types";
 import { supabase } from '../lib/supabase';
 
-const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-const genAI = new GoogleGenerativeAI(apiKey || 'DUMMY_KEY_FOR_DEV');
-const MODEL_NAME = "gemini-2.0-flash";
+const MODEL_NAME = "gemini-2.5-flash";
 
 // --- ANALYTICS ENGINE ---
 
@@ -156,30 +155,27 @@ export const generateTeachingStrategies = async (
     analytics: PedagogicalAnalytics,
     currentStrategies: TeachingStrategy[] = []
 ): Promise<TeachingStrategy[]> => {
-    const model = genAI.getGenerativeModel({
-        model: MODEL_NAME,
-        generationConfig: {
-            responseMimeType: "application/json",
-            maxOutputTokens: 4096,
-            responseSchema: {
-                type: SchemaType.ARRAY,
-                items: {
-                    type: SchemaType.OBJECT,
-                    properties: {
-                        insight: { type: SchemaType.STRING, description: "Pattern observed in the data" },
-                        rootCause: { type: SchemaType.STRING, description: "Why current teaching may be ineffective" },
-                        strategy: { type: SchemaType.STRING, description: "Specific prompt instruction to add" },
-                        expectedImpact: { type: SchemaType.STRING, description: "Predicted improvement" },
-                        targetGrade: { type: SchemaType.STRING },
-                        targetTopic: { type: SchemaType.STRING },
-                        targetSubject: { type: SchemaType.STRING },
-                        priority: { type: SchemaType.STRING, description: "HIGH, MEDIUM, or LOW" }
-                    },
-                    required: ["insight", "rootCause", "strategy", "expectedImpact", "priority"]
-                }
+    const generationConfig = {
+        responseMimeType: "application/json",
+        maxOutputTokens: 4096,
+        responseSchema: {
+            type: SchemaType.ARRAY,
+            items: {
+                type: SchemaType.OBJECT,
+                properties: {
+                    insight: { type: SchemaType.STRING, description: "Pattern observed in the data" },
+                    rootCause: { type: SchemaType.STRING, description: "Why current teaching may be ineffective" },
+                    strategy: { type: SchemaType.STRING, description: "Specific prompt instruction to add" },
+                    expectedImpact: { type: SchemaType.STRING, description: "Predicted improvement" },
+                    targetGrade: { type: SchemaType.STRING },
+                    targetTopic: { type: SchemaType.STRING },
+                    targetSubject: { type: SchemaType.STRING },
+                    priority: { type: SchemaType.STRING, description: "HIGH, MEDIUM, or LOW" }
+                },
+                required: ["insight", "rootCause", "strategy", "expectedImpact", "priority"]
             }
         }
-    });
+    };
 
     // Build analytics summary for the AI
     const bottomTopicsSummary = analytics.bottomTopics.map(t =>
@@ -228,7 +224,8 @@ export const generateTeachingStrategies = async (
   `;
 
     try {
-        const result = await model.generateContent(prompt);
+        const contents = [{ role: 'user', parts: [{ text: prompt }] }];
+        const result = await callGeminiProxy(MODEL_NAME, contents, generationConfig);
         const text = result.response.text();
         if (!text) throw new Error("No response from Admin Agent");
 

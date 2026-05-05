@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Hero Image Preview — Pick A, B or C</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #0f172a; font-family: system-ui, sans-serif; color: white; min-height: 100vh; }
+    h1 { text-align: center; padding: 32px; font-size: 1.8rem; color: #94a3b8; letter-spacing: 0.05em; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 24px; padding: 0 32px 40px; max-width: 1400px; margin: 0 auto; }
+    .card { background: #1e293b; border-radius: 20px; overflow: hidden; border: 2px solid #334155; transition: border-color 0.2s; }
+    .card:hover { border-color: #3b82f6; }
+    .card img { width: 100%; display: block; object-fit: contain; max-height: 480px; background: #0ea5e920; }
+    .label { padding: 20px 24px; }
+    .label h2 { font-size: 1.1rem; font-weight: 800; margin-bottom: 6px; }
+    .label p { color: #94a3b8; font-size: 0.85rem; line-height: 1.5; }
+    .badge { display: inline-block; color: white; font-size: 0.7rem; font-weight: 800; padding: 4px 12px; border-radius: 99px; margin-bottom: 10px; letter-spacing: 0.1em; text-transform: uppercase; }
+    .new-badge { background: #22c55e; font-size: 0.65rem; padding: 2px 8px; border-radius: 99px; margin-left: 8px; vertical-align: middle; }
+  </style>
+</head>
+<body>
+  <h1>Hero Image Options — Soma Smart CBE</h1>
+  <div class="grid">
+    <div class="card">
+      <img src="/hero_option_a.png" alt="Option A" />
+      <div class="label">
+        <span class="badge" style="background:#3b82f6">Option A — Current</span>
+        <h2>Girl + Tablet + AI Overlay</h2>
+        <p>Soft blue & white. Young learner with tablet. Holographic AI elements. Clean and approachable.</p>
+      </div>
+    </div>
+    <div class="card">
+      <img src="/hero_option_b.png" alt="Option B" />
+      <div class="label">
+        <span class="badge" style="background:#6366f1">Option B</span>
+        <h2>Boy + Headphones + Icons</h2>
+        <p>Bold royal blue gradient. Tech-forward with floating subject icons — maths, science, AI nodes.</p>
+      </div>
+    </div>
+    <div class="card" style="border-color: #22c55e;">
+      <img src="/hero_option_c.png" alt="Option C" />
+      <div class="label">
+        <span class="badge" style="background:#22c55e">Option C — NEW ✨</span>
+        <h2>Teacher + Student + AI Glow</h2>
+        <p>Same warm style as A but now a smiling teacher guides the learner. Collaborative, CBE-perfect.</p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

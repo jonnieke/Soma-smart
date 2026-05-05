@@ -35,7 +35,7 @@ export const TeacherLanding: React.FC<TeacherLandingProps> = ({ onLogin, onRegis
         {
             icon: <BookOpen className="w-6 h-6 text-white" />,
             title: "CBC Ready Content",
-            desc: "Thousands of pre-approved resources aligned with the latest curriculum.",
+            desc: "Curriculum-aware resources and tools for planning, marking, and classroom follow-up.",
             bg: "bg-orange-500"
         }
     ];
@@ -78,7 +78,7 @@ export const TeacherLanding: React.FC<TeacherLandingProps> = ({ onLogin, onRegis
                         >
                             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-500/30 border border-blue-400/30 backdrop-blur-sm text-blue-50 text-sm font-bold mb-8">
                                 <Star className="w-4 h-4 text-yellow-300 fill-yellow-300" />
-                                The #1 App for Kenyan Teachers
+                                Built for Kenyan Teachers
                             </div>
 
                             <h1 className="text-5xl lg:text-7xl font-extrabold text-white mb-6 leading-[1.1] tracking-tight">
@@ -87,7 +87,7 @@ export const TeacherLanding: React.FC<TeacherLandingProps> = ({ onLogin, onRegis
                             </h1>
 
                             <p className="text-xl text-blue-100 mb-10 max-w-xl mx-auto lg:mx-0 leading-relaxed font-medium">
-                                Join 10,000+ teachers upgrading their classroom with AI-powered lesson plans, automated marking, and instant learner reports.
+                                Create lesson plans, mark assignments, and review learner progress with AI-powered tools made for busy school days.
                             </p>
 
                             <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">

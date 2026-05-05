@@ -74,7 +74,7 @@ export const PricingPage: React.FC<Props> = ({ onSelectPlan, onClose, currentTie
                             The Future of <br /> Learning is Somo.
                         </h1>
                         <p className="text-xl text-indigo-100/60 font-medium max-w-xl mx-auto leading-relaxed">
-                            Join thousands of students and teachers across Kenya. Simple, transparent pricing for every stage of your journey.
+                            Simple, transparent pricing for learners, teachers, and schools at each stage of the journey.
                         </p>
                     </motion.div>
                 </div>
@@ -167,10 +167,10 @@ export const PricingPage: React.FC<Props> = ({ onSelectPlan, onClose, currentTie
 
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                         {[
-                            { icon: ShieldCheck, label: 'CBC Aligned', desc: 'Official Kenyan Curriculum', color: 'text-emerald-500' },
+                            { icon: ShieldCheck, label: 'CBC Focused', desc: 'Built around Kenyan classroom needs', color: 'text-emerald-500' },
                             { icon: Smartphone, label: 'Secure Payments', desc: 'SSL Encrypted Checkout', color: 'text-indigo-500' },
                             { icon: Zap, label: 'AI Powered', desc: 'Personalized Tutoring', color: 'text-amber-500' },
-                            { icon: Star, label: '5-Star Support', desc: 'Always here to help', color: 'text-rose-500' },
+                            { icon: Star, label: 'Human Support', desc: 'Help when learners or schools need it', color: 'text-rose-500' },
                         ].map((item, i) => (
                             <div key={i} className="bg-white/50 backdrop-blur-sm p-6 rounded-[2rem] text-center border border-white shadow-sm hover:shadow-md transition-all">
                                 <item.icon className={`w-10 h-10 ${item.color} mx-auto mb-3`} />

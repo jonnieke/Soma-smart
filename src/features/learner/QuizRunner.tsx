@@ -70,7 +70,7 @@ export const QuizRunner: React.FC<{
                     exit={{ opacity: 0, x: -20 }}
                     className="space-y-6"
                 >
-                    <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-200">
+                    <div className="bg-white p-6 rounded-3xl shadow-sm border-2 border-slate-300">
                         <h3 className="text-xl font-bold text-slate-800 leading-snug">{question.question}</h3>
                     </div>
 

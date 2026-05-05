@@ -112,29 +112,49 @@ export const SchemesView: React.FC<SchemesViewProps> = ({ onBack, subject, grade
                                     <Button variant="outline" className="p-3"><Share2 className="w-5 h-5" /></Button>
                                 </div>
                             </div>
-                            <div className="p-8 overflow-x-auto">
-                                <table className="w-full text-left text-sm">
-                                    <thead>
-                                        <tr className="border-b border-slate-100 italic text-slate-400 font-black uppercase tracking-wider text-[10px]">
-                                            <th className="pb-4 pr-4 w-16">Week</th>
-                                            <th className="pb-4 pr-4">Strand/Topic</th>
-                                            <th className="pb-4">Suggested outcomes</th>
+                            <div className="p-0 overflow-x-auto">
+                                <table className="w-full text-left text-sm min-w-[1200px]">
+                                    <thead className="bg-slate-100">
+                                        <tr className="border-b border-slate-200 text-slate-500 font-black uppercase tracking-wider text-[10px]">
+                                            <th className="p-4 w-16">Wk</th>
+                                            <th className="p-4 w-16">Lsn</th>
+                                            <th className="p-4 w-48">Strand / Sub-strand</th>
+                                            <th className="p-4 w-64">Specific Learning Outcomes</th>
+                                            <th className="p-4 w-48">Key Inquiry Questions</th>
+                                            <th className="p-4 w-48">Core Competences & Values</th>
+                                            <th className="p-4 w-64">Learning Experiences</th>
+                                            <th className="p-4 w-48">Learning Resources</th>
+                                            <th className="p-4 w-48">Assessment Methods</th>
                                         </tr>
                                     </thead>
-                                    <tbody className="divide-y divide-slate-50">
-                                        {generatedScheme.weeks.map((w: any) => (
-                                            <tr key={w.week} className="hover:bg-slate-50/50 transition-colors">
-                                                <td className="py-6 font-black text-indigo-600 text-lg">#{w.week}</td>
-                                                <td className="py-6 pr-6">
+                                    <tbody className="divide-y divide-slate-100">
+                                        {generatedScheme.weeks.map((w: any, idx: number) => (
+                                            <tr key={`${w.week}-${w.lesson || idx}`} className="hover:bg-slate-50/80 transition-colors align-top">
+                                                <td className="p-4 font-black text-indigo-600 bg-indigo-50/30 text-center">{w.week}</td>
+                                                <td className="p-4 font-bold text-slate-500 text-center">{w.lesson || '-'}</td>
+                                                <td className="p-4">
                                                     <p className="font-black text-slate-800">{w.strand}</p>
                                                     <p className="text-xs text-slate-500 font-medium mt-1">{w.subStrand}</p>
                                                 </td>
-                                                <td className="py-6">
-                                                    <p className="text-slate-600 leading-relaxed italic">"{w.outcomes}"</p>
-                                                    <div className="flex items-center gap-2 mt-4">
-                                                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Resources:</span>
-                                                        <span className="text-[10px] font-bold text-indigo-500 bg-indigo-50 px-2 py-0.5 rounded">{w.resources}</span>
-                                                    </div>
+                                                <td className="p-4 text-slate-600 leading-relaxed text-xs">
+                                                    {w.specificLearningOutcomes || w.outcomes}
+                                                </td>
+                                                <td className="p-4 text-slate-600 italic text-xs">
+                                                    {w.keyInquiryQuestions || '-'}
+                                                </td>
+                                                <td className="p-4 text-slate-600 text-xs">
+                                                    {w.coreCompetences || '-'}
+                                                </td>
+                                                <td className="p-4 text-slate-600 leading-relaxed text-xs">
+                                                    {w.learningExperiences || '-'}
+                                                </td>
+                                                <td className="p-4">
+                                                    <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded inline-block">
+                                                        {w.learningResources || w.resources}
+                                                    </span>
+                                                </td>
+                                                <td className="p-4 text-slate-600 text-xs font-medium">
+                                                    {w.assessmentMethods || '-'}
                                                 </td>
                                             </tr>
                                         ))}

@@ -10,12 +10,12 @@ const BASE_URL = `https://api.elevenlabs.io/v1/text-to-speech/${VOICE_ID}`;
 // Adam (deep, natural multilingual) for Kiswahili — excellent Swahili pronunciation on eleven_multilingual_v2
 export const TALKBACK_VOICES = {
     en: "21m00Tcm4TlvDq8ikWAM", // Rachel — warm, friendly, clear English
-    sw: "pNInz6obpgDQGcFmaJgB", // Adam — deep, natural African accent, excellent Kiswahili
+    sw: "nt9hK6jZNn8o3C1F4w9u", // Brian (Deep, resonant, comforting)
 } as const;
 
 export const LANGUAGE_TUTOR_VOICES = {
     en: "ErXwobaYiN019PkySvjV", // Antoni — encouraging male teacher voice
-    sw: "pNInz6obpgDQGcFmaJgB", // Adam — best Kiswahili pronunciation
+    sw: "nt9hK6jZNn8o3C1F4w9u", // Brian (Deep, resonant, comforting)
 } as const;
 
 // Keep track of current audio to allow stopping
@@ -98,7 +98,7 @@ export const speak = async (text: string): Promise<void> => {
         if (googleVoice) utterance.voice = googleVoice;
 
         utterance.onend = () => resolve();
-        utterance.onerror = (e) => reject(e);
+        utterance.onerror = (e) => { console.warn('Browser TTS fallback interrupted or failed', e); resolve(); };
 
         window.speechSynthesis.speak(utterance);
     });
@@ -188,7 +188,7 @@ export const playPodcast = async (
             }
 
             utterance.onend = () => resolve();
-            utterance.onerror = (e) => reject(e);
+            utterance.onerror = (e) => { console.warn('Browser TTS fallback interrupted or failed', e); resolve(); };
 
             window.speechSynthesis.speak(utterance);
         });
@@ -264,18 +264,21 @@ export const speakConversational = async (text: string, voiceId: string): Promis
 
     if (API_KEY && API_KEY.length > 10) {
         try {
+            const isSwahiliVoice = voiceId === 'nt9hK6jZNn8o3C1F4w9u' || voiceId === 'Xb7hK6jZNn8o3C1F4w9u';
+            const payload: any = {
+                text,
+                model_id: isSwahiliVoice ? "eleven_multilingual_v2" : "eleven_flash_v2_5",
+                voice_settings: {
+                    stability: isSwahiliVoice ? 0.45 : 0.5,
+                    similarity_boost: 0.8,
+                    style: 0.1,
+                    use_speaker_boost: true,
+                },
+            };
+
             const response = await axios.post(
                 `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`,
-                {
-                    text,
-                    model_id: "eleven_flash_v2_5",
-                    voice_settings: {
-                        stability: 0.5,
-                        similarity_boost: 0.8,
-                        style: 0.1,
-                        use_speaker_boost: true,
-                    },
-                },
+                payload,
                 {
                     headers: {
                         'xi-api-key': API_KEY,
@@ -314,10 +317,10 @@ export const speakConversational = async (text: string, voiceId: string): Promis
             return;
         }
         const utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = voiceId.includes('pNInz') ? 'sw' : 'en-US';
+        utterance.lang = (voiceId === 'nt9hK6jZNn8o3C1F4w9u' || voiceId === 'Xb7hK6jZNn8o3C1F4w9u') ? 'sw' : 'en-US';
         utterance.rate = 1.0;
         utterance.onend = () => resolve();
-        utterance.onerror = (e) => reject(e);
+        utterance.onerror = (e) => { console.warn('Browser TTS fallback interrupted or failed', e); resolve(); };
         window.speechSynthesis.speak(utterance);
     });
 };
@@ -333,7 +336,7 @@ const processQueue = async (voiceId: string) => {
         while (speechQueue.length > 0) {
             const nextText = speechQueue.shift();
             if (nextText) {
-                await speakConversational(nextText, voiceId);
+                try { await speakConversational(nextText, voiceId); } catch (e) { console.error('Speech queue error:', e); }
             }
         }
     } finally {

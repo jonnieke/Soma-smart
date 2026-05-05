@@ -3,11 +3,124 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { encode as encodeBase64 } from "https://deno.land/std@0.168.0/encoding/base64.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
     'Access-Control-Allow-Methods': 'POST, GET, OPTIONS, PUT, DELETE',
+};
+
+const FREE_AI_DAILY_LIMIT = Number(Deno.env.get('FREE_AI_DAILY_LIMIT') || '3');
+const GUEST_AI_DAILY_LIMIT = Number(Deno.env.get('GUEST_AI_DAILY_LIMIT') || '3');
+
+const getClientIp = (req: Request) => {
+    return (
+        req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+        req.headers.get('cf-connecting-ip') ||
+        req.headers.get('x-real-ip') ||
+        'unknown'
+    );
+};
+
+const isActivePro = (profile: any) => {
+    const tier = String(profile?.subscription_tier || profile?.subscription_status || 'FREE').toUpperCase();
+    if (!tier || tier === 'FREE' || tier === 'TRIAL') return false;
+
+    const expiry = profile?.subscription_expiry || profile?.expiry;
+    if (!expiry) return true;
+
+    return new Date(expiry).getTime() > Date.now();
+};
+
+const usageKindForProfile = (profile: any) => {
+    return profile?.role === 'TEACHER' ? 'teacher' : 'learner';
+};
+
+const firstRpcRow = (data: any) => {
+    if (Array.isArray(data)) return data[0];
+    return data;
+};
+
+const enforceUsageLimit = async (req: Request) => {
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
+    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+
+    if (!supabaseUrl || !serviceRoleKey) {
+        throw new Error('Supabase service credentials are not configured');
+    }
+
+    const supabase = createClient(supabaseUrl, serviceRoleKey);
+    const authHeader = req.headers.get('Authorization') || '';
+    const token = authHeader.replace(/^Bearer\s+/i, '');
+
+    if (token && token !== 'undefined' && token !== 'null') {
+        const { data: userData } = await supabase.auth.getUser(token);
+        if (userData.user) {
+            const { data: profile, error: profileError } = await supabase
+                .from('profiles')
+                .select('id, role, subscription_tier, subscription_status, subscription_expiry, expiry')
+                .eq('id', userData.user.id)
+                .single();
+
+            if (profileError || !profile) {
+                throw new Response(JSON.stringify({ error: 'Profile not found' }), {
+                    status: 403,
+                    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+                });
+            }
+
+            if (isActivePro(profile)) return;
+
+            const { data: usageResult, error: usageError } = await supabase.rpc('increment_profile_ai_usage', {
+                p_profile_id: userData.user.id,
+                p_usage_kind: usageKindForProfile(profile),
+                p_limit: FREE_AI_DAILY_LIMIT
+            });
+
+            if (usageError) {
+                console.error('Profile usage RPC failed:', usageError);
+                throw new Error('Could not verify daily AI usage limit');
+            }
+
+            const usage = firstRpcRow(usageResult);
+            if (!usage?.allowed) {
+                throw new Response(JSON.stringify({
+                    error: 'Daily free AI limit reached',
+                    limit: FREE_AI_DAILY_LIMIT,
+                    usageCount: usage?.usage_count ?? FREE_AI_DAILY_LIMIT
+                }), {
+                    status: 429,
+                    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+                });
+            }
+
+            return;
+        }
+    }
+
+    const identifier = `ip:${getClientIp(req)}`;
+    const { data: guestUsageResult, error: guestUsageError } = await supabase.rpc('increment_guest_ai_usage', {
+        p_identifier: identifier,
+        p_limit: GUEST_AI_DAILY_LIMIT
+    });
+
+    if (guestUsageError) {
+        console.error('Guest usage RPC failed:', guestUsageError);
+        throw new Error('Could not verify daily guest AI usage limit');
+    }
+
+    const guestUsage = firstRpcRow(guestUsageResult);
+    if (!guestUsage?.allowed) {
+        throw new Response(JSON.stringify({
+            error: 'Daily guest AI limit reached',
+            limit: GUEST_AI_DAILY_LIMIT,
+            usageCount: guestUsage?.usage_count ?? GUEST_AI_DAILY_LIMIT
+        }), {
+            status: 429,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+    }
 };
 
 serve(async (req) => {
@@ -31,6 +144,15 @@ serve(async (req) => {
                 JSON.stringify({ error: 'Missing required fields: model, contents' }),
                 { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
             );
+        }
+
+        try {
+            await enforceUsageLimit(req);
+        } catch (limitError) {
+            if (limitError instanceof Response) {
+                return limitError;
+            }
+            throw limitError;
         }
 
         // Gemini expects contents to be an array of objects with { role: "user|model", parts: [...] }

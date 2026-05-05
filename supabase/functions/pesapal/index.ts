@@ -58,18 +58,43 @@ serve(async (req) => {
         }
 
         // Helper to update transaction status
-        const updateTransactionStatus = async (orderTrackingId: string) => {
+        const updateTransactionStatus = async (orderTrackingId?: string, merchantReference?: string) => {
+            let resolvedTrackingId = orderTrackingId
+
+            if (!resolvedTrackingId && merchantReference) {
+                const { data: existingTx } = await supabase
+                    .from('transactions')
+                    .select('order_tracking_id')
+                    .eq('reference_code', merchantReference)
+                    .maybeSingle()
+
+                resolvedTrackingId = existingTx?.order_tracking_id
+            }
+
+            if (!resolvedTrackingId) {
+                throw new Error('Missing OrderTrackingId for Pesapal status check')
+            }
+
             const token = await getAuthToken()
-            const statusRes = await fetch(`${PESAPAL_BASE_URL}/api/Transactions/GetTransactionStatus?orderTrackingId=${orderTrackingId}`, {
+            const statusRes = await fetch(`${PESAPAL_BASE_URL}/api/Transactions/GetTransactionStatus?orderTrackingId=${resolvedTrackingId}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             })
             const statusData = await statusRes.json()
+            const statusDescription = String(statusData.payment_status_description || '').toLowerCase()
+            const resolvedReference = statusData.merchant_reference || merchantReference
 
-            if (statusData.payment_status_description === 'Completed') {
-                const { merchant_reference } = statusData
+            if (!resolvedReference) {
+                return statusData
+            }
+
+            if (statusDescription === 'completed') {
+                const merchant_reference = resolvedReference
 
                 // 1. Update Transaction
-                await supabase.from('transactions').update({ status: 'SUCCESS' }).eq('reference_code', merchant_reference)
+                await supabase
+                    .from('transactions')
+                    .update({ status: 'SUCCESS', order_tracking_id: resolvedTrackingId })
+                    .eq('reference_code', merchant_reference)
 
                 // 2. Update Profile (Subscription)
                 const { data: tx } = await supabase.from('transactions').select('user_id, amount').eq('reference_code', merchant_reference).single()
@@ -108,6 +133,11 @@ serve(async (req) => {
                         subscription_expiry: expiryDate.toISOString()
                     }).eq('id', tx.user_id)
                 }
+            } else if (['failed', 'invalid', 'cancelled', 'canceled'].includes(statusDescription)) {
+                await supabase
+                    .from('transactions')
+                    .update({ status: 'FAILED', order_tracking_id: resolvedTrackingId })
+                    .eq('reference_code', resolvedReference)
             }
             return statusData
         }
@@ -219,6 +249,13 @@ serve(async (req) => {
                 }), { status: 400, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } })
             }
 
+            if (orderData.order_tracking_id) {
+                await supabase
+                    .from('transactions')
+                    .update({ order_tracking_id: orderData.order_tracking_id })
+                    .eq('reference_code', reference)
+            }
+
             return new Response(JSON.stringify(orderData), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } })
         }
 
@@ -241,7 +278,7 @@ serve(async (req) => {
             console.log(`Processing IPN for OrderTrackingId: ${trackingId}`)
 
             if (trackingId) {
-                await updateTransactionStatus(trackingId)
+                await updateTransactionStatus(trackingId, merchantRef)
 
                 return new Response(JSON.stringify({
                     "orderNotificationType": "IPN",
@@ -255,8 +292,8 @@ serve(async (req) => {
 
         // 5. MANUAL CHECK STATUS
         if (path.endsWith('check-status')) {
-            const { OrderTrackingId } = await req.json()
-            const statusData = await updateTransactionStatus(OrderTrackingId)
+            const { OrderTrackingId, merchantReference } = await req.json()
+            const statusData = await updateTransactionStatus(OrderTrackingId, merchantReference)
             return new Response(JSON.stringify(statusData), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } })
         }
 

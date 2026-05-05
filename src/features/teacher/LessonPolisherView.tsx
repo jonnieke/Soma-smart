@@ -8,7 +8,8 @@ import {
     AlertTriangle,
     ArrowUpRight,
     Brain,
-    Bot
+    Bot,
+    Copy
 } from 'lucide-react';
 import { Button } from '../../components/Shared';
 import { polishLessonPlan } from '../../services/geminiService';
@@ -171,9 +172,34 @@ export const LessonPolisherView: React.FC<LessonPolisherViewProps> = ({ onBack, 
                                 </div>
                             </div>
 
-                            <Button className="mt-12 w-full bg-emerald-600 hover:bg-emerald-700 text-white py-5 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-emerald-100">
-                                Apply All Suggestions & Download Plan
+                            <Button 
+                                onClick={() => {
+                                    navigator.clipboard.writeText(analysisResult.polishedContent);
+                                    alert("Lesson plan copied to clipboard!");
+                                }}
+                                className="mt-12 w-full bg-emerald-600 hover:bg-emerald-700 text-white py-5 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-emerald-100 flex items-center justify-center gap-2"
+                            >
+                                <Copy className="w-4 h-4" /> Copy KICD 5-E Lesson Plan
                             </Button>
+
+                            {/* Render Polished Content */}
+                            {analysisResult.polishedContent && (
+                                <div className="mt-12 pt-12 border-t-2 border-slate-100">
+                                    <h3 className="text-xl font-black text-slate-800 mb-6 flex items-center gap-2">
+                                        <Sparkles className="w-6 h-6 text-emerald-500" />
+                                        Fully Polished Lesson Plan
+                                    </h3>
+                                    <div className="bg-slate-50 p-8 rounded-3xl border-2 border-slate-100 prose prose-slate prose-sm max-w-none">
+                                        {analysisResult.polishedContent.split('\n').map((line: string, i: number) => {
+                                            if (line.startsWith('# ')) return <h1 key={i} className="text-2xl font-black mb-4">{line.replace('# ', '')}</h1>;
+                                            if (line.startsWith('## ')) return <h2 key={i} className="text-xl font-bold mt-6 mb-3">{line.replace('## ', '')}</h2>;
+                                            if (line.startsWith('### ')) return <h3 key={i} className="text-lg font-bold mt-4 mb-2">{line.replace('### ', '')}</h3>;
+                                            if (line.trim().startsWith('- ') || line.trim().startsWith('* ')) return <li key={i} className="ml-4 mb-1">{line.replace(/^[-*]\s/, '')}</li>;
+                                            return <p key={i} className="mb-3" dangerouslySetInnerHTML={{ __html: line.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }} />;
+                                        })}
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
 

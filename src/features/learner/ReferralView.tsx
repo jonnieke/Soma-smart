@@ -72,7 +72,7 @@ export const ReferralView: React.FC = () => {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.1 }}
-                    className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-8 shadow-sm"
+                    className="bg-white dark:bg-slate-900 border-2 border-slate-300 dark:border-slate-800 rounded-3xl p-8 shadow-sm"
                 >
                     <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-6 flex items-center gap-2">
                         <Share2 className="w-6 h-6 text-indigo-500" /> Share the wealth
@@ -98,7 +98,7 @@ export const ReferralView: React.FC = () => {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.2 }}
-                    className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-8 shadow-sm flex flex-col justify-between"
+                    className="bg-white dark:bg-slate-900 border-2 border-slate-300 dark:border-slate-800 rounded-3xl p-8 shadow-sm flex flex-col justify-between"
                 >
                     <div>
                         <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2 flex items-center gap-2">
@@ -117,7 +117,7 @@ export const ReferralView: React.FC = () => {
                         <p className="text-xs font-bold text-emerald-600 dark:text-emerald-400 mt-2 text-right">0 / 5 to VIP Status</p>
                     </div>
                     
-                    <div className="mt-6 p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 flex items-center gap-3">
+                    <div className="mt-6 p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50 border-2 border-slate-300 dark:border-slate-800 flex items-center gap-3">
                         <div className="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-slate-400">
                             <Gift className="w-5 h-5" />
                         </div>

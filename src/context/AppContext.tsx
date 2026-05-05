@@ -2,7 +2,6 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { LearnerActivity, UserRole, TeacherProfile, TeacherActivity, SchoolProfile, SchoolStats, SchoolTeacher, SchoolMaterial, TeacherWallet, TutoringRequest, MaterialListing, SubscriptionPlan, SubscriptionTier, ChatMessage, SpacedRepetitionItem, TeachingStrategy, PedagogicalAnalytics, EducationLevel } from '../types';
 import { processQuizResult, getDueTopics, getWeakTopics, loadSRFromLocal, loadMasteryFromLocal, getPersonalizedChallenge } from '../services/spacedRepetitionService';
 import { loadStrategiesFromLocal, approveStrategy as approveStrategyFn, rejectStrategy as rejectStrategyFn, addStrategies, getActiveStrategies, getPendingStrategies } from '../services/strategyService';
-import { fetchPedagogicalAnalytics, generateTeachingStrategies } from '../services/adminAgentService';
 
 // Update interface
 interface AppContextType {
@@ -109,7 +108,7 @@ interface AppContextType {
   fetchSchoolMaterials: () => Promise<void>;
   updateSchoolProfile: (updates: { name?: string, email?: string }) => Promise<{ success: boolean; message?: string }>;
   // Language
-  language: 'EN' | 'FR';
+  language: 'EN' | 'SW';
   toggleLanguage: () => void;
   startGuestSession: () => void;
   // Resource Portal
@@ -169,19 +168,27 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     loadTeacherHistoryDB();
   }, [role]);
 
-  // Duplicate functions removed. Using async versions defined below.
 
   const clearHistory = () => {
     setLearnerHistory([]);
     offlineService.clearLearnerHistory();
   };
 
+
+
   const [studentCode, setStudentCode] = useState<string>("");
   const [usageCount, setUsageCount] = useState<number>(() => {
+    // For NON-registered users (guests), use the persistent guest key — NOT the daily key.
+    // The daily key resets at midnight and would let users bypass the 3-session limit each day.
+    // The guest key is LIFETIME (within the browser) and is only cleared on registration/login.
+    const guestUsage = localStorage.getItem('somo_guest_usage_general');
+    if (guestUsage !== null) {
+      return parseInt(guestUsage);
+    }
+    // Fallback: read the daily key if guest key doesn't exist yet
     const saved = localStorage.getItem('somo_daily_usage');
     const lastDate = localStorage.getItem('somo_daily_date');
     const today = new Date().toLocaleDateString();
-
     if (lastDate !== today) {
       localStorage.setItem('somo_daily_date', today);
       localStorage.setItem('somo_daily_usage', '0');
@@ -197,8 +204,18 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     return (localStorage.getItem('soma_education_level') as EducationLevel) || EducationLevel.SENIOR;
   });
 
-  // Teacher State
-  const [teacherUsageCount, setTeacherUsageCount] = useState<number>(0);
+  // Teacher State — guest count persisted daily (registered count comes from Supabase on login)
+  const [teacherUsageCount, setTeacherUsageCount] = useState<number>(() => {
+    const saved = localStorage.getItem('soma_teacher_usage');
+    const lastDate = localStorage.getItem('soma_teacher_date');
+    const today = new Date().toLocaleDateString();
+    if (lastDate !== today) {
+      localStorage.setItem('soma_teacher_date', today);
+      localStorage.setItem('soma_teacher_usage', '0');
+      return 0;
+    }
+    return saved ? parseInt(saved) : 0;
+  });
   const [teacherDarasaUsage, setTeacherDarasaUsage] = useState<number>(0);
   const [teacherProfile, setTeacherProfile] = useState<TeacherProfile | null>(null);
   const [teacherHistory, setTeacherHistory] = useState<TeacherActivity[]>(offlineService.getTeacherHistory());
@@ -216,8 +233,18 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const isOnline = useOnlineStatus();
 
-  // Revision State
-  const [revisionUsageCount, setRevisionUsageCount] = useState<number>(0);
+  // Revision State — persisted daily (same pattern as somo_daily_usage)
+  const [revisionUsageCount, setRevisionUsageCount] = useState<number>(() => {
+    const saved = localStorage.getItem('soma_revision_usage');
+    const lastDate = localStorage.getItem('soma_revision_date');
+    const today = new Date().toLocaleDateString();
+    if (lastDate !== today) {
+      localStorage.setItem('soma_revision_date', today);
+      localStorage.setItem('soma_revision_usage', '0');
+      return 0;
+    }
+    return saved ? parseInt(saved) : 0;
+  });
 
   // Super Teacher Phase 2: Adaptive Tutoring State
   const [masteryGraph, setMasteryGraph] = useState<Record<string, number>>(loadMasteryFromLocal);
@@ -250,8 +277,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   });
   const [userId, setUserId] = useState<string | null>(null);
 
-  const [language, setLanguage] = useState<'EN' | 'FR'>(() => {
-    return (localStorage.getItem('soma_language') as 'EN' | 'FR') || 'EN';
+  const [language, setLanguage] = useState<'EN' | 'SW'>(() => {
+    return (localStorage.getItem('soma_language') as 'EN' | 'SW') || 'EN';
   });
 
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
@@ -259,6 +286,33 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     if (saved) return saved;
     return 'light';
   });
+
+  type ServerUsageCounts = {
+    usage_learner?: number;
+    usage_revision?: number;
+    usage_download?: number;
+    usage_teacher?: number;
+  };
+
+  const applyServerUsageCounts = (counts?: ServerUsageCounts) => {
+    if (!counts) return;
+    if (typeof counts.usage_learner === 'number') setUsageCount(counts.usage_learner);
+    if (typeof counts.usage_revision === 'number') setRevisionUsageCount(counts.usage_revision);
+    if (typeof counts.usage_download === 'number') setDownloadUsageCount(counts.usage_download);
+    if (typeof counts.usage_teacher === 'number') setTeacherUsageCount(counts.usage_teacher);
+  };
+
+  const incrementRegisteredUsage = async (type: 'learner' | 'revision' | 'download' | 'teacher') => {
+    const { data, error } = await supabase.functions.invoke('usage-limits/increment', {
+      body: { type }
+    });
+
+    if (error) {
+      throw error;
+    }
+
+    applyServerUsageCounts(data?.counts);
+  };
 
   useEffect(() => {
     const root = window.document.documentElement;
@@ -399,6 +453,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   const incrementDownloadUsage = () => {
+    if (userId && isRegistered && role !== UserRole.GUEST) {
+      setDownloadUsageCount(prev => prev + 1);
+      incrementRegisteredUsage('download').catch(error => {
+        console.error('Failed to sync download usage:', error);
+      });
+      return;
+    }
+
     setDownloadUsageCount(prev => {
       const newVal = prev + 1;
       localStorage.setItem('soma_download_usage', newVal.toString());
@@ -409,7 +471,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const toggleLanguage = () => {
     setLanguage(prev => {
-      const newLang = prev === 'EN' ? 'FR' : 'EN';
+      const newLang = prev === 'EN' ? 'SW' : 'EN';
       localStorage.setItem('soma_language', newLang);
       return newLang;
     });
@@ -557,6 +619,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
           if (profile.role === 'LEARNER' || profile.role === 'REVISION') {
             const level = getEducationLevelFromGrade(profile.grade || '');
+            const usageIsCurrent = profile.usage_date === new Date().toISOString().slice(0, 10);
             setStudentProfile({
               id: profile.id,
               name: profile.full_name,
@@ -571,7 +634,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             setRole(profile.role === 'REVISION' ? UserRole.REVISION : UserRole.LEARNER);
             setEducationLevelState(level);
             localStorage.setItem('soma_education_level', level);
+            setUsageCount(usageIsCurrent ? (profile.usage_learner || 0) : 0);
+            setRevisionUsageCount(usageIsCurrent ? (profile.usage_revision || 0) : 0);
+            setDownloadUsageCount(usageIsCurrent ? (profile.usage_download || 0) : 0);
           } else if (profile.role === 'TEACHER') {
+            const usageIsCurrent = profile.usage_date === new Date().toISOString().slice(0, 10);
             setRole(UserRole.TEACHER);
             setTeacherProfile({
               id: profile.id,
@@ -583,7 +650,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
               sessionId: profile.session_id,
               isAvailable: profile.is_available
             });
-            setTeacherUsageCount(profile.usage_teacher || 0);
+            setTeacherUsageCount(usageIsCurrent ? (profile.usage_teacher || 0) : 0);
             setTeacherDarasaUsage(profile.usage_teacher_darasa || 0);
             setIsAvailableForTutoring(!!profile.is_available);
           } else if (profile.role === 'SCHOOL') {
@@ -1306,8 +1373,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const incrementTeacherUsage = async () => {
     const newCount = teacherUsageCount + 1;
     setTeacherUsageCount(newCount);
-    if (userId) {
-      await supabase.from('profiles').update({ usage_teacher: newCount }).eq('id', userId);
+    if (userId && isRegistered && role !== UserRole.GUEST) {
+      // Registered AI usage is enforced by gemini-proxy to avoid double-counting.
+      return;
+    } else {
+      // Guest teacher: persist to localStorage so refresh can't bypass limit
+      const today = new Date().toLocaleDateString();
+      localStorage.setItem('soma_teacher_usage', newCount.toString());
+      localStorage.setItem('soma_teacher_date', today);
     }
   };
 
@@ -1410,15 +1483,22 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   const incrementUsage = () => {
+    if (userId && isRegistered && role !== UserRole.GUEST) {
+      // Registered users: server-side usage tracked by gemini-proxy.
+      // Increment local counter just for display purposes.
+      setUsageCount(prev => prev + 1);
+      return;
+    }
+
+    // Non-registered / Guest: persist to the permanent guest key.
+    // This key is NEVER daily-reset — it accumulates until the user registers.
     setUsageCount(prev => {
       const newCount = prev + 1;
+      localStorage.setItem('somo_guest_usage_general', newCount.toString());
+      // Also write to daily key for any legacy reads
       const today = new Date().toLocaleDateString();
       localStorage.setItem('somo_daily_usage', newCount.toString());
       localStorage.setItem('somo_daily_date', today);
-      // Legacy Guest Sync (Optional)
-      if (role === UserRole.GUEST) {
-        localStorage.setItem('somo_guest_usage_general', newCount.toString());
-      }
       return newCount;
     });
   };
@@ -1426,13 +1506,23 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   // incrementStudyUsage removed
 
   const incrementRevisionUsage = () => {
-    if (role === UserRole.GUEST) {
-      const newCount = revisionUsageCount + 1;
-      setRevisionUsageCount(newCount);
-      localStorage.setItem('soma_guest_usage_revision', newCount.toString());
-    } else {
+    if (userId && isRegistered && role !== UserRole.GUEST) {
       setRevisionUsageCount(prev => prev + 1);
+      // Registered AI usage is enforced by gemini-proxy to avoid double-counting.
+      return;
     }
+
+    setRevisionUsageCount(prev => {
+      const newCount = prev + 1;
+      const today = new Date().toLocaleDateString();
+      localStorage.setItem('soma_revision_usage', newCount.toString());
+      localStorage.setItem('soma_revision_date', today);
+      // Legacy guest key kept for backward compat
+      if (role === UserRole.GUEST) {
+        localStorage.setItem('soma_guest_usage_revision', newCount.toString());
+      }
+      return newCount;
+    });
   };
 
   // --- Super Teacher Phase 2: Adaptive Tutoring Handlers ---
@@ -1478,6 +1568,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const runAdminAgent = async () => {
     setIsAdminAgentRunning(true);
     try {
+      const { fetchPedagogicalAnalytics, generateTeachingStrategies } = await import('../services/adminAgentService');
+
       // 1. Fetch analytics
       const analytics = await fetchPedagogicalAnalytics();
       setPedagogicalAnalytics(analytics);
@@ -1833,11 +1925,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       if (!userId) return;
 
       try {
-        const { data, error } = await supabase
-          .from('activities')
-          .select('*')
-          .eq('student_id', userId)
-          .order('created_at', { ascending: false });
+        const { data, error } = await supabase.rpc('get_recent_activities', {
+          p_student_id: userId,
+          p_limit: 200
+        });
 
         if (error) {
           // If table doesn't exist, we just ignore it for now (graceful degradation)
@@ -1877,11 +1968,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       if (!session?.user || role !== UserRole.TEACHER) return;
 
       try {
-        const { data, error } = await supabase
-          .from('activities')
-          .select('*')
-          .eq('student_id', session.user.id)
-          .order('created_at', { ascending: false });
+        const { data, error } = await supabase.rpc('get_recent_activities', {
+          p_student_id: session.user.id,
+          p_limit: 200
+        });
 
         if (error) {
           console.warn("Could not fetch teacher history:", error);
@@ -2373,7 +2463,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         category: listing.category,
         file_url: listing.fileUrl,
         preview_url: listing.previewUrl,
-        rating: 5.0,
+        rating: 0,
         download_count: 0
       });
 

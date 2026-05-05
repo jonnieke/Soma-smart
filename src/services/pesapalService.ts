@@ -58,11 +58,16 @@ export const pesapalService = {
     /**
      * Checks the status of a specific order
      */
-    async checkTransactionStatus(orderTrackingId: string) {
+    async checkTransactionStatus(params: string | { orderTrackingId?: string | null; merchantReference?: string | null }) {
+        const body = typeof params === 'string'
+            ? { OrderTrackingId: params }
+            : {
+                OrderTrackingId: params.orderTrackingId || undefined,
+                merchantReference: params.merchantReference || undefined
+            };
+
         const { data, error } = await supabase.functions.invoke('pesapal/check-status', {
-            body: {
-                OrderTrackingId: orderTrackingId
-            }
+            body
         });
 
         if (error) throw error;

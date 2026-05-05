@@ -7,9 +7,9 @@
   <meta name="theme-color" content="#4f46e5" />
   <link rel="manifest" href="/manifest.json" />
   <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png" />
-  <title>Somo Smart | Kenya's Leading AI-Powered Learning Platform</title>
+  <title>Somo Smart | AI-Powered Learning for Kenyan Students and Teachers</title>
   <meta name="description"
-    content="Somo Smart is Kenya's premier Smartstudy assistant for CBC and KCSE students. Scan textbooks, get simple Smartexplanations, and practice with smart quizzes. Tailored for Kenyan learners, teachers, and parents." />
+    content="Somo Smart is an AI study assistant for CBC and KCSE students. Scan textbooks, get step-by-step explanations, and practice with smart quizzes. Tailored for Kenyan learners, teachers, and parents." />
   <meta name="keywords"
     content="Somo Smart, SmartEducation Kenya, CBC Kenya, KCSE Revision, Kenyan Education AI, Smart Study Assistant, Past Papers Kenya, Education Technology East Africa, Homework Helper, JSS Revision, Junior Secondary, CBC Grade 7, CBC Grade 8, CBC Grade 9, Kenya Exams, Form 4 Revision" />
   <meta name="author" content="Somo Smart" />
@@ -61,7 +61,7 @@
       "name": "Somo Smart",
       "url": "https://somaai.co.ke",
       "logo": "https://somaai.co.ke/logo.png",
-      "description": "Kenya's leading Smart-powered learning platform for CBC and KCSE students.",
+      "description": "AI-powered learning support for CBC and KCSE students in Kenya.",
       "address": {
         "@type": "PostalAddress",
         "addressLocality": "Nairobi",
@@ -125,7 +125,7 @@
           "name": "What is Somo Smart?",
           "acceptedAnswer": {
             "@type": "Answer",
-            "text": "Somo Smart is Kenya's leading Smart-powered learning platform for CBC and KCSE students. It provides instant Smartexplanations, smart quizzes, and spaced repetition revision tailored to the Kenyan curriculum."
+            "text": "Somo Smart is an AI-powered learning support platform for CBC and KCSE students in Kenya. It provides instant explanations, smart quizzes, and spaced repetition revision tailored to the Kenyan curriculum."
           }
         },
         {
@@ -162,7 +162,7 @@
       "name": "Somo Smart",
       "url": "https://somaai.co.ke",
       "logo": "https://somaai.co.ke/logo.png",
-      "description": "Kenya's premier Smart-powered learning platform for CBC and KCSE students.",
+      "description": "AI-powered learning support for CBC and KCSE students in Kenya.",
       "address": {
         "@type": "PostalAddress",
         "addressLocality": "Nairobi",
@@ -208,9 +208,22 @@
   <div id="root"></div>
   <script type="module" src="/src/index.tsx"></script>
   <script>
-    // Register Service Worker for offline support
+    // Register Service Worker for offline support in production only.
+    // In local Vite development it can cache a stale app shell and hide real dev-server failures.
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
+        const isLocalDev = ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname);
+
+        if (isLocalDev) {
+          navigator.serviceWorker.getRegistrations()
+            .then((registrations) => Promise.all(registrations.map((reg) => reg.unregister())))
+            .then(() => caches?.keys?.())
+            .then((keys) => keys ? Promise.all(keys.map((key) => caches.delete(key))) : undefined)
+            .then(() => console.log('[PWA] Service Worker disabled for local development'))
+            .catch((err) => console.warn('[PWA] Local cleanup failed:', err));
+          return;
+        }
+
         navigator.serviceWorker.register('/sw.js')
           .then((reg) => console.log('[PWA] Service Worker registered:', reg.scope))
           .catch((err) => console.warn('[PWA] SW registration failed:', err));

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { Suspense, useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     Upload, Mic, FileText, Share2, StopCircle, Download, BookOpen, Crown, Brain, Sparkles, X, Lightbulb, CheckCircle, Play, Pause, Trash2, ArrowRight, Library, Filter, Calendar, Home, LogOut, MonitorPlay, CreditCard, ScanLine, Plus,
@@ -13,27 +13,42 @@ import { LogoutModal } from '../../components/LogoutModal';
 import { RegistrationModal } from '../../components/RegistrationModal';
 import { TeacherLanding } from '../../components/TeacherLanding';
 import { useApp } from '../../context/AppContext';
-import { convertNotes, processVoiceNote, generateTeacherQuiz, generateAdvancedTeacherQuiz, fileToGenerativePart, processDarasaRecording } from '../../services/geminiService';
 import { ViewState, TeacherNote, QuizData, TeacherActivity, SubscriptionPlan, ChatMessage } from '../../types';
 import { PdfPageSelector } from '../../components/PdfPageSelector';
 import { PaymentFlow } from '../subscription/PaymentFlow';
 import { translations } from '../../data/translations';
 import { TeacherRequestModal } from '../../components/TeacherRequestModal';
 import { TutoringRequest } from '../../types';
-import { DarasaMode } from './DarasaMode';
-import { MyClassroom } from './MyClassroom';
-import { CreationHub } from './CreationHub';
-import { MarketplaceManager } from './MarketplaceManager';
-import { MarkingManager } from './MarkingManager';
-import { TeacherReports } from './TeacherReports';
-import { TeacherDashboardOverview } from './TeacherDashboardOverview';
-import { SchemesView } from './SchemesView';
-import { LessonPolisherView } from './LessonPolisherView';
-import { DigitalBlackboard } from './DigitalBlackboard';
-import { HomeworkCreator } from './HomeworkCreator';
 
 import { useNavigate, useLocation } from 'react-router-dom';
 import logoImg from '../../assets/images/main_logo.png';
+
+type TeacherGeminiService = typeof import('../../services/geminiService');
+
+const loadTeacherGeminiService = () => import('../../services/geminiService');
+const DarasaMode = React.lazy(() => import('./DarasaMode').then(module => ({ default: module.DarasaMode })));
+const MyClassroom = React.lazy(() => import('./MyClassroom').then(module => ({ default: module.MyClassroom })));
+const CreationHub = React.lazy(() => import('./CreationHub').then(module => ({ default: module.CreationHub })));
+const MarketplaceManager = React.lazy(() => import('./MarketplaceManager').then(module => ({ default: module.MarketplaceManager })));
+const MarkingManager = React.lazy(() => import('./MarkingManager').then(module => ({ default: module.MarkingManager })));
+const TeacherReports = React.lazy(() => import('./TeacherReports').then(module => ({ default: module.TeacherReports })));
+const TeacherDashboardOverview = React.lazy(() => import('./TeacherDashboardOverview').then(module => ({ default: module.TeacherDashboardOverview })));
+const SchemesView = React.lazy(() => import('./SchemesView').then(module => ({ default: module.SchemesView })));
+const LessonPolisherView = React.lazy(() => import('./LessonPolisherView').then(module => ({ default: module.LessonPolisherView })));
+const DigitalBlackboard = React.lazy(() => import('./DigitalBlackboard').then(module => ({ default: module.DigitalBlackboard })));
+const HomeworkCreator = React.lazy(() => import('./HomeworkCreator').then(module => ({ default: module.HomeworkCreator })));
+
+const TeacherToolFallback = () => (
+    <div className="min-h-[320px] rounded-[2rem] border-2 border-slate-100 bg-white flex flex-col items-center justify-center text-slate-400">
+        <Loader2 className="w-6 h-6 animate-spin mb-3" />
+        <p className="text-xs font-black uppercase tracking-widest">Loading tool</p>
+    </div>
+);
+
+const processDarasaAudioFile: TeacherGeminiService['processDarasaRecording'] = async (...args) => {
+    const { processDarasaRecording } = await loadTeacherGeminiService();
+    return processDarasaRecording(...args);
+};
 
 interface TeacherProps {
     onNavigate: (view: ViewState) => void;
@@ -165,6 +180,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
 
     // Phase 3: Marketplace Upload
     const [listingTitle, setListingTitle] = useState("");
+    const [listingFileUrl, setListingFileUrl] = useState("");
     const [listingPrice, setListingPrice] = useState(50);
     const [listingCategory, setListingCategory] = useState<'NOTES' | 'REVISION_PAPER' | 'MARKING_SCHEME' | 'RECORDED_LESSON'>('NOTES');
     const [showUploadPortal, setShowUploadPortal] = useState(false);
@@ -259,6 +275,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
         setLoading(true);
         incrementTeacherUsage();
         try {
+            const { convertNotes, fileToGenerativePart } = await loadTeacherGeminiService();
             const base64 = await fileToGenerativePart(file);
             const result = await convertNotes(base64, file.type, selectedSubject, selectedClass, language);
             setGeneratedNote(result);
@@ -331,6 +348,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
             const reader = new FileReader();
             reader.readAsDataURL(blob);
             reader.onloadend = async () => {
+                const { processVoiceNote } = await loadTeacherGeminiService();
                 const base64String = reader.result as string;
                 const base64Data = base64String.split(',')[1];
                 const result = await processVoiceNote(base64Data, blob.type, selectedSubject, selectedClass, language);
@@ -353,6 +371,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
         setLoading(true);
         incrementTeacherUsage();
         try {
+            const { generateAdvancedTeacherQuiz, fileToGenerativePart } = await loadTeacherGeminiService();
             const images = await Promise.all(advFiles.map(f => fileToGenerativePart(f)));
 
             const result = await generateAdvancedTeacherQuiz(
@@ -446,35 +465,25 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
         );
     }
 
-    if (!teacherProfile && teacherUsageCount >= 3) {
-        return (
-            <>
-                <TeacherOnboarding
-                    onComplete={(p) => updateTeacherProfile(p)}
-                    onClose={() => onNavigate(ViewState.DASHBOARD)}
-                    onLogin={() => setShowLoginModal(true)}
-                />
-                <LoginModal
-                    isOpen={showLoginModal}
-                    onClose={() => setShowLoginModal(false)}
-                    initialTab="TEACHER"
-                />
-                <LogoutModal
-                    isOpen={showLogoutModal}
-                    onClose={() => setShowLogoutModal(false)}
-                    onConfirm={() => {
-                        logout();
-                        onNavigate(ViewState.DASHBOARD);
-                    }}
-                    title="Already Leaving, Teacher? 🍎"
-                    message="You've been doing amazing work preparing lessons! If you stay, you can generate more quizzes or convert more documents. Are you sure you're ready to call it a day?"
-                />
-            </>
-        );
-    }
+
+
+    const creationTabs = ['CREATION_HUB', 'CONVERT', 'VOICE', 'QUIZ', 'SCHEMES', 'LESSON_POLISH', 'HOMEWORK'] as const;
+    const primaryTeacherNav = [
+        { tab: 'DASHBOARD', label: 'Dashboard' },
+        { tab: 'STUDENTS', label: 'Classroom' },
+        { tab: 'CREATION_HUB', label: 'Creation Hub' },
+        { tab: 'DARASA_MODE', label: 'Darasa' },
+        { tab: 'MARKETPLACE', label: 'Store' },
+    ] as const;
+    const isTeacherNavActive = (tab: typeof primaryTeacherNav[number]['tab']) => {
+        if (tab === 'CREATION_HUB') return creationTabs.includes(activeTab as any);
+        if (tab === 'STUDENTS') return ['STUDENTS', 'MARKING', 'BLACKBOARD'].includes(activeTab);
+        if (tab === 'MARKETPLACE') return ['MARKETPLACE', 'EARNINGS'].includes(activeTab);
+        return activeTab === tab;
+    };
 
     return (
-        <div className="min-h-screen bg-slate-50 font-sans text-slate-800 relative selection:bg-indigo-100">
+        <div className="min-h-screen bg-slate-50 font-sans text-slate-800 relative selection:bg-emerald-100">
             <TeacherPaywall isOpen={showPaywall} onClose={() => setShowPaywall(false)} />
             <TeacherRequestModal
                 isOpen={isRequestModalOpen}
@@ -534,50 +543,17 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                         <img src={logoImg} alt="Somo Smart Logo" className="h-10 w-auto object-contain group-hover:scale-105 transition-transform" />
                     </div>
 
-                    {/* Center: Navigation */}
-                    <div className="hidden md:flex items-center gap-6">
-                        <button
-                            onClick={() => setActiveTab('DASHBOARD')}
-                            className={`pb-1 text-lg tracking-wide font-black transition-all ${activeTab === 'DASHBOARD' ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-slate-500 hover:text-slate-900'}`}
-                        >
-                            Dashboard
-                        </button>
-                        <button
-                            onClick={() => setActiveTab('CREATION_HUB')}
-                            className={`pb-1 text-lg tracking-wide font-black transition-all ${activeTab === 'CREATION_HUB' ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-slate-500 hover:text-slate-900'}`}
-                        >
-                            Creation Hub
-                        </button>
-                        <button
-                            onClick={() => setActiveTab('MARKING')}
-                            className={`pb-1 text-lg tracking-wide font-black transition-all ${activeTab === 'MARKING' ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-slate-500 hover:text-slate-900'}`}
-                        >
-                            Assignments
-                        </button>
-                        <button
-                            onClick={() => setActiveTab('STUDENTS')}
-                            className={`pb-1 text-lg tracking-wide font-black transition-all ${activeTab === 'STUDENTS' ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-slate-500 hover:text-slate-900'}`}
-                        >
-                            Students
-                        </button>
-                        <button
-                            onClick={() => setActiveTab('DARASA_MODE')}
-                            className={`pb-1 text-lg tracking-wide font-black transition-all flex items-center gap-1 ${activeTab === 'DARASA_MODE' ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-slate-500 hover:text-slate-900'}`}
-                        >
-                            <Mic className="w-4 h-4" /> Darasa Mode
-                        </button>
-                        <button
-                            onClick={() => setActiveTab('REPORTS')}
-                            className={`pb-1 text-lg tracking-wide font-black transition-all ${activeTab === 'REPORTS' ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-slate-500 hover:text-slate-900'}`}
-                        >
-                            Reports
-                        </button>
-                        <button
-                            onClick={() => setActiveTab('MARKETPLACE')}
-                            className={`pb-1 text-lg tracking-wide font-black transition-all flex items-center gap-1 ${activeTab === 'MARKETPLACE' ? 'text-emerald-600 border-b-2 border-emerald-600' : 'text-slate-500 hover:text-slate-900'}`}
-                        >
-                            <Store className="w-4 h-4" /> Storefront
-                        </button>
+                    {/* Center: Core Navigation */}
+                    <div className="hidden md:flex items-center gap-5">
+                        {primaryTeacherNav.map(item => (
+                            <button
+                                key={item.tab}
+                                onClick={() => setActiveTab(item.tab)}
+                                className={`pb-1 text-base tracking-wide font-black transition-all ${isTeacherNavActive(item.tab) ? 'text-emerald-600 border-b-2 border-emerald-600' : 'text-slate-500 hover:text-slate-900'}`}
+                            >
+                                {item.label}
+                            </button>
+                        ))}
                     </div>
 
                     {/* Right: Actions Menu */}
@@ -590,10 +566,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                             )}
                         </div>
 
-                        {/* Smart Action */}
-                        <div className="cursor-pointer text-slate-500 hover:text-indigo-600 transition-colors">
-                            <Sparkles className="w-5 h-5" />
-                        </div>
+
 
                         {/* Wallet - De-emphasized */}
                         <div className="flex items-center gap-2 cursor-pointer text-slate-500 hover:text-slate-900 transition-colors" onClick={() => setActiveTab('EARNINGS')}>
@@ -615,6 +588,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
             </div>
 
             <div className="max-w-5xl mx-auto px-6 pt-8 pb-24">
+                <Suspense fallback={<TeacherToolFallback />}>
 
                 {activeTab === 'DARASA_MODE' && (
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
@@ -625,7 +599,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                             selectedSubject={selectedSubject}
                             selectedClass={selectedClass}
                             language={language}
-                            processAudioFile={processDarasaRecording}
+                            processAudioFile={processDarasaAudioFile}
                         />
                     </motion.div>
                 )}
@@ -646,7 +620,8 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                         <MarketplaceManager
                             teacherProfile={teacherProfile}
                             earnings={teacherWallet?.balance || 0}
-                            onPublishNew={() => setActiveTab('CREATION_HUB')}
+                            listings={marketplaceMaterials.filter(m => m.teacherId === teacherProfile?.id)}
+                            onPublishNew={() => setShowUploadPortal(true)}
                         />
                     </motion.div>
                 )}
@@ -714,18 +689,18 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-white rounded-[3rem] shadow-sm border-2 border-slate-100 overflow-hidden min-h-[500px]">
                             <div className="bg-slate-50/50 px-8 md:px-12 py-8 border-b-2 border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-6">
                                 <div className="flex items-center gap-4">
-                                    <div className="w-12 h-12 bg-indigo-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-indigo-100">
+                                    <div className="w-12 h-12 bg-emerald-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-emerald-100">
                                         <Archive className="w-6 h-6" />
                                     </div>
                                     <div>
                                         <h3 className="font-black text-2xl text-slate-900 tracking-tight leading-none">{t.teacher.library.title}</h3>
-                                        <p className="text-[10px] font-black text-indigo-500 uppercase tracking-[0.2em] mt-2">Resource Repository</p>
+                                        <p className="text-[10px] font-black text-emerald-500 uppercase tracking-[0.2em] mt-2">Resource Repository</p>
                                     </div>
                                 </div>
                                 <div className="flex flex-wrap gap-2">
                                     <div className="flex items-center bg-white border-2 border-slate-100 px-4 py-2 rounded-xl shadow-sm">
                                         <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mr-2">Class:</span>
-                                        <span className="text-xs font-black text-indigo-600">{selectedClass}</span>
+                                        <span className="text-xs font-black text-emerald-600">{selectedClass}</span>
                                     </div>
                                     <div className="flex items-center bg-white border-2 border-slate-100 px-4 py-2 rounded-xl shadow-sm">
                                         <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mr-2">Subject:</span>
@@ -752,20 +727,20 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                                                 <motion.div
                                                     key={item.id}
                                                     whileHover={{ y: -3, scale: 1.01 }}
-                                                    className="bg-white border border-slate-100 rounded-[2rem] p-5 shadow-sm hover:shadow-xl hover:shadow-indigo-50/50 cursor-pointer flex justify-between items-center group transition-all"
+                                                    className="bg-white border border-slate-100 rounded-[2rem] p-5 shadow-sm hover:shadow-xl hover:shadow-emerald-50/50 cursor-pointer flex justify-between items-center group transition-all"
                                                     onClick={() => loadHistoryItem(item)}
                                                 >
                                                     <div className="flex items-center gap-4">
-                                                        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center border ${item.type === 'NOTE' ? 'bg-blue-50 border-blue-100 text-blue-600' : 'bg-indigo-50 border-indigo-100 text-indigo-600'}`}>
+                                                        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center border ${item.type === 'NOTE' ? 'bg-blue-50 border-blue-100 text-blue-600' : 'bg-emerald-50 border-emerald-100 text-emerald-600'}`}>
                                                             {item.type === 'NOTE' ? <FileText className="w-6 h-6" /> : <Brain className="w-6 h-6" />}
                                                         </div>
                                                         <div>
-                                                            <h4 className="font-black text-slate-800 text-sm md:text-base group-hover:text-indigo-600 transition-colors line-clamp-1">{item.title}</h4>
+                                                            <h4 className="font-black text-slate-800 text-sm md:text-base group-hover:text-emerald-600 transition-colors line-clamp-1">{item.title}</h4>
                                                             <div className="flex items-center gap-3 mt-1">
                                                                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1">
                                                                     <Calendar className="w-3 h-3" /> {item.date}
                                                                 </span>
-                                                                <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded ${item.type === 'NOTE' ? 'bg-blue-50 text-blue-600' : 'bg-indigo-50 text-indigo-600'}`}>
+                                                                <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded ${item.type === 'NOTE' ? 'bg-blue-50 text-blue-600' : 'bg-emerald-50 text-emerald-600'}`}>
                                                                     {item.type === 'NOTE' ? 'Notes' : 'Exam'}
                                                                 </span>
                                                             </div>
@@ -840,8 +815,8 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
 
                             {/* Active Tutoring Requests - Phase 2 */}
                             {isAvailableForTutoring && (
-                                <div className="bg-white rounded-[2.5rem] border-2 border-indigo-100 shadow-xl shadow-indigo-50/50 overflow-hidden">
-                                    <div className="p-6 bg-indigo-600 text-white flex justify-between items-center">
+                                <div className="bg-white rounded-[2.5rem] border-2 border-emerald-100 shadow-xl shadow-emerald-50/50 overflow-hidden">
+                                    <div className="p-6 bg-emerald-600 text-white flex justify-between items-center">
                                         <h3 className="font-black text-lg flex items-center gap-2">
                                             <Users className="w-5 h-5" /> Pending Tutoring Requests
                                         </h3>
@@ -862,7 +837,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                                                         <div className="flex justify-between items-start mb-4">
                                                             <div>
                                                                 <div className="flex items-center gap-2 mb-1 flex-wrap">
-                                                                    <span className="text-[10px] font-black text-indigo-600 uppercase tracking-widest px-2 py-0.5 bg-indigo-50 rounded">{req.topic}</span>
+                                                                    <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest px-2 py-0.5 bg-emerald-50 rounded">{req.topic}</span>
                                                                     {req.status === 'ACCEPTED' && <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest px-2 py-0.5 bg-emerald-50 rounded animate-pulse">Accepted</span>}
                                                                 </div>
                                                                 <div className="flex items-center gap-2 mb-1.5 flex-wrap">
@@ -886,7 +861,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                                                             {req.status === 'PENDING' ? (
                                                                 <Button
                                                                     variant="primary"
-                                                                    className="bg-indigo-600 text-xs py-2 px-6 h-auto"
+                                                                    className="bg-emerald-600 text-xs py-2 px-6 h-auto"
                                                                     onClick={() => acceptTutoringRequest(req.id)}
                                                                 >
                                                                     Accept & Respond
@@ -947,7 +922,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                                                                 setTeacherChatRequestId(req.id);
                                                                 fetchChatMessages(req.id);
                                                             }}
-                                                            className="mt-2 px-5 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-bold text-xs shadow-lg shadow-blue-200 hover:shadow-xl transition-all flex items-center gap-2"
+                                                            className="mt-2 px-5 py-2 bg-gradient-to-r from-blue-600 to-emerald-600 text-white rounded-xl font-bold text-xs shadow-lg shadow-blue-200 hover:shadow-xl transition-all flex items-center gap-2"
                                                         >
                                                             💬 Open Chat Thread
                                                         </button>
@@ -962,9 +937,9 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                             <div className="bg-white rounded-[2.5rem] border-2 border-slate-100 shadow-sm overflow-hidden">
                                 <div className="p-6 border-b border-slate-100 flex justify-between items-center">
                                     <h3 className="font-black text-lg text-slate-900 flex items-center gap-2">
-                                        <TrendingUp className="w-5 h-5 text-indigo-500" /> Recent Transactions
+                                        <TrendingUp className="w-5 h-5 text-emerald-500" /> Recent Transactions
                                     </h3>
-                                    <button className="text-[10px] font-black text-indigo-600 uppercase tracking-widest hover:underline">View All History</button>
+                                    <button className="text-[10px] font-black text-emerald-600 uppercase tracking-widest hover:underline">View All History</button>
                                 </div>
                                 <div className="divide-y divide-slate-50">
                                     {teacherWallet?.transactions && teacherWallet.transactions.length > 0 ? (
@@ -1002,105 +977,11 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                         <TeacherReports />
                     )
                 }
-                {
-                    activeTab === 'MARKETPLACE' && (
-                        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-8 pb-24">
-                            {/* Marketplace Header */}
-                            <div className="bg-gradient-to-br from-blue-600 to-indigo-700 p-8 rounded-[3rem] text-white shadow-xl shadow-blue-100 relative overflow-hidden group">
-                                <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-20 -mt-20 blur-3xl transition-transform group-hover:scale-110"></div>
-                                <div className="relative z-10">
-                                    <div className="flex justify-between items-start mb-6">
-                                        <div>
-                                            <h3 className="text-3xl font-black mb-2 tracking-tight">Marketplace Portal</h3>
-                                            <p className="opacity-90 text-sm font-medium max-w-xs leading-relaxed">Share your knowledge and earn from every student who unlocks your materials.</p>
-                                        </div>
-                                        <button
-                                            onClick={() => setShowUploadPortal(true)}
-                                            className="bg-white text-blue-600 px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg hover:bg-blue-50 transition-all active:scale-95 flex items-center gap-2"
-                                        >
-                                            <Plus className="w-5 h-5" /> List Material
-                                        </button>
-                                    </div>
-                                    <div className="flex flex-wrap gap-4">
-                                        <div className="bg-white/20 px-6 py-4 rounded-3xl backdrop-blur-md border border-white/10">
-                                            <p className="text-[10px] uppercase font-black opacity-60 tracking-widest mb-1">Your Listings</p>
-                                            <p className="font-black text-2xl">{marketplaceMaterials.filter(m => m.teacherId === teacherProfile?.id).length}</p>
-                                        </div>
-                                        <div className="bg-white/20 px-6 py-4 rounded-3xl backdrop-blur-md border border-white/10">
-                                            <p className="text-[10px] uppercase font-black opacity-60 tracking-widest mb-1">Market Reach</p>
-                                            <p className="font-black text-2xl">Verified</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* My Listings Grid */}
-                            <div className="space-y-6">
-                                <div className="flex items-center justify-between px-2">
-                                    <h3 className="font-black text-xl text-slate-900 tracking-tight">Your Marketplace Items</h3>
-                                    <div className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                                        Live on Store
-                                    </div>
-                                </div>
-
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    {marketplaceMaterials.filter(m => m.teacherId === teacherProfile?.id).length === 0 ? (
-                                        <div className="md:col-span-2 py-24 text-center bg-white border-2 border-dashed border-slate-200 rounded-[3rem] group">
-                                            <div className="w-20 h-20 bg-slate-50 rounded-[2rem] flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform">
-                                                <ShoppingBag className="w-10 h-10 text-slate-200" />
-                                            </div>
-                                            <h4 className="font-black text-slate-400 uppercase tracking-widest text-xs mb-4">No materials listed yet</h4>
-                                            <Button
-                                                onClick={() => setShowUploadPortal(true)}
-                                                className="bg-indigo-600 text-white rounded-xl px-8 py-3 font-black text-[10px] uppercase tracking-widest border-none shadow-lg shadow-indigo-100"
-                                            >
-                                                List First Item
-                                            </Button>
-                                        </div>
-                                    ) : (
-                                        marketplaceMaterials
-                                            .filter(m => m.teacherId === teacherProfile?.id)
-                                            .map(item => (
-                                                <motion.div
-                                                    key={item.id}
-                                                    whileHover={{ y: -5 }}
-                                                    className="bg-white border-2 border-slate-100 rounded-[2.5rem] p-6 shadow-sm hover:border-blue-100 hover:shadow-xl hover:shadow-blue-50/30 transition-all"
-                                                >
-                                                    <div className="flex justify-between items-start mb-6">
-                                                        <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center border border-blue-100">
-                                                            {item.category === 'NOTES' ? <FileText className="w-6 h-6" /> : <Layers className="w-6 h-6" />}
-                                                        </div>
-                                                        <div className="bg-emerald-50 text-emerald-600 px-3 py-1 rounded-lg text-sm font-black">
-                                                            KES {item.price}
-                                                        </div>
-                                                    </div>
-                                                    <h4 className="font-black text-slate-900 text-lg mb-1 tracking-tight">{item.title}</h4>
-                                                    <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest mb-4">{item.subject} • {item.grade}</p>
-                                                    <div className="flex items-center justify-between pt-4 border-t border-slate-50">
-                                                        <div className="flex items-center gap-2">
-                                                            <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center">
-                                                                <Users className="w-4 h-4 text-slate-400" />
-                                                            </div>
-                                                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Active Listing</span>
-                                                        </div>
-                                                        <button className="text-slate-300 hover:text-red-500 transition-colors">
-                                                            <Trash2 className="w-4 h-4" />
-                                                        </button>
-                                                    </div>
-                                                </motion.div>
-                                            ))
-                                    )}
-                                </div>
-                            </div>
-                        </motion.div>
-                    )
-                }
                 {(activeTab === 'CONVERT' || activeTab === 'VOICE' || activeTab === 'QUIZ') && (
                     // RESULTS VIEW
                     <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} className="space-y-8">
                         <div className="flex items-center justify-between mb-2 px-4">
-                            <Button variant="ghost" onClick={() => { setGeneratedNote(null); setGeneratedQuiz(null); setActiveTab('HOME'); }} className="text-slate-500 font-black uppercase tracking-widest text-xs hover:text-indigo-600">
+                            <Button variant="ghost" onClick={() => { setGeneratedNote(null); setGeneratedQuiz(null); setActiveTab('HOME'); }} className="text-slate-500 font-black uppercase tracking-widest text-xs hover:text-emerald-600">
                                 <ArrowRight className="w-4 h-4 mr-2 rotate-180" /> {t.teacher.results.backToStudio}
                             </Button>
                             <div className="flex gap-3">
@@ -1114,7 +995,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                         </div>
 
                         <div className="bg-white p-4 md:p-16 rounded-[2rem] md:rounded-[4rem] shadow-sm border-2 border-slate-100 print:border-none print:shadow-none min-h-[600px] relative overflow-hidden">
-                            <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-50/30 rounded-full blur-[100px] -mr-32 -mt-32 pointer-events-none"></div>
+                            <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-50/30 rounded-full blur-[100px] -mr-32 -mt-32 pointer-events-none"></div>
 
                             {generatedQuiz && (
                                 <div className="space-y-8">
@@ -1126,24 +1007,62 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                                         <h1 className="text-2xl md:text-3xl font-bold text-slate-900 mb-2">{generatedQuiz.topic}</h1>
                                         <p className="text-slate-500 uppercase tracking-widest text-xs font-bold">{t.teacher.results.classroomAssessment}</p>
                                     </div>
-                                    <div className="mt-8 md:mt-12 p-6 md:p-8 bg-slate-50/50 rounded-[2rem] md:rounded-[3rem] border-2 border-slate-100 break-before-page">
-                                        <h3 className="text-xl font-black text-slate-900 mb-6 flex items-center gap-3">
-                                            <div className="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center border border-emerald-100">
-                                                <CheckCircle className="w-6 h-6" />
-                                            </div>
-                                            {t.teacher.results.answerKey}
-                                        </h3>
-                                        <div className="space-y-4">
-                                            {generatedQuiz.questions.map((q, i) => (
-                                                <div key={i} className="flex gap-4 p-4 rounded-2xl bg-white border border-slate-100 shadow-sm">
-                                                    <span className="font-black text-indigo-600 text-lg">{i + 1}.</span>
-                                                    <div className="space-y-1">
-                                                        <p className="text-slate-900 font-black">{q.correctAnswer}</p>
-                                                        <p className="text-xs text-slate-500 font-medium leading-relaxed">{q.explanation}</p>
+                                    <div className="space-y-12">
+                                        {generatedQuiz.questions.map((q, i) => (
+                                            <div key={i} className="relative pl-10 md:pl-12">
+                                                <div className="absolute left-0 top-0 w-8 h-8 md:w-10 md:h-10 bg-slate-900 text-white rounded-xl flex items-center justify-center font-black text-sm shadow-md">
+                                                    {i + 1}
+                                                </div>
+                                                <div className="space-y-4">
+                                                    <h3 className="text-lg font-black text-slate-800 leading-relaxed">
+                                                        {q.question}
+                                                    </h3>
+                                                    
+                                                    {q.type === 'MCQ' && q.options && (
+                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">
+                                                            {q.options.map((opt, oidx) => (
+                                                                <div key={oidx} className="flex items-center gap-3 p-3 rounded-xl border-2 border-slate-100 bg-white">
+                                                                    <div className="w-6 h-6 rounded-full border-2 border-slate-200 flex items-center justify-center text-xs font-bold text-slate-400">
+                                                                        {String.fromCharCode(65 + oidx)}
+                                                                    </div>
+                                                                    <span className="font-medium text-slate-600">{opt}</span>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    )}
+
+                                                    {/* Teacher Only: Marking Scheme */}
+                                                    <div className="mt-6 p-6 bg-emerald-50/50 rounded-2xl border border-emerald-100/50">
+                                                        <div className="flex items-center gap-3 mb-4">
+                                                            <div className="px-3 py-1 bg-emerald-100 text-emerald-700 rounded-lg text-[10px] font-black uppercase tracking-widest">
+                                                                Answer Key
+                                                            </div>
+                                                            {q.cognitiveLevel && (
+                                                                <div className="px-3 py-1 bg-amber-100 text-amber-700 rounded-lg text-[10px] font-black uppercase tracking-widest">
+                                                                    {q.cognitiveLevel}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                        <p className="font-black text-slate-800 mb-2">Ans: {q.correctAnswer}</p>
+                                                        <p className="text-sm text-slate-600 leading-relaxed italic">{q.explanation}</p>
+                                                        
+                                                        {q.markingScheme && q.markingScheme.length > 0 && (
+                                                            <div className="mt-4 pt-4 border-t border-emerald-100/50">
+                                                                <p className="text-[10px] font-black uppercase tracking-widest text-emerald-600 mb-3">KNEC Marking Scheme</p>
+                                                                <ul className="space-y-2">
+                                                                    {q.markingScheme.map((mark, midx) => (
+                                                                        <li key={midx} className="flex items-start gap-2 text-sm text-slate-700">
+                                                                            <CheckCircle className="w-4 h-4 text-emerald-500 mt-0.5 flex-shrink-0" />
+                                                                            <span>{mark}</span>
+                                                                        </li>
+                                                                    ))}
+                                                                </ul>
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 </div>
-                                            ))}
-                                        </div>
+                                            </div>
+                                        ))}
                                     </div>
                                 </div>
                             )}
@@ -1152,7 +1071,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                                 <div className="space-y-8">
                                     <div className="flex flex-col md:flex-row md:items-center gap-4 border-b border-gray-100 pb-6">
                                         <div className="flex items-center gap-4">
-                                            <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center flex-shrink-0">
+                                            <div className="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center flex-shrink-0">
                                                 {activeTab === 'VOICE' ? <Mic className="w-6 h-6" /> : <FileText className="w-6 h-6" />}
                                             </div>
                                             <div>
@@ -1177,7 +1096,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                                         </div>
                                         <div className="space-y-4">
                                             <h2 className="text-xl font-black text-slate-900 flex items-center gap-3">
-                                                <span className="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center text-sm border border-indigo-100">B</span> {t.teacher.results.teacherNotes}
+                                                <span className="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center text-sm border border-emerald-100">B</span> {t.teacher.results.teacherNotes}
                                             </h2>
                                             <div className="prose prose-sm prose-slate p-2">
                                                 <MarkdownText content={generatedNote.structuredNotes} />
@@ -1272,6 +1191,20 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                                     </div>
 
                                     <div className="space-y-2">
+                                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Material Link</label>
+                                        <div className="relative">
+                                            <input
+                                                type="url"
+                                                value={listingFileUrl}
+                                                onChange={(e) => setListingFileUrl(e.target.value)}
+                                                placeholder="Paste a real material link"
+                                                className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 pl-12 text-slate-700 font-bold focus:border-blue-500 focus:bg-white transition-all outline-none"
+                                            />
+                                            <FileText className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-2">
                                         <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Category</label>
                                         <div className="relative">
                                             <select
@@ -1317,23 +1250,35 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                                                     alert("Please enter a title!");
                                                     return;
                                                 }
+                                                if (!teacherProfile) {
+                                                    alert("Please log in as a teacher before listing material.");
+                                                    return;
+                                                }
+                                                const fileUrl = listingFileUrl.trim();
+                                                if (!/^https?:\/\/\S+$/i.test(fileUrl)) {
+                                                    alert("Please paste a valid material link before listing.");
+                                                    return;
+                                                }
                                                 setLoading(true);
                                                 const res = await listMaterial({
-                                                    teacherId: teacherProfile?.id || "mock-teacher",
-                                                    teacherName: teacherProfile?.name || "Teacher",
+                                                    teacherId: teacherProfile.id,
+                                                    teacherName: teacherProfile.name,
                                                     title: listingTitle,
                                                     description: `Premium ${listingCategory.toLowerCase()} for ${selectedClass} ${selectedSubject}.`,
                                                     price: listingPrice,
                                                     grade: selectedClass,
                                                     subject: selectedSubject,
                                                     category: listingCategory,
-                                                    fileUrl: "https://example.com/mock-file.pdf"
+                                                    fileUrl
                                                 });
                                                 setLoading(false);
                                                 if (res.success) {
                                                     setListingTitle("");
+                                                    setListingFileUrl("");
                                                     setShowUploadPortal(false);
                                                     alert("Material listed in the marketplace!");
+                                                } else {
+                                                    alert(res.message || "Could not list material. Please try again.");
                                                 }
                                             }}
                                         >
@@ -1501,7 +1446,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                             {/* Personal Details */}
                             <div className="bg-white rounded-[2rem] p-8 shadow-sm border border-slate-100 space-y-6">
                                 <div className="flex items-center gap-6">
-                                    <div className="w-24 h-24 rounded-full bg-indigo-100 border-4 border-white shadow-lg overflow-hidden">
+                                    <div className="w-24 h-24 rounded-full bg-emerald-100 border-4 border-white shadow-lg overflow-hidden">
                                         <img
                                             src={`https://ui-avatars.com/api/?name=${teacherProfile?.name}&background=random&size=128`}
                                             alt="Profile"
@@ -1536,7 +1481,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                                                     updateTeacherProfile({ ...teacherProfile, name: e.target.value });
                                                 }
                                             }}
-                                            className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                            className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                                         />
                                     </div>
                                     <div>
@@ -1559,11 +1504,11 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                                     <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Classes Taught</label>
                                     <div className="flex flex-wrap gap-2 mb-3">
                                         {teacherProfile?.classes.map((cls) => (
-                                            <span key={cls} className="px-3 py-1 bg-indigo-50 text-indigo-700 text-sm font-bold rounded-lg flex items-center gap-2">
+                                            <span key={cls} className="px-3 py-1 bg-emerald-50 text-emerald-700 text-sm font-bold rounded-lg flex items-center gap-2">
                                                 {cls}
                                                 <button
                                                     onClick={() => updateTeacherProfile({ ...teacherProfile, classes: teacherProfile.classes.filter(c => c !== cls) })}
-                                                    className="hover:text-indigo-900"
+                                                    className="hover:text-emerald-900"
                                                 >
                                                     <X className="w-3 h-3" />
                                                 </button>
@@ -1574,7 +1519,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                                         <input
                                             type="text"
                                             placeholder="Add class (e.g. Grade 4)"
-                                            className="flex-1 px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl font-medium text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                            className="flex-1 px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl font-medium text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
                                             onKeyDown={(e) => {
                                                 if (e.key === 'Enter') {
                                                     const val = e.currentTarget.value.trim();
@@ -1592,11 +1537,11 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                                     <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Subjects</label>
                                     <div className="flex flex-wrap gap-2 mb-3">
                                         {teacherProfile?.subjects.map((sub) => (
-                                            <span key={sub} className="px-3 py-1 bg-purple-50 text-purple-700 text-sm font-bold rounded-lg flex items-center gap-2">
+                                            <span key={sub} className="px-3 py-1 bg-teal-50 text-teal-700 text-sm font-bold rounded-lg flex items-center gap-2">
                                                 {sub}
                                                 <button
                                                     onClick={() => updateTeacherProfile({ ...teacherProfile, subjects: teacherProfile.subjects.filter(s => s !== sub) })}
-                                                    className="hover:text-purple-900"
+                                                    className="hover:text-teal-900"
                                                 >
                                                     <X className="w-3 h-3" />
                                                 </button>
@@ -1607,7 +1552,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                                         <input
                                             type="text"
                                             placeholder="Add subject (e.g. Math)"
-                                            className="flex-1 px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl font-medium text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                            className="flex-1 px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl font-medium text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
                                             onKeyDown={(e) => {
                                                 if (e.key === 'Enter') {
                                                     const val = e.currentTarget.value.trim();
@@ -1624,7 +1569,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
 
                             {/* Subscription & Account */}
                             <div className="lg:col-span-2 bg-slate-900 rounded-[2rem] p-8 shadow-xl text-white relative overflow-hidden">
-                                <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/20 rounded-full blur-3xl -mr-16 -mt-16"></div>
+                                <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/20 rounded-full blur-3xl -mr-16 -mt-16"></div>
                                 <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8">
                                     <div>
                                         <div className="flex items-center gap-3 mb-2">
@@ -1641,7 +1586,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                                         {!isPro && (
                                             <button
                                                 onClick={() => navigate('/pricing')}
-                                                className="px-6 py-3 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-bold rounded-xl shadow-lg shadow-indigo-500/30 transition-all"
+                                                className="px-6 py-3 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold rounded-xl shadow-lg shadow-emerald-500/30 transition-all"
                                             >
                                                 Upgrade to Pro
                                             </button>
@@ -1675,18 +1620,19 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                         />
                     )
                 }
+                </Suspense>
                 {/* Global Bottom Nav - Mobile Only */}
                 <div className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t border-slate-200 px-4 py-3 flex justify-between items-center z-50 md:hidden pb-safe">
                     <button
                         onClick={() => setActiveTab('HOME')}
-                        className={`flex flex-col items-center gap-1 ${activeTab === 'HOME' ? 'text-indigo-600' : 'text-slate-400 hover:text-slate-600'}`}
+                        className={`flex flex-col items-center gap-1 ${activeTab === 'HOME' ? 'text-emerald-600' : 'text-slate-400 hover:text-slate-600'}`}
                     >
                         <Home className="w-6 h-6" />
                         <span className="text-[10px] font-black uppercase tracking-tighter">Studio</span>
                     </button>
                     <button
                         onClick={() => setActiveTab('LIBRARY')}
-                        className={`flex flex-col items-center gap-1 ${activeTab === 'LIBRARY' ? 'text-purple-600' : 'text-slate-400 hover:text-slate-600'}`}
+                        className={`flex flex-col items-center gap-1 ${activeTab === 'LIBRARY' ? 'text-teal-600' : 'text-slate-400 hover:text-slate-600'}`}
                     >
                         <Library className="w-6 h-6" />
                         <span className="text-[10px] font-black uppercase tracking-tighter">Library</span>
@@ -1860,12 +1806,14 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
 
             <AnimatePresence>
                 {activeTab === 'BLACKBOARD' && generatedNote && (
-                    <DigitalBlackboard
-                        onClose={() => setActiveTab('CONVERT')}
-                        title={generatedNote.topic}
-                        content={generatedNote.structuredNotes}
-                        simplifiedContent={generatedNote.simplifiedNotes}
-                    />
+                    <Suspense fallback={null}>
+                        <DigitalBlackboard
+                            onClose={() => setActiveTab('CONVERT')}
+                            title={generatedNote.topic}
+                            content={generatedNote.structuredNotes}
+                            simplifiedContent={generatedNote.simplifiedNotes}
+                        />
+                    </Suspense>
                 )}
             </AnimatePresence>
         </div>

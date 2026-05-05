@@ -199,7 +199,7 @@ export const RevisionPortal: React.FC = () => {
                     <div className="flex flex-col md:flex-row md:items-end justify-between mb-10 gap-4">
                         <div>
                             <h3 className="text-3xl font-black text-slate-900 dark:text-white mb-3">Jump into your subject</h3>
-                            <p className="text-slate-500 font-medium">Access over 10,000+ verified papers immediately.</p>
+                            <p className="text-slate-500 font-medium">Access organized revision papers and study tools immediately.</p>
                         </div>
                         <button onClick={handleSubjectClick} className="text-indigo-600 font-bold hover:text-indigo-700 flex items-center gap-2">
                             View All Subjects <ArrowRight className="w-4 h-4" />
@@ -272,7 +272,7 @@ export const RevisionPortal: React.FC = () => {
                 <section className="bg-slate-900 rounded-[3rem] p-8 md:p-16 text-center text-white relative overflow-hidden">
                     <div className="absolute inset-0 bg-gradient-to-br from-indigo-900/50 to-transparent pointer-events-none" />
                     <div className="relative z-10">
-                        <h3 className="text-3xl md:text-4xl font-black mb-12">Trusted by 10,000+ top candidates</h3>
+                        <h3 className="text-3xl md:text-4xl font-black mb-12">Built for serious exam candidates</h3>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                             {[
                                 { name: "Sarah W.", grade: "Form 4, Mean Grade A-", quote: "The AI explanations for Chemistry broke down concepts my teacher rushed through. I finally understand Mole Concept!" },

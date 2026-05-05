@@ -11,6 +11,7 @@ import {
     TalkbackMessage, LanguageTutorResponse,
     chatTalkbackStream, processStream
 } from '../../services/geminiService';
+import { useApp } from '../../context/AppContext';
 import {
     speakConversational, stopSpeech,
     TALKBACK_VOICES, LANGUAGE_TUTOR_VOICES,
@@ -31,13 +32,13 @@ interface ConversationalTutorProps {
 
 // ─── Constants ───────────────────────────────────────────────────
 const GREETING: Record<ChatLang, string> = {
-    en: "Hey! I'm Somo Buddy 🌟 Ask me anything — a subject, a concept, or something you're stuck on. I'm here to help!",
-    sw: "Habari! Mimi ni Somo Buddy 🌟 Niulize chochote — somo, dhana, au kitu unachoshindwa. Niko hapa kusaidia!"
+    en: "Hey! I'm Akili ✨ Your Kenyan learning buddy! Ask me anything — a subject, a concept, or something you're stuck on. Niko hapa!",
+    sw: "Habari! Mimi ni Akili ✨ Rafiki yako wa kujifunza! Niulize chochote — somo, dhana, au kitu unachoshindwa. Niko hapa!"
 };
 
 const TUTOR_GREETING: Record<ChatLang, string> = {
-    en: "Hi! I'm Mwalimu Somo 🎓 Tell me something — a sentence, a word, or a phrase — and I'll coach you from there!",
-    sw: "Karibu! Mimi ni Mwalimu Somo 🎓 Niambie kitu — sentensi, neno, au msemo — nami nitakuongoza!"
+    en: "Hi! I'm Mwalimu Akili 🎓 Tell me something — a sentence, a word, or a phrase — and I'll coach you from there!",
+    sw: "Karibu! Mimi ni Mwalimu Akili 🎓 Niambie kitu — sentensi, neno, au msemo — nami nitakuongoza!"
 };
 
 const MODE_CONFIG: Record<TutorMode, { icon: React.ReactNode; en: string; sw: string; color: string }> = {
@@ -118,7 +119,7 @@ const ChatBubble: React.FC<{
                 {/* Main bubble */}
                 <div className={`px-4 py-3 rounded-2xl text-sm leading-relaxed ${isUser
                     ? 'bg-indigo-600 text-white rounded-br-sm shadow-lg shadow-indigo-500/20'
-                    : 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 rounded-tl-sm shadow-md border border-slate-100 dark:border-slate-700/50'
+                    : 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 rounded-tl-sm shadow-md border-2 border-slate-300 dark:border-slate-700/50'
                 }`}
                 >
                     <p className="whitespace-pre-wrap font-medium">{message.text.replace(/\*\*/g, '')}</p>
@@ -127,7 +128,7 @@ const ChatBubble: React.FC<{
                             onClick={() => onSpeak?.(message.text)}
                             className={`mt-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold tracking-wide transition-all ${isSpeaking
                                 ? 'bg-indigo-50 text-indigo-600 dark:bg-indigo-900/40 dark:text-indigo-400 ring-1 ring-indigo-200 dark:ring-indigo-800'
-                                : 'bg-slate-50 text-slate-600 hover:bg-slate-100 hover:text-slate-800 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700'
+                                : 'bg-slate-50 text-slate-600 hover:bg-slate-100 hover:text-slate-800 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 border-2 border-slate-300 dark:border-slate-700'
                             }`}
                         >
                             {isSpeaking
@@ -194,6 +195,7 @@ const QUICK_STARTERS: Record<ChatLang, string[]> = {
 
 // ─── Main Component ──────────────────────────────────────────────
 export const ConversationalTutor: React.FC<ConversationalTutorProps> = ({ onBack }) => {
+    const { educationLevel } = useApp();
     const [activeMode, setActiveMode] = useState<ActiveMode>('TALKBACK');
     const [chatLang, setChatLang] = useState<ChatLang>('en');
     const [tutorMode, setTutorMode] = useState<TutorMode>('conversation');
@@ -271,7 +273,7 @@ export const ConversationalTutor: React.FC<ConversationalTutorProps> = ({ onBack
                 setIsSpeaking(true);
                 clearSpeechQueue();
 
-                const stream = await chatTalkbackStream(text, messages, chatLang);
+                const stream = await chatTalkbackStream(text, messages, chatLang, educationLevel);
                 let fullText = "";
                 let spokenText = "";
 
@@ -433,7 +435,7 @@ export const ConversationalTutor: React.FC<ConversationalTutorProps> = ({ onBack
 
                             <div>
                                 <h2 className="text-sm font-black text-white leading-tight">
-                                    {isTutor ? 'Language Coach' : 'Somo Buddy'}
+                                    {isTutor ? 'Language Coach' : 'Akili'}
                                 </h2>
                                 <div className="flex items-center gap-1.5">
                                     <div className={`w-1.5 h-1.5 rounded-full ${isLoading ? 'bg-amber-400 animate-bounce' : isRecording ? 'bg-red-400 animate-pulse' : 'bg-emerald-400 animate-pulse'}`} />
@@ -536,7 +538,7 @@ export const ConversationalTutor: React.FC<ConversationalTutorProps> = ({ onBack
                                 <button
                                     key={i}
                                     onClick={() => handleSendMessage(starter)}
-                                    className="px-3 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:border-indigo-300 hover:text-indigo-600 dark:hover:border-indigo-700 dark:hover:text-indigo-400 hover:shadow-sm transition-all active:scale-95"
+                                    className="px-3 py-2 rounded-xl bg-white dark:bg-slate-800 border-2 border-slate-300 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:border-indigo-300 hover:text-indigo-600 dark:hover:border-indigo-700 dark:hover:text-indigo-400 hover:shadow-sm transition-all active:scale-95"
                                 >
                                     {starter}
                                 </button>
@@ -565,10 +567,10 @@ export const ConversationalTutor: React.FC<ConversationalTutorProps> = ({ onBack
                         animate={{ opacity: 1 }}
                         className="flex items-center gap-2 mb-3"
                     >
-                        <div className="w-8 h-8 rounded-xl overflow-hidden border border-slate-100 dark:border-slate-700 flex-shrink-0">
+                        <div className="w-8 h-8 rounded-xl overflow-hidden border-2 border-slate-300 dark:border-slate-700 flex-shrink-0">
                             <img src={isTutor ? mwalimuSomoImg : somoBuddyImg} alt="AI" className="w-full h-full object-cover" />
                         </div>
-                        <div className="px-4 py-3 rounded-2xl rounded-tl-sm bg-white dark:bg-slate-800 shadow-sm border border-slate-100 dark:border-slate-700 flex items-center gap-2">
+                        <div className="px-4 py-3 rounded-2xl rounded-tl-sm bg-white dark:bg-slate-800 shadow-sm border-2 border-slate-300 dark:border-slate-700 flex items-center gap-2">
                             <Loader2 className="w-3.5 h-3.5 animate-spin text-indigo-500" />
                             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                                 {chatLang === 'sw' ? 'Inafikiri...' : 'Thinking...'}
@@ -637,7 +639,7 @@ export const ConversationalTutor: React.FC<ConversationalTutorProps> = ({ onBack
                                 isRecording ? 'Listening...' :
                                 chatLang === 'sw' ? 'Andika ujumbe...' : 'Ask anything...'
                             }
-                            className="w-full px-5 py-3.5 rounded-2xl text-sm text-slate-900 dark:text-white placeholder:text-slate-400 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:outline-none focus:border-indigo-400 focus:bg-white dark:focus:bg-slate-700 transition-all"
+                            className="w-full px-5 py-3.5 rounded-2xl text-sm text-slate-900 dark:text-white placeholder:text-slate-400 bg-slate-100 dark:bg-slate-800 border-2 border-slate-300 dark:border-slate-700 focus:outline-none focus:border-indigo-400 focus:bg-white dark:focus:bg-slate-700 transition-all"
                             disabled={isLoading || isRecording}
                         />
                     </div>

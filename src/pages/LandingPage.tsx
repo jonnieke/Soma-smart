@@ -19,6 +19,8 @@ import teacherImg from '../assets/images/teacher.png';
 import parentImg from '../assets/images/parent.png';
 import logoImg from '../assets/images/main_logo.png';
 import heroBannerImg from '../assets/images/soma_smart_hero_graphic_with_teacher.png';
+import heroLearnerImg from '../assets/images/hero_learner_emotional.png';
+import heroTeacherImg from '../assets/images/hero_teacher_emotional.png';
 import stepScanImg from '../assets/images/step_scan.png';
 import stepExplainImg from '../assets/images/step_explain.png';
 import stepQuizImg from '../assets/images/step_quiz.png';
@@ -64,6 +66,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
     const [showMockAnswer, setShowMockAnswer] = useState(false);
     const [isGenerating, setIsGenerating] = useState(false);
     const [generatedAnswer, setGeneratedAnswer] = useState<string | null>(null);
+    const [heroRole, setHeroRole] = useState<'LEARNER' | 'TEACHER'>('LEARNER');
 
     const handleGenerateAnswer = async () => {
         if (!questionInput.trim()) return;
@@ -114,7 +117,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                 return () => connection.removeEventListener('change', onChange);
             }
         } catch (_) {
-            // Network Information API not supported — safe to ignore
+            // Network Information API not supported â€” safe to ignore
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
@@ -443,7 +446,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                     <Users className="w-5 h-5 text-slate-400" /> Login
                                 </button>
                                 <button onClick={() => { toggleLanguage(); setMobileMenuOpen(false); }} className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 text-slate-400 font-medium text-sm">
-                                    <Globe className="w-4 h-4" /> {language === 'EN' ? 'Français' : 'English'}
+                                    <Globe className="w-4 h-4" /> {language === 'EN' ? 'FranÃ§ais' : 'English'}
                                 </button>
                                 <div className="p-3">
                                     <ThemeToggle className="w-full justify-center" />
@@ -454,208 +457,239 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                 </AnimatePresence>
             </motion.header>
             {/* --- HERO SECTION --- */}
-            <section className="relative overflow-hidden bg-white dark:bg-slate-950 pt-16 pb-20 md:pt-24 md:pb-32 transition-colors">
-                {/* Rich ambient background */}
+            <section className="relative overflow-hidden bg-white dark:bg-slate-950 transition-colors">
+                {/* Ambient background â€” very subtle, light */}
                 <div className="absolute inset-0 pointer-events-none overflow-hidden">
-                    <div className="absolute top-[-10%] left-[-5%] w-[600px] h-[600px] opacity-40 bg-blue-100 dark:bg-blue-900/20 rounded-full blur-[120px]" />
-                    <div className="absolute bottom-[-10%] right-[-5%] w-[500px] h-[500px] opacity-30 bg-indigo-100 dark:bg-indigo-900/20 rounded-full blur-[120px]" />
-                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] opacity-10 bg-emerald-200 dark:bg-emerald-900/10 rounded-full blur-[80px]" />
+                    <div className="absolute -top-40 -right-40 w-[600px] h-[600px] rounded-full bg-indigo-50 dark:bg-indigo-950/30 blur-[100px]" />
+                    <div className="absolute -bottom-20 -left-20 w-[500px] h-[500px] rounded-full bg-blue-50 dark:bg-blue-950/20 blur-[80px]" />
                 </div>
 
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-                    <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-8">
+                    <div className="flex flex-col lg:flex-row items-center gap-8 lg:gap-16 min-h-[680px] py-16 lg:py-20">
 
-                        {/* LEFT: Text, Input, CTAs */}
-                        <div className="flex-1 text-center lg:text-left max-w-2xl mx-auto lg:mx-0">
-                            <motion.div
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ duration: 0.6 }}
-                            >
-                                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-200 dark:border-indigo-800 text-indigo-800 dark:text-indigo-300 text-xs font-bold mb-6 shadow-sm">
-                                    <Star className="w-4 h-4 text-amber-500 fill-current" />
-                                    Kenya's #1 Learner Experience Platform
-                                </div>
+                        {/* LEFT: Emotional copy + interactive elements */}
+                        <div className="flex-1 max-w-2xl lg:max-w-none">
+                            <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
 
-                                <h1 className="text-4xl md:text-5xl lg:text-[3.5rem] font-extrabold text-slate-900 dark:text-white tracking-tight leading-[1.1] mb-4">
-                                    The smartest way to
-                                    <span className="block text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-indigo-600 to-emerald-500">
-                                        Study, Listen & Learn.
-                                    </span>
-                                </h1>
-
-                                <p className="text-lg text-slate-600 dark:text-slate-400 mb-6 font-medium leading-relaxed">
-                                    Get instant answers, step-by-step explanations, and learn through our <strong className="text-indigo-600 dark:text-indigo-400">AI Audio Tutor</strong> — any subject, any time.
-                                </p>
-
-                                {/* Listen & Learn Feature Pill */}
-                                <div className="inline-flex items-center gap-3 px-4 py-3 rounded-2xl bg-gradient-to-r from-indigo-600/10 to-purple-600/10 border border-indigo-200 dark:border-indigo-800/50 mb-8">
-                                    <div className="flex items-center gap-[3px] shrink-0">
-                                        {[1,2,3,4,3,2,1].map((h, i) => (
-                                            <motion.div
-                                                key={i}
-                                                animate={{ scaleY: [0.4, 1, 0.4] }}
-                                                transition={{ repeat: Infinity, duration: 1.2, delay: i * 0.1, ease: "easeInOut" }}
-                                                className="w-1 bg-indigo-500 rounded-full"
-                                                style={{ height: `${h * 6}px` }}
-                                            />
-                                        ))}
-                                    </div>
-                                    <span className="text-sm font-bold text-indigo-700 dark:text-indigo-300">New: Listen & Learn Audio Tutor is live!</span>
-                                    <button
-                                        onClick={() => {
-                                            if (isRegistered || role !== UserRole.NONE) {
-                                                setRole(UserRole.LEARNER);
-                                                navigate('/learner', { state: { targetTab: 'TALKBACK' } });
-                                            } else {
-                                                startGuestSession();
-                                                setRole(UserRole.LEARNER);
-                                                navigate('/learner', { state: { targetTab: 'TALKBACK' } });
-                                            }
-                                        }}
-                                        className="text-xs font-black text-indigo-600 dark:text-indigo-400 underline underline-offset-2 hover:text-indigo-800 transition-colors whitespace-nowrap"
-                                    >
-                                        Try it →
+                                {/* Role Toggle */}
+                                <div className="inline-flex p-1 bg-slate-100 dark:bg-slate-800/80 rounded-2xl mb-10 gap-1">
+                                    <button onClick={() => setHeroRole('LEARNER')}
+                                        className={`px-5 py-2.5 rounded-xl font-bold text-sm transition-all ${heroRole === 'LEARNER' ? 'bg-white dark:bg-slate-700 text-indigo-700 dark:text-indigo-300 shadow-md' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}>
+                                        I'm a Student
+                                    </button>
+                                    <button onClick={() => setHeroRole('TEACHER')}
+                                        className={`px-5 py-2.5 rounded-xl font-bold text-sm transition-all ${heroRole === 'TEACHER' ? 'bg-white dark:bg-slate-700 text-emerald-700 dark:text-emerald-300 shadow-md' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}>
+                                        I'm a Teacher
                                     </button>
                                 </div>
 
-                                {/* Interactive Input Field */}
-                                <div className="relative max-w-xl mx-auto lg:mx-0 mb-8 z-30">
-                                    <div className="relative flex items-center bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-full shadow-lg p-2 transition-all hover:shadow-xl focus-within:ring-2 focus-within:ring-blue-500/50">
-                                        <button className="p-2 md:p-3 text-slate-400 hover:text-blue-600 transition-colors">
-                                            <Mic className="w-5 h-5" />
-                                        </button>
-                                        <input 
-                                            type="text"
-                                            value={questionInput}
-                                            onChange={(e) => {
-                                                setQuestionInput(e.target.value);
-                                                if (showMockAnswer) setShowMockAnswer(false);
-                                            }}
-                                            placeholder="Type your question..."
-                                            className="flex-1 bg-transparent border-none focus:outline-none text-slate-800 dark:text-slate-200 px-2 placeholder-slate-400 text-sm md:text-base"
-                                            onKeyDown={(e) => {
-                                                if(e.key === 'Enter') {
-                                                    handleGenerateAnswer();
-                                                }
-                                            }}
-                                        />
-                                        <button 
-                                            onClick={handleGenerateAnswer}
-                                            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 md:px-6 md:py-3 rounded-full font-bold text-sm shadow-md transition-colors flex items-center gap-2"
-                                        >
-                                            Solve Now <Send className="w-4 h-4" />
-                                        </button>
-                                    </div>
+                                <AnimatePresence mode="wait">
+                                {heroRole === 'LEARNER' ? (
+                                    <motion.div key="learner" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} transition={{ duration: 0.35 }}>
+                                        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-indigo-50 dark:bg-indigo-900/40 border border-indigo-100 dark:border-indigo-800/60 text-indigo-600 dark:text-indigo-400 text-xs font-black uppercase tracking-widest mb-6">
+                                            <Star className="w-3 h-3 fill-current" /> For KCSE, CBC &amp; KPSEA Students
+                                        </div>
+                                        <h1 className="text-[2.6rem] md:text-5xl lg:text-[3.25rem] font-black text-slate-900 dark:text-white tracking-tight leading-[1.08] mb-5">
+                                            That question you've been<br />stuck on since 8pm?
+                                            <span className="block text-indigo-600 dark:text-indigo-400 mt-1">Let's solve it now.</span>
+                                        </h1>
+                                        <p className="text-lg text-slate-500 dark:text-slate-400 font-medium leading-relaxed mb-8 max-w-lg">
+                                            Instant step-by-step answers, audio explanations &amp; revision tools â€” every KCSE, KPSEA and CBC subject. No waiting. No judgment.
+                                        </p>
 
-                                    {/* Artificial Response Popover (Visible if typed) */}
-                                    <AnimatePresence>
-                                        {showMockAnswer && (
-                                            <motion.div 
-                                                initial={{ opacity: 0, y: -10 }}
-                                                animate={{ opacity: 1, y: 0 }}
-                                                exit={{ opacity: 0, y: -10 }}
-                                                className="absolute top-full left-0 right-0 mt-4 bg-white dark:bg-slate-800 rounded-2xl p-5 shadow-2xl border border-blue-100 dark:border-slate-700 z-50 text-left"
-                                            >
-                                                <div className="flex items-start gap-3 mb-3">
-                                                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-emerald-400 flex items-center justify-center shrink-0">
-                                                        <Sparkles className="w-4 h-4 text-white" />
-                                                    </div>
-                                                    <div className="flex-1 w-full overflow-hidden">
-                                                        <div className="text-sm text-slate-500 mb-2">Soma AI Answer</div>
-                                                        {isGenerating ? (
-                                                            <div className="flex flex-col gap-2 w-full mt-2">
-                                                                <div className="h-3 bg-slate-200 dark:bg-slate-700 rounded w-full animate-pulse"></div>
-                                                                <div className="h-3 bg-slate-200 dark:bg-slate-700 rounded w-3/4 animate-pulse"></div>
-                                                            </div>
-                                                        ) : (
-                                                            <div className="text-slate-800 dark:text-slate-200 font-medium text-sm">
-                                                                {generatedAnswer}
-                                                            </div>
-                                                        )}
-                                                    </div>
+                                        {/* Live ask-bar */}
+                                        <div className="relative mb-5">
+                                            <div className="flex items-center bg-white dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-700 rounded-2xl shadow-xl p-2.5 focus-within:border-indigo-400 focus-within:shadow-indigo-100/50 dark:focus-within:border-indigo-600 transition-all">
+                                                <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center shrink-0 mr-3">
+                                                    <Sparkles className="w-5 h-5 text-white" />
                                                 </div>
-                                                <button 
-                                                    onClick={() => navigate('/learner', { state: { pendingHeroQuestion: questionInput } })}
-                                                    className="w-full mt-2 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-blue-600 dark:text-blue-400 font-bold hover:bg-blue-50 dark:hover:bg-slate-800 transition-colors flex items-center justify-center gap-2"
-                                                >
-                                                    View Full Solution <ArrowRight className="w-4 h-4" />
+                                                <input type="text" value={questionInput}
+                                                    onChange={(e) => { setQuestionInput(e.target.value); if (showMockAnswer) setShowMockAnswer(false); }}
+                                                    onKeyDown={(e) => { if (e.key === 'Enter') handleGenerateAnswer(); }}
+                                                    placeholder="Type your question... e.g. Solve 3x + 7 = 22"
+                                                    className="flex-1 bg-transparent border-none focus:outline-none text-slate-800 dark:text-slate-200 placeholder-slate-400 text-base font-medium pr-2" />
+                                                <button onClick={handleGenerateAnswer}
+                                                    className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-xl font-bold text-sm shadow-lg transition-all hover:scale-[1.02] active:scale-[0.98] whitespace-nowrap flex items-center gap-2">
+                                                    Solve It <ArrowRight className="w-4 h-4" />
                                                 </button>
-                                            </motion.div>
-                                        )}
-                                    </AnimatePresence>
-                                </div>
+                                            </div>
+                                            <AnimatePresence>
+                                                {showMockAnswer && (
+                                                    <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
+                                                        className="absolute top-full left-0 right-0 mt-3 bg-white dark:bg-slate-800 rounded-2xl p-5 shadow-2xl border border-indigo-100 dark:border-slate-700 z-50">
+                                                        <div className="flex items-start gap-3">
+                                                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-blue-500 flex items-center justify-center shrink-0">
+                                                                <Sparkles className="w-4 h-4 text-white" />
+                                                            </div>
+                                                            <div className="flex-1">
+                                                                <div className="text-[10px] font-black text-indigo-500 uppercase tracking-widest mb-2">Somo Smart Answer</div>
+                                                                {isGenerating ? (
+                                                                    <div className="space-y-2"><div className="h-3 bg-slate-200 dark:bg-slate-700 rounded-full w-full animate-pulse"/><div className="h-3 bg-slate-200 dark:bg-slate-700 rounded-full w-3/4 animate-pulse"/></div>
+                                                                ) : (
+                                                                    <p className="text-slate-800 dark:text-slate-200 font-medium text-sm leading-relaxed">{generatedAnswer}</p>
+                                                                )}
+                                                                {!isGenerating && (
+                                                                    <button onClick={() => navigate('/learner', { state: { pendingHeroQuestion: questionInput } })}
+                                                                        className="mt-3 text-xs font-black text-indigo-600 hover:text-indigo-800 transition-colors flex items-center gap-1">
+                                                                        See full step-by-step working <ArrowRight className="w-3 h-3" />
+                                                                    </button>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    </motion.div>
+                                                )}
+                                            </AnimatePresence>
+                                        </div>
 
-                                <div className="flex flex-col sm:flex-row items-center gap-4 mb-5 relative z-10">
-                                    <button 
-                                        id="hero-start-cta"
-                                        onClick={() => handleRoleSelect(UserRole.LEARNER)}
-                                        className="w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-500 hover:to-indigo-600 text-white rounded-2xl font-bold text-lg shadow-xl shadow-blue-500/25 hover:shadow-2xl hover:shadow-blue-500/35 transition-all hover:-translate-y-0.5 whitespace-nowrap"
-                                    >
-                                        Start Free — No Sign Up
-                                    </button>
-                                    <button 
-                                        id="hero-listen-learn-cta"
-                                        onClick={() => {
-                                            if (isRegistered || role !== UserRole.NONE) {
-                                                setRole(UserRole.LEARNER);
-                                                navigate('/learner', { state: { targetTab: 'TALKBACK' } });
-                                            } else {
-                                                startGuestSession();
-                                                setRole(UserRole.LEARNER);
-                                                navigate('/learner', { state: { targetTab: 'TALKBACK' } });
-                                            }
-                                        }}
-                                        className="w-full sm:w-auto px-8 py-4 bg-white dark:bg-slate-900 border-2 border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 rounded-2xl font-bold text-lg hover:bg-indigo-50 dark:hover:bg-indigo-900/30 hover:border-indigo-400 hover:shadow-xl hover:shadow-indigo-200/40 transition-all flex items-center justify-center gap-2 whitespace-nowrap group"
-                                    >
-                                        <Headphones className="w-5 h-5 group-hover:scale-110 transition-transform" />
-                                        Listen & Learn
-                                    </button>
-                                </div>
+                                        {/* Quick-prompt chips */}
+                                        <div className="flex flex-wrap gap-2 mb-9">
+                                            {['Photosynthesis explained simply', 'How do I find the gradient?', "Kenya's major rivers"].map((q, i) => (
+                                                <button key={i} onClick={() => { setQuestionInput(q); setShowMockAnswer(false); }}
+                                                    className="px-3 py-1.5 rounded-full text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 hover:text-indigo-700 dark:hover:text-indigo-400 border border-transparent hover:border-indigo-200 transition-all">
+                                                    {q}
+                                                </button>
+                                            ))}
+                                        </div>
 
-                                <p className="text-sm font-medium text-slate-400 dark:text-slate-500 mb-8">
-                                    Free to start. Only KES 20/day for unlimited access. Cancel anytime.
-                                </p>
+                                        <div className="flex flex-wrap items-center gap-4 mb-7">
+                                            <button onClick={() => handleRoleSelect(UserRole.LEARNER)}
+                                                className="bg-slate-900 dark:bg-white hover:bg-slate-700 dark:hover:bg-slate-100 text-white dark:text-slate-900 font-extrabold text-base px-8 py-4 rounded-2xl shadow-xl hover:-translate-y-0.5 transition-all flex items-center gap-2">
+                                                Start Free â€” No Signup <ArrowRight className="w-4 h-4" />
+                                            </button>
+                                            <button onClick={() => { startGuestSession(); setRole(UserRole.LEARNER); navigate('/learner', { state: { targetTab: 'TALKBACK' } }); }}
+                                                className="flex items-center gap-2 text-slate-500 dark:text-slate-400 font-bold text-sm hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
+                                                <Headphones className="w-4 h-4" /> Try Audio Tutor instead
+                                            </button>
+                                        </div>
+                                        <div className="flex flex-wrap gap-x-5 gap-y-2 text-sm text-slate-500 dark:text-slate-400">
+                                            <div className="flex items-center gap-1.5"><CheckCircle className="w-4 h-4 text-emerald-500" /> Free to start â€” KES 20/day unlimited</div>
+                                            <div className="flex items-center gap-1.5"><CheckCircle className="w-4 h-4 text-emerald-500" /> All subjects &amp; levels</div>
+                                            <div className="flex items-center gap-1.5"><CheckCircle className="w-4 h-4 text-emerald-500" /> Works offline</div>
+                                        </div>
+                                    </motion.div>
+                                ) : (
+                                    <motion.div key="teacher" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} transition={{ duration: 0.35 }}>
+                                        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-100 dark:border-emerald-800/60 text-emerald-700 dark:text-emerald-400 text-xs font-black uppercase tracking-widest mb-6">
+                                            <GraduationCap className="w-3 h-3" /> For Kenyan Teachers
+                                        </div>
+                                        <h1 className="text-[2.6rem] md:text-5xl lg:text-[3.25rem] font-black text-slate-900 dark:text-white tracking-tight leading-[1.08] mb-5">
+                                            You didn't become a teacher<br />to spend weekends
+                                            <span className="block text-emerald-600 dark:text-emerald-400 mt-1">marking 60 books.</span>
+                                        </h1>
+                                        <p className="text-lg text-slate-500 dark:text-slate-400 font-medium leading-relaxed mb-9 max-w-lg">
+                                            Auto-grade CBC exams in minutes. Generate KICD-aligned lesson plans, schemes &amp; quizzes on demand. Reclaim your evenings â€” and your passion for teaching.
+                                        </p>
 
-                                {/* Trust indicators */}
-                                <div className="flex flex-wrap gap-x-6 gap-y-3 text-sm font-medium text-slate-600 dark:text-slate-400 text-left">
-                                    <div className="flex items-center gap-2 whitespace-nowrap"><CheckCircle className="w-4 h-4 text-emerald-500 shrink-0" /> Used by 12,000+ students</div>
-                                    <div className="flex items-center gap-2 whitespace-nowrap"><CheckCircle className="w-4 h-4 text-emerald-500 shrink-0" /> KCSE, CBC &amp; KPSEA</div>
-                                    <div className="flex items-center gap-2 whitespace-nowrap"><CheckCircle className="w-4 h-4 text-emerald-500 shrink-0" /> M-Pesa supported</div>
-                                    <div className="flex items-center gap-2 whitespace-nowrap"><CheckCircle className="w-4 h-4 text-emerald-500 shrink-0" /> Audio Tutor included</div>
-                                </div>
+                                        {/* Specific stat cards */}
+                                        <div className="grid grid-cols-3 gap-3 mb-9">
+                                            {[
+                                                { icon: <Clock className="w-5 h-5 text-emerald-600" />, stat: '15 hrs', label: 'saved per week', bg: 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-100 dark:border-emerald-800/40' },
+                                                { icon: <FileText className="w-5 h-5 text-blue-600" />, stat: '5 mins', label: 'to mark 60 papers', bg: 'bg-blue-50 dark:bg-blue-900/20 border-blue-100 dark:border-blue-800/40' },
+                                                { icon: <Zap className="w-5 h-5 text-amber-600" />, stat: '1 click', label: 'KICD lesson plan', bg: 'bg-amber-50 dark:bg-amber-900/20 border-amber-100 dark:border-amber-800/40' },
+                                            ].map((c, i) => (
+                                                <div key={i} className={`p-4 rounded-2xl border ${c.bg} flex flex-col gap-1`}>
+                                                    {c.icon}
+                                                    <div className="font-black text-slate-900 dark:text-white text-xl leading-tight mt-1">{c.stat}</div>
+                                                    <div className="text-xs text-slate-500 dark:text-slate-400 font-medium">{c.label}</div>
+                                                </div>
+                                            ))}
+                                        </div>
+
+                                        <div className="flex flex-wrap items-center gap-4 mb-7">
+                                            <button onClick={() => handleRoleSelect(UserRole.TEACHER)}
+                                                className="bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-base px-8 py-4 rounded-2xl shadow-xl shadow-emerald-200 dark:shadow-emerald-900/30 hover:-translate-y-0.5 transition-all flex items-center gap-2">
+                                                Try the Teacher Dashboard <ArrowRight className="w-4 h-4" />
+                                            </button>
+                                            <button onClick={() => setShowLogin(true)}
+                                                className="text-slate-500 dark:text-slate-400 font-bold text-sm hover:text-emerald-700 dark:hover:text-emerald-400 transition-colors flex items-center gap-1">
+                                                Sign in <ChevronRight className="w-4 h-4" />
+                                            </button>
+                                        </div>
+                                        <div className="flex flex-wrap gap-x-5 gap-y-2 text-sm text-slate-500 dark:text-slate-400">
+                                            <div className="flex items-center gap-1.5"><CheckCircle className="w-4 h-4 text-emerald-500" /> KNEC &amp; KICD aligned</div>
+                                            <div className="flex items-center gap-1.5"><CheckCircle className="w-4 h-4 text-emerald-500" /> CBC, 8-4-4 &amp; JSS</div>
+                                            <div className="flex items-center gap-1.5"><CheckCircle className="w-4 h-4 text-emerald-500" /> Cancel anytime</div>
+                                        </div>
+                                    </motion.div>
+                                )}
+                                </AnimatePresence>
+
                             </motion.div>
                         </div>
 
-                        {/* RIGHT: Hero Image with Floating Cards */}
-                        <motion.div
-                            initial={{ opacity: 0, x: 40 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ duration: 0.8, delay: 0.2 }}
-                            className="flex-1 relative w-full mt-10 lg:mt-0"
-                        >
-                            <div className="relative max-w-md mx-auto">
-                                {/* Base Image */}
-                                <img
-                                    src={heroCbeImg}
-                                    alt="African student learning with AI technology — CBE-powered education"
-                                    className="w-full h-auto object-contain drop-shadow-2xl rounded-3xl"
-                                />
+                        {/* RIGHT: Emotional photo + floating product proof cards */}
+                        <motion.div initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.8, delay: 0.25 }}
+                            className="flex-1 relative flex items-center justify-center w-full lg:max-w-[460px]">
+                            {/* Soft glow behind image */}
+                            <div className={`absolute inset-10 rounded-[3rem] blur-3xl transition-colors duration-500 ${heroRole === 'LEARNER' ? 'bg-indigo-100/70 dark:bg-indigo-900/20' : 'bg-emerald-100/70 dark:bg-emerald-900/20'}`} />
 
-                                
-                                {/* Stats Badge */}
-                                <motion.div
-                                    animate={{ y: [0, 10, 0] }}
-                                    transition={{ repeat: Infinity, duration: 5, ease: "easeInOut", delay: 1 }}
-                                    className="absolute -bottom-6 -right-4 bg-white dark:bg-slate-900 px-5 py-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xl flex items-center gap-3 backdrop-blur-md z-20"
-                                >
-                                    <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/40 rounded-full flex items-center justify-center text-blue-600">
-                                        <CheckCheck className="w-5 h-5" />
+                            <div className="relative w-full">
+                                <AnimatePresence mode="wait">
+                                    <motion.img key={heroRole}
+                                        src={heroRole === 'LEARNER' ? heroLearnerImg : heroTeacherImg}
+                                        alt={heroRole === 'LEARNER' ? 'Kenyan student solving a question with Somo Smart' : 'Kenyan teacher auto-grading papers with Somo Smart'}
+                                        className="w-full h-auto object-contain relative z-10 drop-shadow-2xl"
+                                        style={{ maxHeight: '520px' }}
+                                        initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }}
+                                        exit={{ opacity: 0, scale: 0.97 }} transition={{ duration: 0.4 }} />
+                                </AnimatePresence>
+
+                                {/* Floating card: top-left â€” role-specific proof */}
+                                {heroRole === 'LEARNER' ? (
+                                    <motion.div animate={{ y: [0, -8, 0] }} transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
+                                        className="absolute top-8 -left-4 lg:-left-10 bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-slate-100 dark:border-slate-700 p-4 max-w-[196px] z-20">
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <div className="w-6 h-6 bg-emerald-500 rounded-lg flex items-center justify-center"><CheckCircle className="w-3.5 h-3.5 text-white" /></div>
+                                            <span className="text-[10px] font-black text-emerald-600 uppercase tracking-wider">Solved!</span>
+                                        </div>
+                                        <p className="text-xs font-semibold text-slate-700 dark:text-slate-300 leading-snug">"Find x if 3x + 7 = 22"</p>
+                                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">x = 5 Â· 3 steps shown âœ“</p>
+                                    </motion.div>
+                                ) : (
+                                    <motion.div animate={{ y: [0, -8, 0] }} transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
+                                        className="absolute top-8 -left-4 lg:-left-10 bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-slate-100 dark:border-slate-700 p-4 max-w-[196px] z-20">
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <div className="w-6 h-6 bg-emerald-500 rounded-lg flex items-center justify-center"><CheckCheck className="w-3.5 h-3.5 text-white" /></div>
+                                            <span className="text-[10px] font-black text-emerald-600 uppercase tracking-wider">Auto-Graded</span>
+                                        </div>
+                                        <p className="text-xs font-semibold text-slate-700 dark:text-slate-300 leading-snug">Class 7B Maths Exam</p>
+                                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">43 papers Â· Avg 72% Â· 4 min</p>
+                                    </motion.div>
+                                )}
+
+                                {/* Floating card: bottom-right */}
+                                {heroRole === 'LEARNER' ? (
+                                    <motion.div animate={{ y: [0, 8, 0] }} transition={{ repeat: Infinity, duration: 5, ease: "easeInOut", delay: 0.8 }}
+                                        className="absolute bottom-16 -right-4 lg:-right-10 bg-indigo-600 rounded-2xl shadow-2xl p-4 max-w-[188px] z-20">
+                                        <div className="flex items-center gap-[3px] mb-2">
+                                            {[1,2,4,3,5,3,2].map((h, i) => (
+                                                <motion.div key={i} animate={{ scaleY: [0.4, 1, 0.4] }} transition={{ repeat: Infinity, duration: 1, delay: i * 0.1 }}
+                                                    className="w-1 bg-white/70 rounded-full" style={{ height: `${h * 4}px` }} />
+                                            ))}
+                                            <span className="text-white text-[10px] font-bold ml-2">Listening...</span>
+                                        </div>
+                                        <p className="text-white/90 text-xs font-medium leading-snug">Audio Tutor â€” Photosynthesis in Kiswahili</p>
+                                    </motion.div>
+                                ) : (
+                                    <motion.div animate={{ y: [0, 8, 0] }} transition={{ repeat: Infinity, duration: 5, ease: "easeInOut", delay: 0.8 }}
+                                        className="absolute bottom-16 -right-4 lg:-right-10 bg-slate-900 dark:bg-slate-700 rounded-2xl shadow-2xl p-4 max-w-[196px] z-20">
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <Sparkles className="w-4 h-4 text-amber-400" />
+                                            <span className="text-[10px] font-black text-amber-400 uppercase tracking-wider">Lesson Ready</span>
+                                        </div>
+                                        <p className="text-white/90 text-xs font-medium leading-snug">Grade 8 Â· Fractions Â· KICD 5-E Model âœ“</p>
+                                    </motion.div>
+                                )}
+
+                                {/* Social proof pill â€” bottom center */}
+                                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1 }}
+                                    className="absolute -bottom-5 left-1/2 -translate-x-1/2 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-full px-4 py-2.5 shadow-xl flex items-center gap-3 z-20 whitespace-nowrap">
+                                    <div className="flex -space-x-2">
+                                        {['bg-blue-400','bg-emerald-400','bg-amber-400','bg-rose-400'].map((c, i) => (
+                                            <div key={i} className={`w-6 h-6 ${c} rounded-full border-2 border-white dark:border-slate-800`} />
+                                        ))}
                                     </div>
-                                    <div>
-                                        <div className="text-sm font-black text-slate-900 dark:text-white">1M+ Questions</div>
-                                        <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Answered</div>
-                                    </div>
+                                    <span className="text-xs font-black text-slate-800 dark:text-slate-200">12,000+ learners already inside</span>
                                 </motion.div>
                             </div>
                         </motion.div>
@@ -665,6 +699,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
             </section>
 
             {/* --- PRESTIGE TICKER --- */}
+
             <div className="border-y border-slate-200/50 dark:border-slate-800/80 bg-white/50 dark:bg-slate-950/50 py-6 sm:py-8 overflow-hidden relative backdrop-blur-sm">
                 <div className="absolute left-0 top-0 bottom-0 w-20 sm:w-40 bg-gradient-to-r from-slate-50 dark:from-slate-950 to-transparent z-10 pointer-events-none" />
                 <div className="absolute right-0 top-0 bottom-0 w-20 sm:w-40 bg-gradient-to-l from-slate-50 dark:from-slate-950 to-transparent z-10 pointer-events-none" />
@@ -1029,7 +1064,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                     </div>
                                     <div>
                                         <div className="text-sm font-bold text-slate-900 dark:text-white">Form 3 Mid-Term</div>
-                                        <div className="text-xs text-slate-500 dark:text-slate-400">Math, Eng, Kisw • Generated</div>
+                                        <div className="text-xs text-slate-500 dark:text-slate-400">Math, Eng, Kisw â€¢ Generated</div>
                                     </div>
                                     <div className="ml-2 w-8 h-8 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-green-600 dark:text-green-400">
                                         <CheckCircle className="w-4 h-4" />

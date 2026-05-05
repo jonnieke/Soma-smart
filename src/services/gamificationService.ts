@@ -74,7 +74,10 @@ export const calculateStreak = (activities: LearnerActivity[]): number => {
 
     // Get unique dates (YYYY-MM-DD)
     const uniqueDates = Array.from(new Set(
-        activities.map(a => new Date(a.date).toISOString().split('T')[0])
+        activities.map(a => {
+            const d = new Date(a.date);
+            return isNaN(d.getTime()) ? null : d.toISOString().split('T')[0];
+        }).filter(Boolean) as string[]
     )).sort().reverse(); // Newest first
 
     if (uniqueDates.length === 0) return 0;

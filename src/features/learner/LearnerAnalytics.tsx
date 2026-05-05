@@ -186,12 +186,14 @@ export const LearnerAnalytics: React.FC<LearnerAnalyticsProps> = ({
                             <div className="space-y-4">
                                 {recentActivity.length > 0 ? recentActivity.map((item, i) => (
                                     <div key={i} className="flex items-start gap-4 flex w-full">
-                                        <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center shrink-0 border border-slate-200 dark:border-slate-700 mt-1">
+                                        <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center shrink-0 border-2 border-slate-300 dark:border-slate-700 mt-1">
                                             {item.type === 'QUIZ' ? <PenTool className="w-3 h-3 text-rose-500" /> : <Lightbulb className="w-4 h-4 text-amber-500" />}
                                         </div>
                                         <div className="flex-1 w-full overflow-hidden">
                                             <p className="text-sm font-bold text-slate-700 dark:text-slate-300 truncate w-full block">{item.topic || 'General Revision'}</p>
-                                            <p className="text-xs text-slate-400 font-medium">{new Date(item.date).toLocaleDateString()} • {item.type}</p>
+                                            <p className="text-xs text-slate-400 font-medium">
+                                                {!isNaN(new Date(item.date).getTime()) ? new Date(item.date).toLocaleDateString() : 'Unknown Date'} • {item.type}
+                                            </p>
                                         </div>
                                     </div>
                                 )) : (

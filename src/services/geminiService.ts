@@ -1,4 +1,3 @@
-import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
 import { ExplanationResult, QuizData, TeacherNote, RevisionMode, TutoringStep, ExamQuestion, ExamAnalysis, TutorResponse, LessonResult, TeachingStrategy } from "../types";
 import { speak as ttSpeak, stopSpeech as ttStop } from "./elevenLabsService";
 import { buildScaffoldingContext } from "./spacedRepetitionService";
@@ -10,7 +9,16 @@ import { buildPersonaInstruction, recommendPersona } from "./adminAgentService";
 // Instead, we call a Supabase Edge Function which adds the key server-side.
 import { supabase } from "../lib/supabase";
 
-const callGeminiProxy = async (model: string, contents: any, generationConfig: any = {}, systemInstruction: any = null) => {
+const SchemaType = {
+  STRING: "string",
+  NUMBER: "number",
+  INTEGER: "integer",
+  BOOLEAN: "boolean",
+  ARRAY: "array",
+  OBJECT: "object"
+} as const;
+
+export const callGeminiProxy = async (model: string, contents: any, generationConfig: any = {}, systemInstruction: any = null) => {
   const { data: { session } } = await supabase.auth.getSession();
   const token = session?.access_token;
 
@@ -54,8 +62,11 @@ const callGeminiProxyStream = async (model: string, contents: any, generationCon
   });
 
   if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || "Failed to call AI proxy");
+    const errorText = await response.text();
+    console.error("Gemini Proxy Stream Error:", response.status, errorText);
+    let message = "Failed to call AI proxy";
+    try { message = JSON.parse(errorText)?.message || message; } catch { /* raw text */ }
+    throw new Error(message);
   }
 
   return response.body as ReadableStream<Uint8Array>;
@@ -74,7 +85,6 @@ export const processStream = async (stream: ReadableStream<Uint8Array>, onChunk:
       buffer += decoder.decode(value, { stream: true });
 
       // Gemini streaming via proxy often returns a sequence of JSON objects.
-      // We look for all instances of "text":"..." in the current buffer.
       // This regex handles escaped quotes and is robust to standard Gemini structures.
       const textMatches = Array.from(buffer.matchAll(/"text":\s*"((?:\\.|[^"\\])*)"/g));
       
@@ -120,7 +130,7 @@ const genAI = {
   })
 };
 
-const MODEL_NAME = "gemini-2.5-flash"; // Updated to latest flash model to resolve 404 Not Found
+const MODEL_NAME = "gemini-2.5-flash"; // GA and widely supported
 
 // --- SUPER TEACHER INSTRUCTIONS ---
 const SYLLABUS_GROUNDING_INSTRUCTION = `
@@ -198,7 +208,7 @@ export const explainImage = async (
   base64Image: string,
   mimeType: string,
   level: 'Simple' | 'Exam',
-  language: 'EN' | 'FR' = 'EN',
+  language: 'EN' | 'SW' = 'EN',
   purpose: 'TUTOR' | 'HOMEWORK' = 'TUTOR'
 ): Promise<ExplanationResult> => {
   const model = genAI.getGenerativeModel({
@@ -218,8 +228,8 @@ export const explainImage = async (
     }
   });
 
-  const langInstruction = language === 'FR'
-    ? "LANGUAGE RULE: You MUST respond in French (Français). Translate specific educational terms if needed, but keep the explanation natural in French."
+  const langInstruction = language === 'SW'
+    ? "LANGUAGE RULE: You MUST respond ENTIRELY in rich, immersive, grammatical Swahili (Kiswahili Sanifu). Use comprehensive educational vocabulary in Swahili."
     : "LANGUAGE RULE: If the subject is 'Kiswahili' or 'Swahili' or the question/content is in Swahili, you MUST respond exclusively in Swahili. For ALL other subjects and questions, you MUST respond exclusively in English.";
 
   const prompt = `
@@ -257,7 +267,7 @@ export const explainImage = async (
   }
 };
 
-export const explainAudio = async (base64Audio: string, mimeType: string, level: 'Simple' | 'Exam', language: 'EN' | 'FR' = 'EN'): Promise<ExplanationResult> => {
+export const explainAudio = async (base64Audio: string, mimeType: string, level: 'Simple' | 'Exam', language: 'EN' | 'SW' = 'EN'): Promise<ExplanationResult> => {
   const model = genAI.getGenerativeModel({
     model: MODEL_NAME,
     generationConfig: {
@@ -276,8 +286,8 @@ export const explainAudio = async (base64Audio: string, mimeType: string, level:
     }
   });
 
-  const langInstruction = language === 'FR'
-    ? "LANGUAGE RULE: You MUST respond in French (Français). Translate specific educational terms if needed, but keep the explanation natural in French."
+  const langInstruction = language === 'SW'
+    ? "LANGUAGE RULE: You MUST respond ENTIRELY in rich, immersive, grammatical Swahili (Kiswahili Sanifu). Use comprehensive educational vocabulary in Swahili."
     : "LANGUAGE RULE: If the subject is 'Kiswahili' or 'Swahili' or the question/content is in Swahili, you MUST respond exclusively in Swahili. For ALL other subjects and questions, you MUST respond exclusively in English.";
 
   const prompt = `
@@ -314,7 +324,7 @@ export const explainAudio = async (base64Audio: string, mimeType: string, level:
   }
 };
 
-export const processDarasaRecording = async (audioBlob: Blob, mimeType: string, subject: string, grade: string, language: 'EN' | 'FR' = 'EN'): Promise<{ note: TeacherNote, quiz: QuizData }> => {
+export const processDarasaRecording = async (audioBlob: Blob, mimeType: string, subject: string, grade: string, language: 'EN' | 'SW' = 'EN'): Promise<{ note: TeacherNote, quiz: QuizData }> => {
   const base64Audio = await fileToGenerativePart(new File([audioBlob], 'darasa.webm', { type: mimeType }));
 
   const model = genAI.getGenerativeModel({
@@ -378,7 +388,7 @@ export const processDarasaRecording = async (audioBlob: Blob, mimeType: string, 
     - Give 4 plausible options per question, with exactly 1 correct answer.
     - Assign realistic marks per question (usually 1 or 2).
     
-    LANGUAGE RULE: Use ${language === 'FR' ? 'French' : 'English'}, except if the subject is Swahili.
+    LANGUAGE RULE: Use ${language === 'SW' ? 'Swahili (Kiswahili Sanifu)' : 'English'}, except if the subject is Swahili.
     
     Output JSON containing both "note" and "quiz" objects.
   `;
@@ -436,7 +446,7 @@ const retrieveContext = async (query: string, documentId?: string, grade?: strin
 export const explainTopic = async (
   topic: string,
   level: 'Simple' | 'Exam',
-  language: 'EN' | 'FR' = 'EN',
+  language: 'EN' | 'SW' = 'EN',
   documentId?: string,
   subject?: string,
   grade?: string,
@@ -527,8 +537,8 @@ export const explainTopic = async (
     `;
   }
 
-  const langInstruction = language === 'FR'
-    ? "LANGUAGE RULE: You MUST respond in French (Français). Translate specific educational terms if needed, but keep the explanation natural in French."
+  const langInstruction = language === 'SW'
+    ? "LANGUAGE RULE: You MUST respond ENTIRELY in rich, immersive, grammatical Swahili (Kiswahili Sanifu). Use comprehensive educational vocabulary in Swahili."
     : "LANGUAGE RULE: If the subject is 'Kiswahili' or 'Swahili' or the question/content is in Swahili, you MUST respond exclusively in Swahili. For ALL other subjects and questions, you MUST respond exclusively in English.";
 
   // Build adaptive scaffolding context if mastery data is available
@@ -598,7 +608,7 @@ export const explainTopic = async (
   }
 };
 
-export const summarizeDocument = async (title: string, documentId: string, language: 'EN' | 'FR' = 'EN', subject?: string, grade?: string): Promise<ExplanationResult> => {
+export const summarizeDocument = async (title: string, documentId: string, language: 'EN' | 'SW' = 'EN', subject?: string, grade?: string): Promise<ExplanationResult> => {
   // We use search-knowledge to get a broad overview of the document
   const ragContext = await retrieveContext("Explain the main content and purpose of this document", documentId);
 
@@ -707,7 +717,7 @@ export const summarizeDocument = async (title: string, documentId: string, langu
     
     5. RELATED TOPICS: Suggest EXACTLY 3 related study topics for further learning.
     
-    6. Use ${language === 'FR' ? 'French' : 'English'}.
+    6. Use ${language === 'SW' ? 'Swahili (Kiswahili Sanifu)' : 'English'}.
     
     Output JSON.
   `;
@@ -723,7 +733,7 @@ export const summarizeDocument = async (title: string, documentId: string, langu
   }
 };
 
-export const generateRichLessonNotes = async (title: string, documentId: string, language: 'EN' | 'FR' = 'EN', subject?: string, grade?: string): Promise<ExplanationResult> => {
+export const generateRichLessonNotes = async (title: string, documentId: string, language: 'EN' | 'SW' = 'EN', subject?: string, grade?: string): Promise<ExplanationResult> => {
   const ragContext = await retrieveContext("Provide a deep, comprehensive and pedagogical explanation of the subject matter for exam revision", documentId);
 
   const model = genAI.getGenerativeModel({
@@ -772,7 +782,7 @@ GUIDELINES:
     3. ** Tone **: Educational, encouraging, and professional(Teacher - to - Student).
     4. ** Richness **: Provide depth.If a concept is mentioned in the source, explain the 'why' and 'how', not just the 'what'.
     5. ** Formatting **: Use Markdown with clear H2 and H3 headers, bold text for emphasis, and organized lists.
-    6. ** Language **: Use ${language === 'FR' ? 'French' : 'English'}.
+    6. ** Language **: Use ${language === 'SW' ? 'Swahili (Kiswahili Sanifu)' : 'English'}.
     
     Output JSON.
   `;
@@ -793,7 +803,7 @@ export const continueResearch = async (
   currentExplanation: string,
   userQuery: string,
   level: 'Simple' | 'Exam',
-  language: 'EN' | 'FR' = 'EN'
+  language: 'EN' | 'SW' = 'EN'
 ): Promise<ExplanationResult> => {
   const model = genAI.getGenerativeModel({
     model: MODEL_NAME,
@@ -812,8 +822,8 @@ export const continueResearch = async (
     }
   });
 
-  const langInstruction = language === 'FR'
-    ? "LANGUAGE RULE: You MUST respond in French (Français)."
+  const langInstruction = language === 'SW'
+    ? "LANGUAGE RULE: You MUST respond ENTIRELY in rich, immersive, grammatical Swahili (Kiswahili Sanifu). Use comprehensive educational vocabulary in Swahili."
     : "LANGUAGE RULE: If the subject is 'Kiswahili' or 'Swahili' or the question/content is in Swahili, you MUST respond exclusively in Swahili. For ALL other subjects and questions, you MUST respond exclusively in English.";
 
   const prompt = `
@@ -844,7 +854,7 @@ TASK:
   }
 };
 
-export const generateQuiz = async (content: string, topic: string, language: 'EN' | 'FR' = 'EN'): Promise<QuizData> => {
+export const generateQuiz = async (content: string, topic: string, language: 'EN' | 'SW' = 'EN'): Promise<QuizData> => {
   const model = genAI.getGenerativeModel({
     model: MODEL_NAME,
     generationConfig: {
@@ -874,8 +884,8 @@ export const generateQuiz = async (content: string, topic: string, language: 'EN
     }
   });
 
-  const langInstruction = language === 'FR'
-    ? "LANGUAGE RULE: You MUST generate the quiz in French (Français)."
+  const langInstruction = language === 'SW'
+    ? "LANGUAGE RULE: You MUST generate the quiz in Swahili (Kiswahili Sanifu)."
     : "LANGUAGE RULE: If the subject is 'Kiswahili' or 'Swahili' or the content is in Swahili, you MUST generate the quiz exclusively in Swahili. For ALL other subjects and content, you MUST generate the quiz exclusively in English.";
 
   const prompt = `
@@ -903,7 +913,7 @@ export const generateQuiz = async (content: string, topic: string, language: 'EN
   }
 };
 
-export const generateQuickQuiz = async (content: string, topic: string, language: 'EN' | 'FR' = 'EN'): Promise<QuizData> => {
+export const generateQuickQuiz = async (content: string, topic: string, language: 'EN' | 'SW' = 'EN'): Promise<QuizData> => {
   const model = genAI.getGenerativeModel({
     model: MODEL_NAME,
     generationConfig: {
@@ -933,8 +943,8 @@ export const generateQuickQuiz = async (content: string, topic: string, language
     }
   });
 
-  const langInstruction = language === 'FR'
-    ? "LANGUAGE RULE: You MUST generate the quiz in French (Français)."
+  const langInstruction = language === 'SW'
+    ? "LANGUAGE RULE: You MUST generate the quiz in Swahili (Kiswahili Sanifu)."
     : "LANGUAGE RULE: If the subject is 'Kiswahili' or 'Swahili' or the content is in Swahili, you MUST generate the quiz exclusively in Swahili. For ALL other subjects and content, you MUST generate the quiz exclusively in English.";
 
   const prompt = `
@@ -971,7 +981,7 @@ export const stopSpeech = () => {
 
 // --- TEACHER FEATURES ---
 
-export const convertNotes = async (base64Data: string, mimeType: string, subject?: string, className?: string, language: 'EN' | 'FR' = 'EN'): Promise<TeacherNote> => {
+export const convertNotes = async (base64Data: string, mimeType: string, subject?: string, className?: string, language: 'EN' | 'SW' = 'EN'): Promise<TeacherNote> => {
   const model = genAI.getGenerativeModel({
     model: MODEL_NAME,
     generationConfig: {
@@ -988,8 +998,8 @@ export const convertNotes = async (base64Data: string, mimeType: string, subject
     }
   });
 
-  const langInstruction = language === 'FR'
-    ? "LANGUAGE RULE: You MUST respond in French (Français)."
+  const langInstruction = language === 'SW'
+    ? "LANGUAGE RULE: You MUST respond ENTIRELY in rich, immersive, grammatical Swahili (Kiswahili Sanifu). Use comprehensive educational vocabulary in Swahili."
     : "LANGUAGE RULE: If the subject is 'Kiswahili' or 'Swahili' or the question/content is in Swahili, you MUST respond exclusively in Swahili. For ALL other subjects and questions, you MUST respond exclusively in English.";
 
   const prompt = `
@@ -1023,7 +1033,7 @@ export const convertNotes = async (base64Data: string, mimeType: string, subject
   }
 };
 
-export const processVoiceNote = async (audioBase64: string, mimeType: string = "audio/mp3", subject?: string, className?: string, language: 'EN' | 'FR' = 'EN'): Promise<TeacherNote> => {
+export const processVoiceNote = async (audioBase64: string, mimeType: string = "audio/mp3", subject?: string, className?: string, language: 'EN' | 'SW' = 'EN'): Promise<TeacherNote> => {
   const model = genAI.getGenerativeModel({
     model: MODEL_NAME,
     generationConfig: {
@@ -1040,8 +1050,8 @@ export const processVoiceNote = async (audioBase64: string, mimeType: string = "
     }
   });
 
-  const langInstruction = language === 'FR'
-    ? "LANGUAGE RULE: You MUST respond in French (Français)."
+  const langInstruction = language === 'SW'
+    ? "LANGUAGE RULE: You MUST respond ENTIRELY in rich, immersive, grammatical Swahili (Kiswahili Sanifu). Use comprehensive educational vocabulary in Swahili."
     : "LANGUAGE RULE: If the subject is 'Kiswahili' or 'Swahili' or the question/content is in Swahili, you MUST respond exclusively in Swahili. For ALL other subjects and questions, you MUST respond exclusively in English.";
 
   const prompt = `
@@ -1104,7 +1114,7 @@ Format as JSON.
   }
 }
 
-export const generateTeacherQuiz = async (topic: string, language: 'EN' | 'FR' = 'EN'): Promise<QuizData> => {
+export const generateTeacherQuiz = async (topic: string, language: 'EN' | 'SW' = 'EN'): Promise<QuizData> => {
   return generateQuiz("", topic, language);
 }
 
@@ -1114,7 +1124,7 @@ export const generateAdvancedTeacherQuiz = async (
   grade: string,
   count: number,
   type: 'MCQ' | 'OPEN',
-  language: 'EN' | 'FR' = 'EN'
+  language: 'EN' | 'SW' = 'EN'
 ): Promise<QuizData> => {
   const model = genAI.getGenerativeModel({
     model: MODEL_NAME,
@@ -1134,9 +1144,14 @@ export const generateAdvancedTeacherQuiz = async (
                 question: { type: SchemaType.STRING },
                 options: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
                 correctAnswer: { type: SchemaType.STRING },
-                explanation: { type: SchemaType.STRING }
+                explanation: { type: SchemaType.STRING },
+                cognitiveLevel: { type: SchemaType.STRING },
+                markingScheme: {
+                  type: SchemaType.ARRAY,
+                  items: { type: SchemaType.STRING }
+                }
               },
-              required: ["id", "type", "question", "correctAnswer", "explanation"]
+              required: ["id", "type", "question", "correctAnswer", "explanation", "cognitiveLevel", "markingScheme"]
             }
           }
         },
@@ -1149,8 +1164,8 @@ export const generateAdvancedTeacherQuiz = async (
     inlineData: { mimeType: "image/jpeg", data: img }
   }));
 
-  const langInstruction = language === 'FR'
-    ? "LANGUAGE RULE: You MUST generate the quiz in French (Français)."
+  const langInstruction = language === 'SW'
+    ? "LANGUAGE RULE: You MUST generate the quiz in Swahili (Kiswahili Sanifu)."
     : "LANGUAGE RULE: If the subject is 'Kiswahili' or 'Swahili' or the content is in Swahili, you MUST generate the quiz exclusively in Swahili. For ALL other subjects and content, you MUST generate the quiz exclusively in English.";
 
   const prompt = `
@@ -1161,12 +1176,14 @@ export const generateAdvancedTeacherQuiz = async (
     Source Material: Use the attached images as context.
 
   Requirements:
-1. Subject identification: Identify the subject from the topic or content.
-    2. ${langInstruction}
-3. Generate EXACTLY ${count} questions.
-    4. Format: ${type === 'MCQ' ? 'Multiple Choice Questions (4 options)' : 'Short Answer / Structured Questions (No options)'}.
-5. Standard: Align with Kenyan CBC standards(Scenario - based, Critical Thinking, Application).
-    6. Language: Academic and age - appropriate for ${grade}.
+  1. Subject identification: Identify the subject from the topic or content.
+  2. ${langInstruction}
+  3. Generate EXACTLY ${count} questions.
+  4. Format: ${type === 'MCQ' ? 'Multiple Choice Questions (4 options)' : 'Short Answer / Structured Questions (No options)'}.
+  5. Standard: Align with Kenyan CBC standards (Scenario-based, Critical Thinking, Application).
+  6. Language: Academic and age-appropriate for ${grade}.
+  7. CRITICAL: Provide a highly detailed, step-by-step 'markingScheme' array for EACH question (e.g., ["1 mark for X", "1 mark for Y"]).
+  8. CRITICAL: Include the cognitiveLevel (e.g., Knowledge, Application, Analysis).
     
     Output JSON structure:
 {
@@ -1202,7 +1219,7 @@ export const generateAdvancedTeacherQuiz = async (
 // --- ASK SOMA CHATBOT ---
 // --- ASK SOMO CHATBOT ---
 
-export const askSomo = async (userQuery: string, chatHistory: { role: 'user' | 'model', text: string }[], language: 'EN' | 'FR' = 'EN'): Promise<string> => {
+export const askSomo = async (userQuery: string, chatHistory: { role: 'user' | 'model', text: string }[], language: 'EN' | 'SW' = 'EN'): Promise<string> => {
   const model = genAI.getGenerativeModel({ model: MODEL_NAME });
 
   // Construct prompt with history manually
@@ -1225,7 +1242,7 @@ USE THESE EXACT LINKS:
       - For Teachers: [Teacher Dashboard](/teacher)
         - For Exam Candidates: [Candidate Success Center](/revision)
 
-${language === 'FR' ? "LANGUAGE RULE: You MUST respond ONLY in French (Français). If the user asks in English, still respond in French." : ""}
+${language === 'SW' ? "LANGUAGE RULE: You MUST respond ENTIRELY in rich, immersive, grammatical Swahili (Kiswahili Sanifu). Use comprehensive educational vocabulary in Swahili." : ""}
 Keep answers short(1 - 3 sentences), warm, and very clear.Always be helpful! ❤️`;
 
   const historyText = chatHistory.map(msg => `${msg.role === 'user' ? 'User' : 'Somo'}: ${msg.text} `).join('\n');
@@ -1463,7 +1480,7 @@ export const getRevisionTutorResponse = async (
   currentStep: TutoringStep,
   history: { role: 'user' | 'model', text: string }[],
   mode: RevisionMode,
-  language: 'EN' | 'FR' = 'EN'
+  language: 'EN' | 'SW' = 'EN'
 ): Promise<TutorResponse> => {
   const model = genAI.getGenerativeModel({
     model: MODEL_NAME,
@@ -1482,8 +1499,8 @@ export const getRevisionTutorResponse = async (
     }
   });
 
-  const langInstruction = language === 'FR'
-    ? "LANGUAGE RULE: Respond in French (Français). Translate educational concepts where appropriate."
+  const langInstruction = language === 'SW'
+    ? "LANGUAGE RULE: Respond in Swahili (Kiswahili Sanifu). Translate educational concepts where appropriate."
     : "LANGUAGE RULE: If the subject is 'Kiswahili' or 'Swahili' or the question/content is in Swahili, you MUST respond exclusively in Swahili. For ALL other subjects and questions, you MUST respond exclusively in English.";
 
   const systemInstruction = `
@@ -1553,7 +1570,7 @@ Mode: ${mode}
   }
 };
 
-export const getPaperGuidance = async (analysis: ExamAnalysis, query?: string, language: 'EN' | 'FR' = 'EN'): Promise<string> => {
+export const getPaperGuidance = async (analysis: ExamAnalysis, query?: string, language: 'EN' | 'SW' = 'EN'): Promise<string> => {
   const model = genAI.getGenerativeModel({ model: MODEL_NAME });
 
   const paperContext = `
@@ -1596,7 +1613,7 @@ Questions:
   const finalPrompt = `
     ${prompt}
     
-    ${language === 'FR' ? "LANGUAGE RULE: You MUST respond in French (Français)." : "LANGUAGE RULE: If the subject is 'Kiswahili' or 'Swahili' or the question/content is in Swahili, you MUST respond exclusively in Swahili. For ALL other subjects and questions, you MUST respond exclusively in English."}
+    ${language === 'SW' ? "LANGUAGE RULE: You MUST respond ENTIRELY in rich, immersive, grammatical Swahili (Kiswahili Sanifu). Use comprehensive educational vocabulary in Swahili." : "LANGUAGE RULE: If the subject is 'Kiswahili' or 'Swahili' or the question/content is in Swahili, you MUST respond exclusively in Swahili. For ALL other subjects and questions, you MUST respond exclusively in English."}
 `;
 
   try {
@@ -1616,7 +1633,7 @@ import { MarkingResult } from "../types";
 export const markStudentAnswer = async (
   question: ExamQuestion,
   learnerAnswer: string,
-  language: 'EN' | 'FR' = 'EN'
+  language: 'EN' | 'SW' = 'EN'
 ): Promise<MarkingResult> => {
   const model = genAI.getGenerativeModel({
     model: MODEL_NAME,
@@ -1637,8 +1654,8 @@ export const markStudentAnswer = async (
     }
   });
 
-  const langInstruction = language === 'FR'
-    ? "LANGUAGE RULE: Respond in French."
+  const langInstruction = language === 'SW'
+    ? "LANGUAGE RULE: You MUST respond ENTIRELY in rich, immersive, grammatical Swahili (Kiswahili Sanifu)."
     : "LANGUAGE RULE: If the subject is 'Kiswahili' or 'Swahili' or the question/content is in Swahili, you MUST respond exclusively in Swahili. For ALL other subjects and questions, you MUST respond exclusively in English.";
 
   const prompt = `
@@ -1689,7 +1706,7 @@ export const generateExamQuestions = async (
   subject: string,
   grade: string,
   count: number = 10,
-  language: 'EN' | 'FR' = 'EN'
+  language: 'EN' | 'SW' = 'EN'
 ): Promise<ExamAnalysis> => {
   const model = genAI.getGenerativeModel({
     model: MODEL_NAME,
@@ -1711,9 +1728,14 @@ export const generateExamQuestions = async (
                 topic: { type: SchemaType.STRING },
                 subStrand: { type: SchemaType.STRING },
                 competency: { type: SchemaType.STRING },
-                marks: { type: SchemaType.INTEGER }
+                cognitiveLevel: { type: SchemaType.STRING },
+                marks: { type: SchemaType.INTEGER },
+                markingScheme: {
+                  type: SchemaType.ARRAY,
+                  items: { type: SchemaType.STRING }
+                }
               },
-              required: ["id", "number", "text", "topic", "competency", "marks"]
+              required: ["id", "number", "text", "topic", "competency", "cognitiveLevel", "marks", "markingScheme"]
             }
           }
         },
@@ -1722,28 +1744,27 @@ export const generateExamQuestions = async (
     }
   });
 
-  const langInstruction = language === 'FR'
-    ? "LANGUAGE RULE: Generate questions in French."
+  const langInstruction = language === 'SW'
+    ? "LANGUAGE RULE: Generate questions ENTIRELY in rich, immersive, grammatical Swahili (Kiswahili Sanifu)."
     : "LANGUAGE RULE: If the subject is 'Kiswahili' or 'Swahili' or the content is in Swahili, you MUST generate exclusively in Swahili. For ALL other subjects and content, you MUST generate exclusively in English.";
 
   const prompt = `
-    You are a KNEC - level Exam Setter for Kenyan national examinations(KPSEA, KCSE).
+    You are a Master KNEC Exam Setter for Kenyan national examinations (KPSEA, KCSE).
     
-    Using the attached revision notes / document as source material, generate ${count} exam - quality questions.
+    Using the attached revision notes / document as source material, generate ${count} strictly formatted exam-quality questions.
 
-  Subject: ${subject}
-Grade: ${grade}
+    Subject: ${subject}
+    Grade: ${grade}
     ${langInstruction}
 
-RULES:
-1. Questions MUST be in the style of actual KPSEA / KCSE papers — structured, precise, with clear mark allocation.
-    2. Mix question types: factual recall(2 marks), application(3 - 4 marks), and analytical / essay(5 + marks).
-    3. Each question must test a specific competency from the Kenyan CBC / 8 - 4 - 4 curriculum.
-    4. Include marks for each question.
-    5. Questions should be ANSWERABLE from the document content.
-    6. Use proper examination language: "State...", "Explain...", "Describe...", "Calculate...", "Discuss..."
-
-Output as ExamAnalysis JSON.
+    STRICT RULES:
+    1. Questions MUST precisely emulate KNEC papers. Use official action verbs: "State", "Identify", "Explain", "Calculate", "Describe with the aid of a diagram".
+    2. Mix cognitive levels (Bloom's Taxonomy): Knowledge (2 marks), Application (3-4 marks), and Analysis/Synthesis (5+ marks).
+    3. Each question must target a specific CBC / 8-4-4 competency.
+    4. Provide the exact marks allocated.
+    5. CRITICAL: You MUST provide a highly detailed, step-by-step 'markingScheme' array for each question. Show exactly where each mark is awarded (e.g., ["1 mark for stating X", "1 mark for linking X to Y"]).
+    
+    Output as JSON matching the requested schema.
   `;
 
   try {
@@ -1763,7 +1784,7 @@ Output as ExamAnalysis JSON.
 
 export const predictLikelyQuestions = async (
   analysis: ExamAnalysis,
-  language: 'EN' | 'FR' = 'EN'
+  language: 'EN' | 'SW' = 'EN'
 ): Promise<ExamAnalysis> => {
   const model = genAI.getGenerativeModel({
     model: MODEL_NAME,
@@ -1785,9 +1806,14 @@ export const predictLikelyQuestions = async (
                 topic: { type: SchemaType.STRING },
                 subStrand: { type: SchemaType.STRING },
                 competency: { type: SchemaType.STRING },
-                marks: { type: SchemaType.INTEGER }
+                cognitiveLevel: { type: SchemaType.STRING },
+                marks: { type: SchemaType.INTEGER },
+                markingScheme: {
+                  type: SchemaType.ARRAY,
+                  items: { type: SchemaType.STRING }
+                }
               },
-              required: ["id", "number", "text", "topic", "competency", "marks"]
+              required: ["id", "number", "text", "topic", "competency", "cognitiveLevel", "marks", "markingScheme"]
             }
           }
         },
@@ -1809,19 +1835,19 @@ Grade: ${analysis.grade}
     Questions from past paper:
     ${paperContext}
     
-    ${language === 'FR' ? "Respond in French." : "If Kiswahili subject, respond in Swahili. Otherwise English."}
+    ${language === 'SW' ? "Respond in Swahili (Kiswahili Sanifu)." : "If Kiswahili subject, respond in Swahili. Otherwise English."}
 
-TASK: Generate 8 PREDICTED questions that are MOST LIKELY to appear in the NEXT exam sitting.
+    TASK: Generate 8 PREDICTED questions that are MOST LIKELY to appear in the NEXT exam sitting.
     
-    PREDICTION CRITERIA:
-1. Topics that appear frequently across KPSEA / KCSE papers get repeated.
+    STRICT KNEC CRITERIA:
+    1. Topics that appear frequently across KPSEA / KCSE papers get repeated.
     2. Topics NOT covered in this paper are likely to appear next time.
-    3. Current affairs or trending topics in Kenya relevant to the subject.
-    4. KNEC tends to rotate between application and knowledge questions.
-    5. Include some "killer" questions that separate A students from B students.
+    3. KNEC tends to rotate between application and knowledge questions. Ensure a mix of cognitive levels (Bloom's Taxonomy).
+    4. Include some "killer" questions that separate A students from B students (Analysis/Synthesis).
+    5. CRITICAL: You MUST provide a highly detailed, step-by-step 'markingScheme' array for each question. Show exactly where each mark is awarded (e.g., ["1 mark for stating X", "1 mark for linking X to Y"]).
     
-    Each question must have marks allocated and be in proper KNEC exam format.
-Output as ExamAnalysis JSON.
+    Each question must have marks allocated, cognitiveLevel defined, and be in proper KNEC exam format.
+    Output as JSON matching the requested schema.
   `;
 
   try {
@@ -1844,7 +1870,7 @@ export const extractStructuredNotes = async (
   mimeType: string,
   subject: string,
   grade: string,
-  language: 'EN' | 'FR' = 'EN'
+  language: 'EN' | 'SW' = 'EN'
 ): Promise<StructuredStudyNotes> => {
   const model = genAI.getGenerativeModel({
     model: MODEL_NAME,
@@ -1881,8 +1907,8 @@ export const extractStructuredNotes = async (
     }
   });
 
-  const langInstruction = language === 'FR'
-    ? "LANGUAGE RULE: Respond in French."
+  const langInstruction = language === 'SW'
+    ? "LANGUAGE RULE: You MUST respond ENTIRELY in rich, immersive, grammatical Swahili (Kiswahili Sanifu)."
     : "LANGUAGE RULE: If the subject is 'Kiswahili' or 'Swahili' or the question/content is in Swahili, you MUST respond exclusively in Swahili. For ALL other subjects and questions, you MUST respond exclusively in English.";
 
   const prompt = `
@@ -1940,7 +1966,7 @@ export const generateTopicQuiz = async (
   topic: StudyTopic,
   subject: string,
   grade: string,
-  language: 'EN' | 'FR' = 'EN'
+  language: 'EN' | 'SW' = 'EN'
 ): Promise<ExamAnalysis> => {
   const model = genAI.getGenerativeModel({
     model: MODEL_NAME,
@@ -1962,9 +1988,14 @@ export const generateTopicQuiz = async (
                 topic: { type: SchemaType.STRING },
                 subStrand: { type: SchemaType.STRING },
                 competency: { type: SchemaType.STRING },
-                marks: { type: SchemaType.INTEGER }
+                cognitiveLevel: { type: SchemaType.STRING },
+                marks: { type: SchemaType.INTEGER },
+                markingScheme: {
+                  type: SchemaType.ARRAY,
+                  items: { type: SchemaType.STRING }
+                }
               },
-              required: ["id", "number", "text", "topic", "competency", "marks"]
+              required: ["id", "number", "text", "topic", "competency", "cognitiveLevel", "marks", "markingScheme"]
             }
           }
         },
@@ -1973,16 +2004,16 @@ export const generateTopicQuiz = async (
     }
   });
 
-  const langInstruction = language === 'FR'
-    ? "Generate questions in French."
+  const langInstruction = language === 'SW'
+    ? "Generate questions in Swahili (Kiswahili Sanifu)."
     : "If Kiswahili subject, generate in Swahili. Otherwise English.";
 
   const prompt = `
-    You are a KNEC - level exam setter.Generate 5 exam - quality questions specifically on this topic.
+    You are a Master KNEC Exam Setter. Generate 5 strictly formatted exam-quality questions specifically on this topic.
 
-  Subject: ${subject}
-Grade: ${grade}
-Topic: ${topic.title}
+    Subject: ${subject}
+    Grade: ${grade}
+    Topic: ${topic.title}
     ${langInstruction}
     
     Topic Content for Context:
@@ -1991,13 +2022,13 @@ Topic: ${topic.title}
     Key Concepts to Test:
     ${topic.keyConcepts.join(', ')}
 
-RULES:
-1. Questions MUST test understanding of THIS specific topic only.
-    2. Mix difficulty: 2 easy(2 marks), 2 medium(3 - 4 marks), 1 hard(5 marks).
-    3. Use KPSEA / KCSE exam format: "State...", "Explain...", "Describe...", "Calculate..."
-4. Questions should be answerable from the topic content provided.
-
-Output as ExamAnalysis JSON.
+    STRICT RULES:
+    1. Questions MUST test understanding of THIS specific topic only.
+    2. Mix cognitive levels: Knowledge (2 easy, 2 marks), Application (2 medium, 3-4 marks), Analysis (1 hard, 5 marks).
+    3. Use official KPSEA / KCSE exam format: "State...", "Explain...", "Describe...", "Calculate..."
+    4. CRITICAL: You MUST provide a highly detailed, step-by-step 'markingScheme' array for each question. Show exactly where each mark is awarded (e.g., ["1 mark for stating X", "1 mark for linking X to Y"]).
+    
+    Output as JSON matching the requested schema.
   `;
 
   try {
@@ -2013,7 +2044,7 @@ Output as ExamAnalysis JSON.
 
 export const explainQuestion = async (
   question: ExamQuestion,
-  language: 'EN' | 'FR' = 'EN'
+  language: 'EN' | 'SW' = 'EN'
 ): Promise<QuestionExplanation> => {
   const model = genAI.getGenerativeModel({
     model: MODEL_NAME,
@@ -2033,8 +2064,8 @@ export const explainQuestion = async (
     }
   });
 
-  const langInstruction = language === 'FR'
-    ? "Respond in French."
+  const langInstruction = language === 'SW'
+    ? "Respond in Swahili (Kiswahili Sanifu)."
     : "If Kiswahili subject, respond in Swahili. Otherwise English.";
 
   const prompt = `
@@ -2074,7 +2105,7 @@ Output as QuestionExplanation JSON.
 
 import { LessonRecap } from "../types";
 
-export const generateLessonRecap = async (inputBase64: string, mimeType: string, audience: 'LEARNER' | 'TEACHER', language: 'EN' | 'FR' = 'EN'): Promise<LessonRecap> => {
+export const generateLessonRecap = async (inputBase64: string, mimeType: string, audience: 'LEARNER' | 'TEACHER', language: 'EN' | 'SW' = 'EN'): Promise<LessonRecap> => {
   const model = genAI.getGenerativeModel({
     model: MODEL_NAME,
     generationConfig: {
@@ -2103,7 +2134,7 @@ export const generateLessonRecap = async (inputBase64: string, mimeType: string,
   const learnerPrompt = `
     You are an expert tutor helping a student understand a live lesson they just attended.
     1. Analyze the recording / notes and identify the subject.
-    2. ${language === 'FR' ? "LANGUAGE RULE: You MUST respond in French (Français)." : "LANGUAGE RULE: If the subject is 'Kiswahili' or 'Swahili' or the question/content is in Swahili, you MUST respond exclusively in Swahili. For ALL other subjects and questions, you MUST respond exclusively in English."}
+    2. ${language === 'SW' ? "LANGUAGE RULE: You MUST respond ENTIRELY in rich, immersive, grammatical Swahili (Kiswahili Sanifu). Use comprehensive educational vocabulary in Swahili." : "LANGUAGE RULE: If the subject is 'Kiswahili' or 'Swahili' or the question/content is in Swahili, you MUST respond exclusively in Swahili. For ALL other subjects and questions, you MUST respond exclusively in English."}
 3. Extract the Main Topic.
     4. Write a fun, simple Summary(2 - 3 sentences).
     5. List 5 Key Points(Bullet points).
@@ -2116,7 +2147,7 @@ export const generateLessonRecap = async (inputBase64: string, mimeType: string,
   const teacherPrompt = `
     You are a curriculum expert summarizing a lesson for a fellow teacher.
     1. Analyze the recording / notes and identify the subject.
-    2. ${language === 'FR' ? "LANGUAGE RULE: You MUST respond in French (Français)." : "LANGUAGE RULE: If the subject is 'Kiswahili' or 'Swahili' or the question/content is in Swahili, you MUST respond exclusively in Swahili. For ALL other subjects and questions, you MUST respond exclusively in English."}
+    2. ${language === 'SW' ? "LANGUAGE RULE: You MUST respond ENTIRELY in rich, immersive, grammatical Swahili (Kiswahili Sanifu). Use comprehensive educational vocabulary in Swahili." : "LANGUAGE RULE: If the subject is 'Kiswahili' or 'Swahili' or the question/content is in Swahili, you MUST respond exclusively in Swahili. For ALL other subjects and questions, you MUST respond exclusively in English."}
 3. Extract Topic and Competencies covered.
     4. Provide a professional Summary.
     5. List Key Teaching Points.
@@ -2146,7 +2177,7 @@ export const generateLessonRecap = async (inputBase64: string, mimeType: string,
 
 // --- DARASA AI FEATURES ---
 
-export const generateDarasaLesson = async (audioBase64: string, mimeType: string = "audio/mp3", language: 'EN' | 'FR' = 'EN'): Promise<LessonResult> => {
+export const generateDarasaLesson = async (audioBase64: string, mimeType: string = "audio/mp3", language: 'EN' | 'SW' = 'EN'): Promise<LessonResult> => {
   const model = genAI.getGenerativeModel({
     model: MODEL_NAME,
     generationConfig: {
@@ -2196,7 +2227,7 @@ export const generateDarasaLesson = async (audioBase64: string, mimeType: string
     
     TASK 2: COMPREHENSIVE NOTES
     Create detailed, professional - grade teacher notes.
-    - ${language === 'FR' ? "LANGUAGE RULE: You MUST respond in French (Français)." : "LANGUAGE RULE: If the subject is 'Kiswahili' or 'Swahili' or the question/content is in Swahili, you MUST respond exclusively in Swahili. For ALL other subjects and questions, you MUST respond exclusively in English."}
+    - ${language === 'SW' ? "LANGUAGE RULE: You MUST respond ENTIRELY in rich, immersive, grammatical Swahili (Kiswahili Sanifu). Use comprehensive educational vocabulary in Swahili." : "LANGUAGE RULE: If the subject is 'Kiswahili' or 'Swahili' or the question/content is in Swahili, you MUST respond exclusively in Swahili. For ALL other subjects and questions, you MUST respond exclusively in English."}
     - ** Introduction **: Briefly introduce the topic.
     - ** Core Concepts **: Explain 3 - 5 main concepts covered in depth.
     - ** Examples **: Provide 2 - 3 real - world examples mentioned or relevant to the context.
@@ -2237,7 +2268,7 @@ export const generateDarasaLesson = async (audioBase64: string, mimeType: string
   }
 };
 
-export const generateDarasaRevision = async (imageBase64: string, mimeType: string, language: 'EN' | 'FR' = 'EN'): Promise<LessonResult> => {
+export const generateDarasaRevision = async (imageBase64: string, mimeType: string, language: 'EN' | 'SW' = 'EN'): Promise<LessonResult> => {
   const model = genAI.getGenerativeModel({
     model: MODEL_NAME,
     generationConfig: {
@@ -2282,7 +2313,7 @@ export const generateDarasaRevision = async (imageBase64: string, mimeType: stri
   const prompt = `
 TASK: REVISION FROM IMAGE
 1. Analyze this image of lesson notes or a textbook page.Identify the subject.
-    2. ${language === 'FR' ? "LANGUAGE RULE: You MUST respond in French (Français)." : "LANGUAGE RULE: If the subject is 'Kiswahili' or 'Swahili' or the question/content is in Swahili, you MUST respond exclusively in Swahili. For ALL other subjects and questions, you MUST respond exclusively in English."}
+    2. ${language === 'SW' ? "LANGUAGE RULE: You MUST respond ENTIRELY in rich, immersive, grammatical Swahili (Kiswahili Sanifu). Use comprehensive educational vocabulary in Swahili." : "LANGUAGE RULE: If the subject is 'Kiswahili' or 'Swahili' or the question/content is in Swahili, you MUST respond exclusively in Swahili. For ALL other subjects and questions, you MUST respond exclusively in English."}
 3. Extract the Main Topic.
     4. Write a clear, simple Summary(2 - 3 sentences).
     5. Create "Simplified Notes" broken into logical sections(Title + Content).
@@ -2358,21 +2389,21 @@ export const generatePodcastScript = async (content: string, topic: string): Pro
   });
 
   const prompt = `
-    You are the producer of a popular educational podcast called "Somo Smart Audio".
-    Your task is to convert the following educational content into a lively, engaging 2 - minute podcast script between two hosts:
-    - ** Host(Rachel) **: Enthusiastic, introduces the topic, asks guiding questions, and summarizes key points.
-    - ** Guest(Expert) **: Knowledgeable but accessible, explains complex ideas with analogies and examples.
+    You are the producer of a popular Kenyan educational podcast called "Akili Audio" — Built for Kenya, by Kenya.
+    Your task is to convert the following educational content into a lively, engaging 2-minute podcast script between two hosts:
+    - Host (Amina): Enthusiastic Kenyan host, introduces the topic, asks guiding questions, and summarizes key points. Uses Kenyan references naturally.
+    - Guest (Akili): The AI knowledge buddy — knowledgeable but accessible, explains complex ideas with Kenyan analogies and real-world examples.
 
-    ** Content to cover:**
-  Topic: "${topic}"
-Material:
-"${content.slice(0, 15000).replace(/"/g, "'")}"
+    Content to cover:
+    Topic: "${topic}"
+    Material:
+    "${content.slice(0, 15000).replace(/"/g, "'")}"
 
-  ** Rules:**
-    1. Start with a catchy intro(e.g., "Welcome back to Somo Smart Audio...").
-    2. Make it sound like a real conversation(use "Exactly!", "That's a great point", "Wait, so you mean...").
-    3. Keep explanations simple and use analogies.
-    4. End with a quick takeaway or study tip.
+    Rules:
+    1. Start with a catchy Kenyan-flavored intro (e.g., "Karibu Akili Audio, the podcast that makes learning fun!").
+    2. Make it sound like a real conversation (use "Exactly!", "That's a great point", "Wait, so you mean...").
+    3. Keep explanations simple and use analogies from Kenyan daily life (shamba, soko, matatu, etc.).
+    4. End with a quick takeaway or study tip relevant to the Kenyan curriculum.
     5. The script should be roughly 2 minutes long when spoken.
   `;
 
@@ -2396,7 +2427,13 @@ export const gradeStudentSubmission = async (
   assignmentContext: string,
   totalMarks: number,
   rubric: string
-): Promise<{ extractedText: string, score: number, feedback: string }> => {
+): Promise<{ 
+  extractedText: string; 
+  totalScore: number; 
+  marksBreakdown: Array<{ criterion: string; awarded: number; possible: number; rationale: string; }>;
+  cbcCompetencies: string[];
+  remedialAdvice: string;
+}> => {
   // We use gemini-1.5-pro or gemini-2.0-flash here for complex handwriting + reasoning
   const model = genAI.getGenerativeModel({
     model: MODEL_NAME, // Assuming this maps to a capable vision model like gemini-2.0-flash
@@ -2406,16 +2443,35 @@ export const gradeStudentSubmission = async (
         type: SchemaType.OBJECT,
         properties: {
           extractedText: { type: SchemaType.STRING, description: "The raw text extracted from the student's handwritten or typed submission" },
-          score: { type: SchemaType.NUMBER, description: "The final computed score out of the total available marks" },
-          feedback: { type: SchemaType.STRING, description: "Constructive feedback explaining the grade and highlighting areas for improvement, formatted in Markdown" }
+          totalScore: { type: SchemaType.NUMBER, description: "The final computed score out of the total available marks" },
+          marksBreakdown: {
+            type: SchemaType.ARRAY,
+            items: {
+              type: SchemaType.OBJECT,
+              properties: {
+                criterion: { type: SchemaType.STRING, description: "What is being marked (e.g. Q1, Methodology, Grammar)" },
+                awarded: { type: SchemaType.NUMBER, description: "Marks awarded" },
+                possible: { type: SchemaType.NUMBER, description: "Maximum possible marks for this criterion" },
+                rationale: { type: SchemaType.STRING, description: "Why the mark was awarded or deducted" }
+              },
+              required: ["criterion", "awarded", "possible", "rationale"]
+            }
+          },
+          cbcCompetencies: {
+            type: SchemaType.ARRAY,
+            items: { type: SchemaType.STRING },
+            description: "List of CBC Core Competencies demonstrated (e.g., Critical Thinking, Communication)"
+          },
+          remedialAdvice: { type: SchemaType.STRING, description: "Constructive feedback and specific remedial advice explaining how the student can improve." }
         },
-        required: ["extractedText", "score", "feedback"]
+        required: ["extractedText", "totalScore", "marksBreakdown", "cbcCompetencies", "remedialAdvice"]
       }
     }
   });
 
   const prompt = `
-    You are an expert, meticulous Kenyan CBE/8-4-4 teacher tasked with grading a student's submission.
+    You are a rigorous Kenyan KNEC Examiner and CBC Master Teacher.
+    Your task is to grade a student's submission line-by-line, strictly adhering to the provided rubric.
     
     ASSIGNMENT CONTEXT:
     Title: ${assignmentTitle}
@@ -2426,15 +2482,14 @@ export const gradeStudentSubmission = async (
     ${rubric}
     
     INSTRUCTIONS:
-    1. EXTRACT: Read the handwritten or typed text in the provided image as accurately as possible.
-    2. EVALUATE: Compare the extracted text strictly against the GRADING RUBRIC. Check for correct methodology and final answers.
-    3. GRADE: Assign a final numerical score out of ${totalMarks}. Be fair but strict, acting like a KNEC examiner.
-    4. FEEDBACK: Provide detailed, constructive feedback directly to the student answering:
-       - What they did well.
-       - Where they lost marks.
-       - How they can improve next time.
+    1. EXTRACT: Read the handwritten/typed text in the provided image with high accuracy.
+    2. EVALUATE: Compare the extracted text strictly against the GRADING RUBRIC. Check for correct methodology, logic, and final answers.
+    3. BREAKDOWN: Provide a highly detailed, step-by-step 'marksBreakdown' array. Do not just give a single score. Break down exactly where every mark was earned or lost based on the rubric.
+    4. GRADE: Calculate the 'totalScore' by summing the awarded marks. Ensure it does not exceed ${totalMarks}.
+    5. COMPETENCIES: Identify which Kenyan CBC Core Competencies the student demonstrated.
+    6. REMEDIATION: Provide specific, encouraging 'remedialAdvice' for the student on how to improve.
     
-    Use a motivating and educational tone for the feedback. Format the feedback using Markdown (bullet points, bold text).
+    Output structured JSON only.
   `;
 
   try {
@@ -2454,7 +2509,7 @@ export const gradeStudentSubmission = async (
 
 // --- TEACHER & CANDIDATE PERFECTION FEATURES ---
 
-export const generateSchemeOfWork = async (subject: string, grade: string, term: string, year: string, language: 'EN' | 'FR' = 'EN'): Promise<any> => {
+export const generateSchemeOfWork = async (subject: string, grade: string, term: string, year: string, language: 'EN' | 'SW' = 'EN'): Promise<any> => {
   const model = genAI.getGenerativeModel({
     model: MODEL_NAME,
     generationConfig: {
@@ -2470,12 +2525,17 @@ export const generateSchemeOfWork = async (subject: string, grade: string, term:
               type: SchemaType.OBJECT,
               properties: {
                 week: { type: SchemaType.INTEGER },
+                lesson: { type: SchemaType.INTEGER },
                 strand: { type: SchemaType.STRING },
                 subStrand: { type: SchemaType.STRING },
-                outcomes: { type: SchemaType.STRING },
-                resources: { type: SchemaType.STRING }
+                specificLearningOutcomes: { type: SchemaType.STRING },
+                keyInquiryQuestions: { type: SchemaType.STRING },
+                coreCompetences: { type: SchemaType.STRING },
+                learningExperiences: { type: SchemaType.STRING },
+                learningResources: { type: SchemaType.STRING },
+                assessmentMethods: { type: SchemaType.STRING }
               },
-              required: ["week", "strand", "subStrand", "outcomes", "resources"]
+              required: ["week", "lesson", "strand", "subStrand", "specificLearningOutcomes", "keyInquiryQuestions", "coreCompetences", "learningExperiences", "learningResources", "assessmentMethods"]
             }
           }
         },
@@ -2485,19 +2545,31 @@ export const generateSchemeOfWork = async (subject: string, grade: string, term:
   });
 
   const prompt = `
-    You are a Kenyan KICD curriculum specialist. 
-    Generate a full, professional Scheme of Work for:
+    You are a Kenyan KICD curriculum specialist and a Master Teacher. 
+    Generate a full, highly detailed, professional Scheme of Work for:
     Subject: ${subject}
     Grade: ${grade}
     Term: ${term}
     Year: ${year}
 
-    Follow the official Kenyan Competency-Based Curriculum (CBC) or 8-4-4 standards as applicable.
-    Provide a week-by-week breakdown for a standard 13-week term.
-    Include Strands, Sub-strands, specific learning outcomes, and suggested resources.
-    Language: ${language === 'FR' ? 'French' : 'English (with Kiswahili specific terms if needed)'}.
+    Follow the STRICT official Kenyan Competency-Based Curriculum (CBC) formatting.
+    Provide a week-by-week breakdown for a standard 13-week term. Generate multiple lessons per week (e.g. Lesson 1, Lesson 2) depending on the subject.
+    
+    You MUST include the exact 10 columns required by KICD:
+    1. Week Number
+    2. Lesson Number
+    3. Strand / Topic
+    4. Sub-strand / Sub-topic
+    5. Specific Learning Outcomes (SLOs)
+    6. Key Inquiry Questions (KIQ)
+    7. Core Competences & Values (e.g., Communication, Critical Thinking, Patriotism)
+    8. Learning Experiences (Specific activities the learners and teacher will do)
+    9. Learning Resources (Textbooks, digital tools, realia)
+    10. Assessment Methods (Observation, Oral Questions, Rubrics, Portfolios)
 
-    Output as JSON.
+    Language: ${language === 'SW' ? 'Swahili (Kiswahili Sanifu)' : 'English (with Kiswahili specific terms if needed)'}.
+
+    Output as structured JSON. DO NOT cut corners. Provide comprehensive educational value.
   `;
 
   try {
@@ -2516,7 +2588,7 @@ export const polishLessonPlan = async (
   subject: string,
   grade: string,
   studentWeakPoints: string[] = [],
-  language: 'EN' | 'FR' = 'EN'
+  language: 'EN' | 'SW' = 'EN'
 ): Promise<any> => {
   const model = genAI.getGenerativeModel({
     model: MODEL_NAME,
@@ -2551,21 +2623,24 @@ export const polishLessonPlan = async (
     : '';
 
   const prompt = `
-    You are an expert pedagogical coach for Kenyan teachers.
-    Analyze this lesson plan and provide actionable refinements.
+    You are a Master Pedagogical Coach for Kenyan teachers, specializing in KICD and CBC standards.
+    Analyze this raw lesson plan and provide actionable, data-driven refinements.
     
     Subject: ${subject}
     Grade: ${grade}
     Raw Plan: "${rawPlan}"
     ${context}
 
-    1. Score the plan out of 100 based on CBC compliance.
+    INSTRUCTIONS:
+    1. Score the raw plan out of 100 based on Kenyan CBC compliance and general pedagogical quality.
     2. Identify "Remedial Matches" - specifically how the teacher can address the stated student weak points within this lesson.
-    3. List general strengths.
-    4. Suggest resources from the Kenyan context (KICD books, Somo Smart videos, local environment).
-    5. Provide a "Polished Content" version of the plan that is more engaging and data-driven.
+    3. List general strengths of the raw plan.
+    4. Suggest resources heavily localized to the Kenyan context (e.g., KICD textbooks, local realia, digital tools).
+    5. Generate a 'polishedContent' string. This MUST be the fully rewritten, professional lesson plan formatted in Markdown. 
+       - It MUST strictly follow the 5-E Pedagogical Model (Engage, Explore, Explain, Elaborate, Evaluate).
+       - It MUST explicitly list the CBC Core Competencies being developed (e.g., Critical Thinking, Citizenship).
 
-    Output as JSON.
+    Output as structured JSON.
   `;
 
   try {
@@ -2582,7 +2657,7 @@ export const polishLessonPlan = async (
 export const getExamGuruResponse = async (
   userQuery: string,
   chatHistory: { role: 'user' | 'guru', content: string }[],
-  language: 'EN' | 'FR' = 'EN'
+  language: 'EN' | 'SW' = 'EN'
 ): Promise<string> => {
   const model = genAI.getGenerativeModel({
     model: MODEL_NAME,
@@ -2646,7 +2721,8 @@ export interface LanguageTutorResponse {
 export const chatTalkback = async (
   userMessage: string,
   chatHistory: TalkbackMessage[],
-  language: 'en' | 'sw' = 'en'
+  language: 'en' | 'sw' = 'en',
+  educationLevel?: string
 ): Promise<string> => {
   const model = genAI.getGenerativeModel({
     model: MODEL_NAME,
@@ -2656,32 +2732,45 @@ export const chatTalkback = async (
   });
 
   const history = chatHistory.slice(-10).map(m =>
-    `${m.role === 'ai' ? 'Somo Buddy' : 'Learner'}: ${m.text}`
+    `${m.role === 'ai' ? 'Akili' : 'Learner'}: ${m.text}`
   ).join('\n');
 
   const langLabel = language === 'sw' ? 'Kiswahili' : 'English';
 
+  const levelPersona = !educationLevel || educationLevel === 'SENIOR'
+    ? `- You are a confident, focused Form 1-4 tutor. Use clear academic language.
+    - Reference KCSE topics and exam technique where relevant.
+    - Encourage exam readiness and critical thinking.
+    - Ask a follow-up question to test understanding.
+    - NO MARKDOWN: NEVER use bold (**text**) or italics (*text*) formatting.`
+    : educationLevel === 'JUNIOR'
+    ? `- You are a warm, playful, patient tutor for a Grade 1-6 CBC learner.
+    - Use VERY simple words, short sentences, and fun local analogies (e.g. matunda, ng'ombe, shamba).
+    - Celebrate every question with excitement — "Good question! 🌟"
+    - Break things into tiny, bite-sized steps.
+    - Use real-life examples from Kenya (market, farm, school).
+    - NO MARKDOWN: NEVER use bold (**text**) or italics (*text*) formatting.`
+    : `- You are a sophisticated university/college academic advisor.
+    - Use formal academic language, cite frameworks, and reference research methodology.
+    - Encourage critical analysis, synthesis, and higher-order thinking.
+    - Ask a probing analytical follow-up question.
+    - NO MARKDOWN: NEVER use bold (**text**) or italics (*text*) formatting.`;
+
   const prompt = `
-    You are "Somo", an elite, world-class AI academic tutor.
+    You are "Akili", a Kenyan AI academic buddy built specifically for Kenyan learners. Built for Kenya, by Kenya.
     You speak ${langLabel}. ALWAYS respond in ${langLabel}.
     
     YOUR TEACHING PERSONA:
-    - You act exactly like a top-tier high school teacher: professional, extremely knowledgeable, and highly articulate.
-    - NEVER use baby-talk, childish analogies, or fluffy language.
-    - Treat the learner with respect, assuming they are a serious student dealing with high-school or college-level material.
-    - When asked an academic question, you MUST solve the problem completely from start to finish.
-    - Provide exact formulas, real mathematical terms, and concrete step-by-step logic.
-    - DO NOT arbitrarily shorten your answer. Take as much space as needed to fully educate and solve the problem.
-    - Ask a rigorous follow-up question to test their understanding.
+    ${levelPersona}
     - NEVER use inappropriate, violent, or scary content.
-    - NO MARKDOWN: NEVER use bold (**text**) or italics (*text*) formatting. Keep text strictly plain.
+    - When asked an academic question, solve it completely from start to finish.
     
     CONVERSATION HISTORY:
     ${history}
     
     LEARNER SAYS: "${userMessage}"
     
-    Respond as Somo, the expert academic tutor. Provide a world-class, fully comprehensive answer.
+    Respond as Akili. Provide a complete, level-appropriate answer.
   `;
 
   try {
@@ -2697,35 +2786,50 @@ export const chatTalkback = async (
 export const chatTalkbackStream = async (
   userMessage: string,
   chatHistory: TalkbackMessage[],
-  language: 'en' | 'sw' = 'en'
+  language: 'en' | 'sw' = 'en',
+  educationLevel?: string
 ): Promise<ReadableStream<Uint8Array>> => {
   const history = chatHistory.slice(-10).map(m =>
-    `${m.role === 'ai' ? 'Somo Buddy' : 'Learner'}: ${m.text}`
+    `${m.role === 'ai' ? 'Akili' : 'Learner'}: ${m.text}`
   ).join('\n');
 
-  const langLabel = language === 'sw' ? 'Kiswahili' : 'English';
+  const langInstruction = language === 'sw'
+    ? "LANGUAGE RULE: You MUST respond ENTIRELY in rich, immersive, grammatical Swahili (Kiswahili Sanifu)."
+    : "LANGUAGE RULE: If the user asks a Kiswahili question or about Swahili grammar, respond in Swahili. Otherwise, respond in English.";
+
+  const levelPersona = !educationLevel || educationLevel === 'SENIOR'
+    ? `- You are a confident, focused Form 1-4 tutor. Use clear academic language.
+    - Reference KCSE topics and exam technique where relevant.
+    - Encourage critical thinking. Ask a follow-up question to test understanding.
+    - NO MARKDOWN: NEVER use bold (**text**) or italics (*text*) formatting.`
+    : educationLevel === 'JUNIOR'
+    ? `- You are a warm, playful, patient tutor for a Grade 1-6 CBC learner.
+    - Use VERY simple words, short sentences, and fun local analogies (e.g. matunda, ng'ombe, shamba, soko).
+    - Celebrate every question with excitement — "Swali zuri! 🌟" or "Great question! 🌟"
+    - Break things into tiny, bite-sized steps a young child can follow.
+    - Use real-life Kenyan examples (market, farm, school, home).
+    - NO MARKDOWN: NEVER use bold (**text**) or italics (*text*) formatting.`
+    : `- You are a sophisticated university/college academic advisor.
+    - Use formal academic language, cite frameworks, encourage research methodology.
+    - Encourage critical analysis, synthesis, and higher-order thinking.
+    - Ask a probing analytical follow-up question.
+    - NO MARKDOWN: NEVER use bold (**text**) or italics (*text*) formatting.`;
 
   const prompt = `
-    You are "Somo", an elite, world-class AI academic tutor.
-    You speak ${langLabel}. ALWAYS respond in ${langLabel}.
-    
+    You are "Akili", a Kenyan AI learning buddy. Built for Kenya, by Kenya.
+    ${langInstruction}
+
     YOUR TEACHING PERSONA:
-    - You act exactly like a top-tier high school teacher: professional, extremely knowledgeable, and highly articulate.
-    - NEVER use baby-talk, childish analogies, or fluffy language.
-    - Treat the learner with respect, assuming they are a serious student dealing with high-school or college-level material.
-    - When asked an academic question, you MUST solve the problem completely from start to finish.
-    - Provide exact formulas, real mathematical terms, and concrete step-by-step logic.
-    - DO NOT arbitrarily shorten your answer. Take as much space as needed to fully educate and solve the problem.
-    - Ask a rigorous follow-up question to test their understanding.
+    ${levelPersona}
     - NEVER use inappropriate, violent, or scary content.
-    - NO MARKDOWN: NEVER use bold (**text**) or italics (*text*) formatting. Keep text strictly plain.
-    
+    - When asked an academic question, solve it completely from start to finish.
+
     CONVERSATION HISTORY:
     ${history}
-    
+
     LEARNER SAYS: "${userMessage}"
-    
-    Respond as Somo, the expert academic tutor. Provide a world-class, fully comprehensive answer.
+
+    Respond as Akili. Provide a complete, level-appropriate answer.
   `;
 
   return callGeminiProxyStream(MODEL_NAME, [{ role: 'user', parts: [{ text: prompt }] }], { maxOutputTokens: 1500 });

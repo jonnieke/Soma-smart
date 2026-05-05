@@ -21,7 +21,13 @@ export const MarkingManager: React.FC = () => {
     const [totalMarks, setTotalMarks] = useState<number>(10);
     const [rubric, setRubric] = useState("1. Correct addition formulation (2 marks)\n2. Correct carry-overs (3 marks)\n3. Correct decimal placement (2 marks)\n4. Final answer correct (3 marks)");
 
-    const [result, setResult] = useState<{ extractedText: string, score: number, feedback: string } | null>(null);
+    const [result, setResult] = useState<{ 
+        extractedText: string;
+        totalScore: number;
+        marksBreakdown: Array<{ criterion: string; awarded: number; possible: number; rationale: string; }>;
+        cbcCompetencies: string[];
+        remedialAdvice: string;
+    } | null>(null);
     const [error, setError] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -195,7 +201,7 @@ export const MarkingManager: React.FC = () => {
                                         </div>
                                     </div>
                                     <div className="text-right">
-                                        <p className="text-4xl font-black text-slate-900">{result.score}<span className="text-lg text-slate-400">/{totalMarks}</span></p>
+                                        <p className="text-4xl font-black text-slate-900">{result.totalScore}<span className="text-lg text-slate-400">/{totalMarks}</span></p>
                                         <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Final Score</p>
                                     </div>
                                 </div>
@@ -209,29 +215,55 @@ export const MarkingManager: React.FC = () => {
                                         <p className="text-sm font-medium text-slate-800 leading-relaxed italic border-l-4 border-indigo-200 pl-3">"{result.extractedText}"</p>
                                     </div>
 
-                                    {/* Feedback Section */}
-                                    <div>
-                                        <h4 className="font-black text-slate-900 uppercase tracking-widest text-xs mb-3">Feedback & Rationale</h4>
-                                        <div className="prose prose-sm prose-emerald text-sm font-medium text-slate-700 leading-relaxed max-w-none">
-                                            {/* Basic markdown rendering for bullet points and bold tags */}
-                                            {result.feedback.split('\n').map((line, i) => {
-                                                if (line.trim().startsWith('- ') || line.trim().startsWith('* ')) {
-                                                    return <li key={i} className="mb-1">{line.replace(/^[-*]\s/, '')}</li>;
-                                                }
-                                                return <p key={i} className="mb-2 last:mb-0" dangerouslySetInnerHTML={{ __html: line.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }} />;
-                                            })}
+                                    {/* CBC Competencies */}
+                                    {result.cbcCompetencies && result.cbcCompetencies.length > 0 && (
+                                        <div>
+                                            <h4 className="font-black text-slate-900 uppercase tracking-widest text-xs mb-3">Demonstrated Competencies</h4>
+                                            <div className="flex flex-wrap gap-2">
+                                                {result.cbcCompetencies.map((comp, idx) => (
+                                                    <span key={idx} className="bg-blue-50 text-blue-700 border border-blue-200 text-xs font-bold px-3 py-1 rounded-full">
+                                                        {comp}
+                                                    </span>
+                                                ))}
+                                            </div>
                                         </div>
+                                    )}
+
+                                    {/* Mark Breakdown */}
+                                    <div>
+                                        <h4 className="font-black text-slate-900 uppercase tracking-widest text-xs mb-3">KNEC Mark Breakdown</h4>
+                                        <div className="space-y-3">
+                                            {result.marksBreakdown.map((mb, i) => (
+                                                <div key={i} className="bg-white border-2 border-slate-100 rounded-xl p-4 shadow-sm flex gap-4">
+                                                    <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 font-black text-lg bg-emerald-50 text-emerald-700">
+                                                        {mb.awarded}<span className="text-xs text-emerald-400">/{mb.possible}</span>
+                                                    </div>
+                                                    <div>
+                                                        <h5 className="font-bold text-slate-900 text-sm">{mb.criterion}</h5>
+                                                        <p className="text-slate-600 text-xs leading-relaxed mt-1">{mb.rationale}</p>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* Remedial Advice */}
+                                    <div className="bg-amber-50 p-5 rounded-2xl border border-amber-200">
+                                        <h4 className="font-black text-amber-800 uppercase tracking-wider text-[10px] mb-2 flex items-center gap-1">
+                                            <AlertCircle className="w-3 h-3" /> Teacher Action Plan
+                                        </h4>
+                                        <p className="text-sm font-medium text-amber-900 leading-relaxed">{result.remedialAdvice}</p>
                                     </div>
                                 </div>
 
                                 {/* AI Feedback Buttons — teacher corrections build the KNEC training dataset */}
                                 <AIFeedbackButtons
-                                    aiResponse={result.feedback}
+                                    aiResponse={result.remedialAdvice}
                                     originalPrompt={`Assignment: ${assignmentTitle} | Context: ${assignmentContext}`}
                                     source="MARKING"
                                     subject={assignmentContext}
                                     grade={assignmentContext}
-                                    className="mb-4"
+                                    className="mb-4 mt-6"
                                 />
 
                                 <div className="pt-4 flex gap-4">

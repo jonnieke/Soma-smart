@@ -2,7 +2,6 @@ import React, { Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
 import { ConnectivityBanner } from './components/ConnectivityBanner';
-import { AskSomo } from './components/AskSomo';
 import { SessionConflictModal } from './components/SessionConflictModal';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { supabase } from './lib/supabase';
@@ -23,6 +22,7 @@ const ResetPassword = React.lazy(() => import('./pages/ResetPassword').then(modu
 const PricingPage = React.lazy(() => import('./pages/PricingPage').then(module => ({ default: module.PricingPage })));
 const SchoolDashboard = React.lazy(() => import('./features/school/SchoolDashboard').then(module => ({ default: module.SchoolDashboard })));
 const OfflinePage = React.lazy(() => import('./pages/OfflinePage').then(module => ({ default: module.OfflinePage })));
+const GuestQuiz = React.lazy(() => import('./pages/GuestQuiz').then(module => ({ default: module.GuestQuiz })));
 
 // Exam Rooms Pages
 const ExamRoomsListPage = React.lazy(() => import('./pages/ExamRoomsListPage').then(module => ({ default: module.ExamRoomsListPage })));
@@ -34,6 +34,7 @@ const CampusPage = React.lazy(() => import('./pages/CampusPage').then(module => 
 // Blog Pages
 const BlogIndex = React.lazy(() => import('./pages/Blog/BlogIndex').then(module => ({ default: module.BlogIndex })));
 const BlogPost = React.lazy(() => import('./pages/Blog/BlogPost').then(module => ({ default: module.BlogPost })));
+const AskSomo = React.lazy(() => import('./components/AskSomo').then(module => ({ default: module.AskSomo })));
 
 // Loading Fallback Component
 const PageLoader = () => (
@@ -48,6 +49,7 @@ const PageLoader = () => (
 const App: React.FC = () => {
     const navigate = useNavigate();
     const location = useLocation();
+    const hideGlobalAssistant = ['/learner', '/teacher', '/revision'].some(path => location.pathname.startsWith(path));
 
     // Initialize Google Analytics
     React.useEffect(() => {
@@ -81,7 +83,11 @@ const App: React.FC = () => {
             <ErrorBoundary>
                 <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:z-[100] focus:top-2 focus:left-2 focus:bg-indigo-600 focus:text-white focus:px-4 focus:py-2 focus:rounded-lg focus:font-bold">Skip to content</a>
                 <ConnectivityBanner />
-                <AskSomo />
+                {!hideGlobalAssistant && (
+                    <Suspense fallback={null}>
+                        <AskSomo />
+                    </Suspense>
+                )}
                 <SessionConflictModal />
                 <Suspense fallback={<PageLoader />}>
                     <main id="main-content">
@@ -105,6 +111,7 @@ const App: React.FC = () => {
                             <Route path="/pricing" element={<PricingPage />} />
                             <Route path="/school" element={<SchoolDashboard />} />
                             <Route path="/offline" element={<OfflinePage />} />
+                            <Route path="/quiz/:id" element={<GuestQuiz />} />
                             <Route path="/blog" element={<BlogIndex />} />
                             <Route path="/blog/:slug" element={<BlogPost />} />
                             <Route path="*" element={<Navigate to="/" replace />} />

@@ -7,6 +7,23 @@ import { ArrowLeft, Loader2, CheckCircle2 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { pesapalService } from '../services/pesapalService';
 
+type PaymentStatusResponse = {
+    payment_status_description?: string;
+    payment_status?: string;
+    status?: string;
+};
+
+const isCompletedPayment = (statusData: PaymentStatusResponse) => {
+    const status = String(
+        statusData?.payment_status_description ||
+        statusData?.payment_status ||
+        statusData?.status ||
+        ''
+    ).toLowerCase();
+
+    return status === 'completed' || status === 'success' || status === 'successful';
+};
+
 export const PricingPage: React.FC = () => {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
@@ -17,39 +34,51 @@ export const PricingPage: React.FC = () => {
 
     const status = searchParams.get('status');
     const ref = searchParams.get('ref');
+    const orderTrackingId =
+        searchParams.get('OrderTrackingId') ||
+        searchParams.get('orderTrackingId') ||
+        searchParams.get('order_tracking_id');
 
-    const handleVerification = async (reference: string) => {
-        // WORLD-CLASS PROCESS: Success UI
-        setVerifySuccess(true);
-        setVerifying(false);
+    const handleVerification = React.useCallback(async (reference: string) => {
+        setVerifying(true);
+        setVerifySuccess(false);
+        setVerifyError('');
 
-        // Explicit sync with DB and refresh profile
         try {
-            await pesapalService.checkTransactionStatus(reference);
+            const statusData = await pesapalService.checkTransactionStatus({
+                orderTrackingId,
+                merchantReference: reference
+            });
+
+            if (!isCompletedPayment(statusData)) {
+                setVerifyError('We could not confirm this payment yet. If M-Pesa completed, wait a moment and try again.');
+                return;
+            }
+
             await refreshProfile();
+
+            setVerifySuccess(true);
+
+            setTimeout(() => {
+                const dashboard = role === 'TEACHER' ? '/teacher' : (role === 'SCHOOL' ? '/school' : '/learner');
+                window.top!.location.href = window.location.origin + dashboard;
+            }, 1500);
         } catch (err) {
             console.error("Verification sync failed:", err);
+            setVerifyError('Payment verification failed. Please try again or contact support if your account was charged.');
+        } finally {
+            setVerifying(false);
         }
-
-        // Check for material intent
-        const materialId = searchParams.get('materialId');
-
-        // Instant Smooth Redirect
-        setTimeout(() => {
-            const dashboard = role === 'TEACHER' ? '/teacher' : (role === 'SCHOOL' ? '/school' : '/learner');
-            // Ensure we break out of any iframes (like the Pesapal one)
-            window.top!.location.href = window.location.origin + dashboard;
-        }, 1500);
-    };
+    }, [orderTrackingId, refreshProfile, role]);
 
     React.useEffect(() => {
         if (status === 'verifying' && ref) {
             handleVerification(ref);
         }
-    }, [status, ref]);
+    }, [status, ref, handleVerification]);
 
     const location = useLocation();
-    const state = location.state as { initialTab?: any } | null;
+    const state = location.state as { initialTab?: 'STUDENT' | 'TEACHER' | 'SCHOOL' } | null;
 
     // Pro users can freely view the pricing plans now to see what they are paying for or to upgrade.
 
