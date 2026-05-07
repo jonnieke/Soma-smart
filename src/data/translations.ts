@@ -283,7 +283,7 @@ export const translations = {
             pillTeachers: "Teachers: Save planning time",
             headline: "SomaAI - A study coach for CBC learners ",
             gradient: "& des outils gain de temps pour les enseignants kÃ©nyans.",
-            subheadline: "Les apprenants scannent leurs devoirs et obtiennent des explications Ã©tape par Ã©tape. Les enseignants gÃ©nÃ¨rent automatiquement examens, notes et corrigent en minutes â€” pas en heures.",
+            subheadline: "Les apprenants scannent leurs devoirs et obtiennent des explications Ã©tape par Ã©tape. Les enseignants gÃ©nÃ¨rent automatiquement examens, notes et corrigent en minutes — pas en heures.",
             ctaLearner: "Essayer Apprenant Gratuitement",
             ctaTeachers: "Pour les Enseignants",
             ctaPilot: "RÃ©server un Pilote Ã‰cole"

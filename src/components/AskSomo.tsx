@@ -14,7 +14,7 @@ export const AskSomo: React.FC = () => {
     const { language } = useApp();
     const [isOpen, setIsOpen] = useState(false);
     const [messages, setMessages] = useState<{ role: 'user' | 'model', text: string }[]>([
-        { role: 'model', text: language === 'FR' ? "Bonjour ! Je suis Somo. 👋 Comment puis-je t'aider à apprendre aujourd'hui ?" : "Hi! I'm Somo. 👋 How can I help you learn today?" }
+        { role: 'model', text: (language as string) === 'FR' ? "Bonjour ! Je suis Somo. 👋 Comment puis-je t'aider à apprendre aujourd'hui ?" : "Hi! I'm Somo. 👋 How can I help you learn today?" }
     ]);
     const [inputValue, setInputValue] = useState("");
     const [isTyping, setIsTyping] = useState(false);
@@ -101,7 +101,7 @@ export const AskSomo: React.FC = () => {
                 ) : (
                     <>
                         <MessageSquare className="w-6 h-6" />
-                        <span>{language === 'FR' ? 'Demander à Somo' : 'Ask Somo'}</span>
+                        <span>{(language as string) === 'FR' ? 'Demander à Somo' : 'Ask Somo'}</span>
                     </>
                 )}
             </motion.button>
@@ -121,8 +121,8 @@ export const AskSomo: React.FC = () => {
                                 <Sparkles className="w-6 h-6 text-white" />
                             </div>
                             <div>
-                                <h3 className="text-white font-bold text-lg">{language === 'FR' ? 'Demander à Somo' : 'Ask Somo'}</h3>
-                                <p className="text-blue-100 text-xs">{language === 'FR' ? "Votre compagnon d'étude IA" : 'Your AI Learning Buddy'}</p>
+                                <h3 className="text-white font-bold text-lg">{(language as string) === 'FR' ? 'Demander à Somo' : 'Ask Somo'}</h3>
+                                <p className="text-blue-100 text-xs">{(language as string) === 'FR' ? "Votre compagnon d'étude IA" : 'Your AI Learning Buddy'}</p>
                             </div>
                         </div>
 
@@ -182,7 +182,7 @@ export const AskSomo: React.FC = () => {
                                     value={inputValue}
                                     onChange={(e) => setInputValue(e.target.value)}
                                     onKeyDown={handleKeyPress}
-                                    placeholder={language === 'FR' ? "Posez une question sur vos devoirs..." : "Ask about homework..."}
+                                    placeholder={(language as string) === 'FR' ? "Posez une question sur vos devoirs..." : "Ask about homework..."}
                                     className="flex-1 pl-4 pr-12 py-3 bg-slate-100 rounded-xl border-none focus:ring-2 focus:ring-blue-500 outline-none text-sm text-slate-800 placeholder:text-slate-400"
                                 />
                                 <button

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Users, TrendingDown, TrendingUp, AlertCircle, Sparkles, Plus, Share2, ClipboardList, Send, FileText, CheckCircle, MessageCircle, UploadCloud, Megaphone, Table } from 'lucide-react';
+import { Users, TrendingDown, TrendingUp, AlertCircle, Sparkles, Plus, Share2, ClipboardList, Send, FileText, CheckCircle, MessageCircle, UploadCloud, Megaphone, Table, Brain } from 'lucide-react';
 import { TeacherProfile } from '../../types';
 import { classroomService, ClassroomPost, ClassMember, GradebookEntry } from '../../services/classroomService';
 
