@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { Sparkles, Send, X, User, CheckSquare, MessageCircle, ChevronRight, Loader, TrendingUp, AlertCircle, PenLine } from 'lucide-react';
-import { getExamGuruResponse, markCandidateAnswer, getPredictedTopics, PredictedTopic, generatePracticeQuestions, PracticeQuestion } from '../../services/geminiService';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Sparkles, Send, X, User, CheckSquare, MessageCircle, ChevronRight, Loader, TrendingUp, AlertCircle, PenLine, LogIn, ShieldAlert } from 'lucide-react';
+import { getExamGuruResponse, markCandidateAnswer, getPredictedTopics, PredictedTopic, generatePracticeQuestions, PracticeQuestion, RateLimitError } from '../../services/geminiService';
 
 interface Message {
     id: string;
@@ -27,8 +27,9 @@ const SUBJECTS = [
 
 type PanelMode = 'chat' | 'mark' | 'predict' | 'practice';
 
-export const ExamGuruPanel: React.FC<{ onClose: () => void }> = ({ onClose }) => {
+export const ExamGuruPanel: React.FC<{ onClose: () => void; onLogin?: () => void }> = ({ onClose, onLogin }) => {
     const [mode, setMode] = useState<PanelMode>('chat');
+    const [rateLimited, setRateLimited] = useState(false);
 
     // --- Chat state ---
     const [messages, setMessages] = useState<Message[]>([
@@ -62,8 +63,9 @@ export const ExamGuruPanel: React.FC<{ onClose: () => void }> = ({ onClose }) =>
             const questions = await generatePracticeQuestions(practiceSubject, practiceTopic, practiceExamType);
             if (questions.length === 0) setGenerateError('Could not generate questions. Try again.');
             else setPracticeQuestions(questions);
-        } catch {
-            setGenerateError('Generation failed. Check your connection.');
+        } catch (err: any) {
+            if (err instanceof RateLimitError) { setRateLimited(true); }
+            else { setGenerateError('Generation failed. Check your connection.'); }
         } finally {
             setIsGenerating(false);
         }
@@ -85,8 +87,9 @@ export const ExamGuruPanel: React.FC<{ onClose: () => void }> = ({ onClose }) =>
             const topics = await getPredictedTopics(predictSubject, predictExamType);
             if (topics.length === 0) setPredictError('Could not generate predictions. Try again.');
             else setPredictedTopics(topics);
-        } catch {
-            setPredictError('Prediction failed. Check connection.');
+        } catch (err: any) {
+            if (err instanceof RateLimitError) { setRateLimited(true); }
+            else { setPredictError('Prediction failed. Check connection.'); }
         } finally {
             setIsPredicting(false);
         }
@@ -119,8 +122,9 @@ export const ExamGuruPanel: React.FC<{ onClose: () => void }> = ({ onClose }) =>
             const history = newMsgs.map(m => ({ role: m.role, content: m.content }));
             const response = await getExamGuruResponse(text.trim(), history);
             setMessages(prev => [...prev, { id: (Date.now() + 1).toString(), role: 'guru', content: response }]);
-        } catch {
-            setMessages(prev => [...prev, { id: (Date.now() + 1).toString(), role: 'guru', content: 'Connection issue. Please try again.' }]);
+        } catch (err: any) {
+            if (err instanceof RateLimitError) { setRateLimited(true); }
+            else { setMessages(prev => [...prev, { id: (Date.now() + 1).toString(), role: 'guru', content: 'Connection issue. Please try again.' }]); }
         } finally {
             setIsTyping(false);
         }
@@ -138,8 +142,9 @@ export const ExamGuruPanel: React.FC<{ onClose: () => void }> = ({ onClose }) =>
                 markMarks ? parseInt(markMarks) : 0
             );
             setMarkResult(result);
-        } catch {
-            setMarkResult('Marking failed. Please check your connection and try again.');
+        } catch (err: any) {
+            if (err instanceof RateLimitError) { setRateLimited(true); }
+            else { setMarkResult('Marking failed. Please check your connection and try again.'); }
         } finally {
             setIsMarking(false);
         }
@@ -208,6 +213,42 @@ export const ExamGuruPanel: React.FC<{ onClose: () => void }> = ({ onClose }) =>
                         <PenLine className="w-3 h-3" /> Practice
                     </button>
                 </div>
+
+                {/* ── RATE LIMIT GATE ── */}
+                <AnimatePresence>
+                {rateLimited && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0 }}
+                        className="absolute inset-0 z-20 flex items-end pb-10 justify-center bg-slate-950/90 backdrop-blur-sm"
+                    >
+                        <div className="w-full max-w-xs mx-4 bg-slate-900 border border-indigo-700/60 rounded-3xl p-6 text-center shadow-2xl space-y-4">
+                            <div className="w-14 h-14 bg-indigo-900/50 border border-indigo-700/60 rounded-2xl flex items-center justify-center mx-auto">
+                                <ShieldAlert className="w-7 h-7 text-indigo-400" />
+                            </div>
+                            <div>
+                                <h3 className="text-white font-black text-base">Daily AI Limit Reached</h3>
+                                <p className="text-slate-400 text-xs mt-2 leading-relaxed font-medium">
+                                    You've used your free AI quota for today. Sign in or create a free account to get more Exam Guru sessions every day.
+                                </p>
+                            </div>
+                            <button
+                                onClick={() => { onClose(); onLogin?.(); }}
+                                className="w-full py-3.5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-black text-sm flex items-center justify-center gap-2 transition-colors shadow-lg"
+                            >
+                                <LogIn className="w-4 h-4" /> Sign In to Continue
+                            </button>
+                            <button
+                                onClick={() => setRateLimited(false)}
+                                className="text-slate-600 text-xs font-bold hover:text-slate-400 transition-colors"
+                            >
+                                Dismiss
+                            </button>
+                        </div>
+                    </motion.div>
+                )}
+                </AnimatePresence>
 
                 {/* ── CHAT MODE ── */}
                 {mode === 'chat' && (

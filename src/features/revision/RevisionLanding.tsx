@@ -11,6 +11,7 @@ import { Helmet } from 'react-helmet-async';
 import { LogoutModal } from '../../components/LogoutModal';
 import { ThemeToggle } from '../../components/ThemeToggle';
 import { ExamGuruPanel } from './ExamGuruPanel';
+import { LoginModal } from '../../components/LoginModal';
 
 const SUBJECT_TIPS: Record<string, { tip: string; trap: string }> = {
     'Mathematics':      { tip: 'Always show full working — even a wrong answer gets method marks if steps are shown.', trap: 'Writing only the final answer loses all marks if it is wrong.' },
@@ -47,6 +48,7 @@ export const RevisionLanding: React.FC<Props> = ({ onStartSession, onNavigate, o
     const [showGuru, setShowGuru] = useState(false);
     const [loadingResources, setLoadingResources] = useState(false);
     const [overflowItem, setOverflowItem] = useState<any>(null);
+    const [showLoginModal, setShowLoginModal] = useState(false);
 
     const videoRef = useRef<HTMLVideoElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -484,7 +486,7 @@ export const RevisionLanding: React.FC<Props> = ({ onStartSession, onNavigate, o
 
             {/* ── EXAM GURU PANEL ── */}
             <AnimatePresence>
-                {showGuru && <ExamGuruPanel onClose={() => setShowGuru(false)} />}
+                {showGuru && <ExamGuruPanel onClose={() => setShowGuru(false)} onLogin={() => setShowLoginModal(true)} />}
             </AnimatePresence>
 
             {/* ── LOGOUT MODAL ── */}
@@ -495,6 +497,13 @@ export const RevisionLanding: React.FC<Props> = ({ onStartSession, onNavigate, o
                     onClose={() => setShowLogoutModal(false)}
                 />
             )}
+
+            {/* ── LOGIN MODAL (rate-limit gate) ── */}
+            <LoginModal
+                isOpen={showLoginModal}
+                onClose={() => setShowLoginModal(false)}
+                initialTab="STUDENT"
+            />
         </div>
     );
 };
