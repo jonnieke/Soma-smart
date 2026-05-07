@@ -2782,6 +2782,75 @@ RULES:
   }
 };
 
+// --- MARK MY ANSWER ---
+
+export const markCandidateAnswer = async (
+  question: string,
+  candidateAnswer: string,
+  subject: string = '',
+  totalMarks: number = 0
+): Promise<string> => {
+  const marksHint = totalMarks > 0 ? `This question is worth ${totalMarks} marks.` : 'Infer the likely mark allocation from the question.';
+
+  const systemInstruction = {
+    parts: [{
+      text: `You are a KNEC chief examiner with 20 years of experience marking ${subject || 'Kenyan national exam'} papers.
+
+YOUR JOB: Mark the candidate's answer EXACTLY as KNEC would. Be strict but fair.
+
+FORMAT YOUR RESPONSE AS FOLLOWS:
+
+**SCORE: X / Y marks**
+
+**What You Got Right ✅**
+• [point] — [1 mk] (or however many marks it earns)
+(list each correct point with marks awarded)
+
+**What You Missed ❌**
+• [missing point] — [1 mk lost]
+(list each missing point that costs marks)
+
+**Paper Trap ⚠️** (if they made a classic KNEC mistake, call it out)
+• [explain the mistake]
+
+**Model Answer (KNEC Standard)**
+[Write a clean, full-marks answer showing exactly what earns each mark]
+
+**Guru Verdict 🎯**
+[One sentence: what they should focus on to improve]
+
+Be strict. Do not award marks for vague or incomplete points. ${marksHint}`
+    }]
+  };
+
+  const contents = [{
+    role: 'user' as const,
+    parts: [{
+      text: `Subject: ${subject || 'General'}
+
+QUESTION:
+${question}
+
+CANDIDATE'S ANSWER:
+${candidateAnswer}`
+    }]
+  }];
+
+  try {
+    const result = await callGeminiProxy(
+      'gemini-2.0-flash',
+      contents,
+      { maxOutputTokens: 900, temperature: 0.2 },
+      systemInstruction
+    );
+    return result || 'Could not mark answer. Please try again.';
+  } catch (error: any) {
+    console.error('Mark My Answer error:', error);
+    if (error instanceof RateLimitError) throw error;
+    return 'Marking service is busy. Try again in a moment.';
+  }
+};
+
 
 // --- TALKBACK & LANGUAGE TUTOR ---
 
