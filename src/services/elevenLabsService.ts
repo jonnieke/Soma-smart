@@ -2,20 +2,30 @@ import axios from 'axios';
 import { supabase } from '../lib/supabase';
 
 const LOCAL_API_KEY = import.meta.env.VITE_ELEVEN_LABS_API_KEY;
-// Using "Rachel" as default warm voice
-const VOICE_ID = "21m00Tcm4TlvDq8ikWAM";
 
-// --- VOICE CONFIGS FOR TALKBACK & LANGUAGE TUTOR ---
-// Rachel (warm, clear English) for English mode
-// Adam (deep, natural multilingual) for Kiswahili — excellent Swahili pronunciation on eleven_multilingual_v2
+// ==========================================================
+// VOICE LIBRARY — curated from ElevenLabs premade catalogue
+// ==========================================================
+
+// Listen & Learn (educational narration)
+// Alice — "Clear, Engaging Educator", British female, informative_educational use-case
+const VOICE_ID_EN = "Xb7hH8MSUJpSbSDYk0k2"; // Alice
+// Brian — "Deep, Resonant and Comforting", good for Swahili narration via multilingual_v2
+const VOICE_ID_SW = "nPczCjzI2devNBz1zQrb"; // Brian
+
+// Default voice for generic speak() calls (Alice — educational EN)
+const VOICE_ID = VOICE_ID_EN;
+
+// Talkback conversational tutor voices
 export const TALKBACK_VOICES = {
-    en: "21m00Tcm4TlvDq8ikWAM", // Rachel — warm, friendly, clear English
-    sw: "nt9hK6jZNn8o3C1F4w9u", // Brian (Deep, resonant, comforting)
+    en: "EXAVITQu4vr4xnSDxMaL", // Sarah — Mature, Reassuring, Confident
+    sw: "nPczCjzI2devNBz1zQrb",  // Brian — Deep, Resonant and Comforting
 } as const;
 
+// Language tutor voices (slightly more formal/teacher-like)
 export const LANGUAGE_TUTOR_VOICES = {
-    en: "ErXwobaYiN019PkySvjV", // Antoni — encouraging male teacher voice
-    sw: "nt9hK6jZNn8o3C1F4w9u", // Brian (Deep, resonant, comforting)
+    en: "JBFqnCBsd6RMkjVDRZzb", // George — Warm, Captivating Storyteller (British)
+    sw: "nPczCjzI2devNBz1zQrb",  // Brian — Deep, Resonant and Comforting
 } as const;
 
 // Keep track of current audio to allow stopping
@@ -52,10 +62,12 @@ export const stopSpeech = () => {
     }
 };
 
-export const speak = async (text: string): Promise<void> => {
+export const speak = async (text: string, language: 'EN' | 'SW' = 'EN'): Promise<void> => {
     stopSpeech(); // Stop any pending speech
 
     const cleanText = cleanForTTS(text);
+    // Pick voice based on language: Alice (EN) or Brian (SW)
+    const selectedVoiceId = language === 'SW' ? VOICE_ID_SW : VOICE_ID_EN;
     const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 
     // Check if we should attempt TTS at all
@@ -68,7 +80,7 @@ export const speak = async (text: string): Promise<void> => {
             if (isLocal && LOCAL_API_KEY && LOCAL_API_KEY.length > 10) {
                 // Direct call bypass for local dev
                 const response = await axios.post(
-                    `https://api.elevenlabs.io/v1/text-to-speech/${VOICE_ID}`,
+                    `https://api.elevenlabs.io/v1/text-to-speech/${selectedVoiceId}`,
                     {
                         text: cleanText,
                         model_id: "eleven_turbo_v2_5",
@@ -100,7 +112,7 @@ export const speak = async (text: string): Promise<void> => {
                         'Authorization': `Bearer ${token}`
                     },
                     body: JSON.stringify({
-                        voiceId: VOICE_ID,
+                        voiceId: selectedVoiceId,
                         text: cleanText,
                         model_id: "eleven_turbo_v2_5",
                         voice_settings: {
@@ -198,8 +210,10 @@ export const playPodcast = async (
     }
 
     const VOICES = {
-        Host: "21m00Tcm4TlvDq8ikWAM", // Rachel
-        Guest: "ErXwobaYiN019PkySvjV"  // Antoni
+        // Matilda — Knowledgeable, Professional, upbeat American female → "Rachel" host persona
+        Host: "XrExE9yKIg1WjnnlVkGX",
+        // George — Warm, Captivating Storyteller, British male → expert guest persona
+        Guest: "JBFqnCBsd6RMkjVDRZzb",
     };
 
     // Helper to fetch audio
@@ -211,8 +225,8 @@ export const playPodcast = async (
                 `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`,
                 {
                     text,
-                    model_id: "eleven_flash_v2_5",
-                    voice_settings: { stability: 0.5, similarity_boost: 0.8, style: 0.0, use_speaker_boost: true },
+                    model_id: "eleven_turbo_v2_5",
+                    voice_settings: { stability: 0.38, similarity_boost: 0.82, style: 0.35, use_speaker_boost: true },
                 },
                 {
                     headers: { 'xi-api-key': LOCAL_API_KEY, 'Content-Type': 'application/json' },
@@ -232,8 +246,8 @@ export const playPodcast = async (
                 body: JSON.stringify({
                     voiceId,
                     text,
-                    model_id: "eleven_flash_v2_5",
-                    voice_settings: { stability: 0.5, similarity_boost: 0.8, style: 0.0, use_speaker_boost: true }
+                    model_id: "eleven_turbo_v2_5",
+                    voice_settings: { stability: 0.38, similarity_boost: 0.82, style: 0.35, use_speaker_boost: true }
                 })
              });
              if (!response.ok) throw new Error("Proxy error for podcast");
