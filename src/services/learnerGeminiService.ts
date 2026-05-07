@@ -18,6 +18,35 @@ const SchemaType = {
 } as const;
 
 const callGeminiProxy = async (model: string, contents: any, generationConfig: any = {}, systemInstruction: any = null) => {
+  const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+  const localApiKey = import.meta.env.VITE_GEMINI_API;
+
+  if (isLocal && localApiKey) {
+    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${localApiKey}`;
+    const body: any = { contents };
+    if (generationConfig) body.generationConfig = generationConfig;
+    if (systemInstruction) body.systemInstruction = systemInstruction;
+
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      console.error("Gemini Direct Error:", error);
+      throw new Error(error.error?.message || "Failed to call AI directly");
+    }
+
+    const data = await response.json();
+    return {
+      response: {
+        text: () => data.candidates?.[0]?.content?.parts?.[0]?.text || "",
+      }
+    };
+  }
+
   const { data: { session } } = await supabase.auth.getSession();
   const token = session?.access_token;
 
@@ -48,6 +77,32 @@ const callGeminiProxy = async (model: string, contents: any, generationConfig: a
 
 // --- STREAMING PROXY HELPER ---
 const callGeminiProxyStream = async (model: string, contents: any, generationConfig: any = {}, systemInstruction: any = null) => {
+  const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+  const localApiKey = import.meta.env.VITE_GEMINI_API;
+
+  if (isLocal && localApiKey) {
+    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:streamGenerateContent?alt=sse&key=${localApiKey}`;
+    const body: any = { contents };
+    if (generationConfig) body.generationConfig = generationConfig;
+    if (systemInstruction) body.systemInstruction = systemInstruction;
+
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("Gemini Direct Stream Error:", response.status, errorText);
+      let message = "Failed to call AI directly";
+      try { message = JSON.parse(errorText)?.error?.message || message; } catch { /* raw text */ }
+      throw new Error(message);
+    }
+
+    return response.body as ReadableStream<Uint8Array>;
+  }
+
   const { data: { session } } = await supabase.auth.getSession();
   const token = session?.access_token;
 
@@ -61,8 +116,11 @@ const callGeminiProxyStream = async (model: string, contents: any, generationCon
   });
 
   if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || "Failed to call AI proxy");
+    const errorText = await response.text();
+    console.error("Gemini Proxy Stream Error:", response.status, errorText);
+    let message = "Failed to call AI proxy";
+    try { message = JSON.parse(errorText)?.message || message; } catch { /* raw text */ }
+    throw new Error(message);
   }
 
   return response.body as ReadableStream<Uint8Array>;
@@ -1022,8 +1080,8 @@ export const generateQuickQuiz = async (content: string, topic: string, language
 };
 
 // Redefine generateSpeech to use ElevenLabs
-export const generateSpeech = async (text: string): Promise<void> => {
-  return ttSpeak(text);
+export const generateSpeech = async (text: string, language: 'EN' | 'SW' = 'EN'): Promise<void> => {
+  return ttSpeak(text, language);
 };
 
 export const stopSpeech = () => {

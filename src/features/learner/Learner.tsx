@@ -1558,7 +1558,7 @@ ${explanation.explanation}
       const textToRead = `${spokenIntro} ${spokenSummary} ${plainExplanation}`.slice(0, 4500);
 
       setIsPlaying(true);
-      await generateSpeech(textToRead);
+      await generateSpeech(textToRead, language);
     } catch (e: any) {
       console.error("TTS Error:", e);
       // generateSpeech already has a fallback to browser TTS inside, 
