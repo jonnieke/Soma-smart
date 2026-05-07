@@ -36,6 +36,8 @@ const ConversationalTutor = React.lazy(() => import('./ConversationalTutor').the
 const ReferralView = React.lazy(() => import('./ReferralView').then(module => ({ default: module.ReferralView })));
 
 const loadGeminiService = () => import('../../services/learnerGeminiService');
+import { RateLimitError } from '../../services/geminiService';
+
 const fileToGenerativePart = async (...args: any[]) => (await loadGeminiService()).fileToGenerativePart(...args as [File]);
 const explainImage = async (...args: any[]) => (await loadGeminiService()).explainImage(...args as [string, string, 'Simple' | 'Exam', 'EN' | 'SW', any]);
 const explainAudio = async (...args: any[]) => (await loadGeminiService()).explainAudio(...args as [string, string, 'Simple' | 'Exam', 'EN' | 'SW']);
@@ -1075,6 +1077,14 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
 
     } catch (error: any) {
       console.error("Scan error:", error);
+
+      if (error instanceof RateLimitError || error?.name === 'RateLimitError') {
+        setLoading(false);
+        setMode('MENU');
+        setShowLogin(true);
+        return;
+      }
+
       let errorMessage = "We couldn't process this image. Please ensure it's clear and contains text.";
       let errorTitle = "Scan Failed";
 
@@ -1083,8 +1093,6 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
         errorMessage = "You are offline. Please check your internet to process this scan.";
       } else if (error.message?.includes("Safety") || error.message?.includes("blocked")) {
         errorMessage = "This content was flagged by our safety filters. Please try a different page.";
-      } else if (error.message?.includes("429")) {
-        errorMessage = "We're receiving too many requests. Please wait a moment and try again.";
       }
 
       setError({ title: errorTitle, message: errorMessage });
@@ -1249,6 +1257,14 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
       };
     } catch (e: any) {
       console.error(e);
+
+      if (e instanceof RateLimitError || e?.name === 'RateLimitError') {
+        setLoading(false);
+        setMode('MENU');
+        setShowLogin(true);
+        return;
+      }
+
       const isNet = !isOnline || !navigator.onLine || e.message?.includes('network') || e.message?.includes('Failed to fetch');
       setError({
         title: isNet ? "Offline Error" : "Audio Error",
@@ -1381,6 +1397,22 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
       generateQuickQuiz(result.explanation, result.topic, language)
         .then(data => setStickyQuizData(data))
         .catch(err => console.error("Background quiz gen failed", err));
+    } catch (e: any) {
+      console.error("Topic explain error:", e);
+
+      if (e instanceof RateLimitError || e?.name === 'RateLimitError') {
+        setLoading(false);
+        setMode('MENU');
+        setShowLogin(true);
+        return;
+      }
+
+      setError({
+        title: "Explanation Failed",
+        message: (!isOnline || e.message?.includes('network') || e.message?.includes('Failed to fetch'))
+          ? "You are offline. Please check your internet connection."
+          : "We couldn't generate an explanation. Please try again."
+      });
     } finally {
       setLoading(false);
     }

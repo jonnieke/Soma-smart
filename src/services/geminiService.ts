@@ -9,6 +9,15 @@ import { buildPersonaInstruction, recommendPersona } from "./adminAgentService";
 // Instead, we call a Supabase Edge Function which adds the key server-side.
 import { supabase } from "../lib/supabase";
 
+// Custom error thrown when the backend returns 429 (usage limit exceeded).
+// Callers can instanceof-check this to show login/register UI instead of a generic error.
+export class RateLimitError extends Error {
+  constructor(message = 'Daily AI limit reached. Please register or log in to continue.') {
+    super(message);
+    this.name = 'RateLimitError';
+  }
+}
+
 const SchemaType = {
   STRING: "string",
   NUMBER: "number",
@@ -19,6 +28,35 @@ const SchemaType = {
 } as const;
 
 export const callGeminiProxy = async (model: string, contents: any, generationConfig: any = {}, systemInstruction: any = null) => {
+  const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+  const localApiKey = import.meta.env.VITE_GEMINI_API;
+
+  if (isLocal && localApiKey) {
+    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${localApiKey}`;
+    const body: any = { contents };
+    if (generationConfig) body.generationConfig = generationConfig;
+    if (systemInstruction) body.systemInstruction = systemInstruction;
+
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      console.error("Gemini Direct Error:", error);
+      throw new Error(error.error?.message || "Failed to call AI directly");
+    }
+
+    const data = await response.json();
+    return {
+      response: {
+        text: () => data.candidates?.[0]?.content?.parts?.[0]?.text || "",
+      }
+    };
+  }
+
   const { data: { session } } = await supabase.auth.getSession();
   const token = session?.access_token;
 
@@ -32,7 +70,10 @@ export const callGeminiProxy = async (model: string, contents: any, generationCo
   });
 
   if (!response.ok) {
-    const error = await response.json();
+    if (response.status === 429) {
+      throw new RateLimitError();
+    }
+    const error = await response.json().catch(() => ({}));
     console.error("Gemini Proxy Error:", error);
     throw new Error(error.message || "Failed to call AI proxy");
   }
@@ -49,6 +90,32 @@ export const callGeminiProxy = async (model: string, contents: any, generationCo
 
 // --- STREAMING PROXY HELPER ---
 const callGeminiProxyStream = async (model: string, contents: any, generationConfig: any = {}, systemInstruction: any = null) => {
+  const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+  const localApiKey = import.meta.env.VITE_GEMINI_API;
+
+  if (isLocal && localApiKey) {
+    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:streamGenerateContent?alt=sse&key=${localApiKey}`;
+    const body: any = { contents };
+    if (generationConfig) body.generationConfig = generationConfig;
+    if (systemInstruction) body.systemInstruction = systemInstruction;
+
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("Gemini Direct Stream Error:", response.status, errorText);
+      let message = "Failed to call AI directly";
+      try { message = JSON.parse(errorText)?.error?.message || message; } catch { /* raw text */ }
+      throw new Error(message);
+    }
+
+    return response.body as ReadableStream<Uint8Array>;
+  }
+
   const { data: { session } } = await supabase.auth.getSession();
   const token = session?.access_token;
 
@@ -62,6 +129,9 @@ const callGeminiProxyStream = async (model: string, contents: any, generationCon
   });
 
   if (!response.ok) {
+    if (response.status === 429) {
+      throw new RateLimitError();
+    }
     const errorText = await response.text();
     console.error("Gemini Proxy Stream Error:", response.status, errorText);
     let message = "Failed to call AI proxy";
