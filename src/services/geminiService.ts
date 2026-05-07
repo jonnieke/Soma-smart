@@ -88,6 +88,58 @@ export const callGeminiProxy = async (model: string, contents: any, generationCo
   };
 };
 
+// --- PREDICTED TOPICS ---
+
+export interface PredictedTopic {
+  topic: string;
+  probability: 'High' | 'Medium';
+  reason: string;
+  paperSection: string;
+}
+
+export const getPredictedTopics = async (
+  subject: string,
+  examType: 'KCSE' | 'KPSEA' | 'JSS' = 'KCSE'
+): Promise<PredictedTopic[]> => {
+  const systemInstruction = {
+    parts: [{
+      text: `You are a KNEC examiner analyst. Based on ${examType} past paper patterns from 2015–2024, predict the most likely topics for the upcoming ${examType} ${subject} exam.
+
+Return a JSON array only — no markdown, no explanation outside JSON.
+Format:
+[
+  {
+    "topic": "Exact topic name",
+    "probability": "High" or "Medium",
+    "reason": "Short reason e.g. 'Appeared in 8 of last 10 papers'",
+    "paperSection": "e.g. P1 Section A Q3 or P2 Essay"
+  }
+]
+Return 6 topics max. Be specific to ${subject} content — not generic exam advice.`
+    }]
+  };
+
+  const contents = [{
+    role: 'user' as const,
+    parts: [{ text: `Predict top ${examType} ${subject} topics for 2025 exam based on past paper analysis.` }]
+  }];
+
+  try {
+    const result = await callGeminiProxy(
+      'gemini-2.0-flash',
+      contents,
+      { maxOutputTokens: 600, temperature: 0.3 },
+      systemInstruction
+    );
+    // Strip any markdown code fences if present
+    const cleaned = (result || '[]').replace(/```json|```/g, '').trim();
+    return JSON.parse(cleaned) as PredictedTopic[];
+  } catch (error: any) {
+    console.error('Predicted topics error:', error);
+    return [];
+  }
+};
+
 // --- STREAMING PROXY HELPER ---
 const callGeminiProxyStream = async (model: string, contents: any, generationConfig: any = {}, systemInstruction: any = null) => {
   const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
