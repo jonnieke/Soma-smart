@@ -15,12 +15,30 @@ export class ErrorBoundary extends Component<Props, State> {
         this.state = { hasError: false, error: null };
     }
 
+    componentDidMount() {
+        // Clear the chunk reload flag on successful mount
+        sessionStorage.removeItem('soma_chunk_reload');
+    }
+
     static getDerivedStateFromError(error: Error): State {
         return { hasError: true, error };
     }
 
     componentDidCatch(error: Error, errorInfo: ErrorInfo) {
         console.error('ErrorBoundary caught:', error, errorInfo);
+        
+        // Auto-reload on chunk load errors (e.g., after a new deployment)
+        const isChunkLoadError = error.name === 'ChunkLoadError' || 
+            (error.message && error.message.toLowerCase().includes('failed to fetch dynamically imported module'));
+            
+        if (isChunkLoadError) {
+            const hasReloaded = sessionStorage.getItem('soma_chunk_reload');
+            if (!hasReloaded) {
+                sessionStorage.setItem('soma_chunk_reload', 'true');
+                window.location.reload();
+                return;
+            }
+        }
     }
 
     render() {
