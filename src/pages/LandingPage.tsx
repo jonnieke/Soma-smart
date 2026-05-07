@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿﻿import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import {
@@ -117,7 +117,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                 return () => connection.removeEventListener('change', onChange);
             }
         } catch (_) {
-            // Network Information API not supported â€” safe to ignore
+            // Network Information API not supported — safe to ignore
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
@@ -446,7 +446,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                     <Users className="w-5 h-5 text-slate-400" /> Login
                                 </button>
                                 <button onClick={() => { toggleLanguage(); setMobileMenuOpen(false); }} className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 text-slate-400 font-medium text-sm">
-                                    <Globe className="w-4 h-4" /> {language === 'EN' ? 'FranÃ§ais' : 'English'}
+                                    <Globe className="w-4 h-4" /> {language === 'EN' ? 'Français' : 'English'}
                                 </button>
                                 <div className="p-3">
                                     <ThemeToggle className="w-full justify-center" />
@@ -458,7 +458,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
             </motion.header>
             {/* --- HERO SECTION --- */}
             <section className="relative overflow-hidden bg-white dark:bg-slate-950 transition-colors">
-                {/* Ambient background â€” very subtle, light */}
+                {/* Ambient background — very subtle, light */}
                 <div className="absolute inset-0 pointer-events-none overflow-hidden">
                     <div className="absolute -top-40 -right-40 w-[600px] h-[600px] rounded-full bg-indigo-50 dark:bg-indigo-950/30 blur-[100px]" />
                     <div className="absolute -bottom-20 -left-20 w-[500px] h-[500px] rounded-full bg-blue-50 dark:bg-blue-950/20 blur-[80px]" />
@@ -494,7 +494,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                             <span className="block text-indigo-600 dark:text-indigo-400 mt-1">Let's solve it now.</span>
                                         </h1>
                                         <p className="text-lg text-slate-500 dark:text-slate-400 font-medium leading-relaxed mb-8 max-w-lg">
-                                            Instant step-by-step answers, audio explanations &amp; revision tools â€” every KCSE, KPSEA and CBC subject. No waiting. No judgment.
+                                            Instant step-by-step answers, audio explanations &amp; revision tools — every KCSE, KPSEA and CBC subject. No waiting. No judgment.
                                         </p>
 
                                         {/* Live ask-bar */}
@@ -554,7 +554,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                         <div className="flex flex-wrap items-center gap-4 mb-7">
                                             <button onClick={() => handleRoleSelect(UserRole.LEARNER)}
                                                 className="bg-slate-900 dark:bg-white hover:bg-slate-700 dark:hover:bg-slate-100 text-white dark:text-slate-900 font-extrabold text-base px-8 py-4 rounded-2xl shadow-xl hover:-translate-y-0.5 transition-all flex items-center gap-2">
-                                                Start Free â€” No Signup <ArrowRight className="w-4 h-4" />
+                                                Start Free — No Signup <ArrowRight className="w-4 h-4" />
                                             </button>
                                             <button onClick={() => { startGuestSession(); setRole(UserRole.LEARNER); navigate('/learner', { state: { targetTab: 'TALKBACK' } }); }}
                                                 className="flex items-center gap-2 text-slate-500 dark:text-slate-400 font-bold text-sm hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
@@ -562,7 +562,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                             </button>
                                         </div>
                                         <div className="flex flex-wrap gap-x-5 gap-y-2 text-sm text-slate-500 dark:text-slate-400">
-                                            <div className="flex items-center gap-1.5"><CheckCircle className="w-4 h-4 text-emerald-500" /> Free to start â€” KES 20/day unlimited</div>
+                                            <div className="flex items-center gap-1.5"><CheckCircle className="w-4 h-4 text-emerald-500" /> Free to start — KES 20/day unlimited</div>
                                             <div className="flex items-center gap-1.5"><CheckCircle className="w-4 h-4 text-emerald-500" /> All subjects &amp; levels</div>
                                             <div className="flex items-center gap-1.5"><CheckCircle className="w-4 h-4 text-emerald-500" /> Works offline</div>
                                         </div>
@@ -577,7 +577,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                             <span className="block text-emerald-600 dark:text-emerald-400 mt-1">marking 60 books.</span>
                                         </h1>
                                         <p className="text-lg text-slate-500 dark:text-slate-400 font-medium leading-relaxed mb-9 max-w-lg">
-                                            Auto-grade CBC exams in minutes. Generate KICD-aligned lesson plans, schemes &amp; quizzes on demand. Reclaim your evenings â€” and your passion for teaching.
+                                            Auto-grade CBC exams in minutes. Generate KICD-aligned lesson plans, schemes &amp; quizzes on demand. Reclaim your evenings — and your passion for teaching.
                                         </p>
 
                                         {/* Specific stat cards */}
@@ -634,7 +634,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                         exit={{ opacity: 0, scale: 0.97 }} transition={{ duration: 0.4 }} />
                                 </AnimatePresence>
 
-                                {/* Floating card: top-left â€” role-specific proof */}
+                                {/* Floating card: top-left — role-specific proof */}
                                 {heroRole === 'LEARNER' ? (
                                     <motion.div animate={{ y: [0, -8, 0] }} transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
                                         className="absolute top-8 -left-4 lg:-left-10 bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-slate-100 dark:border-slate-700 p-4 max-w-[196px] z-20">
@@ -643,7 +643,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                             <span className="text-[10px] font-black text-emerald-600 uppercase tracking-wider">Solved!</span>
                                         </div>
                                         <p className="text-xs font-semibold text-slate-700 dark:text-slate-300 leading-snug">"Find x if 3x + 7 = 22"</p>
-                                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">x = 5 Â· 3 steps shown âœ“</p>
+                                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">x = 5 · 3 steps shown ✓</p>
                                     </motion.div>
                                 ) : (
                                     <motion.div animate={{ y: [0, -8, 0] }} transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
@@ -653,7 +653,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                             <span className="text-[10px] font-black text-emerald-600 uppercase tracking-wider">Auto-Graded</span>
                                         </div>
                                         <p className="text-xs font-semibold text-slate-700 dark:text-slate-300 leading-snug">Class 7B Maths Exam</p>
-                                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">43 papers Â· Avg 72% Â· 4 min</p>
+                                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">43 papers · Avg 72% · 4 min</p>
                                     </motion.div>
                                 )}
 
@@ -668,7 +668,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                             ))}
                                             <span className="text-white text-[10px] font-bold ml-2">Listening...</span>
                                         </div>
-                                        <p className="text-white/90 text-xs font-medium leading-snug">Audio Tutor â€” Photosynthesis in Kiswahili</p>
+                                        <p className="text-white/90 text-xs font-medium leading-snug">Audio Tutor — Photosynthesis in Kiswahili</p>
                                     </motion.div>
                                 ) : (
                                     <motion.div animate={{ y: [0, 8, 0] }} transition={{ repeat: Infinity, duration: 5, ease: "easeInOut", delay: 0.8 }}
@@ -677,11 +677,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                             <Sparkles className="w-4 h-4 text-amber-400" />
                                             <span className="text-[10px] font-black text-amber-400 uppercase tracking-wider">Lesson Ready</span>
                                         </div>
-                                        <p className="text-white/90 text-xs font-medium leading-snug">Grade 8 Â· Fractions Â· KICD 5-E Model âœ“</p>
+                                        <p className="text-white/90 text-xs font-medium leading-snug">Grade 8 · Fractions · KICD 5-E Model ✓</p>
                                     </motion.div>
                                 )}
 
-                                {/* Social proof pill â€” bottom center */}
+                                {/* Social proof pill — bottom center */}
                                 <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1 }}
                                     className="absolute -bottom-5 left-1/2 -translate-x-1/2 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-full px-4 py-2.5 shadow-xl flex items-center gap-3 z-20 whitespace-nowrap">
                                     <div className="flex -space-x-2">
@@ -1064,7 +1064,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                     </div>
                                     <div>
                                         <div className="text-sm font-bold text-slate-900 dark:text-white">Form 3 Mid-Term</div>
-                                        <div className="text-xs text-slate-500 dark:text-slate-400">Math, Eng, Kisw â€¢ Generated</div>
+                                        <div className="text-xs text-slate-500 dark:text-slate-400">Math, Eng, Kisw "¢ Generated</div>
                                     </div>
                                     <div className="ml-2 w-8 h-8 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-green-600 dark:text-green-400">
                                         <CheckCircle className="w-4 h-4" />
