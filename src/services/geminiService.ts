@@ -18,6 +18,13 @@ export class RateLimitError extends Error {
   }
 }
 
+export class SystemQuotaError extends Error {
+  constructor(message = 'System is currently at capacity. Please try again later.') {
+    super(message);
+    this.name = 'SystemQuotaError';
+  }
+}
+
 const SchemaType = {
   STRING: "string",
   NUMBER: "number",
@@ -77,12 +84,23 @@ export const callGeminiProxy = async (model: string, contents: any, generationCo
   });
 
   if (!response.ok) {
+    let errorData: any = {};
+    try {
+      errorData = await response.json();
+    } catch (e) {
+      // Ignore JSON parse errors for non-JSON responses
+    }
+
     if (response.status === 429) {
+      if (errorData?.error === 'Gemini API request failed' || errorData?.error?.message?.includes('Quota exceeded')) {
+        console.error("System Google API Quota Exceeded:", errorData);
+        throw new SystemQuotaError();
+      }
       throw new RateLimitError();
     }
-    const error = await response.json().catch(() => ({}));
-    console.error("Gemini Proxy Error:", error);
-    throw new Error(error.message || "Failed to call AI proxy");
+
+    console.error("Gemini Proxy Error:", errorData);
+    throw new Error(errorData?.error?.message || errorData?.error || "Failed to call AI proxy");
   }
 
   const data = await response.json();

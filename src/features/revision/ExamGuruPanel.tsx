@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkles, Send, X, User, CheckSquare, MessageCircle, ChevronRight, Loader, TrendingUp, AlertCircle, PenLine, LogIn, ShieldAlert } from 'lucide-react';
-import { getExamGuruResponse, markCandidateAnswer, getPredictedTopics, PredictedTopic, generatePracticeQuestions, PracticeQuestion, RateLimitError } from '../../services/geminiService';
+import { getExamGuruResponse, markCandidateAnswer, getPredictedTopics, PredictedTopic, generatePracticeQuestions, PracticeQuestion, RateLimitError, SystemQuotaError } from '../../services/geminiService';
 
 interface Message {
     id: string;
@@ -30,6 +30,7 @@ type PanelMode = 'chat' | 'mark' | 'predict' | 'practice';
 export const ExamGuruPanel: React.FC<{ onClose: () => void; onLogin?: () => void }> = ({ onClose, onLogin }) => {
     const [mode, setMode] = useState<PanelMode>('chat');
     const [rateLimited, setRateLimited] = useState(false);
+    const [quotaExceeded, setQuotaExceeded] = useState(false);
 
     // --- Chat state ---
     const [messages, setMessages] = useState<Message[]>([
@@ -65,6 +66,7 @@ export const ExamGuruPanel: React.FC<{ onClose: () => void; onLogin?: () => void
             else setPracticeQuestions(questions);
         } catch (err: any) {
             if (err instanceof RateLimitError) { setRateLimited(true); }
+            else if (err instanceof SystemQuotaError) { setQuotaExceeded(true); }
             else { setGenerateError('Generation failed. Check your connection.'); }
         } finally {
             setIsGenerating(false);
@@ -89,6 +91,7 @@ export const ExamGuruPanel: React.FC<{ onClose: () => void; onLogin?: () => void
             else setPredictedTopics(topics);
         } catch (err: any) {
             if (err instanceof RateLimitError) { setRateLimited(true); }
+            else if (err instanceof SystemQuotaError) { setQuotaExceeded(true); }
             else { setPredictError('Prediction failed. Check connection.'); }
         } finally {
             setIsPredicting(false);
@@ -124,6 +127,7 @@ export const ExamGuruPanel: React.FC<{ onClose: () => void; onLogin?: () => void
             setMessages(prev => [...prev, { id: (Date.now() + 1).toString(), role: 'guru', content: response }]);
         } catch (err: any) {
             if (err instanceof RateLimitError) { setRateLimited(true); }
+            else if (err instanceof SystemQuotaError) { setQuotaExceeded(true); }
             else { setMessages(prev => [...prev, { id: (Date.now() + 1).toString(), role: 'guru', content: 'Connection issue. Please try again.' }]); }
         } finally {
             setIsTyping(false);
@@ -144,6 +148,7 @@ export const ExamGuruPanel: React.FC<{ onClose: () => void; onLogin?: () => void
             setMarkResult(result);
         } catch (err: any) {
             if (err instanceof RateLimitError) { setRateLimited(true); }
+            else if (err instanceof SystemQuotaError) { setQuotaExceeded(true); }
             else { setMarkResult('Marking failed. Please check your connection and try again.'); }
         } finally {
             setIsMarking(false);
@@ -244,6 +249,36 @@ export const ExamGuruPanel: React.FC<{ onClose: () => void; onLogin?: () => void
                                 className="text-slate-600 text-xs font-bold hover:text-slate-400 transition-colors"
                             >
                                 Dismiss
+                            </button>
+                        </div>
+                    </motion.div>
+                )}
+                </AnimatePresence>
+
+                {/* ── QUOTA EXCEEDED GATE ── */}
+                <AnimatePresence>
+                {quotaExceeded && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0 }}
+                        className="absolute inset-0 z-20 flex items-end pb-10 justify-center bg-slate-950/90 backdrop-blur-sm"
+                    >
+                        <div className="w-full max-w-xs mx-4 bg-slate-900 border border-rose-700/60 rounded-3xl p-6 text-center shadow-2xl space-y-4">
+                            <div className="w-14 h-14 bg-rose-900/50 border border-rose-700/60 rounded-2xl flex items-center justify-center mx-auto">
+                                <AlertCircle className="w-7 h-7 text-rose-400" />
+                            </div>
+                            <div>
+                                <h3 className="text-white font-black text-base">Platform at Capacity</h3>
+                                <p className="text-slate-400 text-xs mt-2 leading-relaxed font-medium">
+                                    Our AI systems are currently handling maximum traffic. The engineers have been notified. Please try again in a few minutes.
+                                </p>
+                            </div>
+                            <button
+                                onClick={() => { setQuotaExceeded(false); onClose(); }}
+                                className="w-full py-3.5 rounded-2xl bg-rose-600 hover:bg-rose-500 text-white font-black text-sm flex items-center justify-center gap-2 transition-colors shadow-lg"
+                            >
+                                <X className="w-4 h-4" /> Close Panel
                             </button>
                         </div>
                     </motion.div>
