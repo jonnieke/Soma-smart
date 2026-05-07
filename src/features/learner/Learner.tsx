@@ -2522,6 +2522,12 @@ ${explanation.explanation}
               >
                 Cancel and Return
               </button>
+              <button
+                onClick={() => setShowLogoutModal(true)}
+                className="text-red-400 hover:text-red-600 font-bold py-2 transition-colors text-sm mt-2"
+              >
+                Clear Guest Session
+              </button>
             </div>
           </div>
         );
