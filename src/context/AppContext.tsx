@@ -1374,7 +1374,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const newCount = teacherUsageCount + 1;
     setTeacherUsageCount(newCount);
     if (userId && isRegistered && role !== UserRole.GUEST) {
-      // Registered AI usage is enforced by gemini-proxy to avoid double-counting.
+      incrementRegisteredUsage('teacher').catch(error => {
+        console.error('Failed to sync teacher usage:', error);
+      });
       return;
     } else {
       // Guest teacher: persist to localStorage so refresh can't bypass limit
@@ -1484,9 +1486,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const incrementUsage = () => {
     if (userId && isRegistered && role !== UserRole.GUEST) {
-      // Registered users: server-side usage tracked by gemini-proxy.
-      // Increment local counter just for display purposes.
       setUsageCount(prev => prev + 1);
+      incrementRegisteredUsage('learner').catch(error => {
+        console.error('Failed to sync learner usage:', error);
+      });
       return;
     }
 
@@ -1508,7 +1511,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const incrementRevisionUsage = () => {
     if (userId && isRegistered && role !== UserRole.GUEST) {
       setRevisionUsageCount(prev => prev + 1);
-      // Registered AI usage is enforced by gemini-proxy to avoid double-counting.
+      incrementRegisteredUsage('revision').catch(error => {
+        console.error('Failed to sync revision usage:', error);
+      });
       return;
     }
 

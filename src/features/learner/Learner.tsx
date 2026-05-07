@@ -2500,7 +2500,7 @@ ${explanation.explanation}
 
     if (mode === 'PROFILE') {
       // PRO GUARD: If no student profile is active, redirect to menu or show login prompt
-      if (!isRegistered && role !== UserRole.REVISION) {
+      if (!isRegistered) {
         return (
           <div className="flex flex-col items-center justify-center min-h-[60vh] p-6 text-center">
             <div className="w-20 h-20 bg-slate-100 rounded-3xl flex items-center justify-center mb-6">
