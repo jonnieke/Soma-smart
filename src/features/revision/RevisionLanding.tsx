@@ -1,16 +1,30 @@
-import React, { useState, useRef, useCallback, useMemo } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
 import { useApp } from '../../context/AppContext';
 import {
-    Upload, BookOpen, Brain, ArrowRight, ScanLine, X, Camera,
+    Upload, BookOpen, Brain, ArrowRight, ScanLine, X,
     CheckCircle, LogOut, Search, FileText, ChevronRight, GraduationCap,
-    Sparkles, MessageCircle, MoreHorizontal, Target
+    Sparkles, MessageCircle, MoreHorizontal, Target, Lightbulb
 } from 'lucide-react';
-import { ViewState, RevisionMode, TeacherActivity, UserRole } from '../../types';
+import { ViewState, RevisionMode, TeacherActivity } from '../../types';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Helmet } from 'react-helmet-async';
 import { LogoutModal } from '../../components/LogoutModal';
 import { ThemeToggle } from '../../components/ThemeToggle';
 import { ExamGuruPanel } from './ExamGuruPanel';
+
+const SUBJECT_TIPS: Record<string, { tip: string; trap: string }> = {
+    'Mathematics':      { tip: 'Always show full working — even a wrong answer gets method marks if steps are shown.', trap: 'Writing only the final answer loses all marks if it is wrong.' },
+    'Biology':          { tip: 'Label diagrams fully — each missing label costs a mark. Use scientific names correctly.', trap: 'Writing "it moves" instead of the scientific process name scores 0.' },
+    'Chemistry':        { tip: 'Balance equations and always include state symbols (s), (l), (g), (aq) in P1 and P2.', trap: 'P3 practical: recording wrong units or skipping observations costs big marks.' },
+    'Physics':          { tip: 'State the formula first, substitute values, then calculate — KNEC awards marks at each step.', trap: 'Forgetting units in the final answer loses the last mark even if the number is right.' },
+    'English':          { tip: 'Essay: write a clear introduction (2 marks), 3 developed paragraphs (12 marks), conclusion (2 marks). Spelling counts.', trap: 'Point-only answers with no illustration score half marks in P2 comprehension.' },
+    'Kiswahili':        { tip: 'Tumia lugha ya kawaida ya fasihi — usandae maneno ya kizungu. Muundo wa insha: utangulizi, mwili, hitimisho.', trap: 'Kutokujibu swali moja kunaathiri alama zako sana — jabu kila swali.' },
+    'History':          { tip: 'PEEL structure: Point, Evidence, Explain, Link. Each point should be a separate paragraph.', trap: 'Writing long paragraphs without clear points — examiners award one mark per distinct point.' },
+    'Geography':        { tip: 'Sketch maps and diagrams must be labelled and titled — they earn separate marks.', trap: 'Vague answers like "it rains a lot" instead of naming the specific climate process.' },
+    'CRE':              { tip: 'Quote scripture references accurately — they earn marks independently of your explanation.', trap: 'Telling a Bible story without linking it to the lesson/theme asked loses half the marks.' },
+    'Agriculture':      { tip: 'When asked about crop diseases, name the causal organism AND the control method for full marks.', trap: 'Writing generic controls like "spray pesticides" without naming the pesticide type.' },
+    'Business Studies': { tip: 'Definitions must include all key elements — incomplete definitions score 0.', trap: 'Advantages/disadvantages: write distinct points, not paraphrases of the same idea.' },
+};
 
 interface Props {
     onStartSession: (data: File | TeacherActivity, mode: RevisionMode) => void;
@@ -285,6 +299,30 @@ export const RevisionLanding: React.FC<Props> = ({ onStartSession, onNavigate, o
                             </button>
                         ))}
                     </div>
+
+                    {/* Subject tip banner */}
+                    {activeSubject !== 'All' && SUBJECT_TIPS[activeSubject] && (
+                        <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto' }}
+                            exit={{ opacity: 0, height: 0 }}
+                            className="mb-4 bg-indigo-50 dark:bg-indigo-950/30 border border-indigo-100 dark:border-indigo-900/50 rounded-2xl p-4 space-y-2"
+                        >
+                            <div className="flex items-start gap-3">
+                                <Lightbulb className="w-4 h-4 text-indigo-500 shrink-0 mt-0.5" />
+                                <div>
+                                    <p className="text-[11px] font-black text-indigo-700 dark:text-indigo-400 uppercase tracking-wider mb-1">{activeSubject} — KNEC Tip</p>
+                                    <p className="text-xs text-slate-700 dark:text-slate-300 font-medium leading-relaxed">{SUBJECT_TIPS[activeSubject].tip}</p>
+                                </div>
+                            </div>
+                            <div className="flex items-start gap-3 pt-1 border-t border-indigo-100 dark:border-indigo-900/40">
+                                <span className="text-rose-500 text-xs shrink-0 font-black mt-0.5">❌</span>
+                                <p className="text-xs text-rose-600 dark:text-rose-400 font-medium leading-relaxed">
+                                    <strong>Paper Trap:</strong> {SUBJECT_TIPS[activeSubject].trap}
+                                </p>
+                            </div>
+                        </motion.div>
+                    )}
 
                     {/* Resource List */}
                     {loadingResources ? (

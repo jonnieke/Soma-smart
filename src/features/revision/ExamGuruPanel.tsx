@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Sparkles, Send, X, User, CheckSquare, MessageCircle, ChevronRight, Loader, TrendingUp, AlertCircle } from 'lucide-react';
-import { getExamGuruResponse, markCandidateAnswer, getPredictedTopics, PredictedTopic } from '../../services/geminiService';
+import { Sparkles, Send, X, User, CheckSquare, MessageCircle, ChevronRight, Loader, TrendingUp, AlertCircle, PenLine } from 'lucide-react';
+import { getExamGuruResponse, markCandidateAnswer, getPredictedTopics, PredictedTopic, generatePracticeQuestions, PracticeQuestion } from '../../services/geminiService';
 
 interface Message {
     id: string;
@@ -25,7 +25,7 @@ const SUBJECTS = [
     'Computer Studies', 'Home Science', 'Art & Design',
 ];
 
-type PanelMode = 'chat' | 'mark' | 'predict';
+type PanelMode = 'chat' | 'mark' | 'predict' | 'practice';
 
 export const ExamGuruPanel: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     const [mode, setMode] = useState<PanelMode>('chat');
@@ -42,6 +42,32 @@ export const ExamGuruPanel: React.FC<{ onClose: () => void }> = ({ onClose }) =>
     const [isTyping, setIsTyping] = useState(false);
     const scrollRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
+
+    // --- Practice Questions state ---
+    const [practiceSubject, setPracticeSubject] = useState('');
+    const [practiceTopic, setPracticeTopic] = useState('');
+    const [practiceExamType, setPracticeExamType] = useState<'KCSE' | 'KPSEA' | 'JSS'>('KCSE');
+    const [practiceQuestions, setPracticeQuestions] = useState<PracticeQuestion[]>([]);
+    const [isGenerating, setIsGenerating] = useState(false);
+    const [generateError, setGenerateError] = useState('');
+    const [expandedPQ, setExpandedPQ] = useState<number | null>(null);
+
+    const handleGenerate = async () => {
+        if (!practiceSubject) return;
+        setIsGenerating(true);
+        setPracticeQuestions([]);
+        setGenerateError('');
+        setExpandedPQ(null);
+        try {
+            const questions = await generatePracticeQuestions(practiceSubject, practiceTopic, practiceExamType);
+            if (questions.length === 0) setGenerateError('Could not generate questions. Try again.');
+            else setPracticeQuestions(questions);
+        } catch {
+            setGenerateError('Generation failed. Check your connection.');
+        } finally {
+            setIsGenerating(false);
+        }
+    };
 
     // --- Predicted Topics state ---
     const [predictSubject, setPredictSubject] = useState('');
@@ -168,30 +194,18 @@ export const ExamGuruPanel: React.FC<{ onClose: () => void }> = ({ onClose }) =>
                 </div>
 
                 {/* Mode Tabs */}
-                <div className="flex bg-slate-900 border-b border-white/5 shrink-0">
-                    <button
-                        onClick={() => setMode('chat')}
-                        className={`flex-1 flex items-center justify-center gap-1.5 py-3 text-[10px] font-black uppercase tracking-wider transition-colors ${
-                            mode === 'chat' ? 'text-white border-b-2 border-indigo-500' : 'text-slate-500 hover:text-slate-300'
-                        }`}
-                    >
-                        <MessageCircle className="w-3.5 h-3.5" /> Ask Guru
+                <div className="flex bg-slate-900 border-b border-white/5 shrink-0 overflow-x-auto no-scrollbar">
+                    <button onClick={() => setMode('chat')} className={`shrink-0 flex-1 flex items-center justify-center gap-1 py-3 text-[9px] font-black uppercase tracking-wider transition-colors min-w-0 px-2 ${ mode === 'chat' ? 'text-white border-b-2 border-indigo-500' : 'text-slate-500 hover:text-slate-300' }`}>
+                        <MessageCircle className="w-3 h-3" /> Ask
                     </button>
-                    <button
-                        onClick={() => setMode('mark')}
-                        className={`flex-1 flex items-center justify-center gap-1.5 py-3 text-[10px] font-black uppercase tracking-wider transition-colors ${
-                            mode === 'mark' ? 'text-white border-b-2 border-emerald-500' : 'text-slate-500 hover:text-slate-300'
-                        }`}
-                    >
-                        <CheckSquare className="w-3.5 h-3.5" /> Mark Me
+                    <button onClick={() => setMode('mark')} className={`shrink-0 flex-1 flex items-center justify-center gap-1 py-3 text-[9px] font-black uppercase tracking-wider transition-colors min-w-0 px-2 ${ mode === 'mark' ? 'text-white border-b-2 border-emerald-500' : 'text-slate-500 hover:text-slate-300' }`}>
+                        <CheckSquare className="w-3 h-3" /> Mark Me
                     </button>
-                    <button
-                        onClick={() => setMode('predict')}
-                        className={`flex-1 flex items-center justify-center gap-1.5 py-3 text-[10px] font-black uppercase tracking-wider transition-colors ${
-                            mode === 'predict' ? 'text-white border-b-2 border-amber-500' : 'text-slate-500 hover:text-slate-300'
-                        }`}
-                    >
-                        <TrendingUp className="w-3.5 h-3.5" /> Hot Topics
+                    <button onClick={() => setMode('predict')} className={`shrink-0 flex-1 flex items-center justify-center gap-1 py-3 text-[9px] font-black uppercase tracking-wider transition-colors min-w-0 px-2 ${ mode === 'predict' ? 'text-white border-b-2 border-amber-500' : 'text-slate-500 hover:text-slate-300' }`}>
+                        <TrendingUp className="w-3 h-3" /> Hot Topics
+                    </button>
+                    <button onClick={() => setMode('practice')} className={`shrink-0 flex-1 flex items-center justify-center gap-1 py-3 text-[9px] font-black uppercase tracking-wider transition-colors min-w-0 px-2 ${ mode === 'practice' ? 'text-white border-b-2 border-rose-500' : 'text-slate-500 hover:text-slate-300' }`}>
+                        <PenLine className="w-3 h-3" /> Practice
                     </button>
                 </div>
 
@@ -494,6 +508,87 @@ export const ExamGuruPanel: React.FC<{ onClose: () => void }> = ({ onClose }) =>
                                         >
                                             Ask Guru about this <ChevronRight className="w-3 h-3" />
                                         </button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {/* ── PRACTICE MODE ── */}
+                {mode === 'practice' && (
+                    <div className="flex-1 overflow-y-auto p-5 space-y-4">
+                        <div className="bg-rose-900/20 border border-rose-800/40 rounded-2xl p-4">
+                            <p className="text-rose-300 text-xs font-bold leading-relaxed">
+                                ✍️ Generate real KCSE-style practice questions. Try to answer them before revealing the marking guide.
+                            </p>
+                        </div>
+
+                        {/* Exam type */}
+                        <div className="grid grid-cols-3 gap-2">
+                            {(['KCSE', 'KPSEA', 'JSS'] as const).map(type => (
+                                <button key={type} onClick={() => { setPracticeExamType(type); setPracticeQuestions([]); }}
+                                    className={`py-2 rounded-xl text-xs font-black transition-colors ${practiceExamType === type ? 'bg-rose-600 text-white' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'}`}>
+                                    {type}
+                                </button>
+                            ))}
+                        </div>
+
+                        {/* Subject */}
+                        <select value={practiceSubject} onChange={e => { setPracticeSubject(e.target.value); setPracticeQuestions([]); }}
+                            className="w-full bg-slate-900 border border-slate-700 focus:border-rose-600 rounded-xl px-3 py-2.5 text-sm text-white outline-none transition-colors">
+                            <option value="">Select subject...</option>
+                            {SUBJECTS.map(s => <option key={s} value={s}>{s}</option>)}
+                        </select>
+
+                        {/* Optional topic */}
+                        <input type="text" value={practiceTopic} onChange={e => setPracticeTopic(e.target.value)}
+                            placeholder="Optional: specific topic (e.g. Osmosis, Quadratic Equations)"
+                            className="w-full bg-slate-900 border border-slate-700 focus:border-rose-600 rounded-xl px-3 py-2.5 text-sm text-white outline-none transition-colors placeholder:text-slate-600" />
+
+                        <button onClick={handleGenerate} disabled={!practiceSubject || isGenerating}
+                            className={`w-full py-3.5 rounded-2xl font-black text-sm flex items-center justify-center gap-2 transition-all ${practiceSubject && !isGenerating ? 'bg-rose-600 hover:bg-rose-500 text-white' : 'bg-slate-800 text-slate-600 cursor-not-allowed'}`}>
+                            {isGenerating ? <><Loader className="w-4 h-4 animate-spin" /> Generating...</> : <><PenLine className="w-4 h-4" /> Generate 3 Questions</>}
+                        </button>
+
+                        {generateError && (
+                            <div className="flex items-center gap-2 text-red-400 text-xs font-bold p-3 bg-red-900/20 rounded-xl border border-red-900/40">
+                                <AlertCircle className="w-4 h-4 shrink-0" /> {generateError}
+                            </div>
+                        )}
+
+                        {practiceQuestions.length > 0 && (
+                            <div className="space-y-3">
+                                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                                    {practiceExamType} {practiceSubject}{practiceTopic ? ` · ${practiceTopic}` : ''} · {practiceQuestions.length} questions
+                                </p>
+                                {practiceQuestions.map((q, i) => (
+                                    <div key={i} className="bg-slate-900 border border-slate-700 rounded-2xl overflow-hidden">
+                                        <div className="p-4">
+                                            <div className="flex items-center justify-between mb-2">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="bg-rose-900/50 text-rose-300 text-[10px] font-black px-2 py-0.5 rounded-md">Q{q.number}</span>
+                                                    <span className="text-[10px] text-slate-500 font-bold">{q.topic}</span>
+                                                </div>
+                                                <span className="text-[10px] font-black text-slate-400">{q.marks} marks</span>
+                                            </div>
+                                            <p className="text-slate-200 text-sm font-medium leading-relaxed">{q.text}</p>
+                                        </div>
+                                        <div className="border-t border-slate-800 px-4 pb-3 pt-2 space-y-2">
+                                            <button onClick={() => setExpandedPQ(expandedPQ === i ? null : i)}
+                                                className="text-[11px] font-black text-amber-400 hover:text-amber-300 flex items-center gap-1 transition-colors">
+                                                {expandedPQ === i ? 'Hide' : 'Show'} Marking Guide <ChevronRight className={`w-3 h-3 transition-transform ${expandedPQ === i ? 'rotate-90' : ''}`} />
+                                            </button>
+                                            {expandedPQ === i && (
+                                                <div className="bg-slate-800/50 rounded-xl p-3 text-[12px] text-slate-300 whitespace-pre-wrap leading-relaxed">
+                                                    {q.modelAnswerOutline}
+                                                </div>
+                                            )}
+                                            <button onClick={() => { sendMessage(`Explain this ${practiceExamType} ${practiceSubject} question in detail and show how to get full marks: "${q.text}"`); setMode('chat'); }}
+                                                className="text-[10px] font-black text-indigo-400 hover:text-indigo-300 flex items-center gap-1 transition-colors">
+                                                Ask Guru to explain <ChevronRight className="w-3 h-3" />
+                                            </button>
+                                        </div>
                                     </div>
                                 ))}
                             </div>

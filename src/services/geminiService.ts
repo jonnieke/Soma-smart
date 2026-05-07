@@ -140,6 +140,66 @@ Return 6 topics max. Be specific to ${subject} content — not generic exam advi
   }
 };
 
+// --- GENERATE PRACTICE QUESTIONS ---
+
+export interface PracticeQuestion {
+  number: number;
+  text: string;
+  topic: string;
+  marks: number;
+  modelAnswerOutline: string;
+}
+
+export const generatePracticeQuestions = async (
+  subject: string,
+  topic: string = '',
+  examType: 'KCSE' | 'KPSEA' | 'JSS' = 'KCSE',
+  count: number = 3
+): Promise<PracticeQuestion[]> => {
+  const topicClause = topic ? `focused on the topic: "${topic}"` : 'covering the most commonly tested topics';
+  const systemInstruction = {
+    parts: [{
+      text: `You are a KNEC examiner setting ${examType} ${subject} exam questions.
+
+Return a JSON array of ${count} exam-style questions — no markdown, no explanation outside JSON.
+Format:
+[
+  {
+    "number": 1,
+    "text": "Full exam question text exactly as it would appear on the paper",
+    "topic": "Topic name",
+    "marks": 4,
+    "modelAnswerOutline": "Brief bullet points of what KNEC would award marks for (not full model answer)"
+  }
+]
+Rules:
+- Questions must match ${examType} difficulty and style
+- Mix question types (definition, explain, calculate, describe, draw & label)
+- Vary the marks between 2 and 10
+- modelAnswerOutline should list 2-5 marking points, one per bullet`
+    }]
+  };
+
+  const contents = [{
+    role: 'user' as const,
+    parts: [{ text: `Generate ${count} ${examType} ${subject} practice questions ${topicClause}.` }]
+  }];
+
+  try {
+    const result = await callGeminiProxy(
+      'gemini-2.0-flash',
+      contents,
+      { maxOutputTokens: 800, temperature: 0.5 },
+      systemInstruction
+    );
+    const cleaned = (result || '[]').replace(/```json|```/g, '').trim();
+    return JSON.parse(cleaned) as PracticeQuestion[];
+  } catch (error: any) {
+    console.error('Generate practice questions error:', error);
+    return [];
+  }
+};
+
 // --- STREAMING PROXY HELPER ---
 const callGeminiProxyStream = async (model: string, contents: any, generationConfig: any = {}, systemInstruction: any = null) => {
   const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';

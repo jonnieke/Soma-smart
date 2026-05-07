@@ -23,7 +23,7 @@ interface Props {
     onExit: () => void;
 }
 
-type SessionPhase = 'LOADING' | 'DASHBOARD' | 'QUIZ_ACTIVE' | 'EXPLAINING' | 'MARKING' | 'RESULTS';
+type SessionPhase = 'LOADING' | 'PRE_EXAM' | 'DASHBOARD' | 'QUIZ_ACTIVE' | 'EXPLAINING' | 'MARKING' | 'RESULTS';
 
 const STORAGE_KEY = 'somo_performance_records';
 
@@ -82,6 +82,10 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
     const [timeRemaining, setTimeRemaining] = useState(0);
     const [timerActive, setTimerActive] = useState(false);
     const [quizStartTime, setQuizStartTime] = useState(0);
+
+    // Pre-exam setup
+    const [preExamMinutes, setPreExamMinutes] = useState(120); // default 2 hrs
+    const [customMinutes, setCustomMinutes] = useState('');
 
     // Dashboard state
     const [predictions, setPredictions] = useState<ExamAnalysis | null>(null);
@@ -199,7 +203,7 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
     };
 
     // ==================== QUIZ CONTROL ====================
-    const startQuiz = (mode: ExamPracticeMode, questions?: ExamQuestion[]) => {
+    const startQuiz = (mode: ExamPracticeMode, questions?: ExamQuestion[], overrideSecs?: number) => {
         const qs = questions || analysis?.questions || [];
         setQuizQuestions(qs);
         setPracticeMode(mode);
@@ -215,7 +219,7 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
         setConfidenceLevel(0);
 
         if (mode === ExamPracticeMode.TIMED_QUIZ) {
-            const totalTime = qs.length * 120;
+            const totalTime = overrideSecs ?? qs.length * 120;
             setTimeLimit(totalTime);
             setTimeRemaining(totalTime);
             setTimerActive(true);
@@ -419,6 +423,95 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
         );
     }
 
+    // --- PRE-EXAM SETUP ---
+    if (phase === 'PRE_EXAM' && analysis) {
+        const totalMarks = analysis.questions.reduce((sum, q) => sum + (q.marks || 2), 0);
+        const PRESETS = [
+            { label: '1 hour', mins: 60, hint: 'KPSEA / short paper' },
+            { label: '2 hours', mins: 120, hint: 'KCSE Paper 1 & 2' },
+            { label: '2.5 hours', mins: 150, hint: 'History / English essays' },
+            { label: '3 hours', mins: 180, hint: 'KCSE Maths / Sciences' },
+        ];
+        const finalMins = customMinutes ? parseInt(customMinutes) : preExamMinutes;
+        return (
+            <div className="h-screen bg-slate-950 flex flex-col items-center justify-center p-6 font-sans">
+                <div className="w-full max-w-sm space-y-6">
+                    {/* Header */}
+                    <div className="text-center">
+                        <div className="w-16 h-16 bg-indigo-900/40 border border-indigo-700/60 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                            <Timer className="w-8 h-8 text-indigo-400" />
+                        </div>
+                        <h2 className="text-white font-black text-xl">Set Exam Time</h2>
+                        <p className="text-slate-400 text-sm mt-1 font-medium">
+                            {analysis.subject} · {analysis.questions.length} questions · {totalMarks} marks
+                        </p>
+                    </div>
+
+                    {/* Time presets */}
+                    <div className="grid grid-cols-2 gap-3">
+                        {PRESETS.map(p => (
+                            <button
+                                key={p.mins}
+                                onClick={() => { setPreExamMinutes(p.mins); setCustomMinutes(''); }}
+                                className={`p-4 rounded-2xl border text-left transition-all ${
+                                    preExamMinutes === p.mins && !customMinutes
+                                        ? 'bg-indigo-600 border-indigo-500 text-white'
+                                        : 'bg-slate-900 border-slate-700 text-slate-300 hover:border-slate-500'
+                                }`}
+                            >
+                                <p className="font-black text-sm">{p.label}</p>
+                                <p className={`text-[10px] mt-0.5 ${preExamMinutes === p.mins && !customMinutes ? 'text-indigo-200' : 'text-slate-500'}`}>{p.hint}</p>
+                            </button>
+                        ))}
+                    </div>
+
+                    {/* Custom time */}
+                    <div>
+                        <label className="text-[11px] font-black text-slate-500 uppercase tracking-wider block mb-1.5">Custom (minutes)</label>
+                        <input
+                            type="number"
+                            value={customMinutes}
+                            onChange={e => setCustomMinutes(e.target.value)}
+                            placeholder="e.g. 90"
+                            min="10" max="300"
+                            className="w-full bg-slate-900 border border-slate-700 focus:border-indigo-500 rounded-xl px-3 py-2.5 text-sm text-white outline-none transition-colors placeholder:text-slate-600"
+                        />
+                    </div>
+
+                    {/* Summary */}
+                    <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4">
+                        <div className="flex justify-between text-sm">
+                            <span className="text-slate-400 font-medium">Time per question (avg)</span>
+                            <span className="text-white font-black">{formatTime(Math.floor((finalMins * 60) / analysis.questions.length))}</span>
+                        </div>
+                        <div className="flex justify-between text-sm mt-2">
+                            <span className="text-slate-400 font-medium">Total exam time</span>
+                            <span className="text-white font-black">{finalMins} min</span>
+                        </div>
+                        <div className="flex justify-between text-sm mt-2">
+                            <span className="text-slate-400 font-medium">Time per mark (avg)</span>
+                            <span className="text-white font-black">{Math.round((finalMins * 60) / totalMarks)}s</span>
+                        </div>
+                    </div>
+
+                    {/* Actions */}
+                    <motion.button
+                        whileHover={{ scale: 1.01 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => startQuiz(ExamPracticeMode.TIMED_QUIZ, undefined, finalMins * 60)}
+                        disabled={!finalMins || finalMins < 10}
+                        className="w-full py-4 rounded-2xl bg-gradient-to-r from-indigo-600 to-blue-600 text-white font-black text-base flex items-center justify-center gap-3 shadow-lg disabled:opacity-50"
+                    >
+                        <Timer className="w-5 h-5" /> Start Exam · {finalMins} min
+                    </motion.button>
+                    <button onClick={() => setPhase('DASHBOARD')} className="w-full text-slate-500 text-sm font-bold hover:text-slate-300 transition-colors">
+                        ← Back to Paper
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
     // --- DASHBOARD ---
     if (phase === 'DASHBOARD' && analysis) {
         const totalMarks = analysis.questions.reduce((sum, q) => sum + (q.marks || 2), 0);
@@ -461,12 +554,12 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
                             <motion.button
                                 whileHover={{ scale: 1.02 }}
                                 whileTap={{ scale: 0.98 }}
-                                onClick={() => startQuiz(ExamPracticeMode.TIMED_QUIZ)}
+                                onClick={() => setPhase('PRE_EXAM')}
                                 className="bg-gradient-to-br from-indigo-600 to-blue-700 text-white p-5 rounded-2xl text-left shadow-lg"
                             >
                                 <Timer className="w-6 h-6 mb-3 opacity-80" />
-                                <p className="font-black text-sm mb-1">Timed Quiz</p>
-                                <p className="text-blue-200 text-[10px]">{analysis.questions.length} Qs • {formatTime(analysis.questions.length * 120)}</p>
+                                <p className="font-black text-sm mb-1">Timed Exam</p>
+                                <p className="text-blue-200 text-[10px]">{analysis.questions.length} Qs · Set your time</p>
                             </motion.button>
 
                             <motion.button
