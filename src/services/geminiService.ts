@@ -60,9 +60,14 @@ export const callGeminiProxy = async (model: string, contents: any, generationCo
   const { data: { session } } = await supabase.auth.getSession();
   const token = session?.access_token;
 
+  // For learners using the SOMA-XXXX code system (no Supabase JWT),
+  // pass the student code so the proxy can identify them as registered.
+  const studentCode = localStorage.getItem('soma_active_student') || '';
+
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
-    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+    ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+    ...(studentCode ? { 'x-student-code': studentCode } : {})
   };
 
   const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/gemini-proxy`, {

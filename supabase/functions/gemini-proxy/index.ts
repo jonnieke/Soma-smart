@@ -1,5 +1,7 @@
 // Supabase Edge Function: Proxies Gemini AI calls so the API key stays server-side.
 // The client sends the prompt/model config, this function adds the key and forwards to Google.
+// Supabase Edge Function: Proxies Gemini AI calls so the API key stays server-side.
+// The client sends the prompt/model config, this function adds the key and forwards to Google.
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { encode as encodeBase64 } from "https://deno.land/std@0.168.0/encoding/base64.ts";
@@ -7,7 +9,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-student-code',
     'Access-Control-Allow-Methods': 'POST, GET, OPTIONS, PUT, DELETE',
 };
 
@@ -104,6 +106,46 @@ const enforceUsageLimit = async (req: Request) => {
 
             return; // Authenticated, within limit — allow
         }
+    }
+
+    // No valid Supabase JWT — check for SOMA-XXXX learner code (custom session system)
+    const studentCode = req.headers.get('x-student-code')?.trim();
+    if (studentCode && studentCode.startsWith('SOMA-')) {
+        const { data: profile } = await supabase
+            .from('profiles')
+            .select('id, role, subscription_tier, subscription_status, subscription_expiry, expiry')
+            .eq('student_id', studentCode)
+            .maybeSingle();
+
+        if (profile) {
+            if (isActivePro(profile)) return; // Pro learner: unlimited
+
+            const { data: usageResult, error: usageError } = await supabase.rpc('increment_profile_ai_usage', {
+                p_profile_id: profile.id,
+                p_usage_kind: 'learner',
+                p_limit: FREE_AI_DAILY_LIMIT
+            });
+
+            if (usageError) {
+                console.error('Student code usage RPC failed — allowing call:', usageError);
+                return; // Fail open rather than blocking a registered learner
+            }
+
+            const usage = firstRpcRow(usageResult);
+            if (!usage?.allowed) {
+                throw new Response(JSON.stringify({
+                    error: 'Daily free AI limit reached',
+                    limit: FREE_AI_DAILY_LIMIT,
+                    usageCount: usage?.usage_count ?? FREE_AI_DAILY_LIMIT
+                }), {
+                    status: 429,
+                    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+                });
+            }
+
+            return; // Registered learner, within limit — allow
+        }
+        // Code not found in DB — fall through to guest IP limiter
     }
 
     // No valid auth token — apply guest IP-based limit
