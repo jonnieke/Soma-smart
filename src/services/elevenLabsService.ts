@@ -1,9 +1,9 @@
 import axios from 'axios';
+import { supabase } from '../lib/supabase';
 
-const API_KEY = import.meta.env.VITE_ELEVEN_LABS_API_KEY;
+const LOCAL_API_KEY = import.meta.env.VITE_ELEVEN_LABS_API_KEY;
 // Using "Rachel" as default warm voice
 const VOICE_ID = "21m00Tcm4TlvDq8ikWAM";
-const BASE_URL = `https://api.elevenlabs.io/v1/text-to-speech/${VOICE_ID}`;
 
 // --- VOICE CONFIGS FOR TALKBACK & LANGUAGE TUTOR ---
 // Rachel (warm, clear English) for English mode
@@ -21,6 +21,26 @@ export const LANGUAGE_TUTOR_VOICES = {
 // Keep track of current audio to allow stopping
 let currentAudio: HTMLAudioElement | null = null;
 
+/**
+ * Strip markdown/formatting characters so they are not spoken aloud by TTS.
+ * e.g. **bold**, ### headers, bullet dashes, numbered lists, etc.
+ */
+const cleanForTTS = (raw: string): string => {
+    return raw
+        .replace(/#{1,6}\s*/g, '')           // remove markdown headers (# ## ###)
+        .replace(/\*\*(.+?)\*\*/g, '$1')      // **bold** -> plain
+        .replace(/\*(.+?)\*/g, '$1')          // *italic* -> plain
+        .replace(/`(.+?)`/g, '$1')            // `code` -> plain
+        .replace(/^\s*[-*+]\s+/gm, '')        // bullet points
+        .replace(/^\s*\d+\.\s+/gm, '')        // numbered lists
+        .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // [link text](url) -> link text
+        .replace(/_+/g, '')                   // underscores
+        .replace(/\n{2,}/g, '. ')             // paragraph breaks -> pause
+        .replace(/\n/g, ' ')                  // single newlines -> space
+        .replace(/\s{2,}/g, ' ')              // collapse whitespace
+        .trim();
+};
+
 export const stopSpeech = () => {
     if (currentAudio) {
         currentAudio.pause();
@@ -35,31 +55,68 @@ export const stopSpeech = () => {
 export const speak = async (text: string): Promise<void> => {
     stopSpeech(); // Stop any pending speech
 
-    // Try ElevenLabs First
-    if (API_KEY && API_KEY.length > 10) {
-        try {
-            const response = await axios.post(
-                BASE_URL,
-                {
-                    text,
-                    model_id: "eleven_flash_v2_5",
-                    voice_settings: {
-                        stability: 0.5,
-                        similarity_boost: 0.8,
-                        style: 0.0,
-                        use_speaker_boost: true
-                    },
-                },
-                {
-                    headers: {
-                        'xi-api-key': API_KEY,
-                        'Content-Type': 'application/json',
-                    },
-                    responseType: 'blob',
-                }
-            );
+    const cleanText = cleanForTTS(text);
+    const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 
-            const audioUrl = URL.createObjectURL(response.data);
+    // Check if we should attempt TTS at all
+    if (!isLocal && !import.meta.env.VITE_SUPABASE_URL) {
+         // Fallback directly if no proxy config exists
+    } else {
+        try {
+            let audioBlob: Blob;
+
+            if (isLocal && LOCAL_API_KEY && LOCAL_API_KEY.length > 10) {
+                // Direct call bypass for local dev
+                const response = await axios.post(
+                    `https://api.elevenlabs.io/v1/text-to-speech/${VOICE_ID}`,
+                    {
+                        text: cleanText,
+                        model_id: "eleven_turbo_v2_5",
+                        voice_settings: {
+                            stability: 0.40,
+                            similarity_boost: 0.80,
+                            style: 0.30,
+                            use_speaker_boost: true
+                        },
+                    },
+                    {
+                        headers: {
+                            'xi-api-key': LOCAL_API_KEY,
+                            'Content-Type': 'application/json',
+                        },
+                        responseType: 'blob',
+                    }
+                );
+                audioBlob = response.data;
+            } else {
+                // Proxy call for production
+                const { data: { session } } = await supabase.auth.getSession();
+                const token = session?.access_token;
+                
+                const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-proxy`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        voiceId: VOICE_ID,
+                        text: cleanText,
+                        model_id: "eleven_turbo_v2_5",
+                        voice_settings: {
+                            stability: 0.40,
+                            similarity_boost: 0.80,
+                            style: 0.30,
+                            use_speaker_boost: true
+                        }
+                    })
+                });
+
+                if (!response.ok) throw new Error("Proxy response not ok");
+                audioBlob = await response.blob();
+            }
+
+            const audioUrl = URL.createObjectURL(audioBlob);
             const audio = new Audio(audioUrl);
             currentAudio = audio;
 
@@ -132,10 +189,12 @@ export const playPodcast = async (
     podcastController = new AbortController();
     const signal = podcastController.signal;
 
-    let useElevenLabs = !!API_KEY && API_KEY.length >= 5;
+    let useElevenLabs = true; // We will attempt to use proxy by default
+    const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 
-    if (!useElevenLabs) {
-        console.warn("ElevenLabs API Key is missing or invalid. Falling back to browser TTS.");
+    if (isLocal && (!LOCAL_API_KEY || LOCAL_API_KEY.length < 5)) {
+        console.warn("ElevenLabs API Key is missing for local dev. Falling back to browser TTS.");
+        useElevenLabs = false;
     }
 
     const VOICES = {
@@ -145,19 +204,43 @@ export const playPodcast = async (
 
     // Helper to fetch audio
     const fetchAudio = async (text: string, voiceId: string): Promise<string> => {
-        const response = await axios.post(
-            `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`,
-            {
-                text,
-                model_id: "eleven_flash_v2_5",
-                voice_settings: { stability: 0.5, similarity_boost: 0.8, style: 0.0, use_speaker_boost: true },
-            },
-            {
-                headers: { 'xi-api-key': API_KEY, 'Content-Type': 'application/json' },
-                responseType: 'blob',
-            }
-        );
-        return URL.createObjectURL(response.data);
+        let audioBlob: Blob;
+
+        if (isLocal && LOCAL_API_KEY) {
+             const response = await axios.post(
+                `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`,
+                {
+                    text,
+                    model_id: "eleven_flash_v2_5",
+                    voice_settings: { stability: 0.5, similarity_boost: 0.8, style: 0.0, use_speaker_boost: true },
+                },
+                {
+                    headers: { 'xi-api-key': LOCAL_API_KEY, 'Content-Type': 'application/json' },
+                    responseType: 'blob',
+                }
+            );
+            audioBlob = response.data;
+        } else {
+             const { data: { session } } = await supabase.auth.getSession();
+             const token = session?.access_token;
+             const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-proxy`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    voiceId,
+                    text,
+                    model_id: "eleven_flash_v2_5",
+                    voice_settings: { stability: 0.5, similarity_boost: 0.8, style: 0.0, use_speaker_boost: true }
+                })
+             });
+             if (!response.ok) throw new Error("Proxy error for podcast");
+             audioBlob = await response.blob();
+        }
+
+        return URL.createObjectURL(audioBlob);
     };
 
     const playNativeBrowserSpeech = (text: string, speaker: 'Host' | 'Guest'): Promise<void> => {
@@ -262,7 +345,9 @@ export const playPodcast = async (
 export const speakConversational = async (text: string, voiceId: string): Promise<void> => {
     stopSpeech(); // Stop any existing speech
 
-    if (API_KEY && API_KEY.length > 10) {
+    const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+
+    if (!isLocal || (isLocal && LOCAL_API_KEY && LOCAL_API_KEY.length > 10)) {
         try {
             const isSwahiliVoice = voiceId === 'nt9hK6jZNn8o3C1F4w9u' || voiceId === 'Xb7hK6jZNn8o3C1F4w9u';
             const payload: any = {
@@ -276,19 +361,37 @@ export const speakConversational = async (text: string, voiceId: string): Promis
                 },
             };
 
-            const response = await axios.post(
-                `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`,
-                payload,
-                {
-                    headers: {
-                        'xi-api-key': API_KEY,
-                        'Content-Type': 'application/json',
-                    },
-                    responseType: 'blob',
-                }
-            );
+            let audioBlob: Blob;
 
-            const audioUrl = URL.createObjectURL(response.data);
+            if (isLocal && LOCAL_API_KEY) {
+                const response = await axios.post(
+                    `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`,
+                    payload,
+                    {
+                        headers: {
+                            'xi-api-key': LOCAL_API_KEY,
+                            'Content-Type': 'application/json',
+                        },
+                        responseType: 'blob',
+                    }
+                );
+                audioBlob = response.data;
+            } else {
+                const { data: { session } } = await supabase.auth.getSession();
+                const token = session?.access_token;
+                const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-proxy`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ voiceId, ...payload })
+                });
+                if (!response.ok) throw new Error("Conversational proxy error");
+                audioBlob = await response.blob();
+            }
+
+            const audioUrl = URL.createObjectURL(audioBlob);
             const audio = new Audio(audioUrl);
             currentAudio = audio;
 

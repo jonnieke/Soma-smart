@@ -1540,7 +1540,22 @@ ${explanation.explanation}
     setLoading(true);
     setLoadingText("Generating high-quality voice...");
     try {
-      const textToRead = `${explanation.topic}. ${explanation.summaryPoints.join('. ')}. Here is the explanation: ${explanation.explanation} `;
+      // Build a natural spoken script — avoid raw markdown being read aloud
+      const spokenIntro = `Today we're learning about ${explanation.topic}.`;
+      const spokenSummary = explanation.summaryPoints.length > 0
+        ? `Here are the key points. ${explanation.summaryPoints.join('. ')}.`
+        : '';
+      // Use plain explanation text, stripping markdown
+      const plainExplanation = explanation.explanation
+        .replace(/#{1,6}\s*/g, '')
+        .replace(/\*\*(.+?)\*\*/g, '$1')
+        .replace(/\*(.+?)\*/g, '$1')
+        .replace(/^[-*+]\s+/gm, '')
+        .replace(/^\d+\.\s+/gm, '')
+        .replace(/\n{2,}/g, '. ')
+        .replace(/\n/g, ' ')
+        .trim();
+      const textToRead = `${spokenIntro} ${spokenSummary} ${plainExplanation}`.slice(0, 4500);
 
       setIsPlaying(true);
       await generateSpeech(textToRead);
