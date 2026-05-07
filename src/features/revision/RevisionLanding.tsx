@@ -27,7 +27,7 @@ export const RevisionLanding: React.FC<Props> = ({ onStartSession, onNavigate, o
     const [loadingQuizzes, setLoadingQuizzes] = useState(false);
     const [showLogoutModal, setShowLogoutModal] = useState(false);
     const [activeSubject, setActiveSubject] = useState<string>('All');
-    const [activeTab, setActiveTab] = useState<TabKey>('papers');
+    const [activeTab, setActiveTab] = useState<TabKey>(role === UserRole.GUEST ? 'syllabus' : 'papers');
     const [searchQuery, setSearchQuery] = useState('');
     const [showCount, setShowCount] = useState(6);
     const [showExamGuru, setShowExamGuru] = useState(false);

@@ -1618,10 +1618,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       const { data, error } = await query;
       if (error) throw error;
 
-      // Filter based on educationLevel
+      // For guests or users with no grade set, default to SENIOR (KCSE/KPSEA audience)
+      // This prevents the empty state that occurs when profile grade is unset or "Play Group"
+      const isGuestOrUnknown = role === UserRole.GUEST || !studentProfile?.grade;
+      const effectiveLevel = isGuestOrUnknown ? EducationLevel.SENIOR : educationLevel;
+
       const filteredData = (data || []).filter(item => {
         const itemLevel = getEducationLevelFromGrade(item.grade || '');
-        return itemLevel === educationLevel;
+        return itemLevel === effectiveLevel;
       }).filter(item => !/^\d{13}$/.test(item.title));
 
       setResources(filteredData);
