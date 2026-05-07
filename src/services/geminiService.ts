@@ -60,12 +60,14 @@ export const callGeminiProxy = async (model: string, contents: any, generationCo
   const { data: { session } } = await supabase.auth.getSession();
   const token = session?.access_token;
 
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+  };
+
   const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/gemini-proxy`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`
-    },
+    headers,
     body: JSON.stringify({ model, contents, generationConfig, systemInstruction, stream: false })
   });
 

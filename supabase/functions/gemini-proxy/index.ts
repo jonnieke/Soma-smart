@@ -11,8 +11,8 @@ const corsHeaders = {
     'Access-Control-Allow-Methods': 'POST, GET, OPTIONS, PUT, DELETE',
 };
 
-const FREE_AI_DAILY_LIMIT = Number(Deno.env.get('FREE_AI_DAILY_LIMIT') || '3');
-const GUEST_AI_DAILY_LIMIT = Number(Deno.env.get('GUEST_AI_DAILY_LIMIT') || '3');
+const FREE_AI_DAILY_LIMIT = Number(Deno.env.get('FREE_AI_DAILY_LIMIT') || '25');  // Registered free users
+const GUEST_AI_DAILY_LIMIT = Number(Deno.env.get('GUEST_AI_DAILY_LIMIT') || '3');  // Unregistered guests
 
 const getClientIp = (req: Request) => {
     return (
@@ -52,35 +52,42 @@ const enforceUsageLimit = async (req: Request) => {
 
     const supabase = createClient(supabaseUrl, serviceRoleKey);
     const authHeader = req.headers.get('Authorization') || '';
-    const token = authHeader.replace(/^Bearer\s+/i, '');
+    const rawToken = authHeader.replace(/^Bearer\s+/i, '').trim();
 
-    if (token && token !== 'undefined' && token !== 'null') {
-        const { data: userData } = await supabase.auth.getUser(token);
-        if (userData.user) {
-            const { data: profile, error: profileError } = await supabase
+    // Reject tokens that are literally the string "undefined" or "null" (client bug)
+    const token = (rawToken && rawToken !== 'undefined' && rawToken !== 'null') ? rawToken : '';
+
+    if (token) {
+        const { data: userData, error: authError } = await supabase.auth.getUser(token);
+
+        if (authError || !userData?.user) {
+            // Invalid token — fall through to guest IP limiter below
+            console.warn('Invalid auth token, treating as guest:', authError?.message);
+        } else {
+            const userId = userData.user.id;
+
+            // Try to load the profile — if missing, apply a generous fallback limit
+            const { data: profile } = await supabase
                 .from('profiles')
                 .select('id, role, subscription_tier, subscription_status, subscription_expiry, expiry')
-                .eq('id', userData.user.id)
+                .eq('id', userId)
                 .single();
 
-            if (profileError || !profile) {
-                throw new Response(JSON.stringify({ error: 'Profile not found' }), {
-                    status: 403,
-                    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-                });
-            }
+            // Pro users: unlimited
+            if (profile && isActivePro(profile)) return;
 
-            if (isActivePro(profile)) return;
-
+            // Free/no-profile users: apply FREE_AI_DAILY_LIMIT (25)
             const { data: usageResult, error: usageError } = await supabase.rpc('increment_profile_ai_usage', {
-                p_profile_id: userData.user.id,
-                p_usage_kind: usageKindForProfile(profile),
+                p_profile_id: userId,
+                p_usage_kind: profile ? usageKindForProfile(profile) : 'learner',
                 p_limit: FREE_AI_DAILY_LIMIT
             });
 
             if (usageError) {
-                console.error('Profile usage RPC failed:', usageError);
-                throw new Error('Could not verify daily AI usage limit');
+                // If the RPC fails (e.g. profile row truly missing), let the call through
+                // rather than blocking a legitimate logged-in user
+                console.error('Profile usage RPC failed — allowing call:', usageError);
+                return;
             }
 
             const usage = firstRpcRow(usageResult);
@@ -95,10 +102,11 @@ const enforceUsageLimit = async (req: Request) => {
                 });
             }
 
-            return;
+            return; // Authenticated, within limit — allow
         }
     }
 
+    // No valid auth token — apply guest IP-based limit
     const identifier = `ip:${getClientIp(req)}`;
     const { data: guestUsageResult, error: guestUsageError } = await supabase.rpc('increment_guest_ai_usage', {
         p_identifier: identifier,
