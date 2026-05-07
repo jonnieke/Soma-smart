@@ -10,11 +10,12 @@ interface Message {
 }
 
 const PROMPT_CHIPS = [
-    'How do I manage exam time?',
-    'What KCSE topics come up most?',
-    'How do I handle difficult questions?',
-    'Best revision strategy for tomorrow?',
-    'How do I avoid careless mistakes?',
+    'How do I answer a Biology question on osmosis?',
+    'How is KCSE Maths P1 marked?',
+    'What structure does an English essay need?',
+    'How do I attempt Chemistry P3 practical?',
+    'KCSE History: how many points per question?',
+    'Time plan for a 3-hour KCSE paper',
 ];
 
 export const ExamGuruPanel: React.FC<{ onClose: () => void }> = ({ onClose }) => {
@@ -22,7 +23,7 @@ export const ExamGuruPanel: React.FC<{ onClose: () => void }> = ({ onClose }) =>
         {
             id: '1',
             role: 'guru',
-            content: "Habari! I'm your Exam Guru 🎯 I'm here to help you think like an examiner — not just revise. Ask me anything about exam strategy, tricky topics, or how to handle pressure on exam day."
+            content: "Exam Guru online. Ask me any Biology, Chemistry, Maths, English or other subject question — I'll show you exactly how KNEC marks it and what earns full marks. No vague advice. Just marks."
         }
     ]);
     const [input, setInput] = useState('');

@@ -2729,46 +2729,59 @@ export const getExamGuruResponse = async (
   chatHistory: { role: 'user' | 'guru', content: string }[],
   language: 'EN' | 'SW' = 'EN'
 ): Promise<string> => {
-  const model = genAI.getGenerativeModel({
-    model: MODEL_NAME,
-    generationConfig: {
-      maxOutputTokens: 1000,
+  const history = chatHistory
+    .slice(-10)
+    .map(m => `${m.role === 'guru' ? 'Guru' : 'Candidate'}: ${m.content}`)
+    .join('\n');
+
+  const systemInstruction = {
+    parts: [{
+      text: `You are the Somo Smart Exam Guru — a seasoned Kenyan examiner who has marked KCSE, KPSEA, and KCPE papers for over 15 years.
+
+YOUR MANDATE: Give candidates answers that SCORE MARKS. Be concrete, specific, exam-aware.
+
+RULES:
+1. Answer the actual question asked — subject content, strategy, or timing.
+2. For subject answers: use bullet points, each worth [n mk] — e.g. "• Movement of water [1 mk] through semi-permeable membrane [1 mk]".
+3. For essay subjects (English, Kiswahili, History, CRE, IRE): give the exact examiner-expected structure with mark distribution.
+4. For Maths/Science: show working step by step, state units, label diagrams.
+5. Flag mistakes candidates lose marks on as "❌ Paper Trap:".
+6. Reference KCSE paper sections (P1 Section A, P2 Section B, etc.) when relevant.
+7. NO padding, NO "Great question!", NO vague motivation. Just marks.
+8. End with one practical tip as "🎯 Guru Tip:".
+9. Respond in ${language === 'SW' ? 'Kiswahili' : 'English'}.`
+    }]
+  };
+
+  const contents = [
+    ...(history ? [{
+      role: 'user' as const,
+      parts: [{ text: `Previous conversation:\n${history}` }]
+    }, {
+      role: 'model' as const,
+      parts: [{ text: 'Understood. I have the conversation context.' }]
+    }] : []),
+    {
+      role: 'user' as const,
+      parts: [{ text: userQuery }]
     }
-  });
-
-  const history = chatHistory.map(m => `${m.role === 'guru' ? 'Exam Guru' : 'Candidate'}: ${m.content}`).join('\n');
-
-  const prompt = `
-    You are the "Exam Guru" (Somo Smart's specialized persona for candidate strategy).
-    Your goal is NOT to teach subject facts, but to teach EXAM STRATEGY, TIME MANAGEMENT, and MENTAL PREPARATION.
-    
-    Target Exams: KCSE, KPSEA, KCPE (Kenya).
-    Tone: Encouraging, strategic, street-smart, and elite.
-    
-    CHART HISTORY:
-    ${history}
-    
-    NEW CANDIDATE QUESTION: "${userQuery}"
-    
-    STRATEGY RULES:
-    1. Focus on KNEC marking patterns.
-    2. Give "Paper Traps" warnings.
-    3. Provide time-management hacks (e.g. "Spend only 20 mins on Section A").
-    4. Use local Kenyan context (e.g. referencing specific paper numbers like P1, P2, P3).
-    5. Be punchy and motivating.
-    
-    Respond directly to the candidate.
-  `;
+  ];
 
   try {
-    const result = await model.generateContent(prompt);
-    const text = result.response.text();
-    return text || "I am currently calculating your strategy. Please try again.";
-  } catch (error) {
-    console.error("Error getting guru response:", error);
-    return "The Guru is momentarily meditating on exam patterns. Ask me again in a second.";
+    const result = await callGeminiProxy(
+      'gemini-2.0-flash',
+      contents,
+      { maxOutputTokens: 700, temperature: 0.35 },
+      systemInstruction
+    );
+    return result || "Check your connection and try again.";
+  } catch (error: any) {
+    console.error("Exam Guru error:", error);
+    if (error instanceof RateLimitError) throw error;
+    return "The Guru is busy right now. Ask again in a moment.";
   }
 };
+
 
 // --- TALKBACK & LANGUAGE TUTOR ---
 
