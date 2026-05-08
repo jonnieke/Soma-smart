@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'r
 import { HelmetProvider } from 'react-helmet-async';
 import { ConnectivityBanner } from './components/ConnectivityBanner';
 import { SessionConflictModal } from './components/SessionConflictModal';
+import { SubscriptionExpiredModal } from './components/SubscriptionExpiredModal';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { supabase } from './lib/supabase';
 import { AdminGuard } from './components/AdminGuard';
@@ -107,6 +108,7 @@ const App: React.FC = () => {
                     </Suspense>
                 )}
                 <SessionConflictModal />
+                <SubscriptionExpiredModal />
                 <Suspense fallback={<PageLoader />}>
                     <main id="main-content">
                         <Routes>

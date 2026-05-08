@@ -165,6 +165,15 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
         }
     }, [location.state, isPro, isRegistered, navigate]);
 
+    // Auto-Redirect logged-in users to their respective dashboards
+    React.useEffect(() => {
+        // Only redirect if they navigate directly to '/' without any specific state intents like selectedPlan
+        if (!location.state && isRegistered && role !== UserRole.NONE) {
+            const target = role === UserRole.TEACHER ? '/teacher' : (role === UserRole.SCHOOL ? '/school' : (role === UserRole.PARENT ? '/parent' : '/learner'));
+            navigate(target, { replace: true });
+        }
+    }, [isRegistered, role, location.state, navigate]);
+
     const handleRoleSelect = (selectedRole: UserRole) => {
         if (selectedRole === UserRole.LEARNER) {
             if (isRegistered || role !== UserRole.NONE) {
