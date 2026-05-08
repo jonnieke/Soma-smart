@@ -5,12 +5,36 @@
 /* Fluid Typography & Responsive Scales */
 html {
   font-size: 16px;
+  /* Prevent horizontal scroll on mobile */
+  overflow-x: hidden;
+  /* Support for iPhone safe areas (notches) */
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
 }
 
 @media (max-width: 768px) {
   html {
     font-size: 14px;
   }
+}
+
+@media (max-width: 360px) {
+  html {
+    font-size: 13px;
+  }
+}
+
+/* Optimize tap performance on mobile */
+button, 
+a, 
+input, 
+select, 
+textarea {
+  touch-action: manipulation;
+}
+
+/* Smooth scrolling on iOS */
+.scroll-touch {
+  -webkit-overflow-scrolling: touch;
 }
 
 :root {

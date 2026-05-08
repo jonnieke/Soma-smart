@@ -93,15 +93,15 @@ export const AskSomo: React.FC = () => {
                 animate={{ scale: 1 }}
                 whileHover={{ scale: 1.05 }}
                 onClick={() => setIsOpen(!isOpen)}
-                className={`fixed bottom-6 right-6 z-50 flex items-center gap-2 px-4 py-3 rounded-full shadow-2xl transition-all ${isOpen ? 'bg-red-500 pr-3 pl-3' : 'bg-blue-600 pr-6 pl-4'
+                className={`fixed bottom-6 right-4 sm:right-6 z-50 flex items-center gap-2 px-3 sm:px-4 py-2.5 sm:py-3 rounded-full shadow-2xl transition-all ${isOpen ? 'bg-red-500 pr-3 pl-3' : 'bg-blue-600 pr-4 sm:pr-6 pl-3 sm:pl-4'
                     } text-white font-semibold`}
             >
                 {isOpen ? (
-                    <X className="w-6 h-6" />
+                    <X className="w-5 h-5 sm:w-6 sm:h-6" />
                 ) : (
                     <>
-                        <MessageSquare className="w-6 h-6" />
-                        <span>{(language as string) === 'FR' ? 'Demander à Somo' : 'Ask Somo'}</span>
+                        <MessageSquare className="w-5 h-5 sm:w-6 sm:h-6" />
+                        <span className="text-xs sm:text-base">{(language as string) === 'FR' ? 'Demander à Somo' : 'Ask Somo'}</span>
                     </>
                 )}
             </motion.button>
@@ -113,7 +113,7 @@ export const AskSomo: React.FC = () => {
                         initial={{ opacity: 0, y: 20, scale: 0.9 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 20, scale: 0.9 }}
-                        className="fixed bottom-24 right-6 z-50 w-80 sm:w-96 bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[600px] h-[70vh]"
+                        className="fixed bottom-20 sm:bottom-24 right-4 sm:right-6 z-50 w-[calc(100%-2rem)] sm:w-96 bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[600px] h-[70vh]"
                     >
                         {/* Header */}
                         <div className="bg-gradient-to-r from-blue-600 to-cyan-500 p-4 flex items-center gap-3">

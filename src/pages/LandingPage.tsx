@@ -1,4 +1,4 @@
-﻿﻿import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import {
@@ -489,7 +489,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                         <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-indigo-50 dark:bg-indigo-900/40 border border-indigo-100 dark:border-indigo-800/60 text-indigo-600 dark:text-indigo-400 text-xs font-black uppercase tracking-widest mb-6">
                                             <Star className="w-3 h-3 fill-current" /> For KCSE, CBC &amp; KPSEA Students
                                         </div>
-                                        <h1 className="text-[2.6rem] md:text-5xl lg:text-[3.25rem] font-black text-slate-900 dark:text-white tracking-tight leading-[1.08] mb-5">
+                                        <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-slate-900 dark:text-white tracking-tight leading-[1.08] mb-5">
                                             That question you've been<br />stuck on since 8pm?
                                             <span className="block text-indigo-600 dark:text-indigo-400 mt-1">Let's solve it now.</span>
                                         </h1>
@@ -509,7 +509,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                                     placeholder="Type your question... e.g. Solve 3x + 7 = 22"
                                                     className="flex-1 bg-transparent border-none focus:outline-none text-slate-800 dark:text-slate-200 placeholder-slate-400 text-base font-medium pr-2" />
                                                 <button onClick={handleGenerateAnswer}
-                                                    className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-xl font-bold text-sm shadow-lg transition-all hover:scale-[1.02] active:scale-[0.98] whitespace-nowrap flex items-center gap-2">
+                                                    className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 sm:px-6 py-3 rounded-xl font-bold text-sm shadow-lg transition-all hover:scale-[1.02] active:scale-[0.98] whitespace-nowrap flex items-center gap-2 shrink-0">
                                                     Solve It <ArrowRight className="w-4 h-4" />
                                                 </button>
                                             </div>
@@ -572,7 +572,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                         <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-100 dark:border-emerald-800/60 text-emerald-700 dark:text-emerald-400 text-xs font-black uppercase tracking-widest mb-6">
                                             <GraduationCap className="w-3 h-3" /> For Kenyan Teachers
                                         </div>
-                                        <h1 className="text-[2.6rem] md:text-5xl lg:text-[3.25rem] font-black text-slate-900 dark:text-white tracking-tight leading-[1.08] mb-5">
+                                        <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-slate-900 dark:text-white tracking-tight leading-[1.08] mb-5">
                                             You didn't become a teacher<br />to spend weekends
                                             <span className="block text-emerald-600 dark:text-emerald-400 mt-1">marking 60 books.</span>
                                         </h1>
@@ -581,16 +581,16 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                         </p>
 
                                         {/* Specific stat cards */}
-                                        <div className="grid grid-cols-3 gap-3 mb-9">
+                                        <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-9">
                                             {[
-                                                { icon: <Clock className="w-5 h-5 text-emerald-600" />, stat: '15 hrs', label: 'saved per week', bg: 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-100 dark:border-emerald-800/40' },
-                                                { icon: <FileText className="w-5 h-5 text-blue-600" />, stat: '5 mins', label: 'to mark 60 papers', bg: 'bg-blue-50 dark:bg-blue-900/20 border-blue-100 dark:border-blue-800/40' },
-                                                { icon: <Zap className="w-5 h-5 text-amber-600" />, stat: '1 click', label: 'KICD lesson plan', bg: 'bg-amber-50 dark:bg-amber-900/20 border-amber-100 dark:border-amber-800/40' },
+                                                { icon: <Clock className="w-5 h-5 text-emerald-600" />, stat: '15 hrs', label: 'saved/wk', bg: 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-100 dark:border-emerald-800/40' },
+                                                { icon: <FileText className="w-5 h-5 text-blue-600" />, stat: '5 mins', label: 'to mark 60', bg: 'bg-blue-50 dark:bg-blue-900/20 border-blue-100 dark:border-blue-800/40' },
+                                                { icon: <Zap className="w-5 h-5 text-amber-600" />, stat: '1 click', label: 'KICD plan', bg: 'bg-amber-50 dark:bg-amber-900/20 border-amber-100 dark:border-amber-800/40' },
                                             ].map((c, i) => (
-                                                <div key={i} className={`p-4 rounded-2xl border ${c.bg} flex flex-col gap-1`}>
+                                                <div key={i} className={`p-3 sm:p-4 rounded-2xl border ${c.bg} flex flex-col gap-1`}>
                                                     {c.icon}
-                                                    <div className="font-black text-slate-900 dark:text-white text-xl leading-tight mt-1">{c.stat}</div>
-                                                    <div className="text-xs text-slate-500 dark:text-slate-400 font-medium">{c.label}</div>
+                                                    <div className="font-black text-slate-900 dark:text-white text-lg sm:text-xl leading-tight mt-1">{c.stat}</div>
+                                                    <div className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 font-medium">{c.label}</div>
                                                 </div>
                                             ))}
                                         </div>
@@ -681,16 +681,15 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                     </motion.div>
                                 )}
 
-                                {/* Social proof pill — bottom center */}
-                                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1 }}
-                                    className="absolute -bottom-5 left-1/2 -translate-x-1/2 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-full px-4 py-2.5 shadow-xl flex items-center gap-3 z-20 whitespace-nowrap">
-                                    <div className="flex -space-x-2">
+                                {/* Social proo                                 <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1 }}
+                                    className="absolute -bottom-5 left-1/2 -translate-x-1/2 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-full px-4 py-2.5 shadow-xl flex items-center gap-3 z-20 whitespace-nowrap max-w-[90vw] sm:max-w-none">
+                                    <div className="flex -space-x-2 shrink-0">
                                         {['bg-blue-400','bg-emerald-400','bg-amber-400','bg-rose-400'].map((c, i) => (
-                                            <div key={i} className={`w-6 h-6 ${c} rounded-full border-2 border-white dark:border-slate-800`} />
+                                            <div key={i} className={`w-5 h-5 sm:w-6 sm:h-6 ${c} rounded-full border-2 border-white dark:border-slate-800`} />
                                         ))}
                                     </div>
-                                    <span className="text-xs font-black text-slate-800 dark:text-slate-200">12,000+ learners already inside</span>
-                                </motion.div>
+                                    <span className="text-[10px] sm:text-xs font-black text-slate-800 dark:text-slate-200 truncate">12,000+ learners already inside</span>
+                                </motion.div>                 </motion.div>
                             </div>
                         </motion.div>
 
@@ -856,7 +855,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 auto-rows-[320px]">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 auto-rows-auto md:auto-rows-[320px]">
                         {/* 1. Large Feature: Darasa Mode (Span 2 cols) */}
                         <motion.div
                             whileHover={{ y: -8, scale: 1.01 }}

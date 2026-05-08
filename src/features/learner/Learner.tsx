@@ -2324,21 +2324,21 @@ ${explanation.explanation}
                   </button>
                 </div>
               </div>
-              <div className="flex items-center gap-3 w-full md:w-auto">
+              <div className="flex items-center gap-2 sm:gap-3 w-full md:w-auto">
                 {/* Day Streak */}
-                <div className="flex-1 md:flex-none flex items-center gap-3 bg-white dark:bg-slate-900 px-4 py-2.5 rounded-2xl shadow-sm border-2 border-slate-300 dark:border-slate-800">
-                  <div className="text-orange-500 text-xl">🔥</div>
+                <div className="flex-1 md:flex-none flex items-center gap-2 sm:gap-3 bg-white dark:bg-slate-900 px-3 sm:px-4 py-2 sm:py-2.5 rounded-2xl shadow-sm border-2 border-slate-300 dark:border-slate-800">
+                  <div className="text-orange-500 text-lg sm:text-xl shrink-0">🔥</div>
                   <div>
-                    <div className="text-sm font-bold text-slate-800 dark:text-white">{streak}</div>
-                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Day Streak</div>
+                    <div className="text-xs sm:text-sm font-bold text-slate-800 dark:text-white leading-none">{streak}</div>
+                    <div className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Streak</div>
                   </div>
                 </div>
                 {/* Points */}
-                <div className="flex-1 md:flex-none flex items-center gap-3 bg-white dark:bg-slate-900 px-4 py-2.5 rounded-2xl shadow-sm border-2 border-slate-300 dark:border-slate-800">
-                  <div className="text-amber-500"><Star className="w-5 h-5 fill-amber-500" /></div>
+                <div className="flex-1 md:flex-none flex items-center gap-2 sm:gap-3 bg-white dark:bg-slate-900 px-3 sm:px-4 py-2 sm:py-2.5 rounded-2xl shadow-sm border-2 border-slate-300 dark:border-slate-800">
+                  <div className="text-amber-500 shrink-0"><Star className="w-4 h-4 sm:w-5 sm:h-5 fill-amber-500" /></div>
                   <div>
-                    <div className="text-sm font-bold text-slate-800 dark:text-white">{totalXP}</div>
-                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Points</div>
+                    <div className="text-xs sm:text-sm font-bold text-slate-800 dark:text-white leading-none">{totalXP}</div>
+                    <div className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Points</div>
                   </div>
                 </div>
               </div>
@@ -2383,27 +2383,27 @@ ${explanation.explanation}
                   </div>
 
                   {/* DESTINATIONS — level-aware shortcuts */}
-                  <div className="grid grid-cols-3 gap-4">
+                  <div className="grid grid-cols-3 gap-2 sm:gap-4">
                      {(
                        educationLevel === 'JUNIOR' ? [
-                         { icon: <Library className="w-6 h-6" />, label: 'Library 📚', color: 'bg-blue-600', onClick: () => handleSidebarTabChange('RESOURCES') },
-                         { icon: <Brain className="w-6 h-6" />, label: 'Exam Prep', color: 'bg-orange-500', onClick: () => handleSidebarTabChange('SUBJECTS') },
-                         { icon: <Mic className="w-6 h-6" />, label: 'Talk & Play', color: 'bg-pink-500', onClick: () => handleSidebarTabChange('TALKBACK') }
+                         { icon: <Library className="w-5 h-5 sm:w-6 sm:h-6" />, label: 'Library 📚', color: 'bg-blue-600', onClick: () => handleSidebarTabChange('RESOURCES') },
+                         { icon: <Brain className="w-5 h-5 sm:w-6 sm:h-6" />, label: 'Exam Prep', color: 'bg-orange-500', onClick: () => handleSidebarTabChange('SUBJECTS') },
+                         { icon: <Mic className="w-5 h-5 sm:w-6 sm:h-6" />, label: 'Talk & Play', color: 'bg-pink-500', onClick: () => handleSidebarTabChange('TALKBACK') }
                        ] : educationLevel === 'CAMPUS' ? [
-                         { icon: <Library className="w-6 h-6" />, label: 'Research Hub', color: 'bg-purple-600', onClick: () => handleSidebarTabChange('RESOURCES') },
-                         { icon: <Brain className="w-6 h-6" />, label: 'Courses', color: 'bg-indigo-500', onClick: () => handleSidebarTabChange('SUBJECTS') },
-                         { icon: <Users className="w-6 h-6" />, label: 'Study Groups', color: 'bg-emerald-500', onClick: () => handleSidebarTabChange('EXAM_ROOMS') }
+                         { icon: <Library className="w-5 h-5 sm:w-6 sm:h-6" />, label: 'Research', color: 'bg-purple-600', onClick: () => handleSidebarTabChange('RESOURCES') },
+                         { icon: <Brain className="w-5 h-5 sm:w-6 sm:h-6" />, label: 'Courses', color: 'bg-indigo-500', onClick: () => handleSidebarTabChange('SUBJECTS') },
+                         { icon: <Users className="w-5 h-5 sm:w-6 sm:h-6" />, label: 'Study Group', color: 'bg-emerald-500', onClick: () => handleSidebarTabChange('EXAM_ROOMS') }
                        ] : [
-                         { icon: <Library className="w-6 h-6" />, label: 'Library', color: 'bg-blue-600', onClick: () => handleSidebarTabChange('RESOURCES') },
-                         { icon: <Brain className="w-6 h-6" />, label: 'Exam Hall', color: 'bg-orange-500', onClick: () => handleSidebarTabChange('SUBJECTS') },
-                         { icon: <Users className="w-6 h-6" />, label: 'Study Group', color: 'bg-emerald-500', onClick: () => handleSidebarTabChange('EXAM_ROOMS') }
+                         { icon: <Library className="w-5 h-5 sm:w-6 sm:h-6" />, label: 'Library', color: 'bg-blue-600', onClick: () => handleSidebarTabChange('RESOURCES') },
+                         { icon: <Brain className="w-5 h-5 sm:w-6 sm:h-6" />, label: 'Exam Hall', color: 'bg-orange-500', onClick: () => handleSidebarTabChange('SUBJECTS') },
+                         { icon: <Users className="w-5 h-5 sm:w-6 sm:h-6" />, label: 'Group Study', color: 'bg-emerald-500', onClick: () => handleSidebarTabChange('EXAM_ROOMS') }
                        ]
                      ).map((item, i) => (
-                        <button key={i} onClick={item.onClick} className="bg-white dark:bg-slate-900 rounded-3xl p-5 shadow-sm border-2 border-slate-300 dark:border-slate-800 hover:shadow-md hover:-translate-y-1 transition-all flex flex-col items-center justify-center gap-3 text-center group">
-                           <div className={`w-14 h-14 ${item.color} rounded-2xl flex items-center justify-center text-white shadow-sm group-hover:scale-110 transition-transform`}>
+                        <button key={i} onClick={item.onClick} className="bg-white dark:bg-slate-900 rounded-3xl p-3 sm:p-5 shadow-sm border-2 border-slate-300 dark:border-slate-800 hover:shadow-md hover:-translate-y-1 transition-all flex flex-col items-center justify-center gap-2 sm:gap-3 text-center group">
+                           <div className={`w-10 h-10 sm:w-14 sm:h-14 ${item.color} rounded-xl sm:rounded-2xl flex items-center justify-center text-white shadow-sm group-hover:scale-110 transition-transform shrink-0`}>
                               {item.icon}
                            </div>
-                           <span className="text-sm font-bold text-slate-800 dark:text-slate-200">{item.label}</span>
+                           <span className="text-[10px] sm:text-sm font-black uppercase tracking-tighter sm:tracking-normal sm:capitalize text-slate-800 dark:text-slate-200 line-clamp-1">{item.label}</span>
                         </button>
                      ))}
                   </div>
@@ -2895,7 +2895,7 @@ ${explanation.explanation}
 
     if (mode === 'SCAN' && loading) {
       return (
-        <div className="h-screen flex flex-col items-center justify-center p-8 text-center bg-slate-50 max-w-4xl mx-auto shadow-2xl border-x border-slate-100">
+        <div className="h-screen flex flex-col items-center justify-center p-6 sm:p-8 text-center bg-slate-50 max-w-4xl mx-auto shadow-2xl border-x border-slate-100">
           <div className="relative">
             <div className="absolute inset-0 bg-blue-100 rounded-full animate-ping opacity-75"></div>
             <div className="relative bg-white p-6 rounded-full shadow-xl">
@@ -3416,7 +3416,7 @@ ${explanation.explanation}
 
       return (
         <div className="bg-slate-50 dark:bg-slate-950 min-h-screen flex flex-col items-center justify-center p-6 w-full animate-in fade-in duration-300">
-          <div className="w-full max-w-2xl bg-white dark:bg-slate-900 rounded-[3rem] shadow-2xl border-2 border-slate-300 dark:border-slate-800 p-8 md:p-12 relative overflow-hidden">
+          <div className="w-full max-w-2xl bg-white dark:bg-slate-900 rounded-[2rem] sm:rounded-[3rem] shadow-2xl border-2 border-slate-300 dark:border-slate-800 p-6 sm:p-8 md:p-12 relative overflow-hidden">
             {/* Background decorations */}
             <div className={`absolute top-0 left-0 w-full h-2 bg-gradient-to-r ${themeGradient}`}></div>
             <div className={`absolute -top-24 -right-24 w-48 h-48 ${bgGlow} rounded-full blur-3xl pointer-events-none`}></div>
@@ -3746,10 +3746,10 @@ ${explanation.explanation}
             >
               <MarkdownText content={explanation.explanation} />
               {/* ACTION FOOTER */}
-              <div className="mt-8 pt-6 border-t border-slate-100 flex flex-wrap gap-4">
+              <div className="mt-8 pt-6 border-t border-slate-100 flex flex-wrap gap-2 sm:gap-4">
                 <button
                   onClick={handleTTS}
-                  className="flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm px-5 py-3 rounded-xl transition-colors"
+                  className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm px-4 sm:px-5 py-3 rounded-xl transition-colors"
                 >
                   {isPlaying ? <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" /> : <Volume2 className="w-4 h-4" />}
                   {isPlaying ? "Stop" : "Listen"}
@@ -3757,7 +3757,7 @@ ${explanation.explanation}
 
                 <button
                   onClick={handleGenerateQuiz}
-                  className="flex items-center gap-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-sm px-5 py-3 rounded-xl transition-colors border border-indigo-100"
+                  className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-sm px-4 sm:px-5 py-3 rounded-xl transition-colors border border-indigo-100"
                 >
                   <Clock className="w-4 h-4" />
                   Take Quiz

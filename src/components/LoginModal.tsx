@@ -221,7 +221,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, initial
                             <p className="text-blue-100 text-sm relative z-10">Who is learning today?</p>
                         </div>
 
-                        <div className="p-6">
+                        <div className="p-4 sm:p-6">
                             <div className="space-y-3">
                                 {recents.map((r) => (
                                     <motion.div
@@ -400,7 +400,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, initial
                         </button>
                     </div>
 
-                    <div className="p-8 overflow-y-auto">
+                    <div className="p-6 sm:p-8 overflow-y-auto">
                         <div className="text-center mb-6">
                             <div className={`w-16 h-16 ${activeTab === 'STUDENT' ? 'bg-blue-100 text-blue-600' : activeTab === 'SCHOOL' ? 'bg-blue-900/10 text-blue-900' : 'bg-indigo-100 text-indigo-600'} rounded-full flex items-center justify-center mx-auto mb-4 transition-colors`}>
                                 {activeTab === 'STUDENT' ? <Lock className="w-8 h-8" /> : activeTab === 'SCHOOL' ? <SchoolIcon className="w-8 h-8" /> : <GraduationCap className="w-8 h-8" />}

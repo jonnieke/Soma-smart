@@ -7,6 +7,9 @@ module.exports = {
     ],
     theme: {
         extend: {
+            screens: {
+                'xs': '360px',
+            },
             colors: {
                 primary: '#4F46E5', // Indigo 600
                 secondary: '#10B981', // Emerald 500
