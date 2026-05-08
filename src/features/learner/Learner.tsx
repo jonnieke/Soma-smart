@@ -502,7 +502,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
                 },
                 body: JSON.stringify({
                     model: 'gemini-2.5-flash',
-                    contents: [{ role: 'user', parts: [{ text: `Provide a highly detailed, step-by-step academic solution for the following question. Use Markdown formatting, bullet points, numbering, and headers. Ensure it is at least 3 paragraphs long. Question: ${state.pendingHeroQuestion}` }] }]
+                    contents: [{ role: 'user', parts: [{ text: `Provide a clear, simple, step-by-step solution for the following question. Do not use overly academic language or excess data. Get straight to the point. Use Markdown formatting and bullet points. Question: ${state.pendingHeroQuestion}` }] }]
                 })
             });
             

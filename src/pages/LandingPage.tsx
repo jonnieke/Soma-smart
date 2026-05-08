@@ -77,7 +77,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
         try {
             const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/gemini-proxy`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
+                },
                 body: JSON.stringify({
                     model: 'gemini-2.0-flash',
                     contents: [{ role: 'user', parts: [{ text: `Answer this academic question in 1 or 2 concise, factual sentences for a student. Do not use markdown headers or formatting. State the answer playfully but smartly. Question: ${questionInput}` }] }]

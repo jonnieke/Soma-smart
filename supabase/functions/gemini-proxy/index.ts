@@ -196,6 +196,8 @@ serve(async (req) => {
             );
         }
 
+        // AI Usage limits temporarily bypassed as requested by user (Unlimited Key Active)
+        /*
         try {
             await enforceUsageLimit(req);
         } catch (limitError) {
@@ -204,6 +206,7 @@ serve(async (req) => {
             }
             throw limitError;
         }
+        */
 
         // Gemini expects contents to be an array of objects with { role: "user|model", parts: [...] }
         // The client often sends an array of strings or simple objects for generateContent.
