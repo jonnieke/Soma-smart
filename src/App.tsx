@@ -8,6 +8,7 @@ import { supabase } from './lib/supabase';
 import { AdminGuard } from './components/AdminGuard';
 import ReactGA from "react-ga4";
 import { useLocation } from 'react-router-dom';
+import { flushMasterySyncQueue } from './services/learnerMemoryService';
 
 // Lazy Load Pages for Performance
 const LandingPage = React.lazy(() => import('./pages/LandingPage').then(module => ({ default: module.LandingPage })));
@@ -77,6 +78,23 @@ const App: React.FC = () => {
 
         return () => subscription.unsubscribe();
     }, [navigate]);
+
+    // Listen for connection restoration to sync offline cognitive mastery
+    React.useEffect(() => {
+        const handleOnline = () => {
+            console.log("Internet restored. Flushing mastery sync queue...");
+            flushMasterySyncQueue();
+        };
+
+        window.addEventListener('online', handleOnline);
+        
+        // Also try flushing on initial load if we are already online
+        if (navigator.onLine) {
+            flushMasterySyncQueue();
+        }
+
+        return () => window.removeEventListener('online', handleOnline);
+    }, []);
 
     return (
         <HelmetProvider>

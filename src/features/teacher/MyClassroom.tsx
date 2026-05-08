@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Users, TrendingDown, TrendingUp, AlertCircle, Sparkles, Plus, Share2, ClipboardList, Send, FileText, CheckCircle, MessageCircle, UploadCloud, Megaphone, Table, Brain } from 'lucide-react';
 import { TeacherProfile } from '../../types';
 import { classroomService, ClassroomPost, ClassMember, GradebookEntry } from '../../services/classroomService';
+import { getBulkMasteryMemories } from '../../services/learnerMemoryService';
 
 interface MyClassroomProps {
     teacherProfile: TeacherProfile | null;
@@ -23,6 +24,7 @@ export const MyClassroom: React.FC<MyClassroomProps> = ({ teacherProfile, select
     const [gradebook, setGradebook] = useState<GradebookEntry[]>([]);
     const [currentClassId, setCurrentClassId] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [masteryData, setMasteryData] = useState<any[]>([]);
 
     // Load Data
     useEffect(() => {
@@ -43,9 +45,14 @@ export const MyClassroom: React.FC<MyClassroomProps> = ({ teacherProfile, select
                     classroomService.getGradebook(activeClass.id)
                 ]);
 
+                // Fetch actual cognitive mastery for all students
+                const studentIds = rosterData.map(s => s.student_id);
+                const memoryData = await getBulkMasteryMemories(studentIds);
+
                 setStream(streamData);
                 setStudents(rosterData);
                 setGradebook(gradebookData);
+                setMasteryData(memoryData);
             } catch (err) {
                 console.error("Failed to load classroom:", err);
             } finally {
@@ -58,9 +65,25 @@ export const MyClassroom: React.FC<MyClassroomProps> = ({ teacherProfile, select
     // Derive UI state
     const decoratedStudents = students.map(s => {
         const studentGrades = gradebook.filter(g => g.student_id === s.student_id);
-        const averageScore = studentGrades.length > 0
+        const gradeScore = studentGrades.length > 0
             ? Math.round(studentGrades.reduce((acc, g) => acc + (g.score / g.max_score) * 100, 0) / studentGrades.length)
             : 0;
+
+        const memory = masteryData.find(m => m.learner_id === s.student_id);
+        
+        let averageScore = gradeScore;
+        let weakTopics = ['Algebra', 'Geometry']; // fallback
+
+        if (memory && memory.mastery_graph) {
+            const topics = Object.values(memory.mastery_graph) as number[];
+            if (topics.length > 0) {
+                // If they have SM-2 mastery data, use that as their true cognitive score
+                averageScore = Math.round(topics.reduce((a, b) => a + b, 0) / topics.length);
+            }
+            if (memory.weak_topics && memory.weak_topics.length > 0) {
+                weakTopics = memory.weak_topics.slice(0, 3);
+            }
+        }
 
         return {
             id: s.student_id,
@@ -68,9 +91,9 @@ export const MyClassroom: React.FC<MyClassroomProps> = ({ teacherProfile, select
             avatar: s.profiles?.name?.charAt(0).toUpperCase() || 'S',
             averageScore,
             trend: averageScore > 50 ? 'UP' : 'DOWN',
-            weakTopics: ['Algebra', 'Geometry'], // Fallback for UI until tracked
+            weakTopics,
             pendingAssignments: 0,
-            lastActive: 'Recently'
+            lastActive: memory?.last_synced_at ? new Date(memory.last_synced_at).toLocaleDateString() : 'Recently'
         };
     });
 
@@ -79,6 +102,16 @@ export const MyClassroom: React.FC<MyClassroomProps> = ({ teacherProfile, select
         : 0;
 
     const atRiskStudents = decoratedStudents.filter(s => s.averageScore < 50);
+
+    // Calculate most common weak topic across the class for the Smart Insight
+    const topicCounts = decoratedStudents.flatMap(s => s.weakTopics).reduce((acc, topic) => {
+        acc[topic] = (acc[topic] || 0) + 1;
+        return acc;
+    }, {} as Record<string, number>);
+    const mostCommonWeakTopic = Object.keys(topicCounts).length > 0 
+        ? Object.entries(topicCounts).sort((a, b) => b[1] - a[1])[0][0] 
+        : 'Algebra';
+    const studentsNeedingHelp = topicCounts[mostCommonWeakTopic] || 0;
 
     const toggleStudent = (id: string) => {
         setSelectedStudents(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
@@ -112,6 +145,28 @@ export const MyClassroom: React.FC<MyClassroomProps> = ({ teacherProfile, select
             console.error(err);
             alert("Failed to post announcement.");
         }
+    };
+
+    const handleParentReport = (e: React.MouseEvent, student: any) => {
+        e.stopPropagation();
+        
+        const firstName = student.name.split(' ')[0] || 'Learner';
+        const focusText = student.weakTopics.length > 0 
+            ? `*Current Focus Areas:*\n${student.weakTopics.map((t: string) => `- ${t}`).join('\n')}\n\n💡 To help ${firstName} improve, we recommend reviewing these topics this week.`
+            : `Great job! ${firstName} has no critical weak topics right now.`;
+
+        const trendIcon = student.trend === 'UP' ? '📈' : student.trend === 'DOWN' ? '📉' : '➖';
+
+        const message = `*Somo Smart Progress Report* 📚
+*Student:* ${student.name}
+*Class:* ${selectedClass}
+*Overall Mastery:* ${student.averageScore}% ${trendIcon}
+
+${focusText}
+
+View full dashboard: https://somaai.co.ke/parent/${student.id}`;
+
+        window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
     };
 
     if (isLoading) {
@@ -284,13 +339,13 @@ export const MyClassroom: React.FC<MyClassroomProps> = ({ teacherProfile, select
                                             Somo Smart Insight <Sparkles className="w-4 h-4 text-amber-500" />
                                         </h3>
                                         <p className="text-sm font-medium text-slate-700 leading-relaxed mt-1">
-                                            <strong>Algebra</strong> is a projected struggle area for {decoratedStudents.length} students.
-                                            Would you like me to generate a fun, low-stakes Algebra mini-game for them to practice?
+                                            <strong>{mostCommonWeakTopic}</strong> is a projected struggle area for {studentsNeedingHelp > 0 ? studentsNeedingHelp : decoratedStudents.length} students.
+                                            Would you like me to generate a fun, low-stakes {mostCommonWeakTopic} mini-game for them to practice?
                                         </p>
                                     </div>
                                 </div>
                                 <button
-                                    onClick={() => onAssignQuiz(decoratedStudents.map(s => s.id), 'Algebra Minigame')}
+                                    onClick={() => onAssignQuiz(decoratedStudents.map(s => s.id), `${mostCommonWeakTopic} Minigame`)}
                                     className="whitespace-nowrap bg-[#25D366] hover:bg-[#128C7E] text-white px-6 py-3 rounded-xl font-bold text-sm shadow-xl shadow-green-600/20 transition-transform hover:scale-105 flex items-center gap-2"
                                 >
                                     <Share2 className="w-4 h-4" /> Assign & Send via WhatsApp
@@ -384,8 +439,16 @@ export const MyClassroom: React.FC<MyClassroomProps> = ({ teacherProfile, select
                                                 <div className="text-xs font-bold text-slate-500 flex items-center gap-1">
                                                     <ClipboardList className="w-3.5 h-3.5" /> {student.pendingAssignments} pending assignments
                                                 </div>
-                                                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${selectedStudents.includes(student.id) ? 'bg-emerald-500 border-emerald-500' : 'border-slate-300'}`}>
-                                                    {selectedStudents.includes(student.id) && <CheckCircle className="w-3 h-3 text-white" />}
+                                                <div className="flex items-center gap-3">
+                                                    <button 
+                                                        onClick={(e) => handleParentReport(e, student)}
+                                                        className="bg-[#25D366] text-white px-3 py-1.5 rounded-lg text-[10px] uppercase font-black tracking-widest flex items-center gap-1 hover:bg-[#128C7E] transition-colors"
+                                                    >
+                                                        <Share2 className="w-3 h-3" /> Report
+                                                    </button>
+                                                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${selectedStudents.includes(student.id) ? 'bg-emerald-500 border-emerald-500' : 'border-slate-300'}`}>
+                                                        {selectedStudents.includes(student.id) && <CheckCircle className="w-3 h-3 text-white" />}
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>

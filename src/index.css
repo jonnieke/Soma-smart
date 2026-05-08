@@ -5,10 +5,19 @@
 /* Fluid Typography & Responsive Scales */
 html {
   font-size: 16px;
-  /* Prevent horizontal scroll on mobile */
   overflow-x: hidden;
+  height: 100%;
+}
+
+body {
+  overflow-x: hidden;
+  width: 100%;
+  min-height: 100%;
   /* Support for iPhone safe areas (notches) */
-  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
 }
 
 @media (max-width: 768px) {

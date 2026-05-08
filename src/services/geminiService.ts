@@ -2640,6 +2640,7 @@ export const gradeStudentSubmission = async (
   marksBreakdown: Array<{ criterion: string; awarded: number; possible: number; rationale: string; }>;
   cbcCompetencies: string[];
   remedialAdvice: string;
+  identifiedTopic: string;
 }> => {
   // We use gemini-1.5-pro or gemini-2.0-flash here for complex handwriting + reasoning
   const model = genAI.getGenerativeModel({
@@ -2669,9 +2670,10 @@ export const gradeStudentSubmission = async (
             items: { type: SchemaType.STRING },
             description: "List of CBC Core Competencies demonstrated (e.g., Critical Thinking, Communication)"
           },
-          remedialAdvice: { type: SchemaType.STRING, description: "Constructive feedback and specific remedial advice explaining how the student can improve." }
+          remedialAdvice: { type: SchemaType.STRING, description: "Constructive feedback and specific remedial advice explaining how the student can improve." },
+          identifiedTopic: { type: SchemaType.STRING, description: "The core academic topic being tested in this assignment, e.g. 'Fractions', 'Algebra', 'Photosynthesis'." }
         },
-        required: ["extractedText", "totalScore", "marksBreakdown", "cbcCompetencies", "remedialAdvice"]
+        required: ["extractedText", "totalScore", "marksBreakdown", "cbcCompetencies", "remedialAdvice", "identifiedTopic"]
       }
     }
   });
@@ -2695,6 +2697,7 @@ export const gradeStudentSubmission = async (
     4. GRADE: Calculate the 'totalScore' by summing the awarded marks. Ensure it does not exceed ${totalMarks}.
     5. COMPETENCIES: Identify which Kenyan CBC Core Competencies the student demonstrated.
     6. REMEDIATION: Provide specific, encouraging 'remedialAdvice' for the student on how to improve.
+    7. TOPIC EXTRACTION: Identify the core academic topic being tested and return it as 'identifiedTopic'.
     
     Output structured JSON only.
   `;

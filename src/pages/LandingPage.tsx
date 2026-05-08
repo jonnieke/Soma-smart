@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import {
@@ -277,9 +277,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                         className="bg-red-600 text-white overflow-hidden relative z-[60]"
                     >
                         <div className="max-w-7xl mx-auto px-4 py-3 sm:px-6 lg:px-8 flex items-center justify-between gap-4">
-                            <div className="flex items-center gap-3">
+                            <div className="flex-1 min-w-0 flex items-center gap-3">
                                 <AlertCircle className="w-5 h-5 flex-shrink-0" />
-                                <p className="text-sm font-medium">
+                                <p className="text-sm font-medium break-words">
                                     {authError.code === 'otp_expired'
                                         ? "Your security link has expired. For your safety, please request a new password reset link."
                                         : authError.description}
@@ -507,7 +507,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                                     onChange={(e) => { setQuestionInput(e.target.value); if (showMockAnswer) setShowMockAnswer(false); }}
                                                     onKeyDown={(e) => { if (e.key === 'Enter') handleGenerateAnswer(); }}
                                                     placeholder="Type your question... e.g. Solve 3x + 7 = 22"
-                                                    className="flex-1 bg-transparent border-none focus:outline-none text-slate-800 dark:text-slate-200 placeholder-slate-400 text-base font-medium pr-2" />
+                                                    className="flex-1 min-w-0 bg-transparent border-none focus:outline-none text-slate-800 dark:text-slate-200 placeholder-slate-400 text-base font-medium pr-2" />
                                                 <button onClick={handleGenerateAnswer}
                                                     className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 sm:px-6 py-3 rounded-xl font-bold text-sm shadow-lg transition-all hover:scale-[1.02] active:scale-[0.98] whitespace-nowrap flex items-center gap-2 shrink-0">
                                                     Solve It <ArrowRight className="w-4 h-4" />
@@ -551,20 +551,20 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                             ))}
                                         </div>
 
-                                        <div className="flex flex-wrap items-center gap-4 mb-7">
+                                        <div className="flex flex-col sm:flex-row items-center gap-4 mb-7 w-full sm:w-auto">
                                             <button onClick={() => handleRoleSelect(UserRole.LEARNER)}
-                                                className="bg-slate-900 dark:bg-white hover:bg-slate-700 dark:hover:bg-slate-100 text-white dark:text-slate-900 font-extrabold text-base px-8 py-4 rounded-2xl shadow-xl hover:-translate-y-0.5 transition-all flex items-center gap-2">
+                                                className="w-full sm:w-auto bg-slate-900 dark:bg-white hover:bg-slate-700 dark:hover:bg-slate-100 text-white dark:text-slate-900 font-extrabold text-base px-8 py-4 rounded-2xl shadow-xl hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2">
                                                 Start Free — No Signup <ArrowRight className="w-4 h-4" />
                                             </button>
                                             <button onClick={() => { startGuestSession(); setRole(UserRole.LEARNER); navigate('/learner', { state: { targetTab: 'TALKBACK' } }); }}
-                                                className="flex items-center gap-2 text-slate-500 dark:text-slate-400 font-bold text-sm hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
+                                                className="flex items-center justify-center gap-2 text-slate-500 dark:text-slate-400 font-bold text-sm hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
                                                 <Headphones className="w-4 h-4" /> Try Audio Tutor instead
                                             </button>
                                         </div>
-                                        <div className="flex flex-wrap gap-x-5 gap-y-2 text-sm text-slate-500 dark:text-slate-400">
-                                            <div className="flex items-center gap-1.5"><CheckCircle className="w-4 h-4 text-emerald-500" /> Free to start — KES 20/day unlimited</div>
-                                            <div className="flex items-center gap-1.5"><CheckCircle className="w-4 h-4 text-emerald-500" /> All subjects &amp; levels</div>
-                                            <div className="flex items-center gap-1.5"><CheckCircle className="w-4 h-4 text-emerald-500" /> Works offline</div>
+                                        <div className="flex flex-col sm:flex-row flex-wrap gap-x-5 gap-y-3 text-sm text-slate-500 dark:text-slate-400">
+                                            <div className="flex items-center gap-1.5"><CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0" /> Free to start — KES 20/day</div>
+                                            <div className="flex items-center gap-1.5"><CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0" /> All subjects & levels</div>
+                                            <div className="flex items-center gap-1.5"><CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0" /> Works offline</div>
                                         </div>
                                     </motion.div>
                                 ) : (
@@ -681,15 +681,16 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                     </motion.div>
                                 )}
 
-                                {/* Social proo                                 <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1 }}
-                                    className="absolute -bottom-5 left-1/2 -translate-x-1/2 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-full px-4 py-2.5 shadow-xl flex items-center gap-3 z-20 whitespace-nowrap max-w-[90vw] sm:max-w-none">
+                                {/* Social proof */}
+                                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1 }}
+                                    className="absolute -bottom-5 left-1/2 -translate-x-1/2 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-full px-4 py-2.5 shadow-xl flex items-center gap-3 z-20 whitespace-nowrap max-w-[90vw] sm:max-w-none overflow-hidden">
                                     <div className="flex -space-x-2 shrink-0">
-                                        {['bg-blue-400','bg-emerald-400','bg-amber-400','bg-rose-400'].map((c, i) => (
+                                        {['bg-blue-400', 'bg-emerald-400', 'bg-amber-400', 'bg-rose-400'].map((c, i) => (
                                             <div key={i} className={`w-5 h-5 sm:w-6 sm:h-6 ${c} rounded-full border-2 border-white dark:border-slate-800`} />
                                         ))}
                                     </div>
                                     <span className="text-[10px] sm:text-xs font-black text-slate-800 dark:text-slate-200 truncate">12,000+ learners already inside</span>
-                                </motion.div>                 </motion.div>
+                                </motion.div>
                             </div>
                         </motion.div>
 
@@ -702,7 +703,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
             <div className="border-y border-slate-200/50 dark:border-slate-800/80 bg-white/50 dark:bg-slate-950/50 py-6 sm:py-8 overflow-hidden relative backdrop-blur-sm">
                 <div className="absolute left-0 top-0 bottom-0 w-20 sm:w-40 bg-gradient-to-r from-slate-50 dark:from-slate-950 to-transparent z-10 pointer-events-none" />
                 <div className="absolute right-0 top-0 bottom-0 w-20 sm:w-40 bg-gradient-to-l from-slate-50 dark:from-slate-950 to-transparent z-10 pointer-events-none" />
-                <div className="flex w-full">
+                <div className="flex w-full overflow-hidden">
                     <motion.div
                         animate={{ x: ["0%", "-50%"] }}
                         transition={{ ease: "linear", duration: 30, repeat: Infinity }}
@@ -790,7 +791,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                 <div className="w-16 h-16 bg-blue-500/20 text-blue-400 rounded-2xl flex items-center justify-center mb-6 border border-blue-500/30 group-hover:scale-110 group-hover:-rotate-3 transition-transform duration-300">
                                     <ScanLine className="w-8 h-8" />
                                 </div>
-                                <div className="absolute top-6 right-6 text-5xl font-black text-white/5 pointer-events-none group-hover:text-blue-500/10 transition-colors">1</div>
+                                <div className="absolute top-6 right-4 sm:right-6 text-5xl font-black text-white/5 pointer-events-none group-hover:text-blue-500/10 transition-colors">1</div>
                                 <h3 className="font-extrabold text-white text-xl mb-3">Snap a Photo</h3>
                                 <p className="text-sm text-slate-400 leading-relaxed">Take a photo of any exam paper, homework problem, or textbook page.</p>
                             </motion.div>
@@ -801,7 +802,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                 <div className="w-16 h-16 bg-purple-500/20 text-purple-400 rounded-2xl flex items-center justify-center mb-6 border border-purple-500/30 group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300">
                                     <MessageSquare className="w-8 h-8" />
                                 </div>
-                                <div className="absolute top-6 right-6 text-5xl font-black text-white/5 pointer-events-none group-hover:text-purple-500/10 transition-colors">2</div>
+                                <div className="absolute top-6 right-4 sm:right-6 text-5xl font-black text-white/5 pointer-events-none group-hover:text-purple-500/10 transition-colors">2</div>
                                 <h3 className="font-extrabold text-white text-xl mb-3">AI Analyzes</h3>
                                 <p className="text-sm text-slate-400 leading-relaxed">Our KNEC-aligned Smart Assistant breaks down the problem step-by-step instantly.</p>
                             </motion.div>
@@ -1231,7 +1232,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
             </section>
 
             {/* --- BOTTOM FOOTER --- */}
-            <footer className="bg-white dark:bg-slate-950 py-12 border-t border-slate-100 dark:border-slate-800 transition-colors">
+            <footer className="bg-white dark:bg-slate-950 py-12 border-t border-slate-100 dark:border-slate-800 transition-colors overflow-hidden">
                 <div className="max-w-7xl mx-auto px-4">
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8 pb-8 border-b border-slate-100 dark:border-slate-800">
                         {/* Column 1: Brand & Local SEO */}
@@ -1239,7 +1240,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                             <div className="flex items-center gap-2 cursor-pointer mb-4" onClick={() => window.scrollTo(0, 0)}>
                                 <img src={logoImg} alt="Somo Smart Logo" className="h-12 w-auto object-contain grayscale opacity-80 hover:grayscale-0 hover:opacity-100 transition-all dark:invert dark:opacity-60 dark:hover:invert-0 dark:hover:opacity-100" />
                             </div>
-                            <p className="text-slate-500 dark:text-slate-400 text-sm mb-6 max-w-sm leading-relaxed">
+                            <p className="text-slate-500 dark:text-slate-400 text-sm mb-6 max-w-full sm:max-w-sm leading-relaxed">
                                 Kenya's leading Smart learning platform. Empowering students, teachers, and parents with strictly aligned CBC and KCSE educational tools.
                             </p>
                             
@@ -1430,14 +1431,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
             />
 
             {/* --- MOBILE STICKY CTA --- */}
-            <div className="md:hidden fixed bottom-6 left-4 right-4 p-2 bg-slate-900/95 dark:bg-slate-800/95 backdrop-blur-xl border border-slate-700/50 shadow-2xl z-50 rounded-2xl flex items-center justify-between pointer-events-auto">
-                <div className="flex flex-col pl-3">
-                    <span className="text-white text-sm font-black tracking-tight leading-none mb-0.5">Ready to pass?</span>
-                    <span className="text-blue-300 text-[10px] font-bold uppercase tracking-widest">Join 12k+ Students</span>
+            <div className="md:hidden fixed bottom-6 left-4 right-4 p-2.5 bg-slate-900/95 dark:bg-slate-800/95 backdrop-blur-xl border border-slate-700/50 shadow-2xl z-50 rounded-2xl flex items-center justify-around pointer-events-auto">
+                <div className="flex flex-col pl-2">
+                    <span className="text-white text-xs font-black tracking-tight leading-none mb-1">Ready to pass?</span>
+                    <span className="text-blue-300 text-[9px] font-bold uppercase tracking-widest">Join 12k+ Students</span>
                 </div>
                 <button
                     onClick={() => handleRoleSelect(UserRole.LEARNER)}
-                    className="bg-blue-600 hover:bg-blue-500 text-white py-3 px-6 rounded-xl font-bold shadow-md shadow-blue-500/20 active:scale-95 transition-all flex items-center gap-2"
+                    className="bg-blue-600 hover:bg-blue-500 text-white py-2.5 px-5 rounded-xl font-bold text-sm shadow-md shadow-blue-500/20 active:scale-95 transition-all flex items-center gap-2"
                 >
                     Start Free <ChevronRight className="w-4 h-4 text-blue-200" />
                 </button>

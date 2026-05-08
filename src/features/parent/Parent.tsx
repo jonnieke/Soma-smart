@@ -5,16 +5,19 @@ import { Header, Card, Button } from '../../components/Shared';
 import { ViewState, LearnerActivity } from '../../types';
 import { calculateTotalXP, calculateLevel } from '../../services/gamificationService';
 import { LogoutModal } from '../../components/LogoutModal';
-import { Book, CheckCircle, Clock, Lock, User, TrendingUp, Award, AlertCircle, ChevronRight, Activity, Calendar, Star, Zap, Home, X, LogOut, CreditCard, Sparkles } from 'lucide-react';
+import { Book, CheckCircle, Clock, Lock, User, TrendingUp, Award, AlertCircle, ChevronRight, Activity, Calendar, Star, Zap, Home, X, LogOut, CreditCard, Sparkles, Brain } from 'lucide-react';
+import { loadMasteryFromCloud } from '../../services/learnerMemoryService';
+import { MasteryDashboard } from '../../components/MasteryDashboard';
 
 interface ParentProps {
     onNavigate: (view: ViewState) => void;
     activityLog: LearnerActivity[];
     validStudentCode: string;
+    studentId?: string | null;
     login: (code: string, phone: string) => Promise<{ success: boolean; message?: string }>;
 }
 
-export const ParentDashboard: React.FC<ParentProps> = ({ onNavigate, activityLog, validStudentCode, login }) => {
+export const ParentDashboard: React.FC<ParentProps> = ({ onNavigate, activityLog, validStudentCode, studentId, login }) => {
     const navigate = useNavigate();
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [inputCode, setInputCode] = useState('');
@@ -22,6 +25,18 @@ export const ParentDashboard: React.FC<ParentProps> = ({ onNavigate, activityLog
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [showLogoutModal, setShowLogoutModal] = useState(false);
+    
+    // Cloud Memory State
+    const [cloudMemoryRow, setCloudMemoryRow] = useState<any>(null);
+
+    // Fetch live mastery from cloud when authenticated
+    React.useEffect(() => {
+        if (isAuthenticated && studentId) {
+            loadMasteryFromCloud(studentId).then(({ cloudRow }) => {
+                if (cloudRow) setCloudMemoryRow(cloudRow);
+            }).catch(() => {});
+        }
+    }, [isAuthenticated, studentId]);
 
     const handleLogin = async () => {
         if (!inputCode || !inputPhone) {
@@ -375,8 +390,31 @@ export const ParentDashboard: React.FC<ParentProps> = ({ onNavigate, activityLog
                     </div>
                 </div>
 
-                {/* 3.5 SMART INSIGHTS & HOMEWORK TRACKING */}
+                {/* 3.5 SMART INSIGHTS & COGNITIVE MASTERY */}
                 <div className="grid lg:grid-cols-2 gap-6">
+                    {/* Live Cognitive Graph */}
+                    <div className="bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl rounded-[2.5rem] p-8 shadow-xl shadow-slate-200/50 dark:shadow-none border border-white/50 dark:border-slate-800 transition-colors">
+                        <h3 className="text-xl font-black text-slate-900 dark:text-white mb-6 flex items-center gap-2">
+                            <Brain className="w-6 h-6 text-emerald-500" /> Cognitive Mastery Graph
+                        </h3>
+                        {cloudMemoryRow ? (
+                            <div className="h-64 sm:h-80 w-full relative -mt-4">
+                                <MasteryDashboard 
+                                    masteryGraph={cloudMemoryRow.mastery_graph || {}} 
+                                    weakTopics={[]} // Optional: or pass specific ones
+                                />
+                            </div>
+                        ) : (
+                            <div className="h-64 flex items-center justify-center text-center p-6 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-[2rem]">
+                                <div>
+                                    <Sparkles className="w-8 h-8 text-slate-300 mx-auto mb-3" />
+                                    <p className="text-slate-500 font-bold text-sm">Waiting for cloud sync...</p>
+                                    <p className="text-xs text-slate-400 mt-1">Somo Smart is building the mastery graph.</p>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
                     {/* Insights & Weak Areas */}
                     <div className="bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl rounded-[2.5rem] p-8 shadow-xl shadow-slate-200/50 dark:shadow-none border border-white/50 dark:border-slate-800 flex flex-col justify-between relative overflow-hidden group transition-colors">
                         <div className="absolute right-0 bottom-0 opacity-[0.03] group-hover:opacity-10 transition-opacity pointer-events-none">
@@ -407,27 +445,6 @@ export const ParentDashboard: React.FC<ParentProps> = ({ onNavigate, activityLog
                                     Excellent progress! Your child is showing consistent mastery across all tested subjects this week. Our Smart Engine is tracking their pace to provide more advanced challenges automatically.
                                 </p>
                             )}
-                        </div>
-                    </div>
-
-                    {/* Homework Tracker */}
-                    <div className="bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl rounded-[2.5rem] p-8 shadow-xl shadow-slate-200/50 dark:shadow-none border border-white/50 dark:border-slate-800 transition-colors">
-                        <h3 className="text-xl font-black text-slate-900 dark:text-white mb-6 flex items-center gap-2">
-                            <Book className="w-6 h-6 text-emerald-500" /> Pending Homework
-                        </h3>
-                        <div className="space-y-4">
-                            <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm gap-3">
-                                <span className="text-[15px] font-bold text-slate-800 dark:text-slate-200">Math: Fractions Remedial</span>
-                                <span className="bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full border border-amber-200 dark:border-amber-800/50 w-fit">Due Tomorrow</span>
-                            </div>
-                            <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm gap-3">
-                                <span className="text-[15px] font-bold text-slate-800 dark:text-slate-200 line-through opacity-70">Science: Plant Systems</span>
-                                <span className="bg-slate-100 dark:bg-slate-900/50 text-slate-500 dark:text-slate-400 text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full border border-slate-200 dark:border-slate-800 w-fit">Completed</span>
-                            </div>
-                            <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm gap-3">
-                                <span className="text-[15px] font-bold text-slate-800 dark:text-slate-200 line-through opacity-70">English: Comprehension</span>
-                                <span className="bg-emerald-50 dark:bg-emerald-900/10 text-emerald-600 dark:text-emerald-500 text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full border border-emerald-100 dark:border-emerald-900/30 w-fit">Completed</span>
-                            </div>
                         </div>
                     </div>
                 </div>

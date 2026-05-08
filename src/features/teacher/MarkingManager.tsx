@@ -2,6 +2,8 @@ import React, { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { ScanLine, Upload, CheckCircle2, AlertCircle, FileText, ArrowLeft, Loader2, Sparkles, X, Plus } from 'lucide-react';
 import { gradeStudentSubmission, fileToGenerativePart } from '../../services/geminiService';
+import { updateStudentMasteryFromTeacher } from '../../services/learnerMemoryService';
+import { classroomService, ClassMember } from '../../services/classroomService';
 import { useApp } from '../../context/AppContext';
 import { Assignment, StudentSubmission } from '../../types';
 import { AIFeedbackButtons } from '../../components/AIFeedbackButtons';
@@ -16,6 +18,9 @@ export const MarkingManager: React.FC = () => {
     const [isProcessing, setIsProcessing] = useState(false);
 
     // Context State
+    const { teacherProfile } = useApp();
+    const [students, setStudents] = useState<ClassMember[]>([]);
+    const [selectedStudentId, setSelectedStudentId] = useState<string>('');
     const [assignmentTitle, setAssignmentTitle] = useState("Math Quiz: Decimals");
     const [assignmentContext, setAssignmentContext] = useState("Grade 5 Mathematics - Topic: Operations on Decimals");
     const [totalMarks, setTotalMarks] = useState<number>(10);
@@ -27,9 +32,32 @@ export const MarkingManager: React.FC = () => {
         marksBreakdown: Array<{ criterion: string; awarded: number; possible: number; rationale: string; }>;
         cbcCompetencies: string[];
         remedialAdvice: string;
+        identifiedTopic: string;
     } | null>(null);
+    const [memoryUpdateSuccess, setMemoryUpdateSuccess] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    React.useEffect(() => {
+        async function loadStudents() {
+            if (!teacherProfile) return;
+            try {
+                const classes = await classroomService.getClassesForTeacher(teacherProfile.id);
+                let allMembers: ClassMember[] = [];
+                for (const c of classes) {
+                    const roster = await classroomService.getClassRoster(c.id);
+                    allMembers = [...allMembers, ...roster];
+                }
+                // Dedupe students who might be in multiple classes
+                const uniqueStudents = Array.from(new Map(allMembers.map(item => [item.student_id, item])).values());
+                setStudents(uniqueStudents);
+                if (uniqueStudents.length > 0) setSelectedStudentId(uniqueStudents[0].student_id);
+            } catch (err) {
+                console.error("Failed to load students for grading", err);
+            }
+        }
+        loadStudents();
+    }, [teacherProfile]);
 
     const MOCK_ASSIGNMENTS: Assignment[] = [
         { id: '1', title: 'Math Quiz: Decimals', subject: 'Mathematics', className: 'Grade 5 East', totalMarks: 10, rubric: '', createdAt: '2024-03-01' },
@@ -56,6 +84,7 @@ export const MarkingManager: React.FC = () => {
         setSelectedFile(null);
         setPreviewUrl(null);
         setResult(null);
+        setMemoryUpdateSuccess(false);
         if (fileInputRef.current) fileInputRef.current.value = '';
     };
 
@@ -75,7 +104,19 @@ export const MarkingManager: React.FC = () => {
                 totalMarks,
                 rubric
             );
+            
             setResult(gradingResult);
+
+            // Sync to Learner Memory!
+            if (selectedStudentId && gradingResult.identifiedTopic) {
+                const { success } = await updateStudentMasteryFromTeacher(
+                    selectedStudentId,
+                    gradingResult.identifiedTopic,
+                    gradingResult.totalScore,
+                    totalMarks
+                );
+                setMemoryUpdateSuccess(success);
+            }
         } catch (err: any) {
             console.error(err);
             setError(err.message || 'Failed to auto-grade submission.');
@@ -104,12 +145,21 @@ export const MarkingManager: React.FC = () => {
                             <h3 className="font-black text-slate-900 mb-4 uppercase tracking-wider text-xs">Assignment Context</h3>
                             <div className="space-y-4">
                                 <div>
+                                    <label className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1 block">Student</label>
+                                    <select value={selectedStudentId} onChange={e => setSelectedStudentId(e.target.value)} className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl px-4 py-3 font-bold text-slate-900 outline-none">
+                                        <option value="" disabled>Select a student...</option>
+                                        {students.map(s => (
+                                            <option key={s.student_id} value={s.student_id}>{s.profiles?.name || s.student_id}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div>
                                     <label className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1 block">Title</label>
                                     <input type="text" value={assignmentTitle} onChange={e => setAssignmentTitle(e.target.value)} className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl px-4 py-3 font-bold text-slate-900" />
                                 </div>
                                 <div className="grid grid-cols-3 gap-4">
                                     <div className="col-span-2">
-                                        <label className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1 block">Context</label>
+                                        <label className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1 block">Context / Subject</label>
                                         <input type="text" value={assignmentContext} onChange={e => setAssignmentContext(e.target.value)} className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl px-4 py-3 font-medium text-slate-900" />
                                     </div>
                                     <div>
@@ -207,6 +257,17 @@ export const MarkingManager: React.FC = () => {
                                 </div>
 
                                 <div className="flex-1 overflow-y-auto pr-2 space-y-6 custom-scrollbar">
+                                    {/* Memory Sync Success Banner */}
+                                    {memoryUpdateSuccess && (
+                                        <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 flex items-center gap-3">
+                                            <Sparkles className="w-6 h-6 text-emerald-500 shrink-0" />
+                                            <div>
+                                                <h4 className="font-black text-emerald-900 text-sm">Learner Memory Updated</h4>
+                                                <p className="text-xs font-medium text-emerald-700">The student's mastery of <strong>{result.identifiedTopic}</strong> was synced to the cloud.</p>
+                                            </div>
+                                        </div>
+                                    )}
+
                                     {/* Extracted Text Details */}
                                     <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200">
                                         <h4 className="font-black text-slate-700 uppercase tracking-wider text-[10px] mb-2 flex items-center gap-1">

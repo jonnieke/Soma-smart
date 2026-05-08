@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, BookOpen, Send, Users, Sparkles } from 'lucide-react';
+import { ArrowLeft, BookOpen, Send, Users, Sparkles, CheckCircle } from 'lucide-react';
+import { generatePracticeQuestions, PracticeQuestion } from '../../services/geminiService';
 
 export const HomeworkCreator: React.FC<{
     onBack: () => void;
@@ -14,19 +15,28 @@ export const HomeworkCreator: React.FC<{
     const [generating, setGenerating] = useState(false);
     const [homework, setHomework] = useState<any>(null);
 
-    const handleGenerate = () => {
+    const handleGenerate = async () => {
         setGenerating(true);
-        setTimeout(() => {
-            setHomework({
-                title: `${topic} Homework`,
-                questions: [
-                    "1. Define the core concepts discussed in class.",
-                    "2. Solve real-world application problems related to this topic.",
-                    "3. Write a short paragraph explaining the significance."
-                ]
-            });
+        try {
+            const count = diff === 'HARD' ? 7 : diff === 'MEDIUM' ? 5 : 3;
+            const examType = grade.includes('8') || grade.toLowerCase().includes('form') ? 'KCSE' : 'JSS';
+            
+            const generated = await generatePracticeQuestions(subject, topic, examType, count);
+            
+            if (generated && generated.length > 0) {
+                setHomework({
+                    title: `${topic} Assignment`,
+                    questions: generated
+                });
+            } else {
+                throw new Error("No questions generated");
+            }
+        } catch (error) {
+            console.error(error);
+            alert("Failed to generate homework. Please try again.");
+        } finally {
             setGenerating(false);
-        }, 2000);
+        }
     };
 
     const handleAssign = () => {
@@ -108,12 +118,21 @@ export const HomeworkCreator: React.FC<{
                     </div>
                 ) : (
                     <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="space-y-6">
-                        <div className="bg-amber-50 rounded-2xl p-6 border border-amber-100">
-                            <h3 className="text-xl font-black text-slate-900 mb-4">{homework.title}</h3>
-                            <div className="space-y-3">
-                                {homework.questions.map((q: string, i: number) => (
-                                    <div key={i} className="flex gap-3">
-                                        <span className="text-slate-800 font-medium">{q}</span>
+                        <div className="bg-amber-50 rounded-2xl p-6 border border-amber-100 shadow-inner">
+                            <h3 className="text-2xl font-black text-slate-900 mb-6">{homework.title}</h3>
+                            <div className="space-y-4">
+                                {homework.questions.map((q: PracticeQuestion, i: number) => (
+                                    <div key={i} className="flex flex-col gap-2 p-5 bg-white rounded-xl border border-amber-200 shadow-sm">
+                                        <div className="flex justify-between items-start gap-4">
+                                            <span className="text-slate-800 font-bold text-lg leading-snug">Q{i + 1}. {q.text}</span>
+                                            <span className="text-sm font-black text-amber-600 bg-amber-100 px-3 py-1 rounded-xl shrink-0 border border-amber-200">{q.marks} Marks</span>
+                                        </div>
+                                        <div className="mt-3 text-sm text-slate-600 bg-indigo-50/50 p-3 rounded-lg border-l-4 border-indigo-300">
+                                            <span className="font-bold text-indigo-900 flex items-center gap-1 uppercase text-[10px] tracking-widest block mb-1">
+                                                <CheckCircle className="w-3 h-3" /> Model Answer Outline
+                                            </span>
+                                            {q.modelAnswerOutline}
+                                        </div>
                                     </div>
                                 ))}
                             </div>

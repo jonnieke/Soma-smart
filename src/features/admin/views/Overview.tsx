@@ -2,16 +2,19 @@ import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { DollarSign, Users, Activity, CheckCircle, TrendingUp, ArrowUp } from 'lucide-react';
 import { getAdminStats, AdminStats } from '../../../services/paymentService'; // Keep for legacy check or remove if unused, but we switch to adminService
-import { fetchDashboardStats, DashboardStats } from '../../../services/adminService';
+import { fetchDashboardStats, DashboardStats, fetchSchoolWideMastery, SchoolCognitiveHealth } from '../../../services/adminService';
+import { Brain, AlertTriangle } from 'lucide-react';
 
 export const Overview: React.FC = () => {
     const [stats, setStats] = useState<DashboardStats | null>(null);
+    const [cognitiveHealth, setCognitiveHealth] = useState<SchoolCognitiveHealth | null>(null);
 
     useEffect(() => {
         fetchDashboardStats().then(setStats);
+        fetchSchoolWideMastery().then(setCognitiveHealth);
     }, []);
 
-    if (!stats) return <div className="p-12 text-center text-slate-400">Loading metrics...</div>;
+    if (!stats || !cognitiveHealth) return <div className="p-12 text-center text-slate-400">Loading metrics...</div>;
 
     return (
         <div className="space-y-8">
@@ -45,6 +48,45 @@ export const Overview: React.FC = () => {
                     icon={<Activity className="w-6 h-6 text-purple-600" />}
                     bg="bg-purple-50"
                 />
+            </div>
+
+            {/* School Cognitive Health */}
+            <div className="bg-gradient-to-br from-slate-900 to-indigo-950 p-8 rounded-2xl shadow-xl border border-indigo-900/50 text-white overflow-hidden relative">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
+                <div className="relative z-10 flex flex-col lg:flex-row gap-8 items-start lg:items-center justify-between">
+                    <div>
+                        <h3 className="text-2xl font-black mb-2 flex items-center gap-3">
+                            <Brain className="w-8 h-8 text-emerald-400" /> School Cognitive Health
+                        </h3>
+                        <p className="text-indigo-200/80 font-medium max-w-xl">
+                            Real-time AI aggregation of memory graphs across all {cognitiveHealth.activeLearners} active learners. This helps principals identify structural curriculum gaps instantly.
+                        </p>
+                    </div>
+                    
+                    <div className="flex flex-wrap gap-4 w-full lg:w-auto">
+                        <div className="bg-white/10 backdrop-blur-md px-6 py-4 rounded-2xl border border-white/10 flex-1 lg:flex-none text-center">
+                            <p className="text-[10px] text-indigo-300 font-black uppercase tracking-widest mb-1">Avg School Mastery</p>
+                            <p className="text-4xl font-black text-white">{cognitiveHealth.averageScore}%</p>
+                        </div>
+                        <div className="bg-white/10 backdrop-blur-md px-6 py-4 rounded-2xl border border-white/10 flex-1 lg:flex-none">
+                            <p className="text-[10px] text-orange-300 font-black uppercase tracking-widest mb-2 flex items-center gap-1">
+                                <AlertTriangle className="w-3 h-3" /> Top Struggling Topics
+                            </p>
+                            <div className="space-y-1">
+                                {cognitiveHealth.topStrugglingTopics.length === 0 ? (
+                                    <p className="text-sm font-semibold text-slate-300">No struggles detected.</p>
+                                ) : (
+                                    cognitiveHealth.topStrugglingTopics.map((item, idx) => (
+                                        <div key={idx} className="flex justify-between items-center text-sm font-bold gap-4">
+                                            <span className="text-slate-200 truncate">{item.topic}</span>
+                                            <span className="text-orange-300 bg-orange-500/20 px-2 py-0.5 rounded text-xs">{item.count} alerts</span>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             {/* 2. Charts Section */}

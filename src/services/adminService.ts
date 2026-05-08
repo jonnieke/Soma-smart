@@ -135,3 +135,64 @@ export const fetchAllUsers = async (): Promise<AdminUser[]> => {
     }
     return data || [];
 };
+
+export interface SchoolCognitiveHealth {
+    averageScore: number;
+    totalMasteredTopics: number;
+    topStrugglingTopics: { topic: string, count: number }[];
+    activeLearners: number;
+}
+
+export const fetchSchoolWideMastery = async (): Promise<SchoolCognitiveHealth> => {
+    try {
+        const { data, error } = await supabase
+            .from('learner_memory')
+            .select('mastery_graph, weak_topics');
+
+        if (error) throw error;
+        if (!data || data.length === 0) {
+            return { averageScore: 0, totalMasteredTopics: 0, topStrugglingTopics: [], activeLearners: 0 };
+        }
+
+        let totalScore = 0;
+        let scoreCount = 0;
+        let totalMastered = 0;
+        const weakTopicCounts: Record<string, number> = {};
+
+        data.forEach(row => {
+            // Calculate averages from mastery_graph
+            if (row.mastery_graph) {
+                Object.values(row.mastery_graph).forEach((score: any) => {
+                    totalScore += Number(score);
+                    scoreCount++;
+                    if (Number(score) >= 80) totalMastered++;
+                });
+            }
+
+            // Aggregate weak topics
+            if (row.weak_topics && Array.isArray(row.weak_topics)) {
+                row.weak_topics.forEach((topic: string) => {
+                    weakTopicCounts[topic] = (weakTopicCounts[topic] || 0) + 1;
+                });
+            }
+        });
+
+        const averageScore = scoreCount > 0 ? Math.round(totalScore / scoreCount) : 0;
+        
+        // Sort weak topics by frequency
+        const topStrugglingTopics = Object.entries(weakTopicCounts)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 3)
+            .map(([topic, count]) => ({ topic, count }));
+
+        return {
+            averageScore,
+            totalMasteredTopics: totalMastered,
+            topStrugglingTopics,
+            activeLearners: data.length
+        };
+    } catch (err) {
+        console.error("School-wide mastery fetch failed:", err);
+        return { averageScore: 0, totalMasteredTopics: 0, topStrugglingTopics: [], activeLearners: 0 };
+    }
+};

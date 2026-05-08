@@ -19,6 +19,7 @@ import { AIFeedbackButtons } from '../../components/AIFeedbackButtons';
 import { LogoutModal } from '../../components/LogoutModal';
 import { ParentPinModal } from '../../components/ParentPinModal';
 import { MarkdownText, Button, Card } from '../../components/Shared';
+import { MasteryDashboard } from '../../components/MasteryDashboard';
 import {
   calculateTotalXP, calculateLevel,
   calculateStreak, calculateSubjectPerformance, getDailyChallenge
@@ -34,6 +35,8 @@ const Community = React.lazy(() => import('../community/Community').then(module 
 const LearnerAnalytics = React.lazy(() => import('./LearnerAnalytics').then(module => ({ default: module.LearnerAnalytics })));
 const ConversationalTutor = React.lazy(() => import('./ConversationalTutor').then(module => ({ default: module.ConversationalTutor })));
 const ReferralView = React.lazy(() => import('./ReferralView').then(module => ({ default: module.ReferralView })));
+
+const loadMemoryService = () => import('../../services/learnerMemoryService');
 
 const loadGeminiService = () => import('../../services/learnerGeminiService');
 import { RateLimitError } from '../../services/geminiService';
@@ -139,6 +142,27 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
     prevXPRef.current = totalXP;
   }, [totalXP]);
 
+  const [showStreakModal, setShowStreakModal] = useState(false);
+  const prevStreakRef = useRef(streak);
+
+  useEffect(() => {
+    // Only show modal if streak increases DURING the session, and they already had a streak (or it's their first, but prev > 0 prevents firing on initial load if we somehow miscalculate)
+    // Actually, prevStreakRef.current is initialized to the streak ON MOUNT. 
+    // So if it goes up, they just earned it now.
+    if (streak > prevStreakRef.current) {
+      setShowStreakModal(true);
+      import('canvas-confetti').then(({ default: confetti }) => {
+        confetti({
+          particleCount: 150,
+          spread: 90,
+          origin: { y: 0.5 },
+          colors: ['#ff4500', '#ffa500', '#ffd700']
+        });
+      });
+    }
+    prevStreakRef.current = streak;
+  }, [streak]);
+
   useEffect(() => {
     // We want learners to see the dashboard even if not registered (they get limited access).
     // Allow users to explore directly as a 'Guest' without kicking them.
@@ -161,6 +185,39 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
   }, [isRegistered, role, navigate, location]);
 
   const [mode, setMode] = useState<'MENU' | 'SCAN' | 'RESULT' | 'QUIZ' | 'RECAP_RESULT' | 'PROFILE' | 'PRICING' | 'PAYMENT' | 'MARKETPLACE' | 'LIBRARY' | 'HISTORY' | 'SCAN_EXPLAIN' | 'STUDY' | 'REQUESTS' | 'COMMUNITY' | 'REVISION' | 'REVISION_SESSION' | 'ANALYTICS' | 'TALKBACK' | 'REFERRAL'>(initialMode as any);
+
+  // --- LEARNER MEMORY (Cloud Sync + Personalized Greeting) ---
+  const [showMasteryDashboard, setShowMasteryDashboard] = useState(false);
+  const [cloudMemoryRow, setCloudMemoryRow] = useState<any>(null);
+
+  // Load mastery from cloud on mount (registered users only)
+  useEffect(() => {
+    const learnerId = studentCode || studentProfile?.id;
+    if (!learnerId) return; // Guest — localStorage only
+    loadMemoryService().then(({ loadMasteryFromCloud }) => {
+      loadMasteryFromCloud(learnerId).then(({ cloudRow }) => {
+        if (cloudRow) setCloudMemoryRow(cloudRow);
+      }).catch(() => {}); // Silently fail if offline
+    });
+  }, [studentCode, studentProfile?.id]);
+
+  // Fire-and-forget cloud sync after quiz completion (wrapped for use inside handlers)
+  const triggerMemorySync = React.useCallback(() => {
+    const learnerId = studentCode || studentProfile?.id;
+    if (!learnerId) return;
+    const lastActivity = history[0];
+    loadMemoryService().then(({ syncMasteryToCloud }) => {
+      syncMasteryToCloud(
+        learnerId,
+        lastActivity?.topic,
+        undefined,
+        streak,
+        totalXP,
+        history.length
+      ).catch(() => {});
+    });
+  }, [studentCode, studentProfile?.id, history, streak, totalXP]);
+
   const [studyTab, setStudyTab] = useState<'LESSON' | 'RECAP' | 'QNA' | 'QUIZ'>('LESSON');
   const [expandedRecaps, setExpandedRecaps] = useState<number[]>([]);
   const [activeRevisionSession, setActiveRevisionSession] = useState<{ data: any, mode: 'LEARN' | 'EXAM' } | null>(null);
@@ -2252,8 +2309,7 @@ ${explanation.explanation}
 
     if (mode === 'MENU') {
       const hour = new Date().getHours();
-      const timeOfDay = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
-            {/* GREETING */}
+      const getGreetingWord = () => hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
       const recentTopics = [...new Set(history.map((h: any) => h.topic))].filter(Boolean).slice(0, 3) as string[];
       const hasHistory = history.length > 0;
       const hasProgress = totalXP > 0;
@@ -2306,11 +2362,20 @@ ${explanation.explanation}
               <div>
                 <div className="flex items-center gap-2 mb-1">
                   <h1 className="text-2xl md:text-3xl font-bold text-slate-900 dark:text-white tracking-tight">
-                    Hello, {profile?.name?.split(' ')[0] || 'Learner'}! 👋
+                    {cloudMemoryRow?.total_sessions > 1 || history.length > 0
+                      ? `${getGreetingWord()}, ${profile?.name?.split(' ')[0] || 'Learner'}! 👋`
+                      : `Hey ${profile?.name?.split(' ')[0] || 'there'}! 👋`}
                   </h1>
                 </div>
-                <div className="flex items-center gap-2 mt-1">
-                  <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Let's keep learning and growing today.</p>
+                <div className="flex items-center gap-2 mt-1 flex-wrap">
+                  {cloudMemoryRow?.last_topic || history[0]?.topic ? (
+                    <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
+                      Last studied: <span className="font-bold text-indigo-600 dark:text-indigo-400">{cloudMemoryRow?.last_topic || history[0]?.topic}</span>
+                      {streak > 1 && <span className="ml-2">· 🔥 {streak}-day streak!</span>}
+                    </p>
+                  ) : (
+                    <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Let's keep learning and growing today.</p>
+                  )}
                   <button
                     onClick={() => { /* open level picker in sidebar */ setSidebarOpen(true); }}
                     className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider transition-all hover:opacity-80 ${
@@ -2324,6 +2389,42 @@ ${explanation.explanation}
                   </button>
                 </div>
               </div>
+              
+              <AnimatePresence>
+                {showStreakModal && (
+                  <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-50 flex items-center justify-center p-4">
+                    <motion.div
+                      initial={{ scale: 0.8, opacity: 0, y: 20 }}
+                      animate={{ scale: 1, opacity: 1, y: 0 }}
+                      exit={{ scale: 0.8, opacity: 0, y: -20 }}
+                      className="bg-white dark:bg-slate-900 rounded-[2.5rem] p-8 max-w-sm w-full text-center shadow-2xl border-4 border-orange-100 dark:border-orange-900 relative overflow-hidden"
+                    >
+                      <div className="absolute top-0 right-0 w-32 h-32 bg-orange-400/20 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none"></div>
+                      <div className="absolute bottom-0 left-0 w-32 h-32 bg-red-400/20 rounded-full blur-3xl -ml-10 -mb-10 pointer-events-none"></div>
+                      
+                      <div className="w-24 h-24 bg-gradient-to-br from-orange-100 to-red-100 dark:from-orange-900/50 dark:to-red-900/50 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner relative z-10 border-4 border-white dark:border-slate-800">
+                        <motion.span 
+                          animate={{ scale: [1, 1.2, 1], rotate: [-5, 5, -5] }} 
+                          transition={{ repeat: Infinity, duration: 2 }}
+                          className="text-5xl"
+                        >
+                          🔥
+                        </motion.span>
+                      </div>
+                      <h2 className="text-4xl font-black text-slate-800 dark:text-white mb-2 relative z-10 tracking-tight">{streak} Day Streak!</h2>
+                      <p className="text-slate-500 dark:text-slate-400 font-bold mb-8 relative z-10 leading-relaxed">You're on fire! You completed a lesson today. Keep coming back daily to build your streak.</p>
+                      
+                      <button
+                        onClick={() => setShowStreakModal(false)}
+                        className="w-full py-4 rounded-2xl bg-gradient-to-r from-orange-500 to-red-500 text-white font-black hover:from-orange-600 hover:to-red-600 transition-all shadow-lg shadow-orange-500/30 relative z-10 transform hover:scale-[1.02] active:scale-95"
+                      >
+                        Keep Going!
+                      </button>
+                    </motion.div>
+                  </div>
+                )}
+              </AnimatePresence>
+
               <div className="flex items-center gap-2 sm:gap-3 w-full md:w-auto">
                 {/* Day Streak */}
                 <div className="flex-1 md:flex-none flex items-center gap-2 sm:gap-3 bg-white dark:bg-slate-900 px-3 sm:px-4 py-2 sm:py-2.5 rounded-2xl shadow-sm border-2 border-slate-300 dark:border-slate-800">
@@ -2396,7 +2497,7 @@ ${explanation.explanation}
                        ] : [
                          { icon: <Library className="w-5 h-5 sm:w-6 sm:h-6" />, label: 'Library', color: 'bg-blue-600', onClick: () => handleSidebarTabChange('RESOURCES') },
                          { icon: <Brain className="w-5 h-5 sm:w-6 sm:h-6" />, label: 'Exam Hall', color: 'bg-orange-500', onClick: () => handleSidebarTabChange('SUBJECTS') },
-                         { icon: <Users className="w-5 h-5 sm:w-6 sm:h-6" />, label: 'Group Study', color: 'bg-emerald-500', onClick: () => handleSidebarTabChange('EXAM_ROOMS') }
+                         { icon: <Trophy className="w-5 h-5 sm:w-6 sm:h-6" />, label: 'My Progress', color: 'bg-indigo-600', onClick: () => setShowMasteryDashboard(true) }
                        ]
                      ).map((item, i) => (
                         <button key={i} onClick={item.onClick} className="bg-white dark:bg-slate-900 rounded-3xl p-3 sm:p-5 shadow-sm border-2 border-slate-300 dark:border-slate-800 hover:shadow-md hover:-translate-y-1 transition-all flex flex-col items-center justify-center gap-2 sm:gap-3 text-center group">
@@ -3941,6 +4042,9 @@ ${explanation.explanation}
           currentDocument?.grade || studentProfile?.grade
         );
 
+        // Feature: Sync mastery to cloud (non-blocking)
+        triggerMemorySync();
+
         // Return to marketplace/materials after study quiz
         setMode('MARKETPLACE');
       }} onExit={() => setMode('RESULT')} />;
@@ -4870,6 +4974,25 @@ ${explanation.explanation}
               </div>
             </motion.div>
           </div>
+        )}
+      </AnimatePresence>
+
+      {/* MASTERY DASHBOARD MODAL */}
+      <AnimatePresence>
+        {showMasteryDashboard && (
+          <MasteryDashboard
+            masteryGraph={masteryGraph}
+            srItems={dueForReview}
+            streak={streak}
+            totalXP={totalXP}
+            onClose={() => setShowMasteryDashboard(false)}
+            onPractice={(topic) => {
+              setShowMasteryDashboard(false);
+              setPromptText(topic);
+              setMode('MENU');
+              setTimeout(() => handlePromptSubmit(), 150);
+            }}
+          />
         )}
       </AnimatePresence>
 

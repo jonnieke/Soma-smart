@@ -7,7 +7,7 @@ import { ViewState } from '../types';
 
 export const ParentPage: React.FC = () => {
     const navigate = useNavigate();
-    const { learnerHistory, studentCode, loginParent } = useApp();
+    const { learnerHistory, studentCode, userId, loginParent } = useApp();
 
     const handleNavigate = (view: ViewState) => {
         if (view === ViewState.DASHBOARD) {
@@ -29,6 +29,7 @@ export const ParentPage: React.FC = () => {
                 onNavigate={handleNavigate}
                 activityLog={learnerHistory}
                 validStudentCode={studentCode}
+                studentId={userId}
                 login={loginParent}
             />
         </>

@@ -1,6 +1,7 @@
 import path from 'path';
 import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
+import { VitePWA } from 'vite-plugin-pwa';
 import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -13,7 +14,35 @@ export default defineConfig(({ mode }) => {
       port: 3000,
       host: '0.0.0.0',
     },
-    plugins: [react()],
+    plugins: [
+      react(),
+      VitePWA({
+        registerType: 'autoUpdate',
+        includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
+        manifest: {
+          name: 'Somo Smart',
+          short_name: 'Somo',
+          description: 'The ultimate AI learning companion',
+          theme_color: '#4f46e5',
+          icons: [
+            {
+              src: 'favicon.ico', // Placeholder since real ones don't exist yet
+              sizes: '192x192',
+              type: 'image/png'
+            },
+            {
+              src: 'favicon.ico',
+              sizes: '512x512',
+              type: 'image/png'
+            }
+          ]
+        },
+        workbox: {
+          // Precache assets to ensure the shell loads offline
+          globPatterns: ['**/*.{js,css,html,ico,png,svg,json,woff,woff2}']
+        }
+      })
+    ],
 
     resolve: {
       alias: {
