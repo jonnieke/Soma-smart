@@ -1187,12 +1187,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                 isOpen={showLogin}
                 onClose={() => setShowLogin(false)}
                 initialTab={loginTab}
-                onSuccess={() => {
+                onSuccess={(tab) => {
                     if (pendingRoute) {
                         navigate(pendingRoute);
                         setPendingRoute(null);
                     } else {
-                        const target = role === UserRole.TEACHER ? '/teacher' : (role === UserRole.SCHOOL ? '/school' : '/learner');
+                        const target = tab === 'TEACHER' ? '/teacher' : (tab === 'SCHOOL' ? '/school' : '/learner');
                         navigate(target);
                     }
                 }}

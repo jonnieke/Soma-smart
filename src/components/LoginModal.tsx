@@ -9,7 +9,8 @@ interface LoginModalProps {
     onClose: () => void;
     initialTab?: 'STUDENT' | 'TEACHER' | 'SCHOOL';
     onSwitchToRegister?: (role?: 'STUDENT' | 'SCHOOL' | 'TEACHER') => void;
-    onSuccess?: () => void;
+    onSwitchToRegister?: (role?: 'STUDENT' | 'SCHOOL' | 'TEACHER') => void;
+    onSuccess?: (tab: 'STUDENT' | 'TEACHER' | 'SCHOOL') => void;
 }
 
 export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, initialTab = 'STUDENT', onSwitchToRegister, onSuccess }) => {
@@ -63,7 +64,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, initial
         login(recentCode).then(success => {
             if (success) {
                 onClose();
-                if (onSuccess) onSuccess();
+                if (onSuccess) onSuccess('STUDENT');
                 else navigate('/learner');
             }
             else setError("Expired or Invalid ID");
@@ -86,7 +87,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, initial
             const success = await login(code);
             if (success) {
                 onClose();
-                if (onSuccess) onSuccess();
+                if (onSuccess) onSuccess('STUDENT');
                 else navigate('/learner');
             } else {
                 setError("Invalid Student ID. Please check and try again.");
@@ -97,7 +98,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, initial
             setLoading(false);
             if (success) {
                 onClose();
-                if (onSuccess) onSuccess();
+                if (onSuccess) onSuccess('TEACHER');
                 else navigate('/teacher');
             } else {
                 if (message && message.includes("Invalid login credentials")) {
@@ -112,7 +113,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, initial
             setLoading(false);
             if (success) {
                 onClose();
-                if (onSuccess) onSuccess();
+                if (onSuccess) onSuccess('SCHOOL');
                 else navigate('/school');
             } else {
                 setError(message || "School login failed. Check your credentials.");
