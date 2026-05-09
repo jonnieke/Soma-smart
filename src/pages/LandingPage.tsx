@@ -717,85 +717,65 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
             {/* --- CBE/KCSE CURRICULUM ALIGNMENT --- */}
 
             {/* --- HOW IT WORKS: 4 EASY STEPS --- */}
-            <section id="how-it-works" className="py-24 bg-slate-950 dark:bg-black relative overflow-hidden transition-colors">
-                {/* Glow effects */}
-                <div className="absolute inset-0 pointer-events-none overflow-hidden">
-                    <div className="absolute top-1/4 left-1/4 w-[400px] h-[400px] opacity-20 bg-blue-600 rounded-full blur-[100px]" />
-                    <div className="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] opacity-20 bg-purple-600 rounded-full blur-[100px]" />
-                </div>
-
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-                    <div className="text-center mb-20">
-                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md text-slate-300 font-bold text-xs mb-6 uppercase tracking-wider border border-white/10 shadow-sm">
-                            <Sparkles className="w-4 h-4 text-purple-400" /> Zero Friction
+            <section id="how-it-works" className="py-16 bg-slate-50 dark:bg-slate-900 transition-colors border-t border-slate-200 dark:border-slate-800">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div className="text-center mb-16">
+                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 font-bold text-xs mb-6 uppercase tracking-wider border border-blue-200 dark:border-blue-800 shadow-sm">
+                            <Sparkles className="w-4 h-4" /> Zero Friction
                         </div>
-                        <h2 className="text-4xl md:text-6xl font-black text-white mb-6 tracking-tight">Learning Made <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400">Simple</span></h2>
-                        <p className="text-slate-400 text-lg md:text-xl font-medium max-w-2xl mx-auto">Get from a confused student to a subject master in 4 incredibly easy steps.</p>
+                        <h2 className="text-3xl md:text-5xl font-bold text-slate-900 dark:text-white mb-6 tracking-tight">Learning Made <span className="text-blue-600 dark:text-blue-400">Simple</span></h2>
+                        <p className="text-slate-600 dark:text-slate-400 text-lg font-medium max-w-2xl mx-auto">Get from a confused student to a subject master in 4 incredibly easy steps.</p>
                     </div>
 
-                    <div className="relative">
-                        {/* Connecting Glow Line connecting items horizontally */}
-                        <div className="hidden lg:block absolute top-1/2 left-[10%] right-[10%] h-1 bg-gradient-to-r from-blue-500/0 via-purple-500/50 to-blue-500/0 -translate-y-1/2 blur-sm z-0"></div>
-                        <div className="hidden lg:block absolute top-1/2 left-[10%] right-[10%] h-[1px] bg-gradient-to-r from-blue-500/0 via-white/50 to-blue-500/0 -translate-y-1/2 z-0"></div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 relative z-10">
+                        {/* Step 1 */}
+                        <div className="flex flex-col items-center text-center bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-8 shadow-sm hover:shadow-md transition-shadow">
+                            <div className="w-14 h-14 bg-blue-50 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 rounded-xl flex items-center justify-center mb-6">
+                                <ScanLine className="w-7 h-7" />
+                            </div>
+                            <h3 className="font-bold text-slate-900 dark:text-white text-lg mb-3">Snap a Photo</h3>
+                            <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">Take a photo of any exam paper, homework problem, or textbook page.</p>
+                        </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 relative z-10">
-                            {/* Step 1 */}
-                            <motion.div whileHover={{ y: -10 }} className="flex flex-col relative items-center text-center bg-white/5 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-8 shadow-2xl overflow-hidden group">
-                                <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                                <div className="w-16 h-16 bg-blue-500/20 text-blue-400 rounded-2xl flex items-center justify-center mb-6 border border-blue-500/30 group-hover:scale-110 group-hover:-rotate-3 transition-transform duration-300">
-                                    <ScanLine className="w-8 h-8" />
-                                </div>
-                                <div className="absolute top-6 right-4 sm:right-6 text-5xl font-black text-white/5 pointer-events-none group-hover:text-blue-500/10 transition-colors">1</div>
-                                <h3 className="font-extrabold text-white text-xl mb-3">Snap a Photo</h3>
-                                <p className="text-sm text-slate-400 leading-relaxed">Take a photo of any exam paper, homework problem, or textbook page.</p>
-                            </motion.div>
+                        {/* Step 2 */}
+                        <div className="flex flex-col items-center text-center bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-8 shadow-sm hover:shadow-md transition-shadow">
+                            <div className="w-14 h-14 bg-purple-50 dark:bg-purple-900/40 text-purple-600 dark:text-purple-400 rounded-xl flex items-center justify-center mb-6">
+                                <MessageSquare className="w-7 h-7" />
+                            </div>
+                            <h3 className="font-bold text-slate-900 dark:text-white text-lg mb-3">AI Analyzes</h3>
+                            <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">Our KNEC-aligned Assistant breaks down the problem step-by-step instantly.</p>
+                        </div>
 
-                            {/* Step 2 */}
-                            <motion.div whileHover={{ y: -10 }} className="flex flex-col relative items-center text-center bg-white/5 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-8 shadow-2xl overflow-hidden group lg:translate-y-8">
-                                <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                                <div className="w-16 h-16 bg-purple-500/20 text-purple-400 rounded-2xl flex items-center justify-center mb-6 border border-purple-500/30 group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300">
-                                    <MessageSquare className="w-8 h-8" />
-                                </div>
-                                <div className="absolute top-6 right-4 sm:right-6 text-5xl font-black text-white/5 pointer-events-none group-hover:text-purple-500/10 transition-colors">2</div>
-                                <h3 className="font-extrabold text-white text-xl mb-3">AI Analyzes</h3>
-                                <p className="text-sm text-slate-400 leading-relaxed">Our KNEC-aligned Smart Assistant breaks down the problem step-by-step instantly.</p>
-                            </motion.div>
+                        {/* Step 3 */}
+                        <div className="flex flex-col items-center text-center bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-8 shadow-sm hover:shadow-md transition-shadow">
+                            <div className="w-14 h-14 bg-emerald-50 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 rounded-xl flex items-center justify-center mb-6">
+                                <CheckSquare className="w-7 h-7" />
+                            </div>
+                            <h3 className="font-bold text-slate-900 dark:text-white text-lg mb-3">Practice Quizzes</h3>
+                            <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">Test your understanding with automatically generated follow-up questions.</p>
+                        </div>
 
-                            {/* Step 3 */}
-                            <motion.div whileHover={{ y: -10 }} className="flex flex-col relative items-center text-center bg-white/5 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-8 shadow-2xl overflow-hidden group">
-                                <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                                <div className="w-16 h-16 bg-emerald-500/20 text-emerald-400 rounded-2xl flex items-center justify-center mb-6 border border-emerald-500/30 group-hover:scale-110 group-hover:-rotate-3 transition-transform duration-300">
-                                    <CheckSquare className="w-8 h-8" />
-                                </div>
-                                <div className="absolute top-6 right-6 text-5xl font-black text-white/5 pointer-events-none group-hover:text-emerald-500/10 transition-colors">3</div>
-                                <h3 className="font-extrabold text-white text-xl mb-3">Practice Quizzes</h3>
-                                <p className="text-sm text-slate-400 leading-relaxed">Test your understanding with automatically generated follow-up questions.</p>
-                            </motion.div>
-
-                            {/* Step 4 */}
-                            <motion.div whileHover={{ y: -10 }} className="flex flex-col relative items-center text-center bg-white/5 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-8 shadow-2xl overflow-hidden group lg:translate-y-8">
-                                <div className="absolute inset-0 bg-gradient-to-br from-orange-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                                <div className="w-16 h-16 bg-orange-500/20 text-orange-400 rounded-2xl flex items-center justify-center mb-6 border border-orange-500/30 group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300">
-                                    <Award className="w-8 h-8" />
-                                </div>
-                                <div className="absolute top-6 right-6 text-5xl font-black text-white/5 pointer-events-none group-hover:text-orange-500/10 transition-colors">4</div>
-                                <h3 className="font-extrabold text-white text-xl mb-3">Master & Pass</h3>
-                                <p className="text-sm text-slate-400 leading-relaxed">Retain knowledge permanently and dramatically boost your KCSE mean grade.</p>
-                            </motion.div>
+                        {/* Step 4 */}
+                        <div className="flex flex-col items-center text-center bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-8 shadow-sm hover:shadow-md transition-shadow">
+                            <div className="w-14 h-14 bg-orange-50 dark:bg-orange-900/40 text-orange-600 dark:text-orange-400 rounded-xl flex items-center justify-center mb-6">
+                                <Award className="w-7 h-7" />
+                            </div>
+                            <h3 className="font-bold text-slate-900 dark:text-white text-lg mb-3">Master & Pass</h3>
+                            <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">Retain knowledge permanently and dramatically boost your KCSE mean grade.</p>
                         </div>
                     </div>
                 </div>
             </section>
 
             {/* --- CORE FEATURES BENTO BOX --- */}
-            <section className="py-24 bg-white dark:bg-slate-950 relative overflow-hidden transition-colors border-t border-slate-100 dark:border-slate-800/50">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+            <section className="py-16 bg-white dark:bg-slate-950 transition-colors border-t border-slate-200 dark:border-slate-800">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="text-center mb-16">
-                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 text-blue-700 font-bold text-xs mb-6 uppercase tracking-wider dark:bg-blue-900/30 dark:text-blue-300 border border-blue-100 dark:border-blue-800">
+                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 font-bold text-xs mb-6 uppercase tracking-wider border border-blue-200 dark:border-blue-800 shadow-sm">
                             <Zap className="w-4 h-4" /> Powered by Super Teacher OS
                         </div>
-                        <h2 className="text-4xl md:text-5xl font-extrabold text-slate-900 dark:text-white mb-6 tracking-tight">Everything you need to <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-emerald-500">excel</span>. As a Teacher.</h2>
-                        <p className="text-lg text-slate-600 dark:text-slate-400 max-w-2xl mx-auto mb-10">A fully integrated suite of tools designed specifically for the Kenyan curriculum.</p>
+                        <h2 className="text-3xl md:text-5xl font-bold text-slate-900 dark:text-white mb-6 tracking-tight">Everything you need to <span className="text-blue-600 dark:text-blue-400">excel</span>. As a Teacher.</h2>
+                        <p className="text-lg text-slate-600 dark:text-slate-400 max-w-2xl mx-auto mb-10 font-medium">A fully integrated suite of tools designed specifically for the Kenyan curriculum.</p>
 
                         <div className="flex justify-center mb-16">
                             <button
@@ -803,131 +783,63 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                     setLoginTab('TEACHER');
                                     handleRoleSelect(UserRole.TEACHER);
                                 }}
-                                className="px-10 py-5 bg-blue-600 text-white font-black text-xs uppercase tracking-[0.2em] rounded-2xl shadow-2xl shadow-blue-500/30 hover:bg-blue-700 hover:-translate-y-1 transition-all flex items-center gap-3"
+                                className="px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-sm hover:-translate-y-1 transition-all flex items-center gap-3"
                             >
-                                Enter Teacher Dashboard <ChevronRight className="w-5 h-5" />
+                                Enter Educator Portal <ChevronRight className="w-5 h-5" />
                             </button>
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 auto-rows-auto md:auto-rows-[320px]">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         {/* 1. Large Feature: Darasa Mode (Span 2 cols) */}
-                        <motion.div
-                            whileHover={{ y: -8, scale: 1.01 }}
-                            className="md:col-span-2 bg-white/50 dark:bg-slate-900/50 backdrop-blur-xl rounded-[2rem] p-8 md:p-10 border border-white/40 dark:border-slate-800 shadow-xl shadow-indigo-100/20 dark:shadow-none relative overflow-hidden group hover:shadow-2xl hover:shadow-indigo-500/10 transition-all duration-500"
-                        >
-                            <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl group-hover:bg-indigo-500/20 transition-all duration-500"></div>
-                            <div className="relative z-10 h-full flex flex-col justify-center w-full md:w-[60%] lg:w-[50%]">
-                                <div className="w-12 h-12 bg-indigo-600 text-white rounded-xl flex items-center justify-center mb-6 shadow-md shadow-indigo-200 dark:shadow-indigo-900/50">
-                                    <MessageSquare className="w-6 h-6" />
-                                </div>
-                                <h3 className="text-2xl font-extrabold text-slate-900 dark:text-white mb-3">Darasa Mode</h3>
-                                <p className="text-slate-600 dark:text-slate-400 leading-relaxed font-medium">Transform any classroom into a smart learning environment. Real-time audio transcription and automatic summarization of key syllabus concepts while you teach.</p>
+                        <div className="md:col-span-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-8 md:p-10 shadow-sm flex flex-col justify-center">
+                            <div className="w-12 h-12 bg-indigo-50 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 rounded-xl flex items-center justify-center mb-6">
+                                <MessageSquare className="w-6 h-6" />
                             </div>
-                            {/* Mock UI Element */}
-                            {!lowDataMode && (
-                                <div className="absolute right-[-5%] bottom-[-5%] lg:right-4 w-[280px] lg:w-[320px] h-[260px] bg-white dark:bg-slate-900 rounded-t-3xl border border-slate-200 dark:border-slate-700 shadow-2xl p-5 hidden md:block transform group-hover:-translate-y-4 lg:group-hover:-translate-x-4 transition-transform duration-500 delay-100">
-                                    <div className="flex items-center gap-3 mb-5 opacity-50">
-                                        <div className="w-2.5 h-2.5 rounded-full bg-rose-400"></div>
-                                        <div className="w-2.5 h-2.5 rounded-full bg-amber-400"></div>
-                                        <div className="w-2.5 h-2.5 rounded-full bg-emerald-400"></div>
-                                    </div>
-                                    <div className="space-y-4 opacity-90">
-                                        <div className="flex gap-3 items-center text-xs text-indigo-600 dark:text-indigo-400 font-bold bg-indigo-50 dark:bg-indigo-900/30 max-w-fit px-3 py-1.5 rounded-full"><Clock className="w-3.5 h-3.5" /> Transcribing Live...</div>
-                                        <div className="h-2 w-3/4 bg-slate-200 dark:bg-slate-700 rounded-full"></div>
-                                        <div className="h-2 w-full bg-slate-200 dark:bg-slate-700 rounded-full"></div>
-                                        <div className="h-2 w-5/6 bg-slate-200 dark:bg-slate-700 rounded-full"></div>
-                                        <div className="h-2 w-2/3 bg-slate-200 dark:bg-slate-700 rounded-full"></div>
-                                    </div>
-                                </div>
-                            )}
-                        </motion.div>
+                            <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-3">Darasa Mode</h3>
+                            <p className="text-slate-600 dark:text-slate-400 leading-relaxed font-medium max-w-xl">Transform any classroom into a smart learning environment. Real-time audio transcription and automatic summarization of key syllabus concepts while you teach.</p>
+                        </div>
 
                         {/* 2. Vertical Feature: Marking Manager */}
-                        <motion.div
-                            whileHover={{ y: -8, scale: 1.01 }}
-                            className="bg-white/50 dark:bg-slate-900/50 backdrop-blur-xl rounded-[2rem] p-8 border border-white/40 dark:border-slate-800 shadow-xl shadow-emerald-100/20 dark:shadow-none relative overflow-hidden group hover:shadow-2xl hover:shadow-emerald-500/10 transition-all duration-500"
-                        >
-                            <div className="relative z-10 flex flex-col h-full">
-                                <div className="w-12 h-12 bg-emerald-600 text-white rounded-xl flex items-center justify-center mb-6 shadow-md shadow-emerald-200 dark:shadow-emerald-900/50">
-                                    <CheckSquare className="w-6 h-6" />
-                                </div>
-                                <h3 className="text-2xl font-extrabold text-slate-900 dark:text-white mb-3">Smart Marking</h3>
-                                <p className="text-slate-600 dark:text-slate-400 leading-relaxed font-medium mb-6">Upload handwritten assignments. Our advanced Smart Marking automatically grades essays and math problems against KNEC rubrics.</p>
-
-                                <div className="mt-auto bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm transform group-hover:-translate-y-2 transition-transform duration-500 flex items-center justify-between">
-                                    <div className="flex items-center gap-3">
-                                        <FileText className="w-8 h-8 text-emerald-500" />
-                                        <div>
-                                            <div className="text-sm font-bold text-slate-800 dark:text-slate-200">Math_P1.jpg</div>
-                                            <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-black tracking-widest uppercase mt-0.5">Score: 18/20</div>
-                                        </div>
-                                    </div>
-                                    <CheckCircle className="w-5 h-5 text-emerald-500" />
-                                </div>
+                        <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-8 shadow-sm flex flex-col">
+                            <div className="w-12 h-12 bg-emerald-50 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 rounded-xl flex items-center justify-center mb-6">
+                                <CheckSquare className="w-6 h-6" />
                             </div>
-                        </motion.div>
+                            <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-3">Smart Marking</h3>
+                            <p className="text-slate-600 dark:text-slate-400 leading-relaxed font-medium mb-6">Upload handwritten assignments. Our advanced Smart Marking automatically grades essays and math problems against KNEC rubrics.</p>
+                        </div>
 
                         {/* 3. Horizontal Feature 1: Revision Hub */}
-                        <motion.div
-                            whileHover={{ y: -8, scale: 1.01 }}
-                            className="bg-white/50 dark:bg-slate-900/50 backdrop-blur-xl rounded-[2rem] p-8 border border-white/40 dark:border-slate-800 shadow-xl shadow-orange-100/20 dark:shadow-none relative overflow-hidden group hover:shadow-2xl hover:shadow-orange-500/10 transition-all duration-500"
-                        >
-                            <div className="relative z-10 h-full flex flex-col justify-between">
-                                <div className="flex items-center justify-between mb-4">
-                                    <div className="w-12 h-12 bg-orange-500 text-white rounded-xl flex items-center justify-center shadow-md shadow-orange-200 dark:shadow-orange-900/50">
-                                        <BookOpen className="w-6 h-6" />
-                                    </div>
-                                    <div className="px-3 py-1 bg-white/60 dark:bg-slate-900/60 rounded-full text-xs font-bold text-orange-600 dark:text-orange-400 border border-orange-200/50 dark:border-orange-800/50 backdrop-blur-sm shadow-sm group-hover:scale-105 transition-transform">Interactive</div>
-                                </div>
-                                <div>
-                                    <h3 className="text-xl font-extrabold text-slate-900 dark:text-white mb-2">Powerful Examination Assistant</h3>
-                                    <p className="text-slate-600 dark:text-slate-400 text-sm font-medium">Generate CBE-aligned lesson plans, access verified KCSE and KPSEA past papers, and get auto-generated step-by-step solutions instantly.</p>
-                                </div>
+                        <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-8 shadow-sm flex flex-col justify-between">
+                            <div className="w-12 h-12 bg-orange-50 dark:bg-orange-900/40 text-orange-600 dark:text-orange-400 rounded-xl flex items-center justify-center mb-6">
+                                <BookOpen className="w-6 h-6" />
                             </div>
-                        </motion.div>
+                            <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">Powerful Examination Assistant</h3>
+                            <p className="text-slate-600 dark:text-slate-400 text-sm font-medium">Generate CBE-aligned lesson plans, access verified KCSE and KPSEA past papers, and get auto-generated step-by-step solutions instantly.</p>
+                        </div>
 
                         {/* 4. Horizontal Feature 2: Analytics Span 2 */}
-                        <motion.div
-                            whileHover={{ y: -8, scale: 1.01 }}
-                            className="md:col-span-2 bg-white/50 dark:bg-slate-900/50 backdrop-blur-xl rounded-[2rem] p-8 border border-white/40 dark:border-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-none relative overflow-hidden group hover:shadow-2xl hover:shadow-slate-500/10 transition-all duration-500"
-                        >
-                            <div className="relative z-10 w-full h-full flex items-center justify-between gap-6">
-                                <div className="flex-1 max-w-lg">
-                                    <div className="w-12 h-12 bg-slate-800 dark:bg-slate-700 text-white rounded-xl flex items-center justify-center mb-6 shadow-md shadow-slate-300 dark:shadow-slate-900/50">
-                                        <BarChart className="w-6 h-6" />
-                                    </div>
-                                    <h3 className="text-2xl font-extrabold text-slate-900 dark:text-white mb-3">Predictive Analytics</h3>
-                                    <p className="text-slate-600 dark:text-slate-400 font-medium">Identify exactly which syllabus topics your learners are struggling with before exams. Detailed progress reports map performance back to core KCSE and KPSEA competencies.</p>
+                        <div className="md:col-span-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-8 shadow-sm flex items-center justify-between gap-6">
+                            <div className="flex-1 max-w-lg">
+                                <div className="w-12 h-12 bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-200 rounded-xl flex items-center justify-center mb-6">
+                                    <BarChart className="w-6 h-6" />
                                 </div>
-                                <div className="hidden md:flex self-end w-48 h-32 relative items-end justify-between p-2">
-                                    <div className="w-8 bg-indigo-200 dark:bg-indigo-900 rounded-t-md h-12 group-hover:h-16 transition-all duration-700 ease-in-out"></div>
-                                    <div className="w-8 bg-indigo-300 dark:bg-indigo-800 rounded-t-md h-16 group-hover:h-24 transition-all duration-700 ease-in-out delay-75"></div>
-                                    <div className="w-8 bg-indigo-500 dark:bg-indigo-600 rounded-t-md h-20 group-hover:h-32 transition-all duration-700 ease-in-out delay-150"></div>
-                                    <div className="w-8 bg-indigo-600 dark:bg-indigo-500 rounded-t-md h-24 group-hover:h-40 transition-all duration-700 ease-in-out delay-200"></div>
-                                </div>
+                                <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-3">Predictive Analytics</h3>
+                                <p className="text-slate-600 dark:text-slate-400 font-medium">Identify exactly which syllabus topics your learners are struggling with before exams. Detailed progress reports map performance back to core KCSE and KPSEA competencies.</p>
                             </div>
-                        </motion.div>
+                        </div>
                     </div>
                 </div>
             </section>
 
-            {/* --- SUPER SCHOOL OS BENTO BOX --- */}
-            <section className="py-24 bg-slate-50 dark:bg-slate-900/50 relative overflow-hidden transition-colors border-t border-slate-100 dark:border-slate-800/50">
-                {/* Background Decor for School Section */}
-                {!lowDataMode && (
-                    <div className="absolute left-0 top-0 w-full h-full overflow-hidden pointer-events-none">
-                        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-500/5 dark:bg-blue-500/5 rounded-full blur-3xl"></div>
-                        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-indigo-500/5 dark:bg-indigo-500/5 rounded-full blur-3xl"></div>
-                    </div>
-                )}
-
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+            {/* --- INSTITUTIONAL INTELLIGENCE BENTO BOX --- */}
+            <section className="py-16 bg-slate-50 dark:bg-slate-900 transition-colors border-t border-slate-200 dark:border-slate-800">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="text-center mb-16">
-                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-200 text-slate-700 font-bold text-xs mb-6 uppercase tracking-wider dark:bg-slate-800 dark:text-slate-300 border border-slate-300 dark:border-slate-700 shadow-sm">
+                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-xs mb-6 uppercase tracking-wider border border-slate-300 dark:border-slate-700 shadow-sm">
                             <Building2 className="w-4 h-4" /> For School Administrators
                         </div>
-                        <h2 className="text-4xl md:text-5xl font-extrabold text-[#1a2b5e] dark:text-white mb-6 tracking-tight">Meet the new <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-700 to-indigo-600 dark:from-blue-400 dark:to-indigo-400">Super School OS</span>.</h2>
+                        <h2 className="text-3xl md:text-5xl font-bold text-slate-900 dark:text-white mb-6 tracking-tight">Institutional <span className="text-blue-600 dark:text-blue-400">Intelligence</span></h2>
                         <p className="text-lg text-slate-600 dark:text-slate-400 max-w-2xl mx-auto mb-10 font-medium">Stop guessing your results. Get real-time syllabus tracking, automated grading, and predictive analytics for your entire school.</p>
 
                         <div className="flex justify-center mb-16">
@@ -936,94 +848,40 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                     setLoginTab('SCHOOL');
                                     handleRoleSelect(UserRole.SCHOOL);
                                 }}
-                                className="px-10 py-5 bg-slate-900 text-white font-black text-xs uppercase tracking-[0.2em] rounded-2xl shadow-2xl shadow-slate-900/10 hover:bg-slate-800 hover:-translate-y-1 transition-all flex items-center gap-3 border border-slate-700"
+                                className="px-8 py-4 bg-slate-900 hover:bg-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700 text-white font-bold rounded-xl shadow-sm hover:-translate-y-1 transition-all flex items-center gap-3"
                             >
-                                Launch School Intelligence <ChevronRight className="w-5 h-5" />
+                                Launch School Admin <ChevronRight className="w-5 h-5" />
                             </button>
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 auto-rows-[340px]">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         {/* 1. Large Feature: Predictive Mean Score (Span 2 cols) */}
-                        <div className="md:col-span-2 bg-gradient-to-br from-slate-900 to-slate-800 dark:from-slate-950 dark:to-slate-900 rounded-[2rem] p-8 md:p-10 border border-slate-700 shadow-2xl relative overflow-hidden group hover:shadow-blue-900/20 transition-all duration-300">
-                            <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl group-hover:bg-blue-500/20 transition-all duration-500"></div>
-
-                            <div className="relative z-10 h-full flex flex-col justify-center w-full md:w-[50%]">
-                                <div className="w-12 h-12 bg-blue-500 text-white rounded-xl flex items-center justify-center mb-6 shadow-lg shadow-blue-500/30">
-                                    <TrendingUp className="w-6 h-6" />
-                                </div>
-                                <h3 className="text-2xl font-extrabold text-white mb-3">Predictive Analytics</h3>
-                                <p className="text-slate-300 leading-relaxed font-medium">Aggregating live data from Smart Marking and student quizzes to project your school's KCSE/KPSEA Mean Score in real-time.</p>
+                        <div className="md:col-span-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-8 md:p-10 shadow-sm flex flex-col justify-center">
+                            <div className="w-12 h-12 bg-blue-50 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 rounded-xl flex items-center justify-center mb-6">
+                                <TrendingUp className="w-6 h-6" />
                             </div>
-
-                            {/* Dramatic Mock UI Element */}
-                            {!lowDataMode && (
-                                <div className="absolute right-[-2%] bottom-[-5%] lg:right-6 lg:bottom-10 w-[300px] lg:w-[350px] bg-slate-800/80 backdrop-blur-xl rounded-2xl border border-slate-700 shadow-2xl p-6 hidden md:block transform group-hover:-translate-y-2 lg:group-hover:-translate-x-2 transition-transform duration-500">
-                                    <div className="flex items-center justify-between mb-4">
-                                        <div className="text-xs font-bold text-slate-400 uppercase tracking-widest">Projected Mean</div>
-                                        <div className="flex items-center gap-1 text-emerald-400 text-xs font-bold bg-emerald-400/10 px-2 py-1 rounded-full">
-                                            <TrendingUp className="w-3 h-3" /> +0.4
-                                        </div>
-                                    </div>
-                                    <div className="flex items-end gap-3 mb-6">
-                                        <div className="text-5xl font-black text-white leading-none">9.2</div>
-                                        <div className="text-2xl font-bold text-blue-400 mb-1">(B-)</div>
-                                    </div>
-
-                                    {/* Mini Bar Chart */}
-                                    <div className="flex items-end justify-between h-16 gap-2">
-                                        <div className="w-full bg-slate-700 rounded-t-sm h-8 relative group-hover:bg-blue-500/40 transition-colors"><div className="absolute -top-5 left-1/2 -translate-x-1/2 text-[9px] text-slate-400 font-bold opacity-0 group-hover:opacity-100 transition-opacity">T1</div></div>
-                                        <div className="w-full bg-slate-700 rounded-t-sm h-10 relative group-hover:bg-blue-500/60 transition-colors"><div className="absolute -top-5 left-1/2 -translate-x-1/2 text-[9px] text-slate-400 font-bold opacity-0 group-hover:opacity-100 transition-opacity">T2</div></div>
-                                        <div className="w-full bg-blue-500 rounded-t-sm h-14 relative shadow-[0_0_15px_rgba(59,130,246,0.5)]"><div className="absolute -top-5 left-1/2 -translate-x-1/2 text-[9px] text-blue-300 font-bold">NOW</div></div>
-                                    </div>
-                                </div>
-                            )}
+                            <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-3">Predictive Mean Score</h3>
+                            <p className="text-slate-600 dark:text-slate-400 leading-relaxed font-medium max-w-xl">Aggregating live data from Smart Marking and student quizzes to project your school's KCSE/KPSEA Mean Score in real-time.</p>
                         </div>
 
                         {/* 2. Vertical Feature: Global Syllabus Tracking */}
-                        <div className="bg-white dark:bg-slate-900 rounded-[2rem] p-8 border border-slate-200 dark:border-slate-800 shadow-sm relative overflow-hidden group hover:shadow-xl transition-all duration-300">
-                            <div className="relative z-10 flex flex-col h-full">
-                                <div className="w-12 h-12 bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 rounded-xl flex items-center justify-center mb-6">
-                                    <ShieldCheck className="w-6 h-6" />
-                                </div>
-                                <h3 className="text-xl font-extrabold text-slate-900 dark:text-white mb-3">Global Syllabus Tracking</h3>
-                                <p className="text-slate-600 dark:text-slate-400 text-sm leading-relaxed font-medium mb-6">Guarantee complete KNEC & KICD compliance digitally. See instantly if Form 4 Chemistry is lagging behind schedule without chasing teachers.</p>
-
-                                <div className="mt-auto bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-100 dark:border-slate-700 transform group-hover:scale-[1.02] transition-transform duration-300">
-                                    <div className="flex justify-between items-center mb-2">
-                                        <div className="text-xs font-bold text-slate-700 dark:text-slate-300">Form 4 Compliance</div>
-                                        <div className="text-xs font-black text-emerald-600 dark:text-emerald-400">94%</div>
-                                    </div>
-                                    <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2 overflow-hidden">
-                                        <div className="bg-emerald-500 h-2 rounded-full w-[94%]"></div>
-                                    </div>
-                                </div>
+                        <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-8 shadow-sm flex flex-col">
+                            <div className="w-12 h-12 bg-emerald-50 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 rounded-xl flex items-center justify-center mb-6">
+                                <ShieldCheck className="w-6 h-6" />
                             </div>
+                            <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-3">Global Syllabus Tracking</h3>
+                            <p className="text-slate-600 dark:text-slate-400 text-sm leading-relaxed font-medium">Guarantee complete KNEC & KICD compliance digitally. See instantly if Form 4 Chemistry is lagging behind schedule without chasing teachers.</p>
                         </div>
 
                         {/* 3. Horizontal Feature: Automated Exam Production */}
-                        <div className="md:col-span-3 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-[2rem] p-8 lg:p-10 border border-blue-100 dark:border-blue-800/30 shadow-sm flex flex-col md:flex-row items-center justify-between gap-8 group hover:shadow-md transition-all">
+                        <div className="md:col-span-3 bg-blue-50 dark:bg-slate-800 border border-blue-100 dark:border-slate-700 rounded-2xl p-8 lg:p-10 shadow-sm flex flex-col md:flex-row items-center justify-between gap-8">
                             <div className="flex-1 max-w-2xl text-center md:text-left">
-                                <div className="inline-flex items-center justify-center w-12 h-12 bg-white dark:bg-slate-800 rounded-xl shadow-sm mb-6 text-indigo-600 dark:text-indigo-400">
+                                <div className="inline-flex items-center justify-center w-12 h-12 bg-white dark:bg-slate-700 rounded-xl shadow-sm mb-6 text-indigo-600 dark:text-indigo-400">
                                     <FileText className="w-6 h-6" />
                                 </div>
-                                <h3 className="text-2xl font-extrabold text-slate-900 dark:text-white mb-3">Automated Exam Production</h3>
+                                <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-3">Automated Exam Production</h3>
                                 <p className="text-slate-600 dark:text-slate-400 font-medium leading-relaxed">Stop spending thousands on external examiners. Generate bespoke, KNEC-standard exams localized exactly to your school's current syllabus coverage in one click.</p>
-                            </div>
-                            <div className="flex-shrink-0 w-full md:w-auto relative">
-                                <div className="absolute inset-0 bg-indigo-500/20 blur-2xl rounded-full"></div>
-                                <div className="relative bg-white dark:bg-slate-800 px-6 py-4 rounded-2xl border border-indigo-100 dark:border-indigo-700 shadow-xl flex items-center gap-4 group-hover:-translate-y-1 transition-transform">
-                                    <div className="w-10 h-10 rounded-full bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
-                                        <Sparkles className="w-5 h-5" />
-                                    </div>
-                                    <div>
-                                        <div className="text-sm font-bold text-slate-900 dark:text-white">Form 3 Mid-Term</div>
-                                        <div className="text-xs text-slate-500 dark:text-slate-400">Math, Eng, Kisw "¢ Generated</div>
-                                    </div>
-                                    <div className="ml-2 w-8 h-8 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-green-600 dark:text-green-400">
-                                        <CheckCircle className="w-4 h-4" />
-                                    </div>
-                                </div>
                             </div>
                         </div>
                     </div>
@@ -1038,31 +896,24 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
             <div className="w-full h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent opacity-20"></div>
 
             {/* --- TESTIMONIALS --- */}
-            <section className="py-24 bg-slate-50 dark:bg-slate-950 transition-colors border-t border-slate-100 dark:border-slate-800/50">
+            <section className="py-16 bg-white dark:bg-slate-950 transition-colors border-t border-slate-200 dark:border-slate-800">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="text-center mb-16">
-                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 text-blue-700 font-bold text-xs mb-6 uppercase tracking-wider dark:bg-blue-900/30 dark:text-blue-300 border border-blue-100 dark:border-blue-800">
+                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 font-bold text-xs mb-6 uppercase tracking-wider border border-blue-200 dark:border-blue-800 shadow-sm">
                             <Star className="w-4 h-4" /> Rated 4.9/5 by 10,000+ Users
                         </div>
-                        <h2 className="text-4xl md:text-5xl font-extrabold text-slate-900 dark:text-white mb-6 tracking-tight">Voices of <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-500">Success</span></h2>
+                        <h2 className="text-3xl md:text-5xl font-bold text-slate-900 dark:text-white mb-6 tracking-tight">Voices of <span className="text-blue-600 dark:text-blue-400">Success</span></h2>
                         <p className="text-lg text-slate-600 dark:text-slate-400 max-w-2xl mx-auto font-medium">See how Somo Smart is transforming the educational landscape for Kenyan students, teachers, and parents.</p>
                     </div>
 
-                    <div className="grid md:grid-cols-3 gap-8">
+                    <div className="grid md:grid-cols-3 gap-6">
                         {/* Learner Testimonial */}
-                        <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            whileInView={{ opacity: 1, y: 0 }}
-                            viewport={{ once: true }}
-                            transition={{ duration: 0.5 }}
-                            whileHover={{ y: -5 }}
-                            className="bg-white dark:bg-slate-900 p-8 rounded-[2rem] shadow-xl shadow-slate-200/50 dark:shadow-none border border-slate-100 dark:border-slate-800 relative group"
-                        >
-                            <div className="absolute top-8 right-8 text-blue-100 dark:text-blue-900/30 group-hover:text-blue-200 dark:group-hover:text-blue-800/50 transition-colors">
-                                <Quote className="w-12 h-12" />
+                        <div className="bg-slate-50 dark:bg-slate-900 p-8 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 relative group">
+                            <div className="absolute top-8 right-8 text-blue-200 dark:text-blue-900/50">
+                                <Quote className="w-10 h-10" />
                             </div>
                             <div className="flex items-center gap-4 mb-6">
-                                <div className="w-14 h-14 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-blue-600 dark:text-blue-400 font-bold text-xl border-2 border-white dark:border-slate-800 shadow-sm relative z-10">
+                                <div className="w-12 h-12 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-blue-600 dark:text-blue-400 font-bold text-lg relative z-10">
                                     BK
                                 </div>
                                 <div className="relative z-10">
@@ -1075,25 +926,18 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                             <p className="text-slate-600 dark:text-slate-400 italic leading-relaxed relative z-10 font-medium">
                                 "Somo Smart explained Chemistry concepts that I struggled with for months. I moved from a C+ to an A- in my latest mocks. The Smart breakdown is just like having a personal tutor."
                             </p>
-                            <div className="mt-6 pt-6 border-t border-slate-50 dark:border-slate-800/50 flex items-center gap-2 text-xs font-bold text-blue-600 dark:text-blue-400">
+                            <div className="mt-6 pt-6 border-t border-slate-200 dark:border-slate-800 flex items-center gap-2 text-xs font-bold text-blue-600 dark:text-blue-400">
                                 <GraduationCap className="w-4 h-4" /> Form 4 Candidate
                             </div>
-                        </motion.div>
+                        </div>
 
                         {/* Teacher Testimonial */}
-                        <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            whileInView={{ opacity: 1, y: 0 }}
-                            viewport={{ once: true }}
-                            transition={{ duration: 0.5, delay: 0.1 }}
-                            whileHover={{ y: -5 }}
-                            className="bg-white dark:bg-slate-900 p-8 rounded-[2rem] shadow-xl shadow-slate-200/50 dark:shadow-none border border-slate-100 dark:border-slate-800 relative group"
-                        >
-                            <div className="absolute top-8 right-8 text-emerald-100 dark:text-emerald-900/30 group-hover:text-emerald-200 dark:group-hover:text-emerald-800/50 transition-colors">
-                                <Quote className="w-12 h-12" />
+                        <div className="bg-slate-50 dark:bg-slate-900 p-8 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 relative group">
+                            <div className="absolute top-8 right-8 text-emerald-200 dark:text-emerald-900/50">
+                                <Quote className="w-10 h-10" />
                             </div>
                             <div className="flex items-center gap-4 mb-6">
-                                <div className="w-14 h-14 rounded-full bg-emerald-100 dark:bg-emerald-900 flex items-center justify-center text-emerald-600 dark:text-emerald-400 font-bold text-xl border-2 border-white dark:border-slate-800 shadow-sm relative z-10">
+                                <div className="w-12 h-12 rounded-full bg-emerald-100 dark:bg-emerald-900 flex items-center justify-center text-emerald-600 dark:text-emerald-400 font-bold text-lg relative z-10">
                                     MO
                                 </div>
                                 <div className="relative z-10">
@@ -1106,25 +950,18 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                             <p className="text-slate-600 dark:text-slate-400 italic leading-relaxed relative z-10 font-medium">
                                 "The defining feature for me is the Smart Marking. I used to spend my entire weekend marking 80 Mathematics papers. Now, Somo does the heavy lifting according to KNEC rubrics, saving me 15+ hours weekly."
                             </p>
-                            <div className="mt-6 pt-6 border-t border-slate-50 dark:border-slate-800/50 flex items-center gap-2 text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                            <div className="mt-6 pt-6 border-t border-slate-200 dark:border-slate-800 flex items-center gap-2 text-xs font-bold text-emerald-600 dark:text-emerald-400">
                                 <School className="w-4 h-4" /> Mathematics HOD
                             </div>
-                        </motion.div>
+                        </div>
 
                         {/* Parent Testimonial */}
-                        <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            whileInView={{ opacity: 1, y: 0 }}
-                            viewport={{ once: true }}
-                            transition={{ duration: 0.5, delay: 0.2 }}
-                            whileHover={{ y: -5 }}
-                            className="bg-white dark:bg-slate-900 p-8 rounded-[2rem] shadow-xl shadow-slate-200/50 dark:shadow-none border border-slate-100 dark:border-slate-800 relative group"
-                        >
-                            <div className="absolute top-8 right-8 text-orange-100 dark:text-orange-900/30 group-hover:text-orange-200 dark:group-hover:text-orange-800/50 transition-colors">
-                                <Quote className="w-12 h-12" />
+                        <div className="bg-slate-50 dark:bg-slate-900 p-8 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 relative group">
+                            <div className="absolute top-8 right-8 text-orange-200 dark:text-orange-900/50">
+                                <Quote className="w-10 h-10" />
                             </div>
                             <div className="flex items-center gap-4 mb-6">
-                                <div className="w-14 h-14 rounded-full bg-orange-100 dark:bg-orange-900 flex items-center justify-center text-orange-600 dark:text-orange-400 font-bold text-xl border-2 border-white dark:border-slate-800 shadow-sm relative z-10">
+                                <div className="w-12 h-12 rounded-full bg-orange-100 dark:bg-orange-900 flex items-center justify-center text-orange-600 dark:text-orange-400 font-bold text-lg relative z-10">
                                     JN
                                 </div>
                                 <div className="relative z-10">
@@ -1137,11 +974,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                             <p className="text-slate-600 dark:text-slate-400 italic leading-relaxed relative z-10 font-medium">
                                 "Since subscribing to Somo Smart, I can finally track exactly where my daughter is struggling. The predictive analytics told me she needed help in Algebra weeks before her midterm exams."
                             </p>
-                            <div className="mt-6 pt-6 border-t border-slate-50 dark:border-slate-800/50 flex items-center gap-2 text-xs font-bold text-orange-600 dark:text-orange-400">
+                            <div className="mt-6 pt-6 border-t border-slate-200 dark:border-slate-800 flex items-center gap-2 text-xs font-bold text-orange-600 dark:text-orange-400">
                                 <Users className="w-4 h-4" /> Parent of JSS Student
                             </div>
-                        </motion.div>
-
+                        </div>
                     </div>
                 </div>
             </section>
