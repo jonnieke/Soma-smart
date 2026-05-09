@@ -318,6 +318,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
             </AnimatePresence>
 
             <Helmet>
+                <html lang="en" />
                 <title>Somo Smart | Kenya's #1 Smart Exam & Revision Assistant (KCSE, KPSEA, JSS)</title>
                 <meta name="description" content="Master your exams with Somo Smart. Kenya's premier Smart platform for KCSE, KPSEA, and Junior School revision. Get instant explanations, auto-marked past papers, and personalized study notes." />
                 <meta name="keywords" content="Somo Smart, KCSE revision 2024, KPSEA past papers, JSS revision notes, Smart tutor Kenya, Kenyan curriculum Smart tool, SomoSmart app, KILEA revision, CBE study assistant" />
@@ -395,7 +396,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                         </div>
 
                         {/* Desktop Nav */}
-                        <nav className="hidden md:flex items-center gap-8">
+                        <nav aria-label="Main Navigation" className="hidden md:flex items-center gap-8">
                             <button onClick={() => navigate('/pricing')} className="text-slate-600 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 font-medium transition-colors text-sm">Pricing</button>
                             <button onClick={() => navigate('/blog')} className="text-slate-600 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 font-medium transition-colors text-sm flex items-center gap-1"><BookOpen className="w-3.5 h-3.5"/> Library</button>
                             <button onClick={toggleLanguage} className="text-slate-400 hover:text-slate-600 transition-colors" title="Switch language">
@@ -405,10 +406,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                             <div className="flex items-center gap-4 border-l border-slate-200 dark:border-slate-700 pl-8">
                                 <button onClick={() => setShowLogin(true)} className="text-slate-800 dark:text-slate-200 hover:text-indigo-600 dark:hover:text-indigo-400 font-bold transition-colors text-sm">Sign In</button>
                                 <button
-                                    onClick={() => handleRoleSelect(UserRole.LEARNER)}
+                                    onClick={() => setShowRegistration(true)}
                                     className="bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-6 py-2.5 rounded-full font-bold text-sm hover:bg-slate-800 dark:hover:bg-slate-100 transition-all shadow-sm"
                                 >
-                                    Access Account
+                                    Get Started
                                 </button>
                             </div>
                         </nav>
@@ -436,9 +437,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                             animate={{ height: 'auto', opacity: 1 }}
                             exit={{ height: 0, opacity: 0 }}
                             transition={{ duration: 0.2, ease: "easeOut" }}
-                            className="md:hidden border-t border-slate-100 overflow-hidden bg-white"
+                            className="md:hidden border-t border-slate-100 overflow-hidden bg-white dark:bg-slate-900 relative z-[60]"
                         >
-                            <nav className="flex flex-col p-4 space-y-3">
+                            <nav aria-label="Mobile Menu" className="flex flex-col p-4 space-y-3">
                                 <button onClick={() => { handleRoleSelect(UserRole.LEARNER); setMobileMenuOpen(false); }} className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 font-bold">
                                     <GraduationCap className="w-5 h-5 text-indigo-500" /> Learner
                                 </button>
