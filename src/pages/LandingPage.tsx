@@ -11,6 +11,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { UserRole } from '../types';
 import { useApp } from '../context/AppContext';
+import { LibraryStorefront } from '../components/LibraryStorefront';
 
 // Import Assets
 import learnerImg from '../assets/images/learner.png';
@@ -982,6 +983,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                     </div>
                 </div>
             </section>
+
+            {/* --- PUBLIC LIBRARY STOREFRONT --- */}
+            <LibraryStorefront onGetAccess={() => handleRoleSelect(UserRole.LEARNER)} />
 
             {/* --- FOOTER CTA --- */}
             <section className="bg-blue-900 py-6 text-center relative overflow-hidden">

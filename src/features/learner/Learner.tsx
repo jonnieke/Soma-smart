@@ -409,7 +409,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
       price: r.type === 'SYLLABUS' ? 0 : 0, // In logic, if it's premium verified, we check Pro
       grade: r.grade,
       subject: r.subject,
-      category: r.type === 'PAST_PAPER' ? 'REVISION_PAPER' : r.type, // Map to marketplace types
+      category: r.type, // Preserve original type so PAST_PAPER / NOTES are visible in library
       fileUrl: r.file_url,
       rating: r.rating ?? 0,
       downloadCount: r.download_count ?? 0,
@@ -4324,26 +4324,41 @@ ${explanation.explanation}
                 ))}
               </div>
 
-              {/* Advanced Filter Row (Grade + Source + Subject) */}
-              <div className="flex flex-wrap items-center gap-3">
-                {/* Source Toggle */}
-                <div className="bg-slate-100 p-1 rounded-xl flex items-center shrink-0">
-                  {(['ALL', 'SOMO', 'TEACHERS'] as const).map(source => (
-                    <button
-                      key={source}
-                      onClick={() => setSelectedSource(source)}
-                      className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all ${selectedSource === source ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
-                    >
-                      {source === 'ALL' ? 'All' : source === 'SOMO' ? 'Somo Verified' : 'Community'}
-                    </button>
-                  ))}
-                </div>
+              {/* Content-Type Filter Tabs */}
+              <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-hide -mx-2 px-2">
+                {[
+                  { id: 'ALL',        emoji: '📚', label: 'All',         activeClass: 'bg-indigo-600 text-white shadow-lg shadow-indigo-200' },
+                  { id: 'SYLLABUS',   emoji: '📖', label: 'Syllabus',    activeClass: 'bg-purple-600 text-white shadow-lg shadow-purple-200' },
+                  { id: 'NOTES',      emoji: '📝', label: 'Notes',       activeClass: 'bg-blue-600 text-white shadow-lg shadow-blue-200' },
+                  { id: 'PAST_PAPER', emoji: '📄', label: 'Past Papers', activeClass: 'bg-amber-500 text-white shadow-lg shadow-amber-200' },
+                ].map(tab => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setMaterialCategory(tab.id)}
+                    className={`flex items-center gap-1.5 px-4 py-2.5 rounded-2xl font-black text-xs whitespace-nowrap transition-all active:scale-95 shrink-0 ${
+                      materialCategory === tab.id
+                        ? tab.activeClass
+                        : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
+                    }`}
+                  >
+                    <span>{tab.emoji}</span> {tab.label}
+                    {tab.id !== 'ALL' && (
+                      <span className={`ml-1 text-[8px] px-1.5 py-0.5 rounded-full font-black ${
+                        materialCategory === tab.id ? 'bg-white/20 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-500'
+                      }`}>
+                        {unifiedMaterials.filter(m => m.category === tab.id && (getGradeLevel(m.grade || '') === educationLevel)).length}
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </div>
 
-                {/* Grade Selector */}
+              {/* Grade + Subject Row */}
+              <div className="flex flex-wrap items-center gap-3">
                 <select
                   value={selectedGrade}
                   onChange={(e) => setSelectedGrade(e.target.value)}
-                  className="bg-white border-2 border-slate-300 text-slate-600 text-[10px] font-bold uppercase tracking-wider rounded-xl px-3 py-2 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition-all cursor-pointer"
+                  className="bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-white text-[10px] font-bold uppercase tracking-wider rounded-xl px-3 py-2 outline-none focus:border-indigo-500 transition-all cursor-pointer"
                 >
                   <option value="ALL">All Grades</option>
                   <option value="PP1">PP1</option>
@@ -4357,17 +4372,16 @@ ${explanation.explanation}
                   <option value="Grade 7">Grade 7</option>
                   <option value="Grade 8">Grade 8</option>
                   <option value="Grade 9">Grade 9</option>
+                  <option value="Grade 10">Grade 10</option>
                   <option value="Form 3">Form 3</option>
                   <option value="Form 4">Form 4</option>
                 </select>
 
-                {/* Subject Slider */}
-                {/* Subject Selector */}
                 <div className="flex-1 min-w-[140px]">
                   <select
                     value={subjectFilter}
                     onChange={(e) => setSubjectFilter(e.target.value)}
-                    className="w-full bg-white border-2 border-slate-300 text-slate-600 text-[10px] font-bold uppercase tracking-wider rounded-xl px-3 py-2 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition-all cursor-pointer"
+                    className="w-full bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-white text-[10px] font-bold uppercase tracking-wider rounded-xl px-3 py-2 outline-none focus:border-indigo-500 transition-all cursor-pointer"
                   >
                     <option value="ALL">All Subjects</option>
                     {subjects.filter(s => s !== 'ALL').map(sub => (
@@ -4375,6 +4389,15 @@ ${explanation.explanation}
                     ))}
                   </select>
                 </div>
+
+                {(materialCategory !== 'ALL' || selectedGrade !== 'ALL' || subjectFilter !== 'ALL') && (
+                  <button
+                    onClick={() => { setMaterialCategory('ALL'); setSelectedGrade('ALL'); setSubjectFilter('ALL'); }}
+                    className="text-[9px] font-black text-indigo-500 hover:text-indigo-700 uppercase tracking-wider px-3 py-2 rounded-xl hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-all"
+                  >
+                    Reset ✕
+                  </button>
+                )}
               </div>
             </div>
 
@@ -4391,12 +4414,16 @@ ${explanation.explanation}
                   filteredMaterials.map(item => {
                     const isOwned = purchasedMaterialIds.includes(item.id);
                     const isSyllabus = item.category === 'SYLLABUS';
+                    const isNotes = item.category === 'NOTES';
+                    const isPastPaper = item.category === 'PAST_PAPER';
                     const isVerified = item.isVerified;
 
-                    // Monetization Logic
+                    // Monetization Logic:
+                    // All Somo-verified content (syllabus, notes, past papers) is FREE.
+                    // Teacher marketplace materials require purchase or Pro.
                     let status = 'PURCHASE';
                     if (isOwned) status = 'OWNED';
-                    else if (isSyllabus) status = 'FREE';
+                    else if (isSyllabus || isNotes || isPastPaper) status = 'FREE';
                     else if (isVerified) status = isPro ? 'PRO_INCLUDED' : 'PRO_LOCKED';
 
                     return (
@@ -4407,8 +4434,13 @@ ${explanation.explanation}
                       >
                         <div>
                           <div className="flex justify-between items-start mb-4">
-                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center shadow-sm ${isVerified ? 'bg-indigo-50 text-indigo-600' : 'bg-blue-50 text-blue-600'}`}>
-                              {item.category === 'NOTES' ? <FileText className="w-5 h-5" /> : isSyllabus ? <Library className="w-5 h-5" /> : <Layers className="w-5 h-5" />}
+                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center shadow-sm ${
+                              isNotes ? 'bg-blue-50 text-blue-600' :
+                              isPastPaper ? 'bg-amber-50 text-amber-600' :
+                              isSyllabus ? 'bg-purple-50 text-purple-600' :
+                              isVerified ? 'bg-indigo-50 text-indigo-600' : 'bg-slate-50 text-slate-600'
+                            }`}>
+                              {isNotes ? <FileText className="w-5 h-5" /> : isPastPaper ? <Layers className="w-5 h-5" /> : isSyllabus ? <Library className="w-5 h-5" /> : <BookOpen className="w-5 h-5" />}
                             </div>
 
                             {/* Price / Status Tag */}
