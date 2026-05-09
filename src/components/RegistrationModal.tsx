@@ -272,7 +272,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
                                         {/* Education Level Selector */}
                                         <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-800">
                                             <label className="block text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-3">I am a...</label>
-                                            <div className="grid grid-cols-3 gap-2">
+                                            <div className="grid grid-cols-3 gap-3">
                                                 {levelCards.map(card => (
                                                     <button
                                                         type="button"
@@ -281,25 +281,25 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
                                                             setEducationLevel(card.level);
                                                             setGrade(""); // Reset grade when level changes
                                                         }}
-                                                        className={`relative flex flex-col items-center p-3 rounded-xl border-2 transition-all duration-200 ${educationLevel === card.level
-                                                                ? `${card.border} ring-2 bg-gradient-to-br ${card.gradient} shadow-md scale-[1.02]`
-                                                                : 'border-gray-200 dark:border-slate-700 hover:border-gray-300 bg-white dark:bg-slate-800'
+                                                        className={`relative flex flex-col items-center p-4 rounded-2xl border-2 transition-all duration-300 ${educationLevel === card.level
+                                                                ? `${card.border} ring-4 ring-blue-500/10 bg-gradient-to-br ${card.gradient} shadow-lg shadow-blue-900/5 scale-[1.05]`
+                                                                : 'border-slate-100 dark:border-slate-800 hover:border-blue-200 dark:hover:border-blue-900 bg-white dark:bg-slate-900/50'
                                                             }`}
                                                     >
-                                                        <div className={`mb-1.5 ${educationLevel === card.level ? 'text-blue-600' : 'text-gray-400'}`}>
+                                                        <div className={`mb-2 transition-transform duration-300 ${educationLevel === card.level ? 'text-blue-600 scale-110' : 'text-slate-400'}`}>
                                                             {card.icon}
                                                         </div>
-                                                        <span className={`text-xs font-bold ${educationLevel === card.level ? 'text-gray-900 dark:text-white' : 'text-gray-600 dark:text-gray-400'}`}>
+                                                        <span className={`text-[11px] font-black uppercase tracking-tight ${educationLevel === card.level ? 'text-slate-900 dark:text-white' : 'text-slate-500 dark:text-slate-500'}`}>
                                                             {card.title}
                                                         </span>
-                                                        <span className="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">{card.subtitle}</span>
+                                                        <span className="text-[9px] text-slate-400 dark:text-slate-600 mt-0.5 font-bold uppercase tracking-tighter">{card.subtitle}</span>
                                                         {educationLevel === card.level && (
                                                             <motion.div
-                                                                initial={{ scale: 0 }}
-                                                                animate={{ scale: 1 }}
-                                                                className="absolute -top-1 -right-1 w-5 h-5 bg-blue-600 rounded-full flex items-center justify-center"
+                                                                initial={{ scale: 0, rotate: -45 }}
+                                                                animate={{ scale: 1, rotate: 0 }}
+                                                                className="absolute -top-2 -right-2 w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center shadow-lg border-2 border-white dark:border-slate-950"
                                                             >
-                                                                <CheckCircle className="w-3.5 h-3.5 text-white" />
+                                                                <CheckCircle className="w-4 h-4 text-white" />
                                                             </motion.div>
                                                         )}
                                                     </button>
@@ -348,16 +348,23 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
                                                             required
                                                             value={grade}
                                                             onChange={(e) => setGrade(e.target.value)}
-                                                            disabled={!educationLevel}
-                                                            className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 dark:bg-slate-800 dark:text-white focus:border-blue-500 outline-none appearance-none bg-white dark:bg-slate-800 cursor-pointer disabled:opacity-50 font-bold"
+                                                            className={`w-full px-4 py-3.5 rounded-xl border-2 outline-none appearance-none transition-all font-bold ${!educationLevel 
+                                                                ? 'bg-slate-50 dark:bg-slate-900 border-slate-100 dark:border-slate-800 text-slate-300 dark:text-slate-600 cursor-not-allowed' 
+                                                                : 'bg-white dark:bg-slate-800 border-blue-50 dark:border-slate-700 text-slate-900 dark:text-white focus:border-blue-500 cursor-pointer shadow-sm'}`}
                                                         >
-                                                            <option value="" disabled>Select...</option>
-                                                            {getGradeOptions().map(g => (
-                                                                <option key={g} value={g}>{g}</option>
-                                                            ))}
+                                                            {!educationLevel ? (
+                                                                <option value="">Choose Level First ↑</option>
+                                                            ) : (
+                                                                <>
+                                                                    <option value="">Select {educationLevel === EducationLevel.CAMPUS ? 'Year' : 'Grade'}...</option>
+                                                                    {getGradeOptions().map(g => (
+                                                                        <option key={g} value={g}>{g}</option>
+                                                                    ))}
+                                                                </>
+                                                            )}
                                                         </select>
-                                                        <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400 text-[10px]">
-                                                            ▼
+                                                        <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-blue-500/50">
+                                                            <ChevronRight className="w-4 h-4 rotate-90" />
                                                         </div>
                                                     </div>
                                                 </div>
@@ -438,59 +445,88 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
                                     </>
                                 ) : ( // TEACHER
                                     <>
-                                        <div>
-                                            <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Full Name</label>
-                                            <input
-                                                type="text"
-                                                required
-                                                value={teacherName}
-                                                onChange={(e) => setTeacherName(e.target.value)}
-                                                className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 dark:bg-slate-800 dark:text-white focus:border-blue-500 outline-none transition-all font-bold"
-                                                placeholder="e.g. Jane Doe"
-                                            />
+                                        <div className="p-4 bg-emerald-50 dark:bg-emerald-900/10 rounded-2xl border border-emerald-100 dark:border-emerald-800/50 mb-4">
+                                            <label className="block text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest mb-3">Teaching Details</label>
+                                            <div className="space-y-4">
+                                                <div>
+                                                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Classes I Teach</label>
+                                                    <div className="grid grid-cols-2 gap-2">
+                                                        {["Grade 1-6", "Grade 7-9 (JSS)", "Form 1-4", "Campus"].map(c => (
+                                                            <button
+                                                                type="button"
+                                                                key={c}
+                                                                onClick={() => {
+                                                                    setTeacherClasses(prev => prev.includes(c) ? prev.filter(x => x !== c) : [...prev, c]);
+                                                                }}
+                                                                className={`px-3 py-2 rounded-lg text-xs font-bold transition-all border-2 ${teacherClasses.includes(c) 
+                                                                    ? 'bg-emerald-500 border-emerald-500 text-white shadow-md' 
+                                                                    : 'bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-800 text-slate-600 dark:text-slate-400'}`}
+                                                            >
+                                                                {c}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">My Main Subject</label>
+                                                    <select 
+                                                        className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 dark:bg-slate-800 dark:text-white focus:border-emerald-500 outline-none font-bold text-sm"
+                                                        onChange={(e) => setTeacherSubjects([e.target.value])}
+                                                    >
+                                                        <option value="">Select Subject...</option>
+                                                        {subjectOptions.map(s => <option key={s} value={s}>{s}</option>)}
+                                                    </select>
+                                                </div>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Email Address</label>
-                                            <input
-                                                type="email"
-                                                required
-                                                value={teacherEmail}
-                                                onChange={(e) => setTeacherEmail(e.target.value)}
-                                                className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 dark:bg-slate-800 dark:text-white focus:border-blue-500 outline-none transition-all font-bold"
-                                                placeholder="jane.doe@example.com"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Phone Number (Optional)</label>
-                                            <input
-                                                type="tel"
-                                                value={teacherPhone}
-                                                onChange={(e) => setTeacherPhone(e.target.value)}
-                                                className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 dark:bg-slate-800 dark:text-white focus:border-blue-500 outline-none transition-all font-bold"
-                                                placeholder="0712345678"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Password</label>
-                                            <input
-                                                type="password"
-                                                required
-                                                value={teacherPassword}
-                                                onChange={(e) => setTeacherPassword(e.target.value)}
-                                                className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 dark:bg-slate-800 dark:text-white focus:border-blue-500 outline-none transition-all font-bold"
-                                                placeholder="******"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Confirm Password</label>
-                                            <input
-                                                type="password"
-                                                required
-                                                value={teacherConfirmPassword}
-                                                onChange={(e) => setTeacherConfirmPassword(e.target.value)}
-                                                className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 dark:bg-slate-800 dark:text-white focus:border-blue-500 outline-none transition-all font-bold"
-                                                placeholder="******"
-                                            />
+
+                                        <div className="space-y-4">
+                                            <div>
+                                                <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Full Name</label>
+                                                <input
+                                                    type="text"
+                                                    required
+                                                    value={teacherName}
+                                                    onChange={(e) => setTeacherName(e.target.value)}
+                                                    className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 dark:bg-slate-800 dark:text-white focus:border-emerald-500 outline-none transition-all font-bold"
+                                                    placeholder="e.g. Jane Doe"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Email Address</label>
+                                                <input
+                                                    type="email"
+                                                    required
+                                                    value={teacherEmail}
+                                                    onChange={(e) => setTeacherEmail(e.target.value)}
+                                                    className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 dark:bg-slate-800 dark:text-white focus:border-emerald-500 outline-none transition-all font-bold"
+                                                    placeholder="jane.doe@example.com"
+                                                />
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div>
+                                                    <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Password</label>
+                                                    <input
+                                                        type="password"
+                                                        required
+                                                        value={teacherPassword}
+                                                        onChange={(e) => setTeacherPassword(e.target.value)}
+                                                        className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 dark:bg-slate-800 dark:text-white focus:border-emerald-500 outline-none transition-all font-bold"
+                                                        placeholder="******"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Confirm</label>
+                                                    <input
+                                                        type="password"
+                                                        required
+                                                        value={teacherConfirmPassword}
+                                                        onChange={(e) => setTeacherConfirmPassword(e.target.value)}
+                                                        className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 dark:bg-slate-800 dark:text-white focus:border-emerald-500 outline-none transition-all font-bold"
+                                                        placeholder="******"
+                                                    />
+                                                </div>
+                                            </div>
                                         </div>
                                     </>
                                 )}
