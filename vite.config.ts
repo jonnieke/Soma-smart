@@ -18,7 +18,7 @@ export default defineConfig(({ mode }) => {
       react(),
       VitePWA({
         registerType: 'autoUpdate',
-        includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
+        includeAssets: ['favicon.png', 'apple-touch-icon.png', 'masked-icon.svg'],
         manifest: {
           name: 'Somo Smart',
           short_name: 'Somo',
@@ -26,12 +26,12 @@ export default defineConfig(({ mode }) => {
           theme_color: '#4f46e5',
           icons: [
             {
-              src: 'favicon.ico', // Placeholder since real ones don't exist yet
+              src: 'favicon.png', 
               sizes: '192x192',
               type: 'image/png'
             },
             {
-              src: 'favicon.ico',
+              src: 'favicon.png',
               sizes: '512x512',
               type: 'image/png'
             }
