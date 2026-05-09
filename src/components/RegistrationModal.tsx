@@ -236,26 +236,31 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
                     </button>
 
                     {step === 'FORM' ? (
-                        <div className="p-6 sm:p-8 overflow-y-auto">
-
-                            <div className="text-center mb-6">
+                        <div className="p-6 sm:p-8 overflow-y-auto">                            <div className="text-center mb-6">
                                 <div className={`w-16 h-16 ${role === 'SCHOOL' ? 'bg-blue-900/10 text-blue-900' : 'bg-blue-100 text-blue-600'} rounded-full flex items-center justify-center mx-auto mb-4 transition-colors`}>
                                     <User className="w-8 h-8" />
                                 </div>
                                 <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
                                     {role === 'SCHOOL' ? 'Register Your School' : role === 'TEACHER' ? 'Teacher Registration' : 'Create Student Profile'}
                                 </h2>
-                                <p className="text-gray-500 dark:text-gray-400 mt-2">
+                                <p className="text-gray-500 dark:text-gray-400 mt-2 mb-4">
                                     {role === 'SCHOOL' ? 'Join the Somo Smart network and empower your teachers.' : role === 'TEACHER' ? 'Create your professional profile to start teaching.' : 'Register to start your personalized learning journey!'}
                                 </p>
+                                
+                                <button
+                                    onClick={onSwitchToLogin}
+                                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-sm font-bold hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-all border border-blue-100 dark:border-blue-800"
+                                >
+                                    Already have an ID? Login here
+                                </button>
                             </div>
 
                             <form onSubmit={handleSubmit} className="space-y-4">
                                 {role === 'STUDENT' ? (
                                     <>
                                         {/* Education Level Selector */}
-                                        <div>
-                                            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">I am a...</label>
+                                        <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-800">
+                                            <label className="block text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-3">I am a...</label>
                                             <div className="grid grid-cols-3 gap-2">
                                                 {levelCards.map(card => (
                                                     <button
@@ -291,135 +296,131 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
                                             </div>
                                         </div>
 
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Student Name</label>
-                                            <input
-                                                type="text"
-                                                required
-                                                value={name}
-                                                onChange={(e) => setName(e.target.value)}
-                                                className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-slate-600 dark:bg-slate-800 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
-                                                placeholder="e.g. John Doe"
-                                            />
-                                        </div>
-
-                                        {/* Institution Name (Campus only) */}
-                                        {educationLevel === EducationLevel.CAMPUS && (
-                                            <motion.div
-                                                initial={{ opacity: 0, height: 0 }}
-                                                animate={{ opacity: 1, height: 'auto' }}
-                                                exit={{ opacity: 0, height: 0 }}
-                                            >
-                                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Institution Name 🏛️</label>
+                                        <div className="space-y-4">
+                                            <div>
+                                                <label className="block text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2 ml-1">Full Name</label>
                                                 <input
                                                     type="text"
-                                                    value={institutionName}
-                                                    onChange={(e) => setInstitutionName(e.target.value)}
-                                                    className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-slate-600 dark:bg-slate-800 dark:text-white focus:ring-2 focus:ring-purple-500 outline-none"
-                                                    placeholder="e.g. University of Nairobi"
-                                                />
-                                            </motion.div>
-                                        )}
-
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                                {educationLevel === EducationLevel.CAMPUS ? 'Year of Study' : 'Grade / Class'}
-                                            </label>
-                                            <div className="relative">
-                                                <select
                                                     required
-                                                    value={grade}
-                                                    onChange={(e) => setGrade(e.target.value)}
-                                                    disabled={!educationLevel}
-                                                    className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-slate-600 dark:bg-slate-800 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none appearance-none bg-white cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                                                    value={name}
+                                                    onChange={(e) => setName(e.target.value)}
+                                                    className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 dark:bg-slate-800 dark:text-white focus:border-blue-500 outline-none transition-all font-bold"
+                                                    placeholder="e.g. John Doe"
+                                                />
+                                            </div>
+
+                                            {/* Institution Name (Campus only) */}
+                                            {educationLevel === EducationLevel.CAMPUS && (
+                                                <motion.div
+                                                    initial={{ opacity: 0, height: 0 }}
+                                                    animate={{ opacity: 1, height: 'auto' }}
+                                                    exit={{ opacity: 0, height: 0 }}
                                                 >
-                                                    <option value="" disabled>
-                                                        {!educationLevel ? 'Select your level first ☝️' : 'Select your Grade'}
-                                                    </option>
-                                                    {getGradeOptions().map(g => (
-                                                        <option key={g} value={g}>{g}</option>
-                                                    ))}
-                                                </select>
-                                                <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">
-                                                    ▼
+                                                    <label className="block text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2 ml-1">Institution Name</label>
+                                                    <input
+                                                        type="text"
+                                                        value={institutionName}
+                                                        onChange={(e) => setInstitutionName(e.target.value)}
+                                                        className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 dark:bg-slate-800 dark:text-white focus:border-purple-500 outline-none transition-all font-bold"
+                                                        placeholder="e.g. University of Nairobi"
+                                                    />
+                                                </motion.div>
+                                            )}
+
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div>
+                                                    <label className="block text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2 ml-1">
+                                                        {educationLevel === EducationLevel.CAMPUS ? 'Year' : 'Grade'}
+                                                    </label>
+                                                    <div className="relative">
+                                                        <select
+                                                            required
+                                                            value={grade}
+                                                            onChange={(e) => setGrade(e.target.value)}
+                                                            disabled={!educationLevel}
+                                                            className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 dark:bg-slate-800 dark:text-white focus:border-blue-500 outline-none appearance-none bg-white dark:bg-slate-800 cursor-pointer disabled:opacity-50 font-bold"
+                                                        >
+                                                            <option value="" disabled>Select...</option>
+                                                            {getGradeOptions().map(g => (
+                                                                <option key={g} value={g}>{g}</option>
+                                                            ))}
+                                                        </select>
+                                                        <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400 text-[10px]">
+                                                            ▼
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2 ml-1">Secret PIN</label>
+                                                    <input
+                                                        type="text"
+                                                        inputMode="numeric"
+                                                        maxLength={4}
+                                                        required
+                                                        value={pin}
+                                                        onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))}
+                                                        className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 dark:bg-slate-800 dark:text-white focus:border-blue-500 outline-none tracking-widest text-lg font-mono text-center font-bold"
+                                                        placeholder="0000"
+                                                    />
                                                 </div>
                                             </div>
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Secret PIN (For Recovery) 🔐</label>
-                                            <input
-                                                type="text"
-                                                inputMode="numeric"
-                                                maxLength={4}
-                                                required
-                                                value={pin}
-                                                onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))}
-                                                className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-slate-600 dark:bg-slate-800 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none tracking-widest text-lg font-mono text-center"
-                                                placeholder="0000"
-                                            />
-                                            <p className="text-xs text-orange-600 mt-1 font-medium bg-orange-50 dark:bg-orange-900/20 p-2 rounded">
-                                                Write this down! You will need it if you forget your Student ID.
-                                            </p>
-                                        </div>
 
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Parent Phone Number 📱</label>
-                                            <input
-                                                type="tel"
-                                                required
-                                                value={parentPhone}
-                                                onChange={(e) => setParentPhone(e.target.value)}
-                                                className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-slate-600 dark:bg-slate-800 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
-                                                placeholder="e.g. 0712345678"
-                                            />
-                                            <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-1">
-                                                Parents will use this number to access your performance dashboard.
-                                            </p>
+                                            <div>
+                                                <label className="block text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2 ml-1">Parent Phone Number</label>
+                                                <input
+                                                    type="tel"
+                                                    required
+                                                    value={parentPhone}
+                                                    onChange={(e) => setParentPhone(e.target.value)}
+                                                    className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 dark:bg-slate-800 dark:text-white focus:border-blue-500 outline-none transition-all font-bold"
+                                                    placeholder="e.g. 0712345678"
+                                                />
+                                            </div>
                                         </div>
                                     </>
                                 ) : role === 'SCHOOL' ? (
                                     <>
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">School Name</label>
+                                            <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">School Name</label>
                                             <input
                                                 type="text"
                                                 required
                                                 value={schoolName}
                                                 onChange={(e) => setSchoolName(e.target.value)}
-                                                className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-slate-600 dark:bg-slate-800 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
+                                                className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 dark:bg-slate-800 dark:text-white focus:border-blue-500 outline-none transition-all font-bold"
                                                 placeholder="e.g. Nairobi Primary School"
                                             />
                                         </div>
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">School Email (Admin)</label>
+                                            <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Admin Email</label>
                                             <input
                                                 type="email"
                                                 required
                                                 value={schoolEmail}
                                                 onChange={(e) => setSchoolEmail(e.target.value)}
-                                                className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-slate-600 dark:bg-slate-800 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
+                                                className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 dark:bg-slate-800 dark:text-white focus:border-blue-500 outline-none transition-all font-bold"
                                                 placeholder="admin@school.edu"
                                             />
                                         </div>
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Create Password</label>
+                                            <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Password</label>
                                             <input
                                                 type="password"
                                                 required
                                                 value={schoolPassword}
                                                 onChange={(e) => setSchoolPassword(e.target.value)}
-                                                className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-slate-600 dark:bg-slate-800 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
+                                                className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 dark:bg-slate-800 dark:text-white focus:border-blue-500 outline-none transition-all font-bold"
                                                 placeholder="******"
                                             />
                                         </div>
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Confirm Password</label>
+                                            <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Confirm Password</label>
                                             <input
                                                 type="password"
                                                 required
                                                 value={confirmPassword}
                                                 onChange={(e) => setConfirmPassword(e.target.value)}
-                                                className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-slate-600 dark:bg-slate-800 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
+                                                className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 dark:bg-slate-800 dark:text-white focus:border-blue-500 outline-none transition-all font-bold"
                                                 placeholder="******"
                                             />
                                         </div>
@@ -427,88 +428,58 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
                                 ) : ( // TEACHER
                                     <>
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Your Full Name</label>
+                                            <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Full Name</label>
                                             <input
                                                 type="text"
                                                 required
                                                 value={teacherName}
                                                 onChange={(e) => setTeacherName(e.target.value)}
-                                                className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-slate-600 dark:bg-slate-800 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
+                                                className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 dark:bg-slate-800 dark:text-white focus:border-blue-500 outline-none transition-all font-bold"
                                                 placeholder="e.g. Jane Doe"
                                             />
                                         </div>
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email Address</label>
+                                            <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Email Address</label>
                                             <input
                                                 type="email"
                                                 required
                                                 value={teacherEmail}
                                                 onChange={(e) => setTeacherEmail(e.target.value)}
-                                                className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-slate-600 dark:bg-slate-800 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
+                                                className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 dark:bg-slate-800 dark:text-white focus:border-blue-500 outline-none transition-all font-bold"
                                                 placeholder="jane.doe@example.com"
                                             />
                                         </div>
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Phone Number (Optional)</label>
+                                            <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Phone Number (Optional)</label>
                                             <input
                                                 type="tel"
                                                 value={teacherPhone}
                                                 onChange={(e) => setTeacherPhone(e.target.value)}
-                                                className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-slate-600 dark:bg-slate-800 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
-                                                placeholder="e.g. 0712345678"
+                                                className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 dark:bg-slate-800 dark:text-white focus:border-blue-500 outline-none transition-all font-bold"
+                                                placeholder="0712345678"
                                             />
                                         </div>
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Create Password</label>
+                                            <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Password</label>
                                             <input
                                                 type="password"
                                                 required
                                                 value={teacherPassword}
                                                 onChange={(e) => setTeacherPassword(e.target.value)}
-                                                className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-slate-600 dark:bg-slate-800 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
+                                                className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 dark:bg-slate-800 dark:text-white focus:border-blue-500 outline-none transition-all font-bold"
                                                 placeholder="******"
                                             />
                                         </div>
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Confirm Password</label>
+                                            <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Confirm Password</label>
                                             <input
                                                 type="password"
                                                 required
                                                 value={teacherConfirmPassword}
                                                 onChange={(e) => setTeacherConfirmPassword(e.target.value)}
-                                                className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-slate-600 dark:bg-slate-800 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
+                                                className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 dark:bg-slate-800 dark:text-white focus:border-blue-500 outline-none transition-all font-bold"
                                                 placeholder="******"
                                             />
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Classes You Teach (Optional)</label>
-                                            <select
-                                                multiple
-                                                value={teacherClasses}
-                                                onChange={(e) => setTeacherClasses(Array.from(e.target.selectedOptions, (option: any) => option.value))}
-
-                                                className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-slate-600 dark:bg-slate-800 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none appearance-none bg-white cursor-pointer h-32"
-                                            >
-                                                {allGradeOptions.map(g => (
-                                                    <option key={g} value={g}>{g}</option>
-                                                ))}
-                                            </select>
-                                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Hold Ctrl/Cmd to select multiple classes.</p>
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Subjects You Teach (Optional)</label>
-                                            <select
-                                                multiple
-                                                value={teacherSubjects}
-                                                onChange={(e) => setTeacherSubjects(Array.from(e.target.selectedOptions, (option: any) => option.value))}
-
-                                                className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-slate-600 dark:bg-slate-800 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none appearance-none bg-white cursor-pointer h-32"
-                                            >
-                                                {subjectOptions.map(s => (
-                                                    <option key={s} value={s}>{s}</option>
-                                                ))}
-                                            </select>
-                                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Hold Ctrl/Cmd to select multiple subjects.</p>
                                         </div>
                                     </>
                                 )}
@@ -516,21 +487,12 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
                                 <button
                                     type="submit"
                                     disabled={loading}
-                                    className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 shadow-blue-200 text-white rounded-lg font-bold text-lg transition-all shadow-lg mt-4 disabled:opacity-50 hover:scale-[1.02] active:scale-[0.98]"
+                                    className="w-full py-4 bg-blue-600 hover:bg-blue-700 shadow-blue-900/20 text-white rounded-xl font-bold text-lg transition-all shadow-xl mt-4 disabled:opacity-50 hover:scale-[1.02] active:scale-[0.98]"
                                 >
                                     {loading ? 'Processing...' : role === 'SCHOOL' ? 'Create School Account' : role === 'TEACHER' ? 'Create Teacher Profile' : 'Get My Student ID'}
                                 </button>
                             </form>
-
-                            <div className="mt-6 text-center">
-                                <button
-                                    onClick={onSwitchToLogin}
-                                    className="text-sm font-medium text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 underline transition-colors"
-                                >
-                                    Already have an ID? Login here
-                                </button>
-                            </div>
-                        </div>
+                        </div>               </div>
                     ) : (
                         <div className="p-6 sm:p-8 text-center relative overflow-hidden overflow-y-auto">
 
