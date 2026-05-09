@@ -236,23 +236,31 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
                     </button>
 
                     {step === 'FORM' ? (
-                        <div className="p-6 sm:p-8 overflow-y-auto">                            <div className="text-center mb-6">
-                                <div className={`w-16 h-16 bg-gradient-to-br ${role === 'SCHOOL' ? 'from-blue-800 to-slate-900 text-white' : role === 'TEACHER' ? 'from-emerald-500 to-teal-600 text-white' : 'from-blue-500 to-indigo-600 text-white'} rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-blue-100 dark:shadow-none transition-all rotate-3`}>
-                                    <User className="w-8 h-8" />
+                        <div className="p-6 sm:p-8 overflow-y-auto">
+                            <div className="text-center mb-8">
+                                <div className="mb-8">
+                                    <button
+                                        onClick={onSwitchToLogin}
+                                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-sm font-bold hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-all border border-blue-100 dark:border-blue-800"
+                                    >
+                                        Already have an ID? Login here
+                                    </button>
                                 </div>
-                                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+
+                                <div className={`w-20 h-20 bg-gradient-to-br ${role === 'SCHOOL' ? 'from-blue-800 to-slate-900 text-white' : role === 'TEACHER' ? 'from-emerald-500 to-teal-600 text-white' : 'from-blue-500 to-indigo-600 text-white'} rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-xl shadow-blue-100 dark:shadow-none transition-all rotate-3`}>
+                                    <User className="w-10 h-10" />
+                                </div>
+                                
+                                <h2 className="text-3xl font-black text-slate-900 dark:text-white mb-3 tracking-tight">
                                     {role === 'SCHOOL' ? 'Register Your School' : role === 'TEACHER' ? 'Teacher Registration' : 'Create Student Profile'}
                                 </h2>
-                                <p className="text-gray-500 dark:text-gray-400 mt-2 mb-4">
-                                    {role === 'SCHOOL' ? 'Join the Somo Smart network and empower your teachers.' : role === 'TEACHER' ? 'Create your professional profile to start teaching.' : 'Register to start your personalized learning journey!'}
+                                <p className="text-slate-500 dark:text-slate-400 font-medium leading-relaxed max-w-xs mx-auto mb-2">
+                                    {role === 'SCHOOL' 
+                                        ? 'Join the Somo Smart network and empower your teachers.' 
+                                        : role === 'TEACHER' 
+                                            ? 'Create your professional profile to start teaching.' 
+                                            : 'Register to start your personalized learning journey!'}
                                 </p>
-                                
-                                <button
-                                    onClick={onSwitchToLogin}
-                                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-sm font-bold hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-all border border-blue-100 dark:border-blue-800"
-                                >
-                                    Already have an ID? Login here
-                                </button>
                             </div>
 
                             <form onSubmit={handleSubmit} className="space-y-4">
