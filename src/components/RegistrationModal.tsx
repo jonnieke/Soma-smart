@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { User, CheckCircle, X, GraduationCap, BookOpen, School } from 'lucide-react';
+import { User, CheckCircle, X, GraduationCap, BookOpen, School, ChevronRight } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { EducationLevel } from '../types';
 import confetti from 'canvas-confetti';
