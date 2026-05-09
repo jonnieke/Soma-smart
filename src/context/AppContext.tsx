@@ -365,11 +365,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     if (g.includes('UNIVERSITY') || g.includes('COLLEGE') || g.includes('YEAR') || g.includes('CAMPUS')) {
       return EducationLevel.CAMPUS;
     }
-    const juniorGrades = ['PP1', 'PP2', 'GRADE 1', 'GRADE 2', 'GRADE 3', 'GRADE 4', 'GRADE 5', 'GRADE 6'];
     if (juniorGrades.some(jg => g.includes(jg))) {
       return EducationLevel.JUNIOR;
     }
-    // Default to Senior for Grade 7-12, Form 1-4, KCSE, KPSEA
+    // Universal content
+    if (g === 'ALL') return (role === UserRole.GUEST || !studentProfile?.grade) ? EducationLevel.SENIOR : educationLevel;
+
+    // Default to Senior for Grade 7-12, Form 1-4, KCSE, KCPE
     return EducationLevel.SENIOR;
   };
 
