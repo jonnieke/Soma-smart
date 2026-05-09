@@ -1952,10 +1952,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       if (!userId) return;
 
       try {
-        const { data, error } = await supabase.rpc('get_recent_activities', {
-          p_student_id: userId,
-          p_limit: 200
-        });
+        const { data, error } = await supabase
+          .from('activities')
+          .select('id, type, topic, score, details, created_at')
+          .eq('student_id', userId)
+          .order('created_at', { ascending: false })
+          .limit(200);
 
         if (error) {
           // If table doesn't exist, we just ignore it for now (graceful degradation)
