@@ -4546,10 +4546,10 @@ ${explanation.explanation}
 
     if (mode === 'LIBRARY') {
       const ownedUnifiedMaterials = unifiedMaterials.filter(m => {
-        const isSyllabus = m.category === 'SYLLABUS';
+        const isFreeContent = ['SYLLABUS', 'NOTES', 'PAST_PAPER'].includes(m.category) && m.isVerified;
         const isOwned = purchasedMaterialIds.includes(m.id);
         const isProBenefit = m.isVerified && isPro;
-        return isOwned || isSyllabus || isProBenefit;
+        return isOwned || isFreeContent || isProBenefit;
       });
 
       return (
