@@ -228,25 +228,28 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
                     className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-md relative flex flex-col max-h-[calc(100vh-2rem)] sm:max-h-[90vh] my-auto overflow-hidden"
                 >
 
-                    <button
-                        onClick={onClose}
-                        className="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-full transition-colors z-10"
-                    >
-                        <X className="w-5 h-5" />
-                    </button>
+
+                    {/* --- STICKY HEADER --- */}
+                    <div className="px-6 py-4 border-b border-slate-50 dark:border-slate-800 flex items-center justify-between sticky top-0 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md z-40">
+                        <button
+                            onClick={onSwitchToLogin}
+                            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-[10px] font-black uppercase tracking-widest hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-all border border-blue-100 dark:border-blue-800 group"
+                        >
+                            <User className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
+                            Already have an ID? Login
+                        </button>
+
+                        <button
+                            onClick={onClose}
+                            className="p-2 text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300 transition-colors bg-slate-50 dark:bg-slate-800/50 rounded-full"
+                        >
+                            <X className="w-5 h-5" />
+                        </button>
+                    </div>
 
                     {step === 'FORM' ? (
-                        <div className="p-6 sm:p-8 overflow-y-auto">
+                        <div className="p-6 sm:p-8 overflow-y-auto max-h-[70vh]">
                             <div className="text-center mb-8">
-                                <div className="mb-8">
-                                    <button
-                                        onClick={onSwitchToLogin}
-                                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-sm font-bold hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-all border border-blue-100 dark:border-blue-800"
-                                    >
-                                        Already have an ID? Login here
-                                    </button>
-                                </div>
-
                                 <div className={`w-20 h-20 bg-gradient-to-br ${role === 'SCHOOL' ? 'from-blue-800 to-slate-900 text-white' : role === 'TEACHER' ? 'from-emerald-500 to-teal-600 text-white' : 'from-blue-500 to-indigo-600 text-white'} rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-xl shadow-blue-100 dark:shadow-none transition-all rotate-3`}>
                                     <User className="w-10 h-10" />
                                 </div>
