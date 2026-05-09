@@ -75,7 +75,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
             case EducationLevel.JUNIOR:
                 return ["Play Group", "PP1", "PP2", "Grade 1", "Grade 2", "Grade 3", "Grade 4", "Grade 5", "Grade 6"];
             case EducationLevel.SENIOR:
-                return ["Grade 7 (JSS)", "Grade 8 (JSS)", "Grade 9 (JSS)", "Form 1", "Form 2", "Form 3", "Form 4"];
+                return ["Grade 7 (JSS)", "Grade 8 (JSS)", "Grade 9 (JSS)", "Grade 10", "Form 3", "Form 4"];
             case EducationLevel.CAMPUS:
                 return ["Year 1", "Year 2", "Year 3", "Year 4", "Year 5", "Postgraduate"];
             default:
@@ -89,7 +89,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
         "Grade 1", "Grade 2", "Grade 3",
         "Grade 4", "Grade 5", "Grade 6",
         "Grade 7 (JSS)", "Grade 8 (JSS)", "Grade 9 (JSS)",
-        "Form 1", "Form 2", "Form 3", "Form 4"
+        "Grade 10", "Form 3", "Form 4"
     ];
 
     const subjectOptions = [
