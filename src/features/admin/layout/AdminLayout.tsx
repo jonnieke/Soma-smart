@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { LayoutDashboard, Users, CreditCard, Settings, LogOut, Menu, X, Bell, BookOpen, ClipboardCheck, BarChart3, Brain } from 'lucide-react';
+import { LayoutDashboard, Users, CreditCard, Settings, LogOut, Menu, X, Bell, BookOpen, ClipboardCheck, BarChart3, Brain, FileText } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ViewState } from '../../../types';
@@ -26,6 +26,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children, activeTab, o
         { id: 'CURRICULUM', label: 'Curriculum & AI', icon: <BookOpen className="w-5 h-5" /> },
         { id: 'ANALYTICS', label: 'Analytics', icon: <BarChart3 className="w-5 h-5" /> },
         { id: 'STRATEGY_LAB', label: 'AI Strategy Lab', icon: <Brain className="w-5 h-5 text-purple-400" /> },
+        { id: 'JOURNAL', label: 'Somo Journal', icon: <FileText className="w-5 h-5 text-amber-400" /> },
         { id: 'SETTINGS', label: 'System & Logs', icon: <Settings className="w-5 h-5" /> },
     ];
 

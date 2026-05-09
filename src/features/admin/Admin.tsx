@@ -12,6 +12,7 @@ import { StrategyLabView } from './views/StrategyLab';
 import { Lock } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { Helmet } from 'react-helmet-async';
+import { JournalView } from './views/Journal';
 
 interface AdminProps {
     onNavigate: (view: ViewState) => void;
@@ -50,6 +51,7 @@ export const AdminDashboard: React.FC<AdminProps> = ({ onNavigate, authStatus = 
             {activeTab === 'EXAMS' && <ExamsView />}
             {activeTab === 'ANALYTICS' && <AnalyticsView />}
             {activeTab === 'STRATEGY_LAB' && <StrategyLabView />}
+            {activeTab === 'JOURNAL' && <JournalView />}
             {activeTab === 'SETTINGS' && <SettingsView />}
         </AdminLayout>
     );
