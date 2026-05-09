@@ -21,6 +21,7 @@ import logoImg from '../assets/images/main_logo.png';
 import heroBannerImg from '../assets/images/soma_smart_hero_graphic_with_teacher.png';
 import heroLearnerImg from '../assets/images/hero_learner_emotional.png';
 import heroTeacherImg from '../assets/images/hero_teacher_emotional.png';
+import heroScienceLabImg from '../assets/images/hero_science_lab.png';
 import stepScanImg from '../assets/images/step_scan.png';
 import stepExplainImg from '../assets/images/step_explain.png';
 import stepQuizImg from '../assets/images/step_quiz.png';
@@ -66,18 +67,16 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
     const [showMockAnswer, setShowMockAnswer] = useState(false);
     const [isGenerating, setIsGenerating] = useState(false);
     const [generatedAnswer, setGeneratedAnswer] = useState<string | null>(null);
-    const [heroRole, setHeroRole] = useState<'LEARNER' | 'TEACHER'>('LEARNER');
 
     const handleGenerateAnswer = async () => {
         if (!questionInput.trim()) return;
         setShowMockAnswer(true);
         setIsGenerating(true);
         setGeneratedAnswer(null);
-
         try {
             const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/gemini-proxy`, {
                 method: 'POST',
-                headers: { 
+                headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
                 },
@@ -86,12 +85,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                     contents: [{ role: 'user', parts: [{ text: `Answer this academic question in 1 or 2 concise, factual sentences for a student. Do not use markdown headers or formatting. State the answer playfully but smartly. Question: ${questionInput}` }] }]
                 })
             });
-            
             if (!response.ok) throw new Error('API Error');
             const data = await response.json();
             const text = data.candidates?.[0]?.content?.parts?.[0]?.text || 'I analyzed this but could not generate a summary.';
             setGeneratedAnswer(text);
-        } catch(err) {
+        } catch (err) {
             setGeneratedAnswer('An error occurred while generating the answer. Please check your connection.');
         } finally {
             setIsGenerating(false);
@@ -168,7 +166,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
     // Auto-Redirect logged-in users to their respective dashboards
     React.useEffect(() => {
         // Only redirect if they navigate directly to '/' without any specific state intents like selectedPlan
-        if (!location.state && isRegistered && role !== UserRole.NONE) {
+        // AND if they haven't already been auto-redirected in this session. This allows them to manually click "Home" to see the landing page.
+        const hasAutoRedirected = sessionStorage.getItem('hasAutoRedirected');
+        if (!location.state && isRegistered && role !== UserRole.NONE && !hasAutoRedirected) {
+            sessionStorage.setItem('hasAutoRedirected', 'true');
             const target = role === UserRole.TEACHER ? '/teacher' : (role === UserRole.SCHOOL ? '/school' : (role === UserRole.PARENT ? '/parent' : '/learner'));
             navigate(target, { replace: true });
         }
@@ -395,22 +396,21 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
 
                         {/* Desktop Nav */}
                         <nav className="hidden md:flex items-center gap-8">
-                            <button onClick={() => handleRoleSelect(UserRole.LEARNER)} className="text-slate-800 dark:text-slate-200 hover:text-blue-600 dark:hover:text-blue-400 font-bold transition-colors text-sm">For Learners</button>
-                            <button onClick={() => handleRoleSelect(UserRole.TEACHER)} className="text-slate-800 dark:text-slate-200 hover:text-blue-600 dark:hover:text-blue-400 font-bold transition-colors text-sm">For Teachers</button>
-                            <button onClick={() => handleRoleSelect(UserRole.SCHOOL)} className="text-slate-800 dark:text-slate-200 hover:text-blue-600 dark:hover:text-blue-400 font-bold transition-colors text-sm flex items-center gap-1"><School className="w-4 h-4" /> For Schools</button>
-                            <button onClick={() => navigate('/pricing')} className="text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors text-sm">Pricing</button>
-                            <button onClick={() => navigate('/blog')} className="text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors text-sm flex items-center gap-1"><BookOpen className="w-3.5 h-3.5"/> Blog</button>
-                            <button onClick={() => setShowLogin(true)} className="text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors text-sm">Login</button>
+                            <button onClick={() => navigate('/pricing')} className="text-slate-600 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 font-medium transition-colors text-sm">Pricing</button>
+                            <button onClick={() => navigate('/blog')} className="text-slate-600 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 font-medium transition-colors text-sm flex items-center gap-1"><BookOpen className="w-3.5 h-3.5"/> Library</button>
                             <button onClick={toggleLanguage} className="text-slate-400 hover:text-slate-600 transition-colors" title="Switch language">
                                 <Globe className="w-4 h-4" />
                             </button>
                             <ThemeToggle />
-                            <button
-                                onClick={() => handleRoleSelect(UserRole.LEARNER)}
-                                className="bg-[#5b61de] text-white px-6 py-2.5 rounded-xl font-bold text-sm hover:bg-[#4a50d0] transition-all shadow-md shadow-indigo-200 hover:-translate-y-0.5"
-                            >
-                                Get Started Free
-                            </button>
+                            <div className="flex items-center gap-4 border-l border-slate-200 dark:border-slate-700 pl-8">
+                                <button onClick={() => setShowLogin(true)} className="text-slate-800 dark:text-slate-200 hover:text-indigo-600 dark:hover:text-indigo-400 font-bold transition-colors text-sm">Sign In</button>
+                                <button
+                                    onClick={() => handleRoleSelect(UserRole.LEARNER)}
+                                    className="bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-6 py-2.5 rounded-full font-bold text-sm hover:bg-slate-800 dark:hover:bg-slate-100 transition-all shadow-sm"
+                                >
+                                    Access Account
+                                </button>
+                            </div>
                         </nav>
 
                         {/* Mobile Menu Button */}
@@ -440,27 +440,28 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                         >
                             <nav className="flex flex-col p-4 space-y-3">
                                 <button onClick={() => { handleRoleSelect(UserRole.LEARNER); setMobileMenuOpen(false); }} className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 font-bold">
-                                    <GraduationCap className="w-5 h-5 text-blue-500" /> For Learners
+                                    <GraduationCap className="w-5 h-5 text-indigo-500" /> Learner
                                 </button>
                                 <button onClick={() => { handleRoleSelect(UserRole.TEACHER); setMobileMenuOpen(false); }} className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 font-bold">
-                                    <Users className="w-5 h-5 text-emerald-500" /> For Teachers
+                                    <BookOpen className="w-5 h-5 text-emerald-500" /> Educator
                                 </button>
-                                <button onClick={() => { handleRoleSelect(UserRole.SCHOOL); setMobileMenuOpen(false); }} className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 font-bold">
-                                    <School className="w-5 h-5 text-purple-500" /> For Schools
+                                <button onClick={() => { handleRoleSelect(UserRole.PARENT); setMobileMenuOpen(false); }} className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 font-bold">
+                                    <Users className="w-5 h-5 text-purple-500" /> Parent
                                 </button>
+                                <div className="h-px bg-slate-100 dark:bg-slate-800 my-2" />
                                 <button onClick={() => { navigate('/pricing'); setMobileMenuOpen(false); }} className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 font-medium">
-                                    <CreditCard className="w-5 h-5 text-indigo-500" /> Pricing
+                                    <CreditCard className="w-5 h-5 text-slate-400" /> Pricing
                                 </button>
                                 <button onClick={() => { navigate('/blog'); setMobileMenuOpen(false); }} className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 font-medium">
-                                    <BookOpen className="w-5 h-5 text-indigo-500" /> Blog
+                                    <BookOpen className="w-5 h-5 text-slate-400" /> Library
                                 </button>
                                 <button onClick={() => { setShowLogin(true); setMobileMenuOpen(false); }} className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 font-medium">
-                                    <Users className="w-5 h-5 text-slate-400" /> Login
+                                    <Users className="w-5 h-5 text-slate-400" /> Sign In
                                 </button>
                                 <button onClick={() => { toggleLanguage(); setMobileMenuOpen(false); }} className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 text-slate-400 font-medium text-sm">
                                     <Globe className="w-4 h-4" /> {language === 'EN' ? 'Français' : 'English'}
                                 </button>
-                                <div className="p-3">
+                                <div className="p-3 border-t border-slate-100 dark:border-slate-800 mt-2">
                                     <ThemeToggle className="w-full justify-center" />
                                 </div>
                             </nav>
@@ -469,244 +470,185 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                 </AnimatePresence>
             </motion.header>
             {/* --- HERO SECTION --- */}
-            <section className="relative overflow-hidden bg-white dark:bg-slate-950 transition-colors">
-                {/* Ambient background — very subtle, light */}
-                <div className="absolute inset-0 pointer-events-none overflow-hidden">
-                    <div className="absolute -top-40 -right-40 w-[600px] h-[600px] rounded-full bg-indigo-50 dark:bg-indigo-950/30 blur-[100px]" />
-                    <div className="absolute -bottom-20 -left-20 w-[500px] h-[500px] rounded-full bg-blue-50 dark:bg-blue-950/20 blur-[80px]" />
-                </div>
+            <section className="relative overflow-hidden bg-slate-50 dark:bg-slate-900 transition-colors border-b border-slate-200 dark:border-slate-800">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-                    <div className="flex flex-col lg:flex-row items-center gap-8 lg:gap-16 min-h-[680px] py-16 lg:py-20">
+                    {/* Top two-column: Copy + Image */}
+                    <div className="flex flex-col lg:flex-row items-center gap-10 lg:gap-16 pt-20 pb-12 lg:pt-28 lg:pb-16">
 
-                        {/* LEFT: Emotional copy + interactive elements */}
-                        <div className="flex-1 max-w-2xl lg:max-w-none">
-                            <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
+                        {/* LEFT: Urgent copy + Solve It chat */}
+                        <motion.div
+                            initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}
+                            className="flex-1 max-w-2xl"
+                        >
+                            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-indigo-100 dark:bg-indigo-900/50 border border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 text-xs font-bold uppercase tracking-widest mb-6">
+                                <Star className="w-3 h-3 fill-current" /> For KCSE, CBC &amp; KPSEA Students
+                            </div>
 
-                                {/* Role Toggle */}
-                                <div className="inline-flex p-1 bg-slate-100 dark:bg-slate-800/80 rounded-2xl mb-10 gap-1">
-                                    <button onClick={() => setHeroRole('LEARNER')}
-                                        className={`px-5 py-2.5 rounded-xl font-bold text-sm transition-all ${heroRole === 'LEARNER' ? 'bg-white dark:bg-slate-700 text-indigo-700 dark:text-indigo-300 shadow-md' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}>
-                                        I'm a Student
-                                    </button>
-                                    <button onClick={() => setHeroRole('TEACHER')}
-                                        className={`px-5 py-2.5 rounded-xl font-bold text-sm transition-all ${heroRole === 'TEACHER' ? 'bg-white dark:bg-slate-700 text-emerald-700 dark:text-emerald-300 shadow-md' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}>
-                                        I'm a Teacher
+                            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-slate-900 dark:text-white tracking-tight leading-[1.1] mb-5">
+                                That question you've been<br />stuck on since 8pm?
+                                <span className="block text-indigo-600 dark:text-indigo-400 mt-2">Let's solve it now.</span>
+                            </h1>
+                            <p className="text-lg text-slate-600 dark:text-slate-400 font-medium leading-relaxed mb-8 max-w-lg">
+                                Instant step-by-step answers, audio explanations &amp; revision tools — every KCSE, KPSEA and CBC subject. No waiting. No judgment.
+                            </p>
+
+                            {/* Solve It chat window */}
+                            <div className="relative mb-5">
+                                <div className="flex items-center bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 rounded-2xl shadow-lg p-2.5 focus-within:border-indigo-400 dark:focus-within:border-indigo-600 transition-all">
+                                    <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center shrink-0 mr-3">
+                                        <Sparkles className="w-5 h-5 text-white" />
+                                    </div>
+                                    <input
+                                        type="text"
+                                        value={questionInput}
+                                        onChange={(e) => { setQuestionInput(e.target.value); if (showMockAnswer) setShowMockAnswer(false); }}
+                                        onKeyDown={(e) => { if (e.key === 'Enter') handleGenerateAnswer(); }}
+                                        placeholder="Type your question... e.g. Solve 3x + 7 = 22"
+                                        className="flex-1 min-w-0 bg-transparent border-none focus:outline-none text-slate-800 dark:text-slate-200 placeholder-slate-400 text-base font-medium pr-2"
+                                    />
+                                    <button
+                                        onClick={handleGenerateAnswer}
+                                        className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 sm:px-6 py-3 rounded-xl font-bold text-sm shadow-md transition-all hover:scale-[1.02] active:scale-[0.98] whitespace-nowrap flex items-center gap-2 shrink-0"
+                                    >
+                                        Solve It <ArrowRight className="w-4 h-4" />
                                     </button>
                                 </div>
 
-                                <AnimatePresence mode="wait">
-                                {heroRole === 'LEARNER' ? (
-                                    <motion.div key="learner" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} transition={{ duration: 0.35 }}>
-                                        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-indigo-50 dark:bg-indigo-900/40 border border-indigo-100 dark:border-indigo-800/60 text-indigo-600 dark:text-indigo-400 text-xs font-black uppercase tracking-widest mb-6">
-                                            <Star className="w-3 h-3 fill-current" /> For KCSE, CBC &amp; KPSEA Students
-                                        </div>
-                                        <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-slate-900 dark:text-white tracking-tight leading-[1.08] mb-5">
-                                            That question you've been<br />stuck on since 8pm?
-                                            <span className="block text-indigo-600 dark:text-indigo-400 mt-1">Let's solve it now.</span>
-                                        </h1>
-                                        <p className="text-lg text-slate-500 dark:text-slate-400 font-medium leading-relaxed mb-8 max-w-lg">
-                                            Instant step-by-step answers, audio explanations &amp; revision tools — every KCSE, KPSEA and CBC subject. No waiting. No judgment.
-                                        </p>
-
-                                        {/* Live ask-bar */}
-                                        <div className="relative mb-5">
-                                            <div className="flex items-center bg-white dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-700 rounded-2xl shadow-xl p-2.5 focus-within:border-indigo-400 focus-within:shadow-indigo-100/50 dark:focus-within:border-indigo-600 transition-all">
-                                                <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center shrink-0 mr-3">
-                                                    <Sparkles className="w-5 h-5 text-white" />
+                                <AnimatePresence>
+                                    {showMockAnswer && (
+                                        <motion.div
+                                            initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
+                                            className="absolute top-full left-0 right-0 mt-3 bg-white dark:bg-slate-800 rounded-2xl p-5 shadow-2xl border border-indigo-100 dark:border-slate-700 z-50"
+                                        >
+                                            <div className="flex items-start gap-3">
+                                                <div className="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center shrink-0">
+                                                    <Sparkles className="w-4 h-4 text-white" />
                                                 </div>
-                                                <input type="text" value={questionInput}
-                                                    onChange={(e) => { setQuestionInput(e.target.value); if (showMockAnswer) setShowMockAnswer(false); }}
-                                                    onKeyDown={(e) => { if (e.key === 'Enter') handleGenerateAnswer(); }}
-                                                    placeholder="Type your question... e.g. Solve 3x + 7 = 22"
-                                                    className="flex-1 min-w-0 bg-transparent border-none focus:outline-none text-slate-800 dark:text-slate-200 placeholder-slate-400 text-base font-medium pr-2" />
-                                                <button onClick={handleGenerateAnswer}
-                                                    className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 sm:px-6 py-3 rounded-xl font-bold text-sm shadow-lg transition-all hover:scale-[1.02] active:scale-[0.98] whitespace-nowrap flex items-center gap-2 shrink-0">
-                                                    Solve It <ArrowRight className="w-4 h-4" />
-                                                </button>
-                                            </div>
-                                            <AnimatePresence>
-                                                {showMockAnswer && (
-                                                    <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
-                                                        className="absolute top-full left-0 right-0 mt-3 bg-white dark:bg-slate-800 rounded-2xl p-5 shadow-2xl border border-indigo-100 dark:border-slate-700 z-50">
-                                                        <div className="flex items-start gap-3">
-                                                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-blue-500 flex items-center justify-center shrink-0">
-                                                                <Sparkles className="w-4 h-4 text-white" />
-                                                            </div>
-                                                            <div className="flex-1">
-                                                                <div className="text-[10px] font-black text-indigo-500 uppercase tracking-widest mb-2">Somo Smart Answer</div>
-                                                                {isGenerating ? (
-                                                                    <div className="space-y-2"><div className="h-3 bg-slate-200 dark:bg-slate-700 rounded-full w-full animate-pulse"/><div className="h-3 bg-slate-200 dark:bg-slate-700 rounded-full w-3/4 animate-pulse"/></div>
-                                                                ) : (
-                                                                    <p className="text-slate-800 dark:text-slate-200 font-medium text-sm leading-relaxed">{generatedAnswer}</p>
-                                                                )}
-                                                                {!isGenerating && (
-                                                                    <button onClick={() => navigate('/learner', { state: { pendingHeroQuestion: questionInput } })}
-                                                                        className="mt-3 text-xs font-black text-indigo-600 hover:text-indigo-800 transition-colors flex items-center gap-1">
-                                                                        See full step-by-step working <ArrowRight className="w-3 h-3" />
-                                                                    </button>
-                                                                )}
-                                                            </div>
+                                                <div className="flex-1">
+                                                    <div className="text-[10px] font-black text-indigo-500 uppercase tracking-widest mb-2">Somo Smart Answer</div>
+                                                    {isGenerating ? (
+                                                        <div className="space-y-2">
+                                                            <div className="h-3 bg-slate-200 dark:bg-slate-700 rounded-full w-full animate-pulse" />
+                                                            <div className="h-3 bg-slate-200 dark:bg-slate-700 rounded-full w-3/4 animate-pulse" />
                                                         </div>
-                                                    </motion.div>
-                                                )}
-                                            </AnimatePresence>
-                                        </div>
-
-                                        {/* Quick-prompt chips */}
-                                        <div className="flex flex-wrap gap-2 mb-9">
-                                            {['Photosynthesis explained simply', 'How do I find the gradient?', "Kenya's major rivers"].map((q, i) => (
-                                                <button key={i} onClick={() => { setQuestionInput(q); setShowMockAnswer(false); }}
-                                                    className="px-3 py-1.5 rounded-full text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 hover:text-indigo-700 dark:hover:text-indigo-400 border border-transparent hover:border-indigo-200 transition-all">
-                                                    {q}
-                                                </button>
-                                            ))}
-                                        </div>
-
-                                        <div className="flex flex-col sm:flex-row items-center gap-4 mb-7 w-full sm:w-auto">
-                                            <button onClick={() => handleRoleSelect(UserRole.LEARNER)}
-                                                className="w-full sm:w-auto bg-slate-900 dark:bg-white hover:bg-slate-700 dark:hover:bg-slate-100 text-white dark:text-slate-900 font-extrabold text-base px-8 py-4 rounded-2xl shadow-xl hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2">
-                                                Start Free — No Signup <ArrowRight className="w-4 h-4" />
-                                            </button>
-                                            <button onClick={() => { startGuestSession(); setRole(UserRole.LEARNER); navigate('/learner', { state: { targetTab: 'TALKBACK' } }); }}
-                                                className="flex items-center justify-center gap-2 text-slate-500 dark:text-slate-400 font-bold text-sm hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
-                                                <Headphones className="w-4 h-4" /> Try Audio Tutor instead
-                                            </button>
-                                        </div>
-                                        <div className="flex flex-col sm:flex-row flex-wrap gap-x-5 gap-y-3 text-sm text-slate-500 dark:text-slate-400">
-                                            <div className="flex items-center gap-1.5"><CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0" /> Free to start — KES 20/day</div>
-                                            <div className="flex items-center gap-1.5"><CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0" /> All subjects & levels</div>
-                                            <div className="flex items-center gap-1.5"><CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0" /> Works offline</div>
-                                        </div>
-                                    </motion.div>
-                                ) : (
-                                    <motion.div key="teacher" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} transition={{ duration: 0.35 }}>
-                                        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-100 dark:border-emerald-800/60 text-emerald-700 dark:text-emerald-400 text-xs font-black uppercase tracking-widest mb-6">
-                                            <GraduationCap className="w-3 h-3" /> For Kenyan Teachers
-                                        </div>
-                                        <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-slate-900 dark:text-white tracking-tight leading-[1.08] mb-5">
-                                            You didn't become a teacher<br />to spend weekends
-                                            <span className="block text-emerald-600 dark:text-emerald-400 mt-1">marking 60 books.</span>
-                                        </h1>
-                                        <p className="text-lg text-slate-500 dark:text-slate-400 font-medium leading-relaxed mb-9 max-w-lg">
-                                            Auto-grade CBC exams in minutes. Generate KICD-aligned lesson plans, schemes &amp; quizzes on demand. Reclaim your evenings — and your passion for teaching.
-                                        </p>
-
-                                        {/* Specific stat cards */}
-                                        <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-9">
-                                            {[
-                                                { icon: <Clock className="w-5 h-5 text-emerald-600" />, stat: '15 hrs', label: 'saved/wk', bg: 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-100 dark:border-emerald-800/40' },
-                                                { icon: <FileText className="w-5 h-5 text-blue-600" />, stat: '5 mins', label: 'to mark 60', bg: 'bg-blue-50 dark:bg-blue-900/20 border-blue-100 dark:border-blue-800/40' },
-                                                { icon: <Zap className="w-5 h-5 text-amber-600" />, stat: '1 click', label: 'KICD plan', bg: 'bg-amber-50 dark:bg-amber-900/20 border-amber-100 dark:border-amber-800/40' },
-                                            ].map((c, i) => (
-                                                <div key={i} className={`p-3 sm:p-4 rounded-2xl border ${c.bg} flex flex-col gap-1`}>
-                                                    {c.icon}
-                                                    <div className="font-black text-slate-900 dark:text-white text-lg sm:text-xl leading-tight mt-1">{c.stat}</div>
-                                                    <div className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 font-medium">{c.label}</div>
+                                                    ) : (
+                                                        <p className="text-slate-800 dark:text-slate-200 font-medium text-sm leading-relaxed">{generatedAnswer}</p>
+                                                    )}
+                                                    {!isGenerating && (
+                                                        <button
+                                                            onClick={() => navigate('/learner', { state: { pendingHeroQuestion: questionInput } })}
+                                                            className="mt-3 text-xs font-black text-indigo-600 hover:text-indigo-800 transition-colors flex items-center gap-1"
+                                                        >
+                                                            See full step-by-step working <ArrowRight className="w-3 h-3" />
+                                                        </button>
+                                                    )}
                                                 </div>
-                                            ))}
-                                        </div>
-
-                                        <div className="flex flex-wrap items-center gap-4 mb-7">
-                                            <button onClick={() => handleRoleSelect(UserRole.TEACHER)}
-                                                className="bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-base px-8 py-4 rounded-2xl shadow-xl shadow-emerald-200 dark:shadow-emerald-900/30 hover:-translate-y-0.5 transition-all flex items-center gap-2">
-                                                Try the Teacher Dashboard <ArrowRight className="w-4 h-4" />
-                                            </button>
-                                            <button onClick={() => setShowLogin(true)}
-                                                className="text-slate-500 dark:text-slate-400 font-bold text-sm hover:text-emerald-700 dark:hover:text-emerald-400 transition-colors flex items-center gap-1">
-                                                Sign in <ChevronRight className="w-4 h-4" />
-                                            </button>
-                                        </div>
-                                        <div className="flex flex-wrap gap-x-5 gap-y-2 text-sm text-slate-500 dark:text-slate-400">
-                                            <div className="flex items-center gap-1.5"><CheckCircle className="w-4 h-4 text-emerald-500" /> KNEC &amp; KICD aligned</div>
-                                            <div className="flex items-center gap-1.5"><CheckCircle className="w-4 h-4 text-emerald-500" /> CBC, 8-4-4 &amp; JSS</div>
-                                            <div className="flex items-center gap-1.5"><CheckCircle className="w-4 h-4 text-emerald-500" /> Cancel anytime</div>
-                                        </div>
-                                    </motion.div>
-                                )}
+                                            </div>
+                                        </motion.div>
+                                    )}
                                 </AnimatePresence>
+                            </div>
 
-                            </motion.div>
-                        </div>
+                            {/* Quick-prompt chips */}
+                            <div className="flex flex-wrap gap-2 mb-8">
+                                {['Photosynthesis explained simply', 'How do I find the gradient?', "Kenya's major rivers"].map((q, i) => (
+                                    <button key={i} onClick={() => { setQuestionInput(q); setShowMockAnswer(false); }}
+                                        className="px-3 py-1.5 rounded-full text-xs font-bold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 hover:text-indigo-700 hover:border-indigo-200 transition-all">
+                                        {q}
+                                    </button>
+                                ))}
+                            </div>
 
-                        {/* RIGHT: Emotional photo + floating product proof cards */}
-                        <motion.div initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.8, delay: 0.25 }}
-                            className="flex-1 relative flex items-center justify-center w-full lg:max-w-[460px]">
-                            {/* Soft glow behind image */}
-                            <div className={`absolute inset-10 rounded-[3rem] blur-3xl transition-colors duration-500 ${heroRole === 'LEARNER' ? 'bg-indigo-100/70 dark:bg-indigo-900/20' : 'bg-emerald-100/70 dark:bg-emerald-900/20'}`} />
-
-                            <div className="relative w-full">
-                                <AnimatePresence mode="wait">
-                                    <motion.img key={heroRole}
-                                        src={heroRole === 'LEARNER' ? heroLearnerImg : heroTeacherImg}
-                                        alt={heroRole === 'LEARNER' ? 'Kenyan student solving a question with Somo Smart' : 'Kenyan teacher auto-grading papers with Somo Smart'}
-                                        className="w-full h-auto object-contain relative z-10 drop-shadow-2xl"
-                                        style={{ maxHeight: '520px' }}
-                                        initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }}
-                                        exit={{ opacity: 0, scale: 0.97 }} transition={{ duration: 0.4 }} />
-                                </AnimatePresence>
-
-                                {/* Floating card: top-left — role-specific proof */}
-                                {heroRole === 'LEARNER' ? (
-                                    <motion.div animate={{ y: [0, -8, 0] }} transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
-                                        className="absolute top-8 -left-4 lg:-left-10 bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-slate-100 dark:border-slate-700 p-4 max-w-[196px] z-20">
-                                        <div className="flex items-center gap-2 mb-2">
-                                            <div className="w-6 h-6 bg-emerald-500 rounded-lg flex items-center justify-center"><CheckCircle className="w-3.5 h-3.5 text-white" /></div>
-                                            <span className="text-[10px] font-black text-emerald-600 uppercase tracking-wider">Solved!</span>
-                                        </div>
-                                        <p className="text-xs font-semibold text-slate-700 dark:text-slate-300 leading-snug">"Find x if 3x + 7 = 22"</p>
-                                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">x = 5 · 3 steps shown ✓</p>
-                                    </motion.div>
-                                ) : (
-                                    <motion.div animate={{ y: [0, -8, 0] }} transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
-                                        className="absolute top-8 -left-4 lg:-left-10 bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-slate-100 dark:border-slate-700 p-4 max-w-[196px] z-20">
-                                        <div className="flex items-center gap-2 mb-2">
-                                            <div className="w-6 h-6 bg-emerald-500 rounded-lg flex items-center justify-center"><CheckCheck className="w-3.5 h-3.5 text-white" /></div>
-                                            <span className="text-[10px] font-black text-emerald-600 uppercase tracking-wider">Auto-Graded</span>
-                                        </div>
-                                        <p className="text-xs font-semibold text-slate-700 dark:text-slate-300 leading-snug">Class 7B Maths Exam</p>
-                                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">43 papers · Avg 72% · 4 min</p>
-                                    </motion.div>
-                                )}
-
-                                {/* Floating card: bottom-right */}
-                                {heroRole === 'LEARNER' ? (
-                                    <motion.div animate={{ y: [0, 8, 0] }} transition={{ repeat: Infinity, duration: 5, ease: "easeInOut", delay: 0.8 }}
-                                        className="absolute bottom-16 -right-4 lg:-right-10 bg-indigo-600 rounded-2xl shadow-2xl p-4 max-w-[188px] z-20">
-                                        <div className="flex items-center gap-[3px] mb-2">
-                                            {[1,2,4,3,5,3,2].map((h, i) => (
-                                                <motion.div key={i} animate={{ scaleY: [0.4, 1, 0.4] }} transition={{ repeat: Infinity, duration: 1, delay: i * 0.1 }}
-                                                    className="w-1 bg-white/70 rounded-full" style={{ height: `${h * 4}px` }} />
-                                            ))}
-                                            <span className="text-white text-[10px] font-bold ml-2">Listening...</span>
-                                        </div>
-                                        <p className="text-white/90 text-xs font-medium leading-snug">Audio Tutor — Photosynthesis in Kiswahili</p>
-                                    </motion.div>
-                                ) : (
-                                    <motion.div animate={{ y: [0, 8, 0] }} transition={{ repeat: Infinity, duration: 5, ease: "easeInOut", delay: 0.8 }}
-                                        className="absolute bottom-16 -right-4 lg:-right-10 bg-slate-900 dark:bg-slate-700 rounded-2xl shadow-2xl p-4 max-w-[196px] z-20">
-                                        <div className="flex items-center gap-2 mb-2">
-                                            <Sparkles className="w-4 h-4 text-amber-400" />
-                                            <span className="text-[10px] font-black text-amber-400 uppercase tracking-wider">Lesson Ready</span>
-                                        </div>
-                                        <p className="text-white/90 text-xs font-medium leading-snug">Grade 8 · Fractions · KICD 5-E Model ✓</p>
-                                    </motion.div>
-                                )}
-
-                                {/* Social proof */}
-                                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1 }}
-                                    className="absolute -bottom-5 left-1/2 -translate-x-1/2 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-full px-4 py-2.5 shadow-xl flex items-center gap-3 z-20 whitespace-nowrap max-w-[90vw] sm:max-w-none overflow-hidden">
-                                    <div className="flex -space-x-2 shrink-0">
-                                        {['bg-blue-400', 'bg-emerald-400', 'bg-amber-400', 'bg-rose-400'].map((c, i) => (
-                                            <div key={i} className={`w-5 h-5 sm:w-6 sm:h-6 ${c} rounded-full border-2 border-white dark:border-slate-800`} />
-                                        ))}
-                                    </div>
-                                    <span className="text-[10px] sm:text-xs font-black text-slate-800 dark:text-slate-200 truncate">12,000+ learners already inside</span>
-                                </motion.div>
+                            <div className="flex flex-wrap gap-x-5 gap-y-3 text-sm text-slate-500 dark:text-slate-400">
+                                <div className="flex items-center gap-1.5"><CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0" /> Free to start — KES 20/day</div>
+                                <div className="flex items-center gap-1.5"><CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0" /> All subjects &amp; levels</div>
+                                <div className="flex items-center gap-1.5"><CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0" /> Works offline</div>
                             </div>
                         </motion.div>
 
+                        {/* RIGHT: Science lab hero image */}
+                        <motion.div
+                            initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.8, delay: 0.25 }}
+                            className="flex-1 w-full lg:max-w-[520px] relative"
+                        >
+                            <div className="relative rounded-3xl overflow-hidden shadow-2xl border border-slate-200 dark:border-slate-700">
+                                <img
+                                    src={heroScienceLabImg}
+                                    alt="Kenyan students studying in a science laboratory"
+                                    className="w-full h-auto object-cover"
+                                    style={{ maxHeight: '480px' }}
+                                />
+                                {/* Subtle overlay gradient at bottom */}
+                                <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-slate-900/60 to-transparent" />
+                                {/* Solution-based proof pill on image */}
+                                <div className="absolute bottom-5 left-1/2 -translate-x-1/2 bg-white/95 dark:bg-slate-800/95 backdrop-blur-sm border border-slate-100 dark:border-slate-700 rounded-full px-5 py-2.5 shadow-xl flex items-center gap-3 whitespace-nowrap">
+                                    <div className="w-7 h-7 bg-indigo-600 rounded-full flex items-center justify-center shrink-0">
+                                        <Sparkles className="w-3.5 h-3.5 text-white" />
+                                    </div>
+                                    <span className="text-xs font-bold text-slate-800 dark:text-slate-200">Step-by-step answers for every KCSE &amp; KPSEA subject</span>
+                                </div>
+                            </div>
+                        </motion.div>
                     </div>
+
+                    {/* Bottom: Unified Portal Cards */}
+                    <motion.div
+                        initial={{ opacity: 0, y: 30 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.8, delay: 0.4 }}
+                        className="pb-16"
+                    >
+                        <div className="flex items-center gap-4 mb-6">
+                            <div className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
+                            <span className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Choose your profile</span>
+                            <div className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-left">
+                            {/* Learner */}
+                            <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-lg hover:border-indigo-300 dark:hover:border-indigo-600 transition-all group flex items-center gap-5">
+                                <div className="w-12 h-12 bg-indigo-50 dark:bg-indigo-900/40 rounded-xl flex items-center justify-center shrink-0 group-hover:bg-indigo-600 transition-colors">
+                                    <GraduationCap className="w-6 h-6 text-indigo-600 dark:text-indigo-400 group-hover:text-white transition-colors" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <div className="font-bold text-slate-900 dark:text-white">Learner</div>
+                                    <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Step-by-step answers & quizzes</div>
+                                </div>
+                                <button onClick={() => handleRoleSelect(UserRole.LEARNER)} className="shrink-0 p-2 rounded-lg bg-slate-100 dark:bg-slate-700 hover:bg-indigo-600 hover:text-white dark:hover:bg-indigo-500 text-slate-600 dark:text-slate-300 transition-colors">
+                                    <ArrowRight className="w-4 h-4" />
+                                </button>
+                            </div>
+
+                            {/* Educator */}
+                            <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-lg hover:border-emerald-300 dark:hover:border-emerald-600 transition-all group flex items-center gap-5">
+                                <div className="w-12 h-12 bg-emerald-50 dark:bg-emerald-900/40 rounded-xl flex items-center justify-center shrink-0 group-hover:bg-emerald-600 transition-colors">
+                                    <BookOpen className="w-6 h-6 text-emerald-600 dark:text-emerald-400 group-hover:text-white transition-colors" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <div className="font-bold text-slate-900 dark:text-white">Educator</div>
+                                    <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Lesson plans & auto-grading</div>
+                                </div>
+                                <button onClick={() => handleRoleSelect(UserRole.TEACHER)} className="shrink-0 p-2 rounded-lg bg-slate-100 dark:bg-slate-700 hover:bg-emerald-600 hover:text-white dark:hover:bg-emerald-500 text-slate-600 dark:text-slate-300 transition-colors">
+                                    <ArrowRight className="w-4 h-4" />
+                                </button>
+                            </div>
+
+                            {/* Parent */}
+                            <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-lg hover:border-purple-300 dark:hover:border-purple-600 transition-all group flex items-center gap-5">
+                                <div className="w-12 h-12 bg-purple-50 dark:bg-purple-900/40 rounded-xl flex items-center justify-center shrink-0 group-hover:bg-purple-600 transition-colors">
+                                    <Users className="w-6 h-6 text-purple-600 dark:text-purple-400 group-hover:text-white transition-colors" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <div className="font-bold text-slate-900 dark:text-white">Parent</div>
+                                    <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Track progress & manage plans</div>
+                                </div>
+                                <button onClick={() => handleRoleSelect(UserRole.PARENT)} className="shrink-0 p-2 rounded-lg bg-slate-100 dark:bg-slate-700 hover:bg-purple-600 hover:text-white dark:hover:bg-purple-500 text-slate-600 dark:text-slate-300 transition-colors">
+                                    <ArrowRight className="w-4 h-4" />
+                                </button>
+                            </div>
+                        </div>
+                    </motion.div>
                 </div>
             </section>
 
@@ -722,10 +664,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                         className="flex items-center justify-around flex-nowrap shrink-0 gap-8 sm:gap-20 px-4 min-w-[200%]"
                     >
                         {[
-                            "KNEC Aligned", "CBC Compliant", "8-4-4 Ready", "KPSEA Approved",
-                            "JSS Integrated", "1M+ Questions Solved", "Instant Auto-Grading", "Teacher Recommended",
-                            "KNEC Aligned*", "CBC Compliant*", "8-4-4 Ready*", "KPSEA Approved*",
-                            "JSS Integrated*", "1M+ Questions Solved*", "Instant Auto-Grading*", "Teacher Recommended*"
+                            "KNEC Rubric Aligned", "CBC Support", "8-4-4 Ready", "JSS Integrated",
+                            "Automated Marking", "Personalized Quizzes", "Interactive Tutors", "Secure Platform",
+                            "KNEC Rubric Aligned*", "CBC Support*", "8-4-4 Ready*", "JSS Integrated*",
+                            "Automated Marking*", "Personalized Quizzes*", "Interactive Tutors*", "Secure Platform*"
                         ].map((school, i) => (
                             <div key={i} className="flex items-center gap-3 opacity-40 dark:opacity-30 grayscale hover:grayscale-0 hover:opacity-100 transition-all cursor-default shrink-0">
                                 <School className="w-6 h-6 sm:w-8 sm:h-8 text-slate-700 dark:text-slate-300" />
