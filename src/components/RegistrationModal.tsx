@@ -492,7 +492,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
                                     {loading ? 'Processing...' : role === 'SCHOOL' ? 'Create School Account' : role === 'TEACHER' ? 'Create Teacher Profile' : 'Get My Student ID'}
                                 </button>
                             </form>
-                        </div>               </div>
+                        </div>
                     ) : (
                         <div className="p-6 sm:p-8 text-center relative overflow-hidden overflow-y-auto">
 
