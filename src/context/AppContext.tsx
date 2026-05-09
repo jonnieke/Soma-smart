@@ -303,6 +303,19 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   const incrementRegisteredUsage = async (type: 'learner' | 'revision' | 'download' | 'teacher') => {
+    // Learners lack Supabase Auth JWT, so the edge function will fail with 401. Use RPC instead.
+    if (type === 'learner' && userId) {
+      const { data, error } = await supabase.rpc('increment_profile_ai_usage', {
+        p_profile_id: userId,
+        p_usage_kind: 'learner',
+        p_limit: 10000
+      });
+      if (!error && data && data.length > 0) {
+        setUsageCount(data[0].usage_count);
+      }
+      return;
+    }
+
     const { data, error } = await supabase.functions.invoke('usage-limits/increment', {
       body: { type }
     });
@@ -537,6 +550,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         }
 
         if (data) {
+          // Bypass strict session validation for learners/guests because RLS prevents anonymous active_sessions updates
+          if (role === UserRole.LEARNER || role === UserRole.REVISION || role === UserRole.GUEST) {
+            return;
+          }
+
           let hasConflict = false;
           // Multi-Device logic only if column exists
           if (data && 'active_sessions' in data && data.active_sessions && Array.isArray(data.active_sessions) && data.active_sessions.length > 0) {

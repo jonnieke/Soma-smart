@@ -120,7 +120,7 @@ export const loadMasteryFromCloud = async (learnerId: string): Promise<{
       .from('learner_memory')
       .select('*')
       .eq('learner_id', learnerId)
-      .single();
+      .maybeSingle();
 
     if (error || !data) {
       // No cloud record yet — local is the truth
@@ -330,7 +330,7 @@ export const updateStudentMasteryFromTeacher = async (
       .from('learner_memory')
       .select('*')
       .eq('learner_id', studentId)
-      .single();
+      .maybeSingle();
 
     if (fetchErr && fetchErr.code !== 'PGRST116') { // PGRST116 is 'not found'
       throw fetchErr;
