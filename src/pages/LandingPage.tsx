@@ -684,20 +684,20 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
             {/* --- EXAM ASSISTANT CTA --- */}
             <section className="py-12 relative overflow-hidden bg-white dark:bg-slate-950 transition-colors">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-                    <div className="bg-gradient-to-br from-orange-500 to-rose-600 rounded-[2.5rem] p-10 md:p-14 shadow-2xl overflow-hidden relative group">
-                        {/* Decorative background blur */}
-                        <div className="absolute top-[-50%] right-[-10%] w-[150%] h-[200%] bg-gradient-to-bl from-rose-400/30 to-transparent blur-3xl pointer-events-none transform group-hover:rotate-12 transition-transform duration-1000"></div>
+                    <div className="bg-slate-900 dark:bg-slate-800 rounded-[2rem] p-10 md:p-14 shadow-xl overflow-hidden relative group border border-slate-800 dark:border-slate-700">
+                        {/* Subtle background glow */}
+                        <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl pointer-events-none"></div>
 
                         <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-10">
                             <div className="flex-1 text-center md:text-left">
-                                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/20 backdrop-blur-md text-white font-bold text-xs mb-6 uppercase tracking-wider border border-white/20 shadow-sm">
-                                    <Star className="w-4 h-4 text-amber-300 fill-current" />
+                                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-500/20 text-blue-300 font-bold text-xs mb-6 uppercase tracking-wider border border-blue-500/30">
+                                    <Star className="w-4 h-4 text-blue-400 fill-current" />
                                     For Candidates
                                 </div>
-                                <h2 className="text-3xl md:text-4xl lg:text-5xl font-extrabold text-white mb-4 tracking-tight leading-tight">
+                                <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-4 tracking-tight leading-tight">
                                     Meet your powerful new Exam Assistant.
                                 </h2>
-                                <p className="text-orange-100 text-lg md:text-xl font-medium max-w-2xl leading-relaxed">
+                                <p className="text-slate-300 text-lg md:text-xl font-medium max-w-2xl leading-relaxed">
                                     Crush your KCSE & KPSEA exams with instant access to verified past papers, complete with auto-generated, step-by-step solutions mapping to KNEC rubrics.
                                 </p>
                             </div>
@@ -705,7 +705,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                             <div className="flex-shrink-0">
                                 <button
                                     onClick={() => navigate('/revision')}
-                                    className="bg-white text-rose-600 hover:bg-orange-50 font-extrabold text-lg px-8 py-5 rounded-2xl shadow-xl hover:-translate-y-1 transition-all flex items-center gap-3 border border-orange-100"
+                                    className="bg-white text-slate-900 hover:bg-slate-50 font-bold text-lg px-8 py-5 rounded-xl shadow-lg hover:-translate-y-1 transition-all flex items-center gap-3"
                                 >
                                     Try it now <ChevronRight className="w-6 h-6" />
                                 </button>
@@ -1225,7 +1225,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
             <div className="md:hidden fixed bottom-6 left-4 right-4 p-2.5 bg-slate-900/95 dark:bg-slate-800/95 backdrop-blur-xl border border-slate-700/50 shadow-2xl z-50 rounded-2xl flex items-center justify-around pointer-events-auto">
                 <div className="flex flex-col pl-2">
                     <span className="text-white text-xs font-black tracking-tight leading-none mb-1">Ready to pass?</span>
-                    <span className="text-blue-300 text-[9px] font-bold uppercase tracking-widest">Join 12k+ Students</span>
+                    <span className="text-blue-300 text-[9px] font-bold uppercase tracking-widest">Solutions for KCSE & CBC</span>
                 </div>
                 <button
                     onClick={() => handleRoleSelect(UserRole.LEARNER)}
