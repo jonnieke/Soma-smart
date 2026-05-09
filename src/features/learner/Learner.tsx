@@ -2650,33 +2650,64 @@ ${explanation.explanation}
       // PRO GUARD: If no student profile is active, redirect to menu or show login prompt
       if (!isRegistered) {
         return (
-          <div className="flex flex-col items-center justify-center min-h-[60vh] p-6 text-center">
-            <div className="w-20 h-20 bg-slate-100 rounded-3xl flex items-center justify-center mb-6">
-              <Lock className="w-10 h-10 text-slate-400" />
-            </div>
-            <h2 className="text-2xl font-black text-slate-900 mb-2">Login Required</h2>
-            <p className="text-slate-500 mb-8 max-w-xs">Please log in or register as a student to view and manage your profile settings.</p>
-            <div className="flex flex-col gap-3 w-full max-w-sm justify-center">
-              <button
-                onClick={() => setShowLogin(true)}
-                className="bg-blue-600 hover:bg-blue-700 pulse-blue text-white font-bold rounded-2xl w-full px-8 py-4 transition-all shadow-lg hover:shadow-blue-200 active:scale-95 text-base flex items-center justify-center gap-2"
-              >
-                <Lock className="w-5 h-5 text-blue-200" />
-                Login / Register Now
-              </button>
-              <button
-                onClick={() => setMode('MENU')}
-                className="text-slate-400 hover:text-slate-600 font-bold py-2 transition-colors text-sm"
-              >
-                Cancel and Return
-              </button>
-              <button
-                onClick={() => setShowLogoutModal(true)}
-                className="text-red-400 hover:text-red-600 font-bold py-2 transition-colors text-sm mt-2"
-              >
-                Clear Guest Session
-              </button>
-            </div>
+          <div className="flex flex-col items-center justify-center min-h-[80vh] p-6 text-center max-w-md mx-auto">
+            <motion.div
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              className="w-full"
+            >
+              <div className="mb-8">
+                <button
+                  onClick={() => setShowLogin(true)}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-sm font-bold hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-all border border-blue-100 dark:border-blue-800 mb-8"
+                >
+                  Already have an ID? Login here
+                </button>
+
+                <div className="w-24 h-24 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-[2.5rem] flex items-center justify-center mx-auto mb-6 shadow-xl shadow-blue-100 dark:shadow-none rotate-3">
+                  <UserCircle className="w-12 h-12 text-white" />
+                </div>
+                
+                <h2 className="text-3xl font-black text-slate-900 dark:text-white mb-3 tracking-tight">Create Student Profile</h2>
+                <p className="text-slate-500 dark:text-slate-400 font-medium mb-10 leading-relaxed">
+                  Join thousands of students and get personalized AI tutoring, progress tracking, and access to all study materials.
+                </p>
+              </div>
+
+              <div className="flex flex-col gap-4 w-full">
+                <button
+                  onClick={() => setShowRegistration(true)}
+                  className="bg-blue-600 hover:bg-blue-700 text-white font-black rounded-2xl w-full px-8 py-5 transition-all shadow-xl shadow-blue-200 dark:shadow-none active:scale-95 text-lg flex items-center justify-center gap-3 group"
+                >
+                  Get Your Student ID
+                  <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                </button>
+                
+                <div className="flex items-center gap-4 my-4">
+                  <div className="h-px flex-1 bg-slate-200 dark:bg-slate-800"></div>
+                  <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">or</span>
+                  <div className="h-px flex-1 bg-slate-200 dark:bg-slate-800"></div>
+                </div>
+
+                <button
+                  onClick={() => setMode('MENU')}
+                  className="text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white font-bold py-2 transition-colors text-sm"
+                >
+                  Continue as Guest
+                </button>
+              </div>
+
+              <div className="mt-12 p-6 bg-amber-50 dark:bg-amber-900/20 rounded-3xl border border-amber-100 dark:border-amber-900/30 text-left">
+                <h4 className="font-bold text-amber-800 dark:text-amber-400 text-sm mb-1 flex items-center gap-2">
+                   <Sparkles className="w-4 h-4" /> Why create a profile?
+                </h4>
+                <ul className="text-xs font-medium text-amber-700/80 dark:text-amber-500/80 space-y-2 mt-3">
+                  <li className="flex gap-2"><span>•</span> Save your learning history and streaks</li>
+                  <li className="flex gap-2"><span>•</span> Unlock unlimited AI explanations</li>
+                  <li className="flex gap-2"><span>•</span> Get a personalized study buddy profile</li>
+                </ul>
+              </div>
+            </motion.div>
           </div>
         );
       }
@@ -2715,23 +2746,28 @@ ${explanation.explanation}
           <div className="p-6 space-y-8 max-w-2xl mx-auto">
             {/* Profile Card */}
             <section>
-              <div className="flex items-center gap-4 mb-4">
-                <div className="w-12 h-12 bg-blue-100 rounded-2xl flex items-center justify-center">
-                  <UserCircle className="w-8 h-8 text-blue-600" />
+              <div className="flex items-center gap-4 mb-6">
+                <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-100">
+                  <UserCircle className="w-8 h-8 text-white" />
                 </div>
-                <h2 className="text-lg font-bold text-slate-800">Account Details</h2>
+                <div>
+                  <h2 className="text-xl font-black text-slate-900">Student Profile</h2>
+                  <p className="text-sm font-medium text-slate-500">Manage your identity and school info</p>
+                </div>
               </div>
 
-              <Card className="p-6 space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-4">
+              <Card className="p-8 space-y-8 overflow-hidden relative">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-blue-50 rounded-full blur-3xl -mr-16 -mt-16 opacity-50"></div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 relative z-10">
+                  <div className="space-y-6">
                     <div>
-                      <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Full Name</label>
+                      <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 px-1">Full Name</label>
                       <input
                         id="studentName"
                         type="text"
                         defaultValue={studentProfile?.name || ''}
-                        className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl px-4 py-2.5 font-bold text-slate-800 focus:border-blue-500 outline-none transition-all"
+                        className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl px-5 py-3.5 font-bold text-slate-800 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-50 outline-none transition-all"
                         onChange={() => {
                           const btn = document.getElementById('save-profile-btn');
                           if (btn) btn.style.display = 'block';
@@ -2739,41 +2775,54 @@ ${explanation.explanation}
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Grade Level</label>
-                      <select
-                        id="studentGrade"
-                        defaultValue={studentProfile?.grade || ''}
-                        className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl px-4 py-2.5 font-bold text-slate-800 focus:border-blue-500 outline-none transition-all appearance-none"
-                        onChange={() => {
-                          const btn = document.getElementById('save-profile-btn');
-                          if (btn) btn.style.display = 'block';
-                        }}
-                      >
-                        <option value="">Select Grade</option>
-                        <option value="Grade 4">Grade 4</option>
-                        <option value="Grade 5">Grade 5</option>
-                        <option value="Grade 6">Grade 6</option>
-                        <option value="Grade 7">Grade 7</option>
-                        <option value="Grade 8">Grade 8</option>
-                        <option value="Form 1">Form 1</option>
-                        <option value="Form 2">Form 2</option>
-                        <option value="Form 3">Form 3</option>
-                        <option value="Form 4">Form 4</option>
-                        <option value="1st Year (University)">1st Year (University)</option>
-                        <option value="2nd Year (University)">2nd Year (University)</option>
-                        <option value="3rd Year (University)">3rd Year (University+)</option>
-                        <option value="Diploma / Certificate">Diploma / Certificate</option>
-                      </select>
+                      <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 px-1">Grade Level</label>
+                      <div className="relative">
+                        <select
+                          id="studentGrade"
+                          defaultValue={studentProfile?.grade || ''}
+                          className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl px-5 py-3.5 font-bold text-slate-800 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-50 outline-none transition-all appearance-none"
+                          onChange={() => {
+                            const btn = document.getElementById('save-profile-btn');
+                            if (btn) btn.style.display = 'block';
+                          }}
+                        >
+                          <option value="">Select Grade</option>
+                          <option value="Grade 4">Grade 4</option>
+                          <option value="Grade 5">Grade 5</option>
+                          <option value="Grade 6">Grade 6</option>
+                          <option value="Grade 7">Grade 7</option>
+                          <option value="Grade 8">Grade 8</option>
+                          <option value="Form 1">Form 1</option>
+                          <option value="Form 2">Form 2</option>
+                          <option value="Form 3">Form 3</option>
+                          <option value="Form 4">Form 4</option>
+                          <option value="1st Year (University)">1st Year (University)</option>
+                          <option value="2nd Year (University)">2nd Year (University)</option>
+                          <option value="3rd Year (University)">3rd Year (University+)</option>
+                          <option value="Diploma / Certificate">Diploma / Certificate</option>
+                        </select>
+                        <div className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                          <ArrowRight className="w-4 h-4 rotate-90" />
+                        </div>
+                      </div>
                     </div>
                   </div>
-                  <div className="space-y-4">
+                  <div className="space-y-6">
                     <div>
-                      <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Student ID</label>
-                      <p className="text-lg font-bold text-blue-600 font-mono tracking-wider bg-blue-50 px-4 py-2 rounded-xl border border-blue-100">{studentCode || '---'}</p>
+                      <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 px-1">My Student ID</label>
+                      <div className="group relative">
+                        <p className="text-xl font-black text-blue-600 font-mono tracking-widest bg-blue-50 border-2 border-blue-100 px-5 py-3.5 rounded-2xl flex items-center justify-between">
+                          {studentCode || '---'}
+                          <CheckCircle className="w-5 h-5 text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </p>
+                      </div>
+                      <p className="text-[10px] font-medium text-slate-400 mt-2 px-1">Share this with your parents to link accounts.</p>
                     </div>
                     <div>
-                      <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Account Email</label>
-                      <p className="text-sm font-medium text-slate-500 truncate bg-slate-50 px-4 py-2 rounded-xl border-2 border-slate-300">{studentProfile?.email || 'No email set'}</p>
+                      <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 px-1">Verified Email</label>
+                      <p className="text-sm font-bold text-slate-600 bg-slate-50/50 border-2 border-slate-100 px-5 py-3.5 rounded-2xl truncate">
+                        {studentProfile?.email || 'No email set'}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -2812,54 +2861,59 @@ ${explanation.explanation}
 
             {/* Subscription Snapshot */}
             <section>
-              <div className="flex items-center gap-4 mb-4">
-                <div className="w-12 h-12 bg-amber-100 rounded-2xl flex items-center justify-center">
-                  <CreditCard className="w-7 h-7 text-amber-600" />
+              <div className="flex items-center gap-4 mb-6">
+                <div className="w-14 h-14 bg-gradient-to-br from-amber-400 to-orange-500 rounded-2xl flex items-center justify-center shadow-lg shadow-amber-100">
+                  <Star className="w-8 h-8 text-white fill-white" />
                 </div>
                 <div>
-                  <h2 className="text-lg font-bold text-slate-800">Subscription Status</h2>
-                  <p className="text-xs text-slate-400 font-medium">Manage your plan and billing</p>
+                  <h2 className="text-xl font-black text-slate-900">Learning Plan</h2>
+                  <p className="text-sm font-medium text-slate-500">Manage your subscription and features</p>
                 </div>
               </div>
 
-              <Card className="p-6">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-                  <div className="flex items-center gap-4">
-                    <div className="w-14 h-14 bg-amber-50 rounded-2xl flex items-center justify-center border border-amber-100">
-                      <Star className={`w-8 h-8 ${isPro ? 'text-amber-500 fill-amber-500' : 'text-slate-300'}`} />
+              <Card className="p-8 relative overflow-hidden group">
+                <div className="absolute top-0 right-0 w-40 h-40 bg-amber-50 rounded-full blur-3xl -mr-20 -mt-20 opacity-60 transition-transform group-hover:scale-110"></div>
+                
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 relative z-10">
+                  <div className="flex items-center gap-6">
+                    <div className={`w-16 h-16 rounded-[1.5rem] flex items-center justify-center border-2 shadow-sm ${isPro ? 'bg-amber-100 border-amber-200' : 'bg-slate-50 border-slate-100'}`}>
+                      <Star className={`w-8 h-8 ${isPro ? 'text-amber-600 fill-amber-600' : 'text-slate-300'}`} />
                     </div>
                     <div>
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-sm font-black text-slate-900 uppercase">
+                      <div className="flex items-center gap-2 mb-1.5">
+                        <span className="text-lg font-black text-slate-900 tracking-tight">
                           {activePlanDetails?.name || subscriptionPlan || 'Somo Basic'}
                         </span>
                         {isPro && (
-                          <span className="bg-emerald-100 text-emerald-700 text-[8px] font-black px-1.5 py-0.5 rounded uppercase tracking-widest">
-                            Active Plan
+                          <span className="bg-emerald-500 text-white text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-widest shadow-sm">
+                            Active
                           </span>
                         )}
                       </div>
-                      <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">
+                      <p className="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
                         {isPro && subscriptionExpiry && !isNaN(new Date(subscriptionExpiry).getTime())
-                          ? `Valid until ${new Date(subscriptionExpiry).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}`
-                          : 'Free Access - 3 Queries/Day'}
+                          ? <><Clock className="w-3.5 h-3.5" /> Valid until {new Date(subscriptionExpiry).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</>
+                          : <><Sparkles className="w-3.5 h-3.5" /> Free Access · 3 Queries Left Today</>}
                       </p>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-4 border-t md:border-t-0 md:border-l border-slate-100 pt-4 md:pt-0 md:pl-6">
+                  <div className="flex items-center justify-between md:justify-end gap-8 pt-6 md:pt-0 border-t md:border-t-0 md:border-l border-slate-100 md:pl-8">
                     <div className="text-right">
-                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Paid</p>
-                      <p className="text-lg font-black text-slate-900">
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Billing Amount</p>
+                      <p className="text-xl font-black text-slate-900">
                         {isPro && activePlanDetails ? `${activePlanDetails.price} KES` : '0 KES'}
                       </p>
                     </div>
                     <Button
-                      variant="outline"
-                      className="rounded-xl border-blue-200 text-blue-600 hover:bg-blue-50 font-black text-[10px] uppercase tracking-widest px-6 ml-2"
                       onClick={() => setSelectedPlan(activePlanDetails || STUDENT_PLANS[1])}
+                      className={`px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest transition-all shadow-lg active:scale-95 ${
+                        isPro 
+                        ? 'bg-white border-2 border-slate-200 text-slate-600 hover:bg-slate-50 shadow-slate-100' 
+                        : 'bg-amber-500 text-white hover:bg-amber-600 shadow-amber-200'
+                      }`}
                     >
-                      {isPro ? 'Manage' : 'Upgrade'}
+                      {isPro ? 'Manage Plan' : 'Go Pro'}
                     </Button>
                   </div>
                 </div>
@@ -2898,67 +2952,70 @@ ${explanation.explanation}
 
             {/* Parent Contact Settings */}
             <section>
-              <div className="flex items-center gap-4 mb-4">
-                <div className="w-12 h-12 bg-purple-100 rounded-2xl flex items-center justify-center">
-                  <Sparkles className="w-7 h-7 text-purple-600" />
+              <div className="flex items-center gap-4 mb-6">
+                <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-violet-600 rounded-2xl flex items-center justify-center shadow-lg shadow-purple-100">
+                  <Lock className="w-7 h-7 text-white" />
                 </div>
                 <div>
-                  <h2 className="text-lg font-bold text-slate-800">Parent Dashboard Access</h2>
-                  <p className="text-xs text-slate-400 font-medium">Allows parents to log in using their phone number</p>
+                  <h2 className="text-xl font-black text-slate-900">Parental Controls</h2>
+                  <p className="text-sm font-medium text-slate-500">Secure access for your guardians</p>
                 </div>
               </div>
 
-              <Card className="p-6">
-                <div className="space-y-4">
-                  <div>
-                    <label htmlFor="parentPhone" className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Parent&apos;s Phone Number</label>
-                    <div className="relative">
+              <Card className="p-8 space-y-6 relative overflow-hidden">
+                 <div className="absolute top-0 right-0 w-32 h-32 bg-purple-50 rounded-full blur-3xl -mr-16 -mt-16 opacity-50"></div>
+                
+                <div className="relative z-10">
+                  <label htmlFor="parentPhone" className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 px-1">Parent&apos;s Phone Number</label>
+                  <div className="flex flex-col sm:flex-row gap-4">
+                    <div className="relative flex-1">
                       <input
                         id="parentPhone"
                         type="tel"
                         defaultValue={studentProfile?.parentPhone || ''}
                         placeholder="e.g. 0712345678"
-                        className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl px-5 py-3.5 text-lg font-bold text-slate-800 focus:border-purple-500 focus:ring-0 transition-all outline-none"
-                        onChange={(e) => {
+                        className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl px-5 py-4 text-lg font-black text-slate-800 focus:border-purple-500 focus:bg-white focus:ring-4 focus:ring-purple-50 transition-all outline-none"
+                        onChange={() => {
                           const btn = document.getElementById('save-profile-btn');
                           if (btn) btn.style.display = 'block';
                         }}
                       />
                     </div>
-                    <p className="mt-3 text-xs text-slate-500 leading-relaxed">
-                      Parents use this number + your Student ID to access performance reports and subscription management.
-                    </p>
+                    <div id="save-profile-btn" style={{ display: 'none' }} className="sm:w-48">
+                      <Button
+                        fullWidth
+                        className="h-full py-4 bg-purple-600 hover:bg-purple-700 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-purple-200 active:scale-95 transition-all"
+                        onClick={async () => {
+                          const nameInput = document.getElementById('studentName') as HTMLInputElement;
+                          const gradeInput = document.getElementById('studentGrade') as HTMLSelectElement;
+                          const phoneInput = document.getElementById('parentPhone') as HTMLInputElement;
+
+                          setLoading(true);
+                          setLoadingText("Updating profile...");
+                          const { success, message } = await updateStudentProfile({
+                            name: nameInput.value,
+                            grade: gradeInput.value,
+                            parentPhone: phoneInput.value
+                          });
+                          setLoading(false);
+
+                          if (success) {
+                            const btn = document.getElementById('save-profile-btn');
+                            if (btn) btn.style.display = 'none';
+                          } else {
+                            alert(message || "Failed to update profile");
+                          }
+                        }}
+                      >
+                        Save Changes
+                      </Button>
+                    </div>
                   </div>
-
-                  <div id="save-profile-btn" style={{ display: 'none' }}>
-                    <Button
-                      fullWidth
-                      className="bg-purple-600 hover:bg-purple-700 text-white shadow-lg shadow-purple-200"
-                      onClick={async () => {
-                        const nameInput = document.getElementById('studentName') as HTMLInputElement;
-                        const gradeInput = document.getElementById('studentGrade') as HTMLSelectElement;
-                        const phoneInput = document.getElementById('parentPhone') as HTMLInputElement;
-
-                        setLoading(true);
-                        setLoadingText("Saving profile...");
-                        const { success, message } = await updateStudentProfile({
-                          name: nameInput.value,
-                          grade: gradeInput.value,
-                          parentPhone: phoneInput.value
-                        });
-                        setLoading(false);
-
-                        if (success) {
-                          const btn = document.getElementById('save-profile-btn');
-                          if (btn) btn.style.display = 'none';
-                          // Show a success state or just rely on the UI updating
-                        } else {
-                          alert(message || "Failed to save profile");
-                        }
-                      }}
-                    >
-                      Save Changes
-                    </Button>
+                  <div className="mt-6 flex items-start gap-3 p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                    <div className="p-2 bg-white rounded-lg shadow-sm"><CheckCircle className="w-4 h-4 text-emerald-500" /></div>
+                    <p className="text-xs text-slate-500 leading-relaxed font-medium">
+                      Providing this number allows your parent to log in to the <span className="text-purple-600 font-bold">Parent Dashboard</span> to see your progress reports and manage your subscription.
+                    </p>
                   </div>
                 </div>
               </Card>

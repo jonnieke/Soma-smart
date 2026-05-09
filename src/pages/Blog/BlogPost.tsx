@@ -22,6 +22,7 @@ export const BlogPost: React.FC = () => {
     const { slug } = useParams<{ slug: string }>();
     const navigate = useNavigate();
     const [post, setPost] = useState<BlogPost | null>(null);
+    const [relatedPosts, setRelatedPosts] = useState<BlogPost[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -51,7 +52,16 @@ export const BlogPost: React.FC = () => {
                     }
                     return;
                 }
-                if (data) setPost(data);
+                if (data) {
+                    setPost(data);
+                    // Fetch related posts
+                    const { data: others } = await supabase
+                        .from('blog_posts')
+                        .select('*')
+                        .neq('slug', slug)
+                        .limit(3);
+                    if (others) setRelatedPosts(others);
+                }
             } catch (err) {
                 console.error("Failed to fetch blog post", err);
             } finally {
@@ -117,7 +127,10 @@ export const BlogPost: React.FC = () => {
                 <meta property="og:description" content={post.excerpt} />
                 <meta property="og:image" content={post.cover_image_url} />
                 <meta property="og:type" content="article" />
+                <meta property="article:published_time" content={post.published_at} />
+                <meta property="article:author" content={post.author_name} />
                 <meta name="twitter:card" content="summary_large_image" />
+                <link rel="canonical" href={shareUrl} />
             </Helmet>
 
             {/* --- HEADER --- */}
@@ -190,6 +203,33 @@ export const BlogPost: React.FC = () => {
                         Start Learning Free
                     </button>
                 </div>
+
+                {/* --- READ NEXT --- */}
+                {relatedPosts.length > 0 && (
+                    <div className="mt-24">
+                        <h3 className="text-2xl font-black text-slate-900 dark:text-white mb-8">Read Next</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            {relatedPosts.map(rel => (
+                                <button 
+                                    key={rel.id} 
+                                    onClick={() => {
+                                        navigate(`/blog/${rel.slug}`);
+                                        window.scrollTo(0, 0);
+                                    }}
+                                    className="text-left group flex flex-col"
+                                >
+                                    <div className="aspect-video rounded-2xl overflow-hidden mb-4 bg-slate-100 dark:bg-slate-800 border border-slate-100 dark:border-slate-800 transition-transform group-hover:scale-[1.02]">
+                                        <img src={rel.cover_image_url} alt={rel.title} className="w-full h-full object-cover" />
+                                    </div>
+                                    <h4 className="font-bold text-slate-900 dark:text-white line-clamp-2 group-hover:text-blue-600 transition-colors">{rel.title}</h4>
+                                    <p className="text-xs text-slate-500 mt-2 flex items-center gap-1.5 uppercase font-bold tracking-widest">
+                                        <Clock className="w-3.5 h-3.5" /> {rel.read_time_minutes} min read
+                                    </p>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                )}
             </article>
         </div>
     );

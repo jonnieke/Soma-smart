@@ -237,7 +237,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
 
                     {step === 'FORM' ? (
                         <div className="p-6 sm:p-8 overflow-y-auto">                            <div className="text-center mb-6">
-                                <div className={`w-16 h-16 ${role === 'SCHOOL' ? 'bg-blue-900/10 text-blue-900' : 'bg-blue-100 text-blue-600'} rounded-full flex items-center justify-center mx-auto mb-4 transition-colors`}>
+                                <div className={`w-16 h-16 bg-gradient-to-br ${role === 'SCHOOL' ? 'from-blue-800 to-slate-900 text-white' : role === 'TEACHER' ? 'from-emerald-500 to-teal-600 text-white' : 'from-blue-500 to-indigo-600 text-white'} rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-blue-100 dark:shadow-none transition-all rotate-3`}>
                                     <User className="w-8 h-8" />
                                 </div>
                                 <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
