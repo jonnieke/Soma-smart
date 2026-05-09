@@ -365,6 +365,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     if (g.includes('UNIVERSITY') || g.includes('COLLEGE') || g.includes('YEAR') || g.includes('CAMPUS')) {
       return EducationLevel.CAMPUS;
     }
+    const juniorGrades = ['PP1', 'PP2', 'GRADE 1', 'GRADE 2', 'GRADE 3', 'GRADE 4', 'GRADE 5', 'GRADE 6'];
     if (juniorGrades.some(jg => g.includes(jg))) {
       return EducationLevel.JUNIOR;
     }

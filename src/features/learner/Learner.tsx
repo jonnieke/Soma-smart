@@ -388,7 +388,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
   };
 
   useEffect(() => {
-    if (mode === 'MARKETPLACE' || mode === 'RESOURCES') {
+    if (mode === 'MARKETPLACE' || mode === 'RESOURCES' || mode === 'LIBRARY') {
       fetchResources();
       setMaterialCategory('ALL');
       setSubjectFilter('ALL');
@@ -426,6 +426,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
     if (g.includes('UNIVERSITY') || g.includes('COLLEGE') || g.includes('YEAR') || g.includes('CAMPUS') || g.includes('DEGREE') || g.includes('DIPLOMA')) {
       return EducationLevel.CAMPUS;
     }
+    const juniorGrades = ['PP1', 'PP2', 'GRADE 1', 'GRADE 2', 'GRADE 3', 'GRADE 4', 'GRADE 5', 'GRADE 6'];
     if (juniorGrades.some(jg => g.includes(jg))) {
       return EducationLevel.JUNIOR;
     }
