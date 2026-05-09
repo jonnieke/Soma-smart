@@ -9,6 +9,7 @@ import {
     Facebook, Twitter, Instagram, Linkedin, MapPin, Store, Mic, Send, Flame, Target, MessageCircle, Brain, CheckCheck, Headphones
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import ReactGA from 'react-ga4';
 import { UserRole } from '../types';
 import { useApp } from '../context/AppContext';
 import { LibraryStorefront } from '../components/LibraryStorefront';
@@ -64,10 +65,21 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
     const t = translations[language];
     const [registrationRole, setRegistrationRole] = useState<'STUDENT' | 'TEACHER' | 'SCHOOL'>('STUDENT');
     const [pendingRoute, setPendingRoute] = useState<string | null>(null);
+    const [pendingRouteState, setPendingRouteState] = useState<Record<string, unknown> | null>(null);
     const [questionInput, setQuestionInput] = useState('');
     const [showMockAnswer, setShowMockAnswer] = useState(false);
     const [isGenerating, setIsGenerating] = useState(false);
     const [generatedAnswer, setGeneratedAnswer] = useState<string | null>(null);
+
+    const trackFunnelEvent = (eventName: string, params: Record<string, unknown> = {}) => {
+        try {
+            if (import.meta.env.VITE_GA_MEASUREMENT_ID !== 'G-CHECK_GA_DASHBOARD') {
+                ReactGA.event(eventName, params);
+            }
+        } catch (_) {
+            // Non-blocking analytics
+        }
+    };
 
     const handleGenerateAnswer = async () => {
         if (!questionInput.trim()) return;
@@ -90,6 +102,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
             const data = await response.json();
             const text = data.candidates?.[0]?.content?.parts?.[0]?.text || 'I analyzed this but could not generate a summary.';
             setGeneratedAnswer(text);
+            trackFunnelEvent('learner_answer_generated', {
+                source: 'landing_hero',
+                question_length: questionInput.trim().length
+            });
         } catch (err) {
             setGeneratedAnswer('An error occurred while generating the answer. Please check your connection.');
         } finally {
@@ -214,8 +230,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
     const handleRegistrationSuccess = () => {
         setShowRegistration(false);
         if (pendingRoute) {
-            navigate(pendingRoute);
+            navigate(pendingRoute, pendingRouteState ? { state: pendingRouteState } : undefined);
             setPendingRoute(null);
+            setPendingRouteState(null);
             return;
         }
         if (isClaimingOffer) {
@@ -535,15 +552,71 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                                             <div className="h-3 bg-slate-200 dark:bg-slate-700 rounded-full w-3/4 animate-pulse" />
                                                         </div>
                                                     ) : (
-                                                        <p className="text-slate-800 dark:text-slate-200 font-medium text-sm leading-relaxed">{generatedAnswer}</p>
+                                                        <>
+                                                            <p className="text-slate-800 dark:text-slate-200 font-medium text-sm leading-relaxed">{generatedAnswer}</p>
+                                                            <div className="mt-3 flex flex-wrap gap-2">
+                                                                <span className="px-2 py-1 rounded-full text-[10px] font-black uppercase tracking-wide bg-indigo-50 text-indigo-700 border border-indigo-100">
+                                                                    KCSE/CBC Context
+                                                                </span>
+                                                                <span className="px-2 py-1 rounded-full text-[10px] font-black uppercase tracking-wide bg-emerald-50 text-emerald-700 border border-emerald-100">
+                                                                    AI Assisted
+                                                                </span>
+                                                                <span className="px-2 py-1 rounded-full text-[10px] font-black uppercase tracking-wide bg-amber-50 text-amber-700 border border-amber-100">
+                                                                    Verify With Class Material
+                                                                </span>
+                                                            </div>
+                                                        </>
                                                     )}
                                                     {!isGenerating && (
-                                                        <button
-                                                            onClick={() => navigate('/learner', { state: { pendingHeroQuestion: questionInput } })}
-                                                            className="mt-3 text-xs font-black text-indigo-600 hover:text-indigo-800 transition-colors flex items-center gap-1"
-                                                        >
-                                                            See full step-by-step working <ArrowRight className="w-3 h-3" />
-                                                        </button>
+                                                        <div className="mt-3">
+                                                            <button
+                                                                onClick={() => {
+                                                                    trackFunnelEvent('learner_answer_cta_clicked', {
+                                                                        source: 'landing_hero',
+                                                                        cta: 'practice_5_questions'
+                                                                    });
+                                                                    const learnerRouteState = { pendingHeroQuestion: questionInput, autoStartPractice: true };
+
+                                                                    if (isRegistered || role !== UserRole.NONE) {
+                                                                        setRole(UserRole.LEARNER);
+                                                                        navigate('/learner', { state: learnerRouteState });
+                                                                        return;
+                                                                    }
+
+                                                                    setRole(UserRole.LEARNER);
+                                                                    setRegistrationRole('STUDENT');
+                                                                    setPendingRoute('/learner');
+                                                                    setPendingRouteState(learnerRouteState);
+                                                                    setShowRegistration(true);
+                                                                }}
+                                                                className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-lg text-xs font-black transition-colors flex items-center justify-center gap-1 shadow-md shadow-indigo-200"
+                                                            >
+                                                                Practice 5 Questions <ArrowRight className="w-3 h-3" />
+                                                            </button>
+
+                                                            <button
+                                                                onClick={() => {
+                                                                    trackFunnelEvent('learner_answer_cta_clicked', {
+                                                                        source: 'landing_hero',
+                                                                        cta: 'full_step_by_step'
+                                                                    });
+                                                                    if (isRegistered || role !== UserRole.NONE) {
+                                                                        setRole(UserRole.LEARNER);
+                                                                        navigate('/learner', { state: { pendingHeroQuestion: questionInput } });
+                                                                        return;
+                                                                    }
+
+                                                                    setRole(UserRole.LEARNER);
+                                                                    setRegistrationRole('STUDENT');
+                                                                    setPendingRoute('/learner');
+                                                                    setPendingRouteState({ pendingHeroQuestion: questionInput });
+                                                                    setShowRegistration(true);
+                                                                }}
+                                                                className="mt-2 text-[11px] font-bold text-slate-500 hover:text-indigo-700 transition-colors flex items-center gap-1"
+                                                            >
+                                                                Need full step-by-step notes? Open detailed view <ArrowRight className="w-3 h-3" />
+                                                            </button>
+                                                        </div>
                                                     )}
                                                 </div>
                                             </div>
@@ -553,7 +626,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                             </div>
 
                             {/* Quick-prompt chips */}
-                            <div className="flex flex-wrap gap-2 mb-8">
+                            <div className={`flex flex-wrap gap-2 mb-8 transition-all duration-200 ${showMockAnswer ? 'opacity-30 pointer-events-none' : 'opacity-100'}`}>
                                 {['Photosynthesis explained simply', 'How do I find the gradient?', "Kenya's major rivers"].map((q, i) => (
                                     <button key={i} onClick={() => { setQuestionInput(q); setShowMockAnswer(false); }}
                                         className="px-3 py-1.5 rounded-full text-xs font-bold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 hover:text-indigo-700 hover:border-indigo-200 transition-all">

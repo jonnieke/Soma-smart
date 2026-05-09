@@ -1,7 +1,8 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, ReactNode } from 'react';
 import { LearnerActivity, UserRole, TeacherProfile, TeacherActivity, SchoolProfile, SchoolStats, SchoolTeacher, SchoolMaterial, TeacherWallet, TutoringRequest, MaterialListing, SubscriptionPlan, SubscriptionTier, ChatMessage, SpacedRepetitionItem, TeachingStrategy, PedagogicalAnalytics, EducationLevel } from '../types';
 import { processQuizResult, getDueTopics, getWeakTopics, loadSRFromLocal, loadMasteryFromLocal, getPersonalizedChallenge } from '../services/spacedRepetitionService';
 import { loadStrategiesFromLocal, approveStrategy as approveStrategyFn, rejectStrategy as rejectStrategyFn, addStrategies, getActiveStrategies, getPendingStrategies } from '../services/strategyService';
+import { classroomService } from '../services/classroomService';
 
 // Update interface
 interface AppContextType {
@@ -222,6 +223,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [availableQuizzes, setAvailableQuizzes] = useState<TeacherActivity[]>([]);
   const [teacherWallet, setTeacherWallet] = useState<TeacherWallet | null>(null);
   const [isAvailableForTutoring, setIsAvailableForTutoring] = useState<boolean>(false);
+  const teacherWalletAccessDeniedRef = useRef(false);
+  const pendingClassJoinRef = useRef(false);
 
   const [activeTutoringRequests, setActiveTutoringRequests] = useState<TutoringRequest[]>([]);
 
@@ -793,6 +796,31 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     };
     initSession();
   }, []);
+
+  useEffect(() => {
+    const pendingClassId = localStorage.getItem('soma_pending_class_id');
+    if (!pendingClassId || pendingClassJoinRef.current || !studentProfile?.id || !studentCode) return;
+
+    pendingClassJoinRef.current = true;
+    classroomService.joinClassWithStudentCode(pendingClassId, studentCode)
+      .then((result) => {
+        if (result.success) {
+          const joinedClassName = localStorage.getItem('soma_pending_class_name') || 'your class';
+          localStorage.removeItem('soma_pending_class_id');
+          localStorage.removeItem('soma_pending_class_name');
+          localStorage.setItem('soma_joined_class_notice', joinedClassName);
+          console.log('Joined pending classroom invite.');
+        } else {
+          console.warn('Could not join pending classroom invite:', result.message);
+        }
+      })
+      .catch((error) => {
+        console.warn('Could not join pending classroom invite:', error);
+      })
+      .finally(() => {
+        pendingClassJoinRef.current = false;
+      });
+  }, [studentProfile?.id, studentCode]);
 
 
 
@@ -1423,12 +1451,40 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const fetchEarnings = async () => {
     if (!userId) return;
+    if (teacherWalletAccessDeniedRef.current) return;
+
+    const isWalletForbiddenError = (err: any): boolean => {
+      const code = String(err?.code || '');
+      const status = Number(err?.status || 0);
+      const msg = String(err?.message || '').toLowerCase();
+      return status === 403 || code === '42501' || msg.includes('permission denied');
+    };
+
     try {
       // 1. Fetch Wallet
-      const { data: wallet } = await supabase.from('teacher_wallets').select('*').eq('id', userId).maybeSingle();
+      const { data: wallet, error: walletError } = await supabase.from('teacher_wallets').select('*').eq('id', userId).maybeSingle();
+
+      if (walletError) {
+        if (isWalletForbiddenError(walletError)) {
+          teacherWalletAccessDeniedRef.current = true;
+          setTeacherWallet(prev => prev || { balance: 0, currency: 'KES', transactions: [] });
+          console.warn('Teacher wallet access denied by RLS. Skipping wallet polling.');
+          return;
+        }
+        throw walletError;
+      }
 
       // 2. Fetch Transactions
-      const { data: transactions } = await supabase.from('transactions').select('*').eq('teacher_id', userId).order('created_at', { ascending: false });
+      const { data: transactions, error: txError } = await supabase.from('transactions').select('*').eq('teacher_id', userId).order('created_at', { ascending: false });
+      if (txError) {
+        if (isWalletForbiddenError(txError)) {
+          teacherWalletAccessDeniedRef.current = true;
+          setTeacherWallet(prev => prev || { balance: 0, currency: 'KES', transactions: [] });
+          console.warn('Transactions access denied by RLS. Skipping earnings polling.');
+          return;
+        }
+        throw txError;
+      }
 
       if (wallet) {
         setTeacherWallet({
@@ -1447,7 +1503,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       } else {
         // Auto-create wallet if missing - wrap in try/catch to prevent retry flood
         try {
-          await supabase.from('teacher_wallets').insert([{ id: userId, balance: 0, currency: 'KES' }]);
+          const { error: insertError } = await supabase.from('teacher_wallets').insert([{ id: userId, balance: 0, currency: 'KES' }]);
+          if (insertError && isWalletForbiddenError(insertError)) {
+            teacherWalletAccessDeniedRef.current = true;
+            console.warn('Wallet auto-create blocked by RLS. Disabling wallet retries.');
+          }
         } catch (insertErr) {
           console.warn('Could not auto-create wallet (RLS may block INSERT):', insertErr);
         }
@@ -1490,6 +1550,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       fetchEarnings();
     }
   }, [role, isRegistered]);
+
+  useEffect(() => {
+    teacherWalletAccessDeniedRef.current = false;
+  }, [userId]);
 
   const startGuestSession = () => {
     const saved = parseInt(localStorage.getItem('somo_guest_usage_general') || '0');
@@ -1639,15 +1703,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       const { data, error } = await query;
       if (error) throw error;
 
-      // For guests or users with no grade set, default to SENIOR (KCSE/KPSEA audience)
-      // This prevents the empty state that occurs when profile grade is unset or "Play Group"
-      const isGuestOrUnknown = role === UserRole.GUEST || !studentProfile?.grade;
-      const effectiveLevel = isGuestOrUnknown ? EducationLevel.SENIOR : educationLevel;
-
-      const filteredData = (data || []).filter(item => {
-        const itemLevel = getEducationLevelFromGrade(item.grade || '');
-        return itemLevel === effectiveLevel;
-      }).filter(item => !/^\d{13}$/.test(item.title));
+      // Do not hard-drop resources by education level at context fetch time.
+      // Let learner-side filters decide what to show so admin starter materials
+      // (NOTES / PAST_PAPER) always remain available in the library.
+      const filteredData = (data || []).filter(item => !/^\d{13}$/.test(item.title));
 
       setResources(filteredData);
     } catch (e) {

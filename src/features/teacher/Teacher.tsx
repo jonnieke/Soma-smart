@@ -19,6 +19,7 @@ import { PaymentFlow } from '../subscription/PaymentFlow';
 import { translations } from '../../data/translations';
 import { TeacherRequestModal } from '../../components/TeacherRequestModal';
 import { TutoringRequest } from '../../types';
+import { classroomService } from '../../services/classroomService';
 
 import { useNavigate, useLocation } from 'react-router-dom';
 import logoImg from '../../assets/images/main_logo.png';
@@ -52,7 +53,7 @@ const processDarasaAudioFile: TeacherGeminiService['processDarasaRecording'] = a
 
 interface TeacherProps {
     onNavigate: (view: ViewState) => void;
-    initialTab?: 'DASHBOARD' | 'MAGIC_CLASSROOM' | 'CREATION_HUB' | 'STUDENTS' | 'MARKING' | 'EARNINGS' | 'LIBRARY' | 'HOME' | 'CONVERT' | 'VOICE' | 'QUIZ' | 'MARKETPLACE' | 'PROFILE' | 'REPORTS' | 'DARASA_MODE' | 'HOMEWORK';
+    initialTab?: 'DASHBOARD' | 'CREATION_HUB' | 'STUDENTS' | 'MARKING' | 'EARNINGS' | 'LIBRARY' | 'HOME' | 'CONVERT' | 'VOICE' | 'QUIZ' | 'MARKETPLACE' | 'PROFILE' | 'REPORTS' | 'DARASA_MODE' | 'HOMEWORK';
 }
 
 export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTab }) => {
@@ -141,13 +142,14 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
     const [paymentPlan, setPaymentPlan] = useState<SubscriptionPlan | null>(null);
     const [showLoginModal, setShowLoginModal] = useState(false);
     const [showLogoutModal, setShowLogoutModal] = useState(false);
-    const [activeTab, setActiveTab] = useState<'DASHBOARD' | 'MAGIC_CLASSROOM' | 'CREATION_HUB' | 'STUDENTS' | 'MARKING' | 'EARNINGS' | 'LIBRARY' | 'CONVERT' | 'VOICE' | 'QUIZ' | 'HOME' | 'MARKETPLACE' | 'PROFILE' | 'REPORTS' | 'DARASA_MODE' | 'SCHEMES' | 'LESSON_POLISH' | 'BLACKBOARD' | 'HOMEWORK'>(initialTab || 'DASHBOARD');
+    const [teacherNotice, setTeacherNotice] = useState<{ type: 'success' | 'error' | 'info'; text: string } | null>(null);
+    const [activeTab, setActiveTab] = useState<'DASHBOARD' | 'CREATION_HUB' | 'STUDENTS' | 'MARKING' | 'EARNINGS' | 'LIBRARY' | 'CONVERT' | 'VOICE' | 'QUIZ' | 'HOME' | 'MARKETPLACE' | 'PROFILE' | 'REPORTS' | 'DARASA_MODE' | 'SCHEMES' | 'LESSON_POLISH' | 'BLACKBOARD' | 'HOMEWORK'>(initialTab || 'DASHBOARD');
     const [loading, setLoading] = useState(false);
 
     // Selection State
-    const [selectedClass, setSelectedClass] = useState<string>(teacherProfile?.classes?.[0] || (language === 'FR' ? "Département" : "Selected Department"));
+    const [selectedClass, setSelectedClass] = useState<string>(teacherProfile?.classes?.[0] || "");
     const [showOnboarding, setShowOnboarding] = useState(false);
-    const [selectedSubject, setSelectedSubject] = useState<string>(teacherProfile?.subjects?.[0] || (language === 'FR' ? "Discipline" : "Active Discipline"));
+    const [selectedSubject, setSelectedSubject] = useState<string>(teacherProfile?.subjects?.[0] || "");
 
     // Exam Generator State
     const [showExamGen, setShowExamGen] = useState(false);
@@ -166,6 +168,8 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
     // Results
     const [generatedNote, setGeneratedNote] = useState<TeacherNote | null>(null);
     const [generatedQuiz, setGeneratedQuiz] = useState<QuizData | null>(null);
+    const [isRepairingQuiz, setIsRepairingQuiz] = useState(false);
+    const [isRepairingNote, setIsRepairingNote] = useState(false);
 
     // Phase 2: Tutoring Response
     const [respondingTo, setRespondingTo] = useState<string | null>(null);
@@ -190,6 +194,17 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
     const [recordingTime, setRecordingTime] = useState(0);
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
     const chunksRef = useRef<Blob[]>([]);
+    const teacherNoticeTimeoutRef = useRef<number | null>(null);
+
+    const showTeacherNotice = (type: 'success' | 'error' | 'info', text: string) => {
+        if (teacherNoticeTimeoutRef.current) {
+            window.clearTimeout(teacherNoticeTimeoutRef.current);
+        }
+        setTeacherNotice({ type, text });
+        teacherNoticeTimeoutRef.current = window.setTimeout(() => {
+            setTeacherNotice(null);
+        }, 5000);
+    };
 
     // Update defaults when profile loads
     useEffect(() => {
@@ -232,6 +247,9 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
     // Fix: Stop mic when component unmounts
     useEffect(() => {
         return () => {
+            if (teacherNoticeTimeoutRef.current) {
+                window.clearTimeout(teacherNoticeTimeoutRef.current);
+            }
             if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
                 mediaRecorderRef.current.stop();
             }
@@ -267,6 +285,77 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
         saveTeacherActivity(activity);
     };
 
+    const validateQuizForClassroom = (quiz: any): { ok: boolean; reason?: string } => {
+        const questions = Array.isArray(quiz?.questions) ? quiz.questions : [];
+        if (!quiz?.topic || String(quiz.topic).trim().length < 4) {
+            return { ok: false, reason: "Quiz topic is missing or too short." };
+        }
+        if (questions.length < 5) {
+            return { ok: false, reason: "Quiz needs at least 5 questions before assigning." };
+        }
+        const missingCore = questions.some((q: any) => !q?.question || !q?.correctAnswer);
+        if (missingCore) {
+            return { ok: false, reason: "Some questions are missing the answer key." };
+        }
+        const thinMarking = questions.filter((q: any) => Array.isArray(q?.markingScheme) && q.markingScheme.length >= 2).length;
+        if (thinMarking < Math.ceil(questions.length * 0.6)) {
+            return { ok: false, reason: "Add fuller marking schemes first (at least 60% of questions)." };
+        }
+        return { ok: true };
+    };
+
+    const validateNoteForClassroom = (note: any): { ok: boolean; reason?: string } => {
+        const structured = String(note?.structuredNotes || '').trim();
+        const simplified = String(note?.simplifiedNotes || '').trim();
+        if (!note?.topic || String(note.topic).trim().length < 4) {
+            return { ok: false, reason: "Lesson note topic is missing or too short." };
+        }
+        if (structured.length < 220 && simplified.length < 220) {
+            return { ok: false, reason: "Lesson note is too short. Add more teaching detail first." };
+        }
+        return { ok: true };
+    };
+
+    const publishToClassroom = async (type: 'NOTE' | 'QUIZ', title: string, content: any) => {
+        if (!teacherProfile?.id) return;
+        if (!selectedClass.trim() || !selectedSubject.trim()) {
+            showTeacherNotice('error', "Select class and subject before publishing to classroom.");
+            return;
+        }
+        if (type === 'QUIZ') {
+            const quality = validateQuizForClassroom(content);
+            if (!quality.ok) {
+                showTeacherNotice('error', quality.reason || "Quiz quality check failed.");
+                return;
+            }
+        } else {
+            const quality = validateNoteForClassroom(content);
+            if (!quality.ok) {
+                showTeacherNotice('error', quality.reason || "Lesson quality check failed.");
+                return;
+            }
+        }
+        try {
+            const cls = await classroomService.getOrCreateClassByName(teacherProfile.id, selectedClass, selectedSubject);
+            const body = type === 'QUIZ'
+                ? `Quiz Assigned: ${title}\nSubject: ${selectedSubject}\nClass: ${selectedClass}\nQuestions: ${Array.isArray(content?.questions) ? content.questions.length : 0}`
+                : `Lesson Notes Shared: ${title}\nSubject: ${selectedSubject}\nClass: ${selectedClass}`;
+            await classroomService.createPost(cls.id, teacherProfile.id, type === 'QUIZ' ? 'ASSIGNMENT' : 'ANNOUNCEMENT', body);
+            showTeacherNotice('success', type === 'QUIZ' ? "Quiz assigned to class stream." : "Lesson note shared to class stream.");
+        } catch (error) {
+            console.error("Classroom publish failed:", error);
+            showTeacherNotice('error', "Could not publish to classroom. Please try again.");
+        }
+    };
+
+    const handleDarasaSave = (type: 'NOTE' | 'QUIZ', title: string, content: any) => {
+        handleSaveToHistory(type, title, content);
+        void publishToClassroom(type, title, content);
+    };
+
+    const quizPublishState = generatedQuiz ? validateQuizForClassroom(generatedQuiz) : { ok: false, reason: "No quiz generated." };
+    const notePublishState = generatedNote ? validateNoteForClassroom(generatedNote) : { ok: false, reason: "No note generated." };
+
     const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
@@ -282,7 +371,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
             handleSaveToHistory('NOTE', result.topic, result);
             setActiveTab('CONVERT');
         } catch (e) {
-            alert("Error converting file");
+            showTeacherNotice('error', "Couldn't convert that file. Please try another file or retry.");
         } finally {
             setLoading(false);
         }
@@ -318,7 +407,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                 stream.getTracks().forEach(track => track.stop());
 
                 if (blob.size < 1000) {
-                    alert("Recording too short or empty. Please try again.");
+                    showTeacherNotice('error', "Recording is too short. Please record a little longer.");
                     setLoading(false);
                     return;
                 }
@@ -330,7 +419,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
             setIsRecording(true);
         } catch (e) {
             console.error("Mic Error:", e);
-            alert("Microphone access denied. Please check your browser settings.");
+            showTeacherNotice('error', "Microphone access was blocked. Please allow microphone access and retry.");
         }
     };
 
@@ -359,7 +448,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
             };
         } catch (e) {
             console.error("Processing Error:", e);
-            alert("Error processing audio. Please try again.");
+            showTeacherNotice('error', "Audio processing failed. Please try again.");
             setLoading(false);
         }
     };
@@ -389,10 +478,44 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
             setAdvFiles([]);
             setAdvTopic("");
         } catch (e) {
-            alert("Error generating advanced quiz. Please try again.");
+            showTeacherNotice('error', "Couldn't generate the quiz right now. Please try again.");
             console.error(e);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleFixQuizWithAI = async () => {
+        if (!generatedQuiz) return;
+        setIsRepairingQuiz(true);
+        try {
+            const { repairQuizForClassroom } = await loadTeacherGeminiService();
+            const fixed = await repairQuizForClassroom(generatedQuiz, selectedSubject, selectedClass, language);
+            setGeneratedQuiz(fixed);
+            handleSaveToHistory('QUIZ', fixed.topic || generatedQuiz.topic, fixed);
+            showTeacherNotice('success', "Quiz repaired and upgraded for classroom publishing.");
+        } catch (error) {
+            console.error("Quiz repair failed:", error);
+            showTeacherNotice('error', "Could not repair the quiz right now. Please regenerate and retry.");
+        } finally {
+            setIsRepairingQuiz(false);
+        }
+    };
+
+    const handleFixNoteWithAI = async () => {
+        if (!generatedNote) return;
+        setIsRepairingNote(true);
+        try {
+            const { repairNoteForClassroom } = await loadTeacherGeminiService();
+            const fixed = await repairNoteForClassroom(generatedNote, selectedSubject, selectedClass, language);
+            setGeneratedNote(fixed);
+            handleSaveToHistory('NOTE', fixed.topic || generatedNote.topic, fixed);
+            showTeacherNotice('success', "Lesson note repaired and expanded for classroom publishing.");
+        } catch (error) {
+            console.error("Note repair failed:", error);
+            showTeacherNotice('error', "Could not repair the lesson note right now. Please retry.");
+        } finally {
+            setIsRepairingNote(false);
         }
     };
 
@@ -471,14 +594,14 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
     const primaryTeacherNav = [
         { tab: 'DASHBOARD', label: 'Dashboard' },
         { tab: 'STUDENTS', label: 'Classroom' },
-        { tab: 'CREATION_HUB', label: 'Creation Hub' },
-        { tab: 'DARASA_MODE', label: 'Darasa' },
-        { tab: 'MARKETPLACE', label: 'Store' },
+        { tab: 'CREATION_HUB', label: 'Teach' },
+        { tab: 'MARKING', label: 'Assess' },
+        { tab: 'LIBRARY', label: 'Library' },
     ] as const;
     const isTeacherNavActive = (tab: typeof primaryTeacherNav[number]['tab']) => {
         if (tab === 'CREATION_HUB') return creationTabs.includes(activeTab as any);
-        if (tab === 'STUDENTS') return ['STUDENTS', 'MARKING', 'BLACKBOARD'].includes(activeTab);
-        if (tab === 'MARKETPLACE') return ['MARKETPLACE', 'EARNINGS'].includes(activeTab);
+        if (tab === 'STUDENTS') return activeTab === 'STUDENTS';
+        if (tab === 'MARKING') return ['MARKING', 'BLACKBOARD'].includes(activeTab);
         return activeTab === tab;
     };
 
@@ -508,7 +631,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                         </button>
 
                         <div className="mb-4 text-center">
-                            <h2 className="text-xl font-bold text-slate-800">Complete Updgrade</h2>
+                            <h2 className="text-xl font-bold text-slate-800">Complete Upgrade</h2>
                             <p className="text-sm text-slate-500">Secure payment for {paymentPlan.name}</p>
                         </div>
 
@@ -516,7 +639,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                             plan={paymentPlan}
                             onSuccess={() => {
                                 setPaymentPlan(null);
-                                alert("Payment Successful! Welcome to Pro.");
+                                showTeacherNotice('success', "Payment successful. Welcome to Pro!");
                             }}
                             onCancel={() => setPaymentPlan(null)}
                         />
@@ -588,12 +711,29 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
             </div>
 
             <div className="max-w-5xl mx-auto px-6 pt-8 pb-24">
+                {teacherNotice && (
+                    <div className={`mb-6 flex items-start gap-3 rounded-2xl border px-4 py-3 ${teacherNotice.type === 'success'
+                        ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
+                        : teacherNotice.type === 'error'
+                            ? 'border-red-200 bg-red-50 text-red-800'
+                            : 'border-blue-200 bg-blue-50 text-blue-800'
+                        }`}>
+                        {teacherNotice.type === 'success' ? (
+                            <CheckCircle2 className="mt-0.5 h-4 w-4 flex-shrink-0" />
+                        ) : teacherNotice.type === 'error' ? (
+                            <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0" />
+                        ) : (
+                            <Bell className="mt-0.5 h-4 w-4 flex-shrink-0" />
+                        )}
+                        <p className="text-sm font-semibold">{teacherNotice.text}</p>
+                    </div>
+                )}
                 <Suspense fallback={<TeacherToolFallback />}>
 
                 {activeTab === 'DARASA_MODE' && (
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
                         <DarasaMode
-                            onSaveToLibrary={handleSaveToHistory}
+                            onSaveToLibrary={handleDarasaSave}
                             checkLimit={checkLimit}
                             incrementUsage={incrementTeacherUsage}
                             selectedSubject={selectedSubject}
@@ -985,6 +1125,54 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                                 <ArrowRight className="w-4 h-4 mr-2 rotate-180" /> {t.teacher.results.backToStudio}
                             </Button>
                             <div className="flex gap-3">
+                                {generatedQuiz && (
+                                    <>
+                                    <Button
+                                        variant="outline"
+                                        disabled={!quizPublishState.ok}
+                                        title={quizPublishState.ok ? "Assign this quiz to your class stream" : (quizPublishState.reason || "Quality check failed")}
+                                        onClick={() => publishToClassroom('QUIZ', generatedQuiz.topic, generatedQuiz)}
+                                        className={`rounded-xl border-2 font-black uppercase tracking-widest text-xs ${!quizPublishState.ok ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                    >
+                                        <ClipboardCheck className="w-4 h-4 mr-2" /> Assign To Class
+                                    </Button>
+                                    {!quizPublishState.ok && (
+                                        <Button
+                                            variant="outline"
+                                            disabled={isRepairingQuiz}
+                                            onClick={handleFixQuizWithAI}
+                                            className={`rounded-xl border-2 font-black uppercase tracking-widest text-xs ${isRepairingQuiz ? 'opacity-60 cursor-wait' : ''}`}
+                                        >
+                                            {isRepairingQuiz ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Sparkles className="w-4 h-4 mr-2" />}
+                                            Fix With AI
+                                        </Button>
+                                    )}
+                                    </>
+                                )}
+                                {generatedNote && (
+                                    <>
+                                    <Button
+                                        variant="outline"
+                                        disabled={!notePublishState.ok}
+                                        title={notePublishState.ok ? "Share this note to your class stream" : (notePublishState.reason || "Quality check failed")}
+                                        onClick={() => publishToClassroom('NOTE', generatedNote.topic, generatedNote)}
+                                        className={`rounded-xl border-2 font-black uppercase tracking-widest text-xs ${!notePublishState.ok ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                    >
+                                        <Share2 className="w-4 h-4 mr-2" /> Share To Class
+                                    </Button>
+                                    {!notePublishState.ok && (
+                                        <Button
+                                            variant="outline"
+                                            disabled={isRepairingNote}
+                                            onClick={handleFixNoteWithAI}
+                                            className={`rounded-xl border-2 font-black uppercase tracking-widest text-xs ${isRepairingNote ? 'opacity-60 cursor-wait' : ''}`}
+                                        >
+                                            {isRepairingNote ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Sparkles className="w-4 h-4 mr-2" />}
+                                            Fix Note With AI
+                                        </Button>
+                                    )}
+                                    </>
+                                )}
                                 <Button variant="outline" onClick={() => setActiveTab('BLACKBOARD')} className="rounded-xl border-2 font-black uppercase tracking-widest text-xs bg-slate-900 text-white border-slate-900 hover:bg-slate-800">
                                     <MonitorPlay className="w-4 h-4 mr-2" /> Digital Blackboard
                                 </Button>
@@ -1247,16 +1435,16 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                                             className="bg-blue-600 hover:bg-blue-700 text-white shadow-xl shadow-blue-100 py-4 text-lg"
                                             onClick={async () => {
                                                 if (!listingTitle.trim()) {
-                                                    alert("Please enter a title!");
+                                                    showTeacherNotice('error', "Please enter a material title.");
                                                     return;
                                                 }
                                                 if (!teacherProfile) {
-                                                    alert("Please log in as a teacher before listing material.");
+                                                    showTeacherNotice('error', "Please log in as a teacher before listing material.");
                                                     return;
                                                 }
                                                 const fileUrl = listingFileUrl.trim();
                                                 if (!/^https?:\/\/\S+$/i.test(fileUrl)) {
-                                                    alert("Please paste a valid material link before listing.");
+                                                    showTeacherNotice('error', "Please paste a valid material link.");
                                                     return;
                                                 }
                                                 setLoading(true);
@@ -1276,9 +1464,11 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                                                     setListingTitle("");
                                                     setListingFileUrl("");
                                                     setShowUploadPortal(false);
-                                                    alert("Material listed in the marketplace!");
+                                                    setListingPrice(50);
+                                                    setListingCategory('NOTES');
+                                                    showTeacherNotice('success', "Material listed in the marketplace.");
                                                 } else {
-                                                    alert(res.message || "Could not list material. Please try again.");
+                                                    showTeacherNotice('error', res.message || "Could not list material. Please try again.");
                                                 }
                                             }}
                                         >
@@ -1417,9 +1607,9 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                                                 if (res.success) {
                                                     setRespondingTo(null);
                                                     setResponseText("");
-                                                    alert(res.message);
+                                                    showTeacherNotice('success', res.message);
                                                 } else {
-                                                    alert(res.message);
+                                                    showTeacherNotice('error', res.message);
                                                 }
                                             }}
                                         >

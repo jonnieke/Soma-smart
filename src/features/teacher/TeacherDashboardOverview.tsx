@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Sparkles, AlertCircle, TrendingUp, FileText, Lightbulb, ChevronRight, Bell, DollarSign, Clock, CheckCircle2, Library, Brain, Layers, Mic, LayoutDashboard } from 'lucide-react';
+import { Sparkles, FileText, Lightbulb, ChevronRight, Bell, DollarSign, Clock, Library, Brain, Mic, LayoutDashboard } from 'lucide-react';
 import { TeacherProfile, TutoringRequest, TeacherActivity, TeacherWallet } from '../../types';
 
 interface TeacherDashboardOverviewProps {
@@ -10,7 +10,7 @@ interface TeacherDashboardOverviewProps {
     activeTutoringRequests: TutoringRequest[];
     teacherHistory: TeacherActivity[];
     teacherWallet: TeacherWallet | null;
-    onNavigate: (tab: 'MAGIC_CLASSROOM' | 'MARKING' | 'LIBRARY' | 'CREATION_HUB' | 'DARASA_MODE') => void;
+    onNavigate: (tab: 'STUDENTS' | 'MARKING' | 'LIBRARY' | 'CREATION_HUB' | 'DARASA_MODE') => void;
     onRequestClick: (request: TutoringRequest) => void;
     onHistoryItemClick: (item: TeacherActivity) => void;
 }
@@ -28,6 +28,11 @@ export const TeacherDashboardOverview: React.FC<TeacherDashboardOverviewProps> =
 }) => {
 
     const pendingRequests = activeTutoringRequests.filter(r => r.status === 'PENDING');
+    const totalCreations = teacherHistory.length;
+    const noteCount = teacherHistory.filter(item => item.type === 'NOTE').length;
+    const quizCount = teacherHistory.filter(item => item.type === 'QUIZ').length;
+    const hasCreatedResources = totalCreations > 0;
+    const primaryCtaLabel = hasCreatedResources ? 'Open Creation Hub' : 'Create First Resource';
     const todayEarnings = teacherWallet?.transactions
         .filter(t => new Date(t.date).toLocaleDateString() === new Date().toLocaleDateString())
         .reduce((acc, t) => acc + (t.type === 'EARNING' ? t.amount : 0), 0) || 0;
@@ -43,25 +48,25 @@ export const TeacherDashboardOverview: React.FC<TeacherDashboardOverviewProps> =
                     <div className="relative z-10 flex-1 w-full text-emerald-50">
                         <h2 className="text-2xl font-black tracking-tight mb-6 flex items-center gap-2 text-white">
                             <LayoutDashboard className="w-6 h-6 text-emerald-300" />
-                            Dashboard Overview
+                            Welcome back, {teacherProfile?.name?.split(' ')[0] || 'Teacher'}
                         </h2>
 
                         <div className="space-y-4 font-bold text-sm">
                             <div className="flex items-center gap-3">
                                 <div className="w-8 h-8 rounded-xl bg-white/10 flex items-center justify-center border-2 border-white/20">
-                                    <AlertCircle className="w-4 h-4 text-emerald-100" />
+                                    <FileText className="w-4 h-4 text-emerald-100" />
                                 </div>
                                 <p className="text-emerald-100">
-                                    <span className="text-white font-black text-base">8 students</span> at risk in {selectedSubject}
+                                    <span className="text-white font-black text-base">{noteCount}</span> note{noteCount === 1 ? '' : 's'} created in {selectedSubject}
                                 </p>
                             </div>
 
                             <div className="flex items-center gap-3">
                                 <div className="w-8 h-8 rounded-xl bg-white/10 flex items-center justify-center border-2 border-white/20">
-                                    <TrendingUp className="w-4 h-4 text-emerald-100" />
+                                    <Brain className="w-4 h-4 text-emerald-100" />
                                 </div>
                                 <p className="text-emerald-100">
-                                    <span className="text-white font-black text-base">{selectedClass} improving</span> <span className="text-emerald-300">+6%</span>
+                                    <span className="text-white font-black text-base">{quizCount}</span> assessment{quizCount === 1 ? '' : 's'} generated for {selectedClass}
                                 </p>
                             </div>
 
@@ -70,7 +75,11 @@ export const TeacherDashboardOverview: React.FC<TeacherDashboardOverviewProps> =
                                     <Lightbulb className="w-4 h-4 text-emerald-100" />
                                 </div>
                                 <p className="text-emerald-100">
-                                    Suggested remedial: <span className="text-white font-black text-base">Decimals</span>
+                                    {hasCreatedResources ? (
+                                        <>Your library now has <span className="text-white font-black text-base">{totalCreations}</span> total resource{totalCreations === 1 ? '' : 's'}</>
+                                    ) : (
+                                        <>Start with one resource to populate your class library automatically.</>
+                                    )}
                                 </p>
                             </div>
                         </div>
@@ -83,15 +92,15 @@ export const TeacherDashboardOverview: React.FC<TeacherDashboardOverviewProps> =
                             className="w-full bg-white text-emerald-900 px-8 py-4 rounded-2xl font-black text-lg shadow-sm hover:bg-emerald-50 transition-all flex items-center justify-center gap-2 group border-2 border-emerald-900"
                         >
                             <Sparkles className="w-5 h-5 text-emerald-600" />
-                            Creation Hub
+                            {primaryCtaLabel}
                             <ChevronRight className="w-5 h-5 text-emerald-400 group-hover:text-emerald-600 transition-colors" />
                         </button>
                         <button
-                            onClick={() => onNavigate('DARASA_MODE')}
+                            onClick={() => onNavigate('STUDENTS')}
                             className="w-full bg-emerald-900 text-emerald-100 border-2 border-emerald-700 px-8 py-3.5 rounded-2xl font-bold hover:bg-emerald-700 hover:text-white transition-all flex items-center justify-center gap-2"
                         >
-                            <Mic className="w-5 h-5" />
-                            Darasa Mode
+                            <Library className="w-5 h-5" />
+                            Open Classroom
                         </button>
                     </div>
                 </div>

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import logoImg from '../../assets/images/main_logo.png';
 import { motion, AnimatePresence } from 'framer-motion';
+import ReactGA from 'react-ga4';
 import {
   Sparkles, Home, X, XCircle, Camera, ScanLine, Mic, Upload, Clock,
   CheckCircle, Play, Pause, ChevronRight, Star, BookOpen, Brain, Lightbulb, Lock, Volume2, CreditCard, Crown,
@@ -28,6 +29,7 @@ import { translations } from '../../data/translations';
 import { QuizRunner } from './QuizRunner';
 import { ThemeToggle } from '../../components/ThemeToggle';
 import { DashboardSidebar, SidebarTab } from '../../components/DashboardSidebar';
+import { classroomService, StudentClassroomSummary } from '../../services/classroomService';
 
 const RevisionLanding = React.lazy(() => import('../revision/RevisionLanding').then(module => ({ default: module.RevisionLanding })));
 const RevisionSession = React.lazy(() => import('../revision/RevisionSession').then(module => ({ default: module.RevisionSession })));
@@ -97,6 +99,16 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
   const t = translations[language];
   const location = useLocation();
 
+  const trackFunnelEvent = React.useCallback((eventName: string, params: Record<string, unknown> = {}) => {
+    try {
+      if (import.meta.env.VITE_GA_MEASUREMENT_ID !== 'G-CHECK_GA_DASHBOARD') {
+        ReactGA.event(eventName, params);
+      }
+    } catch (_) {
+      // Non-blocking analytics
+    }
+  }, []);
+
   // Read target tab from navigation state if coming from another route (like /exam-rooms)
   const initialTab = (location.state as any)?.targetTab as SidebarTab || 'HOME';
   const initialMode = initialTab === 'SMART_TUTOR' || initialTab === 'HOMEWORK' ? 'SCAN_EXPLAIN' :
@@ -143,7 +155,42 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
   }, [totalXP]);
 
   const [showStreakModal, setShowStreakModal] = useState(false);
+  const [joinedClassNotice, setJoinedClassNotice] = useState<string | null>(null);
+  const [studentClasses, setStudentClasses] = useState<StudentClassroomSummary[]>([]);
+  const [isLoadingStudentClasses, setIsLoadingStudentClasses] = useState(false);
   const prevStreakRef = useRef(streak);
+
+  useEffect(() => {
+    const notice = localStorage.getItem('soma_joined_class_notice');
+    if (!notice) return;
+    setJoinedClassNotice(notice);
+    localStorage.removeItem('soma_joined_class_notice');
+  }, []);
+
+  useEffect(() => {
+    if (!studentProfile?.id) {
+      setStudentClasses([]);
+      return;
+    }
+
+    let mounted = true;
+    setIsLoadingStudentClasses(true);
+    classroomService.getClassesForStudent(studentProfile.id)
+      .then((classes) => {
+        if (mounted) setStudentClasses(classes);
+      })
+      .catch((error) => {
+        console.warn('Could not load learner classes:', error);
+        if (mounted) setStudentClasses([]);
+      })
+      .finally(() => {
+        if (mounted) setIsLoadingStudentClasses(false);
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, [studentProfile?.id, joinedClassNotice]);
 
   useEffect(() => {
     // Only show modal if streak increases DURING the session, and they already had a streak (or it's their first, but prev > 0 prevents firing on initial load if we somehow miscalculate)
@@ -300,6 +347,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
 
   const [tutoringTopic, setTutoringTopic] = useState("");
   const [materialCategory, setMaterialCategory] = useState<'ALL' | 'NOTES' | 'PAST_PAPER' | 'SYLLABUS'>('ALL');
+  const [libraryView, setLibraryView] = useState<'UNLOCKED' | 'PURCHASED' | 'PRO_VAULT'>('UNLOCKED');
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
 
   // PWA Install Prompt Logic
@@ -395,6 +443,19 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
     }
   }, [mode, educationLevel]);
 
+  const normalizeMaterialCategory = (rawCategory: any): string => {
+    const normalized = String(rawCategory || '')
+      .toUpperCase()
+      .replace(/[\s-]+/g, '_')
+      .trim();
+
+    if (normalized.includes('SYLLABUS')) return 'SYLLABUS';
+    if (normalized.includes('NOTE')) return 'NOTES';
+    if (normalized === 'REVISION_PAPER' || normalized === 'REVISIONPAPER' || normalized === 'PASTPAPER' || normalized === 'PAST_PAPERS' || normalized === 'PAST_PAPER') return 'PAST_PAPER';
+    if (normalized === 'MARKING_SCHEME' || normalized === 'RECORDED_LESSON') return normalized;
+    return normalized || 'NOTES';
+  };
+
   const unifiedMaterials = React.useMemo(() => {
     const verified = (resources || []).map((r: any) => ({
       id: `v-${r.id}`,
@@ -409,14 +470,19 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
       price: r.type === 'SYLLABUS' ? 0 : 0, // In logic, if it's premium verified, we check Pro
       grade: r.grade,
       subject: r.subject,
-      category: r.type, // Preserve original type so PAST_PAPER / NOTES are visible in library
+      category: normalizeMaterialCategory(r.type),
       fileUrl: r.file_url,
       rating: r.rating ?? 0,
       downloadCount: r.download_count ?? 0,
       isInternal: true
     }));
 
-    const teacher = (marketplaceMaterials || []).map(m => ({ ...m, isVerified: false, isInternal: false }));
+    const teacher = (marketplaceMaterials || []).map(m => ({
+      ...m,
+      category: normalizeMaterialCategory(m.category),
+      isVerified: false,
+      isInternal: false
+    }));
 
     return [...verified, ...teacher];
   }, [resources, marketplaceMaterials]);
@@ -467,9 +533,12 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
 
   const filteredMaterials = React.useMemo(() => {
     return unifiedMaterials.filter(m => {
+      const normalizedCategory = normalizeMaterialCategory(m.category);
+      const isVerifiedStarter = Boolean(m.isVerified) && (normalizedCategory === 'NOTES' || normalizedCategory === 'PAST_PAPER');
+
       // 0. Education level filter: prevent cross-level content leakage
       const materialLevel = getGradeLevel(m.grade || '');
-      if (materialLevel !== educationLevel) return false;
+      if (!isVerifiedStarter && materialLevel !== educationLevel) return false;
 
       // 1. Category Filter
       if (materialCategory !== 'ALL' && m.category !== materialCategory) return false;
@@ -485,13 +554,37 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
     });
   }, [unifiedMaterials, materialCategory, subjectFilter, selectedGrade, selectedSource, educationLevel]);
 
+  const isStarterCategory = (category: string) =>
+    ['SYLLABUS', 'NOTES', 'PAST_PAPER'].includes(normalizeMaterialCategory(category));
+
+  const getMaterialAccessStatus = React.useCallback((material: any) => {
+    const normalizedCategory = normalizeMaterialCategory(material.category);
+    const isOwned = purchasedMaterialIds.includes(material.id);
+    const isVerified = Boolean(material.isVerified);
+    const starter = isStarterCategory(normalizedCategory);
+
+    if (isOwned) return 'OWNED' as const;
+    if (isVerified && starter) return 'FREE' as const;
+    if (isVerified && isPro) return 'PRO_INCLUDED' as const;
+    if (isVerified && !isPro) return 'PRO_LOCKED' as const;
+    return 'PURCHASE' as const;
+  }, [purchasedMaterialIds, isPro]);
+
   // Check for subscription intent & Auto-open material intent
   React.useEffect(() => {
-    const state = location.state as { pendingHeroQuestion?: string; selectedPlan?: SubscriptionPlan; openSubscription?: boolean, initiatePaymentFor?: SubscriptionPlan, materialId?: string };
+    const state = location.state as {
+      pendingHeroQuestion?: string;
+      autoStartPractice?: boolean;
+      selectedPlan?: SubscriptionPlan;
+      openSubscription?: boolean;
+      initiatePaymentFor?: SubscriptionPlan;
+      materialId?: string;
+    };
 
     // Faded Solution / Full Solution Modal Check
     if (state?.pendingHeroQuestion) {
-      setFadedSolutionData({ query: state.pendingHeroQuestion, answer: null, isGenerating: true, show: true });
+      const shouldAutoStartPractice = Boolean(state.autoStartPractice);
+      setFadedSolutionData({ query: state.pendingHeroQuestion, answer: null, isGenerating: true, show: !shouldAutoStartPractice });
       
       const fetchHeroAnswer = async () => {
           try {
@@ -511,7 +604,24 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
             const data = await response.json();
             const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
             if (text) {
-                setFadedSolutionData({ query: state.pendingHeroQuestion, answer: text, isGenerating: false, show: true });
+                setFadedSolutionData({ query: state.pendingHeroQuestion, answer: text, isGenerating: false, show: !shouldAutoStartPractice });
+
+                if (shouldAutoStartPractice) {
+                  try {
+                    const heroQuiz = await generateQuickQuiz(text, state.pendingHeroQuestion, language);
+                    setQuizData(heroQuiz);
+                    trackFunnelEvent('learner_quiz_started', {
+                      source: 'landing_auto_practice',
+                      topic: state.pendingHeroQuestion
+                    });
+                    setMode('QUIZ');
+                  } catch {
+                    setError({
+                      title: "Practice Quiz Unavailable",
+                      message: "We generated your answer, but couldn't start the quiz right now. Please try again in a moment."
+                    });
+                  }
+                }
             }
           } catch(err) {
               setFadedSolutionData({ query: state.pendingHeroQuestion, answer: "**Connection Interrupted**\n\nThe AI was generating the detailed step-by-step logic, but a network error occurred. Please close this window and try again to view the full breakdown.", isGenerating: false, show: true });
@@ -574,6 +684,13 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
   const startStudySession = async (material: any) => {
     // Paywall Check: 3 free usages for non-pro users
     if (!checkLimit({ type: 'STUDY_SESSION', material, materialName: material.title })) return;
+    trackFunnelEvent('library_action_explain', {
+      source: mode === 'LIBRARY' ? 'library' : 'marketplace',
+      material_id: material.id,
+      material_category: material.category,
+      subject: material.subject,
+      grade: material.grade
+    });
 
     setCurrentDocument(material);
     setMode('STUDY');
@@ -641,19 +758,25 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
   };
 
   const handleDownloadAIRevisionNotes = async (material: any, bypassLimit = false) => {
-    // 1. Strict Subscription Check
-    if (!isPro) {
+    const normalizedCategory = normalizeMaterialCategory(material?.category);
+    const isAdminStarterMaterial = Boolean(material?.isVerified) && (normalizedCategory === 'NOTES' || normalizedCategory === 'PAST_PAPER');
+    const isTeacherMonetizedMaterial = !material?.isVerified;
+
+    // Gate only teacher-created monetized materials.
+    if (isTeacherMonetizedMaterial && !isPro) {
       handlePricingNavigation();
-      setError({ title: "Subscription Required", message: "Downloads are exclusive to Somo Smart Pro members. Join today to unlock elite revision notes!" });
+      setError({ title: "Subscription Required", message: "Upgrade to Pro to download teacher premium resources." });
       return;
     }
 
-    // 2. Daily Limit Check (3 + extra)
-    const effectiveLimit = 3 + extraDownloads;
-    if (downloadUsageCount >= effectiveLimit && !bypassLimit) {
-      setPendingDownloadMaterial(material);
-      setShowDownloadPayment(true);
-      return;
+    // Apply paid daily limit only to monetized paths, not admin starter resources.
+    if (!isAdminStarterMaterial) {
+      const effectiveLimit = 3 + extraDownloads;
+      if (downloadUsageCount >= effectiveLimit && !bypassLimit) {
+        setPendingDownloadMaterial(material);
+        setShowDownloadPayment(true);
+        return;
+      }
     }
 
     setPendingDownloadMaterial(material);
@@ -798,8 +921,21 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
         doc.text(`Page ${i} of ${totalPages} | Prepared by Somo Smart AI`, pageWidth / 2, pageHeight - 10, { align: 'center' });
       }
 
-      // 3. Increment usage only on success and if not a paid overage
-      if (!bypassLimit) {
+      const downloadFileName = `${material.title || 'lesson_notes'}_somo_smart.pdf`
+        .replace(/[^a-z0-9_\- ]/gi, '')
+        .replace(/\s+/g, '_')
+        .toLowerCase();
+      doc.save(downloadFileName);
+      trackFunnelEvent('library_downloaded', {
+        material_id: material.id,
+        material_category: material.category,
+        subject: material.subject,
+        grade: material.grade,
+        source: mode === 'LIBRARY' ? 'library' : 'marketplace'
+      });
+
+      // Increment usage only for monetized materials (admin starter resources are open access).
+      if (!isAdminStarterMaterial && !bypassLimit) {
         incrementDownloadUsage();
       }
 
@@ -876,6 +1012,16 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
     try {
       const data = await generateQuiz(explanation.explanation, currentDocument.title, language);
       setQuizData(data);
+      trackFunnelEvent('library_action_quiz', {
+        material_id: currentDocument.id,
+        material_category: currentDocument.category,
+        subject: currentDocument.subject,
+        grade: currentDocument.grade
+      });
+      trackFunnelEvent('learner_quiz_started', {
+        source: 'study_session',
+        topic: currentDocument.title
+      });
       setMode('QUIZ');
     } catch (err) {
       console.error("Quiz error:", err);
@@ -1563,6 +1709,10 @@ ${explanation.explanation}
       const quiz = await generateQuiz(explanation.explanation, explanation.topic, language);
       setQuizData(quiz);
       setStickyQuizTaken(true); // Marked as taken so they aren't bugged on exit
+      trackFunnelEvent('learner_quiz_started', {
+        source: 'result_view',
+        topic: explanation.topic
+      });
       setMode('QUIZ');
     } catch (error) {
       alert("Failed to generate quiz."); // Keep alert for in-flow minor error or upgrade to setError if critical
@@ -2357,6 +2507,31 @@ ${explanation.explanation}
 
           {/* SCROLL CONTENT */}
           <div className="max-w-5xl mx-auto px-4 pb-32 pt-6">
+            <AnimatePresence>
+              {joinedClassNotice && (
+                <motion.div
+                  initial={{ opacity: 0, y: -8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -8 }}
+                  className="mb-6 bg-emerald-50 dark:bg-emerald-950/40 border-2 border-emerald-200 dark:border-emerald-900 rounded-2xl p-4 flex items-start gap-3"
+                >
+                  <CheckCircle className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
+                  <div className="flex-1">
+                    <p className="text-sm font-black text-emerald-900 dark:text-emerald-100">You joined {joinedClassNotice}</p>
+                    <p className="text-xs font-bold text-emerald-800/80 dark:text-emerald-200/80 mt-1">
+                      Your teacher can now see you in the classroom roster.
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setJoinedClassNotice(null)}
+                    className="p-1 rounded-lg text-emerald-700 hover:bg-emerald-100 dark:text-emerald-300 dark:hover:bg-emerald-900/60 transition-colors"
+                    aria-label="Dismiss class joined notice"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             {/* HEADER METRICS */}
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 gap-4">
@@ -2537,6 +2712,60 @@ ${explanation.explanation}
               </div>
 
               <div className="space-y-6">
+                  {/* MY CLASSES */}
+                  {(isRegistered || studentClasses.length > 0) && (
+                    <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-sm border-2 border-slate-300 dark:border-slate-800 p-6">
+                      <div className="flex items-center justify-between mb-5">
+                        <div>
+                          <h3 className="font-bold text-slate-800 dark:text-white">My Classes</h3>
+                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-0.5">Teacher updates</p>
+                        </div>
+                        {isLoadingStudentClasses && <Loader2 className="w-4 h-4 text-emerald-500 animate-spin" />}
+                      </div>
+
+                      {studentClasses.length === 0 ? (
+                        <div className="rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-800 p-5 text-center">
+                          <Users className="w-8 h-8 text-slate-300 mx-auto mb-3" />
+                          <p className="text-sm font-bold text-slate-500 dark:text-slate-400">No class invites joined yet.</p>
+                          <p className="text-xs font-medium text-slate-400 mt-1">Open a teacher's WhatsApp invite link to join.</p>
+                        </div>
+                      ) : (
+                        <div className="space-y-4">
+                          {studentClasses.slice(0, 3).map((item) => {
+                            const latestPost = item.latestPosts[0];
+                            return (
+                              <div key={item.class.id} className="rounded-2xl border-2 border-slate-200 dark:border-slate-800 p-4">
+                                <div className="flex items-start justify-between gap-3 mb-3">
+                                  <div>
+                                    <h4 className="text-sm font-black text-slate-900 dark:text-white">{item.class.name}</h4>
+                                    <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest mt-1">{item.class.subject}</p>
+                                  </div>
+                                  <span className="text-[10px] font-bold text-slate-400 whitespace-nowrap">
+                                    {item.class.profiles?.name || 'Teacher'}
+                                  </span>
+                                </div>
+
+                                {latestPost ? (
+                                  <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-3">
+                                    <div className="flex items-center gap-2 mb-1">
+                                      <ClipboardList className="w-3.5 h-3.5 text-slate-400" />
+                                      <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">
+                                        {latestPost.post_type === 'ASSIGNMENT' ? 'Assignment' : 'Announcement'}
+                                      </span>
+                                    </div>
+                                    <p className="text-xs font-bold text-slate-600 dark:text-slate-300 line-clamp-3 whitespace-pre-wrap">{latestPost.content}</p>
+                                  </div>
+                                ) : (
+                                  <p className="text-xs font-bold text-slate-400">No teacher posts yet.</p>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   {/* DAILY CHALLENGE */}
                   {dailyChallenge && (
                      <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-sm border-2 border-slate-300 dark:border-slate-800 p-6 relative overflow-hidden group">
@@ -4103,6 +4332,12 @@ ${explanation.explanation}
         // Feature: Sync mastery to cloud (non-blocking)
         triggerMemorySync();
 
+        trackFunnelEvent('learner_quiz_completed', {
+          topic: quizData.topic,
+          score,
+          source: 'quiz_runner'
+        });
+
         // Return to marketplace/materials after study quiz
         setMode('MARKETPLACE');
       }} onExit={() => setMode('RESULT')} />;
@@ -4299,6 +4534,87 @@ ${explanation.explanation}
               </div>
             )}
 
+            {/* Outcome-First Paths */}
+            <div className="px-6 pb-2">
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3">Start with your goal</p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {[
+                  {
+                    id: 'revise_topic',
+                    title: 'Revise a Topic',
+                    subtitle: 'High-quality notes for fast understanding',
+                    icon: Brain,
+                    className: 'border-indigo-200 bg-indigo-50 text-indigo-700',
+                    onClick: () => {
+                      setMaterialCategory('NOTES');
+                      setSelectedSource('SOMO');
+                      setSelectedGrade('ALL');
+                      setSubjectFilter('ALL');
+                      trackFunnelEvent('library_intent_selected', { intent: 'revise_topic' });
+                    }
+                  },
+                  {
+                    id: 'past_paper_marking',
+                    title: 'Past Paper + Marking',
+                    subtitle: 'Exam-style papers and answer guidance',
+                    icon: Layers,
+                    className: 'border-amber-200 bg-amber-50 text-amber-700',
+                    onClick: () => {
+                      setMaterialCategory('PAST_PAPER');
+                      setSelectedSource('SOMO');
+                      setSelectedGrade('ALL');
+                      setSubjectFilter('ALL');
+                      trackFunnelEvent('library_intent_selected', { intent: 'past_paper_marking' });
+                    }
+                  },
+                  {
+                    id: 'quick_notes',
+                    title: 'Quick Notes',
+                    subtitle: 'Concise notes to review in minutes',
+                    icon: FileText,
+                    className: 'border-blue-200 bg-blue-50 text-blue-700',
+                    onClick: () => {
+                      setMaterialCategory('NOTES');
+                      setSubjectFilter('ALL');
+                      setSelectedGrade('ALL');
+                      setSelectedSource('SOMO');
+                      trackFunnelEvent('library_intent_selected', { intent: 'quick_notes' });
+                    }
+                  },
+                  {
+                    id: 'teacher_picks',
+                    title: 'Teacher Picks',
+                    subtitle: 'Community-created premium resources',
+                    icon: Star,
+                    className: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+                    onClick: () => {
+                      setSelectedSource('TEACHERS');
+                      setMaterialCategory('ALL');
+                      setSelectedGrade('ALL');
+                      setSubjectFilter('ALL');
+                      trackFunnelEvent('library_intent_selected', { intent: 'teacher_picks' });
+                    }
+                  }
+                ].map((card) => (
+                  <button
+                    key={card.id}
+                    onClick={card.onClick}
+                    className={`rounded-2xl border p-4 text-left transition-all hover:shadow-md hover:-translate-y-0.5 ${card.className}`}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-white/70 flex items-center justify-center">
+                        <card.icon className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-black tracking-tight">{card.title}</p>
+                        <p className="text-[11px] font-semibold opacity-80">{card.subtitle}</p>
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
             {/* Filters */}
             <div className="px-6 space-y-4">
               {/* Simple Horizontal Mode Tabs for Mobile-First Experience */}
@@ -4357,6 +4673,20 @@ ${explanation.explanation}
               {/* Grade + Subject Row */}
               <div className="flex flex-wrap items-center gap-3">
                 <select
+                  value={selectedSource}
+                  onChange={(e) => {
+                    const nextSource = e.target.value as 'ALL' | 'SOMO' | 'TEACHERS';
+                    setSelectedSource(nextSource);
+                    trackFunnelEvent('library_source_changed', { source: nextSource });
+                  }}
+                  className="bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-white text-[10px] font-bold uppercase tracking-wider rounded-xl px-3 py-2 outline-none focus:border-indigo-500 transition-all cursor-pointer"
+                >
+                  <option value="ALL">All Sources</option>
+                  <option value="SOMO">Somo Smart</option>
+                  <option value="TEACHERS">Teacher Picks</option>
+                </select>
+
+                <select
                   value={selectedGrade}
                   onChange={(e) => setSelectedGrade(e.target.value)}
                   className="bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-white text-[10px] font-bold uppercase tracking-wider rounded-xl px-3 py-2 outline-none focus:border-indigo-500 transition-all cursor-pointer"
@@ -4391,9 +4721,15 @@ ${explanation.explanation}
                   </select>
                 </div>
 
-                {(materialCategory !== 'ALL' || selectedGrade !== 'ALL' || subjectFilter !== 'ALL') && (
+                {(materialCategory !== 'ALL' || selectedGrade !== 'ALL' || subjectFilter !== 'ALL' || selectedSource !== 'ALL') && (
                   <button
-                    onClick={() => { setMaterialCategory('ALL'); setSelectedGrade('ALL'); setSubjectFilter('ALL'); }}
+                    onClick={() => {
+                      setMaterialCategory('ALL');
+                      setSelectedGrade('ALL');
+                      setSubjectFilter('ALL');
+                      setSelectedSource('ALL');
+                      trackFunnelEvent('library_filters_reset', { source: 'ALL' });
+                    }}
                     className="text-[9px] font-black text-indigo-500 hover:text-indigo-700 uppercase tracking-wider px-3 py-2 rounded-xl hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-all"
                   >
                     Reset ✕
@@ -4409,23 +4745,23 @@ ${explanation.explanation}
                   <div className="md:col-span-2 py-12 md:py-32 text-center bg-white border-2 border-dashed border-slate-200 rounded-[2.5rem]">
                     <ShoppingBag className="w-12 h-12 text-slate-200 mx-auto mb-4" />
                     <h4 className="font-black text-slate-300 uppercase tracking-widest text-xs">No materials found in this category</h4>
-                    <button onClick={() => { setMaterialCategory('ALL'); setSubjectFilter('ALL'); }} className="mt-4 text-indigo-600 font-black uppercase text-[10px] tracking-widest hover:underline">Reset Filters</button>
+                    <button onClick={() => { setMaterialCategory('ALL'); setSubjectFilter('ALL'); setSelectedSource('ALL'); trackFunnelEvent('library_filters_reset', { source: 'ALL' }); }} className="mt-4 text-indigo-600 font-black uppercase text-[10px] tracking-widest hover:underline">Reset Filters</button>
                   </div>
                 ) : (
                   filteredMaterials.map(item => {
-                    const isOwned = purchasedMaterialIds.includes(item.id);
                     const isSyllabus = item.category === 'SYLLABUS';
                     const isNotes = item.category === 'NOTES';
                     const isPastPaper = item.category === 'PAST_PAPER';
                     const isVerified = item.isVerified;
+                    const sourceType = isVerified ? 'Somo Smart' : 'Teacher';
+                    const alignmentTag = getGradeLevel(item.grade || '') === EducationLevel.JUNIOR ? 'CBC/KPSEA' : 'KCSE';
+                    const createdAtValue = (item as any).createdAt ? new Date((item as any).createdAt) : null;
+                    const reviewedLabel = createdAtValue && !isNaN(createdAtValue.getTime())
+                      ? `Reviewed ${createdAtValue.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`
+                      : 'Recently reviewed';
+                    const qualityLabel = isVerified ? 'Editorial Reviewed' : 'Community Rated';
 
-                    // Monetization Logic:
-                    // All Somo-verified content (syllabus, notes, past papers) is FREE.
-                    // Teacher marketplace materials require purchase or Pro.
-                    let status = 'PURCHASE';
-                    if (isOwned) status = 'OWNED';
-                    else if (isSyllabus || isNotes || isPastPaper) status = 'FREE';
-                    else if (isVerified) status = isPro ? 'PRO_INCLUDED' : 'PRO_LOCKED';
+                    const status = getMaterialAccessStatus(item);
 
                     return (
                       <motion.div
@@ -4475,6 +4811,20 @@ ${explanation.explanation}
                             <span className="text-slate-200">/</span>
                             <span className="text-slate-400">{isVerified ? "Somo Smart" : item.teacherName}</span>
                           </div>
+                          <div className="flex flex-wrap gap-1.5 mb-4">
+                            <span className="px-2 py-0.5 rounded-md text-[8px] font-black uppercase tracking-wider bg-slate-100 text-slate-600">
+                              {sourceType}
+                            </span>
+                            <span className="px-2 py-0.5 rounded-md text-[8px] font-black uppercase tracking-wider bg-indigo-50 text-indigo-700 border border-indigo-100">
+                              {alignmentTag}
+                            </span>
+                            <span className="px-2 py-0.5 rounded-md text-[8px] font-black uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-100">
+                              {qualityLabel}
+                            </span>
+                            <span className="px-2 py-0.5 rounded-md text-[8px] font-black uppercase tracking-wider bg-amber-50 text-amber-700 border border-amber-100">
+                              {reviewedLabel}
+                            </span>
+                          </div>
                         </div>
 
                         <div className="flex gap-2 mt-auto">
@@ -4484,11 +4834,22 @@ ${explanation.explanation}
                               ? 'bg-amber-50 text-amber-700 border-amber-200 shadow-none hover:bg-amber-100'
                               : 'bg-indigo-600 text-white border-indigo-600 shadow-md shadow-indigo-100 hover:bg-indigo-700 hover:scale-[1.02]'
                               }`}
-                            onClick={() => startStudySession(item)}
+                            onClick={() => {
+                              if (isSyllabus) {
+                                trackFunnelEvent('library_syllabus_opened', {
+                                  material_id: item.id,
+                                  subject: item.subject,
+                                  grade: item.grade
+                                });
+                                if (item.fileUrl) window.open(item.fileUrl, '_blank');
+                                return;
+                              }
+                              startStudySession(item);
+                            }}
                             isLoading={loading && currentDocument?.id === item.id}
-                            icon={usageCount >= 3 && !isPro ? <Lock className="w-3 h-3" /> : <Sparkles className="w-3 h-3" />}
+                            icon={isSyllabus ? <Library className="w-3 h-3" /> : usageCount >= 3 && !isPro ? <Lock className="w-3 h-3" /> : <Sparkles className="w-3 h-3" />}
                           >
-                            {usageCount >= 3 && !isPro ? 'Limit Reached' : 'Study'}
+                            {isSyllabus ? 'Open Guide' : usageCount >= 3 && !isPro ? 'Limit Reached' : 'Study'}
                           </Button>
                           <Button
                             variant="ghost"
@@ -4546,42 +4907,119 @@ ${explanation.explanation}
     }
 
     if (mode === 'LIBRARY') {
-      const ownedUnifiedMaterials = unifiedMaterials.filter(m => {
-        const isFreeContent = ['SYLLABUS', 'NOTES', 'PAST_PAPER'].includes(m.category) && m.isVerified;
-        const isOwned = purchasedMaterialIds.includes(m.id);
-        const isProBenefit = m.isVerified && isPro;
-        return isOwned || isFreeContent || isProBenefit;
+      const purchasedResources = unifiedMaterials.filter(m => getMaterialAccessStatus(m) === 'OWNED');
+      const freeStarterResources = unifiedMaterials.filter(m => getMaterialAccessStatus(m) === 'FREE');
+      const proVaultResources = unifiedMaterials.filter(m => getMaterialAccessStatus(m) === 'PRO_INCLUDED' || getMaterialAccessStatus(m) === 'PRO_LOCKED');
+      const unlockedResources = unifiedMaterials.filter(m => {
+        const status = getMaterialAccessStatus(m);
+        const normalizedCategory = normalizeMaterialCategory(m.category);
+        // Always include starter library content in unlocked view.
+        if (isStarterCategory(normalizedCategory)) return true;
+        return status === 'OWNED' || status === 'FREE' || status === 'PRO_INCLUDED';
       });
+
+      const visibleLibraryMaterials =
+        libraryView === 'PURCHASED'
+          ? purchasedResources
+          : libraryView === 'PRO_VAULT'
+            ? (isPro ? proVaultResources : [])
+            : unlockedResources;
 
       return (
         <div className="bg-slate-50 dark:bg-slate-950 min-h-screen pb-32 max-w-4xl mx-auto shadow-2xl border-x border-slate-100 dark:border-slate-800 flex flex-col">
           <div className="sticky top-0 z-40 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 px-6 py-4 flex items-center justify-between">
             <div>
               <h1 className="text-xl font-black text-slate-900 dark:text-white tracking-tight leading-none">My Library</h1>
-              <p className="text-[9px] font-black text-indigo-500 uppercase tracking-[0.2em] mt-1.5">Unlocked Resources</p>
+              <p className="text-[9px] font-black text-indigo-500 uppercase tracking-[0.2em] mt-1.5">Saved Learning Resources</p>
             </div>
             <button onClick={() => setMode('MENU')} className="p-2 hover:bg-slate-100 rounded-full transition-colors"><X className="w-5 h-5" /></button>
           </div>
 
           <div className="p-6 flex-1 overflow-y-auto no-scrollbar">
-            {ownedUnifiedMaterials.length === 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+              <button
+                onClick={() => {
+                  setLibraryView('UNLOCKED');
+                  trackFunnelEvent('library_view_changed', { view: 'UNLOCKED' });
+                }}
+                className={`rounded-xl px-3 py-2 border text-left transition-all ${libraryView === 'UNLOCKED'
+                    ? 'border-indigo-200 bg-indigo-50 text-indigo-700'
+                    : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
+                  }`}
+              >
+                <p className="text-[9px] font-black uppercase tracking-widest">Unlocked</p>
+                <p className="text-lg font-black">{unlockedResources.length}</p>
+              </button>
+              <button
+                onClick={() => {
+                  setLibraryView('PURCHASED');
+                  trackFunnelEvent('library_view_changed', { view: 'PURCHASED' });
+                }}
+                className={`rounded-xl px-3 py-2 border text-left transition-all ${libraryView === 'PURCHASED'
+                    ? 'border-indigo-200 bg-indigo-50 text-indigo-700'
+                    : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
+                  }`}
+              >
+                <p className="text-[9px] font-black uppercase tracking-widest">Purchased</p>
+                <p className="text-lg font-black">{purchasedResources.length}</p>
+              </button>
+              <button
+                onClick={() => {
+                  setLibraryView('PRO_VAULT');
+                  trackFunnelEvent('library_view_changed', { view: 'PRO_VAULT' });
+                }}
+                className={`rounded-xl px-3 py-2 border text-left transition-all ${libraryView === 'PRO_VAULT'
+                    ? 'border-amber-200 bg-amber-50 text-amber-700'
+                    : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
+                  }`}
+              >
+                <p className="text-[9px] font-black uppercase tracking-widest">Pro Vault</p>
+                <p className="text-lg font-black">{proVaultResources.length}</p>
+              </button>
+            </div>
+
+            {libraryView === 'PRO_VAULT' && !isPro ? (
+              <div className="py-12 md:py-24 text-center bg-white dark:bg-slate-900 border-2 border-dashed border-amber-200 dark:border-amber-900/40 rounded-[3rem] mb-6">
+                <div className="w-24 h-24 bg-amber-50 dark:bg-amber-900/20 rounded-[2.5rem] flex items-center justify-center mx-auto mb-6 border-2 border-amber-200 dark:border-amber-800/30">
+                  <Lock className="w-10 h-10 text-amber-500 dark:text-amber-400" />
+                </div>
+                <h4 className="text-xl font-black text-slate-800 dark:text-white mb-2 tracking-tight">Pro Vault is locked</h4>
+                <p className="text-[10px] text-slate-500 font-black uppercase tracking-[0.2em] mb-8 max-w-sm mx-auto leading-relaxed">Upgrade to unlock premium teacher resources curated for faster exam prep.</p>
+                <Button onClick={() => handlePricingNavigation()} className="px-10 py-4 bg-amber-500 hover:bg-amber-600 text-white rounded-2xl shadow-xl shadow-amber-100 font-black uppercase tracking-widest text-[10px] border-none">
+                  Unlock Pro Vault
+                </Button>
+              </div>
+            ) : visibleLibraryMaterials.length === 0 ? (
               <div className="py-12 md:py-32 text-center bg-white dark:bg-slate-900 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-[3rem]">
                 <div className="w-24 h-24 bg-slate-50 dark:bg-slate-800 rounded-[2.5rem] flex items-center justify-center mx-auto mb-6 border-2 border-slate-300 dark:border-slate-700">
                   <Library className="w-10 h-10 text-slate-300 dark:text-slate-600" />
                 </div>
                 <h4 className="text-xl font-black text-slate-800 dark:text-white mb-2 tracking-tight">Your library is empty</h4>
-                <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.2em] mb-12 max-w-xs mx-auto leading-relaxed">Unlock premium notes and revision papers from the marketplace to see them here.</p>
+                <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.2em] mb-12 max-w-xs mx-auto leading-relaxed">
+                  {libraryView === 'PURCHASED'
+                    ? 'Buy premium resources from the marketplace and they will appear here.'
+                    : 'Unlock premium notes and revision papers from the marketplace to see them here.'}
+                </p>
                 <Button onClick={() => setMode('MARKETPLACE')} className="px-10 py-4 bg-indigo-600 text-white rounded-2xl shadow-xl shadow-indigo-100 font-black uppercase tracking-widest text-[10px] border-none">
                   Browse Materials
                 </Button>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-20">
-                {ownedUnifiedMaterials.map(item => (
+                {visibleLibraryMaterials.map(item => (
                   <motion.div
                     key={item.id}
                     whileTap={{ scale: 0.98 }}
-                    onClick={() => item.fileUrl && window.open(item.fileUrl, '_blank')}
+                    onClick={() => {
+                      trackFunnelEvent('library_item_opened', {
+                        material_id: item.id,
+                        material_category: item.category,
+                        subject: item.subject,
+                        grade: item.grade,
+                        source: libraryView
+                      });
+                      if (item.fileUrl) window.open(item.fileUrl, '_blank');
+                    }}
                     className="bg-white dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-800 rounded-[2.5rem] p-6 shadow-sm flex items-center gap-6 group hover:border-indigo-100 dark:hover:border-indigo-800 hover:shadow-xl hover:shadow-indigo-50/30 dark:hover:shadow-black/30 transition-all cursor-pointer relative overflow-hidden"
                   >
                     <div className={`w-16 h-16 rounded-2xl flex items-center justify-center shrink-0 border-2 border-slate-300 dark:border-slate-700 shadow-sm ${item.isVerified ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400' : 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'}`}>

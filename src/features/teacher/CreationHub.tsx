@@ -7,6 +7,7 @@ interface CreationHubProps {
 }
 
 export const CreationHub: React.FC<CreationHubProps> = ({ onNavigateToTool }) => {
+    const [showMoreTools, setShowMoreTools] = React.useState(false);
     const cardClass = "cursor-pointer bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl p-8 rounded-[2.5rem] border border-white/50 dark:border-slate-800 relative overflow-hidden group shadow-xl shadow-slate-200/40 dark:shadow-none hover:-translate-y-2 hover:shadow-2xl hover:border-emerald-200 dark:hover:border-emerald-500/50 transition-all duration-300";
 
     return (
@@ -44,25 +45,26 @@ export const CreationHub: React.FC<CreationHubProps> = ({ onNavigateToTool }) =>
                 }}
                 className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-12"
             >
-                {/* Darasa Mode Card */}
+                {/* Auto Grader */}
                 <motion.div
                     variants={{
                         hidden: { opacity: 0, y: 20 },
                         visible: { opacity: 1, y: 0 }
                     }}
-                    onClick={() => onNavigateToTool('DARASA_MODE')}
+                    onClick={() => onNavigateToTool('MARKING')}
                     className={cardClass}
                 >
                     <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-bl-[100px] -z-10 group-hover:bg-emerald-500/20 transition-colors"></div>
-                    <div className="w-14 h-14 bg-gradient-to-br from-emerald-500 to-emerald-700 text-white rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-emerald-500/30 group-hover:scale-110 transition-transform">
-                        <Mic className="w-7 h-7" />
+                    <div className="w-14 h-14 bg-gradient-to-br from-emerald-500 to-emerald-700 text-white rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-emerald-500/30 group-hover:scale-110 transition-transform relative">
+                        <ScanLine className="w-7 h-7" />
+                        <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[8px] font-black px-1.5 py-0.5 rounded uppercase tracking-widest border-2 border-white shadow-sm">Beta</span>
                     </div>
-                    <h3 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight mb-2">Darasa Mode</h3>
+                    <h3 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight mb-2">Smart Auto-Grader</h3>
                     <p className="text-slate-500 dark:text-slate-400 font-medium text-sm mb-6 leading-relaxed">
-                        Record your live class sessions. The Smart Assistant will instantly transcribe, summarize, and generate targeted CBC quizzes for your students.
+                        Upload student scripts and get rubric-aligned marks with feedback in minutes.
                     </p>
                     <div className="flex items-center text-sm font-black text-emerald-600 dark:text-emerald-400 tracking-wider uppercase mt-auto">
-                        Start Recording <ChevronRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
+                        Scan & Mark <ChevronRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
                     </div>
                 </motion.div>
 
@@ -81,7 +83,7 @@ export const CreationHub: React.FC<CreationHubProps> = ({ onNavigateToTool }) =>
                     </div>
                     <h3 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight mb-2">Smart Exam Builder</h3>
                     <p className="text-slate-500 dark:text-slate-400 font-medium text-sm mb-6 leading-relaxed">
-                        Input a topic, drop in a scheme of work, or specify learning outcomes. We'll generate a complete, formatted exam paper.
+                        Generate exam-ready papers with marking schemes from topics, outcomes, or source notes.
                     </p>
                     <div className="flex items-center text-sm font-black text-teal-600 dark:text-teal-400 tracking-wider uppercase mt-auto">
                         Build Assessment <ChevronRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
@@ -103,80 +105,85 @@ export const CreationHub: React.FC<CreationHubProps> = ({ onNavigateToTool }) =>
                     </div>
                     <h3 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight mb-2">Smart Digitize</h3>
                     <p className="text-slate-500 dark:text-slate-400 font-medium text-sm mb-6 leading-relaxed">
-                        Upload messy PDFs, old lesson plans, or syllabi. We will rapidly convert them into rich, structured KNEC-aligned notes.
+                        Convert PDFs, syllabi, and old lesson docs into structured classroom notes.
                     </p>
                     <div className="flex items-center text-sm font-black text-blue-600 dark:text-blue-400 tracking-wider uppercase mt-auto">
                         Upload Document <ChevronRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
                     </div>
                 </motion.div>
 
-                {/* Auto Grader */}
+                {/* Live Lesson Capture */}
                 <motion.div
                     variants={{
                         hidden: { opacity: 0, y: 20 },
                         visible: { opacity: 1, y: 0 }
                     }}
-                    onClick={() => onNavigateToTool('MARKING')}
+                    onClick={() => onNavigateToTool('DARASA_MODE')}
                     className={cardClass}
                 >
                     <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-bl-[100px] -z-10 group-hover:bg-emerald-500/20 transition-colors"></div>
-                    <div className="w-14 h-14 bg-gradient-to-br from-emerald-500 to-emerald-700 text-white rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-emerald-500/30 group-hover:scale-110 transition-transform relative">
-                        <ScanLine className="w-7 h-7" />
-                        <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[8px] font-black px-1.5 py-0.5 rounded uppercase tracking-widest border-2 border-white shadow-sm">Beta</span>
+                    <div className="w-14 h-14 bg-gradient-to-br from-emerald-500 to-emerald-700 text-white rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-emerald-500/30 group-hover:scale-110 transition-transform">
+                        <Mic className="w-7 h-7" />
                     </div>
-                    <h3 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight mb-2">Smart Auto-Grader</h3>
+                    <h3 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight mb-2">Live Lesson Capture</h3>
                     <p className="text-slate-500 dark:text-slate-400 font-medium text-sm mb-6 leading-relaxed">
-                        Snap a photo of handwritten student work. We will use OCR and Smart rules to evaluate it against CBC rubrics and pinpoint gaps.
+                        Record a lesson once and instantly get notes plus a ready class quiz.
                     </p>
                     <div className="flex items-center text-sm font-black text-emerald-600 dark:text-emerald-400 tracking-wider uppercase mt-auto">
-                        Scan & Mark <ChevronRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
+                        Capture Lesson <ChevronRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
                     </div>
                 </motion.div>
 
-                {/* Schemes of Work */}
-                <motion.div
-                    variants={{
-                        hidden: { opacity: 0, y: 20 },
-                        visible: { opacity: 1, y: 0 }
-                    }}
-                    onClick={() => onNavigateToTool('SCHEMES')}
-                    className="cursor-pointer bg-gradient-to-br from-slate-900 to-slate-950 p-8 rounded-[2.5rem] border border-slate-700/50 relative overflow-hidden group shadow-2xl hover:-translate-y-2 hover:shadow-emerald-500/20 transition-all duration-300"
-                >
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-bl-[100px] -z-10 group-hover:bg-white/10 transition-colors"></div>
-                    <div className="w-14 h-14 bg-gradient-to-br from-blue-400 to-emerald-500 text-white rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-blue-500/30 group-hover:scale-110 transition-transform">
-                        <Zap className="w-7 h-7" />
-                    </div>
-                    <h3 className="text-2xl font-black text-white tracking-tight mb-2">Smart Schemes</h3>
-                    <p className="text-slate-400 font-medium text-sm mb-6 leading-relaxed">
-                        Generate comprehensive, KICD-compliant schemes for any term. Includes automated time-allocation and resource mapping.
-                    </p>
-                    <div className="flex items-center text-sm font-black text-blue-400 tracking-wider uppercase mt-auto">
-                        Generate Now <ChevronRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
-                    </div>
-                </motion.div>
-
-                {/* Lesson Plan Polisher */}
-                <motion.div
-                    variants={{
-                        hidden: { opacity: 0, y: 20 },
-                        visible: { opacity: 1, y: 0 }
-                    }}
-                    onClick={() => onNavigateToTool('LESSON_POLISH')}
-                    className={cardClass}
-                >
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 rounded-bl-[100px] -z-10 group-hover:bg-amber-500/20 transition-colors"></div>
-                    <div className="w-14 h-14 bg-gradient-to-br from-amber-500 to-amber-600 text-white rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-amber-500/30 group-hover:scale-110 transition-transform">
-                        <FileText className="w-7 h-7" />
-                    </div>
-                    <h3 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight mb-2">Lesson Polisher</h3>
-                    <p className="text-slate-500 dark:text-slate-400 font-medium text-sm mb-6 leading-relaxed">
-                        Paste your lesson plan. We will cross-reference it with your student's weak points to suggest remedial focus areas automatically.
-                    </p>
-                    <div className="flex items-center text-sm font-black text-amber-600 dark:text-amber-500 tracking-wider uppercase mt-auto">
-                        Refine Plan <ChevronRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
-                    </div>
-                </motion.div>
             </motion.div>
+
+            <div className="pb-12">
+                <button
+                    onClick={() => setShowMoreTools(prev => !prev)}
+                    className="w-full md:w-auto px-5 py-3 rounded-xl border-2 border-slate-200 bg-white text-slate-700 font-black text-xs uppercase tracking-widest hover:border-emerald-300 hover:text-emerald-700 transition-all"
+                >
+                    {showMoreTools ? 'Hide More Tools' : 'More Tools'}
+                </button>
+
+                {showMoreTools && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                        {/* Schemes of Work */}
+                        <div
+                            onClick={() => onNavigateToTool('SCHEMES')}
+                            className="cursor-pointer bg-gradient-to-br from-slate-900 to-slate-950 p-8 rounded-[2.5rem] border border-slate-700/50 relative overflow-hidden group shadow-2xl hover:-translate-y-2 hover:shadow-emerald-500/20 transition-all duration-300"
+                        >
+                            <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-bl-[100px] -z-10 group-hover:bg-white/10 transition-colors"></div>
+                            <div className="w-14 h-14 bg-gradient-to-br from-blue-400 to-emerald-500 text-white rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-blue-500/30 group-hover:scale-110 transition-transform">
+                                <Zap className="w-7 h-7" />
+                            </div>
+                            <h3 className="text-2xl font-black text-white tracking-tight mb-2">Smart Schemes</h3>
+                            <p className="text-slate-400 font-medium text-sm mb-6 leading-relaxed">
+                                Generate comprehensive, KICD-compliant schemes for any term. Includes automated time-allocation and resource mapping.
+                            </p>
+                            <div className="flex items-center text-sm font-black text-blue-400 tracking-wider uppercase mt-auto">
+                                Generate Now <ChevronRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
+                            </div>
+                        </div>
+
+                        {/* Lesson Plan Polisher */}
+                        <div
+                            onClick={() => onNavigateToTool('LESSON_POLISH')}
+                            className={cardClass}
+                        >
+                            <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 rounded-bl-[100px] -z-10 group-hover:bg-amber-500/20 transition-colors"></div>
+                            <div className="w-14 h-14 bg-gradient-to-br from-amber-500 to-amber-600 text-white rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-amber-500/30 group-hover:scale-110 transition-transform">
+                                <FileText className="w-7 h-7" />
+                            </div>
+                            <h3 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight mb-2">Lesson Polisher</h3>
+                            <p className="text-slate-500 dark:text-slate-400 font-medium text-sm mb-6 leading-relaxed">
+                                Paste your lesson plan. We will cross-reference it with your student's weak points to suggest remedial focus areas automatically.
+                            </p>
+                            <div className="flex items-center text-sm font-black text-amber-600 dark:text-amber-500 tracking-wider uppercase mt-auto">
+                                Refine Plan <ChevronRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </div>
         </div>
     );
 };

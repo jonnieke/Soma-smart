@@ -1423,6 +1423,132 @@ export const generateAdvancedTeacherQuiz = async (
   }
 };
 
+export const repairQuizForClassroom = async (
+  quiz: QuizData,
+  subject: string,
+  grade: string,
+  language: 'EN' | 'SW' = 'EN'
+): Promise<QuizData> => {
+  const model = genAI.getGenerativeModel({
+    model: MODEL_NAME,
+    generationConfig: {
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: SchemaType.OBJECT,
+        properties: {
+          topic: { type: SchemaType.STRING },
+          questions: {
+            type: SchemaType.ARRAY,
+            items: {
+              type: SchemaType.OBJECT,
+              properties: {
+                id: { type: SchemaType.INTEGER },
+                type: { type: SchemaType.STRING, enum: ["MCQ", "SHORT"] },
+                question: { type: SchemaType.STRING },
+                options: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
+                correctAnswer: { type: SchemaType.STRING },
+                explanation: { type: SchemaType.STRING },
+                cognitiveLevel: { type: SchemaType.STRING },
+                markingScheme: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } }
+              },
+              required: ["id", "type", "question", "correctAnswer", "explanation", "cognitiveLevel", "markingScheme"]
+            }
+          }
+        },
+        required: ["topic", "questions"]
+      }
+    }
+  });
+
+  const langInstruction = language === 'SW'
+    ? "LANGUAGE RULE: You MUST output in Swahili (Kiswahili Sanifu)."
+    : "LANGUAGE RULE: If subject is Kiswahili/Swahili output in Swahili; otherwise output in English.";
+
+  const prompt = `
+You are a senior Kenyan teacher quality-checking an exam quiz before class assignment.
+${langInstruction}
+
+Fix and return a STRICTLY classroom-ready quiz for:
+Subject: ${subject}
+Grade/Class: ${grade}
+
+Current quiz JSON:
+${JSON.stringify(quiz)}
+
+RULES:
+1. Keep the same topic intent.
+2. Ensure at least 5 questions.
+3. Every question must include:
+   - clear question text
+   - correctAnswer
+   - explanation
+   - cognitiveLevel
+   - detailed markingScheme with at least 2 marking points
+4. Keep options only for MCQ; 4 options for MCQ.
+5. Return only valid JSON matching schema.
+`;
+
+  const result = await model.generateContent(prompt);
+  const text = result.response.text();
+  if (!text) throw new Error("No response from AI");
+  return JSON.parse(text) as QuizData;
+};
+
+export const repairNoteForClassroom = async (
+  note: TeacherNote,
+  subject: string,
+  grade: string,
+  language: 'EN' | 'SW' = 'EN'
+): Promise<TeacherNote> => {
+  const model = genAI.getGenerativeModel({
+    model: MODEL_NAME,
+    generationConfig: {
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: SchemaType.OBJECT,
+        properties: {
+          topic: { type: SchemaType.STRING },
+          structuredNotes: { type: SchemaType.STRING },
+          simplifiedNotes: { type: SchemaType.STRING }
+        },
+        required: ["topic", "structuredNotes", "simplifiedNotes"]
+      }
+    }
+  });
+
+  const langInstruction = language === 'SW'
+    ? "LANGUAGE RULE: Output in Kiswahili Sanifu."
+    : "LANGUAGE RULE: If subject is Kiswahili/Swahili output in Swahili; otherwise output in English.";
+
+  const prompt = `
+You are a senior Kenyan teacher improving a lesson note before classroom publishing.
+${langInstruction}
+
+Subject: ${subject}
+Grade/Class: ${grade}
+
+Current note JSON:
+${JSON.stringify(note)}
+
+TASK:
+1. Keep the same topic intent.
+2. Expand and polish content so it is classroom-ready and exam-aligned.
+3. structuredNotes: professional teacher-quality markdown with headings, key points, examples, and short assessment checks.
+4. simplifiedNotes: student-friendly study note with plain language, bullet points, and quick recap.
+5. Return only valid JSON matching schema.
+`;
+
+  const result = await model.generateContent(prompt);
+  const text = result.response.text();
+  if (!text) throw new Error("No response from AI");
+  const parsed = JSON.parse(text) as TeacherNote;
+  return {
+    id: note.id || Date.now().toString(),
+    date: note.date || new Date().toLocaleDateString(),
+    ...parsed
+  };
+};
+
 // --- ASK SOMA CHATBOT ---
 // --- ASK SOMO CHATBOT ---
 

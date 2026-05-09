@@ -25,6 +25,7 @@ const PricingPage = React.lazy(() => import('./pages/PricingPage').then(module =
 const SchoolDashboard = React.lazy(() => import('./features/school/SchoolDashboard').then(module => ({ default: module.SchoolDashboard })));
 const OfflinePage = React.lazy(() => import('./pages/OfflinePage').then(module => ({ default: module.OfflinePage })));
 const GuestQuiz = React.lazy(() => import('./pages/GuestQuiz').then(module => ({ default: module.GuestQuiz })));
+const ClassJoinPage = React.lazy(() => import('./pages/ClassJoinPage').then(module => ({ default: module.ClassJoinPage })));
 
 // Exam Rooms Pages
 const ExamRoomsListPage = React.lazy(() => import('./pages/ExamRoomsListPage').then(module => ({ default: module.ExamRoomsListPage })));
@@ -132,6 +133,9 @@ const App: React.FC = () => {
                             <Route path="/school" element={<SchoolDashboard />} />
                             <Route path="/offline" element={<OfflinePage />} />
                             <Route path="/quiz/:id" element={<GuestQuiz />} />
+                            <Route path="/join" element={<ClassJoinPage />} />
+                            <Route path="/join/:classId" element={<ClassJoinPage />} />
+                            <Route path="/class/:classId" element={<ClassJoinPage />} />
                             <Route path="/blog" element={<BlogIndex />} />
                             <Route path="/blog/:slug" element={<BlogPost />} />
                             <Route path="*" element={<Navigate to="/" replace />} />

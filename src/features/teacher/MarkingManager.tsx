@@ -3,9 +3,8 @@ import { motion } from 'framer-motion';
 import { ScanLine, Upload, CheckCircle2, AlertCircle, FileText, ArrowLeft, Loader2, Sparkles, X, Plus } from 'lucide-react';
 import { gradeStudentSubmission, fileToGenerativePart } from '../../services/geminiService';
 import { updateStudentMasteryFromTeacher } from '../../services/learnerMemoryService';
-import { classroomService, ClassMember } from '../../services/classroomService';
+import { classroomService, ClassMember, GradebookEntry, AssignmentPost } from '../../services/classroomService';
 import { useApp } from '../../context/AppContext';
-import { Assignment, StudentSubmission } from '../../types';
 import { AIFeedbackButtons } from '../../components/AIFeedbackButtons';
 
 export const MarkingManager: React.FC = () => {
@@ -21,6 +20,8 @@ export const MarkingManager: React.FC = () => {
     const { teacherProfile } = useApp();
     const [students, setStudents] = useState<ClassMember[]>([]);
     const [selectedStudentId, setSelectedStudentId] = useState<string>('');
+    const [recentAssignments, setRecentAssignments] = useState<AssignmentPost[]>([]);
+    const [recentGradebook, setRecentGradebook] = useState<GradebookEntry[]>([]);
     const [assignmentTitle, setAssignmentTitle] = useState("Math Quiz: Decimals");
     const [assignmentContext, setAssignmentContext] = useState("Grade 5 Mathematics - Topic: Operations on Decimals");
     const [totalMarks, setTotalMarks] = useState<number>(10);
@@ -38,37 +39,41 @@ export const MarkingManager: React.FC = () => {
     const [error, setError] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    React.useEffect(() => {
-        async function loadStudents() {
-            if (!teacherProfile) return;
-            try {
-                const classes = await classroomService.getClassesForTeacher(teacherProfile.id);
-                let allMembers: ClassMember[] = [];
-                for (const c of classes) {
-                    const roster = await classroomService.getClassRoster(c.id);
-                    allMembers = [...allMembers, ...roster];
-                }
-                // Dedupe students who might be in multiple classes
-                const uniqueStudents = Array.from(new Map(allMembers.map(item => [item.student_id, item])).values());
-                setStudents(uniqueStudents);
-                if (uniqueStudents.length > 0) setSelectedStudentId(uniqueStudents[0].student_id);
-            } catch (err) {
-                console.error("Failed to load students for grading", err);
+    const loadTeacherMarkingData = React.useCallback(async () => {
+        if (!teacherProfile) return;
+        try {
+            const classes = await classroomService.getClassesForTeacher(teacherProfile.id);
+            let allMembers: ClassMember[] = [];
+            let allGradebook: GradebookEntry[] = [];
+            for (const c of classes) {
+                const roster = await classroomService.getClassRoster(c.id);
+                allMembers = [...allMembers, ...roster];
+                const gradebook = await classroomService.getGradebook(c.id);
+                allGradebook = [...allGradebook, ...gradebook];
             }
+
+            const uniqueStudents = Array.from(new Map(allMembers.map(item => [item.student_id, item])).values());
+            setStudents(uniqueStudents);
+            if (uniqueStudents.length > 0 && !selectedStudentId) {
+                setSelectedStudentId(uniqueStudents[0].student_id);
+            }
+
+            setRecentGradebook(
+                allGradebook
+                    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+                    .slice(0, 20)
+            );
+
+            const assignments = await classroomService.getTeacherAssignments(teacherProfile.id);
+            setRecentAssignments(assignments.slice(0, 20));
+        } catch (err) {
+            console.error("Failed to load students for grading", err);
         }
-        loadStudents();
-    }, [teacherProfile]);
+    }, [teacherProfile, selectedStudentId]);
 
-    const MOCK_ASSIGNMENTS: Assignment[] = [
-        { id: '1', title: 'Math Quiz: Decimals', subject: 'Mathematics', className: 'Grade 5 East', totalMarks: 10, rubric: '', createdAt: '2024-03-01' },
-        { id: '2', title: 'Creative Writing: My Vacation', subject: 'English', className: 'Grade 6 West', totalMarks: 20, rubric: '', createdAt: '2024-03-02' }
-    ];
-
-    const MOCK_RECENT: StudentSubmission[] = [
-        { id: '101', assignmentId: '1', studentName: 'John Doe', imageUrl: '', score: 8, status: 'GRADED' },
-        { id: '102', assignmentId: '1', studentName: 'Jane Smith', imageUrl: '', score: 10, status: 'GRADED' },
-        { id: '103', assignmentId: '2', studentName: 'Peter Kamau', imageUrl: '', score: 14, status: 'GRADED' },
-    ];
+    React.useEffect(() => {
+        loadTeacherMarkingData();
+    }, [loadTeacherMarkingData]);
 
     const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -107,6 +112,17 @@ export const MarkingManager: React.FC = () => {
             
             setResult(gradingResult);
 
+            const selectedStudent = students.find(s => s.student_id === selectedStudentId);
+            if (selectedStudent?.class_id && selectedStudentId) {
+                await classroomService.createGradebookEntry({
+                    classId: selectedStudent.class_id,
+                    studentId: selectedStudentId,
+                    title: assignmentTitle,
+                    score: gradingResult.totalScore,
+                    maxScore: totalMarks
+                });
+            }
+
             // Sync to Learner Memory!
             if (selectedStudentId && gradingResult.identifiedTopic) {
                 const { success } = await updateStudentMasteryFromTeacher(
@@ -117,6 +133,7 @@ export const MarkingManager: React.FC = () => {
                 );
                 setMemoryUpdateSuccess(success);
             }
+            await loadTeacherMarkingData();
         } catch (err: any) {
             console.error(err);
             setError(err.message || 'Failed to auto-grade submission.');
@@ -368,18 +385,24 @@ export const MarkingManager: React.FC = () => {
                     </div>
 
                     <div className="grid sm:grid-cols-2 gap-4">
-                        {MOCK_ASSIGNMENTS.map(assignment => (
+                        {recentAssignments.length === 0 && (
+                            <div className="sm:col-span-2 bg-white rounded-[2rem] p-6 border-2 border-dashed border-slate-200 text-center">
+                                <p className="font-black text-slate-700">No assignment posts yet</p>
+                                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-2">Create an assignment in Classroom to track it here.</p>
+                            </div>
+                        )}
+                        {recentAssignments.map(assignment => (
                             <div key={assignment.id} className="bg-white rounded-[2rem] p-6 border-2 border-slate-100 shadow-sm hover:border-emerald-100 transition-colors group cursor-pointer">
                                 <div className="flex justify-between items-start mb-4">
                                     <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center font-black text-lg">
-                                        {assignment.totalMarks}
+                                        A
                                     </div>
                                     <span className="bg-slate-50 text-slate-500 font-bold text-[10px] uppercase tracking-widest px-2 py-1 rounded">
-                                        {assignment.className}
+                                        {assignment.class_name}
                                     </span>
                                 </div>
                                 <h4 className="font-black text-slate-900 text-lg tracking-tight mb-1 group-hover:text-emerald-600 transition-colors">{assignment.title}</h4>
-                                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">{assignment.subject}</p>
+                                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">{new Date(assignment.created_at).toLocaleDateString()}</p>
                             </div>
                         ))}
                     </div>
@@ -389,11 +412,13 @@ export const MarkingManager: React.FC = () => {
                 <div className="space-y-6">
                     <h3 className="font-black text-xl text-slate-900 tracking-tight">Recently Graded</h3>
                     <div className="bg-white rounded-[2rem] p-6 border-2 border-slate-100 shadow-sm space-y-4 max-h-[400px] overflow-y-auto custom-scrollbar">
-                        {MOCK_RECENT.map(sub => {
-                            const assign = MOCK_ASSIGNMENTS.find(a => a.id === sub.assignmentId);
-                            if (!assign) return null;
-                            const percentage = Math.round((sub.score! / assign.totalMarks) * 100);
+                        {recentGradebook.length === 0 && (
+                            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest text-center py-8">No graded submissions yet</p>
+                        )}
+                        {recentGradebook.map(sub => {
+                            const percentage = sub.max_score > 0 ? Math.round((sub.score / sub.max_score) * 100) : 0;
                             const isGood = percentage >= 70;
+                            const student = students.find(s => s.student_id === sub.student_id);
 
                             return (
                                 <div key={sub.id} className="flex items-center gap-4 p-3 rounded-xl hover:bg-slate-50 transition-colors cursor-pointer">
@@ -401,8 +426,8 @@ export const MarkingManager: React.FC = () => {
                                         {percentage}%
                                     </div>
                                     <div>
-                                        <p className="font-black text-slate-900 text-sm">{sub.studentName}</p>
-                                        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest truncate max-w-[150px]">{assign.title}</p>
+                                        <p className="font-black text-slate-900 text-sm">{student?.profiles?.name || sub.student_id}</p>
+                                        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest truncate max-w-[150px]">{sub.title}</p>
                                     </div>
                                 </div>
                             );

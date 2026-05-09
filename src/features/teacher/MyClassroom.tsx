@@ -17,6 +17,7 @@ export const MyClassroom: React.FC<MyClassroomProps> = ({ teacherProfile, select
     const [selectedStudents, setSelectedStudents] = useState<string[]>([]);
     const [isAssigning, setIsAssigning] = useState(false);
     const [postText, setPostText] = useState("");
+    const [isPosting, setIsPosting] = useState(false);
 
     // Backend State
     const [stream, setStream] = useState<ClassroomPost[]>([]);
@@ -25,16 +26,35 @@ export const MyClassroom: React.FC<MyClassroomProps> = ({ teacherProfile, select
     const [currentClassId, setCurrentClassId] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [masteryData, setMasteryData] = useState<any[]>([]);
+    const baseJoinUrl = 'https://somaai.co.ke/join';
+    const isLocalClass = Boolean(currentClassId?.startsWith('local-class:'));
+    const classJoinUrl = currentClassId && !isLocalClass ? `${baseJoinUrl}/${currentClassId}` : `${baseJoinUrl}?class=${encodeURIComponent(selectedClass)}`;
+    const classroomShareUrl = currentClassId && !isLocalClass ? `https://somaai.co.ke/class/${currentClassId}` : classJoinUrl;
 
     // Load Data
     useEffect(() => {
         async function loadClassroom() {
             if (!teacherProfile) return;
+            const normalizedClass = String(selectedClass || '').trim();
+            const looksLikePlaceholder =
+                !normalizedClass ||
+                normalizedClass.toLowerCase() === 'selected department' ||
+                normalizedClass.toLowerCase() === 'department' ||
+                normalizedClass.toLowerCase() === 'classe';
+            if (looksLikePlaceholder) {
+                setCurrentClassId(null);
+                setStream([]);
+                setStudents([]);
+                setGradebook([]);
+                setMasteryData([]);
+                setIsLoading(false);
+                return;
+            }
             setIsLoading(true);
             try {
                 const activeClass = await classroomService.getOrCreateClassByName(
                     teacherProfile.id,
-                    selectedClass,
+                    normalizedClass,
                     selectedSubject
                 );
                 setCurrentClassId(activeClass.id);
@@ -147,6 +167,78 @@ export const MyClassroom: React.FC<MyClassroomProps> = ({ teacherProfile, select
         }
     };
 
+    const resolveClassIdForPosting = async (): Promise<string | null> => {
+        if (!teacherProfile) return null;
+        if (currentClassId) return currentClassId;
+
+        const fallbackClass = String(selectedClass || teacherProfile.classes?.[0] || '').trim();
+        const fallbackSubject = String(selectedSubject || teacherProfile.subjects?.[0] || '').trim();
+        if (!fallbackClass || !fallbackSubject) return null;
+
+        const cls = await classroomService.getOrCreateClassByName(teacherProfile.id, fallbackClass, fallbackSubject);
+        setCurrentClassId(cls.id);
+        return cls.id;
+    };
+
+    const openWhatsAppShare = (message: string, shareWindow?: Window | null) => {
+        const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(message)}`;
+        if (shareWindow && !shareWindow.closed) {
+            shareWindow.location.replace(url);
+            return;
+        }
+        const popup = window.open(url, '_blank', 'noopener,noreferrer');
+        if (!popup) {
+            window.location.href = url;
+        }
+    };
+
+    const handlePostAndShare = async () => {
+        if (!postText.trim()) return;
+        if (!teacherProfile) {
+            alert("Teacher profile is not ready yet. Please retry.");
+            return;
+        }
+
+        // Reserve a tab during the click so browsers allow the WhatsApp handoff after the async post.
+        const shareWindow = window.open('about:blank', '_blank');
+        if (shareWindow) {
+            shareWindow.document.title = 'Opening WhatsApp...';
+            shareWindow.document.body.innerHTML = '<p style="font-family: system-ui, sans-serif; padding: 24px;">Opening WhatsApp...</p>';
+        }
+        setIsPosting(true);
+        const textToShare = postText.trim();
+
+        try {
+            const classId = await resolveClassIdForPosting();
+            if (!classId) {
+                if (shareWindow && !shareWindow.closed) {
+                    shareWindow.close();
+                }
+                alert("Please pick a class and subject first.");
+                return;
+            }
+
+            const newPost = await classroomService.createPost(classId, teacherProfile.id, 'ANNOUNCEMENT', textToShare);
+            setStream((prev) => [newPost, ...prev]);
+            setPostText("");
+
+            const className = selectedClass || teacherProfile.classes?.[0] || 'my class';
+            const resolvedShareUrl = classId.startsWith('local-class:')
+                ? `${baseJoinUrl}?class=${encodeURIComponent(className)}`
+                : `https://somaai.co.ke/class/${classId}`;
+            const shareMessage = `New announcement for ${className}: ${textToShare} - View on Somo Smart: ${resolvedShareUrl}`;
+            openWhatsAppShare(shareMessage, shareWindow);
+        } catch (err) {
+            console.error(err);
+            if (shareWindow && !shareWindow.closed) {
+                shareWindow.close();
+            }
+            alert("Failed to post announcement.");
+        } finally {
+            setIsPosting(false);
+        }
+    };
+
     const handleParentReport = (e: React.MouseEvent, student: any) => {
         e.stopPropagation();
         
@@ -199,6 +291,18 @@ View full dashboard: https://somaai.co.ke/parent/${student.id}`;
                 </div>
             </div>
 
+            {isLocalClass && (
+                <div className="max-w-3xl mx-auto bg-amber-50 border-2 border-amber-200 rounded-2xl p-4 flex items-start gap-3">
+                    <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+                    <div>
+                        <p className="text-sm font-black text-amber-900">Temporary local classroom mode</p>
+                        <p className="text-xs font-bold text-amber-800/80 mt-1">
+                            Posts can still be shared to WhatsApp, but they are saved on this device until classroom sync reconnects.
+                        </p>
+                    </div>
+                </div>
+            )}
+
             {/* Internal Navigation Tabs */}
             <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide border-b-2 border-slate-200">
                 <button
@@ -249,8 +353,12 @@ View full dashboard: https://somaai.co.ke/parent/${student.id}`;
                                             <button className="p-2 hover:bg-slate-100 rounded-full text-slate-400 transition-colors">
                                                 <Share2 className="w-5 h-5" />
                                             </button>
-                                            <button onClick={handlePost} className="bg-[#25D366] text-white px-6 py-2.5 rounded-xl font-bold text-sm shadow-md hover:bg-[#128C7E] transition-colors flex items-center gap-2">
-                                                <Share2 className="w-4 h-4" /> Post & Share to WhatsApp
+                                            <button
+                                                onClick={handlePostAndShare}
+                                                disabled={isPosting || !postText.trim()}
+                                                className="bg-[#25D366] text-white px-6 py-2.5 rounded-xl font-bold text-sm shadow-md hover:bg-[#128C7E] transition-colors flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+                                            >
+                                                <Share2 className="w-4 h-4" /> {isPosting ? 'Posting...' : 'Post & Share to WhatsApp'}
                                             </button>
                                         </div>
                                     </div>
@@ -271,14 +379,12 @@ View full dashboard: https://somaai.co.ke/parent/${student.id}`;
                                                 <span className="text-xs font-bold text-slate-400">• {new Date(post.created_at).toLocaleDateString()}</span>
                                             </div>
                                             <p className="text-slate-600 font-medium mb-3">{post.content}</p>
-                                            <a 
-                                                href={`https://wa.me/?text=New%20Announcement%20for%20${encodeURIComponent(selectedClass)}:%20${encodeURIComponent(post.content)}%20-%20View%20on%20Somo%20Smart:%20https://somaai.co.ke/quiz/${post.id}`}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
+                                            <button
+                                                onClick={() => openWhatsAppShare(`New announcement for ${selectedClass}: ${post.content} - View on Somo Smart: ${classroomShareUrl}`)}
                                                 className="inline-flex items-center gap-1.5 bg-[#25D366]/10 text-[#128C7E] px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-[#25D366]/20 transition-colors"
                                             >
                                                 <Share2 className="w-3.5 h-3.5" /> Share to WhatsApp
-                                            </a>
+                                            </button>
                                         </div>
                                     </div>
                                 ))
@@ -384,7 +490,7 @@ View full dashboard: https://somaai.co.ke/parent/${student.id}`;
                                 <div className="text-center p-8 bg-slate-50 border-2 border-dashed border-slate-300 rounded-[2rem] flex flex-col items-center gap-4">
                                     <p className="text-slate-500 font-bold">No students have joined this class yet.</p>
                                     <a 
-                                        href={`https://wa.me/?text=Join%20my%20Somo%20Smart%20class:%20${encodeURIComponent(selectedClass)}%20-%20https://somaai.co.ke/join/${currentClassId}`}
+                                        href={`https://wa.me/?text=${encodeURIComponent(`Join my Somo Smart class: ${selectedClass} - ${classJoinUrl}`)}`}
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         className="inline-flex items-center gap-2 bg-[#25D366] text-white px-6 py-3 rounded-xl font-bold shadow-md hover:bg-[#128C7E] transition-colors"
