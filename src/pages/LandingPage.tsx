@@ -398,7 +398,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                         {/* Desktop Nav */}
                         <nav aria-label="Main Navigation" className="hidden md:flex items-center gap-8">
                             <button onClick={() => navigate('/pricing')} className="text-slate-600 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 font-medium transition-colors text-sm">Pricing</button>
-                            <button onClick={() => navigate('/blog')} className="text-slate-600 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 font-medium transition-colors text-sm flex items-center gap-1"><BookOpen className="w-3.5 h-3.5"/> Library</button>
+                            <button onClick={() => navigate('/blog')} className="text-slate-600 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 font-medium transition-colors text-sm flex items-center gap-1"><BookOpen className="w-3.5 h-3.5"/> Journal</button>
                             <button onClick={toggleLanguage} className="text-slate-400 hover:text-slate-600 transition-colors" title="Switch language">
                                 <Globe className="w-4 h-4" />
                             </button>
@@ -454,7 +454,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                     <CreditCard className="w-5 h-5 text-slate-400" /> Pricing
                                 </button>
                                 <button onClick={() => { navigate('/blog'); setMobileMenuOpen(false); }} className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 font-medium">
-                                    <BookOpen className="w-5 h-5 text-slate-400" /> Library
+                                    <BookOpen className="w-5 h-5 text-slate-400" /> Journal
                                 </button>
                                 <button onClick={() => { setShowLogin(true); setMobileMenuOpen(false); }} className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 font-medium">
                                     <Users className="w-5 h-5 text-slate-400" /> Sign In
@@ -1022,6 +1022,79 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                 </div>
             </section>
 
+            {/* --- JOURNAL PREVIEW --- */}
+            <section className="py-24 bg-white dark:bg-slate-950 transition-colors border-t border-slate-100 dark:border-slate-900">
+                <div className="max-w-7xl mx-auto px-4">
+                    <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
+                        <div>
+                            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-xs font-bold uppercase tracking-widest mb-4">
+                                <BookOpen className="w-3.5 h-3.5" /> Latest from the Journal
+                            </div>
+                            <h2 className="text-3xl md:text-4xl font-black text-slate-900 dark:text-white tracking-tight">Insights for Smarter Learning</h2>
+                        </div>
+                        <button 
+                            onClick={() => navigate('/blog')}
+                            className="group flex items-center gap-2 text-blue-600 dark:text-blue-400 font-bold hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
+                        >
+                            Visit the Somo Journal <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                        </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                        {/* Article 1 */}
+                        <motion.div 
+                            initial={{ opacity: 0, y: 20 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            onClick={() => navigate('/blog/how-to-prepare-for-kcse-mathematics')}
+                            className="group cursor-pointer bg-slate-50 dark:bg-slate-900/50 rounded-3xl overflow-hidden border border-slate-200 dark:border-slate-800 hover:shadow-2xl transition-all duration-300"
+                        >
+                            <div className="h-48 overflow-hidden">
+                                <img src="https://images.unsplash.com/photo-1632559646295-c1e14afb8e5c?w=800&q=80" alt="Mathematics Guide" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                            </div>
+                            <div className="p-6">
+                                <div className="text-xs font-bold text-slate-400 mb-2">EDUCATION • MAY 2024</div>
+                                <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-3 group-hover:text-blue-600 transition-colors">How to Prepare for KCSE Mathematics: A Comprehensive Guide</h3>
+                                <p className="text-sm text-slate-600 dark:text-slate-400 line-clamp-2 font-medium">Discover proven strategies and techniques to master KCSE Mathematics. From understanding core concepts to practicing past papers efficiently...</p>
+                            </div>
+                        </motion.div>
+
+                        {/* Article 2 */}
+                        <motion.div 
+                            initial={{ opacity: 0, y: 20 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.1 }}
+                            className="group bg-slate-50 dark:bg-slate-900/50 rounded-3xl overflow-hidden border border-slate-200 dark:border-slate-800 hover:shadow-2xl transition-all duration-300"
+                        >
+                            <div className="h-48 overflow-hidden flex items-center justify-center bg-indigo-100 dark:bg-indigo-900/20">
+                                <Sparkles className="w-12 h-12 text-indigo-400" />
+                            </div>
+                            <div className="p-6">
+                                <div className="text-xs font-bold text-slate-400 mb-2">ANNOUNCEMENT • APRIL 2024</div>
+                                <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-3 transition-colors">Introducing the AI Personal Tutor: A New Era of Learning</h3>
+                                <p className="text-sm text-slate-600 dark:text-slate-400 line-clamp-2 font-medium">We are excited to unveil our new AI-powered personal tutor, designed to provide instant explanations and personalized feedback to every student.</p>
+                            </div>
+                        </motion.div>
+
+                        {/* Article 3 */}
+                        <motion.div 
+                            initial={{ opacity: 0, y: 20 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.2 }}
+                            className="group bg-slate-50 dark:bg-slate-900/50 rounded-3xl overflow-hidden border border-slate-200 dark:border-slate-800 hover:shadow-2xl transition-all duration-300"
+                        >
+                            <div className="h-48 overflow-hidden">
+                                <img src="https://images.unsplash.com/photo-1546410531-bea518040081?auto=format&fit=crop&q=80" alt="CBC Curriculum" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                            </div>
+                            <div className="p-6">
+                                <div className="text-xs font-bold text-slate-400 mb-2">CURRICULUM • MARCH 2024</div>
+                                <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-3 transition-colors">Navigating the CBC: What Parents Need to Know</h3>
+                                <p className="text-sm text-slate-600 dark:text-slate-400 line-clamp-2 font-medium">Understanding the Competency-Based Curriculum can be a challenge. We break down the key pillars and how you can support your child's success.</p>
+                            </div>
+                        </motion.div>
+                    </div>
+                </div>
+            </section>
+
             {/* --- BOTTOM FOOTER --- */}
             <footer className="bg-white dark:bg-slate-950 py-12 border-t border-slate-100 dark:border-slate-800 transition-colors overflow-hidden">
                 <div className="max-w-7xl mx-auto px-4">
@@ -1052,6 +1125,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                 <li><button onClick={() => navigate('/pricing')} className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">Pricing</button></li>
                                 <li><a href="#how-it-works" className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">How it Works</a></li>
                                 <li><button onClick={() => setShowLogin(true)} className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">Login</button></li>
+                                <li><button onClick={() => navigate('/blog')} className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">Somo Journal</button></li>
                                 <li><button onClick={() => navigate('/admin')} className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> System Admin</button></li>
                             </ul>
                         </div>
