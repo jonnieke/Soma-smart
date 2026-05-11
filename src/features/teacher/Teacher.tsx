@@ -15,7 +15,6 @@ import { RegistrationModal } from '../../components/RegistrationModal';
 import { TeacherLanding } from '../../components/TeacherLanding';
 import { useApp } from '../../context/AppContext';
 import { ViewState, TeacherNote, QuizData, TeacherActivity, SubscriptionPlan, ChatMessage } from '../../types';
-import { PdfPageSelector } from '../../components/PdfPageSelector';
 import { PaymentFlow } from '../subscription/PaymentFlow';
 import { translations } from '../../data/translations';
 import { TeacherRequestModal } from '../../components/TeacherRequestModal';
@@ -39,6 +38,7 @@ const SchemesView = React.lazy(() => import('./SchemesView').then(module => ({ d
 const LessonPolisherView = React.lazy(() => import('./LessonPolisherView').then(module => ({ default: module.LessonPolisherView })));
 const DigitalBlackboard = React.lazy(() => import('./DigitalBlackboard').then(module => ({ default: module.DigitalBlackboard })));
 const HomeworkCreator = React.lazy(() => import('./HomeworkCreator').then(module => ({ default: module.HomeworkCreator })));
+const PdfPageSelector = React.lazy(() => import('../../components/PdfPageSelector').then(module => ({ default: module.PdfPageSelector })));
 
 const TeacherToolFallback = () => (
     <div className="min-h-[320px] rounded-[2rem] border-2 border-slate-100 bg-white flex flex-col items-center justify-center text-slate-400">
@@ -727,14 +727,16 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
             )}
 
             {pdfFile && (
-                <PdfPageSelector
-                    file={pdfFile}
-                    onCancel={() => setPdfFile(null)}
-                    onSelectionComplete={(files) => {
-                        setAdvFiles(prev => [...prev, ...files]);
-                        setPdfFile(null);
-                    }}
-                />
+                <Suspense fallback={null}>
+                    <PdfPageSelector
+                        file={pdfFile}
+                        onCancel={() => setPdfFile(null)}
+                        onSelectionComplete={(files) => {
+                            setAdvFiles(prev => [...prev, ...files]);
+                            setPdfFile(null);
+                        }}
+                    />
+                </Suspense>
             )}
 
             {/* --- MODERN HEADER --- */}
@@ -1912,20 +1914,20 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                 }
                 </Suspense>
                 {/* Global Bottom Nav - Mobile Only */}
-                <div className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t border-slate-200 px-4 py-3 flex justify-between items-center z-50 md:hidden pb-safe">
+                <div className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t border-slate-200 px-4 py-2.5 flex justify-between items-center z-50 md:hidden pb-safe">
                     <button
                         onClick={() => setActiveTab('HOME')}
-                        className={`flex flex-col items-center gap-1 ${activeTab === 'HOME' ? 'text-emerald-600' : 'text-slate-400 hover:text-slate-600'}`}
+                        className={`flex min-h-[52px] min-w-[52px] flex-col items-center justify-center gap-1 ${activeTab === 'HOME' ? 'text-emerald-600' : 'text-slate-400 hover:text-slate-600'}`}
                     >
                         <Home className="w-6 h-6" />
-                        <span className="text-[10px] font-black uppercase tracking-tighter">Studio</span>
+                        <span className="text-[11px] font-black uppercase tracking-tight">Studio</span>
                     </button>
                     <button
                         onClick={() => setActiveTab('LIBRARY')}
-                        className={`flex flex-col items-center gap-1 ${activeTab === 'LIBRARY' ? 'text-teal-600' : 'text-slate-400 hover:text-slate-600'}`}
+                        className={`flex min-h-[52px] min-w-[52px] flex-col items-center justify-center gap-1 ${activeTab === 'LIBRARY' ? 'text-teal-600' : 'text-slate-400 hover:text-slate-600'}`}
                     >
                         <Library className="w-6 h-6" />
-                        <span className="text-[10px] font-black uppercase tracking-tighter">Library</span>
+                        <span className="text-[11px] font-black uppercase tracking-tight">Library</span>
                     </button>
                     <div className="relative -mt-8">
                         <button
@@ -1938,17 +1940,17 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                     </div>
                     <button
                         onClick={() => setActiveTab('EARNINGS')}
-                        className={`flex flex-col items-center gap-1 ${activeTab === 'EARNINGS' ? 'text-amber-600' : 'text-slate-400 hover:text-slate-600'}`}
+                        className={`flex min-h-[52px] min-w-[52px] flex-col items-center justify-center gap-1 ${activeTab === 'EARNINGS' ? 'text-amber-600' : 'text-slate-400 hover:text-slate-600'}`}
                     >
                         <Wallet className="w-6 h-6" />
-                        <span className="text-[10px] font-black uppercase tracking-tighter">Wallet</span>
+                        <span className="text-[11px] font-black uppercase tracking-tight">Wallet</span>
                     </button>
                     <button
                         onClick={() => setActiveTab('MARKETPLACE')}
-                        className={`flex flex-col items-center gap-1 ${activeTab === 'MARKETPLACE' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-600'}`}
+                        className={`flex min-h-[52px] min-w-[52px] flex-col items-center justify-center gap-1 ${activeTab === 'MARKETPLACE' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-600'}`}
                     >
                         <ShoppingBag className="w-6 h-6" />
-                        <span className="text-[10px] font-black uppercase tracking-tighter">Shop</span>
+                        <span className="text-[11px] font-black uppercase tracking-tight">Shop</span>
                     </button>
                 </div>
             </div>

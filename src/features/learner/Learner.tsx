@@ -3446,27 +3446,27 @@ ${explanation.explanation}
           </div>
 
           {/* Global Bottom Nav */}
-          <div className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t border-slate-200 px-6 py-3 flex justify-between items-center z-50 max-w-4xl mx-auto shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
-            <button onClick={() => setMode('MENU')} className="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-600">
+          <div className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t border-slate-200 px-4 py-2.5 pb-safe flex justify-between items-center z-50 max-w-4xl mx-auto shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
+            <button onClick={() => setMode('MENU')} className="flex min-h-[52px] min-w-[52px] flex-col items-center justify-center gap-1 text-slate-400 hover:text-slate-600">
               <Home className="w-6 h-6" />
-              <span className="text-[10px] font-black uppercase tracking-tighter">Home</span>
+              <span className="text-[11px] font-black uppercase tracking-tight">Home</span>
             </button>
-            <button onClick={() => setMode('MARKETPLACE')} className="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-600">
+            <button onClick={() => setMode('MARKETPLACE')} className="flex min-h-[52px] min-w-[52px] flex-col items-center justify-center gap-1 text-slate-400 hover:text-slate-600">
               <ShoppingBag className="w-6 h-6" />
-              <span className="text-[10px] font-black uppercase tracking-tighter">Materials</span>
+              <span className="text-[11px] font-black uppercase tracking-tight">Materials</span>
             </button>
             <div className="relative -mt-10">
               <button onClick={() => setMode('SCAN')} className="relative w-16 h-16 bg-indigo-600 rounded-full flex items-center justify-center shadow-xl shadow-indigo-200 text-white transform hover:scale-110 active:scale-90 transition-all border-4 border-white">
                 <ScanLine className="w-8 h-8" />
               </button>
             </div>
-            <button onClick={() => setMode('LIBRARY')} className="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-600">
+            <button onClick={() => setMode('LIBRARY')} className="flex min-h-[52px] min-w-[52px] flex-col items-center justify-center gap-1 text-slate-400 hover:text-slate-600">
               <Library className="w-6 h-6" />
-              <span className="text-[10px] font-black uppercase tracking-tighter">Library</span>
+              <span className="text-[11px] font-black uppercase tracking-tight">Library</span>
             </button>
-            <button onClick={() => isRegistered ? setMode('PROFILE') : setShowLogin(true)} className="flex flex-col items-center gap-1 text-indigo-600 scale-110">
+            <button onClick={() => isRegistered ? setMode('PROFILE') : setShowLogin(true)} className="flex min-h-[52px] min-w-[52px] flex-col items-center justify-center gap-1 text-indigo-600 scale-110">
               <UserCircle className="w-6 h-6" />
-              <span className="text-[10px] font-black uppercase tracking-tighter">Me</span>
+              <span className="text-[11px] font-black uppercase tracking-tight">Me</span>
             </button>
           </div>
         </div >
@@ -4500,27 +4500,27 @@ ${explanation.explanation}
 
 
           {/* Global Bottom Nav */}
-          <div className="fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 px-6 py-3 flex justify-between items-center z-50 max-w-4xl mx-auto shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
-            <button onClick={() => setMode('MENU')} className="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-600">
+          <div className="fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 px-4 py-2.5 pb-safe flex justify-between items-center z-50 max-w-4xl mx-auto shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
+            <button onClick={() => setMode('MENU')} className="flex min-h-[52px] min-w-[52px] flex-col items-center justify-center gap-1 text-slate-400 hover:text-slate-600">
               <Home className="w-6 h-6" />
-              <span className="text-[10px] font-black uppercase tracking-tighter">Home</span>
+              <span className="text-[11px] font-black uppercase tracking-tight">Home</span>
             </button>
-            <button onClick={() => setMode('MARKETPLACE')} className="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-600">
+            <button onClick={() => setMode('MARKETPLACE')} className="flex min-h-[52px] min-w-[52px] flex-col items-center justify-center gap-1 text-slate-400 hover:text-slate-600">
               <ShoppingBag className="w-6 h-6" />
-              <span className="text-[10px] font-black uppercase tracking-tighter">Materials</span>
+              <span className="text-[11px] font-black uppercase tracking-tight">Materials</span>
             </button>
             <div className="relative -mt-10">
               <button onClick={() => setMode('SCAN')} className="relative w-16 h-16 bg-indigo-600 rounded-full flex items-center justify-center shadow-xl shadow-indigo-200 text-white transform hover:scale-110 active:scale-90 transition-all border-4 border-white">
                 <ScanLine className="w-8 h-8" />
               </button>
             </div>
-            <button onClick={() => setMode('LIBRARY')} className="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-600">
+            <button onClick={() => setMode('LIBRARY')} className="flex min-h-[52px] min-w-[52px] flex-col items-center justify-center gap-1 text-slate-400 hover:text-slate-600">
               <Library className="w-6 h-6" />
-              <span className="text-[10px] font-black uppercase tracking-tighter">Library</span>
+              <span className="text-[11px] font-black uppercase tracking-tight">Library</span>
             </button>
-            <button onClick={() => isRegistered ? setMode('PROFILE') : setShowLogin(true)} className="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-600">
+            <button onClick={() => isRegistered ? setMode('PROFILE') : setShowLogin(true)} className="flex min-h-[52px] min-w-[52px] flex-col items-center justify-center gap-1 text-slate-400 hover:text-slate-600">
               <UserCircle className="w-6 h-6" />
-              <span className="text-[10px] font-black uppercase tracking-tighter">Me</span>
+              <span className="text-[11px] font-black uppercase tracking-tight">Me</span>
             </button>
           </div>
         </div>
@@ -5128,27 +5128,27 @@ ${explanation.explanation}
           </div>
 
           {/* Global Bottom Nav */}
-          <div className="fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 px-6 py-3 flex justify-between items-center z-50 max-w-4xl mx-auto shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
-            <button onClick={() => setMode('MENU')} className="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-600">
+          <div className="fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 px-4 py-2.5 pb-safe flex justify-between items-center z-50 max-w-4xl mx-auto shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
+            <button onClick={() => setMode('MENU')} className="flex min-h-[52px] min-w-[52px] flex-col items-center justify-center gap-1 text-slate-400 hover:text-slate-600">
               <Home className="w-6 h-6" />
-              <span className="text-[10px] font-black uppercase tracking-tighter">Home</span>
+              <span className="text-[11px] font-black uppercase tracking-tight">Home</span>
             </button>
-            <button onClick={() => setMode('MARKETPLACE')} className="flex flex-col items-center gap-1 text-indigo-600 scale-110">
+            <button onClick={() => setMode('MARKETPLACE')} className="flex min-h-[52px] min-w-[52px] flex-col items-center justify-center gap-1 text-indigo-600 scale-110">
               <ShoppingBag className="w-6 h-6" />
-              <span className="text-[10px] font-black uppercase tracking-tighter">Materials</span>
+              <span className="text-[11px] font-black uppercase tracking-tight">Materials</span>
             </button>
             <div className="relative -mt-10">
               <button onClick={() => setMode('SCAN')} className="relative w-16 h-16 bg-indigo-600 rounded-full flex items-center justify-center shadow-xl shadow-indigo-200 text-white transform hover:scale-110 active:scale-90 transition-all border-4 border-white">
                 <ScanLine className="w-8 h-8" />
               </button>
             </div>
-            <button onClick={() => setMode('LIBRARY')} className="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-600">
+            <button onClick={() => setMode('LIBRARY')} className="flex min-h-[52px] min-w-[52px] flex-col items-center justify-center gap-1 text-slate-400 hover:text-slate-600">
               <Library className="w-6 h-6" />
-              <span className="text-[10px] font-black uppercase tracking-tighter">Library</span>
+              <span className="text-[11px] font-black uppercase tracking-tight">Library</span>
             </button>
-            <button onClick={() => isRegistered ? setMode('PROFILE') : setShowLogin(true)} className="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-600">
+            <button onClick={() => isRegistered ? setMode('PROFILE') : setShowLogin(true)} className="flex min-h-[52px] min-w-[52px] flex-col items-center justify-center gap-1 text-slate-400 hover:text-slate-600">
               <UserCircle className="w-6 h-6" />
-              <span className="text-[10px] font-black uppercase tracking-tighter">Me</span>
+              <span className="text-[11px] font-black uppercase tracking-tight">Me</span>
             </button>
           </div>
         </div>
@@ -5179,7 +5179,7 @@ ${explanation.explanation}
           <div className="sticky top-0 z-40 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 px-6 py-4 flex items-center justify-between">
             <div>
               <h1 className="text-xl font-black text-slate-900 dark:text-white tracking-tight leading-none">My Library</h1>
-              <p className="text-[9px] font-black text-indigo-500 uppercase tracking-[0.2em] mt-1.5">Saved Learning Resources</p>
+              <p className="text-[10px] font-black text-indigo-500 uppercase tracking-[0.15em] mt-1.5">Saved Learning Resources</p>
             </div>
             <button onClick={() => setMode('MENU')} className="p-2 hover:bg-slate-100 rounded-full transition-colors"><X className="w-5 h-5" /></button>
           </div>
@@ -5292,27 +5292,27 @@ ${explanation.explanation}
           </div>
 
           {/* Global Bottom Nav */}
-          <div className="fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 px-6 py-3 flex justify-between items-center z-50 max-w-4xl mx-auto shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
-            <button onClick={() => setMode('MENU')} className="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-600">
+          <div className="fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 px-4 py-2.5 pb-safe flex justify-between items-center z-50 max-w-4xl mx-auto shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
+            <button onClick={() => setMode('MENU')} className="flex min-h-[52px] min-w-[52px] flex-col items-center justify-center gap-1 text-slate-400 hover:text-slate-600">
               <Home className="w-6 h-6" />
-              <span className="text-[10px] font-black uppercase tracking-tighter">Home</span>
+              <span className="text-[11px] font-black uppercase tracking-tight">Home</span>
             </button>
-            <button onClick={() => setMode('MARKETPLACE')} className="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-600">
+            <button onClick={() => setMode('MARKETPLACE')} className="flex min-h-[52px] min-w-[52px] flex-col items-center justify-center gap-1 text-slate-400 hover:text-slate-600">
               <ShoppingBag className="w-6 h-6" />
-              <span className="text-[10px] font-black uppercase tracking-tighter">Materials</span>
+              <span className="text-[11px] font-black uppercase tracking-tight">Materials</span>
             </button>
             <div className="relative -mt-10">
               <button onClick={() => setMode('SCAN')} className="relative w-16 h-16 bg-indigo-600 rounded-full flex items-center justify-center shadow-xl shadow-indigo-200 text-white transform hover:scale-110 active:scale-90 transition-all border-4 border-white">
                 <ScanLine className="w-8 h-8" />
               </button>
             </div>
-            <button onClick={() => setMode('LIBRARY')} className="flex flex-col items-center gap-1 text-indigo-600 scale-110">
+            <button onClick={() => setMode('LIBRARY')} className="flex min-h-[52px] min-w-[52px] flex-col items-center justify-center gap-1 text-indigo-600 scale-110">
               <Library className="w-6 h-6" />
-              <span className="text-[10px] font-black uppercase tracking-tighter">Library</span>
+              <span className="text-[11px] font-black uppercase tracking-tight">Library</span>
             </button>
-            <button onClick={() => isRegistered ? setMode('PROFILE') : setShowLogin(true)} className="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-600">
+            <button onClick={() => isRegistered ? setMode('PROFILE') : setShowLogin(true)} className="flex min-h-[52px] min-w-[52px] flex-col items-center justify-center gap-1 text-slate-400 hover:text-slate-600">
               <UserCircle className="w-6 h-6" />
-              <span className="text-[10px] font-black uppercase tracking-tighter">Me</span>
+              <span className="text-[11px] font-black uppercase tracking-tight">Me</span>
             </button>
           </div>
         </div>

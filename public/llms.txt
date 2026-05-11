@@ -1,45 +1,43 @@
-# Somo Smart — AI-Powered Learning Platform
+# Somo Smart - AI-Powered Learning Platform
 
-> Somo Smart is Kenya's leading AI-powered learning platform for CBC and KCSE students, teachers, and parents.
+> Somo Smart is a Kenyan learning platform for learners, teachers, and parents.
 
-## What We Offer
+## Core Product Areas
 
-- **AI Explanations**: Students scan textbooks or type any topic to get curriculum-aligned explanations with KCSE exam insights
-- **Smart Quizzes**: AI-generated practice quizzes tailored to the Kenyan CBC/8-4-4 curriculum
-- **Spaced Repetition**: Adaptive review system based on the SM-2 algorithm for long-term retention
-- **Teacher Tools**: Lesson note generation, quiz creation, automated marking, and homework management
-- **Resource Library**: Verified study materials, past papers, and syllabus guides for all CBC/KCSE subjects
-- **Parent Portal**: Secure access for parents to monitor their child's study progress and quiz scores
+- Learner dashboard: https://somaai.co.ke/learner
+- Teacher workspace: https://somaai.co.ke/teacher
+- Parent portal: https://somaai.co.ke/parent
+- School dashboard: https://somaai.co.ke/school
+- Revision portal: https://somaai.co.ke/revision
+- Pricing: https://somaai.co.ke/pricing
+- Blog: https://somaai.co.ke/blog
 
-## Subjects Covered
+## What Learners Get
 
-Mathematics, Science, English, Kiswahili, Social Studies, CRE, IRE, Agriculture, Business Studies, Computer Science, History, Geography, Physics, Chemistry, Biology, Home Science
+- Ask Akili explanations
+- Quiz generation and marking
+- Notes and past papers library access
+- Guided revision by curriculum level
 
-## Grade Levels
+## What Teachers Get
 
-- CBC: Grade 1 through Grade 9 (Junior Secondary)
-- 8-4-4: Form 1 through Form 4
+- Lesson and assessment generation
+- Classroom stream and assignment flows
+- Marking support and report-ready outputs
+- Monetizable teacher-created premium resources
 
-## Pricing
+## Library Policy
 
-- Free tier: 3 AI explanations per session
-- Pro Monthly (KES 200): Unlimited explanations, quizzes, and downloads for 30 days
-- Pro Term (KES 500): Unlimited access for 90 days
-- Pro Annual (KES 1,500): Full year of unlimited access
+- Official/admin uploaded notes and past papers are available to subscribed learners.
+- Paid gates should apply to teacher-created premium resources only.
 
-## Target Audience
+## Audience
 
-- Kenyan students preparing for KCSE, KPSEA, and CBC assessments
+- Learners preparing for KCSE, KPSEA, and CBC assessments
 - Teachers in Kenyan primary and secondary schools
-- Parents monitoring their children's academic progress
-
-## Technical Details
-
-- Built with React 19, Vite, Supabase, and Google Gemini AI
-- Available at: https://somaai.co.ke
-- Supports English and Kiswahili languages
+- Parents monitoring learner outcomes
 
 ## Contact
 
-- Website: https://somaai.co.ke
+- Website: https://somaai.co.ke/
 - Location: Nairobi, Kenya

@@ -674,6 +674,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                 <img
                                     src={heroScienceLabImg}
                                     alt="Kenyan students studying in a science laboratory"
+                                    fetchPriority="high"
+                                    loading="eager"
+                                    decoding="async"
                                     className="w-full h-auto object-cover"
                                     style={{ maxHeight: '480px' }}
                                 />
@@ -1208,7 +1211,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                             className="group cursor-pointer bg-slate-50 dark:bg-slate-900/50 rounded-3xl overflow-hidden border border-slate-200 dark:border-slate-800 hover:shadow-2xl transition-all duration-300"
                         >
                             <div className="h-48 overflow-hidden">
-                                <img src="https://images.unsplash.com/photo-1632559646295-c1e14afb8e5c?w=800&q=80" alt="Mathematics Guide" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                                <img src="https://images.unsplash.com/photo-1632559646295-c1e14afb8e5c?w=800&q=80" alt="Mathematics Guide" loading="lazy" decoding="async" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                             </div>
                             <div className="p-6">
                                 <div className="text-xs font-bold text-slate-400 mb-2">EDUCATION • MAY 2024</div>
@@ -1242,7 +1245,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                             className="group bg-slate-50 dark:bg-slate-900/50 rounded-3xl overflow-hidden border border-slate-200 dark:border-slate-800 hover:shadow-2xl transition-all duration-300"
                         >
                             <div className="h-48 overflow-hidden">
-                                <img src="https://images.unsplash.com/photo-1546410531-bea518040081?auto=format&fit=crop&q=80" alt="CBC Curriculum" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                                <img src="https://images.unsplash.com/photo-1546410531-bea518040081?auto=format&fit=crop&q=80" alt="CBC Curriculum" loading="lazy" decoding="async" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                             </div>
                             <div className="p-6">
                                 <div className="text-xs font-bold text-slate-400 mb-2">CURRICULUM • MARCH 2024</div>

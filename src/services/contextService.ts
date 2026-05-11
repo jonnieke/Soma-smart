@@ -26,17 +26,19 @@ export const clearContext = () => {
     activeContext = null;
 };
 
-// If using pdfjs-dist in browser
-import * as pdfjsLib from 'pdfjs-dist';
-
-// Use Vite's URL import for the worker to ensure it bundles correctly
-// This avoids CDN version mismatches and 404s
-import pdfWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
-pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker;
+const loadPdfJs = async () => {
+    const [pdfjsLib, workerModule] = await Promise.all([
+        import('pdfjs-dist'),
+        import('pdfjs-dist/build/pdf.worker.min.mjs?url')
+    ]);
+    (pdfjsLib as any).GlobalWorkerOptions.workerSrc = (workerModule as any).default;
+    return pdfjsLib;
+};
 
 export const extractTextFromPDF = async (file: File): Promise<string> => {
+    const pdfjsLib = await loadPdfJs();
     const arrayBuffer = await file.arrayBuffer();
-    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    const pdf = await (pdfjsLib as any).getDocument({ data: arrayBuffer }).promise;
     let fullText = "";
 
     for (let i = 1; i <= pdf.numPages; i++) {
@@ -50,9 +52,10 @@ export const extractTextFromPDF = async (file: File): Promise<string> => {
 };
 
 export const extractTextFromURL = async (url: string): Promise<string> => {
+    const pdfjsLib = await loadPdfJs();
     const response = await fetch(url);
     const arrayBuffer = await response.arrayBuffer();
-    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    const pdf = await (pdfjsLib as any).getDocument({ data: arrayBuffer }).promise;
     let fullText = "";
 
     for (let i = 1; i <= pdf.numPages; i++) {

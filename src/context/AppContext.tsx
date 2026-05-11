@@ -1488,6 +1488,23 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   };
 
+  const isWalletForbiddenError = (err: any): boolean => {
+    const code = String(err?.code || '');
+    const status = Number(err?.status || 0);
+    const statusCode = Number(err?.statusCode || 0);
+    const msg = String(err?.message || '').toLowerCase();
+    const details = String(err?.details || '').toLowerCase();
+    const hint = String(err?.hint || '').toLowerCase();
+    return (
+      status === 403 ||
+      statusCode === 403 ||
+      code === '42501' ||
+      msg.includes('permission denied') ||
+      details.includes('permission denied') ||
+      hint.includes('permission denied')
+    );
+  };
+
   // Monetization Handlers
   const toggleTutoringAvailability = () => {
     setIsAvailableForTutoring(prev => !prev);
@@ -1497,23 +1514,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const fetchEarnings = async () => {
     if (!userId) return;
     if (teacherWalletAccessDeniedRef.current) return;
-
-    const isWalletForbiddenError = (err: any): boolean => {
-      const code = String(err?.code || '');
-      const status = Number(err?.status || 0);
-      const statusCode = Number(err?.statusCode || 0);
-      const msg = String(err?.message || '').toLowerCase();
-      const details = String(err?.details || '').toLowerCase();
-      const hint = String(err?.hint || '').toLowerCase();
-      return (
-        status === 403 ||
-        statusCode === 403 ||
-        code === '42501' ||
-        msg.includes('permission denied') ||
-        details.includes('permission denied') ||
-        hint.includes('permission denied')
-      );
-    };
 
     try {
       // 1. Fetch Wallet
@@ -2078,12 +2078,28 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       learnerHistoryFetchInFlightRef.current = true;
 
       try {
-        const { data, error } = await supabase
-          .from('activities')
-          .select('id, type, topic, score, details, created_at')
-          .eq('student_id', userId)
-          .order('created_at', { ascending: false })
-          .limit(100);
+        let data: any[] | null = null;
+        let error: any = null;
+
+        const recentActivities = await supabase.rpc('get_recent_activities', {
+          p_student_id: userId,
+          p_limit: 60
+        });
+
+        data = (recentActivities as any).data ?? null;
+        error = (recentActivities as any).error ?? null;
+
+        // Fallback to a lighter direct query if the RPC is unavailable in a given environment.
+        if (error && (String(error?.code || '') === '42883' || String(error?.message || '').toLowerCase().includes('function'))) {
+          const fallback = await supabase
+            .from('activities')
+            .select('id, type, topic, score, created_at')
+            .eq('student_id', userId)
+            .order('created_at', { ascending: false })
+            .limit(40);
+          data = (fallback as any).data ?? null;
+          error = (fallback as any).error ?? null;
+        }
 
         if (error) {
           // Treat history as optional data. Timeout/missing table should not disturb learner flow.
@@ -2109,7 +2125,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             topic: d.topic,
             date: new Date(d.created_at).toLocaleString(),
             score: d.score,
-            details: typeof d.details === 'string' ? d.details : JSON.stringify(d.details)
+            details: typeof d.details === 'string'
+              ? d.details
+              : (d.details ? JSON.stringify(d.details) : '')
           }));
           const merged = offlineService.mergeLearnerHistory(mapped);
           setLearnerHistory(merged);
@@ -2417,12 +2435,36 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       // 4. Earnings Update (if fixed price) - non-blocking so core response still saves
       if (pricingType === 'FIXED' && price > 0) {
         try {
-          const { data: wallet } = await supabase.from('teacher_wallets').select('balance').eq('id', userId).maybeSingle();
+          if (teacherWalletAccessDeniedRef.current) {
+            throw new Error('wallet_access_disabled');
+          }
+
+          const { data: wallet, error: walletReadError } = await supabase
+            .from('teacher_wallets')
+            .select('balance')
+            .eq('id', userId)
+            .maybeSingle();
+
+          if (walletReadError) {
+            if (isWalletForbiddenError(walletReadError)) {
+              teacherWalletAccessDeniedRef.current = true;
+              warnIfDev('Wallet credit skipped: teacher wallet access denied by RLS.');
+              throw new Error('wallet_access_forbidden');
+            }
+            throw walletReadError;
+          }
 
           if (!wallet) {
-            await supabase.from('teacher_wallets').insert({ id: userId, balance: price });
+            const { error: walletInsertError } = await supabase
+              .from('teacher_wallets')
+              .insert({ id: userId, balance: price });
+            if (walletInsertError) throw walletInsertError;
           } else {
-            await supabase.from('teacher_wallets').update({ balance: wallet.balance + price }).eq('id', userId);
+            const { error: walletUpdateError } = await supabase
+              .from('teacher_wallets')
+              .update({ balance: wallet.balance + price })
+              .eq('id', userId);
+            if (walletUpdateError) throw walletUpdateError;
           }
 
           await supabase.from('transactions').insert({
@@ -2433,7 +2475,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             status: 'COMPLETED'
           });
         } catch (earningsErr) {
-          warnIfDev('Earnings update failed (non-critical):', earningsErr);
+          if ((earningsErr as Error)?.message !== 'wallet_access_disabled' && (earningsErr as Error)?.message !== 'wallet_access_forbidden') {
+            warnIfDev('Earnings update failed (non-critical):', earningsErr);
+          }
         }
 
         if (teacherWallet) {
@@ -2655,19 +2699,40 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       const material = marketplaceMaterials.find(m => m.id === materialId);
       if (!material) return { success: false, message: "Material not found" };
 
-      // 1. Credit Seller Wallet
-      const { data: wallet } = await supabase.from('teacher_wallets').select('balance').eq('id', material.teacherId).single();
-      const currentBalance = wallet?.balance || 0;
-      await supabase.from('teacher_wallets').update({ balance: currentBalance + material.price }).eq('id', material.teacherId);
+      // 1. Credit Seller Wallet (best-effort; should not block learner purchase UX)
+      try {
+        const { data: wallet, error: walletReadError } = await supabase
+          .from('teacher_wallets')
+          .select('balance')
+          .eq('id', material.teacherId)
+          .maybeSingle();
+        if (walletReadError) throw walletReadError;
 
-      // 2. Add Transaction to Seller
-      await supabase.from('transactions').insert({
-        teacher_id: material.teacherId,
-        type: 'EARNING',
-        amount: material.price,
-        description: `Marketplace Sale: ${material.title}`,
-        status: 'COMPLETED'
-      });
+        const currentBalance = wallet?.balance || 0;
+        if (!wallet) {
+          const { error: walletInsertError } = await supabase
+            .from('teacher_wallets')
+            .insert({ id: material.teacherId, balance: material.price, currency: 'KES' });
+          if (walletInsertError) throw walletInsertError;
+        } else {
+          const { error: walletUpdateError } = await supabase
+            .from('teacher_wallets')
+            .update({ balance: currentBalance + material.price })
+            .eq('id', material.teacherId);
+          if (walletUpdateError) throw walletUpdateError;
+        }
+
+        // 2. Add Transaction to Seller
+        await supabase.from('transactions').insert({
+          teacher_id: material.teacherId,
+          type: 'EARNING',
+          amount: material.price,
+          description: `Marketplace Sale: ${material.title}`,
+          status: 'COMPLETED'
+        });
+      } catch (walletErr) {
+        warnIfDev('Marketplace wallet credit failed (non-blocking):', walletErr);
+      }
 
       // 3. Update Download Count
       await supabase.from('marketplace_materials').update({ download_count: material.downloadCount + 1 }).eq('id', materialId);

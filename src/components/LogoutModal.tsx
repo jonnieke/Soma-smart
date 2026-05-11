@@ -40,7 +40,7 @@ export const LogoutModal: React.FC<LogoutModalProps> = ({
                         initial={{ opacity: 0, scale: 0.9, y: 20 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                        className="relative w-full max-w-md bg-white rounded-[2.5rem] shadow-2xl border border-indigo-100 overflow-hidden"
+                        className="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl border border-indigo-100 dark:border-slate-700 overflow-hidden"
                     >
                         {/* Top Accent Bar */}
                         <div className="h-2 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500" />
@@ -48,7 +48,7 @@ export const LogoutModal: React.FC<LogoutModalProps> = ({
                         {/* Close Button */}
                         <button
                             onClick={onClose}
-                            className="absolute top-6 right-6 p-2 bg-slate-100 hover:bg-slate-200 rounded-full text-slate-500 transition-colors"
+                            className="absolute top-6 right-6 p-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 rounded-full text-slate-500 dark:text-slate-300 transition-colors"
                         >
                             <X className="w-5 h-5" />
                         </button>
@@ -66,7 +66,7 @@ export const LogoutModal: React.FC<LogoutModalProps> = ({
                                         repeat: Infinity,
                                         ease: "easeInOut"
                                     }}
-                                    className="w-full h-full bg-indigo-50 rounded-full flex items-center justify-center shadow-inner"
+                                    className="w-full h-full bg-indigo-50 dark:bg-slate-800 rounded-full flex items-center justify-center shadow-inner"
                                 >
                                     <LogOut className="w-10 h-10 text-indigo-600 ml-1" />
                                 </motion.div>
@@ -86,10 +86,10 @@ export const LogoutModal: React.FC<LogoutModalProps> = ({
                                 </motion.div>
                             </div>
 
-                            <h2 className="text-2xl font-black text-slate-800 mb-3 tracking-tight">
+                            <h2 className="text-2xl font-black text-slate-800 dark:text-slate-100 mb-3 tracking-tight">
                                 {title}
                             </h2>
-                            <p className="text-slate-600 leading-relaxed mb-8 px-2 font-medium">
+                            <p className="text-slate-600 dark:text-slate-300 leading-relaxed mb-8 px-2 font-medium">
                                 {message}
                             </p>
 
@@ -103,7 +103,7 @@ export const LogoutModal: React.FC<LogoutModalProps> = ({
                                 </Button>
                                 <button
                                     onClick={onConfirm}
-                                    className="py-3 text-slate-400 hover:text-red-500 font-bold text-sm transition-colors flex items-center justify-center gap-2"
+                                    className="py-3 text-slate-400 dark:text-slate-500 hover:text-red-500 dark:hover:text-red-400 font-bold text-sm transition-colors flex items-center justify-center gap-2"
                                 >
                                     {confirmText}
                                 </button>
@@ -111,8 +111,8 @@ export const LogoutModal: React.FC<LogoutModalProps> = ({
                         </div>
 
                         {/* Bottom Decoration */}
-                        <div className="bg-slate-50 py-4 px-8 border-t border-slate-100 flex justify-center">
-                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
+                        <div className="bg-slate-50 dark:bg-slate-800/60 py-4 px-8 border-t border-slate-100 dark:border-slate-700 flex justify-center">
+                            <p className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-widest">
                                 Somo Smart • Your Learning Buddy
                             </p>
                         </div>
