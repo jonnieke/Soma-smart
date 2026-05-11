@@ -138,16 +138,7 @@ class ClassroomService {
     async getClassesForStudent(studentId: string): Promise<StudentClassroomSummary[]> {
         const { data, error } = await supabase
             .from('class_members')
-            .select(`
-                class_id,
-                classes (
-                    *,
-                    profiles:teacher_id (
-                        name,
-                        full_name
-                    )
-                )
-            `)
+            .select('class_id')
             .eq('student_id', studentId);
 
         if (error) {
@@ -155,19 +146,42 @@ class ClassroomService {
             return [];
         }
 
-        const classes = (data || [])
-            .map((row: any) => {
-                const rawClass = Array.isArray(row.classes) ? row.classes[0] : row.classes;
-                if (!rawClass) return null;
-                const rawProfile = Array.isArray(rawClass.profiles) ? rawClass.profiles[0] : rawClass.profiles;
-                return {
-                    ...rawClass,
-                    profiles: rawProfile
-                        ? { name: rawProfile.name || rawProfile.full_name }
-                        : undefined
-                } as ClassroomDetails;
-            })
-            .filter(Boolean) as ClassroomDetails[];
+        const classIds = Array.from(new Set((data || []).map((row: any) => row.class_id).filter(Boolean)));
+        if (classIds.length === 0) return [];
+
+        const { data: classRows, error: classError } = await supabase
+            .from('classes')
+            .select('*')
+            .in('id', classIds);
+
+        if (classError) {
+            warnIfDev('Student classroom class lookup failed:', classError);
+            return [];
+        }
+
+        const teacherIds = Array.from(new Set((classRows || []).map((row: any) => row.teacher_id).filter(Boolean)));
+        let teachersById = new Map<string, { name?: string }>();
+
+        if (teacherIds.length > 0) {
+            const { data: teacherRows, error: teacherError } = await supabase
+                .from('profiles')
+                .select('id, full_name')
+                .in('id', teacherIds);
+
+            if (teacherError) {
+                warnIfDev('Student classroom teacher lookup failed:', teacherError);
+            } else {
+                teachersById = new Map((teacherRows || []).map((teacher: any) => [
+                    teacher.id,
+                    { name: teacher.full_name }
+                ]));
+            }
+        }
+
+        const classes = (classRows || []).map((classroom: any) => ({
+            ...classroom,
+            profiles: teachersById.get(classroom.teacher_id)
+        })) as ClassroomDetails[];
 
         const summaries = await Promise.all(classes.map(async (classroom) => {
             const latestPosts = (await this.getClassStream(classroom.id)).slice(0, 3);

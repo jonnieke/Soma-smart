@@ -52,7 +52,11 @@ export const pesapalService = {
             console.error("Supabase Function Error:", error);
             throw error;
         }
-        return data; // contains redirect_url
+        return {
+            ...data,
+            client_reference: reference,
+            client_user_id: userId
+        }; // contains redirect_url
     },
 
     /**

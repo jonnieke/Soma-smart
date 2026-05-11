@@ -15,14 +15,53 @@ interface Props {
 }
 
 export const PaymentFlow: React.FC<Props> = ({ plan, materialId, onSuccess, onCancel }) => {
-    const { userId, studentProfile, teacherProfile, role } = useApp();
+    const { userId, studentProfile, teacherProfile, role, login } = useApp();
     const [step, setStep] = useState<'INPUT' | 'IFRAME' | 'PROCESSING' | 'SUCCESS' | 'ERROR'>('INPUT');
     const [phone, setPhone] = useState('');
     const [firstName, setFirstName] = useState('');
     const [lastName, setLastName] = useState('');
     const [email, setEmail] = useState('');
+    const [payerMode, setPayerMode] = useState<'NEW' | 'EXISTING'>('NEW');
+    const [existingStudentCode, setExistingStudentCode] = useState('');
+    const [existingStudentProfileId, setExistingStudentProfileId] = useState<string | null>(null);
+    const [isResolvingStudent, setIsResolvingStudent] = useState(false);
     const [iframeUrl, setIframeUrl] = useState('');
+    const [paymentReference, setPaymentReference] = useState<string | null>(null);
+    const [paymentUserId, setPaymentUserId] = useState<string | null>(null);
+    const [iframeFailed, setIframeFailed] = useState(false);
+    const [iframeLoaded, setIframeLoaded] = useState(false);
+    const [autoOpenedCheckout, setAutoOpenedCheckout] = useState(false);
     const [error, setError] = useState('');
+    
+    const getPlanLabel = (tier?: string | null) => {
+        const t = String(tier || '').toUpperCase();
+        if (t === 'DAILY') return 'Daily Plan';
+        if (t === 'WEEKLY') return 'Weekly Plan';
+        if (t === 'MONTHLY') return 'Monthly Plan';
+        if (t === 'TERMLY') return 'Termly Plan';
+        if (t === 'ANNUAL') return 'Annual Plan';
+        if (t === 'PRO') return 'Pro Plan';
+        return t ? `${t} Plan` : 'Active Plan';
+    };
+
+    const hasActiveSubscription = async (profileId: string): Promise<{ active: boolean; plan?: string }> => {
+        try {
+            const { data, error: subError } = await supabase
+                .from('profiles')
+                .select('subscription_tier, subscription_expiry')
+                .eq('id', profileId)
+                .maybeSingle();
+
+            if (subError || !data) return { active: false };
+            const tier = String(data.subscription_tier || 'FREE').toUpperCase();
+            const expiry = data.subscription_expiry ? new Date(data.subscription_expiry) : null;
+            const now = new Date();
+            const active = tier !== 'FREE' && !!expiry && expiry > now;
+            return { active, plan: tier };
+        } catch {
+            return { active: false };
+        }
+    };
 
     const trackFunnelEvent = (eventName: string, params: Record<string, unknown> = {}) => {
         try {
@@ -53,6 +92,8 @@ export const PaymentFlow: React.FC<Props> = ({ plan, materialId, onSuccess, onCa
     }, [studentProfile, teacherProfile, role]);
 
     const isRegistered = !!(studentProfile || teacherProfile);
+    const isGuestExistingStudent = !isRegistered && payerMode === 'EXISTING';
+    const GUEST_DUMMY_UUID = '00000000-0000-0000-0000-000000000000';
 
     // Poll for payment success when in IFRAME
     useEffect(() => {
@@ -60,23 +101,51 @@ export const PaymentFlow: React.FC<Props> = ({ plan, materialId, onSuccess, onCa
 
         const interval = setInterval(async () => {
             const profileId = studentProfile?.id || teacherProfile?.id;
-            const uid = userId || profileId;
+            const uid = paymentUserId || userId || profileId || existingStudentProfileId;
             if (!uid) return;
 
             try {
-                const { data } = await supabase
+                let data: { status?: string } | null = null;
+                if (paymentReference) {
+                    const { data: refData } = await supabase
+                        .from('transactions')
+                        .select('status')
+                        .eq('reference_code', paymentReference)
+                        .maybeSingle();
+                    data = refData;
+                }
+
+                if (!data) {
+                    const { data: latestData } = await supabase
                     .from('transactions')
                     .select('status')
                     .eq('user_id', uid)
                     .order('created_at', { ascending: false })
                     .limit(1)
                     .maybeSingle();
+                    data = latestData;
+                }
 
                 if (data && data.status === 'SUCCESS') {
                     setStep('SUCCESS');
-                    setTimeout(() => {
+                    setTimeout(async () => {
+                        // Always attempt account handoff after success to avoid guest/paywall loops.
+                        if (!isRegistered) {
+                            if (existingStudentCode) {
+                                await login(existingStudentCode);
+                            } else if (paymentUserId && paymentUserId !== GUEST_DUMMY_UUID) {
+                                const { data: paidProfile } = await supabase
+                                    .from('profiles')
+                                    .select('student_id')
+                                    .eq('id', paymentUserId)
+                                    .maybeSingle();
+                                if (paidProfile?.student_id) {
+                                    await login(paidProfile.student_id);
+                                }
+                            }
+                        }
                         onSuccess();
-                    }, 3000);
+                    }, 1500);
                 } else if (data && data.status === 'FAILED') {
                     setStep('ERROR');
                 }
@@ -86,12 +155,79 @@ export const PaymentFlow: React.FC<Props> = ({ plan, materialId, onSuccess, onCa
         }, 3000); // Check every 3 seconds
 
         return () => clearInterval(interval);
-    }, [step, userId, studentProfile, teacherProfile, onSuccess]);
+    }, [step, paymentUserId, userId, studentProfile, teacherProfile, existingStudentProfileId, paymentReference, onSuccess, isRegistered, existingStudentCode, login]);
+
+    const resolveExistingStudent = async (): Promise<boolean> => {
+        const code = existingStudentCode.trim().toUpperCase();
+        if (!code) {
+            setError('Enter Student ID (SOMA-XXXX)');
+            return false;
+        }
+
+        setIsResolvingStudent(true);
+        setError('');
+        try {
+            const { data, error: lookupError } = await supabase
+                .from('profiles')
+                .select('id, full_name, email, parent_phone, student_id')
+                .eq('student_id', code)
+                .maybeSingle();
+
+            if (lookupError) throw lookupError;
+            if (!data) {
+                setError('Student ID not found. Confirm and try again.');
+                setExistingStudentProfileId(null);
+                return false;
+            }
+
+            const names = (data.full_name || '').trim().split(/\s+/).filter(Boolean);
+            setFirstName(names[0] || 'Learner');
+            setLastName(names.slice(1).join(' ') || 'User');
+            setEmail(data.email || '');
+            setPhone(((data.parent_phone || '') as string).replace(/^\+?254/, '').replace(/^0/, ''));
+            setExistingStudentProfileId(data.id);
+            setExistingStudentCode(data.student_id || code);
+            return true;
+        } catch (lookupErr) {
+            console.error('Existing student lookup failed:', lookupErr);
+            setError('Could not verify Student ID right now. Please try again.');
+            setExistingStudentProfileId(null);
+            return false;
+        } finally {
+            setIsResolvingStudent(false);
+        }
+    };
 
     const handlePayment = async () => {
-        if (!phone || (!isRegistered && (!firstName || !lastName || !email))) {
+        if (!isRegistered && !isGuestExistingStudent) {
+            setError('For guest checkout, use Existing Student and verify a SOMA ID first.');
+            return;
+        }
+
+        if (isGuestExistingStudent && !existingStudentProfileId) {
+            const resolved = await resolveExistingStudent();
+            if (!resolved) return;
+        }
+
+        if (!phone || (!isRegistered && !isGuestExistingStudent && (!firstName || !lastName || !email))) {
             setError(isRegistered ? 'Please enter your phone number' : 'Please fill in all contact details');
             return;
+        }
+
+        const profileId = studentProfile?.id || teacherProfile?.id || existingStudentProfileId;
+        if (profileId) {
+            const existingSub = await hasActiveSubscription(profileId);
+            if (existingSub.active) {
+                setError(`Already subscribed: ${getPlanLabel(existingSub.plan)} is still active. Redirecting...`);
+                setStep('SUCCESS');
+                setTimeout(async () => {
+                    if (!isRegistered && existingStudentCode) {
+                        await login(existingStudentCode);
+                    }
+                    onSuccess();
+                }, 900);
+                return;
+            }
         }
 
         setStep('PROCESSING');
@@ -113,8 +249,8 @@ export const PaymentFlow: React.FC<Props> = ({ plan, materialId, onSuccess, onCa
 
         try {
             // Priority for UUID: Auth session > Profile ID > Guest dummy
-            const profileId = studentProfile?.id || teacherProfile?.id;
-            const uid = userId || profileId || '00000000-0000-0000-0000-000000000000';
+            const currentProfileId = studentProfile?.id || teacherProfile?.id;
+            const uid = userId || currentProfileId || existingStudentProfileId || GUEST_DUMMY_UUID;
 
             // Fallback email for registered users if empty
             const profileEmail = studentProfile?.email || teacherProfile?.email;
@@ -129,6 +265,11 @@ export const PaymentFlow: React.FC<Props> = ({ plan, materialId, onSuccess, onCa
 
             if (response.redirect_url) {
                 setIframeUrl(response.redirect_url);
+                setPaymentReference(response.client_reference || null);
+                setPaymentUserId(uid);
+                setIframeLoaded(false);
+                setAutoOpenedCheckout(false);
+                setIframeFailed(false);
                 setStep('IFRAME');
                 trackFunnelEvent('payment_iframe_opened', {
                     plan_id: plan?.id,
@@ -144,6 +285,37 @@ export const PaymentFlow: React.FC<Props> = ({ plan, materialId, onSuccess, onCa
             setStep('ERROR');
         }
     };
+
+    useEffect(() => {
+        if (isRegistered) return;
+        setError('');
+        setExistingStudentProfileId(null);
+        if (payerMode === 'NEW') {
+            setExistingStudentCode('');
+        }
+    }, [payerMode, isRegistered]);
+
+    const openCheckoutDirectly = () => {
+        if (!iframeUrl) return;
+        const opened = window.open(iframeUrl, '_blank', 'noopener,noreferrer');
+        if (!opened) {
+            window.location.href = iframeUrl;
+        }
+    };
+
+    useEffect(() => {
+        if (step !== 'IFRAME' || !iframeUrl || iframeLoaded || autoOpenedCheckout) return;
+
+        const timeout = window.setTimeout(() => {
+            // In some in-app browsers, the checkout iframe stays blank.
+            // Auto-fallback so users don't need to click manually.
+            setIframeFailed(true);
+            setAutoOpenedCheckout(true);
+            openCheckoutDirectly();
+        }, 2200);
+
+        return () => window.clearTimeout(timeout);
+    }, [step, iframeUrl, iframeLoaded, autoOpenedCheckout]);
 
     return (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md">
@@ -176,11 +348,96 @@ export const PaymentFlow: React.FC<Props> = ({ plan, materialId, onSuccess, onCa
                             </div>
 
                             <div className="space-y-4">
+                                {!isRegistered && (
+                                    <div className="grid grid-cols-2 gap-2 p-1 bg-slate-100 rounded-xl">
+                                        <button
+                                            type="button"
+                                            onClick={() => setPayerMode('NEW')}
+                                            className={`py-2 rounded-lg text-xs font-black uppercase tracking-widest transition ${payerMode === 'NEW' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'}`}
+                                        >
+                                            New Learner
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setPayerMode('EXISTING')}
+                                            className={`py-2 rounded-lg text-xs font-black uppercase tracking-widest transition ${payerMode === 'EXISTING' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'}`}
+                                        >
+                                            Existing Student
+                                        </button>
+                                    </div>
+                                )}
+                                {!isRegistered && payerMode === 'NEW' && (
+                                    <div className="mx-1 p-3 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-xs font-medium">
+                                        To activate immediately after payment, switch to <span className="font-black">Existing Student</span> and verify a SOMA ID.
+                                    </div>
+                                )}
+
                                 <div className="bg-indigo-50/50 p-4 rounded-2xl border border-indigo-100 mb-2">
                                     <p className="text-[10px] font-black uppercase text-indigo-400 tracking-widest mb-1">Paying as</p>
                                     <p className="font-bold text-slate-700">{firstName} {lastName}</p>
                                     <p className="text-[10px] text-slate-400 truncate">{email}</p>
                                 </div>
+
+                                {!isRegistered && payerMode === 'EXISTING' && (
+                                    <div className="bg-slate-50 p-4 rounded-2xl border-2 border-slate-100">
+                                        <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest block mb-1">Student ID</label>
+                                        <div className="flex items-center gap-2">
+                                            <input
+                                                type="text"
+                                                placeholder="SOMA-XXXX"
+                                                className="w-full bg-transparent font-bold uppercase outline-none placeholder:text-slate-300"
+                                                value={existingStudentCode}
+                                                onChange={(e) => {
+                                                    setExistingStudentCode(e.target.value.toUpperCase());
+                                                    setExistingStudentProfileId(null);
+                                                }}
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={resolveExistingStudent}
+                                                disabled={isResolvingStudent || !existingStudentCode.trim()}
+                                                className="px-3 py-2 rounded-lg bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest disabled:opacity-50"
+                                            >
+                                                {isResolvingStudent ? 'Checking...' : existingStudentProfileId ? 'Verified' : 'Verify'}
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {!isRegistered && payerMode === 'NEW' && (
+                                    <div className="grid grid-cols-1 gap-3">
+                                        <div className="bg-slate-50 p-4 rounded-2xl border-2 border-slate-100">
+                                            <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest block mb-1">First Name</label>
+                                            <input
+                                                type="text"
+                                                placeholder="e.g. Amina"
+                                                className="w-full bg-transparent font-bold outline-none placeholder:text-slate-300"
+                                                value={firstName}
+                                                onChange={(e) => setFirstName(e.target.value)}
+                                            />
+                                        </div>
+                                        <div className="bg-slate-50 p-4 rounded-2xl border-2 border-slate-100">
+                                            <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest block mb-1">Last Name</label>
+                                            <input
+                                                type="text"
+                                                placeholder="e.g. Otieno"
+                                                className="w-full bg-transparent font-bold outline-none placeholder:text-slate-300"
+                                                value={lastName}
+                                                onChange={(e) => setLastName(e.target.value)}
+                                            />
+                                        </div>
+                                        <div className="bg-slate-50 p-4 rounded-2xl border-2 border-slate-100">
+                                            <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest block mb-1">Email Address</label>
+                                            <input
+                                                type="email"
+                                                placeholder="e.g. parent@email.com"
+                                                className="w-full bg-transparent font-bold outline-none placeholder:text-slate-300"
+                                                value={email}
+                                                onChange={(e) => setEmail(e.target.value)}
+                                            />
+                                        </div>
+                                    </div>
+                                )}
 
                                 <div className="bg-slate-50 p-4 rounded-2xl border-2 border-slate-100">
                                     <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest block mb-1">M-Pesa Phone Number</label>
@@ -253,13 +510,28 @@ export const PaymentFlow: React.FC<Props> = ({ plan, materialId, onSuccess, onCa
                                     <ShieldCheck className="w-4 h-4 text-emerald-500" />
                                     <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Secure Pesapal Checkout</span>
                                 </div>
-                                <button onClick={onCancel} className="text-slate-400 hover:text-red-500 font-bold text-xs uppercase">Cancel</button>
+                                <div className="flex items-center gap-3">
+                                    <button
+                                        onClick={openCheckoutDirectly}
+                                        className="text-indigo-600 hover:text-indigo-800 font-bold text-xs uppercase inline-flex items-center gap-1"
+                                    >
+                                        Open Checkout <ExternalLink className="w-3 h-3" />
+                                    </button>
+                                    <button onClick={onCancel} className="text-slate-400 hover:text-red-500 font-bold text-xs uppercase">Cancel</button>
+                                </div>
                             </div>
+                            {iframeFailed && (
+                                <div className="mx-4 mt-4 p-3 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-xs font-medium">
+                                    Embedded checkout could not load in this browser. Use <span className="font-black">Open Checkout</span> above to continue payment securely.
+                                </div>
+                            )}
                             <iframe
                                 src={iframeUrl}
                                 className="w-full flex-1 border-none"
                                 title="Pesapal Checkout"
                                 allow="payment"
+                                onLoad={() => setIframeLoaded(true)}
+                                onError={() => setIframeFailed(true)}
                             />
                         </motion.div>
                     )}

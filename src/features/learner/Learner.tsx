@@ -92,7 +92,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
     marketplaceMaterials, purchasedMaterialIds, purchaseMaterial,
     resources, fetchResources,
     extraDownloads, grantExtraDownloads,
-    verifySubscription,
+    verifySubscription, login,
     // Phase 2/3: Adaptive Tutoring & Evolutionary Educator
     masteryGraph, dueForReview, weakTopics, processQuizCompletion, addSpacedRepetitionItem,
     getPersonalizedDailyChallenge, activeStrategies, educationLevel
@@ -333,6 +333,8 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
   const [promptText, setPromptText] = useState("");
   const [showTutoringModal, setShowTutoringModal] = useState(false);
   const [showExpiryModal, setShowExpiryModal] = useState(false); // New State
+  const [hasRecentPaymentUnlock, setHasRecentPaymentUnlock] = useState(false);
+  const resumeBypassRef = useRef(false);
 
   // Subscription Expiry Check
   useEffect(() => {
@@ -1253,8 +1255,19 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
   };
 
   const checkLimit = (action?: PendingPaywallAction): boolean => {
+    if (resumeBypassRef.current) {
+      resumeBypassRef.current = false;
+      return true;
+    }
+
+    const hasClientActiveSubscription =
+      subscriptionPlan !== 'FREE' &&
+      !!subscriptionExpiry &&
+      !isNaN(new Date(subscriptionExpiry).getTime()) &&
+      new Date(subscriptionExpiry) > new Date();
+
     // Pro = Unlimited Checks
-    if (isPro) return true;
+    if (isPro || hasRecentPaymentUnlock || hasClientActiveSubscription) return true;
 
     // Defensive: If we are registered but isPro is not yet set (or false), 
     // we should still allow access if usage is below limit.
@@ -1602,6 +1615,18 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
       .replace(/\b(a|an|quick|short|practice|revision|quiz|test|questions?|me)\b/gi, '');
 
     return rawTopic.replace(/[?.!]+$/g, '').trim() || 'General revision';
+  };
+
+  const restoreMemberSessionForResume = async () => {
+    const savedStudentCode = localStorage.getItem('soma_active_student');
+    if (!savedStudentCode) return false;
+
+    const restored = await login(savedStudentCode);
+    if (restored) {
+      await verifySubscription();
+      setHasRecentPaymentUnlock(true);
+    }
+    return restored;
   };
 
   const handleTopicClick = async (topic: string, multimedia?: { data: string, mimeType: string }) => {
@@ -2741,7 +2766,12 @@ ${explanation.explanation}
                       <h3 className="text-lg font-black text-slate-900 dark:text-white mb-1">{recentTopics[0]}</h3>
                       <p className="text-xs font-semibold text-slate-500 mb-4">Jump back into your last learning thread and keep momentum.</p>
                       <button
-                        onClick={() => {
+                        onClick={async () => {
+                          const restored = await restoreMemberSessionForResume();
+                          if (restored) {
+                            // Immediate one-shot bypass for the resumed action in the same tick.
+                            resumeBypassRef.current = true;
+                          }
                           const resumePrompt = `Continue explaining: ${recentTopics[0]}`;
                           setPromptText(resumePrompt);
                           handlePromptSubmit(resumePrompt);
@@ -4566,6 +4596,8 @@ ${explanation.explanation}
               plan_id: (selectedPlan as any)?.id,
               plan_name: selectedPlan?.name
             });
+            setHasRecentPaymentUnlock(true);
+            setShowLimitModal(false);
             await verifySubscription();
             setMode('MENU');
             setSelectedPlan(null);

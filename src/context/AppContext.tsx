@@ -227,6 +227,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const teacherWalletAccessDeniedRef = useRef(false);
   const pendingClassJoinRef = useRef(false);
   const historyFetchWarnedRef = useRef(false);
+  const learnerHistoryFetchInFlightRef = useRef(false);
 
   const [activeTutoringRequests, setActiveTutoringRequests] = useState<TutoringRequest[]>([]);
 
@@ -285,6 +286,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [language, setLanguage] = useState<'EN' | 'SW'>(() => {
     return (localStorage.getItem('soma_language') as 'EN' | 'SW') || 'EN';
   });
+
+  const getAccessFromProfileRow = (profile: any): { isPro: boolean; tier: SubscriptionTier; expiry: string | null } => {
+    const tier = (profile?.subscription_tier || 'FREE') as SubscriptionTier;
+    const expiry = profile?.subscription_expiry || null;
+    const isPro = Boolean(tier !== 'FREE' && expiry && new Date(expiry) > new Date());
+    return { isPro, tier: isPro ? tier : 'FREE', expiry: isPro ? expiry : expiry };
+  };
 
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     const saved = localStorage.getItem('soma_theme') as 'light' | 'dark';
@@ -642,6 +650,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
       if (session) {
         currentUserId = session.user.id;
+        let preloadedAccess: { isPro: boolean; tier: SubscriptionTier; expiry: string | null } | null = null;
         // Fetch profile
         const { data: profile } = await supabase
           .from('profiles')
@@ -650,6 +659,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           .maybeSingle();
 
         if (profile) {
+          preloadedAccess = getAccessFromProfileRow(profile);
           setUserId(session.user.id);
           // Update Session ID on init if it's yours (or take over)
           // Actually, we should only take over on explicit login action, 
@@ -731,6 +741,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             await supabase.from('profiles').update({ session_id: browserSessionId }).eq('id', profile.id);
           }
         }
+
+        if (preloadedAccess && preloadedAccess.isPro) {
+          setIsPro(preloadedAccess.isPro);
+          setSubscriptionPlan(preloadedAccess.tier);
+          setSubscriptionExpiry(preloadedAccess.expiry);
+        }
       } else {
         // 2. No Supabase session? Check for persistent local Student ID
         const savedStudentCode = localStorage.getItem('soma_active_student');
@@ -743,6 +759,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             .maybeSingle();
 
           if (profile) {
+            const preloadedAccess = getAccessFromProfileRow(profile);
             currentUserId = profile.id;
             setUserId(profile.id);
             setStudentCode(profile.student_id);
@@ -774,6 +791,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
               await supabase.from('profiles').update({ session_id: browserSessionId }).eq('id', profile.id);
             }
             setRole(profile.role === 'REVISION' ? UserRole.REVISION : UserRole.LEARNER);
+            if (preloadedAccess.isPro) {
+              setIsPro(preloadedAccess.isPro);
+              setSubscriptionPlan(preloadedAccess.tier);
+              setSubscriptionExpiry(preloadedAccess.expiry);
+            }
           } else {
             localStorage.removeItem('soma_active_student');
           }
@@ -799,9 +821,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         }
 
         const access = await checkSubscriptionAccess(currentUserId, segment);
-        setIsPro(access.isPro);
-        setSubscriptionPlan(access.tier);
-        setSubscriptionExpiry(access.expiry);
+        // Keep explicit profile-derived pro access if service-level access check degrades.
+        if (access.isPro || subscriptionPlan === 'FREE') {
+          setIsPro(access.isPro);
+          setSubscriptionPlan(access.tier);
+          setSubscriptionExpiry(access.expiry);
+        }
       } else {
         // RESET STATE if no user found (Prevents stale data leak)
         setIsPro(false);
@@ -2007,6 +2032,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       setIsRegistered(true);
       setRole(profile.role === 'REVISION' ? UserRole.REVISION : UserRole.LEARNER);
       setUserId(profile.id);
+      const accessFromProfile = getAccessFromProfileRow(profile);
+      if (accessFromProfile.isPro) {
+        setIsPro(accessFromProfile.isPro);
+        setSubscriptionPlan(accessFromProfile.tier);
+        setSubscriptionExpiry(accessFromProfile.expiry);
+      }
 
       // PERSIST LOGIN
       localStorage.setItem('soma_active_student', profile.student_id);
@@ -2043,6 +2074,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const loadHistory = async () => {
       if (!userId) return;
       if (isOptionalDataUnavailable('learner_history')) return;
+      if (learnerHistoryFetchInFlightRef.current) return;
+      learnerHistoryFetchInFlightRef.current = true;
 
       try {
         const { data, error } = await supabase
@@ -2050,13 +2083,17 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           .select('id, type, topic, score, details, created_at')
           .eq('student_id', userId)
           .order('created_at', { ascending: false })
-          .limit(200);
+          .limit(100);
 
         if (error) {
-          // If table doesn't exist, we just ignore it for now (graceful degradation)
+          // Treat history as optional data. Timeout/missing table should not disturb learner flow.
           markOptionalDataUnavailable('learner_history');
           if (!historyFetchWarnedRef.current) {
-            warnIfDev("Could not fetch history (maybe table missing):", error);
+            if ((error as any)?.code === '57014') {
+              warnIfDev("History query timed out; using local history fallback.");
+            } else {
+              warnIfDev("Could not fetch history (maybe table missing):", error);
+            }
             historyFetchWarnedRef.current = true;
           }
           return;
@@ -2079,7 +2116,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         }
       } catch (e) {
         markOptionalDataUnavailable('learner_history');
-        warnIfDev("History Load Error:", e);
+        if (!historyFetchWarnedRef.current) {
+          warnIfDev("History Load Error:", e);
+          historyFetchWarnedRef.current = true;
+        }
+      } finally {
+        learnerHistoryFetchInFlightRef.current = false;
       }
     };
 
@@ -2748,8 +2790,26 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   }, [role, userId, educationLevel]);
 
   const verifySubscription = async () => {
-    if (!userId) return;
-    await verifyAndFixSubscription(userId);
+    let resolvedUserId = userId;
+
+    if (!resolvedUserId) {
+      const savedStudentCode = localStorage.getItem('soma_active_student');
+      if (savedStudentCode) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('student_id', savedStudentCode)
+          .maybeSingle();
+        if (profile?.id) {
+          resolvedUserId = profile.id;
+          setUserId(profile.id);
+        }
+      }
+    }
+
+    if (!resolvedUserId) return;
+
+    await verifyAndFixSubscription(resolvedUserId);
     await refreshProfile();
   };
 
