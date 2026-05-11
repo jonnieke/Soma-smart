@@ -1,30 +1,43 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Sparkles, FileText, Lightbulb, ChevronRight, Bell, DollarSign, Clock, Library, Brain, Mic, LayoutDashboard } from 'lucide-react';
+import { Sparkles, FileText, Lightbulb, ChevronRight, Bell, DollarSign, Clock, Library, Brain, LayoutDashboard, CheckCircle2, AlertCircle } from 'lucide-react';
 import { TeacherProfile, TutoringRequest, TeacherActivity, TeacherWallet } from '../../types';
+import { getTeacherCtaVariant } from '../../utils/abExperiments';
 
 interface TeacherDashboardOverviewProps {
     teacherProfile: TeacherProfile | null;
     selectedSubject: string;
     selectedClass: string;
+    availableClasses: string[];
+    availableSubjects: string[];
     activeTutoringRequests: TutoringRequest[];
     teacherHistory: TeacherActivity[];
     teacherWallet: TeacherWallet | null;
     onNavigate: (tab: 'STUDENTS' | 'MARKING' | 'LIBRARY' | 'CREATION_HUB' | 'DARASA_MODE') => void;
+    onClassChange: (value: string) => void;
+    onSubjectChange: (value: string) => void;
     onRequestClick: (request: TutoringRequest) => void;
     onHistoryItemClick: (item: TeacherActivity) => void;
+    onTrackEvent?: (eventName: string, params?: Record<string, unknown>) => void;
+    workflowStepSignal?: { step: 'GENERATE_ASSESSMENT' | 'PUBLISH_STREAM'; message: string; at: number } | null;
 }
 
 export const TeacherDashboardOverview: React.FC<TeacherDashboardOverviewProps> = ({
     teacherProfile,
     selectedSubject,
     selectedClass,
+    availableClasses,
+    availableSubjects,
     activeTutoringRequests,
     teacherHistory,
     teacherWallet,
     onNavigate,
+    onClassChange,
+    onSubjectChange,
     onRequestClick,
-    onHistoryItemClick
+    onHistoryItemClick,
+    onTrackEvent,
+    workflowStepSignal
 }) => {
 
     const pendingRequests = activeTutoringRequests.filter(r => r.status === 'PENDING');
@@ -36,9 +49,113 @@ export const TeacherDashboardOverview: React.FC<TeacherDashboardOverviewProps> =
     const todayEarnings = teacherWallet?.transactions
         .filter(t => new Date(t.date).toLocaleDateString() === new Date().toLocaleDateString())
         .reduce((acc, t) => acc + (t.type === 'EARNING' ? t.amount : 0), 0) || 0;
+    const hasTeachingContext = Boolean(selectedClass?.trim()) && Boolean(selectedSubject?.trim());
+    const hasGeneratedAssessment = quizCount > 0;
+    const hasAssignedToStream = quizCount > 0;
+    const completedResponses = activeTutoringRequests.filter(r => r.status === 'COMPLETED').length;
+    const completedSteps = [hasTeachingContext, hasGeneratedAssessment, hasAssignedToStream].filter(Boolean).length;
+    const teacherCtaVariant = React.useMemo(() => getTeacherCtaVariant(), []);
 
     return (
         <div className="space-y-8">
+            <div className="bg-white rounded-[2rem] p-6 border-2 border-emerald-200 shadow-sm">
+                <div className="flex flex-col lg:flex-row gap-5 lg:items-center lg:justify-between">
+                    <div>
+                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-600 mb-1">Start Here</p>
+                        <h3 className="text-xl font-black text-slate-900">
+                            {teacherCtaVariant === 'A' ? 'First Teaching Workflow' : 'Run Your First 3-Step Class Flow'}
+                        </h3>
+                        <p className="text-sm font-semibold text-slate-500 mt-1">
+                            {teacherCtaVariant === 'A'
+                                ? 'Choose class, generate assessment, then assign to class stream.'
+                                : 'Set class context, generate one assessment, and publish to stream in minutes.'}
+                        </p>
+                    </div>
+                    <div className="bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-2">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-emerald-700">Progress</p>
+                        <p className="text-lg font-black text-emerald-800">{completedSteps}/3 completed</p>
+                    </div>
+                </div>
+
+                <div className="mt-5 rounded-xl border border-slate-200 bg-slate-50 p-4">
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 mb-3">Reliability Status</p>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <div className={`rounded-lg border px-3 py-2 text-xs font-bold flex items-center gap-2 ${hasCreatedResources ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-amber-50 border-amber-200 text-amber-700'}`}>
+                            {hasCreatedResources ? <CheckCircle2 className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
+                            Content Generated
+                        </div>
+                        <div className={`rounded-lg border px-3 py-2 text-xs font-bold flex items-center gap-2 ${hasAssignedToStream ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-amber-50 border-amber-200 text-amber-700'}`}>
+                            {hasAssignedToStream ? <CheckCircle2 className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
+                            Assignment Sent
+                        </div>
+                        <div className={`rounded-lg border px-3 py-2 text-xs font-bold flex items-center gap-2 ${completedResponses > 0 ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-amber-50 border-amber-200 text-amber-700'}`}>
+                            {completedResponses > 0 ? <CheckCircle2 className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
+                            Submissions Received
+                        </div>
+                    </div>
+                </div>
+                {workflowStepSignal && (
+                    <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3">
+                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-700 mb-1">Step Completed</p>
+                        <p className="text-sm font-bold text-emerald-800">{workflowStepSignal.message}</p>
+                    </div>
+                )}
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-5">
+                    <div className="rounded-xl border border-slate-200 p-4">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2">1. Choose Class & Subject</p>
+                        <div className="space-y-2">
+                            <select
+                                value={selectedClass}
+                                onChange={(e) => onClassChange(e.target.value)}
+                                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-700"
+                            >
+                                {(availableClasses || []).length === 0 && <option value="">No classes yet</option>}
+                                {(availableClasses || []).map((cls) => (
+                                    <option key={cls} value={cls}>{cls}</option>
+                                ))}
+                            </select>
+                            <select
+                                value={selectedSubject}
+                                onChange={(e) => onSubjectChange(e.target.value)}
+                                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-700"
+                            >
+                                {(availableSubjects || []).length === 0 && <option value="">No subjects yet</option>}
+                                {(availableSubjects || []).map((subj) => (
+                                    <option key={subj} value={subj}>{subj}</option>
+                                ))}
+                            </select>
+                        </div>
+                    </div>
+                    <div className="rounded-xl border border-slate-200 p-4 flex flex-col">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2">2. Generate Assessment</p>
+                        <p className="text-xs font-semibold text-slate-500 mb-3">Use Smart Exam Builder to generate your first quiz.</p>
+                        <button
+                            onClick={() => {
+                                onTrackEvent?.('teacher_cta_clicked', { variant: teacherCtaVariant, cta: 'generate_assessment' });
+                                onNavigate('CREATION_HUB');
+                            }}
+                            className="mt-auto rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black px-3 py-2"
+                        >
+                            {teacherCtaVariant === 'A' ? 'Open Creation Hub' : 'Generate First Assessment'}
+                        </button>
+                    </div>
+                    <div className="rounded-xl border border-slate-200 p-4 flex flex-col">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2">3. Assign To Stream</p>
+                        <p className="text-xs font-semibold text-slate-500 mb-3">Publish quiz to classroom stream and share to WhatsApp.</p>
+                        <button
+                            onClick={() => {
+                                onTrackEvent?.('teacher_cta_clicked', { variant: teacherCtaVariant, cta: 'assign_to_stream' });
+                                onNavigate('STUDENTS');
+                            }}
+                            className="mt-auto rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-black px-3 py-2"
+                        >
+                            {teacherCtaVariant === 'A' ? 'Open Classroom' : 'Publish To Stream'}
+                        </button>
+                    </div>
+                </div>
+            </div>
+
             {/* Hero Section */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Smart Priority Strip (Hero Section) */}

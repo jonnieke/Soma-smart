@@ -30,6 +30,7 @@ import { QuizRunner } from './QuizRunner';
 import { ThemeToggle } from '../../components/ThemeToggle';
 import { DashboardSidebar, SidebarTab } from '../../components/DashboardSidebar';
 import { classroomService, StudentClassroomSummary } from '../../services/classroomService';
+import { getLearnerCtaVariant } from '../../utils/abExperiments';
 
 const RevisionLanding = React.lazy(() => import('../revision/RevisionLanding').then(module => ({ default: module.RevisionLanding })));
 const RevisionSession = React.lazy(() => import('../revision/RevisionSession').then(module => ({ default: module.RevisionSession })));
@@ -349,6 +350,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
   const [materialCategory, setMaterialCategory] = useState<'ALL' | 'NOTES' | 'PAST_PAPER' | 'SYLLABUS'>('ALL');
   const [libraryView, setLibraryView] = useState<'UNLOCKED' | 'PURCHASED' | 'PRO_VAULT'>('UNLOCKED');
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const learnerCtaVariant = React.useMemo(() => getLearnerCtaVariant(), []);
 
   // PWA Install Prompt Logic
   useEffect(() => {
@@ -370,6 +372,39 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
     const { outcome } = await deferredPrompt.userChoice;
     if (outcome === 'accepted') {
       setDeferredPrompt(null);
+    }
+  };
+
+  const getPaywallActionContext = (action: PendingPaywallAction | null): { completed: string; next: string } => {
+    if (!action) {
+      return {
+        completed: 'used your free learning credits',
+        next: 'continue with unlimited learning actions'
+      };
+    }
+
+    switch (action.type) {
+      case 'PROCESS_FILE':
+        return { completed: 'used image scan support', next: 'analyze this image step-by-step' };
+      case 'AUDIO_EXPLANATION':
+        return { completed: 'used voice explanation support', next: 'process this audio explanation' };
+      case 'TOPIC_CLICK':
+        return { completed: `started exploring ${action.topic || 'a topic'}`, next: 'open full topic guidance and practice' };
+      case 'STUDY_SESSION':
+        return { completed: `opened ${action.materialName || 'a study session'}`, next: 'continue the study session with Akili' };
+      case 'STUDY_CHAT':
+        return { completed: 'started a study chat', next: 'ask more follow-up questions in context' };
+      case 'STUDY_QUIZ':
+        return { completed: 'completed your free quiz generation', next: 'generate more quizzes and mark instantly' };
+      case 'PODCAST':
+        return { completed: 'used Talk & Play audio generation', next: 'create more audio conversations' };
+      case 'REVISION_ENTRY':
+        return { completed: 'opened Exam Prep', next: 'continue revision and exam practice' };
+      case 'TALKBACK_ENTRY':
+      case 'TALKBACK_MESSAGE':
+        return { completed: 'started Talk & Play practice', next: 'continue the conversation-based learning session' };
+      default:
+        return { completed: 'used your free learning credits', next: 'continue learning without interruption' };
     }
   };
   const [subjectFilter, setSubjectFilter] = useState<string>('ALL');
@@ -428,11 +463,12 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
   }, [isRecording]);
 
   const handlePricingNavigation = () => {
-    if (!isRegistered) {
-      setShowRegistration(true);
-    } else {
-      setMode('PRICING');
-    }
+    trackFunnelEvent('pricing_opened', {
+      source: 'learner_dashboard',
+      role: role || 'GUEST',
+      mode
+    });
+    setMode('PRICING');
   };
 
   useEffect(() => {
@@ -954,6 +990,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
   const askStudyBuddy = async (query: string) => {
     if (!query.trim() && !pendingMedia) return;
     if (!currentDocument) return;
+    if (!checkLimit({ type: 'STUDY_CHAT', query })) return;
 
     const userMsg = { role: 'user' as const, text: query || (pendingMedia?.type === 'AUDIO' ? "Voice Message" : "Image Attachment") };
     setStudyChat(prev => [...prev, userMsg]);
@@ -1007,6 +1044,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
 
   const generatePracticeQuiz = async () => {
     if (!currentDocument || !explanation) return;
+    if (!checkLimit({ type: 'STUDY_QUIZ' })) return;
     setLoading(true);
     setLoadingText("Akili is crafting your quiz...");
     try {
@@ -1169,7 +1207,13 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
     | { type: 'PROCESS_FILE', file: File }
     | { type: 'AUDIO_EXPLANATION', blob: Blob, mimeType: string }
     | { type: 'TOPIC_CLICK', topic: string, multimedia?: { data: string, mimeType: string } }
-    | { type: 'STUDY_SESSION', material: any, materialName: string };
+    | { type: 'STUDY_SESSION', material: any, materialName: string }
+    | { type: 'STUDY_CHAT', query: string }
+    | { type: 'STUDY_QUIZ' }
+    | { type: 'PODCAST' }
+    | { type: 'REVISION_ENTRY' }
+    | { type: 'TALKBACK_ENTRY' }
+    | { type: 'TALKBACK_MESSAGE' };
   const [pendingPaywallAction, setPendingPaywallAction] = useState<PendingPaywallAction | null>(null);
 
 
@@ -1216,6 +1260,11 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
     // we should still allow access if usage is below limit.
     // If usage is ABOVE limit, and we are registered, we show limit modal.
     if (usageCount >= 3) {
+      trackFunnelEvent('paywall_shown', {
+        source: 'learner_usage_limit',
+        role: role || 'GUEST',
+        action_type: action?.type || 'UNKNOWN'
+      });
       if (action) {
         setPendingPaywallAction(action);
       }
@@ -1223,10 +1272,8 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
       // Second chance: refresh profile once if we think we might be pro but usage is high
       // (This is a bit heavy, but safe for users who just paid)
 
-      if (role === UserRole.GUEST) {
-        setShowLogin(true); // Force login
-      } else if (!isRegistered) {
-        setShowRegistration(true);
+      if (role === UserRole.GUEST || !isRegistered) {
+        setShowLimitModal(true);
       } else {
         // Registered but Limit Reached -> PAYWALL MODAL
         // Only show if we are CERTAIN it's not a loading state
@@ -1538,17 +1585,53 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
     }
   };
 
+  const getQuizRequestTopic = (input: string): string | null => {
+    const cleaned = input.trim();
+    if (!cleaned) return null;
+
+    const lower = cleaned.toLowerCase();
+    const isQuizRequest =
+      /\b(generate|create|make|set|give|start|take|practice|prepare)\b.*\b(quiz|test|questions?)\b/.test(lower) ||
+      /\b(quiz|test)\s+me\b/.test(lower);
+
+    if (!isQuizRequest) return null;
+
+    const topicMatch = cleaned.match(/\b(?:on|about|for|from)\s+(.+)$/i);
+    const rawTopic = topicMatch?.[1] || cleaned
+      .replace(/\b(generate|create|make|set|give|start|take|practice|prepare)\b/gi, '')
+      .replace(/\b(a|an|quick|short|practice|revision|quiz|test|questions?|me)\b/gi, '');
+
+    return rawTopic.replace(/[?.!]+$/g, '').trim() || 'General revision';
+  };
+
   const handleTopicClick = async (topic: string, multimedia?: { data: string, mimeType: string }) => {
     if (!checkLimit({ type: 'TOPIC_CLICK', topic, multimedia })) return;
 
     setLoading(true);
     setError(null);
-    setLoadingText(topic ? `Akili is exploring ${topic}...` : "Akili is reading your attachment...");
+    const requestedQuizTopic = !multimedia ? getQuizRequestTopic(topic) : null;
+    setLoadingText(requestedQuizTopic ? `Akili is crafting a quiz on ${requestedQuizTopic}...` : topic ? `Akili is exploring ${topic}...` : "Akili is reading your attachment...");
     setMode('SCAN'); // Show loading
     const purpose = sidebarTab === 'HOMEWORK' ? 'HOMEWORK' : 'TUTOR';
     try {
       setAudioData(null);
       setImageData(null);
+
+      if (requestedQuizTopic) {
+        const quiz = await generateQuickQuiz(
+          `Create a learner-ready quiz on ${requestedQuizTopic}. Test key definitions, process steps, misconceptions, and exam-style understanding.`,
+          requestedQuizTopic,
+          language
+        );
+        setQuizData(quiz);
+        setStickyQuizTaken(true);
+        trackFunnelEvent('learner_quiz_started', {
+          source: 'ask_akili_prompt',
+          topic: requestedQuizTopic
+        });
+        setMode('QUIZ');
+        return;
+      }
 
       const result = await explainTopic(
         topic || (multimedia?.mimeType.includes('audio') ? "Voice Message" : "Image Analysis"),
@@ -1622,9 +1705,9 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
     }
   };
 
-  const handlePromptSubmit = async () => {
-    if (!promptText.trim() && !pendingMedia) return;
-    const query = promptText.trim();
+  const handlePromptSubmit = async (overrideText?: unknown) => {
+    const query = typeof overrideText === 'string' ? overrideText.trim() : promptText.trim();
+    if (!query && !pendingMedia) return;
     const media = pendingMedia;
     setPromptText("");
     setPendingMedia(null);
@@ -1703,6 +1786,7 @@ ${explanation.explanation}
 
   const handleGenerateQuiz = async () => {
     if (!explanation) return;
+    if (!checkLimit({ type: 'STUDY_QUIZ' })) return;
     setLoading(true);
     setLoadingText("Creating your quiz...");
     try {
@@ -1798,6 +1882,7 @@ ${explanation.explanation}
 
     // Generate New
     if (!explanation) return;
+    if (!checkLimit({ type: 'PODCAST' })) return;
     try {
       setPodcastLoading(true);
       const script = await generatePodcastScript(explanation.explanation, explanation.topic);
@@ -1833,6 +1918,7 @@ ${explanation.explanation}
             onBack={() => setMode('MENU')}
             onNavigate={onNavigate}
             onStartSession={(data, sessionMode) => {
+              if (!checkLimit({ type: 'REVISION_ENTRY' })) return;
               setActiveRevisionSession({ data, mode: sessionMode });
               setMode('REVISION_SESSION');
             }}
@@ -1860,6 +1946,7 @@ ${explanation.explanation}
       return (
         <React.Suspense fallback={<DeferredViewLoader />}>
           <ConversationalTutor
+            onBeforeMessage={() => checkLimit({ type: 'TALKBACK_MESSAGE' })}
             onBack={() => {
               setMode('MENU');
               setSidebarTab('HOME');
@@ -2465,6 +2552,11 @@ ${explanation.explanation}
       const hasHistory = history.length > 0;
       const hasProgress = totalXP > 0;
       const freeUsesLeft = Math.max(0, 3 - usageCount);
+      const latestStudy = history.find((h: any) => h.type === 'EXPLANATION' || h.type === 'STUDY');
+      const latestQuiz = history.find((h: any) => h.type === 'QUIZ');
+      const hasStudiedTopic = Boolean(latestStudy?.topic);
+      const hasQuizAttempt = Boolean(latestQuiz);
+      const hasScoreGain = typeof latestQuiz?.score === 'number' && latestQuiz.score >= 0;
 
       return (
         <div className="min-h-screen bg-slate-50 dark:bg-slate-950 font-sans text-slate-800 dark:text-slate-100 w-full transition-colors duration-300">
@@ -2532,6 +2624,24 @@ ${explanation.explanation}
                 </motion.div>
               )}
             </AnimatePresence>
+
+            {/* GUEST PROGRESS BREADCRUMBS */}
+            {!isRegistered && (
+              <div className="mb-6 bg-white dark:bg-slate-900 rounded-2xl border-2 border-slate-200 dark:border-slate-800 p-4">
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-600 mb-3">Your Progress So Far</p>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  <div className={`rounded-xl px-3 py-2 border text-xs font-bold ${hasStudiedTopic ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-slate-50 border-slate-200 text-slate-500'}`}>
+                    1. Studied Topic: {hasStudiedTopic ? 'Done' : 'Pending'}
+                  </div>
+                  <div className={`rounded-xl px-3 py-2 border text-xs font-bold ${hasQuizAttempt ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-slate-50 border-slate-200 text-slate-500'}`}>
+                    2. Quiz Attempted: {hasQuizAttempt ? 'Done' : 'Pending'}
+                  </div>
+                  <div className={`rounded-xl px-3 py-2 border text-xs font-bold ${hasScoreGain ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-slate-50 border-slate-200 text-slate-500'}`}>
+                    3. Score Gained: {hasScoreGain ? `${latestQuiz?.score}%` : 'Pending'}
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* HEADER METRICS */}
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 gap-4">
@@ -2624,6 +2734,58 @@ ${explanation.explanation}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 
               <div className="lg:col-span-2 space-y-6">
+                  {/* RETURNING GUEST CONTINUE CARD */}
+                  {!isRegistered && hasHistory && recentTopics.length > 0 && (
+                    <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-sm border-2 border-indigo-200 dark:border-indigo-800 p-5">
+                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-500 mb-2">Continue Where You Left Off</p>
+                      <h3 className="text-lg font-black text-slate-900 dark:text-white mb-1">{recentTopics[0]}</h3>
+                      <p className="text-xs font-semibold text-slate-500 mb-4">Jump back into your last learning thread and keep momentum.</p>
+                      <button
+                        onClick={() => {
+                          const resumePrompt = `Continue explaining: ${recentTopics[0]}`;
+                          setPromptText(resumePrompt);
+                          handlePromptSubmit(resumePrompt);
+                        }}
+                        className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black uppercase tracking-wider"
+                      >
+                        Resume Learning
+                      </button>
+                    </div>
+                  )}
+
+                  {/* START HERE: PRIMARY FIRST-SESSION PATH */}
+                  <div className="bg-gradient-to-r from-indigo-600 to-blue-600 rounded-3xl p-6 text-white shadow-xl shadow-indigo-200">
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-100 mb-2">Start Here</p>
+                    <h2 className="text-2xl font-black tracking-tight mb-2">
+                      {learnerCtaVariant === 'A' ? 'Study a topic, then test yourself' : 'Open one topic now and finish with a score'}
+                    </h2>
+                    <p className="text-sm font-medium text-indigo-100 mb-5">
+                      {learnerCtaVariant === 'A'
+                        ? 'Open notes or past papers, ask Akili for a clear explanation, then generate a quick quiz.'
+                        : 'Pick a note or past paper, ask Akili for clarity, and complete a quick quiz in one flow.'}
+                    </p>
+                    <div className="flex flex-col sm:flex-row gap-3">
+                      <button
+                        onClick={() => {
+                          trackFunnelEvent('library_intent_selected', { intent: 'start_here_library', variant: learnerCtaVariant });
+                          handleSidebarTabChange('RESOURCES');
+                        }}
+                        className="flex-1 bg-white text-indigo-700 hover:bg-indigo-50 rounded-2xl py-3.5 px-4 font-black text-sm transition-colors shadow-sm"
+                      >
+                        {learnerCtaVariant === 'A' ? '1. Open Library' : '1. Pick A Topic'}
+                      </button>
+                      <button
+                        onClick={() => {
+                          trackFunnelEvent('library_intent_selected', { intent: 'start_here_ask_akili', variant: learnerCtaVariant });
+                          setMode('SCAN_EXPLAIN');
+                        }}
+                        className="flex-1 bg-indigo-500/40 hover:bg-indigo-500/60 border border-indigo-300/40 rounded-2xl py-3.5 px-4 font-black text-sm transition-colors"
+                      >
+                        {learnerCtaVariant === 'A' ? '2. Ask Akili' : '2. Get Instant Help'}
+                      </button>
+                    </div>
+                  </div>
+
                   {/* AI INPUT BUBBLE */}
                   <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-sm border-2 border-slate-300 dark:border-slate-800 p-6 relative overflow-hidden">
                     <div className="absolute top-0 right-0 w-48 h-48 bg-blue-50 dark:bg-blue-900/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
@@ -2659,7 +2821,7 @@ ${explanation.explanation}
                     </div>
                   </div>
 
-                  {/* DESTINATIONS — level-aware shortcuts */}
+                  {/* SHORTCUTS — secondary actions */}
                   <div className="grid grid-cols-3 gap-2 sm:gap-4">
                      {(
                        educationLevel === 'JUNIOR' ? [
@@ -2676,11 +2838,11 @@ ${explanation.explanation}
                          { icon: <Trophy className="w-5 h-5 sm:w-6 sm:h-6" />, label: 'My Progress', color: 'bg-indigo-600', onClick: () => setShowMasteryDashboard(true) }
                        ]
                      ).map((item, i) => (
-                        <button key={i} onClick={item.onClick} className="bg-white dark:bg-slate-900 rounded-3xl p-3 sm:p-5 shadow-sm border-2 border-slate-300 dark:border-slate-800 hover:shadow-md hover:-translate-y-1 transition-all flex flex-col items-center justify-center gap-2 sm:gap-3 text-center group">
-                           <div className={`w-10 h-10 sm:w-14 sm:h-14 ${item.color} rounded-xl sm:rounded-2xl flex items-center justify-center text-white shadow-sm group-hover:scale-110 transition-transform shrink-0`}>
+                        <button key={i} onClick={item.onClick} className="bg-white/80 dark:bg-slate-900/80 rounded-2xl p-3 sm:p-4 shadow-sm border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 transition-all flex flex-col items-center justify-center gap-2 text-center group">
+                           <div className={`w-10 h-10 sm:w-12 sm:h-12 ${item.color} rounded-xl flex items-center justify-center text-white shadow-sm group-hover:scale-105 transition-transform shrink-0`}>
                               {item.icon}
                            </div>
-                           <span className="text-[10px] sm:text-sm font-black uppercase tracking-tighter sm:tracking-normal sm:capitalize text-slate-800 dark:text-slate-200 line-clamp-1">{item.label}</span>
+                           <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 line-clamp-1">{item.label}</span>
                         </button>
                      ))}
                   </div>
@@ -2694,7 +2856,7 @@ ${explanation.explanation}
                         </div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                            {recentTopics.map((topic, i) => (
-                              <div key={i} onClick={() => { setPromptText(`Continue explaining: ${topic}`); handlePromptSubmit(); }} className="flex flex-col p-4 rounded-2xl border-2 border-slate-300 dark:border-slate-800 hover:border-blue-200 dark:hover:border-blue-800 cursor-pointer transition-colors group">
+                              <div key={i} onClick={() => { setPromptText(`Continue explaining: ${topic}`); handlePromptSubmit(`Continue explaining: ${topic}`); }} className="flex flex-col p-4 rounded-2xl border-2 border-slate-300 dark:border-slate-800 hover:border-blue-200 dark:hover:border-blue-800 cursor-pointer transition-colors group">
                                  <div className="w-8 h-8 bg-slate-50 dark:bg-slate-800 rounded-full flex items-center justify-center mb-3">
                                     <BookOpen className="w-4 h-4 text-slate-400 group-hover:text-blue-600 transition-colors" />
                                  </div>
@@ -2783,7 +2945,7 @@ ${explanation.explanation}
                         <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-1.5 mb-5 overflow-hidden">
                            <div className="bg-orange-500 h-1.5 rounded-full w-1/4"></div>
                         </div>
-                        <button onClick={() => { setPromptText(`Generate a ${dailyChallenge.quiz}`); handlePromptSubmit(); }} className="w-full py-3 bg-white border-2 border-slate-300 dark:border-slate-700 hover:border-orange-300 hover:bg-orange-50 dark:hover:bg-orange-900/20 text-slate-800 dark:text-white rounded-xl text-xs font-bold transition-all relative z-10">
+                        <button onClick={() => { setPromptText(`Generate a ${dailyChallenge.quiz}`); handlePromptSubmit(`Generate a ${dailyChallenge.quiz}`); }} className="w-full py-3 bg-white border-2 border-slate-300 dark:border-slate-700 hover:border-orange-300 hover:bg-orange-50 dark:hover:bg-orange-900/20 text-slate-800 dark:text-white rounded-xl text-xs font-bold transition-all relative z-10">
                            Start Challenge
                         </button>
                      </div>
@@ -4125,6 +4287,34 @@ ${explanation.explanation}
               </ul>
             </motion.div>
 
+            {/* QUIZ NUDGE: convert explanation intent into quiz starts */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.15 }}
+              className="bg-gradient-to-r from-emerald-600 to-teal-600 rounded-3xl p-5 text-white shadow-lg shadow-emerald-200"
+            >
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-100 mb-1">Next Step</p>
+                  <h3 className="text-lg font-black">Lock this in with a 60-second quiz</h3>
+                  <p className="text-xs font-semibold text-emerald-100 mt-1">Best results come when you test immediately after learning.</p>
+                </div>
+                <button
+                  onClick={() => {
+                    trackFunnelEvent('learner_quiz_nudge_clicked', {
+                      source: 'result_quiz_nudge',
+                      topic: explanation.topic
+                    });
+                    handleGenerateQuiz();
+                  }}
+                  className="bg-white text-emerald-700 hover:bg-emerald-50 rounded-2xl px-5 py-3 text-sm font-black uppercase tracking-wider"
+                >
+                  Start Quiz
+                </button>
+              </div>
+            </motion.div>
+
             {/* Detailed Explanation */}
             <motion.article
               initial={{ opacity: 0, y: 20 }}
@@ -4351,6 +4541,12 @@ ${explanation.explanation}
           currentTier={subscriptionPlan}
           isPro={isPro}
           onSelectPlan={(plan) => {
+            trackFunnelEvent('pricing_plan_selected', {
+              source: 'learner_pricing',
+              plan_id: (plan as any)?.id,
+              plan_name: plan?.name,
+              amount_kes: (plan as any)?.price
+            });
             setSelectedPlan(plan);
             setMode('PAYMENT' as any);
           }}
@@ -4365,6 +4561,11 @@ ${explanation.explanation}
           plan={selectedPlan}
           materialId={pendingMaterialId || undefined}
           onSuccess={async () => {
+            trackFunnelEvent('payment_success', {
+              source: 'learner_payment',
+              plan_id: (selectedPlan as any)?.id,
+              plan_name: selectedPlan?.name
+            });
             await verifySubscription();
             setMode('MENU');
             setSelectedPlan(null);
@@ -4378,6 +4579,15 @@ ${explanation.explanation}
                 else if (action.type === 'AUDIO_EXPLANATION') handleAudioExplanation(action.blob, action.mimeType);
                 else if (action.type === 'TOPIC_CLICK') handleTopicClick(action.topic, action.multimedia);
                 else if (action.type === 'STUDY_SESSION') startStudySession(action.material);
+                else if (action.type === 'STUDY_CHAT') askStudyBuddy(action.query);
+                else if (action.type === 'STUDY_QUIZ') {
+                  if (currentDocument) generatePracticeQuiz();
+                  else handleGenerateQuiz();
+                }
+                else if (action.type === 'PODCAST') handlePodcastToggle();
+                else if (action.type === 'REVISION_ENTRY') setMode('REVISION');
+                else if (action.type === 'TALKBACK_ENTRY') setMode('TALKBACK');
+                else if (action.type === 'TALKBACK_MESSAGE') setMode('TALKBACK');
               }, 100);
             } else if (pendingMaterialId) {
               const material = unifiedMaterials.find(m => m.id === pendingMaterialId || (m as any).realId === pendingMaterialId);
@@ -4385,7 +4595,14 @@ ${explanation.explanation}
               setPendingMaterialId(null);
             }
           }}
-          onCancel={() => handlePricingNavigation()}
+          onCancel={() => {
+            trackFunnelEvent('payment_cancel', {
+              source: 'learner_payment',
+              plan_id: (selectedPlan as any)?.id,
+              plan_name: selectedPlan?.name
+            });
+            handlePricingNavigation();
+          }}
         />
       );
     }
@@ -5419,32 +5636,40 @@ ${explanation.explanation}
 
                 <h3 className="text-xl font-black text-slate-800 mb-2">Free Trials Exhausted</h3>
                 <p className="text-slate-500 text-sm leading-relaxed mb-6">
-                  {pendingPaywallAction ? (
-                    <>
-                      You've used your 3 free credits today. <span className="font-bold text-slate-700">
-                      {pendingPaywallAction.type === 'PROCESS_FILE' && "Subscribe to analyze this image."}
-                      {pendingPaywallAction.type === 'AUDIO_EXPLANATION' && "Subscribe to process this audio."}
-                      {pendingPaywallAction.type === 'TOPIC_CLICK' && `Subscribe to explore "${pendingPaywallAction.topic || 'this topic'}".`}
-                      {pendingPaywallAction.type === 'STUDY_SESSION' && `Subscribe to study "${pendingPaywallAction.materialName}".`}
-                      </span> Subscribe now for <span className="text-indigo-600 font-bold">unlimited access</span> from 20 KES.
-                    </>
-                  ) : (
-                    <>
-                      You have exhausted your free trials. Click here to continue enjoying <span className="text-indigo-600 font-bold">unlimited access</span> to learning for as low as <span className="text-indigo-600 font-bold">20 KES</span>.
-                    </>
-                  )}
+                  {(() => {
+                    const ctx = getPaywallActionContext(pendingPaywallAction);
+                    return (
+                      <>
+                        You already <span className="font-bold text-slate-700">{ctx.completed}</span>. Unlock now to <span className="font-bold text-slate-700">{ctx.next}</span>.
+                      </>
+                    );
+                  })()}
                 </p>
+
+                <div className="mb-6 bg-indigo-50 rounded-2xl border border-indigo-100 p-4 text-left">
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-500 mb-2">What You Unlock</p>
+                  <ul className="space-y-1.5 text-xs font-bold text-slate-700">
+                    <li>Unlimited Ask Akili explanations</li>
+                    <li>Unlimited quiz generation and marking</li>
+                    <li>Full access to notes and past papers</li>
+                  </ul>
+                </div>
 
                 <div className="space-y-3">
                   <Button
                     fullWidth
                     onClick={() => {
+                      trackFunnelEvent('pricing_opened', {
+                        source: 'learner_limit_modal',
+                        role: role || 'GUEST',
+                        action_type: pendingPaywallAction?.type || 'UNKNOWN'
+                      });
                       setShowLimitModal(false);
                       handlePricingNavigation();
                     }}
                     className="py-4 text-base shadow-xl shadow-indigo-200"
                   >
-                    Unlock Unlimited Access
+                    Continue To Plans
                   </Button>
                   <button
                     onClick={() => setShowLimitModal(false)}

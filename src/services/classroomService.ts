@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabase';
+import { warnIfDev } from '../utils/logger';
 
 export interface ClassroomPost {
     id: string;
@@ -59,6 +60,9 @@ export interface StudentClassroomSummary {
 }
 
 class ClassroomService {
+    private classLookupCooldownMs = 5 * 60 * 1000;
+    private classLookupFailureCache = new Map<string, number>();
+
     private isLocalClassId(classId: string) {
         return classId.startsWith('local-class:');
     }
@@ -147,7 +151,7 @@ class ClassroomService {
             .eq('student_id', studentId);
 
         if (error) {
-            console.warn('Student classroom fetch failed:', error);
+            warnIfDev('Student classroom fetch failed:', error);
             return [];
         }
 
@@ -178,6 +182,12 @@ class ClassroomService {
         if (!normalizedClassName) {
             throw new Error('Class name is required.');
         }
+        const cacheKey = `${teacherId}:${normalizedClassName.toLowerCase()}`;
+        const now = Date.now();
+        const lastFailureAt = this.classLookupFailureCache.get(cacheKey);
+        if (lastFailureAt && now - lastFailureAt < this.classLookupCooldownMs) {
+            return this.createLocalClass(teacherId, normalizedClassName, subject);
+        }
 
         // Find existing
         let { data, error } = await supabase
@@ -190,7 +200,8 @@ class ClassroomService {
             .maybeSingle();
 
         if (error) {
-            console.warn('Class lookup failed; using local classroom fallback:', error);
+            warnIfDev('Class lookup failed; using local classroom fallback:', error);
+            this.classLookupFailureCache.set(cacheKey, now);
             return this.createLocalClass(teacherId, normalizedClassName, subject);
         }
 
@@ -202,11 +213,13 @@ class ClassroomService {
                 .select()
                 .single();
             if (res.error) {
-                console.warn('Class create failed; using local classroom fallback:', res.error);
+                warnIfDev('Class create failed; using local classroom fallback:', res.error);
+                this.classLookupFailureCache.set(cacheKey, now);
                 return this.createLocalClass(teacherId, normalizedClassName, subject);
             }
             data = res.data;
         }
+        this.classLookupFailureCache.delete(cacheKey);
         
         return data;
     }
@@ -223,7 +236,7 @@ class ClassroomService {
             .order('created_at', { ascending: false });
 
         if (error) {
-            console.warn('Class stream fetch failed; showing local stream fallback:', error);
+            warnIfDev('Class stream fetch failed; showing local stream fallback:', error);
             return this.readLocalPosts(classId);
         }
         return data || [];
@@ -258,7 +271,7 @@ class ClassroomService {
             .single();
 
         if (error) {
-            console.warn('Class post create failed; saving post locally:', error);
+            warnIfDev('Class post create failed; saving post locally:', error);
             const post: ClassroomPost = {
                 id: `local-post:${Date.now()}`,
                 class_id: classId,
@@ -292,7 +305,7 @@ class ClassroomService {
             .eq('class_id', classId);
 
         if (error) {
-            console.warn('Class roster fetch failed; showing empty roster fallback:', error);
+            warnIfDev('Class roster fetch failed; showing empty roster fallback:', error);
             return [];
         }
         return data || [];

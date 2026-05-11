@@ -15,6 +15,32 @@ interface Props {
 
 export const PricingPage: React.FC<Props> = ({ onSelectPlan, onClose, currentTier, isPro, initialTab = 'STUDENT' }) => {
     const [activeTab, setActiveTab] = useState<UserSegment>(initialTab);
+    const personaValueCopy = {
+        STUDENT: {
+            title: 'Learner Outcomes',
+            points: [
+                'Revise faster with exam-ready notes and past papers.',
+                'Generate quizzes instantly and track score gains.',
+                'Stay consistent with guided daily study flow.'
+            ]
+        },
+        TEACHER: {
+            title: 'Teacher Time Savings',
+            points: [
+                'Prepare lesson resources and schemes in minutes.',
+                'Generate and assign assessments with fewer steps.',
+                'Mark faster with structured classroom workflows.'
+            ]
+        },
+        SCHOOL: {
+            title: 'School & Parent Confidence',
+            points: [
+                'Track learner progress signals across classes.',
+                'Give parents clearer weekly performance visibility.',
+                'Scale teaching support without adding admin burden.'
+            ]
+        }
+    } as const;
 
     const renderTabButton = (tab: UserSegment, icon: any, label: string) => (
         <button
@@ -87,6 +113,17 @@ export const PricingPage: React.FC<Props> = ({ onSelectPlan, onClose, currentTie
                     {renderTabButton('STUDENT', GraduationCap, 'Student')}
                     {renderTabButton('TEACHER', UserCircle2, 'Teacher')}
                     {renderTabButton('SCHOOL', Building2, 'School')}
+                </div>
+
+                <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 mb-8">
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-500 mb-2">{personaValueCopy[activeTab].title}</p>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        {personaValueCopy[activeTab].points.map((point) => (
+                            <div key={point} className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-bold text-slate-700">
+                                {point}
+                            </div>
+                        ))}
+                    </div>
                 </div>
 
                 <AnimatePresence mode="wait">

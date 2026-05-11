@@ -28,6 +28,7 @@ type ChatLang = 'en' | 'sw';
 
 interface ConversationalTutorProps {
     onBack: () => void;
+    onBeforeMessage?: () => boolean;
 }
 
 // ─── Constants ───────────────────────────────────────────────────
@@ -194,7 +195,7 @@ const QUICK_STARTERS: Record<ChatLang, string[]> = {
 };
 
 // ─── Main Component ──────────────────────────────────────────────
-export const ConversationalTutor: React.FC<ConversationalTutorProps> = ({ onBack }) => {
+export const ConversationalTutor: React.FC<ConversationalTutorProps> = ({ onBack, onBeforeMessage }) => {
     const { educationLevel } = useApp();
     const [activeMode, setActiveMode] = useState<ActiveMode>('TALKBACK');
     const [chatLang, setChatLang] = useState<ChatLang>('en');
@@ -262,6 +263,7 @@ export const ConversationalTutor: React.FC<ConversationalTutorProps> = ({ onBack
     // ─── Send Message ────────────────────────────────────────────
     const handleSendMessage = useCallback(async (text: string) => {
         if (!text.trim()) return;
+        if (onBeforeMessage && !onBeforeMessage()) return;
         const userMsg: TalkbackMessage = { role: 'user', text: text.trim(), timestamp: Date.now() };
         setMessages(prev => [...prev, userMsg]);
         setInputText('');
@@ -337,7 +339,7 @@ export const ConversationalTutor: React.FC<ConversationalTutorProps> = ({ onBack
         } finally {
             setIsLoading(false);
         }
-    }, [activeMode, messages, chatLang, tutorMode]);
+    }, [activeMode, messages, chatLang, tutorMode, onBeforeMessage]);
 
     // ─── Recording ───────────────────────────────────────────────
     const startRecording = useCallback(async () => {

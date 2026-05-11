@@ -4,6 +4,7 @@ import { Users, TrendingDown, TrendingUp, AlertCircle, Sparkles, Plus, Share2, C
 import { TeacherProfile } from '../../types';
 import { classroomService, ClassroomPost, ClassMember, GradebookEntry } from '../../services/classroomService';
 import { getBulkMasteryMemories } from '../../services/learnerMemoryService';
+import { warnIfDev } from '../../utils/logger';
 
 interface MyClassroomProps {
     teacherProfile: TeacherProfile | null;
@@ -74,7 +75,12 @@ export const MyClassroom: React.FC<MyClassroomProps> = ({ teacherProfile, select
                 setGradebook(gradebookData);
                 setMasteryData(memoryData);
             } catch (err) {
-                console.error("Failed to load classroom:", err);
+                warnIfDev("Classroom load degraded to fallback mode:", err);
+                setCurrentClassId(null);
+                setStream([]);
+                setStudents([]);
+                setGradebook([]);
+                setMasteryData([]);
             } finally {
                 setIsLoading(false);
             }
@@ -173,7 +179,16 @@ export const MyClassroom: React.FC<MyClassroomProps> = ({ teacherProfile, select
 
         const fallbackClass = String(selectedClass || teacherProfile.classes?.[0] || '').trim();
         const fallbackSubject = String(selectedSubject || teacherProfile.subjects?.[0] || '').trim();
-        if (!fallbackClass || !fallbackSubject) return null;
+        const normalizedClass = fallbackClass.toLowerCase();
+        const normalizedSubject = fallbackSubject.toLowerCase();
+        const hasPlaceholder =
+            normalizedClass === 'selected department' ||
+            normalizedClass === 'department' ||
+            normalizedClass === 'classe' ||
+            normalizedSubject === 'selected department' ||
+            normalizedSubject === 'department' ||
+            normalizedSubject === 'subject';
+        if (!fallbackClass || !fallbackSubject || hasPlaceholder) return null;
 
         const cls = await classroomService.getOrCreateClassByName(teacherProfile.id, fallbackClass, fallbackSubject);
         setCurrentClassId(cls.id);

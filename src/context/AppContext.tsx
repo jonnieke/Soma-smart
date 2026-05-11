@@ -3,6 +3,7 @@ import { LearnerActivity, UserRole, TeacherProfile, TeacherActivity, SchoolProfi
 import { processQuizResult, getDueTopics, getWeakTopics, loadSRFromLocal, loadMasteryFromLocal, getPersonalizedChallenge } from '../services/spacedRepetitionService';
 import { loadStrategiesFromLocal, approveStrategy as approveStrategyFn, rejectStrategy as rejectStrategyFn, addStrategies, getActiveStrategies, getPendingStrategies } from '../services/strategyService';
 import { classroomService } from '../services/classroomService';
+import { warnIfDev } from '../utils/logger';
 
 // Update interface
 interface AppContextType {
@@ -225,6 +226,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [isAvailableForTutoring, setIsAvailableForTutoring] = useState<boolean>(false);
   const teacherWalletAccessDeniedRef = useRef(false);
   const pendingClassJoinRef = useRef(false);
+  const historyFetchWarnedRef = useRef(false);
 
   const [activeTutoringRequests, setActiveTutoringRequests] = useState<TutoringRequest[]>([]);
 
@@ -348,6 +350,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [marketplaceMaterials, setMarketplaceMaterials] = useState<MaterialListing[]>([]);
   const [purchasedMaterialIds, setPurchasedMaterialIds] = useState<string[]>([]);
   const [resources, setResources] = useState<any[]>([]);
+  const optionalDataFailuresRef = useRef<Set<string>>(new Set());
 
   const [sessionError, setSessionError] = useState<'MULTI_DEVICE' | 'SINGLE_DEVICE' | null>(null);
 
@@ -362,6 +365,23 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       return newVal;
     });
   };
+
+  const hasAuthenticatedSupabaseSession = async () => {
+    const { data } = await supabase.auth.getSession();
+    return Boolean(data.session);
+  };
+
+  const markOptionalDataUnavailable = (key: string) => {
+    optionalDataFailuresRef.current.add(key);
+  };
+
+  const isOptionalDataUnavailable = (key: string) => {
+    return optionalDataFailuresRef.current.has(key);
+  };
+
+  useEffect(() => {
+    optionalDataFailuresRef.current.clear();
+  }, [role, userId]);
 
   const getEducationLevelFromGrade = (grade: string): EducationLevel => {
     const g = grade.toUpperCase();
@@ -475,7 +495,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     if (userId && isRegistered && role !== UserRole.GUEST) {
       setDownloadUsageCount(prev => prev + 1);
       incrementRegisteredUsage('download').catch(error => {
-        console.error('Failed to sync download usage:', error);
+        warnIfDev('Failed to sync download usage:', error);
       });
       return;
     }
@@ -551,7 +571,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           .maybeSingle();
 
         if (error) {
-          console.warn("Session check warning:", error.message);
+          warnIfDev("Session check warning:", error.message);
           return;
         }
 
@@ -565,14 +585,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           // Multi-Device logic only if column exists
           if (data && 'active_sessions' in data && data.active_sessions && Array.isArray(data.active_sessions) && data.active_sessions.length > 0) {
             if (!data.active_sessions.includes(browserSessionId)) {
-              console.warn("Session mismatch! Active:", data.active_sessions, "Current:", browserSessionId);
+              warnIfDev("Session mismatch! Active:", data.active_sessions, "Current:", browserSessionId);
               setSessionError("MULTI_DEVICE");
               hasConflict = true;
             }
           }
           // Fallback legacy logic
           else if (data && 'session_id' in data && data.session_id && data.session_id !== browserSessionId) {
-            console.warn("Session mismatch (legacy)!");
+            warnIfDev("Session mismatch (legacy)!");
             setSessionError("SINGLE_DEVICE");
             hasConflict = true;
           }
@@ -811,11 +831,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           localStorage.setItem('soma_joined_class_notice', joinedClassName);
           console.log('Joined pending classroom invite.');
         } else {
-          console.warn('Could not join pending classroom invite:', result.message);
+          warnIfDev('Could not join pending classroom invite:', result.message);
         }
       })
       .catch((error) => {
-        console.warn('Could not join pending classroom invite:', error);
+        warnIfDev('Could not join pending classroom invite:', error);
       })
       .finally(() => {
         pendingClassJoinRef.current = false;
@@ -1424,7 +1444,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setTeacherUsageCount(newCount);
     if (userId && isRegistered && role !== UserRole.GUEST) {
       incrementRegisteredUsage('teacher').catch(error => {
-        console.error('Failed to sync teacher usage:', error);
+        warnIfDev('Failed to sync teacher usage:', error);
       });
       return;
     } else {
@@ -1456,8 +1476,18 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const isWalletForbiddenError = (err: any): boolean => {
       const code = String(err?.code || '');
       const status = Number(err?.status || 0);
+      const statusCode = Number(err?.statusCode || 0);
       const msg = String(err?.message || '').toLowerCase();
-      return status === 403 || code === '42501' || msg.includes('permission denied');
+      const details = String(err?.details || '').toLowerCase();
+      const hint = String(err?.hint || '').toLowerCase();
+      return (
+        status === 403 ||
+        statusCode === 403 ||
+        code === '42501' ||
+        msg.includes('permission denied') ||
+        details.includes('permission denied') ||
+        hint.includes('permission denied')
+      );
     };
 
     try {
@@ -1468,7 +1498,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         if (isWalletForbiddenError(walletError)) {
           teacherWalletAccessDeniedRef.current = true;
           setTeacherWallet(prev => prev || { balance: 0, currency: 'KES', transactions: [] });
-          console.warn('Teacher wallet access denied by RLS. Skipping wallet polling.');
+          warnIfDev('Teacher wallet access denied by RLS. Skipping wallet polling.');
           return;
         }
         throw walletError;
@@ -1480,7 +1510,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         if (isWalletForbiddenError(txError)) {
           teacherWalletAccessDeniedRef.current = true;
           setTeacherWallet(prev => prev || { balance: 0, currency: 'KES', transactions: [] });
-          console.warn('Transactions access denied by RLS. Skipping earnings polling.');
+          warnIfDev('Transactions access denied by RLS. Skipping earnings polling.');
           return;
         }
         throw txError;
@@ -1506,15 +1536,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           const { error: insertError } = await supabase.from('teacher_wallets').insert([{ id: userId, balance: 0, currency: 'KES' }]);
           if (insertError && isWalletForbiddenError(insertError)) {
             teacherWalletAccessDeniedRef.current = true;
-            console.warn('Wallet auto-create blocked by RLS. Disabling wallet retries.');
+            warnIfDev('Wallet auto-create blocked by RLS. Disabling wallet retries.');
           }
         } catch (insertErr) {
-          console.warn('Could not auto-create wallet (RLS may block INSERT):', insertErr);
+          warnIfDev('Could not auto-create wallet (RLS may block INSERT):', insertErr);
         }
         setTeacherWallet({ balance: 0, currency: 'KES', transactions: [] });
       }
     } catch (e) {
-      console.error("Fetch Earnings Error:", e);
+      warnIfDev("Fetch Earnings Error:", e);
     }
   };
 
@@ -1546,7 +1576,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   useEffect(() => {
-    if (role === UserRole.TEACHER && isRegistered) {
+    if (role === UserRole.TEACHER && isRegistered && !teacherWalletAccessDeniedRef.current) {
       fetchEarnings();
     }
   }, [role, isRegistered]);
@@ -1573,7 +1603,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     if (userId && isRegistered && role !== UserRole.GUEST) {
       setUsageCount(prev => prev + 1);
       incrementRegisteredUsage('learner').catch(error => {
-        console.error('Failed to sync learner usage:', error);
+        warnIfDev('Failed to sync learner usage:', error);
       });
       return;
     }
@@ -1597,7 +1627,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     if (userId && isRegistered && role !== UserRole.GUEST) {
       setRevisionUsageCount(prev => prev + 1);
       incrementRegisteredUsage('revision').catch(error => {
-        console.error('Failed to sync revision usage:', error);
+        warnIfDev('Failed to sync revision usage:', error);
       });
       return;
     }
@@ -1809,9 +1839,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             }
           });
 
-          if (error) console.error("Failed to save teacher activity to DB:", error);
+          if (error) warnIfDev("Failed to save teacher activity to DB:", error);
         } catch (e) {
-          console.error("Teacher DB Save Exception:", e);
+          warnIfDev("Teacher DB Save Exception:", e);
         }
       }
     }
@@ -1999,7 +2029,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         const newItem = { code: profile.student_id, name: profile.full_name, timestamp: Date.now() };
         const updated = [newItem, ...history.filter((h: any) => h.code !== profile.student_id)].slice(0, 5);
         localStorage.setItem('soma_recent_login', JSON.stringify(updated));
-      } catch (e) { console.error(e); }
+      } catch (e) { warnIfDev(e); }
 
       return true;
     } catch (e) {
@@ -2012,6 +2042,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   useEffect(() => {
     const loadHistory = async () => {
       if (!userId) return;
+      if (isOptionalDataUnavailable('learner_history')) return;
 
       try {
         const { data, error } = await supabase
@@ -2023,7 +2054,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
         if (error) {
           // If table doesn't exist, we just ignore it for now (graceful degradation)
-          console.warn("Could not fetch history (maybe table missing):", error);
+          markOptionalDataUnavailable('learner_history');
+          if (!historyFetchWarnedRef.current) {
+            warnIfDev("Could not fetch history (maybe table missing):", error);
+            historyFetchWarnedRef.current = true;
+          }
           return;
         }
 
@@ -2043,7 +2078,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           setLearnerHistory(merged);
         }
       } catch (e) {
-        console.error("History Load Error:", e);
+        markOptionalDataUnavailable('learner_history');
+        warnIfDev("History Load Error:", e);
       }
     };
 
@@ -2057,6 +2093,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const loadTeacherHistory = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user || role !== UserRole.TEACHER) return;
+      if (isOptionalDataUnavailable('teacher_history')) return;
 
       try {
         const { data, error } = await supabase.rpc('get_recent_activities', {
@@ -2065,7 +2102,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         });
 
         if (error) {
-          console.warn("Could not fetch teacher history:", error);
+          markOptionalDataUnavailable('teacher_history');
+          warnIfDev("Could not fetch teacher history:", error);
           return;
         }
 
@@ -2083,7 +2121,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           setTeacherHistory(merged);
         }
       } catch (e) {
-        console.error("Teacher History Load Error:", e);
+        markOptionalDataUnavailable('teacher_history');
+        warnIfDev("Teacher History Load Error:", e);
       }
     };
 
@@ -2137,9 +2176,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           details: activity.details
         });
 
-        if (error) console.error("Failed to save activity to DB:", error);
+        if (error) warnIfDev("Failed to save activity to DB:", error);
       } catch (e) {
-        console.error("DB Save Exception:", e);
+        warnIfDev("DB Save Exception:", e);
       }
     }
   };
@@ -2156,7 +2195,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     if (studentCode) {
       try {
         await supabase.from('activities').delete().eq('id', id);
-      } catch (e) { console.error(e); }
+      } catch (e) { warnIfDev(e); }
     }
   };
 
@@ -2178,7 +2217,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             if (!error) {
               setLearnerHistory(prev => prev.map(h => h.id === activity.id ? { ...h, pendingSync: false } : h));
             }
-          } catch (e) { console.error("Sync failed", e); }
+          } catch (e) { warnIfDev("Sync failed", e); }
         }
 
         // Sync Teacher
@@ -2200,7 +2239,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
               if (!error) {
                 setTeacherHistory(prev => prev.map(h => h.id === activity.id ? { ...h, pendingSync: false } : h));
               }
-            } catch (e) { console.error("Sync failed", e); }
+            } catch (e) { warnIfDev("Sync failed", e); }
           }
         }
       };
@@ -2352,7 +2391,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             status: 'COMPLETED'
           });
         } catch (earningsErr) {
-          console.warn('Earnings update failed (non-critical):', earningsErr);
+          warnIfDev('Earnings update failed (non-critical):', earningsErr);
         }
 
         if (teacherWallet) {
@@ -2603,7 +2642,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   const fetchMarketplaceMaterials = async () => {
+    if (isOptionalDataUnavailable('marketplace_materials')) return;
+
     try {
+      const hasSession = await hasAuthenticatedSupabaseSession();
+      if (!hasSession) {
+        setMarketplaceMaterials([]);
+        return;
+      }
+
       const { data, error } = await supabase.from('marketplace_materials').select('*').order('created_at', { ascending: false });
       if (error) throw error;
       if (data) {
@@ -2630,11 +2677,22 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           createdAt: m.created_at
         })));
       }
-    } catch (e) { console.error("Fetch Marketplace Error:", e); }
+    } catch (_) {
+      markOptionalDataUnavailable('marketplace_materials');
+      setMarketplaceMaterials([]);
+    }
   };
 
   async function fetchTutoringRequests() {
+    if (isOptionalDataUnavailable('tutoring_requests')) return;
+
     try {
+      const hasSession = await hasAuthenticatedSupabaseSession();
+      if (!hasSession || role === UserRole.NONE) {
+        setActiveTutoringRequests([]);
+        return;
+      }
+
       let query = supabase.from('tutoring_requests').select('*').order('created_at', { ascending: false });
 
       // Filter for Students: Only show their own requests
@@ -2666,20 +2724,23 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           completedAt: r.completed_at
         })));
       }
-    } catch (e) { console.error("Fetch Tutoring Error:", e); }
+    } catch (_) {
+      markOptionalDataUnavailable('tutoring_requests');
+      setActiveTutoringRequests([]);
+    }
   };
 
   useEffect(() => {
     fetchMarketplaceMaterials();
     fetchTutoringRequests();
-    if (role === UserRole.TEACHER && userId) {
+    if (role === UserRole.TEACHER && userId && !teacherWalletAccessDeniedRef.current) {
       fetchEarnings();
     }
 
     const interval = setInterval(() => {
       fetchMarketplaceMaterials();
       fetchTutoringRequests();
-      if (role === UserRole.TEACHER && userId) {
+      if (role === UserRole.TEACHER && userId && !teacherWalletAccessDeniedRef.current) {
         fetchEarnings();
       }
     }, 30000); // Poll every 30s

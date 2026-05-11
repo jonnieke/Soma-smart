@@ -1,5 +1,6 @@
 import React, { Suspense, useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import ReactGA from 'react-ga4';
 import {
     Upload, Mic, FileText, Share2, StopCircle, Download, BookOpen, Crown, Brain, Sparkles, X, Lightbulb, CheckCircle, Play, Pause, Trash2, ArrowRight, Library, Filter, Calendar, Home, LogOut, MonitorPlay, CreditCard, ScanLine, Plus,
     SquarePlus, ChevronRight, Type, Layers, ClipboardList, ClipboardCheck, Archive, History as HistoryIcon, MoreVertical, Check, Wallet, ToggleRight, ToggleLeft, Users, TrendingUp, DollarSign, ShoppingBag, Store, Clock, AlertCircle, CheckCircle2, MoreHorizontal, Bell, Star, Loader2, ArrowLeft
@@ -79,6 +80,16 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
     const [showRegister, setShowRegister] = useState(false);
     const [authTab, setAuthTab] = useState<'TEACHER' | 'SCHOOL'>('TEACHER');
 
+    const trackFunnelEvent = (eventName: string, params: Record<string, unknown> = {}) => {
+        try {
+            if (import.meta.env.VITE_GA_MEASUREMENT_ID !== 'G-CHECK_GA_DASHBOARD') {
+                ReactGA.event(eventName, params);
+            }
+        } catch (_) {
+            // Non-blocking analytics
+        }
+    };
+
 
 
     // Check for subscription intent from Landing Page or Pricing Page
@@ -134,6 +145,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                 navigate(location.pathname, { replace: true, state: {} });
             }
         } else if (state?.openSubscription) {
+            trackFunnelEvent('paywall_shown', { source: 'teacher_route_state', role: 'TEACHER' });
             setShowPaywall(true);
             navigate(location.pathname, { replace: true, state: {} });
         }
@@ -145,6 +157,30 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
     const [teacherNotice, setTeacherNotice] = useState<{ type: 'success' | 'error' | 'info'; text: string } | null>(null);
     const [activeTab, setActiveTab] = useState<'DASHBOARD' | 'CREATION_HUB' | 'STUDENTS' | 'MARKING' | 'EARNINGS' | 'LIBRARY' | 'CONVERT' | 'VOICE' | 'QUIZ' | 'HOME' | 'MARKETPLACE' | 'PROFILE' | 'REPORTS' | 'DARASA_MODE' | 'SCHEMES' | 'LESSON_POLISH' | 'BLACKBOARD' | 'HOMEWORK'>(initialTab || 'DASHBOARD');
     const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        if (!paymentPlan) return;
+        trackFunnelEvent('payment_started', {
+            source: 'teacher_direct_payment',
+            plan_id: (paymentPlan as any)?.id,
+            plan_name: paymentPlan?.name
+        });
+    }, [paymentPlan]);
+
+    useEffect(() => {
+        if (!selectedPlan) return;
+        trackFunnelEvent('payment_started', {
+            source: 'teacher_overlay_payment',
+            plan_id: (selectedPlan as any)?.id,
+            plan_name: selectedPlan?.name
+        });
+    }, [selectedPlan]);
+
+    useEffect(() => {
+        if (!workflowStepSignal) return;
+        const timeout = window.setTimeout(() => setWorkflowStepSignal(null), 7000);
+        return () => window.clearTimeout(timeout);
+    }, [workflowStepSignal]);
 
     // Selection State
     const [selectedClass, setSelectedClass] = useState<string>(teacherProfile?.classes?.[0] || "");
@@ -195,6 +231,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
     const chunksRef = useRef<Blob[]>([]);
     const teacherNoticeTimeoutRef = useRef<number | null>(null);
+    const [workflowStepSignal, setWorkflowStepSignal] = useState<{ step: 'GENERATE_ASSESSMENT' | 'PUBLISH_STREAM'; message: string; at: number } | null>(null);
 
     const showTeacherNotice = (type: 'success' | 'error' | 'info', text: string) => {
         if (teacherNoticeTimeoutRef.current) {
@@ -218,6 +255,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
         if (isPro) return true;
 
         if (teacherUsageCount >= 3) {
+            trackFunnelEvent('paywall_shown', { source: 'teacher_usage_limit', role: 'TEACHER' });
             setShowPaywall(true);
             return false;
         }
@@ -285,6 +323,15 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
         saveTeacherActivity(activity);
     };
 
+    const markWorkflowStepCompleted = (
+        step: 'GENERATE_ASSESSMENT' | 'PUBLISH_STREAM',
+        message: string,
+        metadata: Record<string, unknown> = {}
+    ) => {
+        setWorkflowStepSignal({ step, message, at: Date.now() });
+        trackFunnelEvent('teacher_workflow_step_completed', { step, ...metadata });
+    };
+
     const validateQuizForClassroom = (quiz: any): { ok: boolean; reason?: string } => {
         const questions = Array.isArray(quiz?.questions) ? quiz.questions : [];
         if (!quiz?.topic || String(quiz.topic).trim().length < 4) {
@@ -316,9 +363,19 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
         return { ok: true };
     };
 
+    const hasPlaceholderSelection = (value: string): boolean => {
+        const normalized = String(value || '').trim().toLowerCase();
+        return !normalized || normalized === 'selected department' || normalized === 'department' || normalized === 'classe';
+    };
+
     const publishToClassroom = async (type: 'NOTE' | 'QUIZ', title: string, content: any) => {
         if (!teacherProfile?.id) return;
-        if (!selectedClass.trim() || !selectedSubject.trim()) {
+        if (
+            !selectedClass.trim() ||
+            !selectedSubject.trim() ||
+            hasPlaceholderSelection(selectedClass) ||
+            hasPlaceholderSelection(selectedSubject)
+        ) {
             showTeacherNotice('error', "Select class and subject before publishing to classroom.");
             return;
         }
@@ -342,9 +399,14 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                 : `Lesson Notes Shared: ${title}\nSubject: ${selectedSubject}\nClass: ${selectedClass}`;
             await classroomService.createPost(cls.id, teacherProfile.id, type === 'QUIZ' ? 'ASSIGNMENT' : 'ANNOUNCEMENT', body);
             showTeacherNotice('success', type === 'QUIZ' ? "Quiz assigned to class stream." : "Lesson note shared to class stream.");
+            markWorkflowStepCompleted(
+                'PUBLISH_STREAM',
+                type === 'QUIZ' ? 'Step 3 complete: Assessment published to stream.' : 'Step 3 complete: Lesson shared to stream.',
+                { content_type: type, class_name: selectedClass, subject: selectedSubject }
+            );
         } catch (error) {
             console.error("Classroom publish failed:", error);
-            showTeacherNotice('error', "Could not publish to classroom. Please try again.");
+            showTeacherNotice('error', "Could not publish to classroom. Confirm class/subject, then retry. If it persists, open Classroom and post manually.");
         }
     };
 
@@ -371,7 +433,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
             handleSaveToHistory('NOTE', result.topic, result);
             setActiveTab('CONVERT');
         } catch (e) {
-            showTeacherNotice('error', "Couldn't convert that file. Please try another file or retry.");
+            showTeacherNotice('error', "Could not convert that file. Try a clearer file (PDF/image), then retry.");
         } finally {
             setLoading(false);
         }
@@ -419,7 +481,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
             setIsRecording(true);
         } catch (e) {
             console.error("Mic Error:", e);
-            showTeacherNotice('error', "Microphone access was blocked. Please allow microphone access and retry.");
+            showTeacherNotice('error', "Microphone access was blocked. Allow mic permission in browser settings, then retry.");
         }
     };
 
@@ -448,7 +510,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
             };
         } catch (e) {
             console.error("Processing Error:", e);
-            showTeacherNotice('error', "Audio processing failed. Please try again.");
+            showTeacherNotice('error', "Audio processing failed. Re-record for at least 5 seconds or switch to document upload.");
             setLoading(false);
         }
     };
@@ -477,8 +539,13 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
             setActiveTab('QUIZ');
             setAdvFiles([]);
             setAdvTopic("");
+            markWorkflowStepCompleted(
+                'GENERATE_ASSESSMENT',
+                'Step 2 complete: Assessment generated and ready to assign.',
+                { source: 'advanced_quiz_generator', topic: result.topic, class_name: selectedClass, subject: selectedSubject }
+            );
         } catch (e) {
-            showTeacherNotice('error', "Couldn't generate the quiz right now. Please try again.");
+            showTeacherNotice('error', "Quiz generation failed. Check topic/files and retry, or reduce question count.");
             console.error(e);
         } finally {
             setLoading(false);
@@ -496,7 +563,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
             showTeacherNotice('success', "Quiz repaired and upgraded for classroom publishing.");
         } catch (error) {
             console.error("Quiz repair failed:", error);
-            showTeacherNotice('error', "Could not repair the quiz right now. Please regenerate and retry.");
+            showTeacherNotice('error', "Quiz repair failed. Regenerate once, then use 'Assign To Class' if quality checks pass.");
         } finally {
             setIsRepairingQuiz(false);
         }
@@ -513,7 +580,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
             showTeacherNotice('success', "Lesson note repaired and expanded for classroom publishing.");
         } catch (error) {
             console.error("Note repair failed:", error);
-            showTeacherNotice('error', "Could not repair the lesson note right now. Please retry.");
+            showTeacherNotice('error', "Lesson note repair failed. Retry once or regenerate note from source material.");
         } finally {
             setIsRepairingNote(false);
         }
@@ -638,10 +705,22 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                         <PaymentFlow
                             plan={paymentPlan}
                             onSuccess={() => {
+                                trackFunnelEvent('payment_success', {
+                                    source: 'teacher_direct_payment',
+                                    plan_id: (paymentPlan as any)?.id,
+                                    plan_name: paymentPlan?.name
+                                });
                                 setPaymentPlan(null);
                                 showTeacherNotice('success', "Payment successful. Welcome to Pro!");
                             }}
-                            onCancel={() => setPaymentPlan(null)}
+                            onCancel={() => {
+                                trackFunnelEvent('payment_cancel', {
+                                    source: 'teacher_direct_payment',
+                                    plan_id: (paymentPlan as any)?.id,
+                                    plan_name: paymentPlan?.name
+                                });
+                                setPaymentPlan(null);
+                            }}
                         />
                     </motion.div>
                 </div>
@@ -809,15 +888,21 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                             teacherProfile={teacherProfile}
                             selectedSubject={selectedSubject}
                             selectedClass={selectedClass}
+                            availableClasses={teacherProfile?.classes || []}
+                            availableSubjects={teacherProfile?.subjects || []}
                             activeTutoringRequests={activeTutoringRequests}
                             teacherHistory={teacherHistory}
                             teacherWallet={teacherWallet}
                             onNavigate={(tab) => setActiveTab(tab)}
+                            onClassChange={setSelectedClass}
+                            onSubjectChange={setSelectedSubject}
                             onRequestClick={(req) => {
                                 setSelectedRequest(req);
                                 setIsRequestModalOpen(true);
                             }}
                             onHistoryItemClick={loadHistoryItem}
+                            onTrackEvent={trackFunnelEvent}
+                            workflowStepSignal={workflowStepSignal}
                         />
                     </motion.div>
                 )}
@@ -1305,10 +1390,22 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                         <PaymentFlow
                             plan={selectedPlan}
                             onSuccess={async () => {
+                                trackFunnelEvent('payment_success', {
+                                    source: 'teacher_overlay_payment',
+                                    plan_id: (selectedPlan as any)?.id,
+                                    plan_name: selectedPlan?.name
+                                });
                                 await upgradeAccount(selectedPlan);
                                 setSelectedPlan(null);
                             }}
-                            onCancel={() => setSelectedPlan(null)}
+                            onCancel={() => {
+                                trackFunnelEvent('payment_cancel', {
+                                    source: 'teacher_overlay_payment',
+                                    plan_id: (selectedPlan as any)?.id,
+                                    plan_name: selectedPlan?.name
+                                });
+                                setSelectedPlan(null);
+                            }}
                         />
                     )
                 }
@@ -1775,7 +1872,10 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                                     <div className="flex gap-4">
                                         {!isPro && (
                                             <button
-                                                onClick={() => navigate('/pricing')}
+                                                onClick={() => {
+                                                    trackFunnelEvent('pricing_opened', { source: 'teacher_profile_upgrade_cta', role: 'TEACHER' });
+                                                    navigate('/pricing');
+                                                }}
                                                 className="px-6 py-3 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold rounded-xl shadow-lg shadow-emerald-500/30 transition-all"
                                             >
                                                 Upgrade to Pro

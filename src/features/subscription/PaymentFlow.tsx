@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import ReactGA from 'react-ga4';
 import { Smartphone, Loader2, CheckCircle2, XCircle, ArrowLeft, ShieldCheck, CreditCard, ExternalLink, ArrowRight, Sparkles } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { pesapalService } from '../../services/pesapalService';
@@ -22,6 +23,16 @@ export const PaymentFlow: React.FC<Props> = ({ plan, materialId, onSuccess, onCa
     const [email, setEmail] = useState('');
     const [iframeUrl, setIframeUrl] = useState('');
     const [error, setError] = useState('');
+
+    const trackFunnelEvent = (eventName: string, params: Record<string, unknown> = {}) => {
+        try {
+            if (import.meta.env.VITE_GA_MEASUREMENT_ID !== 'G-CHECK_GA_DASHBOARD') {
+                ReactGA.event(eventName, params);
+            }
+        } catch (_) {
+            // Non-blocking analytics
+        }
+    };
 
     // Pre-fill profile data for registered users
     useEffect(() => {
@@ -85,6 +96,20 @@ export const PaymentFlow: React.FC<Props> = ({ plan, materialId, onSuccess, onCa
 
         setStep('PROCESSING');
         setError('');
+        trackFunnelEvent('payment_started', {
+            plan_id: plan?.id,
+            plan_name: plan?.name,
+            amount_kes: plan?.price,
+            is_registered: isRegistered,
+            role
+        });
+        trackFunnelEvent('payment_initiated', {
+            plan_id: plan?.id,
+            plan_name: plan?.name,
+            amount_kes: plan?.price,
+            is_registered: isRegistered,
+            role
+        });
 
         try {
             // Priority for UUID: Auth session > Profile ID > Guest dummy
@@ -105,6 +130,11 @@ export const PaymentFlow: React.FC<Props> = ({ plan, materialId, onSuccess, onCa
             if (response.redirect_url) {
                 setIframeUrl(response.redirect_url);
                 setStep('IFRAME');
+                trackFunnelEvent('payment_iframe_opened', {
+                    plan_id: plan?.id,
+                    plan_name: plan?.name,
+                    amount_kes: plan?.price
+                });
             } else {
                 throw new Error('Failed to get payment URL');
             }

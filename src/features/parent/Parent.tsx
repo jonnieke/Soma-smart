@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import ReactGA from 'react-ga4';
 import { Header, Card, Button } from '../../components/Shared';
 import { ViewState, LearnerActivity } from '../../types';
 import { calculateTotalXP, calculateLevel } from '../../services/gamificationService';
@@ -28,6 +29,16 @@ export const ParentDashboard: React.FC<ParentProps> = ({ onNavigate, activityLog
     
     // Cloud Memory State
     const [cloudMemoryRow, setCloudMemoryRow] = useState<any>(null);
+
+    const trackFunnelEvent = (eventName: string, params: Record<string, unknown> = {}) => {
+        try {
+            if (import.meta.env.VITE_GA_MEASUREMENT_ID !== 'G-CHECK_GA_DASHBOARD') {
+                ReactGA.event(eventName, params);
+            }
+        } catch (_) {
+            // Non-blocking analytics
+        }
+    };
 
     // Fetch live mastery from cloud when authenticated
     React.useEffect(() => {
@@ -107,6 +118,86 @@ export const ParentDashboard: React.FC<ParentProps> = ({ onNavigate, activityLog
             nextLevelProgress: levelInfo.progressPercent,
             weakAreas: uniqueWeakAreas,
             aiUses
+        };
+    }, [activityLog]);
+
+    const topSubjects = Object.entries(stats.subjects)
+        .filter(([, count]) => (count as number) > 0)
+        .sort((a, b) => (b[1] as number) - (a[1] as number))
+        .slice(0, 2)
+        .map(([subject]) => subject);
+
+    const sevenDayPlan = stats.weakAreas.length > 0
+        ? [
+            `Day 1-2: Review ${stats.weakAreas[0]} for 20 minutes daily.`,
+            `Day 3-4: Attempt 2 guided quizzes in ${topSubjects[0] || 'core subjects'}.`,
+            'Day 5-6: Revisit errors and explain answers out loud.',
+            'Day 7: Take one mixed practice quiz and compare score progress.'
+        ]
+        : [
+            `Day 1-2: Extend learning in ${topSubjects[0] || 'core subjects'} with challenge questions.`,
+            `Day 3-4: Practice timed quizzes to improve exam confidence.`,
+            'Day 5-6: Revise one completed topic and summarize key concepts.',
+            'Day 7: Take one full mixed quiz to maintain momentum.'
+        ];
+
+    const weeklyNarrative = stats.avgScore >= 80
+        ? `This week, your child stayed strong in ${topSubjects[0] || 'core subjects'} and maintained high consistency across quizzes.`
+        : stats.avgScore >= 50
+            ? `This week, your child made steady progress, with the biggest growth in ${topSubjects[0] || 'key topics'}.`
+            : `This week, your child showed effort and needs focused support in ${stats.weakAreas[0] || 'core basics'} to build momentum.`;
+
+    const parentDailyActions = [
+        '5 min: Ask what topic they studied today.',
+        '5 min: Let them explain one solved question aloud.',
+        '5 min: Review one mistake and one improvement target.'
+    ];
+
+    const weeklyTrend = useMemo(() => {
+        const quizzes = activityLog.filter(a => a.type === 'QUIZ' && a.score !== undefined);
+        const sorted = [...quizzes].sort((a, b) => {
+            const ta = a.date ? new Date(a.date).getTime() : 0;
+            const tb = b.date ? new Date(b.date).getTime() : 0;
+            if (!Number.isNaN(ta) && !Number.isNaN(tb) && ta !== tb) return ta - tb;
+            return 0;
+        });
+
+        const recent = sorted.slice(-7);
+        const previous = sorted.slice(-14, -7);
+
+        const avg = (items: LearnerActivity[]) => {
+            if (!items.length) return 0;
+            return Math.round(items.reduce((acc, curr) => acc + (curr.score || 0), 0) / items.length);
+        };
+
+        const recentAvg = avg(recent);
+        const previousAvg = avg(previous);
+        const scoreDelta = recentAvg - previousAvg;
+        const quizDelta = recent.length - previous.length;
+
+        let status: 'IMPROVING' | 'STEADY' | 'NEEDS_SUPPORT' = 'STEADY';
+        if (recent.length < 2) {
+            status = 'STEADY';
+        } else if (scoreDelta >= 5) {
+            status = 'IMPROVING';
+        } else if (scoreDelta <= -5) {
+            status = 'NEEDS_SUPPORT';
+        }
+
+        const label =
+            status === 'IMPROVING'
+                ? 'Momentum is improving week over week.'
+                : status === 'NEEDS_SUPPORT'
+                    ? 'Progress dipped this week. Add focused revision support.'
+                    : 'Progress is steady. Keep daily consistency.';
+
+        return {
+            recentAvg,
+            previousAvg,
+            scoreDelta,
+            quizDelta,
+            status,
+            label
         };
     }, [activityLog]);
 
@@ -217,7 +308,10 @@ export const ParentDashboard: React.FC<ParentProps> = ({ onNavigate, activityLog
                     <button onClick={() => onNavigate(ViewState.DASHBOARD)} className="p-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl transition-colors group" title="Back to Home">
                         <Home className="w-6 h-6 text-slate-500 dark:text-slate-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400" />
                     </button>
-                    <button onClick={() => navigate('/pricing')} className="p-2 bg-indigo-50 dark:bg-indigo-900/30 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 rounded-xl transition-colors border border-indigo-100 dark:border-indigo-800/50 group" title="Pricing Plans">
+                    <button onClick={() => {
+                        trackFunnelEvent('pricing_opened', { source: 'parent_dashboard_header', role: 'PARENT' });
+                        navigate('/pricing');
+                    }} className="p-2 bg-indigo-50 dark:bg-indigo-900/30 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 rounded-xl transition-colors border border-indigo-100 dark:border-indigo-800/50 group" title="Pricing Plans">
                         <CreditCard className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
                     </button>
                     <button onClick={() => setShowLogoutModal(true)} className="p-2 bg-red-50 dark:bg-red-900/30 hover:bg-red-100 dark:hover:bg-red-900/50 rounded-xl transition-colors border border-red-100 dark:border-red-800/50 group" title="Logout">
@@ -272,6 +366,77 @@ export const ParentDashboard: React.FC<ParentProps> = ({ onNavigate, activityLog
                         </div>
                     </div>
                 </motion.div>
+
+                {/* 1.5 PARENT PROOF LAYER */}
+                <div className="grid lg:grid-cols-3 gap-6">
+                    <div className="lg:col-span-1 bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl rounded-[2rem] p-6 shadow-xl shadow-slate-200/50 dark:shadow-none border border-white/50 dark:border-slate-800">
+                        <h3 className="text-lg font-black text-slate-900 dark:text-white mb-4">Current Strengths</h3>
+                        <div className="space-y-2">
+                            {(topSubjects.length > 0 ? topSubjects : ['Consistency']).map((s, i) => (
+                                <div key={i} className="px-3 py-2 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 text-xs font-black uppercase tracking-wider border border-emerald-100 dark:border-emerald-800/40">
+                                    {s}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="lg:col-span-1 bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl rounded-[2rem] p-6 shadow-xl shadow-slate-200/50 dark:shadow-none border border-white/50 dark:border-slate-800">
+                        <h3 className="text-lg font-black text-slate-900 dark:text-white mb-4">Areas To Improve</h3>
+                        <div className="space-y-2">
+                            {(stats.weakAreas.length > 0 ? stats.weakAreas.slice(0, 3) : ['No major weak topics right now']).map((area, i) => (
+                                <div key={i} className="px-3 py-2 rounded-xl bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 text-xs font-black uppercase tracking-wider border border-amber-100 dark:border-amber-800/40">
+                                    {area}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="lg:col-span-1 bg-gradient-to-br from-indigo-600 to-purple-700 rounded-[2rem] p-6 text-white shadow-2xl shadow-indigo-500/20">
+                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-200 mb-2">Weekly Summary</p>
+                        <p className="text-sm font-semibold text-indigo-100 leading-relaxed mb-4">{weeklyNarrative}</p>
+
+                        <div className="bg-white/10 border border-white/20 rounded-xl p-3 mb-4">
+                            <p className="text-[10px] font-black uppercase tracking-widest text-indigo-200 mb-2">Week-over-Week Trend</p>
+                            <div className="grid grid-cols-2 gap-2 mb-2">
+                                <div className="rounded-lg bg-white/10 px-2 py-1.5">
+                                    <p className="text-[9px] font-black uppercase tracking-widest text-indigo-200">Score Delta</p>
+                                    <p className="text-sm font-black text-white">{weeklyTrend.scoreDelta >= 0 ? '+' : ''}{weeklyTrend.scoreDelta}%</p>
+                                </div>
+                                <div className="rounded-lg bg-white/10 px-2 py-1.5">
+                                    <p className="text-[9px] font-black uppercase tracking-widest text-indigo-200">Quiz Volume</p>
+                                    <p className="text-sm font-black text-white">{weeklyTrend.quizDelta >= 0 ? '+' : ''}{weeklyTrend.quizDelta}</p>
+                                </div>
+                            </div>
+                            <p className="text-xs font-semibold text-indigo-100">{weeklyTrend.label}</p>
+                        </div>
+
+                        <div className="bg-white/10 border border-white/20 rounded-xl p-3 mb-4">
+                            <p className="text-[10px] font-black uppercase tracking-widest text-indigo-200 mb-2">15 Minutes Per Day</p>
+                            <div className="space-y-1.5">
+                                {parentDailyActions.map((action, i) => (
+                                    <p key={i} className="text-xs font-semibold text-indigo-100">{action}</p>
+                                ))}
+                            </div>
+                        </div>
+
+                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-200 mb-2">Next 7 Days</p>
+                        <h3 className="text-lg font-black mb-3">Parent Action Plan</h3>
+                        <div className="space-y-2 mb-4">
+                            {sevenDayPlan.map((step, i) => (
+                                <p key={i} className="text-xs font-semibold text-indigo-100 leading-relaxed">{step}</p>
+                            ))}
+                        </div>
+                        <button
+                            onClick={() => {
+                                trackFunnelEvent('pricing_opened', { source: 'parent_proof_layer', role: 'PARENT' });
+                                navigate('/pricing');
+                            }}
+                            className="w-full py-2.5 bg-white text-indigo-700 rounded-xl font-black text-xs uppercase tracking-wider hover:bg-indigo-50 transition-colors"
+                        >
+                            Unlock Full Weekly Guidance
+                        </button>
+                    </div>
+                </div>
 
 
                 {/* 2. STATS GRID */}

@@ -16,20 +16,20 @@ export const TeacherLanding: React.FC<TeacherLandingProps> = ({ onLogin, onRegis
     const features = [
         {
             icon: <Clock className="w-6 h-6 text-white" />,
-            title: "Save 20+ Hours/Week",
-            desc: "AI-generated lesson plans and automated marking reclaim your free time.",
+            title: "Save Prep Time Daily",
+            desc: "Build schemes, lesson outlines, and homework drafts in minutes before class starts.",
             bg: "bg-blue-500"
         },
         {
             icon: <ChartBar className="w-6 h-6 text-white" />,
-            title: "Real-Time Insights",
-            desc: "Track student performance instantly. Identify gaps before they become problems.",
+            title: "Mark Faster With Structure",
+            desc: "Use guided marking flows and clear rubrics to reduce pile-up and return feedback faster.",
             bg: "bg-emerald-500"
         },
         {
             icon: <Smartphone className="w-6 h-6 text-white" />,
-            title: "Mobile First",
-            desc: "Your entire classroom in your pocket. Works perfectly on any smartphone.",
+            title: "Assign And Follow Up",
+            desc: "Send to class stream, share to WhatsApp, and track who still needs support.",
             bg: "bg-purple-500"
         },
         {
@@ -82,13 +82,33 @@ export const TeacherLanding: React.FC<TeacherLandingProps> = ({ onLogin, onRegis
                             </div>
 
                             <h1 className="text-5xl lg:text-7xl font-extrabold text-white mb-6 leading-[1.1] tracking-tight">
-                                Teaching Made <br className="hidden lg:block" />
-                                <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-orange-300 to-yellow-300 animate-gradient-x">Simple & Smart.</span>
+                                Teach Better In <br className="hidden lg:block" />
+                                <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-orange-300 to-yellow-300 animate-gradient-x">Less Time.</span>
                             </h1>
 
                             <p className="text-xl text-blue-100 mb-10 max-w-xl mx-auto lg:mx-0 leading-relaxed font-medium">
-                                Create lesson plans, mark assignments, and review learner progress with AI-powered tools made for busy school days.
+                                Plan lessons, mark work faster, and follow up with confidence using practical classroom tools built for real school days.
                             </p>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-8 text-left max-w-xl mx-auto lg:mx-0">
+                                <div className="bg-white/10 border border-white/20 rounded-2xl px-4 py-3">
+                                    <p className="text-[10px] uppercase tracking-widest font-black text-blue-200">Minutes Saved This Week</p>
+                                    <p className="text-2xl font-black text-white mt-1">320</p>
+                                </div>
+                                <div className="bg-white/10 border border-white/20 rounded-2xl px-4 py-3">
+                                    <p className="text-[10px] uppercase tracking-widest font-black text-blue-200">Tasks Automated</p>
+                                    <p className="text-2xl font-black text-white mt-1">24</p>
+                                </div>
+                            </div>
+
+                            <div className="mb-10 max-w-xl mx-auto lg:mx-0 bg-white/10 border border-white/20 rounded-2xl p-4">
+                                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-200 mb-2">Start With These Teacher Jobs</p>
+                                <div className="space-y-1.5 text-sm font-bold text-white">
+                                    <p>1. Prepare weekly schemes of work</p>
+                                    <p>2. Mark assignments with consistent feedback</p>
+                                    <p>3. Assign and track class follow-up quickly</p>
+                                </div>
+                            </div>
 
                             <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
                                 <button

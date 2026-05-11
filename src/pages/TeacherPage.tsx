@@ -4,16 +4,20 @@ import { Helmet } from 'react-helmet-async';
 import { TeacherDashboard } from '../features/teacher/Teacher';
 import { ViewState } from '../types';
 
+type TeacherInitialTab = 'DASHBOARD' | 'CREATION_HUB' | 'STUDENTS' | 'MARKING' | 'EARNINGS' | 'LIBRARY' | 'CONVERT' | 'VOICE' | 'QUIZ' | 'HOME' | 'MARKETPLACE' | 'PROFILE' | 'REPORTS' | 'DARASA_MODE' | 'HOMEWORK';
+
 export const TeacherPage: React.FC = () => {
     const navigate = useNavigate();
     const location = useLocation();
+    const state = location.state as { initialTab?: TeacherInitialTab } | null;
 
     // Determine initial tab based on route
-    let initialTab: 'DASHBOARD' | 'CREATION_HUB' | 'MAGIC_CLASSROOM' | 'STUDENTS' | 'MARKING' | 'EARNINGS' | 'LIBRARY' | 'CONVERT' | 'VOICE' | 'QUIZ' | 'HOME' | 'MARKETPLACE' | 'DARASA_MODE' = 'DASHBOARD';
+    let initialTab: TeacherInitialTab = 'DASHBOARD';
     if (location.pathname === '/teacher/notes') initialTab = 'HOME'; // Stay on Home (Studio) to see note tools
     if (location.pathname === '/teacher/homework') initialTab = 'HOME'; // Stay on Home (Studio) to see quiz tools
     if (location.pathname === '/teacher/marking') initialTab = 'MARKING';
     if (location.pathname === '/teacher/darasa') initialTab = 'DARASA_MODE';
+    if (state?.initialTab) initialTab = state.initialTab;
 
     const handleNavigate = (view: ViewState) => {
         if (view === ViewState.DASHBOARD) {
