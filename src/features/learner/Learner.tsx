@@ -801,7 +801,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
         setIsSummarizing(false);
         setError({
           title: "Study Assistant Offline",
-          message: "You are offline, check your internet. I couldn't generate a study guide for this document right now."
+          message: "You are offline. Please check your internet connection."
         });
         return;
       }
@@ -813,10 +813,17 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
       console.error("Study Guide error:", err);
       // Even if isOnline was true at start, the request might fail due to network drop
       if (!isOnline || !navigator.onLine || err.message?.includes('network') || err.message?.includes('Failed to fetch')) {
-        setError({
-          title: "Study Assistant Offline",
-          message: "You are offline, check your internet. I couldn't generate a study guide for this document right now."
-        });
+        if (!navigator.onLine) {
+          setError({
+            title: "Study Assistant Offline",
+            message: "You are offline. Please check your internet connection to generate a study guide."
+          });
+        } else {
+          setError({
+            title: "Connection Error",
+            message: "We couldn't connect to our servers. Please check your internet connection or try again shortly."
+          });
+        }
       } else {
         setError({ title: "Study Assistant Error", message: "I couldn't generate a study guide for this document right now." });
       }
@@ -1011,7 +1018,11 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
     } catch (err: any) {
       console.error("PDF Generate error:", err);
       if (!isOnline || !navigator.onLine || err.message?.includes('network') || err.message?.includes('Failed to fetch')) {
-        setError({ title: "Offline Error", message: "You are offline. Please check your internet to download teacher notes." });
+        if (!navigator.onLine) {
+          setError({ title: "Offline Error", message: "You are offline. Please check your internet connection to download teacher notes." });
+        } else {
+          setError({ title: "Connection Error", message: "We couldn't connect to our servers. Please check your internet connection or try again shortly." });
+        }
       } else {
         setError({ title: "Generation Error", message: "I couldn't generate the full teacher notes. Please try again." });
       }
@@ -1066,7 +1077,11 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
     } catch (err: any) {
       console.error("Study Buddy error:", err);
       if (!isOnline || !navigator.onLine || err.message?.includes('network') || err.message?.includes('Failed to fetch')) {
-        setStudyChat(prev => [...prev, { role: 'model' as const, text: "I can't answer right now because you are offline." }]);
+        if (!navigator.onLine) {
+          setStudyChat(prev => [...prev, { role: 'model' as const, text: "I can't answer right now because you are offline. Please check your internet connection." }]);
+        } else {
+          setStudyChat(prev => [...prev, { role: 'model' as const, text: "We couldn't connect to our servers. Please check your internet connection or try again shortly." }]);
+        }
       } else {
         setStudyChat(prev => [...prev, { role: 'model' as const, text: "I'm sorry, I hit a snag while looking through this document." }]);
       }
@@ -1384,8 +1399,13 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
       let errorTitle = "Scan Failed";
 
       if (!isOnline || !navigator.onLine || error.message?.includes('network') || error.message?.includes('Failed to fetch')) {
-        errorTitle = "Offline Error";
-        errorMessage = "You are offline. Please check your internet to process this scan.";
+        if (!navigator.onLine) {
+          errorTitle = "Offline Error";
+          errorMessage = "You are offline. Please check your internet to process this scan.";
+        } else {
+          errorTitle = "Connection Error";
+          errorMessage = "We couldn't connect to our servers. Please check your internet connection or try again shortly.";
+        }
       } else if (error.message?.includes("Safety") || error.message?.includes("blocked")) {
         errorMessage = "This content was flagged by our safety filters. Please try a different page.";
       }
@@ -1561,10 +1581,24 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
       }
 
       const isNet = !isOnline || !navigator.onLine || e.message?.includes('network') || e.message?.includes('Failed to fetch');
-      setError({
-        title: isNet ? "Offline Error" : "Audio Error",
-        message: isNet ? "You are offline. Please check your internet to process audio." : "We couldn't understand the audio. Please speak clearly or try again."
-      });
+      if (isNet) {
+        if (!navigator.onLine) {
+          setError({
+            title: "Offline Error",
+            message: "You are offline. Please check your internet to process audio."
+          });
+        } else {
+          setError({
+            title: "Connection Error",
+            message: "We couldn't connect to our servers. Please check your internet connection or try again shortly."
+          });
+        }
+      } else {
+        setError({
+          title: "Audio Error",
+          message: "We couldn't understand the audio. Please speak clearly or try again."
+        });
+      }
       setLoading(false);
     }
   };
@@ -1750,12 +1784,25 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
         return;
       }
 
-      setError({
-        title: "Explanation Failed",
-        message: (!isOnline || e.message?.includes('network') || e.message?.includes('Failed to fetch'))
-          ? "You are offline. Please check your internet connection."
-          : "We couldn't generate an explanation. Please try again."
-      });
+      const isNet = !isOnline || !navigator.onLine || e.message?.includes('network') || e.message?.includes('Failed to fetch');
+      if (isNet) {
+        if (!navigator.onLine) {
+          setError({
+            title: "Offline Error",
+            message: "You are offline. Please check your internet connection."
+          });
+        } else {
+          setError({
+            title: "Connection Error",
+            message: "We couldn't connect to our servers. Please check your internet connection or try again shortly."
+          });
+        }
+      } else {
+        setError({
+          title: "Explanation Failed",
+          message: "We couldn't generate an explanation. Please try again."
+        });
+      }
     } finally {
       setLoading(false);
     }
