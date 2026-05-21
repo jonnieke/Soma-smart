@@ -162,8 +162,9 @@ export const NotesViewer: React.FC<Props> = ({ data, onStartPractice, onExit }) 
                     mt = data.type;
                 } else if (isOfficial) {
                     const res = data as any;
-                    const encodedPath = res.file_path.split('/').map(encodeURIComponent).join('/');
-                    const docUrl = `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/syllabus-docs/${encodedPath}`;
+                    const encodedPath = res.file_path ? res.file_path.split('/').map(encodeURIComponent).join('/') : '';
+                    const fallbackUrl = `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/syllabus-docs/${encodedPath}`;
+                    const docUrl = res.file_url || res.fileUrl || fallbackUrl;
                     setLoadingPhase('Downloading document...');
 
                     const response = await fetch(docUrl);

@@ -117,10 +117,9 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
                     setAnalysis(result);
                 } else if ('file_path' in (data as any)) {
                     const res = data as any;
-                    // Exams are actually stored in knowledge-base, not syllabus-docs
-                    const bucket = res.category === 'SYLLABUS' ? 'syllabus-docs' : 'knowledge-base';
-                    const encodedPath = res.file_path.split('/').map(encodeURIComponent).join('/');
-                    const docUrl = `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/${bucket}/${encodedPath}`;
+                    const encodedPath = res.file_path ? res.file_path.split('/').map(encodeURIComponent).join('/') : '';
+                    const fallbackUrl = `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/syllabus-docs/${encodedPath}`;
+                    const docUrl = res.file_url || res.fileUrl || fallbackUrl;
                     setLoadingText('Fetching and analyzing document...');
 
                     try {

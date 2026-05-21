@@ -26,8 +26,9 @@ export const SyllabusViewer: React.FC<Props> = ({ data, onExit }) => {
         const init = async () => {
             try {
                 if (data?.file_path) {
-                    const encodedPath = data.file_path.split('/').map(encodeURIComponent).join('/');
-                    const docUrl = `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/syllabus-docs/${encodedPath}`;
+                    const encodedPath = data.file_path ? data.file_path.split('/').map(encodeURIComponent).join('/') : '';
+                    const fallbackUrl = `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/syllabus-docs/${encodedPath}`;
+                    const docUrl = data.file_url || data.fileUrl || fallbackUrl;
                     const isImage = data.file_path?.match(/\.(png|jpg|jpeg|gif|webp|svg)$/i);
 
                     if (!isImage) {
