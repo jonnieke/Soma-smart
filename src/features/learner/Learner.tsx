@@ -2659,23 +2659,91 @@ ${explanation.explanation}
               )}
             </AnimatePresence>
 
-            {/* GUEST PROGRESS BREADCRUMBS */}
-            {!isRegistered && (
-              <div className="mb-6 bg-white dark:bg-slate-900 rounded-2xl border-2 border-slate-200 dark:border-slate-800 p-4">
-                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-600 mb-3">Your Progress So Far</p>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                  <div className={`rounded-xl px-3 py-2 border text-xs font-bold ${hasStudiedTopic ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-slate-50 border-slate-200 text-slate-500'}`}>
-                    1. Studied Topic: {hasStudiedTopic ? 'Done' : 'Pending'}
-                  </div>
-                  <div className={`rounded-xl px-3 py-2 border text-xs font-bold ${hasQuizAttempt ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-slate-50 border-slate-200 text-slate-500'}`}>
-                    2. Quiz Attempted: {hasQuizAttempt ? 'Done' : 'Pending'}
-                  </div>
-                  <div className={`rounded-xl px-3 py-2 border text-xs font-bold ${hasScoreGain ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-slate-50 border-slate-200 text-slate-500'}`}>
-                    3. Score Gained: {hasScoreGain ? `${latestQuiz?.score}%` : 'Pending'}
+
+            {/* START HERE — Onboarding card for brand-new users (zero history, not registered) */}
+            {!isRegistered && !hasHistory && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mb-6 bg-gradient-to-br from-indigo-600 to-blue-700 rounded-2xl p-5 text-white shadow-lg shadow-indigo-500/20"
+              >
+                <div className="flex items-start gap-4">
+                  <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center shrink-0 text-xl">🚀</div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-200 mb-1">Welcome to Somo Smart!</p>
+                    <p className="font-bold text-base mb-3">Start with these 3 steps — no signup needed</p>
+                    <div className="space-y-2">
+                      {[
+                        { step: '1', label: 'Type a question below or scan your textbook', icon: '❓' },
+                        { step: '2', label: 'Get a step-by-step explanation instantly', icon: '⚡' },
+                        { step: '3', label: 'Test yourself with a quick quiz on the topic', icon: '✅' },
+                      ].map(({ step, label, icon }) => (
+                        <div key={step} className="flex items-center gap-2.5 text-sm font-medium text-white/90">
+                          <span className="text-base">{icon}</span>
+                          <span>{label}</span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
-              </div>
+              </motion.div>
             )}
+
+            {/* FREE USAGE METER — visible for all non-pro, non-registered users */}
+            {!isPro && !isRegistered && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className={`mb-6 rounded-2xl border-2 p-4 ${
+                  freeUsesLeft === 0
+                    ? 'bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-800'
+                    : freeUsesLeft === 1
+                    ? 'bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800'
+                    : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800'
+                }`}
+              >
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5 mb-2">
+                      {[1, 2, 3].map((slot) => (
+                        <div
+                          key={slot}
+                          className={`h-2 flex-1 rounded-full transition-all duration-500 ${
+                            slot <= usageCount
+                              ? freeUsesLeft === 0
+                                ? 'bg-red-500'
+                                : 'bg-amber-400'
+                              : 'bg-slate-200 dark:bg-slate-700'
+                          }`}
+                        />
+                      ))}
+                    </div>
+                    <p className={`text-xs font-bold ${
+                      freeUsesLeft === 0
+                        ? 'text-red-700 dark:text-red-400'
+                        : freeUsesLeft === 1
+                        ? 'text-amber-700 dark:text-amber-400'
+                        : 'text-slate-500 dark:text-slate-400'
+                    }`}>
+                      {freeUsesLeft === 0
+                        ? 'Free limit reached — upgrade to keep going'
+                        : `${usageCount} of 3 free answers used${freeUsesLeft === 1 ? ' — 1 left!' : ''}`}
+                    </p>
+                  </div>
+                  <button
+                    onClick={handlePricingNavigation}
+                    className={`shrink-0 px-3 py-2 rounded-xl text-xs font-black transition-all ${
+                      freeUsesLeft === 0
+                        ? 'bg-red-600 text-white hover:bg-red-700'
+                        : 'bg-indigo-600 text-white hover:bg-indigo-700'
+                    }`}
+                  >
+                    {freeUsesLeft === 0 ? 'Upgrade Now' : 'From KES 20/day →'}
+                  </button>
+                </div>
+              </motion.div>
+            )}
+
 
             {/* HEADER METRICS */}
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 gap-4">

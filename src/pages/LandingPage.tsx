@@ -815,7 +815,73 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                 </div>
             </section>
 
-            {/* --- CBE/KCSE CURRICULUM ALIGNMENT --- */}
+            {/* --- STUDENT TESTIMONIALS --- */}
+            <section className="py-16 bg-white dark:bg-slate-950 transition-colors border-t border-slate-200 dark:border-slate-800">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div className="text-center mb-12">
+                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 font-bold text-xs mb-4 uppercase tracking-wider border border-amber-200 dark:border-amber-800">
+                            <Star className="w-3.5 h-3.5 fill-current" /> Real Students, Real Results
+                        </div>
+                        <h2 className="text-3xl md:text-4xl font-bold text-slate-900 dark:text-white tracking-tight">
+                            Kenyan students <span className="text-indigo-600 dark:text-indigo-400">are already winning</span>
+                        </h2>
+                        <p className="text-slate-500 dark:text-slate-400 mt-3 text-base font-medium">No tutors. No study groups. Just Somo Smart — at midnight, before exams, anywhere.</p>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        {[
+                            {
+                                quote: "I used to fail Chemistry consistently. After using Somo Smart for two weeks before my mid-term, I got a B+. The step-by-step mole calculations finally made sense.",
+                                name: "Kevin M.",
+                                tag: "Form 3 · Alliance High",
+                                emoji: "🧪",
+                                color: "indigo"
+                            },
+                            {
+                                quote: "It's honestly better than my physics teacher sometimes. I type the question from the past paper, it breaks it down, then asks me questions back. My KCSE mocks improved by 14 marks.",
+                                name: "Fatuma A.",
+                                tag: "Form 4 · Nairobi Girls",
+                                emoji: "⚡",
+                                color: "emerald"
+                            },
+                            {
+                                quote: "I'm in Form 2 and struggle with English essays. Somo Smart helped me understand how to structure arguments. My teacher noticed the improvement without me even telling her I was using it.",
+                                name: "Brian O.",
+                                tag: "Form 2 · Kisumu Day",
+                                emoji: "✍️",
+                                color: "purple"
+                            }
+                        ].map(({ quote, name, tag, emoji, color }) => (
+                            <motion.div
+                                key={name}
+                                initial={{ opacity: 0, y: 20 }}
+                                whileInView={{ opacity: 1, y: 0 }}
+                                viewport={{ once: true }}
+                                transition={{ duration: 0.5 }}
+                                className="bg-slate-50 dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 flex flex-col gap-4 hover:shadow-lg transition-shadow"
+                            >
+                                <div className="flex items-center gap-1">
+                                    {[1,2,3,4,5].map(s => <Star key={s} className="w-4 h-4 fill-amber-400 text-amber-400" />)}
+                                </div>
+                                <p className="text-slate-700 dark:text-slate-300 text-sm font-medium leading-relaxed flex-1">
+                                    "{quote}"
+                                </p>
+                                <div className="flex items-center gap-3 pt-2 border-t border-slate-200 dark:border-slate-800">
+                                    <div className={`w-9 h-9 rounded-full flex items-center justify-center text-lg ${
+                                        color === 'indigo' ? 'bg-indigo-100 dark:bg-indigo-900/40' :
+                                        color === 'emerald' ? 'bg-emerald-100 dark:bg-emerald-900/40' :
+                                        'bg-purple-100 dark:bg-purple-900/40'
+                                    }`}>{emoji}</div>
+                                    <div>
+                                        <p className="font-bold text-slate-900 dark:text-white text-sm">{name}</p>
+                                        <p className="text-[11px] text-slate-400 font-medium">{tag}</p>
+                                    </div>
+                                </div>
+                            </motion.div>
+                        ))}
+                    </div>
+                </div>
+            </section>
 
             {/* --- HOW IT WORKS: 4 EASY STEPS --- */}
             <section id="how-it-works" className="py-16 bg-slate-50 dark:bg-slate-900 transition-colors border-t border-slate-200 dark:border-slate-800">

@@ -3,7 +3,7 @@ export const translations = {
         hero: {
             pillStudents: "Built for Kenyan Students & Teachers",
             pillTeachers: "Teachers: Save planning time",
-            headline: "SomaAI - A study coach for CBC learners ",
+            headline: "Somo Smart - A study coach for CBC learners ",
             gradient: "& time-saving tools for Kenyan teachers.",
             subheadline: "Learners scan homework and get instant, step-by-step explanations. Teachers auto-generate exams, notes & mark papers in minutes, not hours.",
             ctaLearner: "Try Learner for Free",
@@ -281,7 +281,7 @@ export const translations = {
         hero: {
             pillStudents: "Built for Kenyan Students & Teachers",
             pillTeachers: "Teachers: Save planning time",
-            headline: "SomaAI - A study coach for CBC learners ",
+            headline: "Somo Smart - A study coach for CBC learners ",
             gradient: "& des outils gain de temps pour les enseignants kÃ©nyans.",
             subheadline: "Les apprenants scannent leurs devoirs et obtiennent des explications Ã©tape par Ã©tape. Les enseignants gÃ©nÃ¨rent automatiquement examens, notes et corrigent en minutes — pas en heures.",
             ctaLearner: "Essayer Apprenant Gratuitement",
