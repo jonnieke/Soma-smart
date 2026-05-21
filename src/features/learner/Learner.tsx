@@ -2860,7 +2860,52 @@ ${explanation.explanation}
                     </div>
                   )}
 
-                  {/* START HERE: PRIMARY FIRST-SESSION PATH */}
+                  {/* FIRST SESSION WELCOME — only for registered users with zero history */}
+                  {isRegistered && !hasHistory && !hasProgress && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="bg-gradient-to-br from-indigo-600 via-blue-600 to-purple-700 rounded-3xl p-6 text-white shadow-xl shadow-indigo-300/30 relative overflow-hidden"
+                    >
+                      <div className="absolute top-0 right-0 w-40 h-40 bg-white/5 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
+                      <div className="relative z-10">
+                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-200 mb-1">Welcome, {profile?.name?.split(' ')[0] || 'Learner'}! 🎉</p>
+                        <h2 className="text-xl font-black tracking-tight mb-1">Your first question is one tap away.</h2>
+                        <p className="text-sm font-medium text-indigo-100 mb-5 leading-relaxed">
+                          Type anything — a topic, a past paper question, even a photo of your textbook. Akili will explain it step by step.
+                        </p>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                          <button
+                            onClick={() => setMode('SCAN_EXPLAIN')}
+                            className="bg-white/15 hover:bg-white/25 border border-white/20 rounded-xl p-3 text-left transition-all group"
+                          >
+                            <span className="text-xl block mb-1">📸</span>
+                            <span className="text-xs font-black block">Scan a Question</span>
+                            <span className="text-[10px] text-indigo-200 font-medium">Photo from textbook</span>
+                          </button>
+                          <button
+                            onClick={() => setMode('SCAN_EXPLAIN')}
+                            className="bg-white/15 hover:bg-white/25 border border-white/20 rounded-xl p-3 text-left transition-all group"
+                          >
+                            <span className="text-xl block mb-1">✍️</span>
+                            <span className="text-xs font-black block">Type a Question</span>
+                            <span className="text-[10px] text-indigo-200 font-medium">Any subject, any level</span>
+                          </button>
+                          <button
+                            onClick={() => handleSidebarTabChange('SUBJECTS')}
+                            className="bg-white/15 hover:bg-white/25 border border-white/20 rounded-xl p-3 text-left transition-all group"
+                          >
+                            <span className="text-xl block mb-1">📚</span>
+                            <span className="text-xs font-black block">Browse by Subject</span>
+                            <span className="text-[10px] text-indigo-200 font-medium">Revision & past papers</span>
+                          </button>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+
+                  {/* START HERE: PRIMARY FIRST-SESSION PATH — for returning users or registered with history */}
+                  {(!isRegistered || hasHistory || hasProgress) && (
                   <div className="bg-gradient-to-r from-indigo-600 to-blue-600 rounded-3xl p-6 text-white shadow-xl shadow-indigo-200">
                     <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-100 mb-2">Start Here</p>
                     <h2 className="text-2xl font-black tracking-tight mb-2">
@@ -2892,6 +2937,7 @@ ${explanation.explanation}
                       </button>
                     </div>
                   </div>
+                  )}
 
                   {/* AI INPUT BUBBLE */}
                   <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-sm border-2 border-slate-300 dark:border-slate-800 p-6 relative overflow-hidden">

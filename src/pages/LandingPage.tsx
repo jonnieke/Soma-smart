@@ -828,7 +828,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                         <p className="text-slate-500 dark:text-slate-400 mt-3 text-base font-medium">No tutors. No study groups. Just Somo Smart — at midnight, before exams, anywhere.</p>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                         {[
                             {
                                 quote: "I used to fail Chemistry consistently. After using Somo Smart for two weeks before my mid-term, I got a B+. The step-by-step mole calculations finally made sense.",
@@ -850,6 +850,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                 tag: "Form 2 · Kisumu Day",
                                 emoji: "✍️",
                                 color: "purple"
+                            },
+                            {
+                                quote: "The voice feature helps me learn and solve problems. It also helps me improve on oral conversation.",
+                                name: "Gabu",
+                                tag: "Grade 7 · CBC",
+                                emoji: "🎙️",
+                                color: "pink"
                             }
                         ].map(({ quote, name, tag, emoji, color }) => (
                             <motion.div
@@ -870,6 +877,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                     <div className={`w-9 h-9 rounded-full flex items-center justify-center text-lg ${
                                         color === 'indigo' ? 'bg-indigo-100 dark:bg-indigo-900/40' :
                                         color === 'emerald' ? 'bg-emerald-100 dark:bg-emerald-900/40' :
+                                        color === 'pink' ? 'bg-pink-100 dark:bg-pink-900/40' :
                                         'bg-purple-100 dark:bg-purple-900/40'
                                     }`}>{emoji}</div>
                                     <div>
