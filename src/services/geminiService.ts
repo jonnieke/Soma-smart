@@ -909,10 +909,12 @@ export const summarizeDocument = async (title: string, documentId: string, langu
   TASK — GENERATE DETAILED STUDY NOTES(NOT A SUMMARY):
     
     FORMATTING RULES FOR YOUNG LEARNERS(CRITICAL):
-  - NO WALLS OF TEXT.Keep paragraphs extremely short(2 - 3 sentences maximum).
-    - Use abundant bullet points(- ) and numbered lists(1. 2. 3.) to break up information.
-    - Write in plain text.Do NOT use ** (bold markers) or ##(headers) in the content fields.
-    - Keep sentences simple, friendly, and easy to read.
+    - NO WALLS OF TEXT. Keep paragraphs extremely short (2-3 sentences maximum).
+    - Use abundant bullet points (- ) and numbered lists (1. 2. 3.) to break up information.
+    - Write in plain text. Do NOT use ** (bold markers) or ## (headers) in the content fields.
+    - Keep sentences simple, friendly, active, and easy to read (Teacher-to-Student tone).
+    - Use relevant, context-specific, and fun emojis (e.g. 👋, 💡, 🧍, 🧼, 🚽, 🐶, 🦠, 🍎) at the start of titles, subtopic names, key terms, definitions, and list items to make the notes highly visual and interactive.
+    - Emphasize key terms by using ALL CAPS or enclosing in dashes (e.g. --HYGIENE--, --GERMS--) so they stand out clearly in plain text.
     - Use 🎯 for exam tips and key takeaways, placing them on their own separate line.
     - Add blank lines between every paragraph and list item for visual breathing room.
     
@@ -998,11 +1000,14 @@ export const generateRichLessonNotes = async (title: string, documentId: string,
 
 GUIDELINES:
 1. ** Pedagogical Structure **: Start with an "Introduction/Overview", followed by "Core Concepts"(detailed), "Key Formulas/Definitions", "Practical Examples/Context", and "Advanced Insights for Higher Grades".
-    2. ** Exam Focus **: Explicitly mention areas that are frequently tested.Use phrases like "Exam Tip" or "Commonly assessed in national exams (KCSE/CBC)".
-    3. ** Tone **: Educational, encouraging, and professional(Teacher - to - Student).
-    4. ** Richness **: Provide depth.If a concept is mentioned in the source, explain the 'why' and 'how', not just the 'what'.
-    5. ** Formatting **: Use Markdown with clear H2 and H3 headers, bold text for emphasis, and organized lists.
-    6. ** Language **: Use ${isSwahiliSubject(subject, title) ? 'Swahili (Kiswahili Sanifu)' : 'English'}. All subjects other than Swahili/Kiswahili must be generated exclusively in English.
+    2. ** Visual and Interactive Elements **: 
+       - Inject relevant, context-specific, and fun educational emojis (e.g., 👋, 💡, 🧍, 🧼, 🚽, 🐶, 🦠, 🍎, 📐, 🧪) at the start of subtopic headings, key terms, definitions, and important list items to make the notes engaging, friendly, and visually alive for learners.
+       - Use blockquotes ('> 💡 **Key Definition**') to isolate and highlight vital concepts.
+    3. ** Exam Focus **: Explicitly mention areas that are frequently tested.Use phrases like "Exam Tip" or "Commonly assessed in national exams (KCSE/CBC)".
+    4. ** Tone **: Educational, encouraging, friendly, active, and professional (Teacher-to-Student). Keep explanations clear and relatable.
+    5. ** Richness **: Provide depth.If a concept is mentioned in the source, explain the 'why' and 'how', not just the 'what'.
+    6. ** Formatting **: Use Markdown with clear H2 and H3 headers, bold text for emphasis, bullet points, numbered lists, and visual spacing between sections.
+    7. ** Language **: Use ${isSwahiliSubject(subject, title) ? 'Swahili (Kiswahili Sanifu)' : 'English'}. All subjects other than Swahili/Kiswahili must be generated exclusively in English.
     
     Output JSON.
   `;
