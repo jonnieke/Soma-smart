@@ -318,6 +318,18 @@ export const fileToGenerativePart = async (file: File): Promise<string> => {
 
 // --- LEARNER FEATURES ---
 
+const isSwahiliSubject = (subject?: string, topicOrContent?: string): boolean => {
+  if (subject) {
+    const s = subject.toLowerCase();
+    if (s.includes('swahili') || s.includes('kiswahili')) return true;
+  }
+  if (topicOrContent) {
+    const tc = topicOrContent.toLowerCase();
+    if (tc.includes('swahili') || tc.includes('kiswahili')) return true;
+  }
+  return false;
+};
+
 export const explainImage = async (
   base64Image: string,
   mimeType: string,
@@ -344,7 +356,7 @@ export const explainImage = async (
   });
 
   const langInstruction = language === 'SW'
-    ? "LANGUAGE RULE: You MUST respond ENTIRELY in rich, immersive, grammatical Swahili (Kiswahili Sanifu). Use comprehensive educational vocabulary in Swahili."
+    ? "LANGUAGE RULE: First, determine the subject of the image content. If the subject is 'Kiswahili' or 'Swahili', you MUST respond ENTIRELY in rich, immersive Swahili (Kiswahili Sanifu). For ALL other subjects (e.g. Mathematics, Science, Social Studies, CRE, etc.), you MUST respond ENTIRELY in English, even though the user system language is set to Swahili."
     : "LANGUAGE RULE: If the subject is 'Kiswahili' or 'Swahili' or the question/content is in Swahili, you MUST respond exclusively in Swahili. For ALL other subjects and questions, you MUST respond exclusively in English.";
 
   const educationLevelInstruction = buildEducationLevelInstruction(educationLevel);
@@ -406,7 +418,7 @@ export const explainAudio = async (base64Audio: string, mimeType: string, level:
   });
 
   const langInstruction = language === 'SW'
-    ? "LANGUAGE RULE: You MUST respond ENTIRELY in rich, immersive, grammatical Swahili (Kiswahili Sanifu). Use comprehensive educational vocabulary in Swahili."
+    ? "LANGUAGE RULE: First, determine the subject of the audio content. If the subject is 'Kiswahili' or 'Swahili', you MUST respond ENTIRELY in rich, immersive Swahili (Kiswahili Sanifu). For ALL other subjects (e.g. Mathematics, Science, Social Studies, CRE, etc.), you MUST respond ENTIRELY in English, even though the user system language is set to Swahili."
     : "LANGUAGE RULE: If the subject is 'Kiswahili' or 'Swahili' or the question/content is in Swahili, you MUST respond exclusively in Swahili. For ALL other subjects and questions, you MUST respond exclusively in English.";
 
   const educationLevelInstruction = buildEducationLevelInstruction(educationLevel);
@@ -511,7 +523,7 @@ export const processDarasaRecording = async (audioBlob: Blob, mimeType: string, 
     - Give 4 plausible options per question, with exactly 1 correct answer.
     - Assign realistic marks per question (usually 1 or 2).
     
-    LANGUAGE RULE: Use ${language === 'SW' ? 'Swahili (Kiswahili Sanifu)' : 'English'}, except if the subject is Swahili.
+    LANGUAGE RULE: Use ${isSwahiliSubject(subject) ? 'Swahili (Kiswahili Sanifu)' : 'English'}. All subjects other than Swahili/Kiswahili must be generated exclusively in English.
     
     Output JSON containing both "note" and "quiz" objects.
   `;
@@ -660,9 +672,10 @@ export const explainTopic = async (
     `;
   }
 
-  const langInstruction = language === 'SW'
+  const useSwahili = isSwahiliSubject(subject || searchSubject, topic);
+  const langInstruction = useSwahili
     ? "LANGUAGE RULE: You MUST respond ENTIRELY in rich, immersive, grammatical Swahili (Kiswahili Sanifu). Use comprehensive educational vocabulary in Swahili."
-    : "LANGUAGE RULE: If the subject is 'Kiswahili' or 'Swahili' or the question/content is in Swahili, you MUST respond exclusively in Swahili. For ALL other subjects and questions, you MUST respond exclusively in English.";
+    : "LANGUAGE RULE: You MUST respond exclusively in English. For all academic concepts, questions, notes, explanations, and flashcards, use clear, precise academic English. Do NOT respond in Swahili, even if the student language setting is Swahili.";
 
   // Build adaptive scaffolding context if mastery data is available
   const adaptiveContext = masteryData
@@ -844,7 +857,7 @@ export const summarizeDocument = async (title: string, documentId: string, langu
     
     5. RELATED TOPICS: Suggest EXACTLY 3 related study topics for further learning.
     
-    6. Use ${language === 'SW' ? 'Swahili (Kiswahili Sanifu)' : 'English'}.
+    6. Use ${isSwahiliSubject(subject, title) ? 'Swahili (Kiswahili Sanifu)' : 'English'}. All subjects other than Swahili/Kiswahili must be generated exclusively in English.
     
     Output JSON.
   `;
@@ -909,7 +922,7 @@ GUIDELINES:
     3. ** Tone **: Educational, encouraging, and professional(Teacher - to - Student).
     4. ** Richness **: Provide depth.If a concept is mentioned in the source, explain the 'why' and 'how', not just the 'what'.
     5. ** Formatting **: Use Markdown with clear H2 and H3 headers, bold text for emphasis, and organized lists.
-    6. ** Language **: Use ${language === 'SW' ? 'Swahili (Kiswahili Sanifu)' : 'English'}.
+    6. ** Language **: Use ${isSwahiliSubject(subject, title) ? 'Swahili (Kiswahili Sanifu)' : 'English'}. All subjects other than Swahili/Kiswahili must be generated exclusively in English.
     
     Output JSON.
   `;
@@ -949,9 +962,10 @@ export const continueResearch = async (
     }
   });
 
-  const langInstruction = language === 'SW'
+  const useSwahili = isSwahiliSubject(undefined, currentTopic) || isSwahiliSubject(undefined, currentExplanation) || isSwahiliSubject(undefined, userQuery);
+  const langInstruction = useSwahili
     ? "LANGUAGE RULE: You MUST respond ENTIRELY in rich, immersive, grammatical Swahili (Kiswahili Sanifu). Use comprehensive educational vocabulary in Swahili."
-    : "LANGUAGE RULE: If the subject is 'Kiswahili' or 'Swahili' or the question/content is in Swahili, you MUST respond exclusively in Swahili. For ALL other subjects and questions, you MUST respond exclusively in English.";
+    : "LANGUAGE RULE: You MUST respond exclusively in English. For all academic concepts, questions, notes, and explanations, use clear, precise academic English. Do NOT respond in Swahili, even if the student language setting is Swahili.";
 
   const prompt = `
 CONTEXT: The student is learning about "${currentTopic}".
@@ -1011,9 +1025,10 @@ export const generateQuiz = async (content: string, topic: string, language: 'EN
     }
   });
 
-  const langInstruction = language === 'SW'
+  const useSwahili = isSwahiliSubject(undefined, topic) || isSwahiliSubject(undefined, content);
+  const langInstruction = useSwahili
     ? "LANGUAGE RULE: You MUST generate the quiz in Swahili (Kiswahili Sanifu)."
-    : "LANGUAGE RULE: If the subject is 'Kiswahili' or 'Swahili' or the content is in Swahili, you MUST generate the quiz exclusively in Swahili. For ALL other subjects and content, you MUST generate the quiz exclusively in English.";
+    : "LANGUAGE RULE: You MUST generate the quiz exclusively in English. All questions, options, and explanations must be strictly in English, even if the user language setting is Swahili.";
 
   const prompt = `
     Based on the following content about "${topic}":
@@ -1070,9 +1085,10 @@ export const generateQuickQuiz = async (content: string, topic: string, language
     }
   });
 
-  const langInstruction = language === 'SW'
+  const useSwahili = isSwahiliSubject(undefined, topic) || isSwahiliSubject(undefined, content);
+  const langInstruction = useSwahili
     ? "LANGUAGE RULE: You MUST generate the quiz in Swahili (Kiswahili Sanifu)."
-    : "LANGUAGE RULE: If the subject is 'Kiswahili' or 'Swahili' or the content is in Swahili, you MUST generate the quiz exclusively in Swahili. For ALL other subjects and content, you MUST generate the quiz exclusively in English.";
+    : "LANGUAGE RULE: You MUST generate the quiz exclusively in English. All questions, options, and explanations must be strictly in English, even if the user language setting is Swahili.";
 
   const prompt = `
     Based on the explanation of "${topic}", generate a quick "Sticky Quiz" to test immediate retention.
@@ -1145,7 +1161,7 @@ export const generateLessonRecap = async (inputBase64: string, mimeType: string,
   const learnerPrompt = `
     You are an expert tutor helping a student understand a live lesson they just attended.
     1. Analyze the recording / notes and identify the subject.
-    2. ${language === 'SW' ? "LANGUAGE RULE: You MUST respond ENTIRELY in rich, immersive, grammatical Swahili (Kiswahili Sanifu). Use comprehensive educational vocabulary in Swahili." : "LANGUAGE RULE: If the subject is 'Kiswahili' or 'Swahili' or the question/content is in Swahili, you MUST respond exclusively in Swahili. For ALL other subjects and questions, you MUST respond exclusively in English."}
+    2. ${language === 'SW' ? "LANGUAGE RULE: First, determine the subject of the lesson. If the subject is 'Kiswahili' or 'Swahili', you MUST respond ENTIRELY in Swahili (Kiswahili Sanifu). For ALL other subjects, you MUST respond exclusively in English, even though the user system language is set to Swahili." : "LANGUAGE RULE: If the subject is 'Kiswahili' or 'Swahili' or the question/content is in Swahili, you MUST respond exclusively in Swahili. For ALL other subjects and questions, you MUST respond exclusively in English."}
 3. Extract the Main Topic.
     4. Write a fun, simple Summary(2 - 3 sentences).
     5. List 5 Key Points(Bullet points).
@@ -1158,7 +1174,7 @@ export const generateLessonRecap = async (inputBase64: string, mimeType: string,
   const teacherPrompt = `
     You are a curriculum expert summarizing a lesson for a fellow teacher.
     1. Analyze the recording / notes and identify the subject.
-    2. ${language === 'SW' ? "LANGUAGE RULE: You MUST respond ENTIRELY in rich, immersive, grammatical Swahili (Kiswahili Sanifu). Use comprehensive educational vocabulary in Swahili." : "LANGUAGE RULE: If the subject is 'Kiswahili' or 'Swahili' or the question/content is in Swahili, you MUST respond exclusively in Swahili. For ALL other subjects and questions, you MUST respond exclusively in English."}
+    2. ${language === 'SW' ? "LANGUAGE RULE: First, determine the subject of the lesson. If the subject is 'Kiswahili' or 'Swahili', you MUST respond ENTIRELY in Swahili (Kiswahili Sanifu). For ALL other subjects, you MUST respond exclusively in English, even though the user system language is set to Swahili." : "LANGUAGE RULE: If the subject is 'Kiswahili' or 'Swahili' or the question/content is in Swahili, you MUST respond exclusively in Swahili. For ALL other subjects and questions, you MUST respond exclusively in English."}
 3. Extract Topic and Competencies covered.
     4. Provide a professional Summary.
     5. List Key Teaching Points.
