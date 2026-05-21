@@ -15,7 +15,7 @@ interface Props {
 }
 
 export const PaymentFlow: React.FC<Props> = ({ plan, materialId, onSuccess, onCancel }) => {
-    const { userId, studentProfile, teacherProfile, role, login } = useApp();
+    const { userId, studentProfile, teacherProfile, role, login, registerStudent, refreshProfile } = useApp();
     const [step, setStep] = useState<'INPUT' | 'IFRAME' | 'PROCESSING' | 'SUCCESS' | 'ERROR'>('INPUT');
     const [phone, setPhone] = useState('');
     const [firstName, setFirstName] = useState('');
@@ -127,13 +127,30 @@ export const PaymentFlow: React.FC<Props> = ({ plan, materialId, onSuccess, onCa
                 }
 
                 if (data && data.status === 'SUCCESS') {
+                    // Stop polling while we process success
+                    clearInterval(interval);
+                    
                     setStep('SUCCESS');
                     setTimeout(async () => {
+                        // Polling for profile update to resolve IPN race condition
+                        const checkProfileUpdate = async (profileId: string) => {
+                            for (let i = 0; i < 5; i++) {
+                                const { data: p } = await supabase.from('profiles').select('subscription_tier').eq('id', profileId).maybeSingle();
+                                if (p && p.subscription_tier && p.subscription_tier !== 'FREE') return true;
+                                await new Promise(r => setTimeout(r, 1000));
+                            }
+                            return false;
+                        };
+
                         // Always attempt account handoff after success to avoid guest/paywall loops.
                         if (!isRegistered) {
                             if (existingStudentCode) {
+                                // Guest used existing student ID
+                                if (existingStudentProfileId) await checkProfileUpdate(existingStudentProfileId);
                                 await login(existingStudentCode);
                             } else if (paymentUserId && paymentUserId !== GUEST_DUMMY_UUID) {
+                                // Guest created a new account during payment
+                                await checkProfileUpdate(paymentUserId);
                                 const { data: paidProfile } = await supabase
                                     .from('profiles')
                                     .select('student_id')
@@ -143,9 +160,15 @@ export const PaymentFlow: React.FC<Props> = ({ plan, materialId, onSuccess, onCa
                                     await login(paidProfile.student_id);
                                 }
                             }
+                        } else {
+                            // User is already registered and logged in, refresh context to pick up new tier
+                            if (uid && uid !== GUEST_DUMMY_UUID) {
+                                await checkProfileUpdate(uid);
+                            }
+                            await refreshProfile();
                         }
                         onSuccess();
-                    }, 1500);
+                    }, 2000); // 2 second buffer to allow IPN to save profile
                 } else if (data && data.status === 'FAILED') {
                     setStep('ERROR');
                 }
@@ -248,13 +271,33 @@ export const PaymentFlow: React.FC<Props> = ({ plan, materialId, onSuccess, onCa
         });
 
         try {
-            // Priority for UUID: Auth session > Profile ID > Guest dummy
-            const currentProfileId = studentProfile?.id || teacherProfile?.id;
-            const uid = userId || currentProfileId || existingStudentProfileId || GUEST_DUMMY_UUID;
+            // Auto-register NEW learners so their payment attaches to a real account
+            let finalUid = userId || studentProfile?.id || teacherProfile?.id || existingStudentProfileId;
+            let finalEmail = email || studentProfile?.email || teacherProfile?.email;
+            
+            if (!isRegistered && payerMode === 'NEW') {
+                setIsResolvingStudent(true);
+                const regResult = await registerStudent(`${firstName} ${lastName}`.trim(), 'Unknown', '1234', `254${phone.replace(/^0/, '')}`);
+                if (!regResult.success || !regResult.data) {
+                    setError(regResult.message || 'Failed to create student account automatically.');
+                    setStep('INPUT');
+                    setIsResolvingStudent(false);
+                    return;
+                }
+                
+                // Get the real UID
+                const newCode = regResult.data;
+                const { data: newProfile } = await supabase.from('profiles').select('id, email').eq('student_id', newCode).maybeSingle();
+                if (newProfile?.id) {
+                    finalUid = newProfile.id;
+                    finalEmail = email || newProfile.email;
+                    setExistingStudentCode(newCode); // Save for login later
+                }
+                setIsResolvingStudent(false);
+            }
 
-            // Fallback email for registered users if empty
-            const profileEmail = studentProfile?.email || teacherProfile?.email;
-            const finalEmail = email || profileEmail || (role === 'TEACHER' ? 'teacher@soma.app' : 'learner@soma.app');
+            const uid = finalUid || GUEST_DUMMY_UUID;
+            finalEmail = finalEmail || (role === 'TEACHER' ? 'teacher@soma.app' : 'learner@soma.app');
 
             const response = await pesapalService.initiatePayment(uid, plan, {
                 email: finalEmail,
@@ -367,8 +410,8 @@ export const PaymentFlow: React.FC<Props> = ({ plan, materialId, onSuccess, onCa
                                     </div>
                                 )}
                                 {!isRegistered && payerMode === 'NEW' && (
-                                    <div className="mx-1 p-3 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-xs font-medium">
-                                        To activate immediately after payment, switch to <span className="font-black">Existing Student</span> and verify a SOMA ID.
+                                    <div className="mx-1 p-3 rounded-lg bg-indigo-50 border border-indigo-200 text-indigo-800 text-xs font-medium">
+                                        We will automatically generate a <span className="font-black">SOMA ID</span> for you after payment so you can access your resources on any device.
                                     </div>
                                 )}
 
@@ -543,11 +586,20 @@ export const PaymentFlow: React.FC<Props> = ({ plan, materialId, onSuccess, onCa
                             animate={{ opacity: 1, scale: 1 }}
                             className="p-12 text-center"
                         >
-                            <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-8 text-green-600">
+                            <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6 text-green-600">
                                 <CheckCircle2 className="w-12 h-12" />
                             </div>
                             <h2 className="text-3xl font-black text-slate-900 mb-2">Karibu Pro! 🎉</h2>
-                            <p className="text-slate-500 font-medium">Payment received. Your account is being upgraded right now.</p>
+                            <p className="text-slate-500 font-medium mb-6">Payment received. Your account is being upgraded right now.</p>
+                            
+                            {!isRegistered && existingStudentCode && payerMode === 'NEW' && (
+                                <div className="bg-indigo-50 p-4 rounded-xl border border-indigo-100 text-left">
+                                    <p className="text-xs font-bold text-indigo-600 uppercase tracking-widest mb-2">Save Your Credentials</p>
+                                    <p className="text-sm text-slate-700 mb-1">We created a student account for you:</p>
+                                    <p className="text-lg font-black text-slate-900 font-mono">{existingStudentCode}</p>
+                                    <p className="text-xs text-slate-500 mt-2">PIN: <span className="font-bold">1234</span></p>
+                                </div>
+                            )}
                         </motion.div>
                     )}
 
