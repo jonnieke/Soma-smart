@@ -32,16 +32,38 @@ import { DashboardSidebar, SidebarTab } from '../../components/DashboardSidebar'
 import { classroomService, StudentClassroomSummary } from '../../services/classroomService';
 import { getLearnerCtaVariant } from '../../utils/abExperiments';
 
-const RevisionLanding = React.lazy(() => import('../revision/RevisionLanding').then(module => ({ default: module.RevisionLanding })));
-const RevisionSession = React.lazy(() => import('../revision/RevisionSession').then(module => ({ default: module.RevisionSession })));
-const Community = React.lazy(() => import('../community/Community').then(module => ({ default: module.Community })));
-const LearnerAnalytics = React.lazy(() => import('./LearnerAnalytics').then(module => ({ default: module.LearnerAnalytics })));
-const ConversationalTutor = React.lazy(() => import('./ConversationalTutor').then(module => ({ default: module.ConversationalTutor })));
-const ReferralView = React.lazy(() => import('./ReferralView').then(module => ({ default: module.ReferralView })));
+const safeImport = <T,>(importFn: () => Promise<T>): Promise<T> => {
+  return importFn().catch((err) => {
+    const message = err instanceof Error ? err.message : String(err);
+    const isChunkError = 
+      /failed to fetch/i.test(message) ||
+      /dynamically imported module/i.test(message) ||
+      /loading chunk/i.test(message) ||
+      (err instanceof TypeError);
+    if (isChunkError) {
+      console.warn("Dynamic import failed. Reloading page...", err);
+      const reloadKey = 'soma_chunk_reload';
+      const lastReload = sessionStorage.getItem(reloadKey);
+      const now = Date.now();
+      if (!lastReload || now - parseInt(lastReload, 10) > 10000) {
+        sessionStorage.setItem(reloadKey, now.toString());
+        window.location.reload();
+      }
+    }
+    throw err;
+  });
+};
 
-const loadMemoryService = () => import('../../services/learnerMemoryService');
+const RevisionLanding = React.lazy(() => safeImport(() => import('../revision/RevisionLanding').then(module => ({ default: module.RevisionLanding }))));
+const RevisionSession = React.lazy(() => safeImport(() => import('../revision/RevisionSession').then(module => ({ default: module.RevisionSession }))));
+const Community = React.lazy(() => safeImport(() => import('../community/Community').then(module => ({ default: module.Community }))));
+const LearnerAnalytics = React.lazy(() => safeImport(() => import('./LearnerAnalytics').then(module => ({ default: module.LearnerAnalytics }))));
+const ConversationalTutor = React.lazy(() => safeImport(() => import('./ConversationalTutor').then(module => ({ default: module.ConversationalTutor }))));
+const ReferralView = React.lazy(() => safeImport(() => import('./ReferralView').then(module => ({ default: module.ReferralView }))));
 
-const loadGeminiService = () => import('../../services/learnerGeminiService');
+const loadMemoryService = () => safeImport(() => import('../../services/learnerMemoryService'));
+
+const loadGeminiService = () => safeImport(() => import('../../services/learnerGeminiService'));
 import { RateLimitError } from '../../services/geminiService';
 
 const fileToGenerativePart = async (...args: any[]) => (await loadGeminiService()).fileToGenerativePart(...args as [File]);
@@ -57,7 +79,7 @@ const continueResearch = async (...args: any[]) => ((await loadGeminiService()).
 const summarizeDocument = async (...args: any[]) => ((await loadGeminiService()).summarizeDocument as any)(...args);
 const generateRichLessonNotes = async (...args: any[]) => ((await loadGeminiService()).generateRichLessonNotes as any)(...args);
 const generatePodcastScript = async (...args: any[]) => ((await loadGeminiService()).generatePodcastScript as any)(...args);
-const loadElevenLabsService = () => import('../../services/elevenLabsService');
+const loadElevenLabsService = () => safeImport(() => import('../../services/elevenLabsService'));
 const speak = async (...args: any[]) => ((await loadElevenLabsService()).speak as any)(...args);
 const stopSpeechElevenLabs = () => { void loadElevenLabsService().then(service => service.stopSpeech()); };
 const playPodcast = async (...args: any[]) => ((await loadElevenLabsService()).playPodcast as any)(...args);
