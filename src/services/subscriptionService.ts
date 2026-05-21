@@ -87,55 +87,61 @@ export const updateSubscription = async (userId: string, plan: SubscriptionPlan)
  */
 export const verifyAndFixSubscription = async (userId: string): Promise<boolean> => {
     try {
-        // 1. Find the latest SUCCESS subscription transaction
+        // 1. Find all SUCCESS subscription transactions (bounded window)
         const { data: txs, error } = await supabase
             .from('transactions')
-            .select('*')
+            .select('amount, created_at')
             .eq('user_id', userId)
             .eq('type', 'SUBSCRIPTION')
             .eq('status', 'SUCCESS')
             .order('created_at', { ascending: false })
-            .limit(1);
+            .limit(120);
 
         if (error || !txs || txs.length === 0) return false;
 
-        const lastTx = txs[0];
-        const txDate = new Date(lastTx.created_at);
         const now = new Date();
+        const durationFromAmount = (amount: number): SubscriptionPlan['duration'] => {
+            if (amount === 20) return 'DAILY';
+            if (amount === 100) return 'WEEKLY';
+            if (amount === 300 || amount === 600) return 'MONTHLY';
+            if (amount === 700 || amount === 1600) return 'TERMLY';
+            if (amount === 2000 || amount === 5000) return 'ANNUAL';
+            return 'MONTHLY';
+        };
 
-        // Determine Duration from Amount (Source of Truth)
-        let duration: SubscriptionPlan['duration'] = 'MONTHLY'; // Default
-        if (lastTx.amount === 20) duration = 'DAILY';
-        else if (lastTx.amount === 100) duration = 'WEEKLY';
-        else if (lastTx.amount === 300) duration = 'MONTHLY'; // Teacher Monthly
-        else if (lastTx.amount === 600) duration = 'MONTHLY'; // School/Parent
-        else if (lastTx.amount === 700) duration = 'TERMLY';
-        else if (lastTx.amount === 1600) duration = 'TERMLY';
-        else if (lastTx.amount === 2000) duration = 'ANNUAL';
-        else if (lastTx.amount === 5000) duration = 'ANNUAL';
+        const computeExpiry = (start: Date, duration: SubscriptionPlan['duration']) => {
+            const expiry = new Date(start);
+            switch (duration) {
+                case 'DAILY': expiry.setDate(start.getDate() + 1); break;
+                case 'WEEKLY': expiry.setDate(start.getDate() + 7); break;
+                case 'MONTHLY': expiry.setMonth(start.getMonth() + 1); break;
+                case 'TERMLY': expiry.setMonth(start.getMonth() + 3); break;
+                case 'ANNUAL': expiry.setFullYear(start.getFullYear() + 1); break;
+                default: expiry.setMonth(start.getMonth() + 1);
+            }
+            return expiry;
+        };
 
-        // Calculate Expiry
-        let expiryDate = new Date(txDate);
-        switch (duration) {
-            case 'DAILY': expiryDate.setDate(txDate.getDate() + 1); break;
-            case 'WEEKLY': expiryDate.setDate(txDate.getDate() + 7); break;
-            case 'MONTHLY': expiryDate.setMonth(txDate.getMonth() + 1); break;
-            case 'TERMLY': expiryDate.setMonth(txDate.getMonth() + 3); break;
-            case 'ANNUAL': expiryDate.setFullYear(txDate.getFullYear() + 1); break;
-            default: expiryDate.setMonth(txDate.getMonth() + 1);
+        // Choose the best active entitlement (furthest future expiry), not merely latest tx.
+        let best: { duration: SubscriptionPlan['duration']; expiry: Date } | null = null;
+        for (const tx of txs) {
+            const txDate = new Date(tx.created_at);
+            if (isNaN(txDate.getTime())) continue;
+            const duration = durationFromAmount(Number(tx.amount));
+            const expiry = computeExpiry(txDate, duration);
+            if (expiry <= now) continue;
+            if (!best || expiry > best.expiry) {
+                best = { duration, expiry };
+            }
         }
 
-        // If expiry is in the future, FIX the profile
-        if (expiryDate > now) {
+        if (!best) return false;
 
-            await supabase.from('profiles').update({
-                subscription_tier: duration,
-                subscription_expiry: expiryDate.toISOString()
-            }).eq('id', userId);
-            return true;
-        }
-
-        return false;
+        await supabase.from('profiles').update({
+            subscription_tier: best.duration,
+            subscription_expiry: best.expiry.toISOString()
+        }).eq('id', userId);
+        return true;
 
     } catch (e) {
         console.error("Verify Fix Error:", e);

@@ -81,7 +81,8 @@ export const RevisionLanding: React.FC<Props> = ({ onStartSession, onNavigate, o
 
     const subjects = useMemo(() => {
         const s = new Set(allItems.map(r => r.subject).filter(Boolean));
-        return ['All', ...s];
+        const uniqueSubjects = Array.from(s).filter(sub => sub.toLowerCase() !== 'all');
+        return ['All', ...uniqueSubjects];
     }, [allItems]);
 
     const filteredItems = useMemo(() => {

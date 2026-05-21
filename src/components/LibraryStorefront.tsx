@@ -55,7 +55,7 @@ export const LibraryStorefront: React.FC<LibraryStorefrontProps> = ({ onGetAcces
         fetch();
     }, []);
 
-    const subjects = ['ALL', ...Array.from(new Set(items.map(i => i.subject).filter(Boolean)))];
+    const subjects = ['ALL', ...Array.from(new Set(items.map(i => i.subject).filter(Boolean))).filter(s => s.toUpperCase() !== 'ALL')];
 
     const filtered = items
         .filter(i => (activeTab === 'ALL' || i.type === activeTab) && (activeSubject === 'ALL' || i.subject === activeSubject))

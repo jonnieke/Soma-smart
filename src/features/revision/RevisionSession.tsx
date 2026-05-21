@@ -119,7 +119,8 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
                     const res = data as any;
                     // Exams are actually stored in knowledge-base, not syllabus-docs
                     const bucket = res.category === 'SYLLABUS' ? 'syllabus-docs' : 'knowledge-base';
-                    const docUrl = `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/${bucket}/${res.file_path}`;
+                    const encodedPath = res.file_path.split('/').map(encodeURIComponent).join('/');
+                    const docUrl = `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/${bucket}/${encodedPath}`;
                     setLoadingText('Fetching and analyzing document...');
 
                     try {

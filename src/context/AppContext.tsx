@@ -490,8 +490,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           });
         }
 
-        // Check subscription
-        const access = await checkSubscriptionAccess(currentUserId, profile.role === 'TEACHER' ? 'TEACHER' : 'STUDENT');
+        // Check subscription (with self-heal retry in case profile state is stale)
+        const segment = profile.role === 'TEACHER' ? 'TEACHER' : 'STUDENT';
+        let access = await checkSubscriptionAccess(currentUserId, segment);
+        if (!access.isPro) {
+          const repaired = await verifyAndFixSubscription(currentUserId);
+          if (repaired) {
+            access = await checkSubscriptionAccess(currentUserId, segment);
+          }
+        }
         setIsPro(access.isPro);
         setSubscriptionPlan(access.tier);
         setSubscriptionExpiry(access.expiry);

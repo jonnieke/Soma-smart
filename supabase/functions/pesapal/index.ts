@@ -128,10 +128,22 @@ serve(async (req) => {
                         default: expiryDate.setMonth(now.getMonth() + 1);
                     }
 
-                    await supabase.from('profiles').update({
-                        subscription_tier: duration,
-                        subscription_expiry: expiryDate.toISOString()
-                    }).eq('id', tx.user_id)
+                    // Guard against accidental downgrade: only move forward if this expiry is later.
+                    const { data: currentProfile } = await supabase
+                        .from('profiles')
+                        .select('subscription_expiry')
+                        .eq('id', tx.user_id)
+                        .maybeSingle()
+
+                    const currentExpiry = currentProfile?.subscription_expiry ? new Date(currentProfile.subscription_expiry) : null
+                    const shouldUpdate = !currentExpiry || isNaN(currentExpiry.getTime()) || expiryDate > currentExpiry
+
+                    if (shouldUpdate) {
+                        await supabase.from('profiles').update({
+                            subscription_tier: duration,
+                            subscription_expiry: expiryDate.toISOString()
+                        }).eq('id', tx.user_id)
+                    }
                 }
             } else if (['failed', 'invalid', 'cancelled', 'canceled'].includes(statusDescription)) {
                 await supabase

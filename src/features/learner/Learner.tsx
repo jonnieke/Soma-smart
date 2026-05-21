@@ -335,6 +335,15 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
   const [showExpiryModal, setShowExpiryModal] = useState(false); // New State
   const [hasRecentPaymentUnlock, setHasRecentPaymentUnlock] = useState(false);
   const resumeBypassRef = useRef(false);
+  const subscriptionRepairAttemptedRef = useRef(false);
+
+  useEffect(() => {
+    if (!isRegistered || isPro || subscriptionRepairAttemptedRef.current) return;
+    subscriptionRepairAttemptedRef.current = true;
+    verifySubscription().catch((err) => {
+      console.warn('Subscription self-heal check failed:', err);
+    });
+  }, [isRegistered, isPro, verifySubscription]);
 
   // Subscription Expiry Check
   useEffect(() => {
