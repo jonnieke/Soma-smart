@@ -80,6 +80,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
     const [showLogin, setShowLogin] = useState(false);
     const [showRegister, setShowRegister] = useState(false);
     const [authTab, setAuthTab] = useState<'TEACHER' | 'SCHOOL'>('TEACHER');
+    const [workflowStepSignal, setWorkflowStepSignal] = useState<{ step: 'GENERATE_ASSESSMENT' | 'PUBLISH_STREAM'; message: string; at: number } | null>(null);
 
     const trackFunnelEvent = (eventName: string, params: Record<string, unknown> = {}) => {
         try {
@@ -232,7 +233,6 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
     const chunksRef = useRef<Blob[]>([]);
     const teacherNoticeTimeoutRef = useRef<number | null>(null);
-    const [workflowStepSignal, setWorkflowStepSignal] = useState<{ step: 'GENERATE_ASSESSMENT' | 'PUBLISH_STREAM'; message: string; at: number } | null>(null);
 
     const showTeacherNotice = (type: 'success' | 'error' | 'info', text: string) => {
         if (teacherNoticeTimeoutRef.current) {
