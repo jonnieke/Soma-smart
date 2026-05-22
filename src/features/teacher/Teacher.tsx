@@ -23,22 +23,23 @@ import { classroomService } from '../../services/classroomService';
 
 import { useNavigate, useLocation } from 'react-router-dom';
 import logoImg from '../../assets/images/main_logo.png';
+import { safeImport } from '../../utils/safeImport';
 
 type TeacherGeminiService = typeof import('../../services/geminiService');
 
-const loadTeacherGeminiService = () => import('../../services/geminiService');
-const DarasaMode = React.lazy(() => import('./DarasaMode').then(module => ({ default: module.DarasaMode })));
-const MyClassroom = React.lazy(() => import('./MyClassroom').then(module => ({ default: module.MyClassroom })));
-const CreationHub = React.lazy(() => import('./CreationHub').then(module => ({ default: module.CreationHub })));
-const MarketplaceManager = React.lazy(() => import('./MarketplaceManager').then(module => ({ default: module.MarketplaceManager })));
-const MarkingManager = React.lazy(() => import('./MarkingManager').then(module => ({ default: module.MarkingManager })));
-const TeacherReports = React.lazy(() => import('./TeacherReports').then(module => ({ default: module.TeacherReports })));
-const TeacherDashboardOverview = React.lazy(() => import('./TeacherDashboardOverview').then(module => ({ default: module.TeacherDashboardOverview })));
-const SchemesView = React.lazy(() => import('./SchemesView').then(module => ({ default: module.SchemesView })));
-const LessonPolisherView = React.lazy(() => import('./LessonPolisherView').then(module => ({ default: module.LessonPolisherView })));
-const DigitalBlackboard = React.lazy(() => import('./DigitalBlackboard').then(module => ({ default: module.DigitalBlackboard })));
-const HomeworkCreator = React.lazy(() => import('./HomeworkCreator').then(module => ({ default: module.HomeworkCreator })));
-const PdfPageSelector = React.lazy(() => import('../../components/PdfPageSelector').then(module => ({ default: module.PdfPageSelector })));
+const loadTeacherGeminiService = () => safeImport(() => import('../../services/geminiService'));
+const DarasaMode = React.lazy(() => safeImport(() => import('./DarasaMode').then(module => ({ default: module.DarasaMode }))));
+const MyClassroom = React.lazy(() => safeImport(() => import('./MyClassroom').then(module => ({ default: module.MyClassroom }))));
+const CreationHub = React.lazy(() => safeImport(() => import('./CreationHub').then(module => ({ default: module.CreationHub }))));
+const MarketplaceManager = React.lazy(() => safeImport(() => import('./MarketplaceManager').then(module => ({ default: module.MarketplaceManager }))));
+const MarkingManager = React.lazy(() => safeImport(() => import('./MarkingManager').then(module => ({ default: module.MarkingManager }))));
+const TeacherReports = React.lazy(() => safeImport(() => import('./TeacherReports').then(module => ({ default: module.TeacherReports }))));
+const TeacherDashboardOverview = React.lazy(() => safeImport(() => import('./TeacherDashboardOverview').then(module => ({ default: module.TeacherDashboardOverview }))));
+const SchemesView = React.lazy(() => safeImport(() => import('./SchemesView').then(module => ({ default: module.SchemesView }))));
+const LessonPolisherView = React.lazy(() => safeImport(() => import('./LessonPolisherView').then(module => ({ default: module.LessonPolisherView }))));
+const DigitalBlackboard = React.lazy(() => safeImport(() => import('./DigitalBlackboard').then(module => ({ default: module.DigitalBlackboard }))));
+const HomeworkCreator = React.lazy(() => safeImport(() => import('./HomeworkCreator').then(module => ({ default: module.HomeworkCreator }))));
+const PdfPageSelector = React.lazy(() => safeImport(() => import('../../components/PdfPageSelector').then(module => ({ default: module.PdfPageSelector }))));
 
 const TeacherToolFallback = () => (
     <div className="min-h-[320px] rounded-[2rem] border-2 border-slate-100 bg-white flex flex-col items-center justify-center text-slate-400">

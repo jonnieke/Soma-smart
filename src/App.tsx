@@ -10,34 +10,35 @@ import { AdminGuard } from './components/AdminGuard';
 import ReactGA from "react-ga4";
 import { useLocation } from 'react-router-dom';
 import { flushMasterySyncQueue } from './services/learnerMemoryService';
+import { safeImport } from './utils/safeImport';
 
 // Lazy Load Pages for Performance
-const LandingPage = React.lazy(() => import('./pages/LandingPage').then(module => ({ default: module.LandingPage })));
-const LearnerPage = React.lazy(() => import('./pages/LearnerPage').then(module => ({ default: module.LearnerPage })));
-const TeacherPage = React.lazy(() => import('./pages/TeacherPage').then(module => ({ default: module.TeacherPage })));
-const ParentPage = React.lazy(() => import('./pages/ParentPage').then(module => ({ default: module.ParentPage })));
-const AdminDashboard = React.lazy(() => import('./features/admin/Admin').then(module => ({ default: module.AdminDashboard })));
-const AdminKnowledgeBase = React.lazy(() => import('./features/admin/KnowledgeBase').then(module => ({ default: module.AdminKnowledgeBase })));
-const RevisionPortal = React.lazy(() => import('./features/revision/RevisionPortal').then(module => ({ default: module.RevisionPortal })));
-const RevisionDashboard = React.lazy(() => import('./features/revision/RevisionDashboard').then(module => ({ default: module.RevisionDashboard })));
-const ResetPassword = React.lazy(() => import('./pages/ResetPassword').then(module => ({ default: module.ResetPassword })));
-const PricingPage = React.lazy(() => import('./pages/PricingPage').then(module => ({ default: module.PricingPage })));
-const SchoolDashboard = React.lazy(() => import('./features/school/SchoolDashboard').then(module => ({ default: module.SchoolDashboard })));
-const OfflinePage = React.lazy(() => import('./pages/OfflinePage').then(module => ({ default: module.OfflinePage })));
-const GuestQuiz = React.lazy(() => import('./pages/GuestQuiz').then(module => ({ default: module.GuestQuiz })));
-const ClassJoinPage = React.lazy(() => import('./pages/ClassJoinPage').then(module => ({ default: module.ClassJoinPage })));
+const LandingPage = React.lazy(() => safeImport(() => import('./pages/LandingPage').then(module => ({ default: module.LandingPage }))));
+const LearnerPage = React.lazy(() => safeImport(() => import('./pages/LearnerPage').then(module => ({ default: module.LearnerPage }))));
+const TeacherPage = React.lazy(() => safeImport(() => import('./pages/TeacherPage').then(module => ({ default: module.TeacherPage }))));
+const ParentPage = React.lazy(() => safeImport(() => import('./pages/ParentPage').then(module => ({ default: module.ParentPage }))));
+const AdminDashboard = React.lazy(() => safeImport(() => import('./features/admin/Admin').then(module => ({ default: module.AdminDashboard }))));
+const AdminKnowledgeBase = React.lazy(() => safeImport(() => import('./features/admin/KnowledgeBase').then(module => ({ default: module.AdminKnowledgeBase }))));
+const RevisionPortal = React.lazy(() => safeImport(() => import('./features/revision/RevisionPortal').then(module => ({ default: module.RevisionPortal }))));
+const RevisionDashboard = React.lazy(() => safeImport(() => import('./features/revision/RevisionDashboard').then(module => ({ default: module.RevisionDashboard }))));
+const ResetPassword = React.lazy(() => safeImport(() => import('./pages/ResetPassword').then(module => ({ default: module.ResetPassword }))));
+const PricingPage = React.lazy(() => safeImport(() => import('./pages/PricingPage').then(module => ({ default: module.PricingPage }))));
+const SchoolDashboard = React.lazy(() => safeImport(() => import('./features/school/SchoolDashboard').then(module => ({ default: module.SchoolDashboard }))));
+const OfflinePage = React.lazy(() => safeImport(() => import('./pages/OfflinePage').then(module => ({ default: module.OfflinePage }))));
+const GuestQuiz = React.lazy(() => safeImport(() => import('./pages/GuestQuiz').then(module => ({ default: module.GuestQuiz }))));
+const ClassJoinPage = React.lazy(() => safeImport(() => import('./pages/ClassJoinPage').then(module => ({ default: module.ClassJoinPage }))));
 
 // Exam Rooms Pages
-const ExamRoomsListPage = React.lazy(() => import('./pages/ExamRoomsListPage').then(module => ({ default: module.ExamRoomsListPage })));
-const ExamRoomChatPage = React.lazy(() => import('./pages/ExamRoomChatPage').then(module => ({ default: module.ExamRoomChatPage })));
+const ExamRoomsListPage = React.lazy(() => safeImport(() => import('./pages/ExamRoomsListPage').then(module => ({ default: module.ExamRoomsListPage }))));
+const ExamRoomChatPage = React.lazy(() => safeImport(() => import('./pages/ExamRoomChatPage').then(module => ({ default: module.ExamRoomChatPage }))));
 
 // Campus Pages
-const CampusPage = React.lazy(() => import('./pages/CampusPage').then(module => ({ default: module.CampusPage })));
+const CampusPage = React.lazy(() => safeImport(() => import('./pages/CampusPage').then(module => ({ default: module.CampusPage }))));
 
 // Blog Pages
-const BlogIndex = React.lazy(() => import('./pages/Blog/BlogIndex').then(module => ({ default: module.BlogIndex })));
-const BlogPost = React.lazy(() => import('./pages/Blog/BlogPost').then(module => ({ default: module.BlogPost })));
-const AskSomo = React.lazy(() => import('./components/AskSomo').then(module => ({ default: module.AskSomo })));
+const BlogIndex = React.lazy(() => safeImport(() => import('./pages/Blog/BlogIndex').then(module => ({ default: module.BlogIndex }))));
+const BlogPost = React.lazy(() => safeImport(() => import('./pages/Blog/BlogPost').then(module => ({ default: module.BlogPost }))));
+const AskSomo = React.lazy(() => safeImport(() => import('./components/AskSomo').then(module => ({ default: module.AskSomo }))));
 
 // Loading Fallback Component
 const PageLoader = () => (

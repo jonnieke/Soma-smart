@@ -31,28 +31,8 @@ import { ThemeToggle } from '../../components/ThemeToggle';
 import { DashboardSidebar, SidebarTab } from '../../components/DashboardSidebar';
 import { classroomService, StudentClassroomSummary } from '../../services/classroomService';
 import { getLearnerCtaVariant } from '../../utils/abExperiments';
-
-const safeImport = <T,>(importFn: () => Promise<T>): Promise<T> => {
-  return importFn().catch((err) => {
-    const message = err instanceof Error ? err.message : String(err);
-    const isChunkError = 
-      /failed to fetch/i.test(message) ||
-      /dynamically imported module/i.test(message) ||
-      /loading chunk/i.test(message) ||
-      (err instanceof TypeError);
-    if (isChunkError) {
-      console.warn("Dynamic import failed. Reloading page...", err);
-      const reloadKey = 'soma_chunk_reload';
-      const lastReload = sessionStorage.getItem(reloadKey);
-      const now = Date.now();
-      if (!lastReload || now - parseInt(lastReload, 10) > 10000) {
-        sessionStorage.setItem(reloadKey, now.toString());
-        window.location.reload();
-      }
-    }
-    throw err;
-  });
-};
+import { QuestRoadmap } from './QuestRoadmap';
+import { safeImport } from '../../utils/safeImport';
 
 const RevisionLanding = React.lazy(() => safeImport(() => import('../revision/RevisionLanding').then(module => ({ default: module.RevisionLanding }))));
 const RevisionSession = React.lazy(() => safeImport(() => import('../revision/RevisionSession').then(module => ({ default: module.RevisionSession }))));
@@ -85,10 +65,18 @@ const stopSpeechElevenLabs = () => { void loadElevenLabsService().then(service =
 const playPodcast = async (...args: any[]) => ((await loadElevenLabsService()).playPodcast as any)(...args);
 const cancelPodcast = () => { void loadElevenLabsService().then(service => service.cancelPodcast()); };
 
+// ─── Branded lazy-load skeleton ───────────────────────────────────────────────
 const DeferredViewLoader = () => (
-  <div className="min-h-[60vh] flex items-center justify-center text-slate-500">
-    <Loader2 className="w-6 h-6 animate-spin mr-2" />
-    <span className="text-sm font-bold">Loading...</span>
+  <div className="min-h-[60vh] flex flex-col items-center justify-center gap-5 text-slate-400">
+    {/* Animated indigo bar */}
+    <div className="w-48 h-1.5 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
+      <div
+        className="h-full bg-gradient-to-r from-indigo-500 via-violet-500 to-indigo-500 rounded-full"
+        style={{ animation: 'soma-shimmer 1.6s ease-in-out infinite', backgroundSize: '200% 100%' }}
+      />
+    </div>
+    <style>{`@keyframes soma-shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}`}</style>
+    <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">Loading Somo&hellip;</p>
   </div>
 );
 
@@ -116,8 +104,8 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
     extraDownloads, grantExtraDownloads,
     verifySubscription, login,
     // Phase 2/3: Adaptive Tutoring & Evolutionary Educator
-    masteryGraph, dueForReview, weakTopics, processQuizCompletion, addSpacedRepetitionItem,
-    getPersonalizedDailyChallenge, activeStrategies, educationLevel
+    masteryGraph, spacedRepetitionItems, dueForReview, weakTopics, processQuizCompletion, addSpacedRepetitionItem,
+    getPersonalizedDailyChallenge, activeStrategies, educationLevel, updateTopicMastery
   } = useApp();
   const t = translations[language];
   const location = useLocation();
@@ -138,8 +126,9 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
     initialTab === 'RESOURCES' ? 'MARKETPLACE' :
       initialTab === 'PROGRESS' ? 'HISTORY' :
         initialTab === 'SUBJECTS' ? 'REVISION' :
-          initialTab === 'COMMUNITY' ? 'COMMUNITY' :
-            initialTab === 'TALKBACK' ? 'TALKBACK' : 'MENU';
+          initialTab === 'QUEST_MAP' ? 'QUEST_MAP' :
+            initialTab === 'COMMUNITY' ? 'COMMUNITY' :
+              initialTab === 'TALKBACK' ? 'TALKBACK' : 'MENU';
 
   // Find active plan details
   const activePlanDetails = React.useMemo(() => {
@@ -254,7 +243,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
     }
   }, [isRegistered, role, navigate, location]);
 
-  const [mode, setMode] = useState<'MENU' | 'SCAN' | 'RESULT' | 'QUIZ' | 'RECAP_RESULT' | 'PROFILE' | 'PRICING' | 'PAYMENT' | 'MARKETPLACE' | 'LIBRARY' | 'HISTORY' | 'SCAN_EXPLAIN' | 'STUDY' | 'REQUESTS' | 'COMMUNITY' | 'REVISION' | 'REVISION_SESSION' | 'ANALYTICS' | 'TALKBACK' | 'REFERRAL'>(initialMode as any);
+  const [mode, setMode] = useState<'MENU' | 'SCAN' | 'RESULT' | 'QUIZ' | 'RECAP_RESULT' | 'PROFILE' | 'PRICING' | 'PAYMENT' | 'MARKETPLACE' | 'LIBRARY' | 'HISTORY' | 'SCAN_EXPLAIN' | 'STUDY' | 'REQUESTS' | 'COMMUNITY' | 'REVISION' | 'REVISION_SESSION' | 'ANALYTICS' | 'TALKBACK' | 'REFERRAL' | 'QUEST_MAP' | 'FLASHCARDS'>(initialMode as any);
 
   // --- LEARNER MEMORY (Cloud Sync + Personalized Greeting) ---
   const [showMasteryDashboard, setShowMasteryDashboard] = useState(false);
@@ -302,6 +291,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
   const [podcastScript, setPodcastScript] = useState<PodcastScript | null>(null);
   const [isPodcastPlaying, setIsPodcastPlaying] = useState(false);
   const [currentSegmentIndex, setCurrentSegmentIndex] = useState(-1);
+  const [podcastTotalSegments, setPodcastTotalSegments] = useState(0);
   const [podcastLoading, setPodcastLoading] = useState(false);
 
   // Faded Solution State from Hero
@@ -358,6 +348,25 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
   const [hasRecentPaymentUnlock, setHasRecentPaymentUnlock] = useState(false);
   const resumeBypassRef = useRef(false);
   const subscriptionRepairAttemptedRef = useRef(false);
+
+  // --- Spaced Repetition (Flashcards) States & Confetti Hook ---
+  const [currentCardIndex, setCurrentCardIndex] = useState(0);
+  const [isFlipped, setIsFlipped] = useState(false);
+  const [reviewComplete, setReviewComplete] = useState(false);
+  const [practiceMode, setPracticeMode] = useState<'due' | 'all'>('due');
+
+  useEffect(() => {
+    if (reviewComplete) {
+      import('canvas-confetti').then(confetti => {
+        confetti.default({
+          particleCount: 180,
+          spread: 80,
+          origin: { y: 0.5 },
+          colors: ['#6366f1', '#a855f7', '#10b981', '#f59e0b']
+        });
+      });
+    }
+  }, [reviewComplete]);
 
   useEffect(() => {
     if (!isRegistered || isPro || subscriptionRepairAttemptedRef.current) return;
@@ -569,24 +578,70 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
     return EducationLevel.SENIOR;
   };
 
+  const getAcademicCluster = (grade: string): 'LOWER_PRIMARY' | 'UPPER_PRIMARY' | 'JUNIOR_SECONDARY' | 'SENIOR_SECONDARY' | 'CAMPUS' | 'UNKNOWN' => {
+    const g = String(grade || "").toLowerCase().trim();
+    if (!g) return 'UNKNOWN';
+
+    if (g.includes('university') || g.includes('college') || g.includes('campus') || g.includes('year') || g.includes('degree') || g.includes('diploma')) {
+      return 'CAMPUS';
+    }
+
+    if (g.includes('pp1') || g.includes('pp2') || g.includes('pre-unit') || g.includes('nursery')) {
+      return 'LOWER_PRIMARY';
+    }
+
+    if (g.match(/\bgrade\s*[1-3]\b/) || g === '1' || g === '2' || g === '3') {
+      return 'LOWER_PRIMARY';
+    }
+
+    if (g.match(/\bgrade\s*[4-6]\b/) || g === '4' || g === '5' || g === '6') {
+      return 'UPPER_PRIMARY';
+    }
+
+    if (g.includes('jss') || g.match(/\bgrade\s*[7-9]\b/) || g === '7' || g === '8' || g === '9') {
+      return 'JUNIOR_SECONDARY';
+    }
+
+    if (g.includes('form') || g.match(/\bgrade\s*(1[0-2])\b/) || g === '10' || g === '11' || g === '12' || g.includes('kcse')) {
+      return 'SENIOR_SECONDARY';
+    }
+
+    const numMatch = g.match(/\d+/);
+    if (numMatch) {
+      const num = parseInt(numMatch[0], 10);
+      if (num >= 1 && num <= 3) return 'LOWER_PRIMARY';
+      if (num >= 4 && num <= 6) return 'UPPER_PRIMARY';
+      if (num >= 7 && num <= 9) return 'JUNIOR_SECONDARY';
+      if (num >= 10 && num <= 12) return 'SENIOR_SECONDARY';
+    }
+
+    return 'UNKNOWN';
+  };
+
   const normalizeGrade = (g: any) => {
     const str = String(g || "").toLowerCase();
     return str.replace(/\s*grade\s*/g, '').replace(/\s*\(jss\)\s*/g, '').trim() || "";
+  };
+
+  const isGradeInStudentRange = (materialGrade: string, studentGrade: string): boolean => {
+    if (!studentGrade) return true;
+    const materialCluster = getAcademicCluster(materialGrade);
+    const studentCluster = getAcademicCluster(studentGrade);
+    
+    if (materialCluster === 'UNKNOWN' || materialCluster === 'all') return true;
+    if (studentCluster === 'UNKNOWN') return true;
+
+    return materialCluster === studentCluster;
   };
 
   const gradeFilteredMaterials = React.useMemo(() => {
     // First filter by education level to prevent cross-level content
     const levelFiltered = unifiedMaterials.filter(m => getGradeLevel(m.grade || '') === educationLevel);
 
-    const studentGrade = normalizeGrade(studentProfile?.grade || "");
-    const exactMatches = levelFiltered.filter(m => {
-      if (!studentGrade) return true;
-      return normalizeGrade(m.grade) === studentGrade;
+    const result = levelFiltered.filter(m => {
+      if (!studentProfile?.grade) return true;
+      return isGradeInStudentRange(m.grade || '', studentProfile.grade);
     });
-
-    // If we have exact matches for student's grade, show only those.
-    // If NOT, show level-filtered materials as a fallback so the screen isn't empty.
-    const result = exactMatches.length > 0 ? exactMatches : levelFiltered;
 
     return result;
   }, [unifiedMaterials, studentProfile?.grade, educationLevel]);
@@ -603,11 +658,17 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
   const filteredMaterials = React.useMemo(() => {
     return unifiedMaterials.filter(m => {
       const normalizedCategory = normalizeMaterialCategory(m.category);
-      const isVerifiedStarter = Boolean(m.isVerified) && (normalizedCategory === 'NOTES' || normalizedCategory === 'PAST_PAPER');
 
       // 0. Education level filter: prevent cross-level content leakage
       const materialLevel = getGradeLevel(m.grade || '');
-      if (!isVerifiedStarter && materialLevel !== educationLevel) return false;
+      if (materialLevel !== educationLevel) return false;
+
+      // 0b. Profile-level Grade Range Filter for ALL materials
+      if (studentProfile?.grade) {
+        if (!isGradeInStudentRange(m.grade || '', studentProfile.grade)) {
+          return false;
+        }
+      }
 
       // 1. Category Filter
       if (materialCategory !== 'ALL' && m.category !== materialCategory) return false;
@@ -621,7 +682,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
 
       return true;
     });
-  }, [unifiedMaterials, materialCategory, subjectFilter, selectedGrade, selectedSource, educationLevel]);
+  }, [unifiedMaterials, materialCategory, subjectFilter, selectedGrade, selectedSource, educationLevel, studentProfile?.grade]);
 
   const isStarterCategory = (category: string) =>
     ['SYLLABUS', 'NOTES', 'PAST_PAPER'].includes(normalizeMaterialCategory(category));
@@ -1274,6 +1335,9 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
       case 'SMART_TUTOR':
         setMode('SCAN_EXPLAIN');
         break;
+      case 'QUEST_MAP':
+        setMode('QUEST_MAP');
+        break;
       case 'RESOURCES':
         setMode('MARKETPLACE');
         break;
@@ -1770,6 +1834,10 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
         })
       });
 
+      // Update baseline topic mastery on studying a topic (40%) and trigger immediate cloud sync
+      updateTopicMastery(result.topic, 40);
+      triggerMemorySync();
+
       // Trigger background quiz generation
       generateQuickQuiz(result.explanation, result.topic, language)
         .then(data => setStickyQuizData(data))
@@ -1972,8 +2040,22 @@ ${explanation.explanation}
     }
 
     if (podcastScript) {
-      // Resume or Restart? For now, restart.
+      // Restart from beginning
+      setCurrentSegmentIndex(0);
       setIsPodcastPlaying(true);
+
+      if (explanation) {
+        updateTopicMastery(explanation.topic, 50);
+        saveActivity({
+          id: Date.now().toString(),
+          type: 'STUDY',
+          topic: explanation.topic,
+          date: new Date().toLocaleDateString(),
+          details: JSON.stringify({ mode: 'podcast_recap', xpEarned: 30 })
+        });
+        triggerMemorySync();
+      }
+
       playPodcast(
         podcastScript.script,
         (idx) => setCurrentSegmentIndex(idx),
@@ -1988,10 +2070,22 @@ ${explanation.explanation}
     if (!checkLimit({ type: 'PODCAST' })) return;
     try {
       setPodcastLoading(true);
+      setCurrentSegmentIndex(-1);
       const script = await generatePodcastScript(explanation.explanation, explanation.topic);
       setPodcastScript(script);
+      setPodcastTotalSegments(script.script.length);
       setPodcastLoading(false);
       setIsPodcastPlaying(true);
+
+      updateTopicMastery(explanation.topic, 50);
+      saveActivity({
+        id: Date.now().toString(),
+        type: 'STUDY',
+        topic: explanation.topic,
+        date: new Date().toLocaleDateString(),
+        details: JSON.stringify({ mode: 'podcast_recap', xpEarned: 30 })
+      });
+      triggerMemorySync();
 
       playPodcast(
         script.script,
@@ -2007,6 +2101,82 @@ ${explanation.explanation}
     }
   };
 
+  const handlePodcastSkip = () => {
+    if (!podcastScript) return;
+    const nextIdx = currentSegmentIndex + 1;
+    if (nextIdx >= podcastScript.script.length) {
+      cancelPodcast();
+      setIsPodcastPlaying(false);
+      setCurrentSegmentIndex(-1);
+      return;
+    }
+    cancelPodcast();
+    const remaining = podcastScript.script.slice(nextIdx);
+    setCurrentSegmentIndex(nextIdx);
+    setIsPodcastPlaying(true);
+    playPodcast(
+      remaining,
+      (idx) => setCurrentSegmentIndex(nextIdx + idx),
+      () => setIsPodcastPlaying(false),
+      (err) => setError({ title: "Audio Error", message: err.message || "Failed to play segment." })
+    );
+  };
+
+  const handlePodcastRegenerate = () => {
+    cancelPodcast();
+    setIsPodcastPlaying(false);
+    setPodcastScript(null);
+    setPodcastTotalSegments(0);
+    setCurrentSegmentIndex(-1);
+    // Kick off generation again after state settles
+    setTimeout(() => handlePodcastToggle(), 100);
+  };
+
+  const autoPlayPodcastRef = useRef<boolean>(false);
+
+  useEffect(() => {
+    if (mode === 'RESULT' && explanation && autoPlayPodcastRef.current) {
+      autoPlayPodcastRef.current = false;
+      setTimeout(() => {
+        handlePodcastToggle();
+      }, 500);
+    }
+  }, [mode, explanation]);
+
+  const handleQuestStudyTopic = (topic: string) => {
+    handleTopicClick(topic);
+  };
+
+  const handleQuestTakeQuiz = async (topic: string) => {
+    if (!checkLimit({ type: 'STUDY_QUIZ' })) return;
+    setLoading(true);
+    setError(null);
+    setLoadingText(`Akili is crafting a quiz on ${topic}...`);
+    setMode('SCAN'); // Show loading screen
+    try {
+      const quiz = await generateQuickQuiz(
+        `Create a learner-ready quiz on ${topic}. Test key definitions, process steps, misconceptions, and exam-style understanding.`,
+        topic,
+        language
+      );
+      setQuizData(quiz);
+      setStickyQuizTaken(true);
+      trackFunnelEvent('learner_quiz_started', {
+        source: 'quest_roadmap',
+        topic: topic
+      });
+      setMode('QUIZ');
+    } catch (e) {
+      console.error(e);
+      setLoading(false);
+      setError({ title: "Quiz Generation Error", message: "Failed to generate quick quiz." });
+    }
+  };
+
+  const handleQuestListenRecap = (topic: string) => {
+    autoPlayPodcastRef.current = true;
+    handleTopicClick(topic);
+  };
 
   // Remove unused playBuffer helper
   // eslint-disable-next-line @typescript-eslint/no-empty-function
@@ -2014,6 +2184,352 @@ ${explanation.explanation}
 
   // --- VIEWS ---
   const renderMode = () => {
+    if (mode === 'FLASHCARDS') {
+      const flashcardItems = (practiceMode === 'due' ? dueForReview : spacedRepetitionItems)
+        .filter(item => item.question && item.answer);
+
+      const totalFlashcards = spacedRepetitionItems?.filter(i => i.question && i.answer).length || 0;
+      const dueFlashcardsCount = dueForReview?.filter(i => i.question && i.answer).length || 0;
+
+      const handleSeed = () => {
+        const samples = [
+          {
+            topic: "Photosynthesis",
+            subject: "Biology",
+            grade: "Form 1",
+            nextReviewDate: new Date().toISOString(),
+            intervalDays: 1,
+            easeFactor: 2.5,
+            lastScore: 0,
+            reviewCount: 0,
+            question: "What are the raw materials and products of photosynthesis in plants?",
+            answer: "Raw Materials:\n- Carbon dioxide (absorbed through stomata)\n- Water (absorbed through roots)\n\nProducts:\n- Glucose (chemical energy stored as starch)\n- Oxygen gas (released as a byproduct through stomata)\n\nReaction Equation:\n6CO₂ + 6H₂O + light → C₆H₁₂O₆ + 6O₂"
+          },
+          {
+            topic: "Quadratic Equations",
+            subject: "Mathematics",
+            grade: "Form 2",
+            nextReviewDate: new Date().toISOString(),
+            intervalDays: 1,
+            easeFactor: 2.5,
+            lastScore: 0,
+            reviewCount: 0,
+            question: "State the quadratic formula and explain what the discriminant determines about the roots.",
+            answer: "Quadratic Formula:\nx = [-b ± √(b² - 4ac)] / (2a)\n\nDiscriminant (D = b² - 4ac):\n1. D > 0: Two distinct real roots.\n2. D = 0: One repeated real root (equal roots).\n3. D < 0: Two complex/imaginary roots."
+          },
+          {
+            topic: "Devolution in Kenya",
+            subject: "History & Government",
+            grade: "Form 4",
+            nextReviewDate: new Date().toISOString(),
+            intervalDays: 1,
+            easeFactor: 2.5,
+            lastScore: 0,
+            reviewCount: 0,
+            question: "What are the primary objectives of devolving governance to the 47 counties in Kenya?",
+            answer: "Primary Objectives:\n1. Promote democratic and accountable exercise of power.\n2. Foster national unity by recognizing diversity.\n3. Give powers of self-governance to the people and enhance their participation.\n4. Ensure equitable sharing of national and local resources across Kenya.\n5. Facilitate the decentralization of state organs and public services from the capital."
+          }
+        ];
+        samples.forEach(item => addSpacedRepetitionItem(item));
+        setCurrentCardIndex(0);
+        setIsFlipped(false);
+        setReviewComplete(false);
+      };
+
+      if (reviewComplete) {
+        return (
+          <div className="min-h-screen bg-slate-950 text-white flex flex-col items-center justify-center p-6 select-none relative overflow-hidden">
+            {/* Ambient gradients */}
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[500px] h-[500px] bg-indigo-500/10 rounded-full blur-3xl -z-10"></div>
+            <div className="absolute bottom-0 right-0 w-[300px] h-[300px] bg-emerald-500/5 rounded-full blur-3xl -z-10"></div>
+
+            <div className="bg-slate-900/60 backdrop-blur-xl border border-slate-800 p-8 md:p-12 rounded-3xl max-w-xl w-full text-center shadow-2xl relative z-10 animate-fade-in">
+              <div className="w-20 h-20 bg-indigo-500/20 border border-indigo-500/30 rounded-full flex items-center justify-center mx-auto mb-6">
+                <Trophy className="w-10 h-10 text-indigo-400" />
+              </div>
+              <h1 className="text-3xl font-extrabold text-white mb-2 tracking-wide font-sans">Deck Mastered! 🎉</h1>
+              <p className="text-slate-400 text-sm mb-8 leading-relaxed font-sans font-medium">
+                Fantastic job! You've successfully finished this spaced-repetition active recall session.
+              </p>
+
+              <div className="grid grid-cols-2 gap-4 mb-8">
+                <div className="bg-slate-950/40 border border-slate-800/80 rounded-2xl p-4">
+                  <p className="text-[10px] font-black text-slate-500 uppercase tracking-wider mb-1">Reviewed</p>
+                  <p className="text-2xl font-black text-white">{flashcardItems.length} Cards</p>
+                </div>
+                <div className="bg-slate-950/40 border border-slate-800/80 rounded-2xl p-4 flex flex-col justify-center items-center">
+                  <p className="text-[10px] font-black text-slate-500 uppercase tracking-wider mb-1">Sync Status</p>
+                  <p className="text-xs font-bold text-emerald-400 mt-2 flex items-center justify-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+                    Cloud Synced
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                <button
+                  onClick={() => setMode('MENU')}
+                  className="px-8 py-3.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white rounded-2xl font-bold text-sm transition-all shadow-lg shadow-indigo-600/20 active:scale-95 duration-200 cursor-pointer text-center"
+                >
+                  Back to Dashboard
+                </button>
+                <button
+                  onClick={() => {
+                    setPracticeMode('all');
+                    setCurrentCardIndex(0);
+                    setIsFlipped(false);
+                    setReviewComplete(false);
+                  }}
+                  className="px-8 py-3.5 bg-slate-800 hover:bg-slate-700/85 border border-slate-700 text-slate-200 rounded-2xl font-bold text-sm transition-all active:scale-95 duration-200 cursor-pointer text-center"
+                >
+                  Practice Deck Again
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      const activeCard = flashcardItems[currentCardIndex];
+      const progressPct = flashcardItems.length > 0 ? (currentCardIndex / flashcardItems.length) * 100 : 0;
+
+      return (
+        <div className="min-h-screen bg-slate-950 text-white flex flex-col p-4 md:p-8 select-none relative overflow-hidden">
+          {/* Decorative gradients */}
+          <div className="absolute top-0 left-1/4 w-[400px] h-[400px] bg-indigo-500/5 rounded-full blur-3xl -z-10"></div>
+          <div className="absolute bottom-0 right-1/4 w-[400px] h-[400px] bg-purple-500/5 rounded-full blur-3xl -z-10"></div>
+
+          {/* HEADER BAR */}
+          <div className="max-w-4xl w-full mx-auto flex flex-col md:flex-row items-center justify-between gap-4 mb-8 bg-slate-900/40 backdrop-blur-xl border border-slate-800/80 p-4 rounded-2xl relative z-20">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setMode('MENU')}
+                className="p-2.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl transition-all cursor-pointer flex items-center justify-center group active:scale-95"
+              >
+                <ArrowRight className="rotate-180 w-4 h-4 text-slate-300 group-hover:text-white" />
+              </button>
+              <div>
+                <h1 className="text-base font-extrabold tracking-wide flex items-center gap-2">
+                  <Brain className="w-5 h-5 text-indigo-400 animate-pulse" />
+                  Active Recall Practice
+                </h1>
+                <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest">
+                  Spaced Repetition Queue
+                </p>
+              </div>
+            </div>
+
+            {totalFlashcards > 0 && (
+              <div className="flex items-center bg-slate-950/80 border border-slate-800 rounded-xl p-1">
+                <button
+                  onClick={() => {
+                    setPracticeMode('due');
+                    setCurrentCardIndex(0);
+                    setIsFlipped(false);
+                    setReviewComplete(false);
+                  }}
+                  className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                    practiceMode === 'due'
+                      ? 'bg-indigo-600 text-white shadow-md'
+                      : 'text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  Due Review ({dueFlashcardsCount})
+                </button>
+                <button
+                  onClick={() => {
+                    setPracticeMode('all');
+                    setCurrentCardIndex(0);
+                    setIsFlipped(false);
+                    setReviewComplete(false);
+                  }}
+                  className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                    practiceMode === 'all'
+                      ? 'bg-indigo-600 text-white shadow-md'
+                      : 'text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  Practice All ({totalFlashcards})
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* MAIN BODY AREA */}
+          <div className="max-w-4xl w-full mx-auto flex-1 flex flex-col justify-center relative z-10 py-4">
+            {flashcardItems.length === 0 ? (
+              <div className="bg-slate-900/60 backdrop-blur-xl border border-slate-800 rounded-3xl p-8 md:p-12 text-center max-w-xl mx-auto shadow-xl">
+                <div className="w-16 h-16 bg-slate-800 border border-slate-700 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <Sparkles className="w-8 h-8 text-indigo-400" />
+                </div>
+                <h2 className="text-xl font-bold text-white mb-2">Queue is Clear! ✨</h2>
+                <p className="text-sm text-slate-400 mb-8 leading-relaxed font-medium">
+                  {totalFlashcards > 0
+                    ? "Fantastic work! You have no spaced repetition cards due right now. You can practice all decks at any time!"
+                    : "No flashcards found in your deck yet. Seed 3 high-yield CBC/KCSE curriculum cards to get started!"
+                  }
+                </p>
+                <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                  <button
+                    onClick={handleSeed}
+                    className="px-6 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-xl text-xs font-bold transition-all shadow-md active:scale-95 duration-200 cursor-pointer"
+                  >
+                    {totalFlashcards > 0 ? "Reset & Seed 3 Q&A Cards" : "Seed 3 Sample Q&A Cards"}
+                  </button>
+                  {totalFlashcards > 0 && (
+                    <button
+                      onClick={() => {
+                        setPracticeMode('all');
+                        setCurrentCardIndex(0);
+                        setIsFlipped(false);
+                        setReviewComplete(false);
+                      }}
+                      className="px-6 py-3 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 rounded-xl text-xs font-bold transition-all active:scale-95 duration-200 cursor-pointer"
+                    >
+                      Practice All ({totalFlashcards})
+                    </button>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <>
+                {/* Progress bar */}
+                <div className="max-w-xl w-full mx-auto mb-6">
+                  <div className="flex items-center justify-between text-xs font-semibold text-slate-400 mb-2">
+                    <span className="text-[10px] font-black text-indigo-400 tracking-wider">PROGRESS</span>
+                    <span>Card {currentCardIndex + 1} of {flashcardItems.length}</span>
+                  </div>
+                  <div className="w-full bg-slate-900 border border-slate-800 rounded-full h-2 overflow-hidden p-0.5">
+                    <div
+                      className="bg-gradient-to-r from-indigo-500 to-purple-600 h-1 rounded-full transition-all duration-300"
+                      style={{ width: `${progressPct}%` }}
+                    ></div>
+                  </div>
+                </div>
+
+                {/* 3D Flipping Card Container */}
+                <div className="w-full max-w-xl mx-auto min-h-[360px] md:min-h-[400px] perspective-[1200px] relative mb-8">
+                  <div
+                    onClick={() => { if (!isFlipped) setIsFlipped(true); }}
+                    className="w-full h-full min-h-[360px] md:min-h-[400px] rounded-3xl relative transition-transform duration-700 cursor-pointer"
+                    style={{
+                      transformStyle: 'preserve-3d',
+                      transform: isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)',
+                      backgroundColor: 'transparent'
+                    }}
+                  >
+                    {/* FRONT FACE */}
+                    <div
+                      className="absolute inset-0 w-full h-full p-6 md:p-8 rounded-3xl border border-slate-800 bg-slate-900 flex flex-col justify-between overflow-y-auto select-none shadow-2xl"
+                      style={{
+                        backfaceVisibility: 'hidden',
+                        WebkitBackfaceVisibility: 'hidden',
+                      }}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-[9px] font-black text-indigo-400 bg-indigo-500/10 border border-indigo-500/35 px-2.5 py-1 rounded-full uppercase tracking-wider">
+                          {activeCard.subject || 'General'}
+                        </span>
+                        <span className="text-[10px] font-bold text-slate-500">
+                          {activeCard.grade || 'KCSE'}
+                        </span>
+                      </div>
+
+                      <div className="my-auto py-4">
+                        <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Question</p>
+                        <h2 className="text-xl md:text-2xl font-extrabold text-white leading-relaxed select-text font-sans">
+                          {activeCard.question}
+                        </h2>
+                      </div>
+
+                      <div className="flex items-center justify-center gap-2 text-indigo-400/80 text-xs font-bold animate-bounce mt-4">
+                        <span>Tap Card to Show Answer</span>
+                        <Sparkles className="w-4 h-4" />
+                      </div>
+                    </div>
+
+                    {/* BACK FACE */}
+                    <div
+                      className="absolute inset-0 w-full h-full p-6 md:p-8 rounded-3xl border border-indigo-500/30 bg-slate-900 flex flex-col justify-between overflow-y-auto select-none shadow-2xl shadow-indigo-500/5"
+                      style={{
+                        backfaceVisibility: 'hidden',
+                        WebkitBackfaceVisibility: 'hidden',
+                        transform: 'rotateY(180deg)'
+                      }}
+                    >
+                      <div>
+                        <div className="flex items-center justify-between mb-4">
+                          <span className="text-[9px] font-black text-emerald-400 bg-emerald-500/10 border border-emerald-500/35 px-2.5 py-1 rounded-full uppercase tracking-wider">
+                            {activeCard.topic}
+                          </span>
+                          <span className="text-[10px] font-bold text-slate-500">
+                            Answer Revealed
+                          </span>
+                        </div>
+
+                        <div className="py-2">
+                          <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Suggested Answer</p>
+                          <div className="text-sm md:text-base font-medium text-slate-200 leading-relaxed whitespace-pre-wrap select-text font-sans">
+                            {activeCard.answer}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="text-[10px] font-semibold text-slate-500 text-center mt-6 uppercase tracking-wider">
+                        Rate difficulty below to update memory schedule
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Rating buttons shown only when flipped */}
+                {isFlipped && (
+                  <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-3 max-w-xl w-full mx-auto relative z-20 animate-fade-in">
+                    {[
+                      { name: 'Again 🟥', score: 20, desc: 'Forgot completely', color: 'from-rose-500/10 to-rose-600/10 border-rose-500/20 text-rose-400 hover:from-rose-500 hover:to-rose-600' },
+                      { name: 'Hard 🟨', score: 50, desc: 'Struggled a lot', color: 'from-amber-500/10 to-amber-600/10 border-amber-500/20 text-amber-400 hover:from-amber-500 hover:to-amber-600' },
+                      { name: 'Good 🟩', score: 80, desc: 'Remembered well', color: 'from-emerald-500/10 to-emerald-600/10 border-emerald-500/20 text-emerald-400 hover:from-emerald-500 hover:to-emerald-600' },
+                      { name: 'Easy 🟦', score: 100, desc: 'Fluent / Perfect', color: 'from-indigo-500/10 to-indigo-600/10 border-indigo-500/20 text-indigo-400 hover:from-indigo-500 hover:to-indigo-600' }
+                    ].map(btn => (
+                      <button
+                        key={btn.name}
+                        onClick={() => {
+                          processQuizCompletion(activeCard.topic, btn.score, activeCard.subject, activeCard.grade);
+                          triggerMemorySync();
+
+                          if (currentCardIndex < flashcardItems.length - 1) {
+                            setCurrentCardIndex(prev => prev + 1);
+                            setIsFlipped(false);
+                          } else {
+                            setReviewComplete(true);
+                          }
+                        }}
+                        className={`flex flex-col items-center justify-center p-3.5 bg-gradient-to-br ${btn.color} border hover:text-white rounded-2xl transition-all cursor-pointer hover:shadow-lg active:scale-95 duration-200 group/btn`}
+                      >
+                        <span className="font-extrabold text-xs mb-0.5">{btn.name}</span>
+                        <span className="text-[8px] font-bold opacity-60 group-hover/btn:text-white">{btn.desc}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    if (mode === 'QUEST_MAP') {
+      return (
+        <QuestRoadmap
+          onStudyTopic={handleQuestStudyTopic}
+          onTakeQuiz={handleQuestTakeQuiz}
+          onListenRecap={handleQuestListenRecap}
+          cloudMemoryRow={cloudMemoryRow}
+        />
+      );
+    }
+
     if (mode === 'REVISION') {
       return (
         <React.Suspense fallback={<DeferredViewLoader />}>
@@ -3149,6 +3665,140 @@ ${explanation.explanation}
                       )}
                     </div>
                   )}
+
+                  {/* ACTIVE RECALL FLASHCARDS NUDGE */}
+                  {(() => {
+                    const totalFlashcards = spacedRepetitionItems?.filter(i => i.question && i.answer).length || 0;
+                    const dueFlashcardsCount = dueForReview?.filter(i => i.question && i.answer).length || 0;
+
+                    return (
+                      <div className="bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 rounded-3xl shadow-xl border border-indigo-500/25 p-6 relative overflow-hidden group">
+                        {/* Glowing radial backdrops */}
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2 group-hover:scale-125 transition-transform duration-700"></div>
+                        <div className="absolute -bottom-10 -left-10 w-24 h-24 bg-purple-500/10 rounded-full blur-xl group-hover:scale-125 transition-transform duration-700"></div>
+
+                        <div className="flex items-center justify-between mb-4 relative z-10">
+                          <div className="flex items-center gap-2.5">
+                            <div className="w-9 h-9 bg-indigo-500/20 rounded-xl flex items-center justify-center border border-indigo-500/30">
+                              <Brain className="w-5 h-5 text-indigo-400" />
+                            </div>
+                            <div>
+                              <h3 className="font-bold text-white text-sm tracking-wide">Active Recall</h3>
+                              <p className="text-[10px] font-medium text-indigo-300/70">Spaced Repetition (SM-2)</p>
+                            </div>
+                          </div>
+                          {dueFlashcardsCount > 0 ? (
+                            <span className="text-[9px] font-black text-emerald-400 bg-emerald-500/15 border border-emerald-500/35 px-2.5 py-1 rounded-full uppercase tracking-widest animate-pulse">
+                              {dueFlashcardsCount} Due
+                            </span>
+                          ) : (
+                            <span className="text-[9px] font-black text-indigo-300 bg-indigo-500/15 border border-indigo-500/35 px-2.5 py-1 rounded-full uppercase tracking-widest">
+                              Clear ✨
+                            </span>
+                          )}
+                        </div>
+
+                        {dueFlashcardsCount > 0 ? (
+                          <>
+                            <p className="text-xs font-semibold text-slate-300 mb-5 relative z-10 leading-relaxed">
+                              You have <span className="text-indigo-400 font-bold">{dueFlashcardsCount} cards</span> due for review. Keep your daily streak going!
+                            </p>
+                            <button
+                              onClick={() => {
+                                setPracticeMode('due');
+                                setCurrentCardIndex(0);
+                                setIsFlipped(false);
+                                setReviewComplete(false);
+                                setMode('FLASHCARDS');
+                              }}
+                              className="w-full py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white rounded-2xl text-xs font-bold transition-all shadow-lg shadow-indigo-600/20 active:scale-95 duration-200 cursor-pointer text-center relative z-10"
+                            >
+                              Review Due Cards
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <p className="text-xs font-semibold text-slate-300 mb-5 relative z-10 leading-relaxed">
+                              {totalFlashcards > 0 
+                                ? "Excellent! Your daily review queue is fully clear. Review past cards to strengthen memory."
+                                : "Supercharge your long-term memory! Seed our CBC/KCSE high-yield cards to get started."
+                              }
+                            </p>
+                            <div className="flex flex-col gap-2 relative z-10">
+                              {totalFlashcards > 0 && (
+                                <button
+                                  onClick={() => {
+                                    setPracticeMode('all');
+                                    setCurrentCardIndex(0);
+                                    setIsFlipped(false);
+                                    setReviewComplete(false);
+                                    setMode('FLASHCARDS');
+                                  }}
+                                  className="w-full py-3 bg-slate-800 hover:bg-slate-700/80 border border-slate-700 text-slate-200 rounded-2xl text-xs font-bold transition-all active:scale-95 duration-200 cursor-pointer text-center"
+                                >
+                                  Practice All Decks
+                                </button>
+                              )}
+                              <button
+                                onClick={() => {
+                                  // Seed samples
+                                  const samples = [
+                                    {
+                                      topic: "Photosynthesis",
+                                      subject: "Biology",
+                                      grade: "Form 1",
+                                      nextReviewDate: new Date().toISOString(),
+                                      intervalDays: 1,
+                                      easeFactor: 2.5,
+                                      lastScore: 0,
+                                      reviewCount: 0,
+                                      question: "What are the raw materials and products of photosynthesis in plants?",
+                                      answer: "Raw Materials:\n- Carbon dioxide (absorbed through stomata)\n- Water (absorbed through roots)\n\nProducts:\n- Glucose (chemical energy stored as starch)\n- Oxygen gas (released as a byproduct through stomata)\n\nReaction Equation:\n6CO₂ + 6H₂O + light → C₆H₁₂O₆ + 6O₂"
+                                    },
+                                    {
+                                      topic: "Quadratic Equations",
+                                      subject: "Mathematics",
+                                      grade: "Form 2",
+                                      nextReviewDate: new Date().toISOString(),
+                                      intervalDays: 1,
+                                      easeFactor: 2.5,
+                                      lastScore: 0,
+                                      reviewCount: 0,
+                                      question: "State the quadratic formula and explain what the discriminant determines about the roots.",
+                                      answer: "Quadratic Formula:\nx = [-b ± √(b² - 4ac)] / (2a)\n\nDiscriminant (D = b² - 4ac):\n1. D > 0: Two distinct real roots.\n2. D = 0: One repeated real root (equal roots).\n3. D < 0: Two complex/imaginary roots."
+                                    },
+                                    {
+                                      topic: "Devolution in Kenya",
+                                      subject: "History & Government",
+                                      grade: "Form 4",
+                                      nextReviewDate: new Date().toISOString(),
+                                      intervalDays: 1,
+                                      easeFactor: 2.5,
+                                      lastScore: 0,
+                                      reviewCount: 0,
+                                      question: "What are the primary objectives of devolving governance to the 47 counties in Kenya?",
+                                      answer: "Primary Objectives:\n1. Promote democratic and accountable exercise of power.\n2. Foster national unity by recognizing diversity.\n3. Give powers of self-governance to the people and enhance their participation.\n4. Ensure equitable sharing of national and local resources across Kenya.\n5. Facilitate the decentralization of state organs and public services from the capital."
+                                    }
+                                  ];
+                                  samples.forEach(item => addSpacedRepetitionItem(item));
+                                  
+                                  // Navigate directly
+                                  setPracticeMode('due');
+                                  setCurrentCardIndex(0);
+                                  setIsFlipped(false);
+                                  setReviewComplete(false);
+                                  setMode('FLASHCARDS');
+                                }}
+                                className="w-full py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-2xl text-xs font-bold transition-all shadow-lg active:scale-95 duration-200 cursor-pointer text-center"
+                              >
+                                {totalFlashcards > 0 ? "Reset & Seed 3 Q&A Cards" : "Seed 3 Sample Q&A Cards"}
+                              </button>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    );
+                  })()}
 
                   {/* DAILY CHALLENGE */}
                   {dailyChallenge && (
@@ -4363,19 +5013,24 @@ ${explanation.explanation}
               disabled={podcastLoading}
               className={`
                 hidden md:flex items-center gap-3 px-4 py-2 rounded-2xl transition-all shadow-sm hover:shadow-md hover:-translate-y-0.5
-                ${isPodcastPlaying
+                ${podcastLoading
+                  ? 'bg-indigo-50 text-indigo-400 border-2 border-indigo-200 cursor-wait'
+                  : isPodcastPlaying
                   ? 'bg-indigo-100 text-indigo-700 ring-2 ring-indigo-500 ring-offset-2'
                   : 'bg-gradient-to-r from-indigo-600 to-violet-600 text-white shadow-indigo-200'}
               `}
             >
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${isPodcastPlaying ? 'bg-indigo-200' : 'bg-white/20'}`}>
-                {podcastLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : (isPodcastPlaying ? <Volume2 className="w-4 h-4 animate-pulse" /> : <Headphones className="w-4 h-4" />)}
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${podcastLoading ? 'bg-indigo-100' : isPodcastPlaying ? 'bg-indigo-200' : 'bg-white/20'}`}>
+                {podcastLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : (isPodcastPlaying ? <Pause className="w-4 h-4" /> : <Headphones className="w-4 h-4" />)}
               </div>
               <div className="text-left flex flex-col">
-                <span className="text-xs font-black uppercase tracking-wide leading-none mb-0.5">{isPodcastPlaying ? "Stop Playing" : "Listen & Learn"}</span>
-
-                <span className={`text-[9px] font-bold uppercase tracking-wider ${isPodcastPlaying ? 'text-indigo-500' : 'text-indigo-100'}`}>
-                  {isPodcastPlaying ? "Audio Lesson" : "Audio Lesson Explanation"}
+                <span className="text-xs font-black uppercase tracking-wide leading-none mb-0.5">
+                  {podcastLoading ? 'Generating...' : isPodcastPlaying ? 'Pause' : 'Listen & Learn'}
+                </span>
+                <span className={`text-[9px] font-bold uppercase tracking-wider ${isPodcastPlaying ? 'text-indigo-500' : podcastLoading ? 'text-indigo-400' : 'text-indigo-100'}`}>
+                  {isPodcastPlaying && podcastTotalSegments > 0
+                    ? `Segment ${currentSegmentIndex + 1} of ${podcastTotalSegments}`
+                    : podcastLoading ? 'Scripting your episode...' : 'Audio Lesson'}
                 </span>
               </div>
             </button>
@@ -4417,27 +5072,114 @@ ${explanation.explanation}
               </motion.div>
             )}
 
-            {/* Podcast Player Overlay */}
+            {/* Podcast Player Overlay — Premium Media Player */}
             <AnimatePresence>
-              {isPodcastPlaying && podcastScript && (
+              {(isPodcastPlaying || podcastLoading) && (isPodcastPlaying ? podcastScript : true) && (
                 <motion.div
-                  initial={{ y: 100, opacity: 0 }}
+                  initial={{ y: 120, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
-                  exit={{ y: 100, opacity: 0 }}
-                  className="fixed bottom-24 left-4 right-4 md:left-1/2 md:-translate-x-1/2 bg-slate-900/95 backdrop-blur-xl p-4 rounded-3xl shadow-2xl flex items-center gap-4 md:w-[90%] md:max-w-md z-[100] border border-white/10 ring-1 ring-black/20"
+                  exit={{ y: 120, opacity: 0 }}
+                  transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                  className="fixed bottom-20 left-3 right-3 md:left-1/2 md:-translate-x-1/2 md:w-[92%] md:max-w-xl z-[100]"
                 >
-                  <div className="w-12 h-12 bg-indigo-500 rounded-full flex items-center justify-center shrink-0">
-                    <Volume2 className="w-6 h-6 text-white animate-pulse" />
+                  <div className="bg-slate-900/98 backdrop-blur-2xl rounded-3xl shadow-2xl border border-white/10 ring-1 ring-black/30 overflow-hidden">
+                    {/* Progress Bar Track */}
+                    {podcastTotalSegments > 0 && (
+                      <div className="h-1 bg-white/10 w-full">
+                        <div
+                          className="h-full bg-gradient-to-r from-indigo-500 to-violet-500 transition-all duration-700"
+                          style={{ width: `${Math.round(((currentSegmentIndex + 1) / podcastTotalSegments) * 100)}%` }}
+                        />
+                      </div>
+                    )}
+
+                    <div className="p-4">
+                      {/* Episode Header */}
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-2xl flex items-center justify-center shrink-0 shadow-lg shadow-indigo-900/50">
+                          {podcastLoading ? <Loader2 className="w-5 h-5 text-white animate-spin" /> : <Headphones className="w-5 h-5 text-white" />}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.15em] leading-none mb-1">Somo Smart Audio</p>
+                          <p className="text-white font-bold text-sm truncate leading-tight">
+                            {podcastScript?.title || (explanation?.topic ?? 'Generating episode...')}
+                          </p>
+                        </div>
+                        {podcastTotalSegments > 0 && (
+                          <span className="shrink-0 text-[10px] font-bold text-slate-400 tabular-nums">
+                            {currentSegmentIndex + 1}/{podcastTotalSegments}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Current Segment Transcript */}
+                      {isPodcastPlaying && podcastScript && currentSegmentIndex >= 0 && (() => {
+                        const seg = podcastScript.script[currentSegmentIndex];
+                        return (
+                          <div className="bg-white/5 rounded-2xl px-4 py-3 mb-4">
+                            <span className={`inline-block text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full mb-2 ${
+                              seg.speaker === 'Host'
+                                ? 'bg-indigo-500/30 text-indigo-300'
+                                : 'bg-violet-500/30 text-violet-300'
+                            }`}>
+                              {seg.speaker === 'Host' ? '🎙️ Host' : '🎓 Expert'}
+                            </span>
+                            <p className="text-slate-200 text-sm leading-relaxed font-medium">{seg.text}</p>
+                          </div>
+                        );
+                      })()}
+
+                      {podcastLoading && (
+                        <div className="bg-white/5 rounded-2xl px-4 py-3 mb-4 flex items-center gap-3">
+                          <Loader2 className="w-4 h-4 text-indigo-400 animate-spin shrink-0" />
+                          <p className="text-slate-400 text-sm font-medium">Scripting your audio episode with AI...</p>
+                        </div>
+                      )}
+
+                      {/* Controls Row */}
+                      <div className="flex items-center gap-2">
+                        {/* Re-generate */}
+                        <button
+                          onClick={handlePodcastRegenerate}
+                          className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-white/8 hover:bg-white/12 text-slate-400 hover:text-slate-200 transition-all text-xs font-bold"
+                        >
+                          <Sparkles className="w-3.5 h-3.5" />
+                          Re-generate
+                        </button>
+
+                        {/* Skip Segment */}
+                        <button
+                          onClick={handlePodcastSkip}
+                          disabled={!podcastScript || currentSegmentIndex >= podcastScript.script.length - 1}
+                          className="flex items-center justify-center w-10 h-10 rounded-xl bg-white/8 hover:bg-white/12 text-slate-400 hover:text-slate-200 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                          title="Skip segment"
+                        >
+                          <ChevronRight className="w-5 h-5" />
+                        </button>
+
+                        {/* Pause / Play */}
+                        <button
+                          onClick={handlePodcastToggle}
+                          className={`flex items-center justify-center w-12 h-12 rounded-2xl transition-all shadow-lg ${
+                            isPodcastPlaying
+                              ? 'bg-indigo-500 hover:bg-indigo-400 shadow-indigo-900/50'
+                              : 'bg-white/15 hover:bg-white/20'
+                          }`}
+                        >
+                          {isPodcastPlaying ? <Pause className="w-5 h-5 text-white" /> : <Play className="w-5 h-5 text-white fill-white" />}
+                        </button>
+
+                        {/* Stop & Close */}
+                        <button
+                          onClick={() => { cancelPodcast(); setIsPodcastPlaying(false); setCurrentSegmentIndex(-1); }}
+                          className="flex items-center justify-center w-10 h-10 rounded-xl bg-white/8 hover:bg-red-500/20 text-slate-400 hover:text-red-400 transition-all"
+                          title="Stop playback"
+                        >
+                          <X className="w-5 h-5" />
+                        </button>
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs font-bold text-indigo-300 uppercase tracking-wider mb-0.5">Somo Smart Audio</p>
-                    <p className="text-white font-bold truncate text-sm">
-                      {currentSegmentIndex >= 0 ? `${podcastScript.script[currentSegmentIndex].speaker}: ${podcastScript.script[currentSegmentIndex].text}` : "Starting..."}
-                    </p>
-                  </div>
-                  <button onClick={handlePodcastToggle} className="p-2 bg-white/10 rounded-full hover:bg-white/20 text-white transition-colors">
-                    <Pause className="w-5 h-5" />
-                  </button>
                 </motion.div>
               )}
             </AnimatePresence>
@@ -4463,26 +5205,50 @@ ${explanation.explanation}
                 disabled={podcastLoading}
                 className={`
                   w-full flex items-center justify-between px-5 py-4 rounded-3xl transition-all shadow-lg hover:shadow-xl active:scale-[0.98]
-                  ${isPodcastPlaying
+                  ${podcastLoading
+                    ? 'bg-indigo-50 border-2 border-dashed border-indigo-300 text-indigo-400 cursor-wait'
+                    : isPodcastPlaying
                     ? 'bg-indigo-50 border-2 border-indigo-500 text-indigo-700'
                     : 'bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-indigo-200'}
                 `}
               >
                 <div className="flex items-center gap-4">
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center ${isPodcastPlaying ? 'bg-indigo-200' : 'bg-white/20'}`}>
-                    {podcastLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Headphones className="w-5 h-5" />}
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                    podcastLoading ? 'bg-indigo-100' : isPodcastPlaying ? 'bg-indigo-200' : 'bg-white/20'
+                  }`}>
+                    {podcastLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : isPodcastPlaying ? <Pause className="w-5 h-5" /> : <Headphones className="w-5 h-5" />}
                   </div>
                   <div className="text-left">
-                    <p className="text-sm font-black uppercase tracking-wide">{isPodcastPlaying ? "Stop" : "Listen & Learn"}</p>
-
-                    <p className={`text-xs font-medium ${isPodcastPlaying ? 'text-indigo-600' : 'text-indigo-100'}`}>
-                      {isPodcastPlaying ? "Audio Lesson Active" : "Audio Lesson Explanation"}
+                    <p className="text-sm font-black uppercase tracking-wide">
+                      {podcastLoading ? 'Generating...' : isPodcastPlaying ? 'Pause' : 'Listen & Learn'}
                     </p>
+                    {isPodcastPlaying && podcastScript && currentSegmentIndex >= 0 ? (
+                      <>
+                        <p className="text-[11px] font-bold text-indigo-500 truncate max-w-[180px]">
+                          {podcastScript.script[currentSegmentIndex].speaker === 'Host' ? '🎙️ Host' : '🎓 Expert'}
+                        </p>
+                        {podcastTotalSegments > 0 && (
+                          <div className="mt-1 h-1 w-28 bg-indigo-200 rounded-full overflow-hidden">
+                            <div
+                              className="h-full bg-indigo-500 rounded-full transition-all duration-700"
+                              style={{ width: `${Math.round(((currentSegmentIndex + 1) / podcastTotalSegments) * 100)}%` }}
+                            />
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <p className={`text-xs font-medium ${isPodcastPlaying ? 'text-indigo-600' : podcastLoading ? 'text-indigo-400' : 'text-indigo-100'}`}>
+                        {podcastLoading ? 'Scripting episode...' : 'Audio Lesson Explanation'}
+                      </p>
+                    )}
                   </div>
                 </div>
-                {isPodcastPlaying ? <div className="w-2 h-2 bg-indigo-500 rounded-full animate-pulse" /> : <Play className="w-5 h-5 fill-current opacity-80" />}
+                {podcastLoading
+                  ? <Loader2 className="w-5 h-5 animate-spin opacity-50" />
+                  : isPodcastPlaying
+                  ? <div className="w-2 h-2 bg-indigo-500 rounded-full animate-pulse" />
+                  : <Play className="w-5 h-5 fill-current opacity-80" />}
               </button>
-
             </div>
 
             {/* Key Points - Modernized */}
@@ -5084,12 +5850,12 @@ ${explanation.explanation}
 
               {/* Content-Type Filter Tabs */}
               <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-hide -mx-2 px-2">
-                {[
+                {([
                   { id: 'ALL',        emoji: '📚', label: 'All',         activeClass: 'bg-indigo-600 text-white shadow-lg shadow-indigo-200' },
                   { id: 'SYLLABUS',   emoji: '📖', label: 'Syllabus',    activeClass: 'bg-purple-600 text-white shadow-lg shadow-purple-200' },
                   { id: 'NOTES',      emoji: '📝', label: 'Notes',       activeClass: 'bg-blue-600 text-white shadow-lg shadow-blue-200' },
                   { id: 'PAST_PAPER', emoji: '📄', label: 'Past Papers', activeClass: 'bg-amber-500 text-white shadow-lg shadow-amber-200' },
-                ].map(tab => (
+                ] as const).map(tab => (
                   <button
                     key={tab.id}
                     onClick={() => setMaterialCategory(tab.id)}
@@ -5133,20 +5899,17 @@ ${explanation.explanation}
                   className="bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-white text-[10px] font-bold uppercase tracking-wider rounded-xl px-3 py-2 outline-none focus:border-indigo-500 transition-all cursor-pointer"
                 >
                   <option value="ALL">All Grades</option>
-                  <option value="PP1">PP1</option>
-                  <option value="PP2">PP2</option>
-                  <option value="Grade 1">Grade 1</option>
-                  <option value="Grade 2">Grade 2</option>
-                  <option value="Grade 3">Grade 3</option>
-                  <option value="Grade 4">Grade 4</option>
-                  <option value="Grade 5">Grade 5</option>
-                  <option value="Grade 6">Grade 6</option>
-                  <option value="Grade 7">Grade 7</option>
-                  <option value="Grade 8">Grade 8</option>
-                  <option value="Grade 9">Grade 9</option>
-                  <option value="Grade 10">Grade 10</option>
-                  <option value="Form 3">Form 3</option>
-                  <option value="Form 4">Form 4</option>
+                  {['PP1', 'PP2', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6', 'Grade 7', 'Grade 8', 'Grade 9', 'Form 1', 'Form 2', 'Form 3', 'Form 4']
+                    .filter(g => {
+                      if (studentProfile?.grade) {
+                        return isGradeInStudentRange(g, studentProfile.grade);
+                      }
+                      return getGradeLevel(g) === educationLevel;
+                    })
+                    .map(g => (
+                      <option key={g} value={g}>{g}</option>
+                    ))
+                  }
                 </select>
 
                 <div className="flex-1 min-w-[140px]">
@@ -5896,6 +6659,43 @@ ${explanation.explanation}
                     Continue To Plans
                   </Button>
                   <button
+                    onClick={async () => {
+                      setLoading(true);
+                      setLoadingText("Verifying Transactions...");
+                      try {
+                        const success = await verifySubscription();
+                        setLoading(false);
+                        if (success) {
+                          alert("Awesome! Your premium subscription has been successfully restored!");
+                          setShowLimitModal(false);
+                        } else {
+                          // Ask for custom reference code
+                          const codeInput = prompt(
+                            "Auto-scan did not find a recent payment. If you paid as a guest or on a different device, please enter your Pesapal Merchant Reference code (e.g. SUB_DAILY_...) to link it:"
+                          );
+                          if (codeInput && codeInput.trim()) {
+                            setLoading(true);
+                            setLoadingText("Verifying custom reference...");
+                            const customSuccess = await verifySubscription(codeInput.trim());
+                            setLoading(false);
+                            if (customSuccess) {
+                              alert("Awesome! Your premium subscription has been successfully restored!");
+                              setShowLimitModal(false);
+                            } else {
+                              alert("We couldn't verify this payment reference. Please double check the code or contact support.");
+                            }
+                          }
+                        }
+                      } catch (err) {
+                        setLoading(false);
+                        alert("An error occurred during verification. Please try again or refresh the page.");
+                      }
+                    }}
+                    className="w-full text-indigo-600 hover:text-indigo-700 font-bold text-xs uppercase tracking-widest transition-colors py-1 block"
+                  >
+                    Already Paid? Click here to restore
+                  </button>
+                  <button
                     onClick={() => setShowLimitModal(false)}
                     className="text-slate-400 font-bold text-xs uppercase tracking-widest hover:text-slate-600 transition-colors"
                   >
@@ -5988,9 +6788,16 @@ ${explanation.explanation}
                   onChange={(e) => setSelectedGrade(e.target.value)}
                 >
                   <option value="ALL">Select Grade</option>
-                  {['Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6', 'Grade 7', 'Grade 8', 'Grade 9', 'Form 1', 'Form 2', 'Form 3', 'Form 4'].map(g => (
-                    <option key={g} value={g}>{g}</option>
-                  ))}
+                  {['PP1', 'PP2', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6', 'Grade 7', 'Grade 8', 'Grade 9', 'Form 1', 'Form 2', 'Form 3', 'Form 4']
+                    .filter(g => {
+                      if (studentProfile?.grade) {
+                        return isGradeInStudentRange(g, studentProfile.grade);
+                      }
+                      return getGradeLevel(g) === educationLevel;
+                    })
+                    .map(g => (
+                      <option key={g} value={g}>{g}</option>
+                    ))}
                 </select>
               </div>
               <div>
