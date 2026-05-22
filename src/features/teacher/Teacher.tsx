@@ -81,6 +81,12 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
     const [showRegister, setShowRegister] = useState(false);
     const [authTab, setAuthTab] = useState<'TEACHER' | 'SCHOOL'>('TEACHER');
     const [workflowStepSignal, setWorkflowStepSignal] = useState<{ step: 'GENERATE_ASSESSMENT' | 'PUBLISH_STREAM'; message: string; at: number } | null>(null);
+    const [paymentPlan, setPaymentPlan] = useState<SubscriptionPlan | null>(null);
+    const [showLoginModal, setShowLoginModal] = useState(false);
+    const [showLogoutModal, setShowLogoutModal] = useState(false);
+    const [teacherNotice, setTeacherNotice] = useState<{ type: 'success' | 'error' | 'info'; text: string } | null>(null);
+    const [activeTab, setActiveTab] = useState<'DASHBOARD' | 'CREATION_HUB' | 'STUDENTS' | 'MARKING' | 'EARNINGS' | 'LIBRARY' | 'CONVERT' | 'VOICE' | 'QUIZ' | 'HOME' | 'MARKETPLACE' | 'PROFILE' | 'REPORTS' | 'DARASA_MODE' | 'SCHEMES' | 'LESSON_POLISH' | 'BLACKBOARD' | 'HOMEWORK'>(initialTab || 'DASHBOARD');
+    const [loading, setLoading] = useState(false);
 
     const trackFunnelEvent = (eventName: string, params: Record<string, unknown> = {}) => {
         try {
@@ -153,12 +159,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
         }
     }, [location.state, isPro, navigate, teacherProfile]);
 
-    const [paymentPlan, setPaymentPlan] = useState<SubscriptionPlan | null>(null);
-    const [showLoginModal, setShowLoginModal] = useState(false);
-    const [showLogoutModal, setShowLogoutModal] = useState(false);
-    const [teacherNotice, setTeacherNotice] = useState<{ type: 'success' | 'error' | 'info'; text: string } | null>(null);
-    const [activeTab, setActiveTab] = useState<'DASHBOARD' | 'CREATION_HUB' | 'STUDENTS' | 'MARKING' | 'EARNINGS' | 'LIBRARY' | 'CONVERT' | 'VOICE' | 'QUIZ' | 'HOME' | 'MARKETPLACE' | 'PROFILE' | 'REPORTS' | 'DARASA_MODE' | 'SCHEMES' | 'LESSON_POLISH' | 'BLACKBOARD' | 'HOMEWORK'>(initialTab || 'DASHBOARD');
-    const [loading, setLoading] = useState(false);
+
 
     useEffect(() => {
         if (!paymentPlan) return;

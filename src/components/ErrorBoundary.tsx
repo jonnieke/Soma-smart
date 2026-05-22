@@ -2,7 +2,7 @@ import React, { Component, ErrorInfo, ReactNode } from 'react';
 
 // Matches the key defined in Learner.tsx safeImport
 const CHUNK_RELOAD_KEY = 'soma_chunk_reload_count';
-const CHUNK_RELOAD_MAX = 2; // maximum auto-reloads before giving up
+const CHUNK_RELOAD_MAX = 3; // maximum auto-reloads before giving up
 const CHUNK_RELOAD_WINDOW_MS = 60_000; // reset counter after 60 s of clean runtime
 
 interface Props {
@@ -91,7 +91,10 @@ export class ErrorBoundary extends Component<Props, State> {
                     } catch (e) {
                         console.error('[ErrorBoundary] SW/Cache cleanup failed:', e);
                     } finally {
-                        window.location.reload();
+                        // Use a cache-busting URL so the service worker cannot serve a stale cached response
+                        const url = new URL(window.location.href);
+                        url.searchParams.set('_cb', String(Date.now()));
+                        window.location.replace(url.toString());
                     }
                 };
 
