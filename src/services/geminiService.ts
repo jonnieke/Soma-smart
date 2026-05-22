@@ -1342,11 +1342,66 @@ Format as JSON.
     console.error("Error processing voice note:", error);
     throw error;
   }
-}
+};
+
+export const transcribeTeacherLesson = async (
+  audioBase64: string,
+  mimeType: string = "audio/webm",
+  subject?: string,
+  grade?: string
+): Promise<string> => {
+  const model = genAI.getGenerativeModel({
+    model: MODEL_NAME,
+    generationConfig: {
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: SchemaType.OBJECT,
+        properties: {
+          transcript: { type: SchemaType.STRING, description: "Structured draft lesson notes transcribed from the audio, formatted in markdown with headers, bullets, or paragraphs." }
+        },
+        required: ["transcript"]
+      }
+    }
+  });
+
+  const useSwahili = isSwahiliSubject(subject);
+  const langInstruction = useSwahili
+    ? "LANGUAGE RULE: You MUST transcribe and structure the content ENTIRELY in Swahili (Kiswahili Sanifu)."
+    : "LANGUAGE RULE: You MUST transcribe and structure the content ENTIRELY in English.";
+
+  const prompt = `
+    You are an AI assistant helping a Kenyan educator draft lesson notes.
+    Listen to this audio recording of a teacher's lesson lecture or dictation.
+    
+    1. Transcribe the spoken text accurately.
+    2. Organize the transcribed text into high-quality draft lesson notes. Use clear headings, bullet points, and paragraphs.
+    3. The subject is ${subject || 'a school subject'} for ${grade || 'a Kenyan classroom'}.
+    4. ${langInstruction}
+    
+    Format the output as JSON matching the schema.
+  `;
+
+  try {
+    const result = await model.generateContent([
+      prompt,
+      { inlineData: { data: audioBase64, mimeType: mimeType } }
+    ]);
+
+    const text = result.response.text();
+    if (!text) throw new Error("No response from AI");
+    
+    const cleanedText = text.replace(/```json\n ?| ```/g, '').trim();
+    const json = JSON.parse(cleanedText);
+    return json.transcript || "";
+  } catch (error) {
+    console.error("Error in transcribeTeacherLesson:", error);
+    throw error;
+  }
+};
 
 export const generateTeacherQuiz = async (topic: string, language: 'EN' | 'SW' = 'EN'): Promise<QuizData> => {
   return generateQuiz("", topic, language);
-}
+};
 
 export const generateAdvancedTeacherQuiz = async (
   images: string[],

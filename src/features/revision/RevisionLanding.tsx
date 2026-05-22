@@ -33,6 +33,50 @@ interface Props {
     onBack?: () => void;
 }
 
+const normalizeGrade = (g: any) => {
+    const str = String(g || "").toLowerCase();
+    return str.replace(/\s*grade\s*/g, '').replace(/\s*\(jss\)\s*/g, '').trim() || "";
+};
+
+const isGradeInStudentRange = (materialGrade: string, studentGrade: string): boolean => {
+    const mGrade = normalizeGrade(materialGrade);
+    const sGrade = normalizeGrade(studentGrade);
+    if (!sGrade) return true;
+    if (!mGrade || mGrade === 'all') return true;
+
+    // Check Pre-Primary & Lower Primary (PP1, PP2, Grade 1, 2, 3)
+    const lowerPrimary = ['pp1', 'pp2', '1', '2', '3'];
+    if (lowerPrimary.includes(sGrade)) {
+        return lowerPrimary.includes(mGrade);
+    }
+
+    // Upper Primary (Grade 4, 5, 6)
+    const upperPrimary = ['4', '5', '6'];
+    if (upperPrimary.includes(sGrade)) {
+        return upperPrimary.includes(mGrade);
+    }
+
+    // Junior Secondary (Grade 7, 8, 9)
+    const juniorSecondary = ['7', '8', '9'];
+    if (juniorSecondary.includes(sGrade)) {
+        return juniorSecondary.includes(mGrade);
+    }
+
+    // Senior Secondary (Form 1, 2, 3, 4)
+    const seniorSecondary = ['form 1', 'form 2', 'form 3', 'form 4', '10', '11', '12'];
+    if (seniorSecondary.some(g => sGrade.includes(g) || g.includes(sGrade))) {
+        return seniorSecondary.some(g => mGrade.includes(g) || g.includes(mGrade));
+    }
+
+    // Campus / University
+    const campus = ['1st year', '2nd year', '3rd year', '4th year', 'university', 'college', 'campus', 'degree', 'diploma'];
+    if (campus.some(g => sGrade.includes(g) || g.includes(sGrade))) {
+        return campus.some(g => mGrade.includes(g) || g.includes(mGrade));
+    }
+
+    return mGrade === sGrade;
+};
+
 export const RevisionLanding: React.FC<Props> = ({ onStartSession, onNavigate, onBack }) => {
     const {
         logout, availableQuizzes, fetchAvailableQuizzes, isOnline,
@@ -76,8 +120,15 @@ export const RevisionLanding: React.FC<Props> = ({ onStartSession, onNavigate, o
                 : (r.title?.toLowerCase().includes('paper') || r.title?.toLowerCase().includes('kcse') || r.title?.toLowerCase().includes('kpsea') || r.title?.toLowerCase().includes('mock'))
                     ? 'paper' : 'notes'
         }));
-        return typed;
-    }, [resources]);
+        // Filter by grade range on profile level for notes and past papers
+        return typed.filter(item => {
+            if (!studentProfile?.grade) return true;
+            if (item._type === 'notes' || item._type === 'paper') {
+                return isGradeInStudentRange(item.grade || '', studentProfile.grade);
+            }
+            return true;
+        });
+    }, [resources, studentProfile?.grade]);
 
     const subjects = useMemo(() => {
         const s = new Set(allItems.map(r => r.subject).filter(Boolean));

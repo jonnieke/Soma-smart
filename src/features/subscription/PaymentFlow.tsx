@@ -310,6 +310,14 @@ export const PaymentFlow: React.FC<Props> = ({ plan, materialId, onSuccess, onCa
                 setIframeUrl(response.redirect_url);
                 setPaymentReference(response.client_reference || null);
                 setPaymentUserId(uid);
+                
+                // Persist reference to localStorage for self-healing/recovery
+                if (response.client_reference) {
+                    localStorage.setItem('soma_last_payment_reference', response.client_reference);
+                    localStorage.setItem('soma_last_payment_time', Date.now().toString());
+                    localStorage.setItem('soma_last_payment_amount', plan.price.toString());
+                }
+
                 setIframeLoaded(false);
                 setAutoOpenedCheckout(false);
                 setIframeFailed(false);

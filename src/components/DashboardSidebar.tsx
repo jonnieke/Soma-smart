@@ -2,6 +2,7 @@ import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Home,
+  Map,
   Brain,
   BookOpen,
   Users,
@@ -33,6 +34,7 @@ import { EducationLevel } from '../types';
 export type SidebarTab =
   | 'HOME'
   | 'SMART_TUTOR'
+  | 'QUEST_MAP'
   | 'SUBJECTS'
   | 'EXAM_ROOMS'
   | 'HOMEWORK'
@@ -67,6 +69,7 @@ const getNavItems = (level: EducationLevel): NavItem[] => {
       return [
         { id: 'HOME', label: 'Home', icon: <Home className="w-5 h-5" />, section: 'primary' },
         { id: 'SMART_TUTOR', label: 'Akili Buddy 🤝', icon: <Sparkles className="w-5 h-5" />, section: 'primary' },
+        { id: 'QUEST_MAP', label: 'Quest Map 🗺️', icon: <Map className="w-5 h-5" />, section: 'primary' },
         { id: 'SUBJECTS', label: 'Exam Prep', icon: <BookOpen className="w-5 h-5" />, section: 'primary' },
         { id: 'RESOURCES', label: 'Library 📚', icon: <FolderOpen className="w-5 h-5" />, section: 'primary' },
         { id: 'PROGRESS', label: 'My Stars ⭐', icon: <Star className="w-5 h-5" />, section: 'primary' },
@@ -77,6 +80,7 @@ const getNavItems = (level: EducationLevel): NavItem[] => {
       return [
         { id: 'HOME', label: 'Home', icon: <Home className="w-5 h-5" />, section: 'primary' },
         { id: 'SMART_TUTOR', label: 'Ask Akili', icon: <ScanLine className="w-5 h-5" />, section: 'primary' },
+        { id: 'QUEST_MAP', label: 'Quest Map 🗺️', icon: <Map className="w-5 h-5" />, section: 'primary' },
         { id: 'SUBJECTS', label: 'Courses', icon: <BookOpen className="w-5 h-5" />, section: 'primary' },
         { id: 'RESOURCES', label: 'Research Hub', icon: <FolderOpen className="w-5 h-5" />, section: 'primary' },
         { id: 'PROGRESS', label: 'Analytics', icon: <BarChart3 className="w-5 h-5" />, section: 'primary' },
@@ -88,6 +92,7 @@ const getNavItems = (level: EducationLevel): NavItem[] => {
       return [
         { id: 'HOME', label: 'Home', icon: <Home className="w-5 h-5" />, section: 'primary' },
         { id: 'SMART_TUTOR', label: 'Ask Akili', icon: <Brain className="w-5 h-5" />, section: 'primary' },
+        { id: 'QUEST_MAP', label: 'Quest Map 🗺️', icon: <Map className="w-5 h-5" />, section: 'primary' },
         { id: 'SUBJECTS', label: 'Exam Hall', icon: <BookOpen className="w-5 h-5" />, section: 'primary' },
         { id: 'RESOURCES', label: 'Library', icon: <FolderOpen className="w-5 h-5" />, section: 'primary' },
         { id: 'PROGRESS', label: 'Progress', icon: <BarChart3 className="w-5 h-5" />, section: 'primary' },

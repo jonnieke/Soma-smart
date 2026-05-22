@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Users, TrendingDown, TrendingUp, AlertCircle, Sparkles, Plus, Share2, ClipboardList, Send, FileText, CheckCircle, MessageCircle, UploadCloud, Megaphone, Table, Brain } from 'lucide-react';
+import { Users, TrendingDown, TrendingUp, AlertCircle, Sparkles, Plus, Share2, ClipboardList, Send, FileText, CheckCircle, MessageCircle, UploadCloud, Megaphone, Table, Brain, Smartphone } from 'lucide-react';
 import { TeacherProfile } from '../../types';
 import { classroomService, ClassroomPost, ClassMember, GradebookEntry } from '../../services/classroomService';
 import { getBulkMasteryMemories } from '../../services/learnerMemoryService';
 import { warnIfDev } from '../../utils/logger';
+import { BulkBillingModal } from './BulkBillingModal';
 
 interface MyClassroomProps {
     teacherProfile: TeacherProfile | null;
@@ -19,6 +20,17 @@ export const MyClassroom: React.FC<MyClassroomProps> = ({ teacherProfile, select
     const [isAssigning, setIsAssigning] = useState(false);
     const [postText, setPostText] = useState("");
     const [isPosting, setIsPosting] = useState(false);
+
+    // Phase 2 additions
+    const [gradingMode, setGradingMode] = useState<'PERCENT' | 'CBC'>('PERCENT');
+    const [isBillingModalOpen, setIsBillingModalOpen] = useState(false);
+
+    const getCBCDescriptor = (score: number) => {
+        if (score >= 80) return { code: 'EE', label: 'Exceeding Expectation', color: 'bg-emerald-100 text-emerald-800 border-emerald-200' };
+        if (score >= 60) return { code: 'ME', label: 'Meeting Expectation', color: 'bg-blue-100 text-blue-800 border-blue-200' };
+        if (score >= 40) return { code: 'AE', label: 'Approaching Expectation', color: 'bg-amber-100 text-amber-800 border-amber-200' };
+        return { code: 'BE', label: 'Below Expectation', color: 'bg-rose-100 text-rose-800 border-rose-250' };
+    };
 
     // Backend State
     const [stream, setStream] = useState<ClassroomPost[]>([]);
@@ -263,11 +275,12 @@ export const MyClassroom: React.FC<MyClassroomProps> = ({ teacherProfile, select
             : `Great job! ${firstName} has no critical weak topics right now.`;
 
         const trendIcon = student.trend === 'UP' ? '📈' : student.trend === 'DOWN' ? '📉' : '➖';
+        const cbc = getCBCDescriptor(student.averageScore);
 
         const message = `*Somo Smart Progress Report* 📚
 *Student:* ${student.name}
 *Class:* ${selectedClass}
-*Overall Mastery:* ${student.averageScore}% ${trendIcon}
+*Overall Mastery:* ${student.averageScore}% (${cbc.code} - ${cbc.label}) ${trendIcon}
 
 ${focusText}
 
@@ -410,38 +423,117 @@ View full dashboard: https://somaai.co.ke/parent/${student.id}`;
                     {/* --- GRADEBOOK VIEW --- */}
                     {view === 'GRADEBOOK' && (
                         <div className="bg-white border-2 border-slate-300 rounded-[2.5rem] p-8 shadow-sm overflow-x-auto">
-                            <div className="flex justify-between items-center mb-6">
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-6 border-b border-slate-100">
                                 <div>
                                     <h3 className="text-xl font-black text-slate-800">Gradebook Matrix</h3>
                                     <p className="text-sm font-medium text-slate-500">Auto-graded assignments and quizzes.</p>
                                 </div>
-                                <button className="bg-slate-900 text-white px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2">
-                                    <UploadCloud className="w-4 h-4" /> Export CSV
-                                </button>
+                                <div className="flex flex-wrap items-center gap-3">
+                                    {/* Grading Mode Toggle */}
+                                    <div className="bg-slate-100 p-1 rounded-xl flex border border-slate-250">
+                                        <button
+                                            onClick={() => setGradingMode('PERCENT')}
+                                            className={`px-3 py-1.5 rounded-lg text-xs font-black transition-all ${gradingMode === 'PERCENT' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
+                                        >
+                                            Percentages
+                                        </button>
+                                        <button
+                                            onClick={() => setGradingMode('CBC')}
+                                            className={`px-3 py-1.5 rounded-lg text-xs font-black transition-all ${gradingMode === 'CBC' ? 'bg-indigo-650 text-white shadow-sm' : 'text-slate-500 hover:text-slate-850'}`}
+                                        >
+                                            Kenyan CBC (JSS)
+                                        </button>
+                                    </div>
+                                    <button className="bg-slate-900 text-white px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 hover:bg-slate-850 transition-colors">
+                                        <UploadCloud className="w-4 h-4" /> Export CSV
+                                    </button>
+                                </div>
                             </div>
                             
                             {decoratedStudents.length === 0 ? (
                                 <div className="text-center p-8 text-slate-400 font-bold">No students have joined this class yet.</div>
                             ) : (
-                                <table className="w-full text-left border-collapse min-w-[600px]">
-                                    <thead>
-                                        <tr>
-                                            <th className="py-3 px-4 text-xs font-black uppercase tracking-widest text-slate-400 border-b-2 border-slate-200">Student</th>
-                                            <th className="py-3 px-4 text-xs font-black uppercase tracking-widest text-slate-400 border-b-2 border-slate-200">Average</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {decoratedStudents.map((student) => (
-                                            <tr key={student.id} className="hover:bg-slate-50 border-b border-slate-100">
-                                                <td className="py-4 px-4 font-bold text-slate-800 flex items-center gap-3">
-                                                    <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-xs">{student.avatar}</div>
-                                                    {student.name}
-                                                </td>
-                                                <td className="py-4 px-4 font-black text-emerald-600 bg-emerald-50/50">{student.averageScore}%</td>
+                                <>
+                                    <table className="w-full text-left border-collapse min-w-[600px]">
+                                        <thead>
+                                            <tr>
+                                                <th className="py-3 px-4 text-xs font-black uppercase tracking-widest text-slate-400 border-b-2 border-slate-200">Student</th>
+                                                <th className="py-3 px-4 text-xs font-black uppercase tracking-widest text-slate-400 border-b-2 border-slate-200">
+                                                    {gradingMode === 'PERCENT' ? 'Average Score' : 'CBC Rating / Descriptor'}
+                                                </th>
                                             </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
+                                        </thead>
+                                        <tbody>
+                                            {decoratedStudents.map((student) => {
+                                                const cbc = getCBCDescriptor(student.averageScore);
+                                                return (
+                                                    <tr key={student.id} className="hover:bg-slate-50 border-b border-slate-100">
+                                                        <td className="py-4 px-4 font-bold text-slate-800 flex items-center gap-3">
+                                                            <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-xs">{student.avatar}</div>
+                                                            {student.name}
+                                                        </td>
+                                                        <td className="py-4 px-4">
+                                                            {gradingMode === 'PERCENT' ? (
+                                                                <span className="font-black text-emerald-600 bg-emerald-50/50 px-2.5 py-1 rounded-lg border border-emerald-100">
+                                                                    {student.averageScore}%
+                                                                </span>
+                                                            ) : (
+                                                                <div className="flex items-center gap-2">
+                                                                    <span className={`px-2.5 py-1 rounded-full font-black text-xs border ${cbc.color}`}>
+                                                                        {cbc.code}
+                                                                    </span>
+                                                                    <span className="text-xs font-bold text-slate-500">
+                                                                        {cbc.label}
+                                                                    </span>
+                                                                </div>
+                                                            )}
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            })}
+                                        </tbody>
+                                    </table>
+
+                                    {/* CBC Scale Legend */}
+                                    {gradingMode === 'CBC' && (
+                                        <div className="mt-8 p-5 bg-indigo-50/20 rounded-3xl border border-indigo-100/80">
+                                            <h4 className="text-xs font-black text-indigo-900 uppercase tracking-widest mb-3 flex items-center gap-1.5">
+                                                <Brain className="w-4 h-4 text-indigo-650" />
+                                                Kenyan JSS CBC Grading Scale Legend
+                                            </h4>
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                                                <div className="flex items-center gap-3 p-3 bg-white rounded-2xl border border-slate-150 shadow-sm">
+                                                    <span className="px-2.5 py-0.5 rounded-lg text-[10px] font-black bg-emerald-100 text-emerald-800 border border-emerald-200">EE</span>
+                                                    <div className="text-[10px] leading-tight">
+                                                        <p className="font-black text-slate-850">Exceeding Expectation</p>
+                                                        <p className="text-slate-400 font-bold mt-0.5">80% - 100%</p>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center gap-3 p-3 bg-white rounded-2xl border border-slate-150 shadow-sm">
+                                                    <span className="px-2.5 py-0.5 rounded-lg text-[10px] font-black bg-blue-100 text-blue-800 border border-blue-200">ME</span>
+                                                    <div className="text-[10px] leading-tight">
+                                                        <p className="font-black text-slate-850">Meeting Expectation</p>
+                                                        <p className="text-slate-400 font-bold mt-0.5">60% - 79%</p>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center gap-3 p-3 bg-white rounded-2xl border border-slate-150 shadow-sm">
+                                                    <span className="px-2.5 py-0.5 rounded-lg text-[10px] font-black bg-amber-100 text-amber-800 border border-amber-200">AE</span>
+                                                    <div className="text-[10px] leading-tight">
+                                                        <p className="font-black text-slate-850">Approaching Expectation</p>
+                                                        <p className="text-slate-400 font-bold mt-0.5">40% - 59%</p>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center gap-3 p-3 bg-white rounded-2xl border border-slate-150 shadow-sm">
+                                                    <span className="px-2.5 py-0.5 rounded-lg text-[10px] font-black bg-rose-100 text-rose-800 border border-rose-200">BE</span>
+                                                    <div className="text-[10px] leading-tight">
+                                                        <p className="font-black text-slate-850">Below Expectation</p>
+                                                        <p className="text-slate-400 font-bold mt-0.5">0% - 39%</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+                                </>
                             )}
                         </div>
                     )}
@@ -474,12 +566,18 @@ View full dashboard: https://somaai.co.ke/parent/${student.id}`;
                             </div>
 
                             {/* Actions & Filters */}
-                            <div className="flex justify-between items-center">
+                            <div className="flex justify-between items-center gap-4 flex-wrap">
                                 <h3 className="text-lg font-black text-slate-800">Student Profiles</h3>
-                                <div className="flex gap-2">
+                                <div className="flex items-center gap-3">
+                                    <button
+                                        onClick={() => setIsBillingModalOpen(true)}
+                                        className="bg-indigo-650 hover:bg-indigo-750 text-white px-4 py-2.5 rounded-xl text-xs font-black flex items-center gap-1.5 shadow-md shadow-indigo-100 hover:shadow-lg transition-all uppercase tracking-wider"
+                                    >
+                                        <Smartphone className="w-4 h-4" /> Collect Fees (M-Pesa)
+                                    </button>
                                     <button
                                         onClick={() => setSelectedStudents(decoratedStudents.length === selectedStudents.length ? [] : decoratedStudents.map(s => s.id))}
-                                        className="text-sm font-bold text-slate-500 hover:text-emerald-600 transition-colors px-3 py-1"
+                                        className="text-sm font-bold text-slate-500 hover:text-emerald-650 transition-colors px-3 py-1"
                                     >
                                         {selectedStudents.length === decoratedStudents.length ? 'Deselect All' : 'Select All'}
                                     </button>
@@ -579,6 +677,16 @@ View full dashboard: https://somaai.co.ke/parent/${student.id}`;
                         </div>
                     )}
                 </motion.div>
+            </AnimatePresence>
+
+            <AnimatePresence>
+                {isBillingModalOpen && (
+                    <BulkBillingModal 
+                        isOpen={isBillingModalOpen} 
+                        onClose={() => setIsBillingModalOpen(false)} 
+                        students={decoratedStudents}
+                    />
+                )}
             </AnimatePresence>
         </div>
     );

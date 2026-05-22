@@ -43,7 +43,7 @@ export const updateSubscription = async (userId: string, plan: SubscriptionPlan)
         const now = new Date();
         // If we are before launch, the subscription starts AT launch date
         const baseDate = now < LAUNCH_DATE ? new Date(LAUNCH_DATE) : new Date(now);
-        let expiryDate = new Date(baseDate);
+        const expiryDate = new Date(baseDate);
 
         switch (plan.duration) {
             case 'DAILY': expiryDate.setDate(baseDate.getDate() + 1); break;

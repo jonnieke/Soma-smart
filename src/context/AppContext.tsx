@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useRef, ReactNode } from 'react';
 import { LearnerActivity, UserRole, TeacherProfile, TeacherActivity, SchoolProfile, SchoolStats, SchoolTeacher, SchoolMaterial, TeacherWallet, TutoringRequest, MaterialListing, SubscriptionPlan, SubscriptionTier, ChatMessage, SpacedRepetitionItem, TeachingStrategy, PedagogicalAnalytics, EducationLevel } from '../types';
-import { processQuizResult, getDueTopics, getWeakTopics, loadSRFromLocal, loadMasteryFromLocal, getPersonalizedChallenge } from '../services/spacedRepetitionService';
+import { processQuizResult, getDueTopics, getWeakTopics, loadSRFromLocal, loadMasteryFromLocal, saveMasteryToLocal, getPersonalizedChallenge } from '../services/spacedRepetitionService';
 import { loadStrategiesFromLocal, approveStrategy as approveStrategyFn, rejectStrategy as rejectStrategyFn, addStrategies, getActiveStrategies, getPendingStrategies } from '../services/strategyService';
 import { classroomService } from '../services/classroomService';
 import { warnIfDev } from '../utils/logger';
@@ -71,6 +71,7 @@ interface AppContextType {
   dueForReview: SpacedRepetitionItem[];
   weakTopics: string[];
   processQuizCompletion: (topic: string, score: number, subject?: string, grade?: string) => void;
+  updateTopicMastery: (topic: string, score: number) => void;
   addSpacedRepetitionItem: (item: SpacedRepetitionItem) => void;
   getPersonalizedDailyChallenge: () => { topic: string; title: string; quiz: string; isPersonalized: boolean };
   // Super Teacher Phase 3: Evolutionary Educator
@@ -1696,6 +1697,17 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   };
 
+  const updateTopicMastery = (topic: string, score: number) => {
+    const cleanTitle = topic.replace(/[\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD00-\uDFFF]/g, '').trim();
+    setMasteryGraph(prev => {
+      const currentScore = prev[cleanTitle] ?? 0;
+      const newScore = Math.max(currentScore, score);
+      const updated = { ...prev, [cleanTitle]: newScore };
+      saveMasteryToLocal(updated);
+      return updated;
+    });
+  };
+
   const addSpacedRepetitionItem = (item: SpacedRepetitionItem) => {
     setSpacedRepetitionItems(prev => {
       const exists = prev.find(i => i.topic === item.topic);
@@ -2915,7 +2927,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     teachingStrategies, activeStrategies, pendingStrategies,
     pedagogicalAnalytics, isAdminAgentRunning,
     runAdminAgent, approveTeachingStrategy, rejectTeachingStrategy,
-    educationLevel, setEducationLevel
+    educationLevel, setEducationLevel,
+    updateTopicMastery
   };
 
   return (

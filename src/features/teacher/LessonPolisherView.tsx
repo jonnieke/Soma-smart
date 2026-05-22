@@ -9,10 +9,16 @@ import {
     ArrowUpRight,
     Brain,
     Bot,
-    Copy
+    Copy,
+    Mic,
+    Square,
+    Play,
+    Pause,
+    Trash2,
+    Loader2
 } from 'lucide-react';
 import { Button } from '../../components/Shared';
-import { polishLessonPlan } from '../../services/geminiService';
+import { polishLessonPlan, transcribeTeacherLesson } from '../../services/geminiService';
 
 interface LessonPolisherViewProps {
     onBack: () => void;
@@ -25,6 +31,139 @@ export const LessonPolisherView: React.FC<LessonPolisherViewProps> = ({ onBack, 
     const [isAnalyzing, setIsAnalyzing] = React.useState(false);
     const [analysisResult, setAnalysisResult] = React.useState<any | null>(null);
     const [error, setError] = React.useState<string | null>(null);
+
+    // Speech recording state
+    const mediaRecorderRef = React.useRef<MediaRecorder | null>(null);
+    const audioChunksRef = React.useRef<Blob[]>([]);
+    const [recordingState, setRecordingState] = React.useState<'idle' | 'recording' | 'paused' | 'transcribing'>('idle');
+    const [recordingTime, setRecordingTime] = React.useState(0);
+    const [audioUrl, setAudioUrl] = React.useState<string | null>(null);
+    const [audioBlob, setAudioBlob] = React.useState<Blob | null>(null);
+
+    React.useEffect(() => {
+        let interval: any = null;
+        if (recordingState === 'recording') {
+            interval = setInterval(() => {
+                setRecordingTime(prev => prev + 1);
+            }, 1000);
+        } else {
+            clearInterval(interval);
+        }
+        return () => clearInterval(interval);
+    }, [recordingState]);
+
+    const formatTime = (secs: number) => {
+        const m = Math.floor(secs / 60).toString().padStart(2, '0');
+        const s = (secs % 60).toString().padStart(2, '0');
+        return `${m}:${s}`;
+    };
+
+    const blobToBase64 = (blob: Blob): Promise<string> => {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                if (typeof reader.result === 'string') {
+                    const base64String = reader.result.split(',')[1];
+                    resolve(base64String);
+                } else {
+                    reject(new Error("Failed to convert blob to base64"));
+                }
+            };
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+        });
+    };
+
+    const startRecording = async () => {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            audioChunksRef.current = [];
+            
+            let options = { mimeType: 'audio/webm' };
+            if (!MediaRecorder.isTypeSupported('audio/webm')) {
+                options = { mimeType: 'audio/mp4' };
+            }
+            
+            const recorder = new MediaRecorder(stream, options);
+            mediaRecorderRef.current = recorder;
+            
+            recorder.ondataavailable = (e) => {
+                if (e.data && e.data.size > 0) {
+                    audioChunksRef.current.push(e.data);
+                }
+            };
+            
+            recorder.onstop = async () => {
+                const finalBlob = new Blob(audioChunksRef.current, { type: options.mimeType });
+                setAudioBlob(finalBlob);
+                
+                const url = URL.createObjectURL(finalBlob);
+                setAudioUrl(url);
+                
+                // Stop all tracks on the stream to release microphone
+                stream.getTracks().forEach(track => track.stop());
+                
+                // Process transcription
+                setRecordingState('transcribing');
+                try {
+                    const base64 = await blobToBase64(finalBlob);
+                    const transcript = await transcribeTeacherLesson(base64, options.mimeType, subject, grade);
+                    if (transcript) {
+                        setLessonPlan(prev => prev ? `${prev}\n\n${transcript}` : transcript);
+                    }
+                } catch (err) {
+                    console.error("Transcription error:", err);
+                    setError("Failed to transcribe audio. You can still play your audio or type notes manually.");
+                } finally {
+                    setRecordingState('idle');
+                }
+            };
+            
+            recorder.start(1000);
+            setRecordingState('recording');
+            setRecordingTime(0);
+            setError(null);
+        } catch (err: any) {
+            console.error("Error accessing microphone:", err);
+            setError("Could not access your microphone. Please check system permissions.");
+            setRecordingState('idle');
+        }
+    };
+
+    const pauseRecording = () => {
+        if (mediaRecorderRef.current && recordingState === 'recording') {
+            mediaRecorderRef.current.pause();
+            setRecordingState('paused');
+        }
+    };
+
+    const resumeRecording = () => {
+        if (mediaRecorderRef.current && recordingState === 'paused') {
+            mediaRecorderRef.current.resume();
+            setRecordingState('recording');
+        }
+    };
+
+    const stopRecording = () => {
+        if (mediaRecorderRef.current && (recordingState === 'recording' || recordingState === 'paused')) {
+            mediaRecorderRef.current.stop();
+        }
+    };
+
+    const discardRecording = () => {
+        if (mediaRecorderRef.current) {
+            mediaRecorderRef.current.onstop = () => {
+                if (mediaRecorderRef.current?.stream) {
+                    mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
+                }
+            };
+            mediaRecorderRef.current.stop();
+        }
+        setRecordingState('idle');
+        setRecordingTime(0);
+        setAudioBlob(null);
+        setAudioUrl(null);
+    };
 
     const handleAnalyze = async () => {
         if (!lessonPlan.trim()) return;
@@ -68,6 +207,130 @@ export const LessonPolisherView: React.FC<LessonPolisherViewProps> = ({ onBack, 
                         <p className="text-slate-500 font-medium mb-6 text-sm leading-relaxed italic">
                             "Paste your existing lesson plan or draft notes below. We'll cross-reference it with your student's recorded weak points and suggest data-driven refinements."
                         </p>
+
+                        {/* Option D: Voice-to-Text Lesson Notes Section */}
+                        <div className="mb-6 bg-slate-50/85 rounded-[1.5rem] p-5 border border-slate-100 space-y-4 shadow-inner">
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                <div>
+                                    <h4 className="text-xs font-black text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                                        <Mic className="w-4 h-4 text-amber-500" /> Speak Lesson Notes
+                                    </h4>
+                                    <p className="text-[10px] text-slate-400 font-bold mt-0.5">
+                                        Record your dictation. Swahili subjects generate Swahili notes, others English.
+                                    </p>
+                                </div>
+
+                                {recordingState === 'idle' && (
+                                    <Button
+                                        onClick={startRecording}
+                                        type="button"
+                                        className="py-2.5 px-4 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-black text-xs uppercase tracking-wider shadow-md hover:shadow-lg transition-all flex items-center gap-2 justify-center"
+                                    >
+                                        <Mic className="w-3.5 h-3.5" /> Start Recording
+                                    </Button>
+                                )}
+                            </div>
+
+                            {recordingState !== 'idle' && (
+                                <div className="bg-slate-900 text-white p-4 rounded-xl flex flex-col sm:flex-row items-center justify-between gap-4 shadow-lg border border-slate-850">
+                                    <div className="flex items-center gap-3">
+                                        <motion.div
+                                            className="w-3 h-3 bg-rose-500 rounded-full shrink-0"
+                                            animate={{ opacity: recordingState === 'recording' ? [0.4, 1, 0.4] : 1 }}
+                                            transition={{ duration: 1.5, repeat: Infinity }}
+                                        />
+                                        
+                                        <div className="font-mono text-sm font-bold">
+                                            {recordingState === 'recording' ? 'Recording' : recordingState === 'paused' ? 'Paused' : 'Transcribing...'} ({formatTime(recordingTime)})
+                                        </div>
+
+                                        {recordingState === 'recording' && (
+                                            <div className="flex items-center gap-0.5 h-6 px-2 shrink-0">
+                                                <motion.div className="w-1 h-3 bg-rose-500 rounded-full" animate={{ scaleY: [1, 2, 0.7, 1.5, 1] }} transition={{ duration: 1, repeat: Infinity, delay: 0 }} style={{ originY: 0.5 }} />
+                                                <motion.div className="w-1 h-3 bg-rose-500 rounded-full" animate={{ scaleY: [1, 1.5, 2.2, 0.8, 1] }} transition={{ duration: 1.1, repeat: Infinity, delay: 0.2 }} style={{ originY: 0.5 }} />
+                                                <motion.div className="w-1 h-3 bg-rose-500 rounded-full" animate={{ scaleY: [1, 0.6, 1.8, 2.5, 1] }} transition={{ duration: 0.9, repeat: Infinity, delay: 0.4 }} style={{ originY: 0.5 }} />
+                                                <motion.div className="w-1 h-3 bg-rose-500 rounded-full" animate={{ scaleY: [1, 2, 0.5, 1.2, 1] }} transition={{ duration: 1.2, repeat: Infinity, delay: 0.1 }} style={{ originY: 0.5 }} />
+                                                <motion.div className="w-1 h-3 bg-rose-500 rounded-full" animate={{ scaleY: [1, 1.3, 2, 0.7, 1] }} transition={{ duration: 1, repeat: Infinity, delay: 0.3 }} style={{ originY: 0.5 }} />
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                                        {recordingState === 'recording' && (
+                                            <button
+                                                onClick={pauseRecording}
+                                                type="button"
+                                                className="p-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg transition-colors"
+                                                title="Pause"
+                                            >
+                                                <Pause className="w-4 h-4" />
+                                            </button>
+                                        )}
+                                        {recordingState === 'paused' && (
+                                            <button
+                                                onClick={resumeRecording}
+                                                type="button"
+                                                className="p-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg transition-colors"
+                                                title="Resume"
+                                            >
+                                                <Play className="w-4 h-4" />
+                                            </button>
+                                        )}
+                                        {(recordingState === 'recording' || recordingState === 'paused') && (
+                                            <>
+                                                <button
+                                                    onClick={stopRecording}
+                                                    type="button"
+                                                    className="p-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg transition-colors"
+                                                    title="Stop & Transcribe"
+                                                >
+                                                    <Square className="w-4 h-4" />
+                                                </button>
+                                                <button
+                                                    onClick={discardRecording}
+                                                    type="button"
+                                                    className="p-2 bg-rose-600 hover:bg-rose-500 text-white rounded-lg transition-colors"
+                                                    title="Discard"
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                </button>
+                                            </>
+                                        )}
+                                        {recordingState === 'transcribing' && (
+                                            <div className="flex items-center gap-2 text-xs font-bold text-amber-400">
+                                                <Loader2 className="w-4 h-4 animate-spin text-amber-400" />
+                                                Transcribing Swahili/English notes...
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+
+                            {audioUrl && recordingState === 'idle' && (
+                                <div className="p-3 bg-amber-50/50 border border-amber-100 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-8 h-8 rounded-lg bg-amber-100 text-amber-600 flex items-center justify-center font-bold text-xs">
+                                            REC
+                                        </div>
+                                        <div>
+                                            <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider">Recorded Audio Review</span>
+                                            <p className="text-[9px] text-slate-400 font-medium">Verify your audio before polishing.</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-3 shrink-0">
+                                        <audio src={audioUrl} controls className="h-7 w-48 sm:w-64" />
+                                        <button
+                                            onClick={() => { setAudioUrl(null); setAudioBlob(null); }}
+                                            type="button"
+                                            className="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg transition-colors"
+                                            title="Clear"
+                                        >
+                                            <Trash2 className="w-4 h-4" />
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
 
                         <textarea
                             value={lessonPlan}

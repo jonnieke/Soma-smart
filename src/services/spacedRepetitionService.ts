@@ -39,7 +39,7 @@ export const calculateNextReview = (
 
     let easeFactor = currentItem?.easeFactor ?? DEFAULT_EASE_FACTOR;
     let intervalDays = currentItem?.intervalDays ?? MIN_INTERVAL;
-    let reviewCount = (currentItem?.reviewCount ?? 0) + 1;
+    const reviewCount = (currentItem?.reviewCount ?? 0) + 1;
 
     if (quality < 3) {
         // Failed — reset interval, review soon
