@@ -226,6 +226,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [teacherWallet, setTeacherWallet] = useState<TeacherWallet | null>(null);
   const [isAvailableForTutoring, setIsAvailableForTutoring] = useState<boolean>(false);
   const teacherWalletAccessDeniedRef = useRef(false);
+  const teacherWalletFetchInFlightRef = useRef(false);
+  const teacherWalletRetryAfterRef = useRef(0);
   const pendingClassJoinRef = useRef(false);
   const historyFetchWarnedRef = useRef(false);
   const learnerHistoryFetchInFlightRef = useRef(false);
@@ -1521,8 +1523,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const fetchEarnings = async () => {
     if (!userId) return;
+    if (isOptionalDataUnavailable('teacher_wallet')) return;
     if (teacherWalletAccessDeniedRef.current) return;
+    if (teacherWalletFetchInFlightRef.current) return;
+    if (Date.now() < teacherWalletRetryAfterRef.current) return;
 
+    teacherWalletFetchInFlightRef.current = true;
     try {
       // 1. Fetch Wallet
       const { data: wallet, error: walletError } = await supabase.from('teacher_wallets').select('*').eq('id', userId).maybeSingle();
@@ -1530,6 +1536,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       if (walletError) {
         if (isWalletForbiddenError(walletError)) {
           teacherWalletAccessDeniedRef.current = true;
+          markOptionalDataUnavailable('teacher_wallet');
           setTeacherWallet(prev => prev || { balance: 0, currency: 'KES', transactions: [] });
           warnIfDev('Teacher wallet access denied by RLS. Skipping wallet polling.');
           return;
@@ -1542,6 +1549,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       if (txError) {
         if (isWalletForbiddenError(txError)) {
           teacherWalletAccessDeniedRef.current = true;
+          markOptionalDataUnavailable('teacher_wallet');
           setTeacherWallet(prev => prev || { balance: 0, currency: 'KES', transactions: [] });
           warnIfDev('Transactions access denied by RLS. Skipping earnings polling.');
           return;
@@ -1569,6 +1577,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           const { error: insertError } = await supabase.from('teacher_wallets').insert([{ id: userId, balance: 0, currency: 'KES' }]);
           if (insertError && isWalletForbiddenError(insertError)) {
             teacherWalletAccessDeniedRef.current = true;
+            markOptionalDataUnavailable('teacher_wallet');
             warnIfDev('Wallet auto-create blocked by RLS. Disabling wallet retries.');
           }
         } catch (insertErr) {
@@ -1577,7 +1586,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         setTeacherWallet({ balance: 0, currency: 'KES', transactions: [] });
       }
     } catch (e) {
+      teacherWalletRetryAfterRef.current = Date.now() + 2 * 60 * 1000;
       warnIfDev("Fetch Earnings Error:", e);
+    } finally {
+      teacherWalletFetchInFlightRef.current = false;
     }
   };
 
@@ -1616,6 +1628,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   useEffect(() => {
     teacherWalletAccessDeniedRef.current = false;
+    teacherWalletFetchInFlightRef.current = false;
+    teacherWalletRetryAfterRef.current = 0;
   }, [userId]);
 
   const startGuestSession = () => {
@@ -2863,13 +2877,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       fetchEarnings();
     }
 
+    const shouldPoll = () => typeof document === 'undefined' || document.visibilityState === 'visible';
     const interval = setInterval(() => {
+      if (!shouldPoll()) return;
       fetchMarketplaceMaterials();
       fetchTutoringRequests();
       if (role === UserRole.TEACHER && userId && !teacherWalletAccessDeniedRef.current) {
         fetchEarnings();
       }
-    }, 30000); // Poll every 30s
+    }, 60000); // Poll every 60s when tab is visible
     return () => clearInterval(interval);
   }, [role, userId, educationLevel]);
 

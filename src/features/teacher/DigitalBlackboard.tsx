@@ -27,6 +27,11 @@ export const DigitalBlackboard: React.FC<DigitalBlackboardProps> = ({ onClose, t
     const [fontSize, setFontSize] = useState(24);
     const [activeSection, setActiveSection] = useState<'NOTES' | 'SIMPLIFIED'>(simplifiedContent ? 'SIMPLIFIED' : 'NOTES');
     const [isFullScreen, setIsFullScreen] = useState(false);
+    const deepDive = typeof content === 'string' ? content.trim() : '';
+    const summary = typeof simplifiedContent === 'string' ? simplifiedContent.trim() : '';
+    const hasAnyContent = Boolean(deepDive || summary);
+    const activeText = activeSection === 'SIMPLIFIED' ? (summary || deepDive) : (deepDive || summary);
+    const fallbackText = `## No note content found\n\nThis blackboard item has no readable lesson text yet.\n\n- Open **Create Notes** to generate content.\n- Or open **Library** and select another note.`;
 
     // Fullscreen toggle helper
     const toggleFullScreen = () => {
@@ -128,7 +133,7 @@ export const DigitalBlackboard: React.FC<DigitalBlackboardProps> = ({ onClose, t
                             isDarkMode ? 'prose prose-invert prose-slate' : 'prose prose-slate'
                         }`}
                 >
-                    <MarkdownText content={activeSection === 'SIMPLIFIED' ? (simplifiedContent || '') : content} />
+                    <MarkdownText content={hasAnyContent ? activeText : fallbackText} />
                 </motion.div>
             </div>
 

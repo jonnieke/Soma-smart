@@ -26,6 +26,7 @@ export const ParentDashboard: React.FC<ParentProps> = ({ onNavigate, activityLog
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [showLogoutModal, setShowLogoutModal] = useState(false);
+    const [proofShareStatus, setProofShareStatus] = useState<'idle' | 'copied' | 'shared'>('idle');
     
     // Cloud Memory State
     const [cloudMemoryRow, setCloudMemoryRow] = useState<any>(null);
@@ -201,6 +202,104 @@ export const ParentDashboard: React.FC<ParentProps> = ({ onNavigate, activityLog
         };
     }, [activityLog]);
 
+    const proofStats = useMemo(() => {
+        const parseDetails = (activity: LearnerActivity): Record<string, any> => {
+            if (!activity.details) return {};
+            try {
+                return JSON.parse(activity.details);
+            } catch (_) {
+                return {};
+            }
+        };
+
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+        const recentActivities = activityLog.filter(activity => {
+            if (!activity.date) return true;
+            const parsed = new Date(activity.date);
+            return Number.isNaN(parsed.getTime()) || parsed >= sevenDaysAgo;
+        });
+
+        const quizReviews = recentActivities
+            .filter(activity => activity.type === 'QUIZ')
+            .map(parseDetails)
+            .filter(details => details.review?.missedQuestions?.length);
+
+        const repairedQuestions = quizReviews.reduce((total, details) => {
+            return total + (details.review?.missedQuestions?.length || 0);
+        }, 0);
+
+        const activeRecallBreaks = recentActivities.filter(activity => {
+            const details = parseDetails(activity);
+            return details.mode === 'active_recall_break';
+        }).length;
+
+        const studyMissions = recentActivities.filter(activity => {
+            const details = parseDetails(activity);
+            return details.mode === 'library_study_mission';
+        }).length;
+
+        const studySessions = recentActivities.filter(activity => (
+            activity.type === 'EXPLANATION' || activity.type === 'STUDY'
+        )).length;
+
+        const nextAction = stats.weakAreas.length > 0
+            ? `Ask your child to redo ${stats.weakAreas[0]} and explain one correction aloud.`
+            : studyMissions === 0
+                ? 'Ask your child to complete one full library study mission: read, clarify, then test.'
+            : activeRecallBreaks > 0
+                ? 'Keep the daily recall habit and add one timed quiz this week.'
+                : 'Ask your child to complete one recall break after the next explanation.';
+
+        return {
+            studySessions,
+            studyMissions,
+            quizzes: recentActivities.filter(activity => activity.type === 'QUIZ').length,
+            activeRecallBreaks,
+            repairedQuestions,
+            nextAction
+        };
+    }, [activityLog, stats.weakAreas]);
+
+    const shareWeeklyProof = async () => {
+        const summary = [
+            'Soma Smart weekly learning proof',
+            `Student ID: ${validStudentCode}`,
+            `Average score: ${stats.avgScore}%`,
+            `Study missions completed: ${proofStats.studyMissions}`,
+            `Quizzes completed: ${proofStats.quizzes}`,
+            `Recall breaks: ${proofStats.activeRecallBreaks}`,
+            `Mistakes repaired: ${proofStats.repairedQuestions}`,
+            `Next action: ${proofStats.nextAction}`,
+            'https://somaai.co.ke'
+        ].join('\n');
+
+        try {
+            if (navigator.share) {
+                await navigator.share({
+                    title: 'Soma Smart weekly learning proof',
+                    text: summary
+                });
+                setProofShareStatus('shared');
+            } else if (navigator.clipboard?.writeText) {
+                await navigator.clipboard.writeText(summary);
+                setProofShareStatus('copied');
+            }
+            trackFunnelEvent('parent_weekly_proof_shared', {
+                method: navigator.share ? 'native_share' : 'clipboard',
+                avg_score: stats.avgScore,
+                study_missions: proofStats.studyMissions,
+                quizzes: proofStats.quizzes
+            });
+        } catch (_) {
+            if (navigator.clipboard?.writeText) {
+                await navigator.clipboard.writeText(summary);
+                setProofShareStatus('copied');
+            }
+        }
+    };
+
 
     // --- LOGIN VIEW ---
     if (!isAuthenticated) {
@@ -366,6 +465,48 @@ export const ParentDashboard: React.FC<ParentProps> = ({ onNavigate, activityLog
                         </div>
                     </div>
                 </motion.div>
+
+                {/* 1.25 PROOF OF LEARNING */}
+                <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl rounded-[2rem] p-6 md:p-7 shadow-xl shadow-slate-200/50 dark:shadow-none border border-white/60 dark:border-slate-800">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-5 mb-5">
+                        <div>
+                            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-600 dark:text-indigo-300 mb-1">Proof Of Learning</p>
+                            <h3 className="text-xl font-black text-slate-900 dark:text-white">Did they actually learn this week?</h3>
+                            <p className="text-sm font-semibold text-slate-500 dark:text-slate-400 mt-1">A quick parent view of effort, testing, memory work, and corrections.</p>
+                        </div>
+                        <div className="rounded-2xl bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-900 px-4 py-3">
+                            <p className="text-[10px] font-black uppercase tracking-widest text-indigo-600 dark:text-indigo-300">Next Parent Move</p>
+                            <p className="text-xs font-bold text-slate-700 dark:text-slate-200 mt-1 max-w-sm">{proofStats.nextAction}</p>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                        {[
+                            { label: 'Study Missions', value: proofStats.studyMissions, tone: 'bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300 border-blue-100 dark:border-blue-900' },
+                            { label: 'Quizzes', value: proofStats.quizzes, tone: 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 border-emerald-100 dark:border-emerald-900' },
+                            { label: 'Recall Breaks', value: proofStats.activeRecallBreaks, tone: 'bg-violet-50 dark:bg-violet-950/30 text-violet-700 dark:text-violet-300 border-violet-100 dark:border-violet-900' },
+                            { label: 'Mistakes Repaired', value: proofStats.repairedQuestions, tone: 'bg-rose-50 dark:bg-rose-950/30 text-rose-700 dark:text-rose-300 border-rose-100 dark:border-rose-900' }
+                        ].map((item) => (
+                            <div key={item.label} className={`rounded-2xl border p-4 ${item.tone}`}>
+                                <p className="text-[10px] font-black uppercase tracking-widest opacity-80">{item.label}</p>
+                                <p className="text-3xl font-black mt-1">{item.value}</p>
+                            </div>
+                        ))}
+                    </div>
+                    <p className="mt-3 text-[11px] font-bold text-slate-500 dark:text-slate-400">
+                        Total learning touches this week: {proofStats.studySessions}. Study missions only count when the learner reads, clarifies, and tests.
+                    </p>
+                    <button
+                        onClick={shareWeeklyProof}
+                        className="mt-4 w-full md:w-auto rounded-2xl bg-slate-900 dark:bg-white text-white dark:text-slate-950 px-5 py-3 text-xs font-black uppercase tracking-wider hover:opacity-90 transition-opacity"
+                    >
+                        {proofShareStatus === 'shared'
+                            ? 'Weekly Proof Shared'
+                            : proofShareStatus === 'copied'
+                                ? 'Weekly Proof Copied'
+                                : 'Share Weekly Proof'}
+                    </button>
+                </div>
 
                 {/* 1.5 PARENT PROOF LAYER */}
                 <div className="grid lg:grid-cols-3 gap-6">

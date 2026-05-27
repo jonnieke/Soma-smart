@@ -70,7 +70,22 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
         chatMessages, sendChatMessage, fetchChatMessages,
         marketplaceMaterials, listMaterial
     } = useApp();
-    const t = translations[language];
+    const baseTranslations = (translations as Record<string, any>).EN ?? Object.values(translations)[0] ?? {};
+    const activeTranslations = (translations as Record<string, any>)[language] ?? baseTranslations;
+    const baseTeacherTranslations = baseTranslations.teacher ?? {};
+    const activeTeacherTranslations = activeTranslations.teacher ?? {};
+    const t = {
+        ...baseTranslations,
+        ...activeTranslations,
+        teacher: {
+            ...baseTeacherTranslations,
+            ...activeTeacherTranslations,
+            library: { ...(baseTeacherTranslations.library ?? {}), ...(activeTeacherTranslations.library ?? {}) },
+            results: { ...(baseTeacherTranslations.results ?? {}), ...(activeTeacherTranslations.results ?? {}) },
+            logoutModal: { ...(baseTeacherTranslations.logoutModal ?? {}), ...(activeTeacherTranslations.logoutModal ?? {}) },
+            onboarding: { ...(baseTeacherTranslations.onboarding ?? {}), ...(activeTeacherTranslations.onboarding ?? {}) },
+        },
+    };
     const [showPaywall, setShowPaywall] = useState(false);
     const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan | null>(null);
     const location = useLocation();
@@ -81,9 +96,33 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
     const [showRegister, setShowRegister] = useState(false);
     const [authTab, setAuthTab] = useState<'TEACHER' | 'SCHOOL'>('TEACHER');
     const [workflowStepSignal, setWorkflowStepSignal] = useState<{ step: 'GENERATE_ASSESSMENT' | 'PUBLISH_STREAM'; message: string; at: number } | null>(null);
+    const [workflowProgress, setWorkflowProgress] = useState<{ generatedAssessment: boolean; publishedStream: boolean }>(() => {
+        try {
+            const raw = localStorage.getItem('soma_teacher_workflow_progress');
+            if (!raw) return { generatedAssessment: false, publishedStream: false };
+            const parsed = JSON.parse(raw);
+            return {
+                generatedAssessment: Boolean(parsed?.generatedAssessment),
+                publishedStream: Boolean(parsed?.publishedStream),
+            };
+        } catch {
+            return { generatedAssessment: false, publishedStream: false };
+        }
+    });
     const [paymentPlan, setPaymentPlan] = useState<SubscriptionPlan | null>(null);
     const [showLoginModal, setShowLoginModal] = useState(false);
     const [showLogoutModal, setShowLogoutModal] = useState(false);
+    const [showQuickStart, setShowQuickStart] = useState(false);
+    // Selection State (must be declared before effects that read them)
+    const [selectedClass, setSelectedClass] = useState<string>(teacherProfile?.classes?.[0] || "");
+    const [selectedSubject, setSelectedSubject] = useState<string>(teacherProfile?.subjects?.[0] || "");
+    const [setupNudgeDismissed, setSetupNudgeDismissed] = useState<boolean>(() => {
+        try {
+            return sessionStorage.getItem('soma_teacher_setup_nudge_dismissed') === '1';
+        } catch {
+            return false;
+        }
+    });
     const [teacherNotice, setTeacherNotice] = useState<{ type: 'success' | 'error' | 'info'; text: string } | null>(null);
     const [activeTab, setActiveTab] = useState<'DASHBOARD' | 'CREATION_HUB' | 'STUDENTS' | 'MARKING' | 'EARNINGS' | 'LIBRARY' | 'CONVERT' | 'VOICE' | 'QUIZ' | 'HOME' | 'MARKETPLACE' | 'PROFILE' | 'REPORTS' | 'DARASA_MODE' | 'SCHEMES' | 'LESSON_POLISH' | 'BLACKBOARD' | 'HOMEWORK'>(initialTab || 'DASHBOARD');
     const [loading, setLoading] = useState(false);
@@ -185,10 +224,34 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
         return () => window.clearTimeout(timeout);
     }, [workflowStepSignal]);
 
-    // Selection State
-    const [selectedClass, setSelectedClass] = useState<string>(teacherProfile?.classes?.[0] || "");
+    useEffect(() => {
+        if (!teacherProfile?.id) return;
+        const dismissedKey = `soma_teacher_quickstart_dismissed_${teacherProfile.id}`;
+        const isDismissed = localStorage.getItem(dismissedKey) === '1';
+        const normalizedClass = String(selectedClass || '').trim().toLowerCase();
+        const normalizedSubject = String(selectedSubject || '').trim().toLowerCase();
+        const hasPlaceholderContext =
+            !normalizedClass ||
+            !normalizedSubject ||
+            normalizedClass === 'selected department' ||
+            normalizedClass === 'department' ||
+            normalizedClass === 'classe' ||
+            normalizedSubject === 'selected department' ||
+            normalizedSubject === 'department' ||
+            normalizedSubject === 'subject';
+        const hasTeachingContext = !hasPlaceholderContext;
+        const completed = [hasTeachingContext, workflowProgress.generatedAssessment, workflowProgress.publishedStream].filter(Boolean).length;
+        if (completed >= 3) {
+            localStorage.setItem(dismissedKey, '1');
+            setShowQuickStart(false);
+            return;
+        }
+        if (!isDismissed) {
+            setShowQuickStart(true);
+        }
+    }, [teacherProfile?.id, selectedClass, selectedSubject, workflowProgress.generatedAssessment, workflowProgress.publishedStream]);
+
     const [showOnboarding, setShowOnboarding] = useState(false);
-    const [selectedSubject, setSelectedSubject] = useState<string>(teacherProfile?.subjects?.[0] || "");
 
     // Exam Generator State
     const [showExamGen, setShowExamGen] = useState(false);
@@ -234,6 +297,8 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
     const chunksRef = useRef<Blob[]>([]);
     const teacherNoticeTimeoutRef = useRef<number | null>(null);
+    const hasWelcomedContextRef = useRef(false);
+    const hasShownCompletionRef = useRef(false);
 
     const showTeacherNotice = (type: 'success' | 'error' | 'info', text: string) => {
         if (teacherNoticeTimeoutRef.current) {
@@ -244,6 +309,42 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
             setTeacherNotice(null);
         }, 5000);
     };
+
+    useEffect(() => {
+        const normalizedClass = String(selectedClass || '').trim().toLowerCase();
+        const normalizedSubject = String(selectedSubject || '').trim().toLowerCase();
+        const hasPlaceholderContext =
+            !normalizedClass ||
+            !normalizedSubject ||
+            normalizedClass === 'selected department' ||
+            normalizedClass === 'department' ||
+            normalizedClass === 'classe' ||
+            normalizedSubject === 'selected department' ||
+            normalizedSubject === 'department' ||
+            normalizedSubject === 'subject';
+        const hasTeachingContext = !hasPlaceholderContext;
+
+        if (hasTeachingContext && !hasWelcomedContextRef.current) {
+            hasWelcomedContextRef.current = true;
+            showTeacherNotice('success', 'Step 1 complete: Class and subject set. Now generate an assessment.');
+        }
+        if (!hasTeachingContext) {
+            hasWelcomedContextRef.current = false;
+        }
+
+        const allComplete = hasTeachingContext && workflowProgress.generatedAssessment && workflowProgress.publishedStream;
+        if (allComplete && !hasShownCompletionRef.current) {
+            hasShownCompletionRef.current = true;
+            if (teacherProfile?.id) {
+                localStorage.setItem(`soma_teacher_quickstart_dismissed_${teacherProfile.id}`, '1');
+            }
+            setShowQuickStart(false);
+            showTeacherNotice('success', 'Quick-start complete: Create, assign, and marking flow is ready.');
+        }
+        if (!allComplete) {
+            hasShownCompletionRef.current = false;
+        }
+    }, [selectedClass, selectedSubject, workflowProgress.generatedAssessment, workflowProgress.publishedStream, teacherProfile?.id]);
 
     // Update defaults when profile loads
     useEffect(() => {
@@ -331,7 +432,39 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
         metadata: Record<string, unknown> = {}
     ) => {
         setWorkflowStepSignal({ step, message, at: Date.now() });
+        showTeacherNotice('success', message);
+        setWorkflowProgress(prev => {
+            const next = {
+                generatedAssessment: prev.generatedAssessment || step === 'GENERATE_ASSESSMENT',
+                publishedStream: prev.publishedStream || step === 'PUBLISH_STREAM',
+            };
+            localStorage.setItem('soma_teacher_workflow_progress', JSON.stringify(next));
+            return next;
+        });
         trackFunnelEvent('teacher_workflow_step_completed', { step, ...metadata });
+    };
+
+    const resetWorkflowProgress = () => {
+        const cleared = { generatedAssessment: false, publishedStream: false };
+        setWorkflowProgress(cleared);
+        localStorage.setItem('soma_teacher_workflow_progress', JSON.stringify(cleared));
+        if (teacherProfile?.id) {
+            localStorage.removeItem(`soma_teacher_quickstart_dismissed_${teacherProfile.id}`);
+        }
+        setShowQuickStart(true);
+        setWorkflowStepSignal({
+            step: 'PUBLISH_STREAM',
+            message: 'Checklist reset. Start again from class and subject.',
+            at: Date.now(),
+        });
+        trackFunnelEvent('teacher_workflow_reset', { source: 'dashboard_overview' });
+    };
+
+    const dismissQuickStart = () => {
+        if (teacherProfile?.id) {
+            localStorage.setItem(`soma_teacher_quickstart_dismissed_${teacherProfile.id}`, '1');
+        }
+        setShowQuickStart(false);
     };
 
     const validateQuizForClassroom = (quiz: any): { ok: boolean; reason?: string } => {
@@ -400,7 +533,6 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                 ? `Quiz Assigned: ${title}\nSubject: ${selectedSubject}\nClass: ${selectedClass}\nQuestions: ${Array.isArray(content?.questions) ? content.questions.length : 0}`
                 : `Lesson Notes Shared: ${title}\nSubject: ${selectedSubject}\nClass: ${selectedClass}`;
             await classroomService.createPost(cls.id, teacherProfile.id, type === 'QUIZ' ? 'ASSIGNMENT' : 'ANNOUNCEMENT', body);
-            showTeacherNotice('success', type === 'QUIZ' ? "Quiz assigned to class stream." : "Lesson note shared to class stream.");
             markWorkflowStepCompleted(
                 'PUBLISH_STREAM',
                 type === 'QUIZ' ? 'Step 3 complete: Assessment published to stream.' : 'Step 3 complete: Lesson shared to stream.',
@@ -498,6 +630,31 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
     const handleAudioProcessing = async (blob: Blob) => {
         setLoading(true);
         try {
+            // Preferred path: generate both a lesson note and a quiz from the same recording.
+            try {
+                const { processDarasaRecording } = await loadTeacherGeminiService();
+                const combined = await processDarasaRecording(blob, blob.type, selectedSubject, selectedClass, language as 'EN' | 'SW');
+                if (combined?.note) {
+                    setGeneratedNote(combined.note);
+                    handleSaveToHistory('NOTE', combined.note.topic || 'Voice Lesson Note', combined.note);
+                }
+                if (combined?.quiz) {
+                    setGeneratedQuiz(combined.quiz);
+                    handleSaveToHistory('QUIZ', combined.quiz.topic || 'Voice Lesson Quiz', combined.quiz);
+                    markWorkflowStepCompleted(
+                        'GENERATE_ASSESSMENT',
+                        'Step 2 complete: Assessment generated from voice lesson.',
+                        { source: 'voice_lesson_capture', class_name: selectedClass, subject: selectedSubject }
+                    );
+                }
+                setActiveTab('VOICE');
+                setLoading(false);
+                return;
+            } catch (comboErr) {
+                console.warn("Voice note+quiz generation unavailable, falling back to note-only processing.", comboErr);
+            }
+
+            // Fallback path: keep prior behavior (note-only) if combined generation fails.
             const reader = new FileReader();
             reader.readAsDataURL(blob);
             reader.onloadend = async () => {
@@ -590,10 +747,36 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
 
     const loadHistoryItem = (item: TeacherActivity) => {
         if (item.type === 'NOTE') {
-            setGeneratedNote(item.content);
+            const raw = item.content as any;
+            const toText = (value: unknown): string => {
+                if (typeof value === 'string') return value.trim();
+                if (Array.isArray(value)) {
+                    return value
+                        .map((entry: any) => {
+                            if (typeof entry === 'string') return entry;
+                            if (entry && typeof entry === 'object') {
+                                return entry.content || entry.text || entry.body || entry.title || '';
+                            }
+                            return '';
+                        })
+                        .filter(Boolean)
+                        .join('\n\n')
+                        .trim();
+                }
+                return '';
+            };
+            const normalizedNote: TeacherNote = {
+                topic: String(raw?.topic || item.title || 'Lesson Note'),
+                structuredNotes: toText(raw?.structuredNotes || raw?.notes || raw?.content),
+                simplifiedNotes: toText(raw?.simplifiedNotes || raw?.summary),
+                date: String(raw?.date || item.date || new Date().toLocaleDateString()),
+            };
+            setGeneratedNote(normalizedNote);
+            setGeneratedQuiz(null);
             setActiveTab('CONVERT');
         } else {
             setGeneratedQuiz(item.content);
+            setGeneratedNote(null);
             setActiveTab('QUIZ');
         }
     };
@@ -661,17 +844,38 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
 
     const creationTabs = ['CREATION_HUB', 'CONVERT', 'VOICE', 'QUIZ', 'SCHEMES', 'LESSON_POLISH', 'HOMEWORK'] as const;
     const primaryTeacherNav = [
-        { tab: 'DASHBOARD', label: 'Dashboard' },
+        { tab: 'DASHBOARD', label: 'Home' },
+        { tab: 'CREATION_HUB', label: 'Create Content' },
         { tab: 'STUDENTS', label: 'Classroom' },
-        { tab: 'CREATION_HUB', label: 'Teach' },
-        { tab: 'MARKING', label: 'Assess' },
+        { tab: 'MARKING', label: 'Marking' },
         { tab: 'LIBRARY', label: 'Library' },
     ] as const;
+    const normalizedClassForSetup = String(selectedClass || '').trim().toLowerCase();
+    const normalizedSubjectForSetup = String(selectedSubject || '').trim().toLowerCase();
+    const hasContextForSetup =
+        Boolean(normalizedClassForSetup) &&
+        Boolean(normalizedSubjectForSetup) &&
+        !['selected department', 'department', 'classe'].includes(normalizedClassForSetup) &&
+        !['selected department', 'department', 'subject'].includes(normalizedSubjectForSetup);
+    const setupCompletedSteps = [
+        hasContextForSetup,
+        workflowProgress.generatedAssessment,
+        workflowProgress.publishedStream,
+    ].filter(Boolean).length;
+    const setupComplete = setupCompletedSteps >= 3;
     const isTeacherNavActive = (tab: typeof primaryTeacherNav[number]['tab']) => {
         if (tab === 'CREATION_HUB') return creationTabs.includes(activeTab as any);
         if (tab === 'STUDENTS') return activeTab === 'STUDENTS';
         if (tab === 'MARKING') return ['MARKING', 'BLACKBOARD'].includes(activeTab);
         return activeTab === tab;
+    };
+    const dismissSetupNudge = () => {
+        setSetupNudgeDismissed(true);
+        try {
+            sessionStorage.setItem('soma_teacher_setup_nudge_dismissed', '1');
+        } catch {
+            // ignore storage unavailability
+        }
     };
 
     return (
@@ -754,12 +958,25 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                         {primaryTeacherNav.map(item => (
                             <button
                                 key={item.tab}
-                                onClick={() => setActiveTab(item.tab)}
+                                onClick={() => setActiveTab(item.tab === 'CREATION_HUB' ? 'CONVERT' : item.tab)}
                                 className={`pb-1 text-base tracking-wide font-black transition-all ${isTeacherNavActive(item.tab) ? 'text-emerald-600 border-b-2 border-emerald-600' : 'text-slate-500 hover:text-slate-900'}`}
                             >
                                 {item.label}
                             </button>
                         ))}
+                        <button
+                            onClick={() => {
+                                dismissSetupNudge();
+                                setActiveTab('DASHBOARD');
+                            }}
+                            className={`ml-1 inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-[11px] font-black uppercase tracking-wider transition-colors ${setupComplete
+                                ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                                : `border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100 ${setupNudgeDismissed ? '' : 'animate-pulse'}`
+                                }`}
+                            title={setupComplete ? 'Teacher setup complete' : 'Resume setup'}
+                        >
+                            {setupComplete ? 'Setup Complete' : `Setup ${setupCompletedSteps}/3`}
+                        </button>
                     </div>
 
                     {/* Right: Actions Menu */}
@@ -793,7 +1010,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                 </div>
             </div>
 
-            <div className="max-w-5xl mx-auto px-6 pt-8 pb-24">
+            <div className="max-w-5xl mx-auto px-4 sm:px-6 pt-5 sm:pt-8 pb-28 md:pb-24">
                 {teacherNotice && (
                     <div className={`mb-6 flex items-start gap-3 rounded-2xl border px-4 py-3 ${teacherNotice.type === 'success'
                         ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
@@ -834,6 +1051,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                             selectedClass={selectedClass}
                             selectedSubject={selectedSubject}
                             onAssignQuiz={handleAssignQuiz}
+                            onWorkflowStepCompleted={markWorkflowStepCompleted}
                         />
                     </motion.div>
                 )}
@@ -907,6 +1125,10 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                             onHistoryItemClick={loadHistoryItem}
                             onTrackEvent={trackFunnelEvent}
                             workflowStepSignal={workflowStepSignal}
+                            workflowProgress={workflowProgress}
+                            onResetWorkflowProgress={resetWorkflowProgress}
+                            showQuickStart={showQuickStart}
+                            onDismissQuickStart={dismissQuickStart}
                         />
                     </motion.div>
                 )}
@@ -997,6 +1219,25 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                         <MarkingManager />
                     )
                 }
+                {activeTab === 'BLACKBOARD' && !generatedNote && (
+                    <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="bg-white rounded-[2rem] border-2 border-slate-100 p-8 text-center">
+                        <div className="w-14 h-14 mx-auto rounded-2xl bg-slate-100 text-slate-600 flex items-center justify-center mb-4">
+                            <MonitorPlay className="w-7 h-7" />
+                        </div>
+                        <h3 className="text-xl font-black text-slate-900">Digital Blackboard is ready</h3>
+                        <p className="mt-2 text-sm font-semibold text-slate-500">
+                            Generate a note first, then launch projector mode.
+                        </p>
+                        <div className="mt-5 flex flex-col sm:flex-row gap-3 justify-center">
+                            <Button onClick={() => setActiveTab('CONVERT')} className="rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black uppercase tracking-wider text-xs">
+                                Create Notes
+                            </Button>
+                            <Button variant="outline" onClick={() => setActiveTab('LIBRARY')} className="rounded-xl border-2 font-black uppercase tracking-wider text-xs">
+                                Open Library
+                            </Button>
+                        </div>
+                    </motion.div>
+                )}
                 {
                     activeTab === 'EARNINGS' && (
                         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6 pb-24">
@@ -1206,11 +1447,113 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                         <TeacherReports />
                     )
                 }
-                {(activeTab === 'CONVERT' || activeTab === 'VOICE' || activeTab === 'QUIZ') && (
+                {activeTab === 'CONVERT' && !generatedNote && (
+                    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-white rounded-[2rem] border-2 border-slate-100 p-8 space-y-6">
+                        <div>
+                            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-600">Create Notes</p>
+                            <h3 className="text-2xl font-black text-slate-900">Upload a lesson file to generate notes</h3>
+                            <p className="text-sm font-semibold text-slate-500 mt-2">Use PDF, image, worksheet files, or record voice. We will convert to structured and simplified classroom notes.</p>
+                        </div>
+                        <div className="flex flex-col sm:flex-row gap-3">
+                            <Button
+                                onClick={() => setActiveTab('VOICE')}
+                                variant="outline"
+                                className="rounded-xl border-2 font-black uppercase tracking-wider text-xs"
+                            >
+                                <Mic className="w-4 h-4 mr-2" /> Record Brief Lesson
+                            </Button>
+                        </div>
+                        <label className="block rounded-2xl border-2 border-dashed border-emerald-300 bg-emerald-50/50 p-8 text-center cursor-pointer hover:bg-emerald-50 transition-colors">
+                            <FileText className="w-8 h-8 text-emerald-600 mx-auto mb-3" />
+                            <p className="text-sm font-black text-emerald-800">Click to upload lesson file</p>
+                            <p className="text-xs font-semibold text-emerald-700 mt-1">PDF, JPG, PNG supported</p>
+                            <input type="file" accept=".pdf,image/*" className="hidden" onChange={handleFileUpload} />
+                        </label>
+                        {loading && <p className="text-xs font-bold text-slate-500">Processing file...</p>}
+                    </motion.div>
+                )}
+
+                {activeTab === 'VOICE' && !generatedNote && (
+                    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-white rounded-[2rem] border-2 border-slate-100 p-8 space-y-6">
+                        <div>
+                            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-600">Voice To Notes</p>
+                            <h3 className="text-2xl font-black text-slate-900">Record lesson audio to generate notes</h3>
+                            <p className="text-sm font-semibold text-slate-500 mt-2">Record directly, or upload an audio file, then we build notes and summaries.</p>
+                        </div>
+                        <div className="flex flex-col sm:flex-row gap-3">
+                            {!isRecording ? (
+                                <Button onClick={startRecording} className="rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black uppercase tracking-wider text-xs">
+                                    <Mic className="w-4 h-4 mr-2" /> Start Recording
+                                </Button>
+                            ) : (
+                                <Button onClick={stopRecording} className="rounded-xl bg-red-600 hover:bg-red-700 text-white font-black uppercase tracking-wider text-xs">
+                                    <StopCircle className="w-4 h-4 mr-2" /> Stop Recording ({formatTime(recordingTime)})
+                                </Button>
+                            )}
+                            <label className="inline-flex items-center justify-center rounded-xl border-2 border-slate-200 px-4 py-2 text-xs font-black uppercase tracking-wider cursor-pointer hover:border-emerald-300">
+                                <Upload className="w-4 h-4 mr-2" /> Upload Audio
+                                <input
+                                    type="file"
+                                    accept="audio/*"
+                                    className="hidden"
+                                    onChange={async (e) => {
+                                        const file = e.target.files?.[0];
+                                        if (!file) return;
+                                        await handleAudioProcessing(file);
+                                    }}
+                                />
+                            </label>
+                        </div>
+                        {loading && <p className="text-xs font-bold text-slate-500">Processing audio...</p>}
+                    </motion.div>
+                )}
+
+                {activeTab === 'QUIZ' && !generatedQuiz && (
+                    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-white rounded-[2rem] border-2 border-slate-100 p-8 space-y-6">
+                        <div>
+                            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-600">Create Quiz</p>
+                            <h3 className="text-2xl font-black text-slate-900">Generate assessment from your topic and files</h3>
+                            <p className="text-sm font-semibold text-slate-500 mt-2">Add a topic and source files, then generate a classroom-ready quiz with marking scheme.</p>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                            <input
+                                value={advTopic}
+                                onChange={(e) => setAdvTopic(e.target.value)}
+                                placeholder="Topic (e.g. Photosynthesis)"
+                                className="md:col-span-2 rounded-xl border-2 border-slate-200 px-4 py-3 text-sm font-semibold text-slate-800 focus:outline-none focus:border-emerald-400"
+                            />
+                            <input
+                                type="number"
+                                min={3}
+                                max={30}
+                                value={advCount}
+                                onChange={(e) => setAdvCount(Number(e.target.value || 5))}
+                                className="rounded-xl border-2 border-slate-200 px-4 py-3 text-sm font-semibold text-slate-800 focus:outline-none focus:border-emerald-400"
+                            />
+                        </div>
+                        <div className="flex flex-wrap gap-3">
+                            <button onClick={() => setAdvType('MCQ')} className={`rounded-xl px-4 py-2 text-xs font-black uppercase tracking-wider border-2 ${advType === 'MCQ' ? 'bg-emerald-600 text-white border-emerald-600' : 'border-slate-200 text-slate-600'}`}>MCQ</button>
+                            <button onClick={() => setAdvType('OPEN')} className={`rounded-xl px-4 py-2 text-xs font-black uppercase tracking-wider border-2 ${advType === 'OPEN' ? 'bg-emerald-600 text-white border-emerald-600' : 'border-slate-200 text-slate-600'}`}>Open Ended</button>
+                            <label className="inline-flex items-center rounded-xl border-2 border-slate-200 px-4 py-2 text-xs font-black uppercase tracking-wider cursor-pointer hover:border-emerald-300">
+                                <Upload className="w-4 h-4 mr-2" /> Add Files
+                                <input type="file" multiple accept=".pdf,image/*" className="hidden" onChange={handleAdvFileUpload} />
+                            </label>
+                            {advFiles.length > 0 && <span className="text-xs font-bold text-slate-500 self-center">{advFiles.length} file(s) attached</span>}
+                        </div>
+                        <Button
+                            onClick={handleAdvancedQuizGen}
+                            disabled={loading || !advTopic.trim() || advFiles.length === 0}
+                            className={`rounded-xl font-black uppercase tracking-wider text-xs ${loading || !advTopic.trim() || advFiles.length === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        >
+                            <Sparkles className="w-4 h-4 mr-2" /> Generate Quiz
+                        </Button>
+                    </motion.div>
+                )}
+                {((activeTab === 'CONVERT' && !!generatedNote) || (activeTab === 'VOICE' && !!generatedNote) || (activeTab === 'QUIZ' && !!generatedQuiz)) && (
                     // RESULTS VIEW
                     <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} className="space-y-8">
                         <div className="flex items-center justify-between mb-2 px-4">
-                            <Button variant="ghost" onClick={() => { setGeneratedNote(null); setGeneratedQuiz(null); setActiveTab('HOME'); }} className="text-slate-500 font-black uppercase tracking-widest text-xs hover:text-emerald-600">
+                            <Button variant="ghost" onClick={() => { setGeneratedNote(null); setGeneratedQuiz(null); setActiveTab('DASHBOARD'); }} className="text-slate-500 font-black uppercase tracking-widest text-xs hover:text-emerald-600">
                                 <ArrowRight className="w-4 h-4 mr-2 rotate-180" /> {t.teacher.results.backToStudio}
                             </Button>
                             <div className="flex gap-3">
@@ -1262,7 +1605,13 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                                     )}
                                     </>
                                 )}
-                                <Button variant="outline" onClick={() => setActiveTab('BLACKBOARD')} className="rounded-xl border-2 font-black uppercase tracking-widest text-xs bg-slate-900 text-white border-slate-900 hover:bg-slate-800">
+                                <Button
+                                    variant="outline"
+                                    onClick={() => setActiveTab('BLACKBOARD')}
+                                    disabled={!generatedNote}
+                                    title={generatedNote ? "Open projector mode for current note" : "Generate or open a note first"}
+                                    className={`rounded-xl border-2 font-black uppercase tracking-widest text-xs bg-slate-900 text-white border-slate-900 hover:bg-slate-800 ${!generatedNote ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                >
                                     <MonitorPlay className="w-4 h-4 mr-2" /> Digital Blackboard
                                 </Button>
                                 <Button variant="outline" onClick={() => window.print()} className="rounded-xl border-2 font-black uppercase tracking-widest text-xs">
@@ -1918,11 +2267,24 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                 {/* Global Bottom Nav - Mobile Only */}
                 <div className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t border-slate-200 px-4 py-2.5 flex justify-between items-center z-50 md:hidden pb-safe">
                     <button
-                        onClick={() => setActiveTab('HOME')}
-                        className={`flex min-h-[52px] min-w-[52px] flex-col items-center justify-center gap-1 ${activeTab === 'HOME' ? 'text-emerald-600' : 'text-slate-400 hover:text-slate-600'}`}
+                        onClick={() => {
+                            dismissSetupNudge();
+                            setActiveTab('DASHBOARD');
+                        }}
+                        className={`absolute -top-8 left-1/2 -translate-x-1/2 min-h-[28px] rounded-full border px-3 text-[10px] font-black uppercase tracking-wider ${setupComplete
+                            ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                            : `border-amber-200 bg-amber-50 text-amber-700 ${setupNudgeDismissed ? '' : 'animate-pulse'}`
+                            }`}
+                        title={setupComplete ? 'Setup complete' : 'Resume setup'}
+                    >
+                        {setupComplete ? 'Setup Done' : `Setup ${setupCompletedSteps}/3`}
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('DASHBOARD')}
+                        className={`flex min-h-[52px] min-w-[52px] flex-col items-center justify-center gap-1 ${activeTab === 'DASHBOARD' || activeTab === 'HOME' ? 'text-emerald-600' : 'text-slate-400 hover:text-slate-600'}`}
                     >
                         <Home className="w-6 h-6" />
-                        <span className="text-[11px] font-black uppercase tracking-tight">Studio</span>
+                        <span className="text-[11px] font-black uppercase tracking-tight">Home</span>
                     </button>
                     <button
                         onClick={() => setActiveTab('LIBRARY')}
@@ -1948,11 +2310,11 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                         <span className="text-[11px] font-black uppercase tracking-tight">Wallet</span>
                     </button>
                     <button
-                        onClick={() => setActiveTab('MARKETPLACE')}
-                        className={`flex min-h-[52px] min-w-[52px] flex-col items-center justify-center gap-1 ${activeTab === 'MARKETPLACE' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-600'}`}
+                        onClick={() => setActiveTab('REPORTS')}
+                        className={`flex min-h-[52px] min-w-[52px] flex-col items-center justify-center gap-1 ${activeTab === 'REPORTS' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-600'}`}
                     >
-                        <ShoppingBag className="w-6 h-6" />
-                        <span className="text-[11px] font-black uppercase tracking-tight">Shop</span>
+                        <TrendingUp className="w-6 h-6" />
+                        <span className="text-[11px] font-black uppercase tracking-tight">Reports</span>
                     </button>
                 </div>
             </div>

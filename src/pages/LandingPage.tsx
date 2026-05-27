@@ -246,6 +246,15 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
         setShowRegistration(true);
     };
 
+    const handleLearnerQuickStart = (targetTab?: string) => {
+        if (!isRegistered && role === UserRole.NONE) {
+            startGuestSession();
+        }
+
+        setRole(UserRole.LEARNER);
+        navigate('/learner', targetTab ? { state: { targetTab } } : undefined);
+    };
+
     const handleRegistrationSuccess = () => {
         setShowRegistration(false);
         if (pendingRoute) {
@@ -434,6 +443,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
 
                         {/* Desktop Nav */}
                         <nav aria-label="Main Navigation" className="hidden md:flex items-center gap-8">
+                            <button
+                                onClick={() => handleRoleSelect(UserRole.TEACHER)}
+                                className="text-emerald-700 dark:text-emerald-300 hover:text-emerald-800 dark:hover:text-emerald-200 font-bold transition-colors text-sm flex items-center gap-1.5"
+                            >
+                                <BookOpen className="w-3.5 h-3.5"/> Teacher Workspace
+                            </button>
                             <button onClick={handleLibraryAccess} className="text-slate-600 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 font-medium transition-colors text-sm flex items-center gap-1"><BookOpen className="w-3.5 h-3.5"/> Library</button>
                             <button onClick={() => navigate('/pricing')} className="text-slate-600 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 font-medium transition-colors text-sm">Pricing</button>
                             <button onClick={() => navigate('/blog')} className="text-slate-600 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 font-medium transition-colors text-sm flex items-center gap-1"><BookOpen className="w-3.5 h-3.5"/> Journal</button>
@@ -453,12 +468,18 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                         </nav>
 
                         {/* Mobile Menu Button */}
-                        <div className="md:hidden flex items-center gap-3">
+                        <div className="md:hidden flex items-center gap-2">
+                            <button
+                                onClick={() => handleRoleSelect(UserRole.TEACHER)}
+                                className="bg-emerald-600 text-white px-3 py-2 rounded-lg font-bold text-[11px] shadow-md"
+                            >
+                                Teacher
+                            </button>
                             <button
                                 onClick={() => handleRoleSelect(UserRole.LEARNER)}
                                 className="bg-[#5b61de] text-white px-4 py-2 rounded-lg font-bold text-xs shadow-md"
                             >
-                                Get Started
+                                Learner
                             </button>
                             <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="p-2 text-gray-600">
                                 {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
@@ -482,7 +503,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                     <GraduationCap className="w-5 h-5 text-indigo-500" /> Learner
                                 </button>
                                 <button onClick={() => { handleRoleSelect(UserRole.TEACHER); setMobileMenuOpen(false); }} className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 font-bold">
-                                    <BookOpen className="w-5 h-5 text-emerald-500" /> Educator
+                                    <BookOpen className="w-5 h-5 text-emerald-500" /> Teacher Workspace
                                 </button>
                                 <button onClick={() => { handleRoleSelect(UserRole.PARENT); setMobileMenuOpen(false); }} className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 font-bold">
                                     <Users className="w-5 h-5 text-purple-500" /> Parent
@@ -524,7 +545,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                             className="flex-1 max-w-2xl"
                         >
                             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-indigo-100 dark:bg-indigo-900/50 border border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 text-xs font-bold uppercase tracking-widest mb-6">
-                                <Star className="w-3 h-3 fill-current" /> For KCSE, CBC &amp; KPSEA Students
+                                <Star className="w-3 h-3 fill-current" /> For Learners &amp; Teachers
                             </div>
 
                             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-slate-900 dark:text-white tracking-tight leading-[1.1] mb-5">
@@ -649,7 +670,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                             </div>
 
                             {/* Quick-prompt chips */}
-                            <div className={`flex flex-wrap gap-2 mb-8 transition-all duration-200 ${showMockAnswer ? 'opacity-30 pointer-events-none' : 'opacity-100'}`}>
+                            <div className="hidden">
                                 {['Photosynthesis explained simply', 'How do I find the gradient?', "Kenya's major rivers"].map((q, i) => (
                                     <button key={i} onClick={() => { setQuestionInput(q); setShowMockAnswer(false); }}
                                         className="px-3 py-1.5 rounded-full text-xs font-bold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 hover:text-indigo-700 hover:border-indigo-200 transition-all">
@@ -660,9 +681,61 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
 
                             <div className="flex flex-wrap gap-x-5 gap-y-3 text-sm text-slate-500 dark:text-slate-400">
                                 <div className="flex items-center gap-1.5"><CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0" /> Try for Free — then KES 20/day</div>
-                                <div className="flex items-center gap-1.5"><CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0" /> All subjects &amp; levels</div>
-                                <div className="flex items-center gap-1.5"><CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0" /> Works offline</div>
+                                <div className="flex items-center gap-1.5"><CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0" /> Notes and past papers</div>
+                                <div className="flex items-center gap-1.5"><CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0" /> Teacher workspace included</div>
                             </div>
+                            <div className="mt-6 flex flex-col sm:flex-row gap-3">
+                                <button
+                                    onClick={() => handleRoleSelect(UserRole.LEARNER)}
+                                    className="w-full sm:w-auto min-h-[46px] rounded-xl bg-indigo-600 hover:bg-indigo-700 px-5 text-sm font-black text-white flex items-center justify-center gap-2"
+                                >
+                                    Open Learner Workspace <ChevronRight className="w-4 h-4" />
+                                </button>
+                                <button
+                                    onClick={() => handleRoleSelect(UserRole.TEACHER)}
+                                    className="w-full sm:w-auto min-h-[46px] rounded-xl border border-emerald-300 bg-emerald-50 hover:bg-emerald-100 px-5 text-sm font-black text-emerald-800 flex items-center justify-center gap-2 dark:border-emerald-700 dark:bg-emerald-900/30 dark:hover:bg-emerald-900/50 dark:text-emerald-200"
+                                >
+                                    I&apos;m a Teacher <ChevronRight className="w-4 h-4" />
+                                </button>
+                            </div>
+
+                            <div className="hidden">
+                                <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500 mb-2">First Time Here?</p>
+                                <h3 className="text-sm font-black text-slate-900 dark:text-white mb-3">Choose what you need now</h3>
+                                <div className="grid grid-cols-2 gap-2">
+                                    <button
+                                        onClick={() => handleLearnerQuickStart('SMART_TUTOR')}
+                                        className="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 px-3 py-2.5 text-left hover:border-indigo-300 dark:hover:border-indigo-600 transition-colors"
+                                    >
+                                        <p className="text-xs font-black text-slate-800 dark:text-slate-100">Ask Akili</p>
+                                        <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400">Stuck now</p>
+                                    </button>
+                                    <button
+                                        onClick={() => handleLearnerQuickStart('RESOURCES')}
+                                        className="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 px-3 py-2.5 text-left hover:border-blue-300 dark:hover:border-blue-600 transition-colors"
+                                    >
+                                        <p className="text-xs font-black text-slate-800 dark:text-slate-100">Library</p>
+                                        <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400">Notes & papers</p>
+                                    </button>
+                                    <button
+                                        onClick={() => handleLearnerQuickStart('SUBJECTS')}
+                                        className="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 px-3 py-2.5 text-left hover:border-orange-300 dark:hover:border-orange-600 transition-colors"
+                                    >
+                                        <p className="text-xs font-black text-slate-800 dark:text-slate-100">Exam Prep</p>
+                                        <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400">Practice fast</p>
+                                    </button>
+                                    <button
+                                        onClick={() => handleLearnerQuickStart('TALKBACK')}
+                                        className="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 px-3 py-2.5 text-left hover:border-pink-300 dark:hover:border-pink-600 transition-colors"
+                                    >
+                                        <p className="text-xs font-black text-slate-800 dark:text-slate-100">Talk &amp; Play</p>
+                                        <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400">Audio learning</p>
+                                    </button>
+                                </div>
+                            </div>
+                            <p className="mt-2 text-xs font-semibold text-emerald-700 dark:text-emerald-300">
+                                Teachers: generate schemes, lessons, quizzes, and marking guides in minutes.
+                            </p>
                         </motion.div>
 
                         {/* RIGHT: Science lab hero image */}
@@ -690,6 +763,26 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                     <span className="text-xs font-bold text-slate-800 dark:text-slate-200">Step-by-step answers for every KCSE &amp; KPSEA subject</span>
                                 </div>
                             </div>
+                            <div className="hidden">
+                                <div className="rounded-xl border border-emerald-200 dark:border-emerald-800 bg-white dark:bg-slate-800 px-3 py-2 text-center">
+                                    <div className="text-sm font-black text-emerald-700 dark:text-emerald-300">-40%</div>
+                                    <div className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Prep Time</div>
+                                </div>
+                                <div className="rounded-xl border border-emerald-200 dark:border-emerald-800 bg-white dark:bg-slate-800 px-3 py-2 text-center">
+                                    <div className="text-sm font-black text-emerald-700 dark:text-emerald-300">Faster</div>
+                                    <div className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Marking Turnaround</div>
+                                </div>
+                                <div className="rounded-xl border border-emerald-200 dark:border-emerald-800 bg-white dark:bg-slate-800 px-3 py-2 text-center">
+                                    <div className="text-sm font-black text-emerald-700 dark:text-emerald-300">Daily</div>
+                                    <div className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Class Follow-up</div>
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => handleRoleSelect(UserRole.TEACHER)}
+                                className="hidden"
+                            >
+                                Start In Teacher Workspace <ChevronRight className="w-4 h-4" />
+                            </button>
                         </motion.div>
                     </div>
 
@@ -706,7 +799,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                             <div className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-left">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-left">
                             {/* Learner */}
                             <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-lg hover:border-indigo-300 dark:hover:border-indigo-600 transition-all group flex items-center gap-5">
                                 <div className="w-12 h-12 bg-indigo-50 dark:bg-indigo-900/40 rounded-xl flex items-center justify-center shrink-0 group-hover:bg-indigo-600 transition-colors">
@@ -721,14 +814,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                 </button>
                             </div>
 
-                            {/* Educator */}
+                            {/* Teacher */}
                             <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-lg hover:border-emerald-300 dark:hover:border-emerald-600 transition-all group flex items-center gap-5">
                                 <div className="w-12 h-12 bg-emerald-50 dark:bg-emerald-900/40 rounded-xl flex items-center justify-center shrink-0 group-hover:bg-emerald-600 transition-colors">
                                     <BookOpen className="w-6 h-6 text-emerald-600 dark:text-emerald-400 group-hover:text-white transition-colors" />
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                    <div className="font-bold text-slate-900 dark:text-white">Educator</div>
-                                    <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Lesson plans & auto-grading</div>
+                                    <div className="font-bold text-slate-900 dark:text-white">Teacher</div>
+                                    <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Plan, mark, assign, and follow up faster</div>
                                 </div>
                                 <button onClick={() => handleRoleSelect(UserRole.TEACHER)} className="shrink-0 p-2 rounded-lg bg-slate-100 dark:bg-slate-700 hover:bg-emerald-600 hover:text-white dark:hover:bg-emerald-500 text-slate-600 dark:text-slate-300 transition-colors">
                                     <ArrowRight className="w-4 h-4" />
@@ -749,10 +842,28 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                 </button>
                             </div>
                         </div>
+                        <div className="hidden">
+                            <div>
+                                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-700 dark:text-emerald-300">For Teachers</p>
+                                <p className="text-sm font-bold text-emerald-900 dark:text-emerald-100">Reduce prep time, clear marking backlog, and keep class follow-up consistent.</p>
+                                <div className="mt-2 flex flex-wrap gap-2">
+                                    <span className="rounded-full bg-white/80 dark:bg-slate-900/50 px-2.5 py-1 text-[11px] font-bold text-emerald-800 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-700">Schemes of work</span>
+                                    <span className="rounded-full bg-white/80 dark:bg-slate-900/50 px-2.5 py-1 text-[11px] font-bold text-emerald-800 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-700">Auto-marking</span>
+                                    <span className="rounded-full bg-white/80 dark:bg-slate-900/50 px-2.5 py-1 text-[11px] font-bold text-emerald-800 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-700">Class follow-up</span>
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => navigate('/teacher')}
+                                className="w-full sm:w-auto min-h-[44px] rounded-xl bg-emerald-600 hover:bg-emerald-700 px-5 text-sm font-black text-white flex items-center justify-center gap-2"
+                            >
+                                Open Teacher Workspace <ChevronRight className="w-4 h-4" />
+                            </button>
+                        </div>
                     </motion.div>
                 </div>
             </section>
-
+            {false && (
+            <>
             {/* --- PRESTIGE TICKER --- */}
 
             <div className="border-y border-slate-200/50 dark:border-slate-800/80 bg-white/50 dark:bg-slate-950/50 py-6 sm:py-8 overflow-hidden relative backdrop-blur-sm">
@@ -949,8 +1060,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 font-bold text-xs mb-6 uppercase tracking-wider border border-blue-200 dark:border-blue-800 shadow-sm">
                             <Zap className="w-4 h-4" /> Powered by Super Teacher OS
                         </div>
-                        <h2 className="text-3xl md:text-5xl font-bold text-slate-900 dark:text-white mb-6 tracking-tight">Everything you need to <span className="text-blue-600 dark:text-blue-400">excel</span>. As a Teacher.</h2>
-                        <p className="text-lg text-slate-600 dark:text-slate-400 max-w-2xl mx-auto mb-10 font-medium">A fully integrated suite of tools designed specifically for the Kenyan curriculum.</p>
+                        <h2 className="text-3xl md:text-5xl font-bold text-slate-900 dark:text-white mb-6 tracking-tight">Teacher Workload, <span className="text-blue-600 dark:text-blue-400">Actually Reduced</span>.</h2>
+                        <p className="text-lg text-slate-600 dark:text-slate-400 max-w-2xl mx-auto mb-10 font-medium">Plan faster, mark consistently, publish to class stream, and track learner support from one teacher workspace.</p>
 
                         <div className="flex justify-center mb-16">
                             <button
@@ -960,7 +1071,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                 }}
                                 className="px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-sm hover:-translate-y-1 transition-all flex items-center gap-3"
                             >
-                                Enter Educator Portal <ChevronRight className="w-5 h-5" />
+                                Open Teacher Workspace <ChevronRight className="w-5 h-5" />
                             </button>
                         </div>
                     </div>
@@ -971,8 +1082,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                             <div className="w-12 h-12 bg-indigo-50 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 rounded-xl flex items-center justify-center mb-6">
                                 <MessageSquare className="w-6 h-6" />
                             </div>
-                            <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-3">Darasa Mode</h3>
-                            <p className="text-slate-600 dark:text-slate-400 leading-relaxed font-medium max-w-xl">Transform any classroom into a smart learning environment. Real-time audio transcription and automatic summarization of key syllabus concepts while you teach.</p>
+                            <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-3">Darasa Mode (No More Missed Notes)</h3>
+                            <p className="text-slate-600 dark:text-slate-400 leading-relaxed font-medium max-w-xl">Capture live teaching automatically with real-time transcription and topic summaries, so learners stop missing key points and teachers stop repeating the same explanations.</p>
                         </div>
 
                         {/* 2. Vertical Feature: Marking Manager */}
@@ -980,8 +1091,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                             <div className="w-12 h-12 bg-emerald-50 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 rounded-xl flex items-center justify-center mb-6">
                                 <CheckSquare className="w-6 h-6" />
                             </div>
-                            <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-3">Smart Marking</h3>
-                            <p className="text-slate-600 dark:text-slate-400 leading-relaxed font-medium mb-6">Upload handwritten assignments. Our advanced Smart Marking automatically grades essays and math problems against KNEC rubrics.</p>
+                            <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-3">Smart Marking (Clear Backlog Faster)</h3>
+                            <p className="text-slate-600 dark:text-slate-400 leading-relaxed font-medium mb-6">Upload handwritten assignments and get rubric-aligned grading support for essays and math, so feedback goes back to learners on time.</p>
                         </div>
 
                         {/* 3. Horizontal Feature 1: Revision Hub */}
@@ -1157,6 +1268,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                 </div>
             </section>
 
+            </>
+            )}
+
             {/* --- PUBLIC LIBRARY ACCESS CARD --- */}
             <section id="library" className="py-16 bg-slate-50 dark:bg-slate-950 border-y border-slate-200 dark:border-slate-900 transition-colors">
                 <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -1218,7 +1332,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                     </motion.div>
                 </div>
             </section>
-
+            {false && (
+            <>
             {/* --- FOOTER CTA --- */}
             <section className="bg-blue-900 py-6 text-center relative overflow-hidden">
                 {/* Decor */}
@@ -1245,7 +1360,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                 onClick={() => handleRoleSelect(UserRole.TEACHER)}
                                 className="px-8 py-4 bg-white/10 text-white backdrop-blur-md border border-white/20 rounded-2xl font-bold text-lg hover:bg-white/20 transition-all w-full md:w-auto flex items-center justify-center gap-2"
                             >
-                                Teacher Access
+                                Open Teacher Workspace
                             </button>
                             <button
                                 onClick={() => setShowContact(true)}
@@ -1258,6 +1373,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                 </div>
             </section>
 
+            </>
+            )}
+
+            {false && (
+            <>
             {/* --- JOURNAL PREVIEW --- */}
             <section className="py-24 bg-white dark:bg-slate-950 transition-colors border-t border-slate-100 dark:border-slate-900">
                 <div className="max-w-7xl mx-auto px-4">
@@ -1331,6 +1451,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                 </div>
             </section>
 
+            </>
+            )}
+
             {/* --- BOTTOM FOOTER --- */}
             <footer className="bg-white dark:bg-slate-950 py-12 border-t border-slate-100 dark:border-slate-800 transition-colors overflow-hidden">
                 <div className="max-w-7xl mx-auto px-4">
@@ -1345,7 +1468,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                             </p>
                             
                             {/* Google Business Profile Action */}
-                            <a href="https://g.page/somosmart/" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors group">
+                            <a href="https://g.page/r/Ccxl6TZuQd3zEBM/review" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors group">
                                 <Store className="w-5 h-5 text-indigo-600 dark:text-indigo-400 group-hover:scale-110 transition-transform" />
                                 <div>
                                     <div className="text-xs font-bold text-slate-800 dark:text-slate-200">Review us on Google</div>

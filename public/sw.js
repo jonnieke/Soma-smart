@@ -9,6 +9,12 @@ const STATIC_ASSETS = [
     '/assets/apple-touch-icon.png',
 ];
 
+self.addEventListener('message', (event) => {
+    if (event.data && event.data.type === 'SKIP_WAITING') {
+        self.skipWaiting();
+    }
+});
+
 // Install: Cache static assets
 self.addEventListener('install', (event) => {
     event.waitUntil(

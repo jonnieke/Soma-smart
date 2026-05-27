@@ -94,7 +94,7 @@ export const MarkingManager: React.FC = () => {
     };
 
     const runAutoGrader = async () => {
-        if (!selectedFile || !isOnline) return;
+        if (!selectedFile || !isOnline || !selectedStudentId) return;
 
         setIsProcessing(true);
         setError(null);
@@ -169,6 +169,11 @@ export const MarkingManager: React.FC = () => {
                                             <option key={s.student_id} value={s.student_id}>{s.profiles?.name || s.student_id}</option>
                                         ))}
                                     </select>
+                                    {students.length === 0 && (
+                                        <p className="mt-2 text-[11px] font-bold text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-2 py-1">
+                                            No learners found yet. Ask learners to join your class first from Classroom.
+                                        </p>
+                                    )}
                                 </div>
                                 <div>
                                     <label className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1 block">Title</label>
@@ -240,11 +245,16 @@ export const MarkingManager: React.FC = () => {
 
                                 <button
                                     onClick={runAutoGrader}
-                                    disabled={!selectedFile || !isOnline}
-                                    className={`px-8 py-4 rounded-xl font-black text-sm transition-all shadow-lg flex items-center gap-2 ${selectedFile && isOnline ? 'bg-emerald-600 text-white shadow-emerald-200 hover:bg-emerald-700 hover:scale-105' : 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none'}`}
+                                    disabled={!selectedFile || !isOnline || !selectedStudentId}
+                                    className={`px-8 py-4 rounded-xl font-black text-sm transition-all shadow-lg flex items-center gap-2 ${selectedFile && isOnline && selectedStudentId ? 'bg-emerald-600 text-white shadow-emerald-200 hover:bg-emerald-700 hover:scale-105' : 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none'}`}
                                 >
                                     <ScanLine className="w-5 h-5" /> Run Auto-Grader
                                 </button>
+                                {!selectedStudentId && (
+                                    <p className="mt-3 text-[11px] font-bold text-amber-700">
+                                        Select a learner to enable grading and save results.
+                                    </p>
+                                )}
                             </div>
                         )}
 

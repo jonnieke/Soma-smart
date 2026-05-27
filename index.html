@@ -226,8 +226,32 @@
           return;
         }
 
+        let refreshing = false;
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+          if (refreshing) return;
+          refreshing = true;
+          window.location.reload();
+        });
+
         navigator.serviceWorker.register('/sw.js')
-          .then((reg) => console.log('[PWA] Service Worker registered:', reg.scope))
+          .then((reg) => {
+            console.log('[PWA] Service Worker registered:', reg.scope);
+            reg.update().catch(() => undefined);
+
+            if (reg.waiting) {
+              reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+            }
+
+            reg.addEventListener('updatefound', () => {
+              const worker = reg.installing;
+              if (!worker) return;
+              worker.addEventListener('statechange', () => {
+                if (worker.state === 'installed' && navigator.serviceWorker.controller) {
+                  worker.postMessage({ type: 'SKIP_WAITING' });
+                }
+              });
+            });
+          })
           .catch((err) => console.warn('[PWA] SW registration failed:', err));
       });
     }

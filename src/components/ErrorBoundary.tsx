@@ -37,16 +37,16 @@ export class ErrorBoundary extends Component<Props, State> {
         console.error('[ErrorBoundary] Caught:', error, errorInfo);
 
         const msg = error ? error.message || '' : '';
-        const name = error ? error.name || '' : '';
-        const isTdzOrChunkError =
-            name === 'ReferenceError' ||
+        const isRecoverableStaleBundleError =
             /before initialization/i.test(msg) ||
             /failed to fetch/i.test(msg) ||
             /dynamically imported module/i.test(msg) ||
             /loading chunk/i.test(msg) ||
-            /loading css chunk/i.test(msg);
+            /loading css chunk/i.test(msg) ||
+            /cannot read properties of undefined \(reading 'teacher'\)/i.test(msg) ||
+            /cannot read properties of undefined \(reading "teacher"\)/i.test(msg);
 
-        if (isTdzOrChunkError) {
+        if (isRecoverableStaleBundleError) {
             // Read bounded reload counter from localStorage
             let reloadCount = 0;
             let windowStart = 0;

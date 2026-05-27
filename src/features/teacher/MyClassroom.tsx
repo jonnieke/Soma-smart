@@ -12,14 +12,16 @@ interface MyClassroomProps {
     selectedClass: string;
     selectedSubject: string;
     onAssignQuiz: (studentIds: string[], topic: string) => void;
+    onWorkflowStepCompleted?: (step: 'PUBLISH_STREAM', message: string, metadata?: Record<string, unknown>) => void;
 }
 
-export const MyClassroom: React.FC<MyClassroomProps> = ({ teacherProfile, selectedClass, selectedSubject, onAssignQuiz }) => {
+export const MyClassroom: React.FC<MyClassroomProps> = ({ teacherProfile, selectedClass, selectedSubject, onAssignQuiz, onWorkflowStepCompleted }) => {
     const [view, setView] = useState<'STREAM' | 'GRADEBOOK' | 'ROSTER'>('STREAM');
     const [selectedStudents, setSelectedStudents] = useState<string[]>([]);
     const [isAssigning, setIsAssigning] = useState(false);
     const [postText, setPostText] = useState("");
     const [isPosting, setIsPosting] = useState(false);
+    const [classroomNotice, setClassroomNotice] = useState<{ type: 'success' | 'error' | 'info'; text: string } | null>(null);
 
     // Phase 2 additions
     const [gradingMode, setGradingMode] = useState<'PERCENT' | 'CBC'>('PERCENT');
@@ -29,7 +31,7 @@ export const MyClassroom: React.FC<MyClassroomProps> = ({ teacherProfile, select
         if (score >= 80) return { code: 'EE', label: 'Exceeding Expectation', color: 'bg-emerald-100 text-emerald-800 border-emerald-200' };
         if (score >= 60) return { code: 'ME', label: 'Meeting Expectation', color: 'bg-blue-100 text-blue-800 border-blue-200' };
         if (score >= 40) return { code: 'AE', label: 'Approaching Expectation', color: 'bg-amber-100 text-amber-800 border-amber-200' };
-        return { code: 'BE', label: 'Below Expectation', color: 'bg-rose-100 text-rose-800 border-rose-250' };
+        return { code: 'BE', label: 'Below Expectation', color: 'bg-rose-100 text-rose-800 border-rose-200' };
     };
 
     // Backend State
@@ -43,6 +45,13 @@ export const MyClassroom: React.FC<MyClassroomProps> = ({ teacherProfile, select
     const isLocalClass = Boolean(currentClassId?.startsWith('local-class:'));
     const classJoinUrl = currentClassId && !isLocalClass ? `${baseJoinUrl}/${currentClassId}` : `${baseJoinUrl}?class=${encodeURIComponent(selectedClass)}`;
     const classroomShareUrl = currentClassId && !isLocalClass ? `https://somaai.co.ke/class/${currentClassId}` : classJoinUrl;
+
+    const showClassroomNotice = (type: 'success' | 'error' | 'info', text: string) => {
+        setClassroomNotice({ type, text });
+        window.setTimeout(() => {
+            setClassroomNotice((prev) => (prev?.text === text ? null : prev));
+        }, 5000);
+    };
 
     // Load Data
     useEffect(() => {
@@ -99,6 +108,10 @@ export const MyClassroom: React.FC<MyClassroomProps> = ({ teacherProfile, select
         }
         loadClassroom();
     }, [teacherProfile, selectedClass, selectedSubject]);
+
+    useEffect(() => {
+        setClassroomNotice(null);
+    }, [selectedClass, selectedSubject]);
 
     // Derive UI state
     const decoratedStudents = students.map(s => {
@@ -164,24 +177,17 @@ export const MyClassroom: React.FC<MyClassroomProps> = ({ teacherProfile, select
             
             onAssignQuiz(selectedStudents, "Targeted Remedial Revision");
             setSelectedStudents([]);
-            alert("Custom revision materials have been assigned!");
+            showClassroomNotice('success', `Assigned targeted revision to ${selectedStudents.length} learner${selectedStudents.length === 1 ? '' : 's'}.`);
+            onWorkflowStepCompleted?.(
+                'PUBLISH_STREAM',
+                'Step 3 complete: Assessment assigned from Classroom.',
+                { source: 'classroom_bulk_assign', class_name: selectedClass, subject: selectedSubject, students: selectedStudents.length }
+            );
         } catch (err) {
             console.error(err);
-            alert("Failed to assign.");
+            showClassroomNotice('error', "Assignment failed. Try again once class sync is stable.");
         } finally {
             setIsAssigning(false);
-        }
-    };
-
-    const handlePost = async () => {
-        if (!postText.trim() || !currentClassId || !teacherProfile) return;
-        try {
-            const newPost = await classroomService.createPost(currentClassId, teacherProfile.id, 'ANNOUNCEMENT', postText);
-            setStream([newPost, ...stream]);
-            setPostText("");
-        } catch (err) {
-            console.error(err);
-            alert("Failed to post announcement.");
         }
     };
 
@@ -222,7 +228,7 @@ export const MyClassroom: React.FC<MyClassroomProps> = ({ teacherProfile, select
     const handlePostAndShare = async () => {
         if (!postText.trim()) return;
         if (!teacherProfile) {
-            alert("Teacher profile is not ready yet. Please retry.");
+            showClassroomNotice('error', "Teacher profile is still loading. Please retry in a few seconds.");
             return;
         }
 
@@ -241,7 +247,7 @@ export const MyClassroom: React.FC<MyClassroomProps> = ({ teacherProfile, select
                 if (shareWindow && !shareWindow.closed) {
                     shareWindow.close();
                 }
-                alert("Please pick a class and subject first.");
+                showClassroomNotice('error', "Select class and subject first, then post to stream.");
                 return;
             }
 
@@ -255,12 +261,18 @@ export const MyClassroom: React.FC<MyClassroomProps> = ({ teacherProfile, select
                 : `https://somaai.co.ke/class/${classId}`;
             const shareMessage = `New announcement for ${className}: ${textToShare} - View on Somo Smart: ${resolvedShareUrl}`;
             openWhatsAppShare(shareMessage, shareWindow);
+            showClassroomNotice('success', "Announcement posted and WhatsApp handoff started.");
+            onWorkflowStepCompleted?.(
+                'PUBLISH_STREAM',
+                'Step 3 complete: Announcement posted to class stream.',
+                { source: 'classroom_post_share', class_name: className, subject: selectedSubject }
+            );
         } catch (err) {
             console.error(err);
             if (shareWindow && !shareWindow.closed) {
                 shareWindow.close();
             }
-            alert("Failed to post announcement.");
+            showClassroomNotice('error', "Post failed. Check class sync/network then retry.");
         } finally {
             setIsPosting(false);
         }
@@ -296,21 +308,21 @@ View full dashboard: https://somaai.co.ke/parent/${student.id}`;
     return (
         <div className="space-y-8">
             {/* Header Stats */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-6 rounded-[2.5rem] shadow-sm border-2 border-slate-300">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-4 sm:p-6 rounded-2xl sm:rounded-[2.5rem] shadow-sm border-2 border-slate-300">
                 <div>
-                    <h2 className="text-3xl font-black text-slate-800 flex items-center gap-2 tracking-tight">
+                    <h2 className="text-2xl sm:text-3xl font-black text-slate-800 flex items-center gap-2 tracking-tight">
                         <Users className="w-8 h-8 text-emerald-500" />
                         {selectedClass}
                     </h2>
                     <p className="text-slate-500 font-bold tracking-wider uppercase text-xs mt-1">{selectedSubject} • {students.length} Students</p>
                 </div>
 
-                <div className="flex gap-4">
-                    <div className="bg-slate-50 px-6 py-3 rounded-2xl border-2 border-slate-300 items-center justify-center flex flex-col">
+                <div className="flex w-full md:w-auto gap-3 sm:gap-4">
+                    <div className="bg-slate-50 px-4 sm:px-6 py-3 rounded-2xl border-2 border-slate-300 items-center justify-center flex flex-col flex-1 md:flex-none">
                         <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Class Average</span>
                         <span className="text-2xl font-black text-slate-800">{classAverage}%</span>
                     </div>
-                    <div className="bg-red-50 px-6 py-3 rounded-2xl border-2 border-red-200 items-center justify-center flex flex-col">
+                    <div className="bg-red-50 px-4 sm:px-6 py-3 rounded-2xl border-2 border-red-200 items-center justify-center flex flex-col flex-1 md:flex-none">
                         <span className="text-[10px] font-black text-red-400 uppercase tracking-widest">At Risk</span>
                         <span className="text-2xl font-black text-red-600 flex items-center gap-1">
                             <AlertCircle className="w-5 h-5" /> {atRiskStudents.length}
@@ -335,19 +347,19 @@ View full dashboard: https://somaai.co.ke/parent/${student.id}`;
             <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide border-b-2 border-slate-200">
                 <button
                     onClick={() => setView('STREAM')}
-                    className={`flex items-center gap-2 px-6 py-3 font-black text-sm uppercase tracking-wider transition-all border-b-4 ${view === 'STREAM' ? 'text-emerald-600 border-emerald-600' : 'text-slate-400 border-transparent hover:text-slate-600'}`}
+                    className={`flex min-h-[48px] items-center gap-2 px-4 sm:px-6 py-3 font-black text-xs sm:text-sm uppercase tracking-wider transition-all border-b-4 whitespace-nowrap ${view === 'STREAM' ? 'text-emerald-600 border-emerald-600' : 'text-slate-400 border-transparent hover:text-slate-600'}`}
                 >
                     <MessageCircle className="w-5 h-5" /> Stream
                 </button>
                 <button
                     onClick={() => setView('GRADEBOOK')}
-                    className={`flex items-center gap-2 px-6 py-3 font-black text-sm uppercase tracking-wider transition-all border-b-4 ${view === 'GRADEBOOK' ? 'text-emerald-600 border-emerald-600' : 'text-slate-400 border-transparent hover:text-slate-600'}`}
+                    className={`flex min-h-[48px] items-center gap-2 px-4 sm:px-6 py-3 font-black text-xs sm:text-sm uppercase tracking-wider transition-all border-b-4 whitespace-nowrap ${view === 'GRADEBOOK' ? 'text-emerald-600 border-emerald-600' : 'text-slate-400 border-transparent hover:text-slate-600'}`}
                 >
                     <Table className="w-5 h-5" /> Gradebook
                 </button>
                 <button
                     onClick={() => setView('ROSTER')}
-                    className={`flex items-center gap-2 px-6 py-3 font-black text-sm uppercase tracking-wider transition-all border-b-4 ${view === 'ROSTER' ? 'text-teal-600 border-teal-600' : 'text-slate-400 border-transparent hover:text-slate-600'}`}
+                    className={`flex min-h-[48px] items-center gap-2 px-4 sm:px-6 py-3 font-black text-xs sm:text-sm uppercase tracking-wider transition-all border-b-4 whitespace-nowrap ${view === 'ROSTER' ? 'text-teal-600 border-teal-600' : 'text-slate-400 border-transparent hover:text-slate-600'}`}
                 >
                     <Users className="w-5 h-5" /> Roster
                 </button>
@@ -364,9 +376,23 @@ View full dashboard: https://somaai.co.ke/parent/${student.id}`;
                 >
                     {/* --- STREAM VIEW --- */}
                     {view === 'STREAM' && (
-                        <div className="space-y-6 max-w-3xl mx-auto">
-                            <div className="bg-white border-2 border-slate-300 rounded-[2rem] p-6 shadow-sm">
-                                <div className="flex gap-4">
+                        <div className="space-y-6 max-w-3xl mx-auto pb-20 sm:pb-0">
+                            <div className="bg-white border-2 border-slate-300 rounded-2xl sm:rounded-[2rem] p-4 sm:p-6 shadow-sm">
+                                <div className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3">
+                                    <p className="text-[11px] font-black uppercase tracking-widest text-emerald-700">Quick Win Flow</p>
+                                    <p className="text-sm font-semibold text-emerald-900 mt-1">Write one class update and tap <span className="font-black">Post & Share to WhatsApp</span> to publish to stream and notify learners instantly.</p>
+                                </div>
+                                {classroomNotice && (
+                                    <div className={`mb-4 rounded-xl border px-4 py-3 text-sm font-semibold ${classroomNotice.type === 'success'
+                                        ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
+                                        : classroomNotice.type === 'error'
+                                            ? 'border-red-200 bg-red-50 text-red-800'
+                                            : 'border-blue-200 bg-blue-50 text-blue-800'
+                                        }`}>
+                                        {classroomNotice.text}
+                                    </div>
+                                )}
+                                <div className="flex gap-3 sm:gap-4">
                                     <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 font-bold shrink-0">
                                         {teacherProfile?.name?.charAt(0) || 'T'}
                                     </div>
@@ -377,20 +403,33 @@ View full dashboard: https://somaai.co.ke/parent/${student.id}`;
                                             onChange={(e) => setPostText(e.target.value)}
                                             className="w-full bg-slate-50 border-2 border-slate-200 rounded-xl p-4 text-sm font-medium focus:outline-none focus:border-emerald-400 focus:bg-white transition-all resize-none h-24"
                                         />
-                                        <div className="flex justify-between items-center">
+                                        <div className="flex items-center justify-between text-[11px] font-bold text-slate-400">
+                                            <span>Tip: include assignment title and deadline.</span>
+                                            <span>{postText.trim().length}/500</span>
+                                        </div>
+                                        <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3">
                                             <button className="p-2 hover:bg-slate-100 rounded-full text-slate-400 transition-colors">
                                                 <Share2 className="w-5 h-5" />
                                             </button>
                                             <button
                                                 onClick={handlePostAndShare}
                                                 disabled={isPosting || !postText.trim()}
-                                                className="bg-[#25D366] text-white px-6 py-2.5 rounded-xl font-bold text-sm shadow-md hover:bg-[#128C7E] transition-colors flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+                                                className="min-h-[48px] bg-[#25D366] text-white px-6 py-2.5 rounded-xl font-bold text-sm shadow-md hover:bg-[#128C7E] transition-colors flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
                                             >
                                                 <Share2 className="w-4 h-4" /> {isPosting ? 'Posting...' : 'Post & Share to WhatsApp'}
                                             </button>
                                         </div>
                                     </div>
                                 </div>
+                            </div>
+                            <div className="sm:hidden fixed bottom-16 left-0 right-0 z-20 px-4">
+                                <button
+                                    onClick={handlePostAndShare}
+                                    disabled={isPosting || !postText.trim()}
+                                    className="w-full min-h-[52px] bg-[#25D366] text-white rounded-2xl font-black text-sm shadow-lg hover:bg-[#128C7E] transition-colors flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+                                >
+                                    <Share2 className="w-4 h-4" /> {isPosting ? 'Posting...' : 'Post & Share to WhatsApp'}
+                                </button>
                             </div>
 
                             {stream.length === 0 ? (
@@ -430,7 +469,7 @@ View full dashboard: https://somaai.co.ke/parent/${student.id}`;
                                 </div>
                                 <div className="flex flex-wrap items-center gap-3">
                                     {/* Grading Mode Toggle */}
-                                    <div className="bg-slate-100 p-1 rounded-xl flex border border-slate-250">
+                                    <div className="bg-slate-100 p-1 rounded-xl flex border border-slate-200">
                                         <button
                                             onClick={() => setGradingMode('PERCENT')}
                                             className={`px-3 py-1.5 rounded-lg text-xs font-black transition-all ${gradingMode === 'PERCENT' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
@@ -439,12 +478,12 @@ View full dashboard: https://somaai.co.ke/parent/${student.id}`;
                                         </button>
                                         <button
                                             onClick={() => setGradingMode('CBC')}
-                                            className={`px-3 py-1.5 rounded-lg text-xs font-black transition-all ${gradingMode === 'CBC' ? 'bg-indigo-650 text-white shadow-sm' : 'text-slate-500 hover:text-slate-850'}`}
+                                            className={`px-3 py-1.5 rounded-lg text-xs font-black transition-all ${gradingMode === 'CBC' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
                                         >
                                             Kenyan CBC (JSS)
                                         </button>
                                     </div>
-                                    <button className="bg-slate-900 text-white px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 hover:bg-slate-850 transition-colors">
+                                    <button className="bg-slate-900 text-white px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 hover:bg-slate-800 transition-colors">
                                         <UploadCloud className="w-4 h-4" /> Export CSV
                                     </button>
                                 </div>
@@ -505,28 +544,28 @@ View full dashboard: https://somaai.co.ke/parent/${student.id}`;
                                                 <div className="flex items-center gap-3 p-3 bg-white rounded-2xl border border-slate-150 shadow-sm">
                                                     <span className="px-2.5 py-0.5 rounded-lg text-[10px] font-black bg-emerald-100 text-emerald-800 border border-emerald-200">EE</span>
                                                     <div className="text-[10px] leading-tight">
-                                                        <p className="font-black text-slate-850">Exceeding Expectation</p>
+                                                        <p className="font-black text-slate-800">Exceeding Expectation</p>
                                                         <p className="text-slate-400 font-bold mt-0.5">80% - 100%</p>
                                                     </div>
                                                 </div>
                                                 <div className="flex items-center gap-3 p-3 bg-white rounded-2xl border border-slate-150 shadow-sm">
                                                     <span className="px-2.5 py-0.5 rounded-lg text-[10px] font-black bg-blue-100 text-blue-800 border border-blue-200">ME</span>
                                                     <div className="text-[10px] leading-tight">
-                                                        <p className="font-black text-slate-850">Meeting Expectation</p>
+                                                        <p className="font-black text-slate-800">Meeting Expectation</p>
                                                         <p className="text-slate-400 font-bold mt-0.5">60% - 79%</p>
                                                     </div>
                                                 </div>
                                                 <div className="flex items-center gap-3 p-3 bg-white rounded-2xl border border-slate-150 shadow-sm">
                                                     <span className="px-2.5 py-0.5 rounded-lg text-[10px] font-black bg-amber-100 text-amber-800 border border-amber-200">AE</span>
                                                     <div className="text-[10px] leading-tight">
-                                                        <p className="font-black text-slate-850">Approaching Expectation</p>
+                                                        <p className="font-black text-slate-800">Approaching Expectation</p>
                                                         <p className="text-slate-400 font-bold mt-0.5">40% - 59%</p>
                                                     </div>
                                                 </div>
                                                 <div className="flex items-center gap-3 p-3 bg-white rounded-2xl border border-slate-150 shadow-sm">
                                                     <span className="px-2.5 py-0.5 rounded-lg text-[10px] font-black bg-rose-100 text-rose-800 border border-rose-200">BE</span>
                                                     <div className="text-[10px] leading-tight">
-                                                        <p className="font-black text-slate-850">Below Expectation</p>
+                                                        <p className="font-black text-slate-800">Below Expectation</p>
                                                         <p className="text-slate-400 font-bold mt-0.5">0% - 39%</p>
                                                     </div>
                                                 </div>
@@ -571,7 +610,7 @@ View full dashboard: https://somaai.co.ke/parent/${student.id}`;
                                 <div className="flex items-center gap-3">
                                     <button
                                         onClick={() => setIsBillingModalOpen(true)}
-                                        className="bg-indigo-650 hover:bg-indigo-750 text-white px-4 py-2.5 rounded-xl text-xs font-black flex items-center gap-1.5 shadow-md shadow-indigo-100 hover:shadow-lg transition-all uppercase tracking-wider"
+                                        className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-xl text-xs font-black flex items-center gap-1.5 shadow-md shadow-indigo-100 hover:shadow-lg transition-all uppercase tracking-wider"
                                     >
                                         <Smartphone className="w-4 h-4" /> Collect Fees (M-Pesa)
                                     </button>

@@ -81,23 +81,23 @@ export const TeacherLanding: React.FC<TeacherLandingProps> = ({ onLogin, onRegis
                                 Built for Kenyan Teachers
                             </div>
 
-                            <h1 className="text-5xl lg:text-7xl font-extrabold text-white mb-6 leading-[1.1] tracking-tight">
+                            <h1 className="text-4xl sm:text-5xl lg:text-7xl font-extrabold text-white mb-6 leading-[1.1] tracking-tight">
                                 Teach Better In <br className="hidden lg:block" />
                                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-orange-300 to-yellow-300 animate-gradient-x">Less Time.</span>
                             </h1>
 
-                            <p className="text-xl text-blue-100 mb-10 max-w-xl mx-auto lg:mx-0 leading-relaxed font-medium">
-                                Plan lessons, mark work faster, and follow up with confidence using practical classroom tools built for real school days.
+                            <p className="text-lg sm:text-xl text-blue-100 mb-8 sm:mb-10 max-w-xl mx-auto lg:mx-0 leading-relaxed font-medium">
+                                Your co-teacher assistant for planning, marking, and classroom follow-up. You stay in control; Soma Smart handles the heavy lift.
                             </p>
 
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-8 text-left max-w-xl mx-auto lg:mx-0">
                                 <div className="bg-white/10 border border-white/20 rounded-2xl px-4 py-3">
-                                    <p className="text-[10px] uppercase tracking-widest font-black text-blue-200">Minutes Saved This Week</p>
-                                    <p className="text-2xl font-black text-white mt-1">320</p>
+                                    <p className="text-[10px] uppercase tracking-widest font-black text-blue-200">First 10 Minutes</p>
+                                    <p className="text-sm font-black text-white mt-1">Set class + subject context</p>
                                 </div>
                                 <div className="bg-white/10 border border-white/20 rounded-2xl px-4 py-3">
-                                    <p className="text-[10px] uppercase tracking-widest font-black text-blue-200">Tasks Automated</p>
-                                    <p className="text-2xl font-black text-white mt-1">24</p>
+                                    <p className="text-[10px] uppercase tracking-widest font-black text-blue-200">Then Do This</p>
+                                    <p className="text-sm font-black text-white mt-1">Generate, assign, and follow up</p>
                                 </div>
                             </div>
 
@@ -106,29 +106,29 @@ export const TeacherLanding: React.FC<TeacherLandingProps> = ({ onLogin, onRegis
                                 <div className="space-y-1.5 text-sm font-bold text-white">
                                     <p>1. Prepare weekly schemes of work</p>
                                     <p>2. Mark assignments with consistent feedback</p>
-                                    <p>3. Assign and track class follow-up quickly</p>
+                                    <p>3. Share to stream + WhatsApp and track follow-up</p>
                                 </div>
                             </div>
 
-                            <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
+                            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center lg:justify-start">
                                 <button
                                     onClick={onRegister}
-                                    className="px-8 py-4 bg-white text-blue-700 font-black text-lg rounded-2xl shadow-xl shadow-blue-900/20 hover:bg-blue-50 hover:-translate-y-1 transition-all flex items-center justify-center gap-3"
+                                    className="min-h-[50px] px-6 sm:px-8 py-3.5 sm:py-4 bg-white text-blue-700 font-black text-base sm:text-lg rounded-2xl shadow-xl shadow-blue-900/20 hover:bg-blue-50 hover:-translate-y-1 transition-all flex items-center justify-center gap-3"
                                 >
                                     <UserPlus className="w-5 h-5" />
-                                    Start Free Account
+                                    Start Teaching Flow
                                 </button>
                                 <button
                                     onClick={onLogin}
-                                    className="px-8 py-4 bg-blue-500/20 text-white font-bold text-lg rounded-2xl border border-white/20 hover:bg-white/10 transition-all flex items-center justify-center gap-3 backdrop-blur-sm"
+                                    className="min-h-[50px] px-6 sm:px-8 py-3.5 sm:py-4 bg-blue-500/20 text-white font-bold text-base sm:text-lg rounded-2xl border border-white/20 hover:bg-white/10 transition-all flex items-center justify-center gap-3 backdrop-blur-sm"
                                 >
                                     <LogIn className="w-5 h-5" />
-                                    Teacher Login
+                                    Continue As Teacher
                                 </button>
                             </div>
 
                             <p className="mt-8 text-blue-200/80 text-sm font-medium flex items-center justify-center lg:justify-start gap-2">
-                                <CheckCircle className="w-4 h-4 text-emerald-400" /> No credit card required. Free forever plan available.
+                                <CheckCircle className="w-4 h-4 text-emerald-400" /> Start free. Upgrade only when your class workflow is running.
                             </p>
                         </motion.div>
 

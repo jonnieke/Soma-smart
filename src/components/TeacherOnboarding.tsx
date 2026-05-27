@@ -16,7 +16,19 @@ interface TeacherOnboardingProps {
 
 export const TeacherOnboarding: React.FC<TeacherOnboardingProps> = ({ onComplete, onClose, onLogin, initialStep = 1, isEditing = false }) => {
     const { registerTeacher, updateTeacherProfile, teacherProfile, language } = useApp();
-    const t = translations[language];
+    const baseTranslations = (translations as Record<string, any>).EN ?? Object.values(translations)[0] ?? {};
+    const activeTranslations = (translations as Record<string, any>)[language] ?? baseTranslations;
+    const baseTeacherTranslations = baseTranslations.teacher ?? {};
+    const activeTeacherTranslations = activeTranslations.teacher ?? {};
+    const t = {
+        ...baseTranslations,
+        ...activeTranslations,
+        teacher: {
+            ...baseTeacherTranslations,
+            ...activeTeacherTranslations,
+            onboarding: { ...(baseTeacherTranslations.onboarding ?? {}), ...(activeTeacherTranslations.onboarding ?? {}) },
+        },
+    };
     const [step, setStep] = useState(initialStep);
 
     // Auth State

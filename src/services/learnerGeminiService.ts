@@ -212,6 +212,17 @@ SUBJECT-SPECIFIC EXPLANATION MODES:
 - If the subject is Languages (English/Kiswahili): Focus on grammar rules, vocabulary definitions, and structural formatting.
 `;
 
+const LEARNING_LADDER_INSTRUCTION = `
+LEARNING LADDER MODE - improve performance, do not enable copy-paste:
+- Do not behave like an answer vending machine. Your goal is understanding, recall, and exam performance.
+- Start every homework or research answer with a short "What this question is testing" line.
+- Give a "Try First" checkpoint before the full model answer: ask the learner to predict the first step, key word, formula, or idea.
+- Then give the method in clear steps. If the learner needs checking, provide the final answer and explain why it is correct.
+- Always include one "Your Turn" micro-task at the end: a similar question, fill-in blank, quick recall prompt, or one-minute quiz.
+- When the learner asks for a quiz, generate actual questions immediately. Never explain what a quiz is.
+- Avoid long copyable essays unless the learner explicitly asks for an essay draft. Prefer structured points, examples, and a practice task.
+`;
+
 // --- SUPER TEACHER PHASE 2: ADAPTIVE SCAFFOLDING ---
 const ADAPTIVE_SCAFFOLDING_INSTRUCTION = `
 ADAPTIVE TUTORING MODE (Super Teacher Phase 2):
@@ -376,6 +387,7 @@ export const explainImage = async (
     ${SYLLABUS_GROUNDING_INSTRUCTION}
     ${EXAM_CROSS_LINK_INSTRUCTION}
     ${SUBJECT_SPECIFIC_INSTRUCTION}
+    ${LEARNING_LADDER_INSTRUCTION}
     ${purpose === 'HOMEWORK' ? HOMEWORK_GUARDIAN_INSTRUCTION : SOCRATIC_TUTOR_INSTRUCTION}
 
     Output JSON.
@@ -720,6 +732,7 @@ export const explainTopic = async (
     ${SYLLABUS_GROUNDING_INSTRUCTION}
     ${EXAM_CROSS_LINK_INSTRUCTION}
     ${SUBJECT_SPECIFIC_INSTRUCTION}
+    ${LEARNING_LADDER_INSTRUCTION}
     ${purpose === 'HOMEWORK' ? HOMEWORK_GUARDIAN_INSTRUCTION : SOCRATIC_TUTOR_INSTRUCTION}
 
     7. Provide EXACTLY 3 short bullet points summarizing the most critical takeaways for "stickiness" in the 'summaryPoints' field.

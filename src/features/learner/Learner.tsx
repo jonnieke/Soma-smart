@@ -26,7 +26,7 @@ import {
   calculateStreak, calculateSubjectPerformance, getDailyChallenge
 } from '../../services/gamificationService';
 import { translations } from '../../data/translations';
-import { QuizRunner } from './QuizRunner';
+import { QuizReviewSummary, QuizRunner } from './QuizRunner';
 import { ThemeToggle } from '../../components/ThemeToggle';
 import { DashboardSidebar, SidebarTab } from '../../components/DashboardSidebar';
 import { classroomService, StudentClassroomSummary } from '../../services/classroomService';
@@ -279,6 +279,10 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
 
   const [studyTab, setStudyTab] = useState<'LESSON' | 'RECAP' | 'QNA' | 'QUIZ'>('LESSON');
   const [expandedRecaps, setExpandedRecaps] = useState<number[]>([]);
+  const [completedRecallChecks, setCompletedRecallChecks] = useState<number[]>([]);
+  const [recallRewarded, setRecallRewarded] = useState(false);
+  const [studyMissionChecks, setStudyMissionChecks] = useState<number[]>([]);
+  const [studyMissionRewarded, setStudyMissionRewarded] = useState(false);
   const [activeRevisionSession, setActiveRevisionSession] = useState<{ data: any, mode: 'LEARN' | 'EXAM' } | null>(null);
   const [recapData, setRecapData] = useState<any>(null); // Store LessonRecap
 
@@ -331,6 +335,8 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
   const [stickyQuizTaken, setStickyQuizTaken] = useState(false);
   const [stickyQuizData, setStickyQuizData] = useState<QuizData | null>(null);
   const [quizData, setQuizData] = useState<QuizData | null>(null);
+  const [lastQuizReview, setLastQuizReview] = useState<QuizReviewSummary | null>(null);
+  const [learningProofStatus, setLearningProofStatus] = useState<'idle' | 'copied' | 'shared'>('idle');
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [qualityWarning, setQualityWarning] = useState<{ show: boolean, issues: string[], file: File | null } | null>(null);
   // Separate warning object to match usage if needed, or just simplify
@@ -343,6 +349,72 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
   const [scanStatus, setScanStatus] = useState<'idle' | 'scanning' | 'success' | 'STABILIZING' | 'CAPTURING' | 'LOOKING'>('idle');
   const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan | null>(null);
   const [promptText, setPromptText] = useState("");
+
+  useEffect(() => {
+    setCompletedRecallChecks([]);
+    setRecallRewarded(false);
+    setLearningProofStatus('idle');
+  }, [explanation?.topic]);
+
+  const shareLearningProof = React.useCallback(async () => {
+    if (!explanation) return;
+
+    const quizLine = lastQuizReview
+      ? `Last quiz score: ${lastQuizReview.score}% (${lastQuizReview.correctCount}/${lastQuizReview.totalQuestions} correct).`
+      : 'Next step: quiz and repair weak spots.';
+    const proofText = [
+      `I completed an active recall break on ${explanation.topic} with Soma Smart.`,
+      'I answered 3 memory checkpoints before moving on.',
+      quizLine,
+      'Learning path: Learn -> Recall -> Quiz -> Repair -> Retry.',
+      'https://somaai.co.ke'
+    ].join('\n');
+
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: 'Soma Smart learning proof',
+          text: proofText
+        });
+        setLearningProofStatus('shared');
+      } else if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(proofText);
+        setLearningProofStatus('copied');
+      }
+      trackFunnelEvent('learner_learning_proof_shared', {
+        topic: explanation.topic,
+        method: navigator.share ? 'native_share' : 'clipboard'
+      });
+    } catch (_) {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(proofText);
+        setLearningProofStatus('copied');
+      }
+    }
+  }, [explanation, lastQuizReview, trackFunnelEvent]);
+
+  useEffect(() => {
+    if (!explanation || recallRewarded || completedRecallChecks.length < 3) return;
+
+    setRecallRewarded(true);
+    updateTopicMastery(explanation.topic, 55);
+    saveActivity({
+      id: `recall-${Date.now()}`,
+      type: 'STUDY',
+      topic: explanation.topic,
+      date: new Date().toLocaleDateString(),
+      details: JSON.stringify({
+        mode: 'active_recall_break',
+        completedChecks: completedRecallChecks.length,
+        xpEarned: 30
+      })
+    });
+    trackFunnelEvent('active_recall_break_completed', {
+      topic: explanation.topic,
+      completedChecks: completedRecallChecks.length
+    });
+    triggerMemorySync();
+  }, [completedRecallChecks.length, explanation, recallRewarded, saveActivity, trackFunnelEvent, triggerMemorySync, updateTopicMastery]);
   const [showTutoringModal, setShowTutoringModal] = useState(false);
   const [showExpiryModal, setShowExpiryModal] = useState(false); // New State
   const [hasRecentPaymentUnlock, setHasRecentPaymentUnlock] = useState(false);
@@ -456,6 +528,42 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
   const [currentDocument, setCurrentDocument] = useState<any>(null);
   const [studyChat, setStudyChat] = useState<{ role: 'user' | 'model', text: string }[]>([]);
   const [isSummarizing, setIsSummarizing] = useState(false);
+
+  useEffect(() => {
+    setStudyMissionChecks([]);
+    setStudyMissionRewarded(false);
+  }, [currentDocument?.id]);
+
+  useEffect(() => {
+    if (!currentDocument || studyMissionRewarded || studyMissionChecks.length < 3) return;
+
+    setStudyMissionRewarded(true);
+    saveActivity({
+      id: `study-mission-${Date.now()}`,
+      type: 'STUDY',
+      topic: currentDocument.title,
+      date: new Date().toLocaleDateString(),
+      details: JSON.stringify({
+        mode: 'library_study_mission',
+        materialId: currentDocument.id,
+        realId: currentDocument.realId,
+        subject: currentDocument.subject,
+        grade: currentDocument.grade,
+        completedChecks: studyMissionChecks.length,
+        xpEarned: 40
+      })
+    });
+    trackFunnelEvent('library_study_mission_completed', {
+      material_id: currentDocument.id,
+      subject: currentDocument.subject,
+      grade: currentDocument.grade
+    });
+    triggerMemorySync();
+  }, [currentDocument, saveActivity, studyMissionChecks.length, studyMissionRewarded, trackFunnelEvent, triggerMemorySync]);
+
+  const toggleStudyMissionCheck = React.useCallback((index: number) => {
+    setStudyMissionChecks(prev => prev.includes(index) ? prev.filter(item => item !== index) : [...prev, index]);
+  }, []);
 
   // Star Rating & Chat State
   const [ratingRequestId, setRatingRequestId] = useState<string | null>(null);
@@ -3176,6 +3284,84 @@ ${explanation.explanation}
       const hasStudiedTopic = Boolean(latestStudy?.topic);
       const hasQuizAttempt = Boolean(latestQuiz);
       const hasScoreGain = typeof latestQuiz?.score === 'number' && latestQuiz.score >= 0;
+      const dueFlashcardsCountForNext = dueForReview?.filter(i => i.question && i.answer).length || 0;
+      const focusTopic = (lastQuizReview?.missedQuestions.length && explanation?.topic)
+        ? explanation.topic
+        : (weakTopics?.[0] || latestQuiz?.topic || latestStudy?.topic || recentTopics[0] || 'today\'s topic');
+      const nextStep = lastQuizReview?.missedQuestions.length
+        ? {
+            label: 'Repair last quiz misses',
+            title: `Fix ${lastQuizReview.missedQuestions.length} missed question${lastQuizReview.missedQuestions.length === 1 ? '' : 's'}`,
+            body: 'Do a correction-first drill before moving to a new topic.',
+            cta: 'Start Repair Drill',
+            action: () => {
+              const repairPrompt = `Create a correction-first repair drill on ${focusTopic}. Start with the key idea, then give 5 practice questions. Do not show answers until I try.`;
+              setPromptText(repairPrompt);
+              handlePromptSubmit(repairPrompt);
+            }
+          }
+        : weakTopics?.length
+        ? {
+            label: 'Weak topic detected',
+            title: `Strengthen ${focusTopic}`,
+            body: 'Akili will explain the idea, test you, then help repair mistakes.',
+            cta: 'Start Weakness Drill',
+            action: () => {
+              const weakPrompt = `Help me improve in ${focusTopic}. Explain the core idea briefly, then generate a 5-question quiz and mark my answers after I try.`;
+              setPromptText(weakPrompt);
+              handlePromptSubmit(weakPrompt);
+            }
+          }
+        : dueFlashcardsCountForNext > 0
+        ? {
+            label: 'Memory review due',
+            title: `${dueFlashcardsCountForNext} recall card${dueFlashcardsCountForNext === 1 ? '' : 's'} due`,
+            body: 'Reviewing before you forget is the fastest way to improve exam memory.',
+            cta: 'Review Cards',
+            action: () => {
+              setPracticeMode('due');
+              setCurrentCardIndex(0);
+              setIsFlipped(false);
+              setReviewComplete(false);
+              setMode('FLASHCARDS');
+            }
+          }
+        : hasQuizAttempt
+        ? {
+            label: 'Beat your last score',
+            title: `Last quiz: ${typeof latestQuiz?.score === 'number' ? `${latestQuiz.score}%` : 'completed'}`,
+            body: `Take a focused retry on ${focusTopic} and aim for a better score.`,
+            cta: 'Try Again',
+            action: () => {
+              const retryPrompt = `Generate a fresh 5-question quiz on ${focusTopic}. Make it exam-style and wait for my answers before marking.`;
+              setPromptText(retryPrompt);
+              handlePromptSubmit(retryPrompt);
+            }
+          }
+        : {
+            label: 'First performance loop',
+            title: 'Pick one topic, learn it, then test yourself',
+            body: 'Start from library notes or a past paper question, then ask Akili to quiz you.',
+            cta: 'Open Library',
+            action: () => handleSidebarTabChange('RESOURCES')
+          };
+      const learningModePrompts = [
+        {
+          label: 'Hint First',
+          body: 'Get guidance without giving away the answer.',
+          buildPrompt: (question: string) => `Do not give me the final answer immediately. Give me one hint first, ask me to try, then reveal the next step only after I respond.\n\nMy question: ${question || '[type or paste your question here]'}`
+        },
+        {
+          label: 'Mark My Working',
+          body: 'Paste your attempt and get corrections.',
+          buildPrompt: (question: string) => `Mark my working like a teacher. Identify the first mistake, explain why it is wrong, and give me one similar practice question.\n\nMy working: ${question || '[paste your working here]'}`
+        },
+        {
+          label: 'Quiz Me',
+          body: 'Turn this topic into a self-test.',
+          buildPrompt: (question: string) => `Create a 5-question quiz on this topic. Ask one question at a time, wait for my answer, then mark it and explain the correction.\n\nTopic: ${question || '[type the topic here]'}`
+        }
+      ];
 
       return (
         <div className="min-h-screen bg-slate-50 dark:bg-slate-950 font-sans text-slate-800 dark:text-slate-100 w-full transition-colors duration-300">
@@ -3524,6 +3710,70 @@ ${explanation.explanation}
                   </div>
                   )}
 
+                  {/* SOLVE IT NOW: immediate student pain points */}
+                  <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-sm border-2 border-slate-300 dark:border-slate-800 p-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <div>
+                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-1">Solve It Now</p>
+                        <h3 className="text-base font-bold text-slate-800 dark:text-white">Pick what you need help with right now</h3>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <button
+                        onClick={() => setMode('SCAN_EXPLAIN')}
+                        className="text-left rounded-2xl border-2 border-slate-200 dark:border-slate-800 p-4 hover:border-blue-300 dark:hover:border-blue-700 transition-colors"
+                      >
+                        <p className="text-sm font-bold text-slate-800 dark:text-slate-100">I am stuck on one question</p>
+                        <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-1">Get hints, steps, then a quick check question.</p>
+                      </button>
+                      <button
+                        onClick={() => handleSidebarTabChange('SUBJECTS')}
+                        className="text-left rounded-2xl border-2 border-slate-200 dark:border-slate-800 p-4 hover:border-orange-300 dark:hover:border-orange-700 transition-colors"
+                      >
+                        <p className="text-sm font-bold text-slate-800 dark:text-slate-100">Exam is near, I need practice</p>
+                        <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-1">Go to Exam Prep and start drills.</p>
+                      </button>
+                      <button
+                        onClick={() => handleSidebarTabChange('RESOURCES')}
+                        className="text-left rounded-2xl border-2 border-slate-200 dark:border-slate-800 p-4 hover:border-indigo-300 dark:hover:border-indigo-700 transition-colors"
+                      >
+                        <p className="text-sm font-bold text-slate-800 dark:text-slate-100">I need notes or past papers now</p>
+                        <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-1">Open the library with all materials.</p>
+                      </button>
+                      <button
+                        onClick={() => handleSidebarTabChange('TALKBACK')}
+                        className="text-left rounded-2xl border-2 border-slate-200 dark:border-slate-800 p-4 hover:border-pink-300 dark:hover:border-pink-700 transition-colors"
+                      >
+                        <p className="text-sm font-bold text-slate-800 dark:text-slate-100">I learn better by listening</p>
+                        <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-1">Use Talk and Play for audio learning.</p>
+                      </button>
+                    </div>
+                    <div className="mt-4 rounded-2xl border border-emerald-200 dark:border-emerald-900 bg-emerald-50 dark:bg-emerald-950/30 p-4">
+                      <p className="text-[10px] font-black uppercase tracking-[0.18em] text-emerald-700 dark:text-emerald-300 mb-1">Learn, Do Not Copy</p>
+                      <p className="text-sm font-bold text-emerald-950 dark:text-emerald-100">
+                        Akili now guides you through a try-first step, a worked method, and a short practice check so you remember the idea for exams.
+                      </p>
+                    </div>
+                    <div className="mt-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/40 p-4">
+                      <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400 mb-3">Score Improvement Loop</p>
+                      <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                        {[
+                          { label: 'Learn', body: 'Understand the idea' },
+                          { label: 'Recall', body: 'Try without copying' },
+                          { label: 'Quiz', body: 'Test immediately' },
+                          { label: 'Repair', body: 'Fix missed questions' },
+                          { label: 'Retry', body: 'Drill weak spots' }
+                        ].map((step, i) => (
+                          <div key={step.label} className="rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3">
+                            <div className="w-6 h-6 rounded-full bg-indigo-600 text-white flex items-center justify-center text-[10px] font-black mb-2">{i + 1}</div>
+                            <p className="text-xs font-black text-slate-900 dark:text-white">{step.label}</p>
+                            <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 mt-0.5 leading-snug">{step.body}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
                   {/* AI INPUT BUBBLE */}
                   <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-sm border-2 border-slate-300 dark:border-slate-800 p-6 relative overflow-hidden">
                     <div className="absolute top-0 right-0 w-48 h-48 bg-blue-50 dark:bg-blue-900/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
@@ -3544,6 +3794,26 @@ ${explanation.explanation}
                             rows={2}
                             className="w-full bg-transparent border-0 focus:ring-0 text-sm font-medium py-2 px-2 resize-none outline-none text-slate-800 dark:text-slate-100 placeholder:text-slate-400"
                           />
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-2">
+                            {learningModePrompts.map((modePrompt) => (
+                              <button
+                                key={modePrompt.label}
+                                type="button"
+                                onClick={() => {
+                                  const currentQuestion = promptText.trim();
+                                  const nextPromptValue = modePrompt.buildPrompt(currentQuestion);
+                                  setPromptText(nextPromptValue);
+                                  if (currentQuestion) {
+                                    handlePromptSubmit(nextPromptValue);
+                                  }
+                                }}
+                                className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-left hover:border-blue-300 dark:hover:border-blue-700 transition-colors"
+                              >
+                                <span className="block text-[11px] font-black text-slate-800 dark:text-white">{modePrompt.label}</span>
+                                <span className="block text-[10px] font-semibold text-slate-500 dark:text-slate-400 mt-0.5 leading-snug">{modePrompt.body}</span>
+                              </button>
+                            ))}
+                          </div>
                           <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-200 dark:border-slate-700">
                              <div className="flex gap-1">
                                 <button onClick={() => fileInputRef.current?.click()} className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-xl transition-colors" title="Upload Image"><ImageIcon className="w-4 h-4" /></button>
@@ -3612,6 +3882,32 @@ ${explanation.explanation}
               </div>
 
               <div className="space-y-6">
+                  {/* RECOMMENDED NEXT STEP */}
+                  <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-sm border-2 border-indigo-200 dark:border-indigo-900/60 p-6 relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
+                    <div className="relative z-10">
+                      <div className="flex items-start justify-between gap-3 mb-4">
+                        <div>
+                          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-600 dark:text-indigo-300 mb-1">Recommended Next Step</p>
+                          <h3 className="font-black text-slate-900 dark:text-white text-lg leading-tight">{nextStep.title}</h3>
+                        </div>
+                        <div className="w-10 h-10 rounded-2xl bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-300 flex items-center justify-center shrink-0">
+                          <Zap className="w-5 h-5" />
+                        </div>
+                      </div>
+                      <span className="inline-flex mb-3 text-[10px] font-black uppercase tracking-widest text-indigo-700 dark:text-indigo-200 bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-900 px-3 py-1 rounded-full">
+                        {nextStep.label}
+                      </span>
+                      <p className="text-sm font-semibold text-slate-600 dark:text-slate-300 leading-relaxed mb-4">{nextStep.body}</p>
+                      <button
+                        onClick={nextStep.action}
+                        className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl text-xs font-black uppercase tracking-wider transition-colors shadow-sm"
+                      >
+                        {nextStep.cta}
+                      </button>
+                    </div>
+                  </div>
+
                   {/* MY CLASSES */}
                   {(isRegistered || studentClasses.length > 0) && (
                     <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-sm border-2 border-slate-300 dark:border-slate-800 p-6">
@@ -4410,6 +4706,18 @@ ${explanation.explanation}
             </div>
 
             <div className="p-6 border-t border-white/5 bg-slate-900/50 backdrop-blur-md">
+              <div className="mb-5 rounded-2xl bg-white/5 border border-white/10 p-4">
+                <p className="text-[10px] font-black uppercase tracking-widest text-emerald-300 mb-2">Study Mission</p>
+                <div className="h-2 rounded-full bg-slate-800 overflow-hidden mb-2">
+                  <div
+                    className="h-full bg-emerald-400 rounded-full transition-all"
+                    style={{ width: `${Math.round((studyMissionChecks.length / 3) * 100)}%` }}
+                  />
+                </div>
+                <p className="text-xs font-bold text-slate-300">
+                  {studyMissionRewarded ? 'Mission complete. Study XP added.' : `${studyMissionChecks.length}/3 active steps done`}
+                </p>
+              </div>
               <div className="flex items-center gap-3 opacity-60">
                 <div className="w-8 h-8 rounded-lg bg-indigo-500/20 flex items-center justify-center border border-indigo-500/30">
                   <Sparkles className="w-4 h-4 text-indigo-400" />
@@ -4498,6 +4806,71 @@ ${explanation.explanation}
                             </button>
                           </div>
                         </div>
+                      </div>
+
+                      <div className="mb-10 rounded-3xl border-2 border-emerald-100 bg-emerald-50 p-5 not-prose">
+                        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
+                          <div>
+                            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-700 mb-1">Active Study Mission</p>
+                            <h3 className="text-lg font-black text-slate-900">Do the work, then earn the progress</h3>
+                            <p className="text-sm font-semibold text-slate-600 mt-1">A material only helps when you read, clarify, and test.</p>
+                          </div>
+                          <div className="rounded-2xl bg-white border border-emerald-100 px-4 py-3 min-w-[120px]">
+                            <p className="text-[10px] font-black uppercase tracking-widest text-emerald-700">Progress</p>
+                            <p className="text-2xl font-black text-emerald-800">{studyMissionChecks.length}/3</p>
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                          {[
+                            {
+                              label: 'Read One Section',
+                              body: 'Finish one subtopic or page before moving on.',
+                              action: () => toggleStudyMissionCheck(0)
+                            },
+                            {
+                              label: 'Clarify One Doubt',
+                              body: 'Ask Akili or explain one confusing idea aloud.',
+                              action: () => {
+                                toggleStudyMissionCheck(1);
+                                setStudyTab('QNA');
+                              }
+                            },
+                            {
+                              label: 'Test Yourself',
+                              body: 'Take the quiz while the idea is fresh.',
+                              action: () => {
+                                toggleStudyMissionCheck(2);
+                                setStudyTab('QUIZ');
+                              }
+                            }
+                          ].map((step, i) => {
+                            const done = studyMissionChecks.includes(i);
+                            return (
+                              <button
+                                key={step.label}
+                                type="button"
+                                onClick={step.action}
+                                className={`rounded-2xl border p-4 text-left transition-all ${done
+                                  ? 'bg-emerald-600 border-emerald-600 text-white shadow-md shadow-emerald-100'
+                                  : 'bg-white border-emerald-100 text-slate-800 hover:border-emerald-300'
+                                }`}
+                              >
+                                <div className="flex items-center gap-2 mb-2">
+                                  <CheckCircle className={`w-4 h-4 ${done ? 'text-white' : 'text-emerald-500'}`} />
+                                  <span className="text-[10px] font-black uppercase tracking-widest">{done ? 'Done' : `Step ${i + 1}`}</span>
+                                </div>
+                                <p className="text-sm font-black leading-tight">{step.label}</p>
+                                <p className={`text-xs font-semibold mt-1 leading-snug ${done ? 'text-emerald-50' : 'text-slate-500'}`}>{step.body}</p>
+                              </button>
+                            );
+                          })}
+                        </div>
+                        {studyMissionRewarded && (
+                          <div className="mt-4 rounded-2xl bg-white border border-emerald-100 p-4">
+                            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-emerald-700 mb-1">Mission Complete</p>
+                            <p className="text-sm font-bold text-slate-800">This study mission has been saved to your progress and parent proof report.</p>
+                          </div>
+                        )}
                       </div>
 
                       {explanation.subtopics && explanation.subtopics.length > 0 ? (
@@ -5251,6 +5624,219 @@ ${explanation.explanation}
               </button>
             </div>
 
+            {lastQuizReview && lastQuizReview.missedQuestions.length > 0 && lastQuizReview.score < 100 && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-rose-50 dark:bg-rose-950/20 p-6 rounded-3xl border-2 border-rose-200 dark:border-rose-900/60 shadow-sm"
+              >
+                <div className="flex items-start justify-between gap-4 mb-4">
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-rose-700 dark:text-rose-300 mb-1">Repair Your Misses</p>
+                    <h3 className="font-bold text-slate-900 dark:text-white text-lg">
+                      Fix {lastQuizReview.missedQuestions.length} weak spot{lastQuizReview.missedQuestions.length === 1 ? '' : 's'} from your last quiz
+                    </h3>
+                    <p className="text-sm font-semibold text-slate-600 dark:text-slate-300 mt-1">
+                      Score: {lastQuizReview.score}%. Review the exact questions you missed before moving on.
+                    </p>
+                  </div>
+                  <div className="w-10 h-10 rounded-2xl bg-white dark:bg-slate-900 text-rose-600 flex items-center justify-center shrink-0">
+                    <AlertTriangle className="w-5 h-5" />
+                  </div>
+                </div>
+                <div className="space-y-3">
+                  {lastQuizReview.missedQuestions.slice(0, 3).map(({ question, index, selectedAnswer }) => (
+                    <div key={`${question.id}-${index}`} className="rounded-2xl bg-white dark:bg-slate-900 border border-rose-200 dark:border-rose-900/60 p-4">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-rose-600 mb-2">Question {index + 1}</p>
+                      <p className="text-sm font-bold text-slate-900 dark:text-white mb-2">{question.question}</p>
+                      <div className="grid gap-1 text-xs font-semibold">
+                        <p className="text-rose-700 dark:text-rose-300">Your answer: {selectedAnswer || 'No answer'}</p>
+                        <p className="text-emerald-700 dark:text-emerald-300">Correct answer: {String(question.correctAnswer)}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-4 flex flex-col sm:flex-row gap-3">
+                  <button
+                    onClick={() => {
+                      const repairPrompt = `Help me repair my mistakes on ${lastQuizReview.missedQuestions.length} quiz question(s) about ${explanation.topic}. For each missed question, explain the concept, show the method, then give me one similar practice question without the answer first.\n\n${lastQuizReview.missedQuestions.map(({ question, selectedAnswer }, i) => `${i + 1}. Question: ${question.question}\nMy answer: ${selectedAnswer || 'No answer'}\nCorrect answer: ${String(question.correctAnswer)}\nExplanation: ${question.explanation}`).join('\n\n')}`;
+                      handlePromptSubmit(repairPrompt);
+                    }}
+                    className="flex-1 rounded-2xl bg-rose-600 hover:bg-rose-700 text-white px-5 py-3 text-xs font-black uppercase tracking-wider transition-colors"
+                  >
+                    Repair With Akili
+                  </button>
+                  <button
+                    onClick={() => {
+                      const repairQuestions = lastQuizReview.missedQuestions.map(({ question }) => question);
+                      if (repairQuestions.length === 0) return;
+                      setQuizData({
+                        topic: `${explanation.topic} Repair Drill`,
+                        questions: repairQuestions
+                      });
+                      setLastQuizReview(null);
+                      trackFunnelEvent('learner_repair_drill_started', {
+                        topic: explanation.topic,
+                        missedQuestions: repairQuestions.length
+                      });
+                      setMode('QUIZ');
+                    }}
+                    className="flex-1 rounded-2xl bg-white dark:bg-slate-900 border border-rose-200 dark:border-rose-900/60 text-rose-700 dark:text-rose-300 px-5 py-3 text-xs font-black uppercase tracking-wider hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors"
+                  >
+                    Retry Missed Only
+                  </button>
+                </div>
+              </motion.div>
+            )}
+
+            {/* Concept Map: visual structure without expensive generated images */}
+            {(() => {
+              const conceptItems = (explanation.recapNodes && explanation.recapNodes.length > 0)
+                ? explanation.recapNodes.map(node => node.point)
+                : (explanation.subtopics && explanation.subtopics.length > 0)
+                  ? explanation.subtopics.map(sub => sub.title)
+                  : explanation.summaryPoints.slice(0, 3);
+
+              if (conceptItems.length === 0) return null;
+
+              return (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.08 }}
+                  className="bg-white dark:bg-slate-900 p-6 rounded-3xl border-2 border-slate-300 dark:border-slate-800 shadow-sm"
+                >
+                  <div className="flex items-center justify-between gap-3 mb-5">
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-500 mb-1">Visual Map</p>
+                      <h3 className="font-bold text-slate-900 dark:text-white text-lg">How this topic connects</h3>
+                    </div>
+                    <div className="w-10 h-10 rounded-2xl bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-300 flex items-center justify-center">
+                      <Layers className="w-5 h-5" />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] gap-3 md:gap-4 items-center">
+                    <div className="rounded-2xl bg-indigo-600 text-white p-4 text-center shadow-md shadow-indigo-100">
+                      <p className="text-[10px] font-black uppercase tracking-[0.18em] text-indigo-100 mb-1">Main Idea</p>
+                      <p className="text-base font-black leading-tight">{explanation.topic}</p>
+                    </div>
+                    <div className="hidden md:flex w-10 h-px bg-slate-300 dark:bg-slate-700" />
+                    <div className="grid grid-cols-1 gap-2">
+                      {conceptItems.map((item, i) => (
+                        <button
+                          key={`${item}-${i}`}
+                          onClick={() => {
+                            setStudyTab('RECAP');
+                            setExpandedRecaps(prev => prev.includes(i) ? prev : [...prev, i]);
+                          }}
+                          className="text-left rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/40 hover:border-indigo-300 dark:hover:border-indigo-700 p-3 transition-colors"
+                        >
+                          <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Concept {i + 1}</span>
+                          <p className="text-sm font-bold text-slate-800 dark:text-slate-100 mt-0.5">{item}</p>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </motion.div>
+              );
+            })()}
+
+            {/* Active Recall Break */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+              className="bg-amber-50 dark:bg-amber-950/20 p-6 rounded-3xl border-2 border-amber-200 dark:border-amber-900/60 shadow-sm"
+            >
+              <div className="flex items-start justify-between gap-4 mb-5">
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-700 dark:text-amber-300 mb-1">Active Recall Break</p>
+                  <h3 className="font-bold text-slate-900 dark:text-white text-lg">Pause before copying. Prove you understood it.</h3>
+                  <p className="text-sm font-semibold text-slate-600 dark:text-slate-300 mt-1">Tap each checkpoint after answering it in your head or notebook.</p>
+                </div>
+                <div className="w-10 h-10 rounded-2xl bg-white dark:bg-slate-900 text-amber-600 flex items-center justify-center shrink-0">
+                  <Lightbulb className="w-5 h-5" />
+                </div>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {[
+                  `What is the first step in ${explanation.topic}?`,
+                  'Name one key idea without looking back.',
+                  'Can you solve one similar question now?'
+                ].map((prompt, i) => {
+                  const done = completedRecallChecks.includes(i);
+                  return (
+                    <button
+                      key={prompt}
+                      onClick={() => {
+                        setCompletedRecallChecks(prev => prev.includes(i) ? prev.filter(item => item !== i) : [...prev, i]);
+                        trackFunnelEvent('active_recall_checkpoint_toggled', {
+                          topic: explanation.topic,
+                          checkpoint: i + 1,
+                          completed: !done
+                        });
+                      }}
+                      className={`text-left rounded-2xl border p-4 transition-all ${done
+                        ? 'bg-emerald-600 border-emerald-600 text-white shadow-md shadow-emerald-100'
+                        : 'bg-white dark:bg-slate-900 border-amber-200 dark:border-amber-900/70 text-slate-800 dark:text-slate-100 hover:border-amber-400'
+                        }`}
+                    >
+                      <div className="flex items-center gap-2 mb-2">
+                        <CheckCircle className={`w-4 h-4 ${done ? 'text-white' : 'text-amber-500'}`} />
+                        <span className="text-[10px] font-black uppercase tracking-widest">{done ? 'Done' : `Check ${i + 1}`}</span>
+                      </div>
+                      <p className="text-sm font-bold leading-snug">{prompt}</p>
+                    </button>
+                  );
+                })}
+              </div>
+              <div className="mt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <p className="text-xs font-bold text-amber-800 dark:text-amber-200">
+                  {recallRewarded
+                    ? 'Recall break completed. Study XP added to your progress.'
+                    : `${completedRecallChecks.length}/3 checks completed. The goal is memory, not just an answer.`}
+                </p>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  {recallRewarded && (
+                    <button
+                      onClick={shareLearningProof}
+                      className="rounded-2xl bg-white dark:bg-slate-900 border border-amber-200 dark:border-amber-900/70 text-amber-800 dark:text-amber-200 px-5 py-3 text-xs font-black uppercase tracking-wider hover:bg-amber-100 dark:hover:bg-amber-950/40 transition-colors"
+                    >
+                      {learningProofStatus === 'shared'
+                        ? 'Progress Shared'
+                        : learningProofStatus === 'copied'
+                          ? 'Progress Copied'
+                          : 'Share Progress'}
+                    </button>
+                  )}
+                  <button
+                    onClick={handleGenerateQuiz}
+                    className="rounded-2xl bg-slate-900 dark:bg-white text-white dark:text-slate-950 px-5 py-3 text-xs font-black uppercase tracking-wider hover:opacity-90 transition-opacity"
+                  >
+                    Turn This Into A Quiz
+                  </button>
+                </div>
+              </div>
+              {recallRewarded && (
+                <div className="mt-4 rounded-2xl bg-white dark:bg-slate-900 border border-amber-200 dark:border-amber-900/70 p-4">
+                  <p className="text-[10px] font-black uppercase tracking-[0.18em] text-amber-700 dark:text-amber-300 mb-2">Learning Receipt</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                    {[
+                      { label: 'Topic', value: explanation.topic },
+                      { label: 'Recall Checks', value: '3 of 3 complete' },
+                      { label: 'Reward', value: 'Study XP added' }
+                    ].map((item) => (
+                      <div key={item.label} className="rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-100 dark:border-amber-900/60 p-3">
+                        <p className="text-[9px] font-black uppercase tracking-widest text-amber-700 dark:text-amber-300">{item.label}</p>
+                        <p className="text-xs font-black text-slate-900 dark:text-white mt-1 line-clamp-2">{item.value}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </motion.div>
+
             {/* Key Points - Modernized */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -5486,7 +6072,8 @@ ${explanation.explanation}
     }
 
     if (mode === 'QUIZ' && quizData) {
-      return <QuizRunner data={quizData} onComplete={(score) => {
+      return <QuizRunner data={quizData} onComplete={(score, review) => {
+        setLastQuizReview(review);
         // Enrich topic with subject for better gamification tracking
         const subjectPrefix = currentDocument?.subject ? `${currentDocument.subject} - ` : "";
 
@@ -5496,7 +6083,7 @@ ${explanation.explanation}
           topic: `${subjectPrefix}${quizData.topic}`,
           date: new Date().toLocaleDateString(),
           score,
-          details: JSON.stringify(quizData)
+          details: JSON.stringify({ ...quizData, review })
         });
 
         // Phase 2: Update mastery graph & spaced repetition schedule
@@ -5516,8 +6103,8 @@ ${explanation.explanation}
           source: 'quiz_runner'
         });
 
-        // Return to marketplace/materials after study quiz
-        setMode('MARKETPLACE');
+        // Return to the explanation when available so learners can repair weak spots.
+        setMode(explanation ? 'RESULT' : 'MARKETPLACE');
       }} onExit={() => setMode('RESULT')} />;
     }
 

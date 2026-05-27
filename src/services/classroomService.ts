@@ -62,6 +62,8 @@ export interface StudentClassroomSummary {
 class ClassroomService {
     private classLookupCooldownMs = 5 * 60 * 1000;
     private classLookupFailureCache = new Map<string, number>();
+    private classListCooldownMs = 2 * 60 * 1000;
+    private classListFailureCache = new Map<string, number>();
 
     private isLocalClassId(classId: string) {
         return classId.startsWith('local-class:');
@@ -101,12 +103,23 @@ class ClassroomService {
     }
 
     async getClassesForTeacher(teacherId: string) {
+        const now = Date.now();
+        const lastFailureAt = this.classListFailureCache.get(teacherId);
+        if (lastFailureAt && now - lastFailureAt < this.classListCooldownMs) {
+            return [];
+        }
+
         const { data, error } = await supabase
             .from('classes')
             .select('*')
             .eq('teacher_id', teacherId);
 
-        if (error) throw error;
+        if (error) {
+            this.classListFailureCache.set(teacherId, now);
+            warnIfDev('Teacher class list fetch failed; using empty class list fallback:', error);
+            return [];
+        }
+        this.classListFailureCache.delete(teacherId);
         return data;
     }
 
