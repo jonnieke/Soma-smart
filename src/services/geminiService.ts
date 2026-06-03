@@ -157,7 +157,8 @@ Return 6 topics max. Be specific to ${subject} content — not generic exam advi
       systemInstruction
     );
     // Strip any markdown code fences if present
-    const cleaned = (result || '[]').replace(/```json|```/g, '').trim();
+    const text = result.response.text();
+    const cleaned = (text || '[]').replace(/```json|```/g, '').trim();
     return JSON.parse(cleaned) as PredictedTopic[];
   } catch (error: any) {
     console.error('Predicted topics error:', error);
@@ -217,7 +218,8 @@ Rules:
       { maxOutputTokens: 800, temperature: 0.5 },
       systemInstruction
     );
-    const cleaned = (result || '[]').replace(/```json|```/g, '').trim();
+    const text = result.response.text();
+    const cleaned = (text || '[]').replace(/```json|```/g, '').trim();
     return JSON.parse(cleaned) as PracticeQuestion[];
   } catch (error: any) {
     console.error('Generate practice questions error:', error);
@@ -3125,7 +3127,8 @@ RULES:
       { maxOutputTokens: 700, temperature: 0.35 },
       systemInstruction
     );
-    return result || "Check your connection and try again.";
+    const text = result.response.text();
+    return text || "Check your connection and try again.";
   } catch (error: any) {
     console.error("Exam Guru error:", error);
     if (error instanceof RateLimitError) throw error;
@@ -3194,7 +3197,8 @@ ${candidateAnswer}`
       { maxOutputTokens: 900, temperature: 0.2 },
       systemInstruction
     );
-    return result || 'Could not mark answer. Please try again.';
+    const text = result.response.text();
+    return text || 'Could not mark answer. Please try again.';
   } catch (error: any) {
     console.error('Mark My Answer error:', error);
     if (error instanceof RateLimitError) throw error;
