@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ReactGA from 'react-ga4';
 import { Smartphone, Loader2, CheckCircle2, XCircle, ArrowLeft, ShieldCheck, CreditCard, ExternalLink, ArrowRight, Sparkles } from 'lucide-react';
@@ -6,6 +6,7 @@ import { useApp } from '../../context/AppContext';
 import { pesapalService } from '../../services/pesapalService';
 import { UserRole } from '../../types';
 import { supabase } from '../../lib/supabase';
+import { verifyAndFixSubscription } from '../../services/subscriptionService';
 
 interface Props {
     plan: any;
@@ -24,6 +25,7 @@ export const PaymentFlow: React.FC<Props> = ({ plan, materialId, onSuccess, onCa
     const [payerMode, setPayerMode] = useState<'NEW' | 'EXISTING'>('NEW');
     const [existingStudentCode, setExistingStudentCode] = useState('');
     const [existingStudentProfileId, setExistingStudentProfileId] = useState<string | null>(null);
+    const existingStudentProfileIdRef = useRef<string | null>(null);
     const [isResolvingStudent, setIsResolvingStudent] = useState(false);
     const [iframeUrl, setIframeUrl] = useState('');
     const [paymentReference, setPaymentReference] = useState<string | null>(null);
@@ -32,6 +34,7 @@ export const PaymentFlow: React.FC<Props> = ({ plan, materialId, onSuccess, onCa
     const [iframeLoaded, setIframeLoaded] = useState(false);
     const [autoOpenedCheckout, setAutoOpenedCheckout] = useState(false);
     const [error, setError] = useState('');
+    const isSubscriptionCheckout = Boolean(plan?.segment === 'STUDENT' || plan?.segment === 'TEACHER') && plan?.id !== 'download_pack_5' && !materialId;
     
     const getPlanLabel = (tier?: string | null) => {
         const t = String(tier || '').toUpperCase();
@@ -46,6 +49,7 @@ export const PaymentFlow: React.FC<Props> = ({ plan, materialId, onSuccess, onCa
 
     const hasActiveSubscription = async (profileId: string): Promise<{ active: boolean; plan?: string }> => {
         try {
+            await verifyAndFixSubscription(profileId);
             const { data, error: subError } = await supabase
                 .from('profiles')
                 .select('subscription_tier, subscription_expiry')
@@ -57,7 +61,23 @@ export const PaymentFlow: React.FC<Props> = ({ plan, materialId, onSuccess, onCa
             const expiry = data.subscription_expiry ? new Date(data.subscription_expiry) : null;
             const now = new Date();
             const active = tier !== 'FREE' && !!expiry && expiry > now;
-            return { active, plan: tier };
+            if (active) return { active: true, plan: tier };
+
+            const repaired = await verifyAndFixSubscription(profileId);
+            if (!repaired) return { active: false };
+
+            const { data: repairedData } = await supabase
+                .from('profiles')
+                .select('subscription_tier, subscription_expiry')
+                .eq('id', profileId)
+                .maybeSingle();
+
+            const repairedTier = String(repairedData?.subscription_tier || 'FREE').toUpperCase();
+            const repairedExpiry = repairedData?.subscription_expiry ? new Date(repairedData.subscription_expiry) : null;
+            return {
+                active: repairedTier !== 'FREE' && !!repairedExpiry && repairedExpiry > now,
+                plan: repairedTier
+            };
         } catch {
             return { active: false };
         }
@@ -90,6 +110,28 @@ export const PaymentFlow: React.FC<Props> = ({ plan, materialId, onSuccess, onCa
             }
         }
     }, [studentProfile, teacherProfile, role]);
+
+    useEffect(() => {
+        if (!isSubscriptionCheckout || step !== 'INPUT') return;
+        const profileId = studentProfile?.id || teacherProfile?.id || userId;
+        if (!profileId) return;
+
+        let cancelled = false;
+        const blockDuplicateCheckout = async () => {
+            const existingSub = await hasActiveSubscription(profileId);
+            if (cancelled || !existingSub.active) return;
+
+            setError(`Already subscribed: ${getPlanLabel(existingSub.plan)} is still active. Redirecting...`);
+            setStep('SUCCESS');
+            await refreshProfile();
+            window.setTimeout(onSuccess, 700);
+        };
+
+        blockDuplicateCheckout();
+        return () => {
+            cancelled = true;
+        };
+    }, [isSubscriptionCheckout, step, studentProfile?.id, teacherProfile?.id, userId, refreshProfile, onSuccess]);
 
     const isRegistered = !!(studentProfile || teacherProfile);
     const isGuestExistingStudent = !isRegistered && payerMode === 'EXISTING';
@@ -200,6 +242,7 @@ export const PaymentFlow: React.FC<Props> = ({ plan, materialId, onSuccess, onCa
             if (!data) {
                 setError('Student ID not found. Confirm and try again.');
                 setExistingStudentProfileId(null);
+                existingStudentProfileIdRef.current = null;
                 return false;
             }
 
@@ -209,12 +252,25 @@ export const PaymentFlow: React.FC<Props> = ({ plan, materialId, onSuccess, onCa
             setEmail(data.email || '');
             setPhone(((data.parent_phone || '') as string).replace(/^\+?254/, '').replace(/^0/, ''));
             setExistingStudentProfileId(data.id);
+            existingStudentProfileIdRef.current = data.id;
             setExistingStudentCode(data.student_id || code);
+
+            if (isSubscriptionCheckout) {
+                const existingSub = await hasActiveSubscription(data.id);
+                if (existingSub.active) {
+                    setError(`Already subscribed: ${getPlanLabel(existingSub.plan)} is still active. Redirecting...`);
+                    setStep('SUCCESS');
+                    await login(data.student_id || code);
+                    window.setTimeout(onSuccess, 700);
+                    return false;
+                }
+            }
             return true;
         } catch (lookupErr) {
             console.error('Existing student lookup failed:', lookupErr);
             setError('Could not verify Student ID right now. Please try again.');
             setExistingStudentProfileId(null);
+            existingStudentProfileIdRef.current = null;
             return false;
         } finally {
             setIsResolvingStudent(false);
@@ -237,8 +293,8 @@ export const PaymentFlow: React.FC<Props> = ({ plan, materialId, onSuccess, onCa
             return;
         }
 
-        const profileId = studentProfile?.id || teacherProfile?.id || existingStudentProfileId;
-        if (profileId) {
+        const profileId = studentProfile?.id || teacherProfile?.id || existingStudentProfileId || existingStudentProfileIdRef.current;
+        if (profileId && isSubscriptionCheckout) {
             const existingSub = await hasActiveSubscription(profileId);
             if (existingSub.active) {
                 setError(`Already subscribed: ${getPlanLabel(existingSub.plan)} is still active. Redirecting...`);
@@ -272,7 +328,7 @@ export const PaymentFlow: React.FC<Props> = ({ plan, materialId, onSuccess, onCa
 
         try {
             // Auto-register NEW learners so their payment attaches to a real account
-            let finalUid = userId || studentProfile?.id || teacherProfile?.id || existingStudentProfileId;
+            let finalUid = userId || studentProfile?.id || teacherProfile?.id || existingStudentProfileId || existingStudentProfileIdRef.current;
             let finalEmail = email || studentProfile?.email || teacherProfile?.email;
             
             if (!isRegistered && payerMode === 'NEW') {
@@ -341,6 +397,7 @@ export const PaymentFlow: React.FC<Props> = ({ plan, materialId, onSuccess, onCa
         if (isRegistered) return;
         setError('');
         setExistingStudentProfileId(null);
+        existingStudentProfileIdRef.current = null;
         if (payerMode === 'NEW') {
             setExistingStudentCode('');
         }
@@ -441,6 +498,7 @@ export const PaymentFlow: React.FC<Props> = ({ plan, materialId, onSuccess, onCa
                                                 onChange={(e) => {
                                                     setExistingStudentCode(e.target.value.toUpperCase());
                                                     setExistingStudentProfileId(null);
+                                                    existingStudentProfileIdRef.current = null;
                                                 }}
                                             />
                                             <button

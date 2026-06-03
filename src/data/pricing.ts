@@ -1,11 +1,11 @@
 import { SubscriptionPlan } from '../types';
 
 export const STUDENT_PLANS: SubscriptionPlan[] = [
-    { id: 's_daily', segment: 'STUDENT', name: 'Daily Dash', price: 20, duration: 'DAILY', features: ['Somo Homework Helper', 'Step-by-Step Solutions', 'Somo Candidate Specialists'] },
-    { id: 's_weekly', segment: 'STUDENT', name: 'Weekly Warrior', price: 100, duration: 'WEEKLY', savings: 'Save 28%', features: ['Somo Homework Helper', 'Step-by-Step Solutions', 'Offline Access', 'Somo Candidate Specialists'] },
-    { id: 's_monthly', segment: 'STUDENT', name: 'Monthly Master', price: 300, duration: 'MONTHLY', savings: 'Save 50%', features: ['Somo Homework Helper', 'Step-by-Step Solutions', 'Offline Access', 'Somo Candidate Specialists', 'Unlimited Scans', 'Practice Quizzes'] },
-    { id: 's_termly', segment: 'STUDENT', name: 'Term Lite', price: 700, duration: 'TERMLY', savings: 'Save 61%', features: ['Somo Homework Helper', 'Step-by-Step Solutions', 'Offline Access', 'Somo Candidate Specialists', 'Unlimited Scans', 'Practice Quizzes'] },
-    { id: 's_annual', segment: 'STUDENT', name: 'Annual Ace', price: 2000, duration: 'ANNUAL', savings: 'Save 72%', features: ['Somo Homework Helper', 'Step-by-Step Solutions', 'Offline Access', 'Somo Candidate Specialists', 'Unlimited Scans', 'Practice Quizzes', 'Exam Prediction'] },
+    { id: 's_daily', segment: 'STUDENT', name: 'Daily Dash', price: 20, duration: 'DAILY', features: ['Ask Akili step-by-step help', 'Try-first answer guidance', 'Quick quizzes with marking'] },
+    { id: 's_weekly', segment: 'STUDENT', name: 'Weekly Warrior', price: 100, duration: 'WEEKLY', savings: 'Save 28%', features: ['Ask Akili step-by-step help', 'Notes and past papers access', 'Quick quizzes with marking', 'Parent progress proof'] },
+    { id: 's_monthly', segment: 'STUDENT', name: 'Monthly Master', price: 300, duration: 'MONTHLY', savings: 'Save 50%', features: ['Ask Akili step-by-step help', 'Notes and past papers access', 'Unlimited quiz and repair drills', 'Parent progress proof', 'Audio learning and scans'] },
+    { id: 's_termly', segment: 'STUDENT', name: 'Term Lite', price: 700, duration: 'TERMLY', savings: 'Save 61%', features: ['Ask Akili step-by-step help', 'Notes and past papers access', 'Unlimited quiz and repair drills', 'Parent progress proof', 'Audio learning and scans'] },
+    { id: 's_annual', segment: 'STUDENT', name: 'Annual Ace', price: 2000, duration: 'ANNUAL', savings: 'Save 72%', features: ['Ask Akili step-by-step help', 'Notes and past papers access', 'Unlimited quiz and repair drills', 'Parent progress proof', 'Audio learning and scans', 'Exam prep habit tracking'] },
 ];
 
 export const TEACHER_PLANS: SubscriptionPlan[] = [

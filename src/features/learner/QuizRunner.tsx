@@ -27,6 +27,7 @@ export const QuizRunner: React.FC<{
     const [results, setResults] = useState<Record<number, { selectedAnswer: string; isCorrect: boolean }>>({});
     const [finished, setFinished] = useState(false);
     const [showMissedReview, setShowMissedReview] = useState(false);
+    const [proofStatus, setProofStatus] = useState<'idle' | 'copied' | 'shared'>('idle');
 
     const question = data.questions[currentIndex];
     const isLast = currentIndex === data.questions.length - 1;
@@ -36,6 +37,38 @@ export const QuizRunner: React.FC<{
     const missedQuestions = data.questions
         .map((item, index) => ({ item, index, result: results[index] }))
         .filter(({ result }) => result && !result.isCorrect);
+    const nextAction = missedQuestions.length > 0
+        ? `Repair ${missedQuestions.length} missed question${missedQuestions.length === 1 ? '' : 's'} before moving on.`
+        : 'Keep the streak going with one more topic tomorrow.';
+
+    const shareQuizProof = async () => {
+        const proofText = [
+            `Soma Smart quiz proof`,
+            `Topic: ${data.topic}`,
+            `Score: ${finalScore}% (${correctCount}/${data.questions.length} correct)`,
+            `Weak spots: ${missedQuestions.length}`,
+            `Next step: ${nextAction}`,
+            `https://somaai.co.ke`
+        ].join('\n');
+
+        try {
+            if (navigator.share) {
+                await navigator.share({
+                    title: 'Soma Smart quiz proof',
+                    text: proofText
+                });
+                setProofStatus('shared');
+                return;
+            }
+        } catch (_) {
+            // Fall through to clipboard so learners still get a usable proof note.
+        }
+
+        if (navigator.clipboard?.writeText) {
+            await navigator.clipboard.writeText(proofText);
+            setProofStatus('copied');
+        }
+    };
 
     const handleAnswer = (ans: string) => {
         if (showResult) return;
@@ -130,6 +163,39 @@ export const QuizRunner: React.FC<{
                             <p className="text-sm font-semibold text-emerald-700 mt-1">Save this progress and keep your streak moving.</p>
                         </div>
                     )}
+
+                    <div className="bg-white rounded-3xl border-2 border-indigo-200 shadow-sm p-5">
+                        <div className="flex items-start justify-between gap-3 mb-4">
+                            <div>
+                                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-600 mb-1">Parent Proof</p>
+                                <h3 className="font-black text-slate-900">This was real practice, not scrolling</h3>
+                            </div>
+                            <div className="w-10 h-10 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
+                                <CheckCircle className="w-5 h-5" />
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-3 gap-2 mb-4">
+                            {[
+                                { label: 'Score', value: `${finalScore}%` },
+                                { label: 'Correct', value: `${correctCount}/${data.questions.length}` },
+                                { label: 'Fix', value: missedQuestions.length }
+                            ].map((item) => (
+                                <div key={item.label} className="rounded-2xl bg-slate-50 border border-slate-200 p-3 text-center">
+                                    <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">{item.label}</p>
+                                    <p className="text-lg font-black text-slate-900 mt-1">{item.value}</p>
+                                </div>
+                            ))}
+                        </div>
+                        <p className="text-xs font-semibold text-slate-600 leading-relaxed mb-4">
+                            Next step: {nextAction}
+                        </p>
+                        <button
+                            onClick={shareQuizProof}
+                            className="w-full rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-3 text-xs font-black uppercase tracking-wider transition-colors"
+                        >
+                            {proofStatus === 'shared' ? 'Proof Shared' : proofStatus === 'copied' ? 'Proof Copied' : 'Share Parent Proof'}
+                        </button>
+                    </div>
                 </div>
 
                 <div className="p-4 bg-white border-t border-slate-200 z-50">

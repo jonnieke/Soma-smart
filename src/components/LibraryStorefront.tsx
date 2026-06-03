@@ -71,7 +71,7 @@ export const LibraryStorefront: React.FC<LibraryStorefrontProps> = ({ onGetAcces
                         📚 Content Library
                     </div>
                     <h2 className="text-3xl md:text-4xl font-bold text-slate-900 dark:text-white tracking-tight mb-3">
-                        Official Study Materials, <span className="text-indigo-600 dark:text-indigo-400">All Free.</span>
+                        Official Soma Study Materials, <span className="text-indigo-600 dark:text-indigo-400">All Free.</span>
                     </h2>
                     <p className="text-slate-500 dark:text-slate-400 max-w-xl mx-auto font-medium">
                         Browse verified syllabuses, expert notes, and KCSE/KPSEA past papers — free for every Kenyan learner.

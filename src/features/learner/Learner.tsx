@@ -3302,6 +3302,11 @@ ${explanation.explanation}
       const hasStudiedTopic = Boolean(latestStudy?.topic);
       const hasQuizAttempt = Boolean(latestQuiz);
       const hasScoreGain = typeof latestQuiz?.score === 'number' && latestQuiz.score >= 0;
+      const quizAttempts = history.filter((h: any) => h.type === 'QUIZ').length;
+      const scoredQuizzes = history.filter((h: any) => h.type === 'QUIZ' && typeof h.score === 'number') as Array<{ score: number }>;
+      const averageQuizScore = scoredQuizzes.length
+        ? Math.round(scoredQuizzes.reduce((sum, item) => sum + item.score, 0) / scoredQuizzes.length)
+        : null;
       const dueFlashcardsCountForNext = dueForReview?.filter(i => i.question && i.answer).length || 0;
       const focusTopic = (lastQuizReview?.missedQuestions.length && explanation?.topic)
         ? explanation.topic
@@ -3378,6 +3383,21 @@ ${explanation.explanation}
           label: 'Quiz Me',
           body: 'Turn this topic into a self-test.',
           buildPrompt: (question: string) => `Create a 5-question quiz on this topic. Ask one question at a time, wait for my answer, then mark it and explain the correction.\n\nTopic: ${question || '[type the topic here]'}`
+        },
+        {
+          label: 'Past Paper Coach',
+          body: 'Work through exam questions step by step.',
+          buildPrompt: (question: string) => `Help me solve this past paper question like an exam coach. First identify the topic and command word, then guide me through the method. Do not give the final answer until I try.\n\nQuestion: ${question || '[paste the past paper question here]'}`
+        },
+        {
+          label: 'Explain Simply',
+          body: 'Break it down for a stuck learner.',
+          buildPrompt: (question: string) => `Explain this in simple language for a Kenyan learner. Use a short example, then ask me one check question before giving a quiz.\n\nTopic or question: ${question || '[type what you do not understand here]'}`
+        },
+        {
+          label: 'Swahili Support',
+          body: 'Use simple English with Kiswahili help.',
+          buildPrompt: (question: string) => `Explain this using simple English, and add short Kiswahili support for hard words. Then ask me to explain it back in my own words.\n\nTopic or question: ${question || '[type your question here]'}`
         }
       ];
 
@@ -3394,6 +3414,13 @@ ${explanation.explanation}
                 <ThemeToggle />
                 {!isRegistered ? (
                   <>
+                    <button
+                      onClick={() => navigate('/parent')}
+                      className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 text-xs font-black text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 rounded-xl transition-colors"
+                    >
+                      <Users className="w-3.5 h-3.5" />
+                      Parent
+                    </button>
                     <button
                       onClick={() => setShowRegistration(true)}
                       className="hidden sm:block px-4 py-1.5 text-sm font-bold text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
@@ -3454,7 +3481,7 @@ ${explanation.explanation}
               <motion.div
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="mb-6 bg-gradient-to-br from-indigo-600 to-blue-700 rounded-2xl p-5 text-white shadow-lg shadow-indigo-500/20"
+                className="hidden"
               >
                 <div className="flex items-start gap-4">
                   <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center shrink-0 text-xl">🚀</div>
@@ -3479,6 +3506,47 @@ ${explanation.explanation}
             )}
 
             {/* FREE USAGE METER — visible for all non-pro, non-registered users */}
+            {!isRegistered && !hasHistory && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mb-6 bg-gradient-to-br from-indigo-600 via-blue-600 to-slate-900 rounded-3xl p-5 sm:p-6 text-white shadow-lg shadow-indigo-500/20"
+              >
+                <div className="flex flex-col lg:flex-row lg:items-center gap-5">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-200 mb-2">Free trial: solve one school problem now</p>
+                    <h2 className="text-2xl sm:text-3xl font-black tracking-tight leading-tight mb-2">Stuck on homework, revision, or past papers?</h2>
+                    <p className="text-sm font-semibold text-indigo-100 leading-relaxed max-w-2xl">
+                      Ask Akili for hints, a worked method, and a quick practice check. No signup needed to start.
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-1 gap-2 lg:w-56">
+                    <button
+                      onClick={() => setMode('SCAN_EXPLAIN')}
+                      className="rounded-2xl bg-white text-indigo-700 hover:bg-indigo-50 px-4 py-3 text-left font-black text-sm transition-colors"
+                    >
+                      Ask a Question
+                      <span className="block text-[10px] font-bold text-indigo-500 mt-0.5">Type or scan work</span>
+                    </button>
+                    <button
+                      onClick={() => handleSidebarTabChange('RESOURCES')}
+                      className="rounded-2xl bg-white/12 hover:bg-white/20 border border-white/15 px-4 py-3 text-left font-black text-sm transition-colors"
+                    >
+                      Open Library
+                      <span className="block text-[10px] font-bold text-indigo-100 mt-0.5">Notes and past papers</span>
+                    </button>
+                    <button
+                      onClick={() => handleSidebarTabChange('SUBJECTS')}
+                      className="rounded-2xl bg-white/12 hover:bg-white/20 border border-white/15 px-4 py-3 text-left font-black text-sm transition-colors"
+                    >
+                      Exam Prep
+                      <span className="block text-[10px] font-bold text-indigo-100 mt-0.5">Practice under pressure</span>
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
             {!isPro && !isRegistered && (
               <motion.div
                 initial={{ opacity: 0 }}
@@ -3491,7 +3559,7 @@ ${explanation.explanation}
                     : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800'
                 }`}
               >
-                <div className="flex items-center justify-between gap-4">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5 mb-2">
                       {[1, 2, 3].map((slot) => (
@@ -3507,7 +3575,7 @@ ${explanation.explanation}
                         />
                       ))}
                     </div>
-                    <p className={`text-xs font-bold ${
+                    <p className={`hidden text-xs font-black uppercase tracking-[0.14em] ${
                       freeUsesLeft === 0
                         ? 'text-red-700 dark:text-red-400'
                         : freeUsesLeft === 1
@@ -3518,10 +3586,26 @@ ${explanation.explanation}
                         ? 'Free limit reached — upgrade to keep going'
                         : `${usageCount} of 3 free answers used${freeUsesLeft === 1 ? ' — 1 left!' : ''}`}
                     </p>
+                    <p className={`text-xs font-black uppercase tracking-[0.14em] ${
+                      freeUsesLeft === 0
+                        ? 'text-red-700 dark:text-red-400'
+                        : freeUsesLeft === 1
+                        ? 'text-amber-700 dark:text-amber-400'
+                        : 'text-slate-500 dark:text-slate-400'
+                    }`}>
+                      {freeUsesLeft === 0
+                        ? 'Free trial complete'
+                        : `${freeUsesLeft} guided answer${freeUsesLeft === 1 ? '' : 's'} left today`}
+                    </p>
+                    <p className="mt-1 text-xs font-semibold text-slate-500 dark:text-slate-400 leading-relaxed">
+                      {freeUsesLeft === 0
+                        ? 'Create or log into a learner profile, then choose a plan to keep progress, quizzes, and notes together.'
+                        : 'Use the free answers to test Akili. Paid plans keep guided help, quizzes, notes, and parent progress proof together.'}
+                    </p>
                   </div>
                   <button
                     onClick={handlePricingNavigation}
-                    className={`shrink-0 px-3 py-2 rounded-xl text-xs font-black transition-all ${
+                    className={`hidden shrink-0 px-3 py-2 rounded-xl text-xs font-black transition-all ${
                       freeUsesLeft === 0
                         ? 'bg-red-600 text-white hover:bg-red-700'
                         : 'bg-indigo-600 text-white hover:bg-indigo-700'
@@ -3529,6 +3613,26 @@ ${explanation.explanation}
                   >
                     {freeUsesLeft === 0 ? 'Upgrade Now' : 'From KES 20/day →'}
                   </button>
+                  <div className="flex flex-col sm:flex-row gap-2 shrink-0">
+                    <button
+                      onClick={handlePricingNavigation}
+                      className={`px-3 py-2 rounded-xl text-xs font-black transition-all ${
+                        freeUsesLeft === 0
+                          ? 'bg-red-600 text-white hover:bg-red-700'
+                          : 'bg-indigo-600 text-white hover:bg-indigo-700'
+                      }`}
+                    >
+                      {freeUsesLeft === 0 ? 'Continue With Plan' : 'Plans From KES 20'}
+                    </button>
+                    {freeUsesLeft === 0 && (
+                      <button
+                        onClick={() => setShowLogin(true)}
+                        className="px-3 py-2 rounded-xl text-xs font-black bg-white dark:bg-slate-950 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 hover:border-indigo-300 dark:hover:border-indigo-500 transition-colors"
+                      >
+                        Log In
+                      </button>
+                    )}
+                  </div>
                 </div>
               </motion.div>
             )}
@@ -3620,6 +3724,44 @@ ${explanation.explanation}
                   </div>
                 </div>
               </div>
+            </div>
+
+            <div className="mb-6 grid grid-cols-1 md:grid-cols-3 gap-3">
+              {[
+                {
+                  icon: <Lightbulb className="w-4 h-4" />,
+                  label: 'For homework',
+                  title: 'Get hints before answers',
+                  body: 'Akili makes the learner try a step first, then explains the method.'
+                },
+                {
+                  icon: <ListChecks className="w-4 h-4" />,
+                  label: 'For exams',
+                  title: 'Practice and repair mistakes',
+                  body: quizAttempts > 0
+                    ? `${quizAttempts} quiz attempt${quizAttempts === 1 ? '' : 's'} recorded${averageQuizScore !== null ? `, average ${averageQuizScore}%` : ''}.`
+                    : 'Turn any topic into a short quiz and fix weak areas immediately.'
+                },
+                {
+                  icon: <Users className="w-4 h-4" />,
+                  label: 'For parents',
+                  title: 'Visible learning proof',
+                  body: hasHistory
+                    ? `${history.length} learning action${history.length === 1 ? '' : 's'} saved for review.`
+                    : 'Parents can see progress, not just trust that screen time was useful.'
+                }
+              ].map((item) => (
+                <div key={item.label} className="bg-white dark:bg-slate-900 rounded-2xl border-2 border-slate-200 dark:border-slate-800 p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-300 flex items-center justify-center">
+                      {item.icon}
+                    </div>
+                    <p className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-400">{item.label}</p>
+                  </div>
+                  <h3 className="text-sm font-black text-slate-900 dark:text-white leading-tight">{item.title}</h3>
+                  <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">{item.body}</p>
+                </div>
+              ))}
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -3800,7 +3942,12 @@ ${explanation.explanation}
                         <Sparkles className="w-6 h-6 text-white" />
                       </div>
                       <div className="flex-1 w-full">
-                        <h2 className="text-base font-bold text-slate-800 dark:text-white mb-2">Ask Akili</h2>
+                        <div className="mb-3">
+                          <h2 className="text-base font-bold text-slate-800 dark:text-white">Ask Akili</h2>
+                          <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mt-1">
+                            Ask a question, scan work, or upload notes. Akili guides you step by step instead of giving copy-paste answers.
+                          </p>
+                        </div>
                         <div className="bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-3 border-2 border-slate-300 dark:border-slate-700 focus-within:border-blue-400 focus-within:ring-4 focus-within:ring-blue-50 dark:focus-within:ring-blue-900/20 transition-all">
                           <textarea
                             value={promptText}
@@ -3838,8 +3985,8 @@ ${explanation.explanation}
                                 <button onClick={isRecording ? stopRecording : startRecording} className={`p-2 rounded-xl transition-colors ${isRecording ? 'text-red-500 bg-red-50 dark:bg-red-900/20 animate-pulse' : 'text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30'}`} title="Voice Note"><Mic className="w-4 h-4" /></button>
                                 <button onClick={startCamera} className="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 rounded-xl transition-colors" title="Scan Document"><Camera className="w-4 h-4" /></button>
                              </div>
-                             <button onClick={handlePromptSubmit} disabled={!promptText.trim() || loading} className="px-5 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-200 disabled:text-slate-400 text-white text-xs font-bold rounded-xl transition-colors flex items-center gap-2 shadow-sm">
-                                {loading ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Ask Now'}
+                             <button onClick={handlePromptSubmit} disabled={(!promptText.trim() && !pendingMedia) || loading} className="px-5 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-200 disabled:text-slate-400 text-white text-xs font-bold rounded-xl transition-colors flex items-center gap-2 shadow-sm">
+                                {loading ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Ask Step-by-step'}
                              </button>
                           </div>
                         </div>
@@ -3848,7 +3995,7 @@ ${explanation.explanation}
                   </div>
 
                   {/* SHORTCUTS — secondary actions */}
-                  <div className="grid grid-cols-3 gap-2 sm:gap-4">
+                  <div className="hidden grid-cols-3 gap-2 sm:gap-4">
                      {(
                        educationLevel === 'JUNIOR' ? [
                          { icon: <Library className="w-5 h-5 sm:w-6 sm:h-6" />, label: 'Library 📚', color: 'bg-blue-600', onClick: () => handleSidebarTabChange('RESOURCES') },
@@ -3900,13 +4047,58 @@ ${explanation.explanation}
               </div>
 
               <div className="space-y-6">
+                  {/* PARENT VALUE CARD */}
+                  <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-sm border-2 border-emerald-200 dark:border-emerald-900/60 p-6">
+                    <div className="flex items-start justify-between gap-3 mb-4">
+                      <div>
+                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-600 dark:text-emerald-300 mb-1">Parent Confidence</p>
+                        <h3 className="font-black text-slate-900 dark:text-white text-lg leading-tight">KES 20 should buy learning, not scrolling.</h3>
+                      </div>
+                      <div className="w-10 h-10 rounded-2xl bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-300 flex items-center justify-center shrink-0">
+                        <Users className="w-5 h-5" />
+                      </div>
+                    </div>
+                    <div className="space-y-3 mb-5">
+                      {[
+                        'Try-first answers reduce copy and paste homework.',
+                        'Notes, past papers, quizzes, and audio learning stay in one place.',
+                        'Progress history gives parents a simple proof of study.'
+                      ].map((item) => (
+                        <div key={item} className="flex items-start gap-2">
+                          <CheckCircle className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
+                          <p className="text-xs font-bold text-slate-600 dark:text-slate-300 leading-relaxed">{item}</p>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                      <button
+                        onClick={() => setShowMasteryDashboard(true)}
+                        className="py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black uppercase tracking-wider transition-colors"
+                      >
+                        See Progress
+                      </button>
+                      <button
+                        onClick={() => navigate('/parent')}
+                        className="py-3 rounded-2xl border-2 border-emerald-200 dark:border-emerald-800 hover:border-emerald-400 dark:hover:border-emerald-600 text-emerald-700 dark:text-emerald-300 text-xs font-black uppercase tracking-wider transition-colors"
+                      >
+                        Parent Portal
+                      </button>
+                      <button
+                        onClick={handlePricingNavigation}
+                        className="py-3 rounded-2xl border-2 border-slate-200 dark:border-slate-700 hover:border-emerald-300 dark:hover:border-emerald-700 text-slate-700 dark:text-slate-200 text-xs font-black uppercase tracking-wider transition-colors"
+                      >
+                        View Plans
+                      </button>
+                    </div>
+                  </div>
+
                   {/* RECOMMENDED NEXT STEP */}
                   <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-sm border-2 border-indigo-200 dark:border-indigo-900/60 p-6 relative overflow-hidden">
                     <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
                     <div className="relative z-10">
                       <div className="flex items-start justify-between gap-3 mb-4">
                         <div>
-                          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-600 dark:text-indigo-300 mb-1">Recommended Next Step</p>
+                          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-600 dark:text-indigo-300 mb-1">Today's 10-minute plan</p>
                           <h3 className="font-black text-slate-900 dark:text-white text-lg leading-tight">{nextStep.title}</h3>
                         </div>
                         <div className="w-10 h-10 rounded-2xl bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-300 flex items-center justify-center shrink-0">
@@ -3917,6 +4109,21 @@ ${explanation.explanation}
                         {nextStep.label}
                       </span>
                       <p className="text-sm font-semibold text-slate-600 dark:text-slate-300 leading-relaxed mb-4">{nextStep.body}</p>
+                      <div className="grid grid-cols-3 gap-2 mb-4">
+                        {[
+                          { step: '1', label: 'Repair', body: 'Fix the weakest point' },
+                          { step: '2', label: 'Test', body: 'Score a short quiz' },
+                          { step: '3', label: 'Proof', body: 'Share progress' }
+                        ].map((item) => (
+                          <div key={item.step} className="rounded-2xl bg-indigo-50/70 dark:bg-indigo-950/30 border border-indigo-100 dark:border-indigo-900/70 p-3">
+                            <div className="w-6 h-6 rounded-full bg-indigo-600 text-white flex items-center justify-center text-[10px] font-black mb-2">
+                              {item.step}
+                            </div>
+                            <p className="text-xs font-black text-slate-900 dark:text-white">{item.label}</p>
+                            <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 leading-snug mt-0.5">{item.body}</p>
+                          </div>
+                        ))}
+                      </div>
                       <button
                         onClick={nextStep.action}
                         className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl text-xs font-black uppercase tracking-wider transition-colors shadow-sm"
@@ -4137,8 +4344,38 @@ ${explanation.explanation}
                      </div>
                   )}
 
-                  {/* RECENT BADGES */}
+                  {/* REAL PROGRESS PROOF */}
                   <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-sm border-2 border-slate-300 dark:border-slate-800 p-6">
+                     <div className="flex items-center justify-between mb-5">
+                        <div>
+                          <h3 className="font-bold text-slate-800 dark:text-white">Progress Proof</h3>
+                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-0.5">What a parent can verify</p>
+                        </div>
+                        <button onClick={() => setShowMasteryDashboard(true)} className="text-xs font-bold text-blue-600 hover:text-blue-700">Open</button>
+                     </div>
+                     <div className="grid grid-cols-2 gap-3 mb-4">
+                        {[
+                          { label: 'Study actions', value: history.length, icon: <BookOpen className="w-4 h-4" /> },
+                          { label: 'Quiz attempts', value: quizAttempts, icon: <ListChecks className="w-4 h-4" /> },
+                          { label: 'Average score', value: averageQuizScore !== null ? `${averageQuizScore}%` : '--', icon: <Trophy className="w-4 h-4" /> },
+                          { label: 'Streak days', value: streak, icon: <Star className="w-4 h-4" /> }
+                        ].map((item) => (
+                          <div key={item.label} className="rounded-2xl bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-slate-800 p-3">
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">{item.label}</span>
+                              <span className="text-indigo-600 dark:text-indigo-300">{item.icon}</span>
+                            </div>
+                            <p className="text-xl font-black text-slate-900 dark:text-white">{item.value}</p>
+                          </div>
+                        ))}
+                     </div>
+                     <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 leading-relaxed">
+                       This is the story parents should see: what the learner studied, how they tested, and where they need help next.
+                     </p>
+                  </div>
+
+                  {/* LEGACY STATIC BADGES HIDDEN */}
+                  <div className="hidden bg-white dark:bg-slate-900 rounded-3xl shadow-sm border-2 border-slate-300 dark:border-slate-800 p-6">
                      <div className="flex items-center justify-between mb-5">
                         <h3 className="font-bold text-slate-800 dark:text-white">Recent Badges</h3>
                         <button className="text-xs font-bold text-slate-400 hover:text-slate-600">View All</button>
@@ -5955,10 +6192,13 @@ ${explanation.explanation}
                     rows={3}
                     className="w-full rounded-2xl border-2 border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-4 py-3 text-sm font-semibold text-slate-800 dark:text-slate-100 outline-none focus:border-indigo-400 dark:focus:border-indigo-600 resize-none"
                   />
+                  <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400">
+                    Write at least 30 characters in your own words. A rough attempt is enough.
+                  </p>
                   <div className="flex flex-col sm:flex-row gap-2">
                     <button
                       onClick={() => {
-                        if (learnerTryText.trim().length < 8) return;
+                        if (learnerTryText.trim().length < 30) return;
                         setAnswerRevealUnlocked(true);
                         setLearningBreakRewarded(true);
                         saveActivity({
@@ -5978,9 +6218,9 @@ ${explanation.explanation}
                           attemptLength: learnerTryText.trim().length
                         });
                       }}
-                      disabled={learnerTryText.trim().length < 8}
+                      disabled={learnerTryText.trim().length < 30}
                       className={`flex-1 rounded-2xl px-5 py-3 text-xs font-black uppercase tracking-wider transition-colors ${
-                        learnerTryText.trim().length >= 8
+                        learnerTryText.trim().length >= 30
                           ? 'bg-indigo-600 hover:bg-indigo-700 text-white'
                           : 'bg-slate-200 dark:bg-slate-800 text-slate-400 cursor-not-allowed'
                       }`}
@@ -5989,17 +6229,16 @@ ${explanation.explanation}
                     </button>
                     <button
                       onClick={() => {
-                        setCompletedRecallChecks([0, 1, 2]);
-                        setAnswerRevealUnlocked(true);
-                        setLearningBreakRewarded(true);
-                        trackFunnelEvent('learner_answer_reveal_unlocked', {
-                          topic: explanation.topic,
-                          method: 'active_recall_shortcut'
+                        setLearnerTryText(prev => prev.trim()
+                          ? prev
+                          : `I think one important idea in ${explanation.topic} is `);
+                        trackFunnelEvent('learner_try_first_hint_clicked', {
+                          topic: explanation.topic
                         });
                       }}
                       className="flex-1 rounded-2xl bg-white dark:bg-slate-950 border border-indigo-200 dark:border-indigo-900/70 text-indigo-700 dark:text-indigo-200 px-5 py-3 text-xs font-black uppercase tracking-wider hover:bg-indigo-50 dark:hover:bg-indigo-950/40 transition-colors"
                     >
-                      I Completed Recall
+                      Give Me a Hint
                     </button>
                   </div>
                 </div>
@@ -6254,13 +6493,26 @@ ${explanation.explanation}
         <PricingPage
           currentTier={subscriptionPlan}
           isPro={isPro}
-          onSelectPlan={(plan) => {
+          onSelectPlan={async (plan) => {
             trackFunnelEvent('pricing_plan_selected', {
               source: 'learner_pricing',
               plan_id: (plan as any)?.id,
               plan_name: plan?.name,
               amount_kes: (plan as any)?.price
             });
+            await verifySubscription();
+            const hasKnownActiveSubscription =
+              subscriptionPlan !== 'FREE' &&
+              !!subscriptionExpiry &&
+              !isNaN(new Date(subscriptionExpiry).getTime()) &&
+              new Date(subscriptionExpiry) > new Date();
+
+            if (isPro || hasKnownActiveSubscription) {
+              setHasRecentPaymentUnlock(true);
+              setShowLimitModal(false);
+              setMode('MENU');
+              return;
+            }
             setSelectedPlan(plan);
             setMode('PAYMENT' as any);
           }}
@@ -7347,24 +7599,24 @@ ${explanation.explanation}
                   <Sparkles className="w-8 h-8 text-indigo-600" />
                 </div>
 
-                <h3 className="text-xl font-black text-slate-800 mb-2">Free Trials Exhausted</h3>
+                <h3 className="text-xl font-black text-slate-800 mb-2">Continue Guided Learning</h3>
                 <p className="text-slate-500 text-sm leading-relaxed mb-6">
                   {(() => {
                     const ctx = getPaywallActionContext(pendingPaywallAction);
                     return (
                       <>
-                        You already <span className="font-bold text-slate-700">{ctx.completed}</span>. Unlock now to <span className="font-bold text-slate-700">{ctx.next}</span>.
+                        You already <span className="font-bold text-slate-700">{ctx.completed}</span>. Choose a learner plan to <span className="font-bold text-slate-700">{ctx.next}</span> and keep your progress proof in one place.
                       </>
                     );
                   })()}
                 </p>
 
                 <div className="mb-6 bg-indigo-50 rounded-2xl border border-indigo-100 p-4 text-left">
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-500 mb-2">What You Unlock</p>
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-500 mb-2">What parents and learners get</p>
                   <ul className="space-y-1.5 text-xs font-bold text-slate-700">
-                    <li>Unlimited Ask Akili explanations</li>
-                    <li>Unlimited quiz generation and marking</li>
-                    <li>Full access to notes and past papers</li>
+                    <li>Step-by-step Ask Akili help that asks the learner to try first</li>
+                    <li>Unlimited quizzes, instant marking, and repair drills</li>
+                    <li>Notes, past papers, and shareable parent progress proof</li>
                   </ul>
                 </div>
 
@@ -7382,7 +7634,7 @@ ${explanation.explanation}
                     }}
                     className="py-4 text-base shadow-xl shadow-indigo-200"
                   >
-                    Continue To Plans
+                    View Learner Plans
                   </Button>
                   <button
                     onClick={async () => {
@@ -7419,7 +7671,7 @@ ${explanation.explanation}
                     }}
                     className="w-full text-indigo-600 hover:text-indigo-700 font-bold text-xs uppercase tracking-widest transition-colors py-1 block"
                   >
-                    Already Paid? Click here to restore
+                    Already subscribed? Restore or log in
                   </button>
                   <button
                     onClick={() => setShowLimitModal(false)}

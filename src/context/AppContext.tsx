@@ -286,6 +286,86 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   });
   const [userId, setUserId] = useState<string | null>(null);
 
+  const flushLocalLearnerHistoryToCloud = async (targetUserId: string) => {
+    if (!targetUserId || !isOnline) return;
+
+    try {
+      const [indexedDbHistory, localStorageHistory] = await Promise.all([
+        dbService.getLearnerActivities().catch(() => []),
+        Promise.resolve(offlineService.getLearnerHistory())
+      ]);
+
+      const combined = [...learnerHistory, ...indexedDbHistory, ...localStorageHistory];
+      const unique = new Map<string, LearnerActivity>();
+
+      combined.forEach((activity) => {
+        if (!activity?.id || !activity.topic || /^\d{13}$/.test(String(activity.topic))) return;
+        unique.set(activity.id, activity);
+      });
+
+      const localActivityIdPattern = /^(study|study-mission|recall|try-first)-\d+$|^\d{10,}$/;
+      const candidates = Array.from(unique.values())
+        .filter((activity: any) => (
+          activity.pendingSync ||
+          (!activity.cloudSyncedStudentId && localActivityIdPattern.test(String(activity.id)))
+        ))
+        .slice(0, 120);
+
+      if (candidates.length === 0) return;
+
+      const syncedIds = new Set<string>();
+
+      for (const activity of candidates) {
+        const details = (() => {
+          try {
+            const parsed = typeof activity.details === 'string' && activity.details
+              ? JSON.parse(activity.details)
+              : (activity.details || {});
+            return {
+              ...parsed,
+              local_activity_id: activity.id,
+              synced_from_local: true
+            };
+          } catch (_) {
+            return {
+              raw_details: activity.details,
+              local_activity_id: activity.id,
+              synced_from_local: true
+            };
+          }
+        })();
+
+        const { error } = await supabase.from('activities').insert({
+          student_id: targetUserId,
+          type: activity.type,
+          topic: activity.topic,
+          score: activity.score,
+          details
+        });
+
+        if (!error) syncedIds.add(activity.id);
+        else warnIfDev('Failed to sync local learner activity:', error);
+      }
+
+      if (syncedIds.size === 0) return;
+
+      const markSynced = (activity: LearnerActivity): LearnerActivity => syncedIds.has(activity.id)
+        ? { ...activity, pendingSync: false, cloudSyncedStudentId: targetUserId } as LearnerActivity
+        : activity;
+
+      const updatedHistory = combined
+        .map(markSynced)
+        .filter((activity, index, arr) => arr.findIndex(item => item.id === activity.id) === index)
+        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+      setLearnerHistory(updatedHistory);
+      offlineService.saveLearnerHistory(updatedHistory);
+      await Promise.all(updatedHistory.map(activity => dbService.putLearnerActivity(activity).catch(() => undefined)));
+    } catch (error) {
+      warnIfDev('Local learner history cloud sync failed:', error);
+    }
+  };
+
   const [language, setLanguage] = useState<'EN' | 'SW'>(() => {
     return (localStorage.getItem('soma_language') as 'EN' | 'SW') || 'EN';
   });
@@ -930,6 +1010,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
       setStudentCode(newCode);
       setStudentProfile({ id: userId, name, grade, parentPhone, educationLevel: regEducationLevel || EducationLevel.SENIOR, institutionName });
+      setUserId(userId);
       setIsRegistered(true);
       setRole(UserRole.LEARNER);
       setEducationLevel(regEducationLevel || EducationLevel.SENIOR);
@@ -944,6 +1025,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       } catch (e) {
         console.error("Failed to save local history", e);
       }
+
+      await flushLocalLearnerHistoryToCloud(userId);
 
       return { success: true, data: newCode };
 
@@ -2087,6 +2170,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         active_sessions: newSessions
       }).eq('id', profile.id);
 
+      await flushLocalLearnerHistoryToCloud(profile.id);
+
       // Save to local history for recovery
       try {
         const history = JSON.parse(localStorage.getItem('soma_recent_login') || '[]');
@@ -2249,7 +2334,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const newActivity: LearnerActivity = {
       ...activity,
       date: activity.date || dateStr,
-      pendingSync: !isOnline
+      pendingSync: !isOnline || !userId
     };
     setLearnerHistory(prev => [newActivity, ...prev]);
 
@@ -2270,6 +2355,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         });
 
         if (error) warnIfDev("Failed to save activity to DB:", error);
+        else {
+          const syncedActivity = { ...newActivity, pendingSync: false, cloudSyncedStudentId: userId } as LearnerActivity;
+          setLearnerHistory(prev => prev.map(item => item.id === activity.id ? syncedActivity : item));
+          await dbService.putLearnerActivity(syncedActivity);
+          offlineService.saveLearnerHistory([syncedActivity, ...learnerHistory]);
+        }
       } catch (e) {
         warnIfDev("DB Save Exception:", e);
       }
@@ -2294,7 +2385,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   // Auto-Sync Effect
   useEffect(() => {
-    if (isOnline) {
+    if (isOnline && userId) {
       const syncPending = async () => {
         // Sync Learner
         const pendingLearner = learnerHistory.filter(h => h.pendingSync);
@@ -2308,7 +2399,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
               details: activity.details
             });
             if (!error) {
-              setLearnerHistory(prev => prev.map(h => h.id === activity.id ? { ...h, pendingSync: false } : h));
+              const syncedActivity = { ...activity, pendingSync: false, cloudSyncedStudentId: userId } as LearnerActivity;
+              setLearnerHistory(prev => prev.map(h => h.id === activity.id ? syncedActivity : h));
+              await dbService.putLearnerActivity(syncedActivity);
+              offlineService.saveLearnerHistory(learnerHistory.map(h => h.id === activity.id ? syncedActivity : h));
             }
           } catch (e) { warnIfDev("Sync failed", e); }
         }
@@ -2338,7 +2432,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       };
       syncPending();
     }
-  }, [isOnline]);
+  }, [isOnline, userId, learnerHistory]);
 
   const upgradeAccount = async (plan: SubscriptionPlan) => {
     const { data: { user } } = await supabase.auth.getUser();

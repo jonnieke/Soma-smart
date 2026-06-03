@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Check, Zap, Star, ShieldCheck, Smartphone, Building2, UserCircle2, GraduationCap, ArrowRight, Timer, Clock, X } from 'lucide-react';
+import { Check, Zap, Star, ShieldCheck, Smartphone, Building2, UserCircle2, GraduationCap, ArrowRight, X } from 'lucide-react';
 import { STUDENT_PLANS, TEACHER_PLANS, SCHOOL_PLANS } from '../../data/pricing';
 import { SubscriptionPlan, UserSegment } from '../../types';
 
@@ -19,9 +19,9 @@ export const PricingPage: React.FC<Props> = ({ onSelectPlan, onClose, currentTie
         STUDENT: {
             title: 'Learner Outcomes',
             points: [
-                'Revise faster with exam-ready notes and past papers.',
-                'Generate quizzes instantly and track score gains.',
-                'Stay consistent with guided daily study flow.'
+                'Get unstuck without copy-paste answers.',
+                'Turn every topic into quizzes, marking, and repair.',
+                'Give parents visible proof that study time helped.'
             ]
         },
         TEACHER: {
@@ -58,18 +58,7 @@ export const PricingPage: React.FC<Props> = ({ onSelectPlan, onClose, currentTie
     return (
         <div className="min-h-screen bg-slate-50 font-sans text-slate-800 pb-20">
             {/* Header */}
-            <header className="bg-gradient-to-br from-indigo-950 via-slate-900 to-indigo-900 px-6 pt-20 pb-20 md:pb-40 rounded-b-[2.5rem] md:rounded-b-[4rem] text-white text-center relative overflow-hidden shadow-2xl shadow-indigo-200/50">
-                {/* Floating Orbs for Premium Feel */}
-                <motion.div
-                    animate={{ x: [0, 20, 0], y: [0, -20, 0] }}
-                    transition={{ repeat: Infinity, duration: 10, ease: "easeInOut" }}
-                    className="absolute -top-24 -left-24 w-96 h-96 bg-indigo-500/10 rounded-full blur-[100px]"
-                ></motion.div>
-                <motion.div
-                    animate={{ x: [0, -30, 0], y: [0, 20, 0] }}
-                    transition={{ repeat: Infinity, duration: 8, ease: "easeInOut" }}
-                    className="absolute -bottom-48 -right-24 w-96 h-96 bg-violet-600/10 rounded-full blur-[120px]"
-                ></motion.div>
+            <header className="bg-slate-950 px-6 pt-20 pb-20 md:pb-40 rounded-b-[2.5rem] md:rounded-b-[4rem] text-white text-center relative overflow-hidden shadow-2xl shadow-slate-200/50">
 
                 {/* Navigation Buttons */}
                 <div className="absolute top-8 left-8 z-50">
@@ -96,11 +85,11 @@ export const PricingPage: React.FC<Props> = ({ onSelectPlan, onClose, currentTie
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                     >
-                        <h1 className="text-4xl md:text-7xl font-black mb-6 tracking-tighter leading-none bg-clip-text text-transparent bg-gradient-to-b from-white to-white/60">
-                            The Future of <br /> Learning is Somo.
+                        <h1 className="text-4xl md:text-6xl font-black mb-6 tracking-tighter leading-none">
+                            Pay for progress, not just answers.
                         </h1>
-                        <p className="text-xl text-indigo-100/60 font-medium max-w-xl mx-auto leading-relaxed">
-                            Simple, transparent pricing for learners, teachers, and schools at each stage of the journey.
+                        <p className="text-lg md:text-xl text-slate-300 font-medium max-w-2xl mx-auto leading-relaxed">
+                            Soma helps learners try first, get guided help, practise with quizzes, and show parents clear proof of study.
                         </p>
                     </motion.div>
                 </div>
@@ -125,6 +114,21 @@ export const PricingPage: React.FC<Props> = ({ onSelectPlan, onClose, currentTie
                         ))}
                     </div>
                 </div>
+
+                {activeTab === 'STUDENT' && (
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                        {[
+                            { label: '1. Try first', body: 'Akili asks for an attempt before opening the full answer.' },
+                            { label: '2. Practise', body: 'Every explanation can become a quiz with marking and repair.' },
+                            { label: '3. Prove progress', body: 'Learners can share scores, weak spots, and next steps with parents.' }
+                        ].map((item) => (
+                            <div key={item.label} className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm">
+                                <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400 mb-2">{item.label}</p>
+                                <p className="text-sm font-bold text-slate-800 leading-relaxed">{item.body}</p>
+                            </div>
+                        ))}
+                    </div>
+                )}
 
                 <AnimatePresence mode="wait">
                     <motion.div

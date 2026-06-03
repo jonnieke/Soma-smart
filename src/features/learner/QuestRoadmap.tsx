@@ -104,6 +104,9 @@ export interface VisualNode {
   y: number; // Pixels vertical position
 }
 
+const cleanTopicTitle = (title: string) =>
+  title.replace(/[\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD00-\uDFFF]/g, '').trim();
+
 interface QuestRoadmapProps {
   onStudyTopic: (topic: string) => void;
   onTakeQuiz: (topic: string) => void;
@@ -130,6 +133,27 @@ export const QuestRoadmap: React.FC<QuestRoadmapProps> = ({
   const [selectedNode, setSelectedNode] = useState<VisualNode | null>(null);
 
   const containerRef = useRef<HTMLDivElement>(null);
+
+  const subjectHistory = React.useMemo(() => {
+    const selected = selectedSubject.toLowerCase();
+    return (history || []).filter((activity: any) => {
+      const haystack = `${activity.topic || ''} ${activity.details || ''}`.toLowerCase();
+      return haystack.includes(selected);
+    });
+  }, [history, selectedSubject]);
+
+  const subjectQuizScores = React.useMemo(() => {
+    return subjectHistory
+      .filter((activity: any) => activity.type === 'QUIZ' && typeof activity.score === 'number')
+      .map((activity: any) => activity.score as number);
+  }, [subjectHistory]);
+
+  const subjectAverage = subjectQuizScores.length
+    ? Math.round(subjectQuizScores.reduce((sum, score) => sum + score, 0) / subjectQuizScores.length)
+    : 0;
+
+  const recentStudyCount = subjectHistory.filter((activity: any) => activity.type === 'STUDY' || activity.type === 'EXPLANATION').length;
+  const recentQuizCount = subjectQuizScores.length;
 
   const handleSelectNode = (node: VisualNode) => {
     setSelectedNode(node);
@@ -168,14 +192,17 @@ export const QuestRoadmap: React.FC<QuestRoadmapProps> = ({
 
     // 3. Resolve actual mastery score from global app state
     // First check user's actual mastery graph, fallback to their history, and then default seeded value
-    let mastery = node.masteryDefault;
-    const cleanTitle = node.title.replace(/[\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD00-\uDFFF]/g, '').trim();
+    let mastery = 0;
+    const cleanTitle = cleanTopicTitle(node.title);
     
     if (masteryGraph && typeof masteryGraph[cleanTitle] === 'number') {
       mastery = masteryGraph[cleanTitle];
     } else if (history) {
       // Find highest score in history for this topic
-      const topicHistory = history.filter((h: any) => h.topic.toLowerCase() === node.title.toLowerCase() || h.topic.toLowerCase() === cleanTitle.toLowerCase());
+      const topicHistory = history.filter((h: any) => {
+        const topic = String(h.topic || '').toLowerCase();
+        return topic.includes(node.title.toLowerCase()) || topic.includes(cleanTitle.toLowerCase());
+      });
       const highestQuizScore = topicHistory
         .filter((h: any) => h.type === 'QUIZ')
         .reduce((max: number, curr: any) => {
@@ -259,6 +286,12 @@ export const QuestRoadmap: React.FC<QuestRoadmapProps> = ({
 
   // Height of SVG canvas based on nodes count
   const svgHeight = visualNodes.length > 0 ? visualNodes[visualNodes.length - 1].y + 100 : 500;
+  const completedCount = visualNodes.filter(node => node.state === 'COMPLETED').length;
+  const activeNode = visualNodes.find(node => node.state === 'ACTIVE') || visualNodes[0];
+  const questProgress = visualNodes.length ? Math.round((completedCount / visualNodes.length) * 100) : 0;
+  const nextMission = activeNode
+    ? `Study ${cleanTopicTitle(activeNode.title)}, take one quiz, then repair missed questions.`
+    : `Choose a ${selectedSubject} topic and complete one study cycle.`;
 
   // Generate SVG path coordinate curves between nodes
   let pathD = '';
@@ -300,11 +333,11 @@ export const QuestRoadmap: React.FC<QuestRoadmapProps> = ({
               </span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight flex items-center gap-2">
-              Visual Learning Path
+              Your Mark-Improvement Map
               <Sparkles className="w-5 h-5 text-amber-400 animate-pulse" />
             </h1>
             <p className="text-xs sm:text-sm font-medium text-slate-400">
-              Conquer topics, unlock badges, and master your syllabus!
+              Follow one topic at a time: learn, quiz, repair mistakes, then move forward.
             </p>
           </div>
 
@@ -337,6 +370,38 @@ export const QuestRoadmap: React.FC<QuestRoadmapProps> = ({
                 {sub}
               </button>
             ))}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 mb-5">
+          {[
+            { label: 'Path Progress', value: `${questProgress}%`, hint: `${completedCount}/${visualNodes.length} topics mastered` },
+            { label: 'Current Mission', value: activeNode ? cleanTopicTitle(activeNode.title) : selectedSubject, hint: 'Best place to start today' },
+            { label: 'Quiz Average', value: subjectAverage ? `${subjectAverage}%` : 'No quiz yet', hint: `${recentQuizCount} quiz records` },
+            { label: 'Study Proof', value: String(recentStudyCount), hint: 'Study actions recorded' }
+          ].map((item) => (
+            <div key={item.label} className="rounded-2xl bg-slate-950/70 border border-white/10 p-4">
+              <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">{item.label}</p>
+              <p className="text-lg font-black text-white mt-1 line-clamp-1">{item.value}</p>
+              <p className="text-[11px] font-semibold text-slate-400 mt-1">{item.hint}</p>
+            </div>
+          ))}
+        </div>
+
+        <div className="rounded-3xl border border-emerald-500/20 bg-emerald-500/10 p-4 mb-5">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-emerald-300 mb-1">Today's 15-Minute Mission</p>
+              <p className="text-sm font-bold text-emerald-50">{nextMission}</p>
+            </div>
+            {activeNode && (
+              <button
+                onClick={() => onStudyTopic(activeNode.title)}
+                className="rounded-2xl bg-emerald-400 text-slate-950 px-5 py-3 text-xs font-black uppercase tracking-wider hover:bg-emerald-300 transition-colors"
+              >
+                Start Mission
+              </button>
+            )}
           </div>
         </div>
 
@@ -453,13 +518,13 @@ export const QuestRoadmap: React.FC<QuestRoadmapProps> = ({
                   {/* Simple Floating Text Title below node */}
                   <div className="mt-3 max-w-[140px] text-center pointer-events-none">
                     <p className={`text-xs truncate transition-colors group-hover:text-white ${titleStyle}`}>
-                      {node.title.replace(/[\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD00-\uDFFF]/g, '')}
+                      {cleanTopicTitle(node.title)}
                     </p>
                     {node.state === 'COMPLETED' && (
                       <span className="text-[9px] font-black text-amber-500 tracking-wider uppercase">Mastered</span>
                     )}
                     {node.state === 'ACTIVE' && (
-                      <span className="text-[9px] font-black text-blue-400 tracking-widest uppercase animate-pulse">Study Now</span>
+                      <span className="text-[9px] font-black text-blue-400 tracking-widest uppercase animate-pulse">Today's Focus</span>
                     )}
                   </div>
                 </div>
@@ -485,7 +550,7 @@ export const QuestRoadmap: React.FC<QuestRoadmapProps> = ({
             <div className="flex items-center justify-between mb-4">
               <span className="px-3 py-1 rounded-xl text-[10px] font-black uppercase tracking-wider bg-white/5 text-slate-300 border border-white/5 flex items-center gap-1.5">
                 <MapPin className="w-3.5 h-3.5 text-blue-400" />
-                Topic Quest
+                Study Mission
               </span>
 
               {/* Status pill */}
@@ -503,7 +568,7 @@ export const QuestRoadmap: React.FC<QuestRoadmapProps> = ({
 
             {/* Title & Description */}
             <h2 className="text-2xl font-black text-white leading-tight mb-2 tracking-tight">
-              {selectedNode.title}
+              {cleanTopicTitle(selectedNode.title)}
             </h2>
             <p className="text-sm text-slate-400 leading-relaxed mb-6 font-medium">
               {selectedNode.description}
@@ -514,7 +579,7 @@ export const QuestRoadmap: React.FC<QuestRoadmapProps> = ({
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs font-black text-slate-300 flex items-center gap-1.5 uppercase tracking-wider">
                   <Trophy className="w-4 h-4 text-amber-400" />
-                  Syllabus Mastery
+                  Mastery Proof
                 </span>
                 <span className="text-xs font-black text-white">{selectedNode.mastery}%</span>
               </div>
@@ -530,7 +595,7 @@ export const QuestRoadmap: React.FC<QuestRoadmapProps> = ({
             <div className="flex-1 flex flex-col mb-8">
               <h3 className="text-xs font-black uppercase tracking-wider text-slate-300 mb-3 flex items-center gap-1.5">
                 <Brain className="w-4 h-4 text-indigo-400" />
-                Key Study Concepts
+                What To Master
               </h3>
               <div className="space-y-2 bg-slate-900/30 p-3 rounded-2xl border border-white/5 flex-1 max-h-56 overflow-y-auto no-scrollbar">
                 {selectedNode.outline.map((item, idx) => (
@@ -554,8 +619,8 @@ export const QuestRoadmap: React.FC<QuestRoadmapProps> = ({
               {selectedNode.state === 'LOCKED' ? (
                 <div className="bg-slate-900/80 rounded-2xl border border-slate-800 p-4 text-center">
                   <Lock className="w-8 h-8 text-slate-600 mx-auto mb-2 animate-bounce" />
-                  <p className="text-xs font-bold text-slate-400">Quest Topic is Locked</p>
-                  <p className="text-[10px] text-slate-500 mt-1">Please complete the active topic upstream to unlock this study adventure!</p>
+                  <p className="text-xs font-bold text-slate-400">Focus topic comes first</p>
+                  <p className="text-[10px] text-slate-500 mt-1">Score 75% or more on the active topic quiz to unlock this path cleanly.</p>
                 </div>
               ) : (
                 <>
@@ -565,7 +630,7 @@ export const QuestRoadmap: React.FC<QuestRoadmapProps> = ({
                     className="w-full py-3 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-2xl font-black text-xs uppercase tracking-wider shadow-lg shadow-blue-500/15 hover:shadow-xl hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2 group"
                   >
                     <Play className="w-4 h-4 fill-white text-white group-hover:scale-110 transition-transform" />
-                    Study Topic
+                    Learn This Topic
                     <ChevronRight className="w-4 h-4 text-blue-200 group-hover:translate-x-0.5 transition-all ml-auto" />
                   </button>
 
@@ -576,7 +641,7 @@ export const QuestRoadmap: React.FC<QuestRoadmapProps> = ({
                       className="py-2.5 px-3 bg-slate-900 hover:bg-slate-800 border border-white/5 hover:border-white/10 rounded-2xl text-[11px] font-black text-slate-300 hover:text-white uppercase tracking-wider transition-all flex items-center justify-center gap-1.5"
                     >
                       <Award className="w-3.5 h-3.5 text-amber-500" />
-                      Take Quiz
+                      Test Myself
                     </button>
 
                     {/* Action 3: Listen to Recap */}
@@ -585,8 +650,24 @@ export const QuestRoadmap: React.FC<QuestRoadmapProps> = ({
                       className="py-2.5 px-3 bg-slate-900 hover:bg-slate-800 border border-white/5 hover:border-white/10 rounded-2xl text-[11px] font-black text-slate-300 hover:text-white uppercase tracking-wider transition-all flex items-center justify-center gap-1.5"
                     >
                       <Volume2 className="w-3.5 h-3.5 text-indigo-400" />
-                      Listen Recap
+                      Listen
                     </button>
+                  </div>
+
+                  <div className="rounded-2xl bg-white/[0.04] border border-white/10 p-4">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">Completion Rule</p>
+                    <div className="space-y-2">
+                      {[
+                        'Read or listen to the explanation',
+                        'Take a short quiz immediately',
+                        'Repair every missed question'
+                      ].map((step, index) => (
+                        <div key={step} className="flex items-center gap-2 text-xs font-semibold text-slate-300">
+                          <span className="w-5 h-5 rounded-full bg-indigo-500/10 border border-indigo-500/30 text-indigo-300 text-[10px] font-black flex items-center justify-center">{index + 1}</span>
+                          {step}
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </>
               )}

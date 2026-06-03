@@ -9,6 +9,9 @@ import { LogoutModal } from '../../components/LogoutModal';
 import { Book, CheckCircle, Clock, Lock, User, TrendingUp, Award, AlertCircle, ChevronRight, Activity, Calendar, Star, Zap, Home, X, LogOut, CreditCard, Sparkles, Brain } from 'lucide-react';
 import { loadMasteryFromCloud } from '../../services/learnerMemoryService';
 import { MasteryDashboard } from '../../components/MasteryDashboard';
+import { supabase } from '../../lib/supabase';
+
+const PARENT_REMEMBER_LOGIN_KEY = 'soma_parent_remembered_login';
 
 interface ParentProps {
     onNavigate: (view: ViewState) => void;
@@ -23,10 +26,15 @@ export const ParentDashboard: React.FC<ParentProps> = ({ onNavigate, activityLog
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [inputCode, setInputCode] = useState('');
     const [inputPhone, setInputPhone] = useState('');
+    const [rememberLogin, setRememberLogin] = useState(true);
+    const [hasRememberedLogin, setHasRememberedLogin] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [showLogoutModal, setShowLogoutModal] = useState(false);
     const [proofShareStatus, setProofShareStatus] = useState<'idle' | 'copied' | 'shared'>('idle');
+    const [parentActivityLog, setParentActivityLog] = useState<LearnerActivity[] | null>(null);
+    const [activityLoading, setActivityLoading] = useState(false);
+    const [activityError, setActivityError] = useState('');
     
     // Cloud Memory State
     const [cloudMemoryRow, setCloudMemoryRow] = useState<any>(null);
@@ -41,6 +49,23 @@ export const ParentDashboard: React.FC<ParentProps> = ({ onNavigate, activityLog
         }
     };
 
+    React.useEffect(() => {
+        try {
+            const saved = localStorage.getItem(PARENT_REMEMBER_LOGIN_KEY);
+            if (!saved) return;
+
+            const parsed = JSON.parse(saved) as { code?: string; phone?: string };
+            if (parsed.code || parsed.phone) {
+                setInputCode(parsed.code || '');
+                setInputPhone(parsed.phone || '');
+                setRememberLogin(true);
+                setHasRememberedLogin(true);
+            }
+        } catch (_) {
+            localStorage.removeItem(PARENT_REMEMBER_LOGIN_KEY);
+        }
+    }, []);
+
     // Fetch live mastery from cloud when authenticated
     React.useEffect(() => {
         if (isAuthenticated && studentId) {
@@ -49,6 +74,67 @@ export const ParentDashboard: React.FC<ParentProps> = ({ onNavigate, activityLog
             }).catch(() => {});
         }
     }, [isAuthenticated, studentId]);
+
+    React.useEffect(() => {
+        if (!isAuthenticated || !studentId) return;
+
+        const loadParentActivities = async () => {
+            setActivityLoading(true);
+            setActivityError('');
+
+            try {
+                let data: any[] | null = null;
+                let error: any = null;
+
+                const rpcResult = await supabase.rpc('get_recent_activities', {
+                    p_student_id: studentId,
+                    p_limit: 100
+                });
+
+                data = (rpcResult as any).data ?? null;
+                error = (rpcResult as any).error ?? null;
+
+                if (error && (String(error?.code || '') === '42883' || String(error?.message || '').toLowerCase().includes('function'))) {
+                    const fallback = await supabase
+                        .from('activities')
+                        .select('id, type, topic, score, details, created_at')
+                        .eq('student_id', studentId)
+                        .order('created_at', { ascending: false })
+                        .limit(100);
+
+                    data = (fallback as any).data ?? null;
+                    error = (fallback as any).error ?? null;
+                }
+
+                if (error) throw error;
+
+                const mapped: LearnerActivity[] = (data || [])
+                    .filter((item: any) => item?.topic && !/^\d{13}$/.test(String(item.topic)))
+                    .map((item: any) => ({
+                        id: item.id,
+                        type: item.type,
+                        topic: item.topic,
+                        score: item.score ?? undefined,
+                        date: item.created_at ? new Date(item.created_at).toLocaleDateString() : new Date().toLocaleDateString(),
+                        details: typeof item.details === 'string'
+                            ? item.details
+                            : (item.details ? JSON.stringify(item.details) : '')
+                    }));
+
+                setParentActivityLog(mapped);
+            } catch (err: any) {
+                console.error('Parent activity fetch failed:', err);
+                setActivityError('We could not load this learner activity yet. Ask the learner to open their dashboard once, then refresh this page.');
+                setParentActivityLog([]);
+            } finally {
+                setActivityLoading(false);
+            }
+        };
+
+        loadParentActivities();
+    }, [isAuthenticated, studentId]);
+
+    const visibleActivityLog = parentActivityLog ?? activityLog;
 
     const handleLogin = async () => {
         if (!inputCode || !inputPhone) {
@@ -62,6 +148,20 @@ export const ParentDashboard: React.FC<ParentProps> = ({ onNavigate, activityLog
         setLoading(false);
 
         if (result.success) {
+            try {
+                if (rememberLogin) {
+                    localStorage.setItem(PARENT_REMEMBER_LOGIN_KEY, JSON.stringify({
+                        code: inputCode.trim().toUpperCase(),
+                        phone: inputPhone.trim()
+                    }));
+                    setHasRememberedLogin(true);
+                } else {
+                    localStorage.removeItem(PARENT_REMEMBER_LOGIN_KEY);
+                    setHasRememberedLogin(false);
+                }
+            } catch (_) {
+                // Local remember-login is a convenience only.
+            }
             setIsAuthenticated(true);
         } else {
             setError(result.message || 'Invalid credentials. Please check your Student ID and Phone Number.');
@@ -70,8 +170,8 @@ export const ParentDashboard: React.FC<ParentProps> = ({ onNavigate, activityLog
 
     // --- ANALYTICS ENGINE ---
     const stats = useMemo(() => {
-        const quizzes = activityLog.filter(a => a.type === 'QUIZ' && a.score !== undefined);
-        const topics = activityLog.filter(a => a.type === 'EXPLANATION');
+        const quizzes = visibleActivityLog.filter(a => a.type === 'QUIZ' && a.score !== undefined);
+        const topics = visibleActivityLog.filter(a => a.type === 'EXPLANATION');
 
         const totalQuizzes = quizzes.length;
         const avgScore = totalQuizzes > 0
@@ -97,7 +197,7 @@ export const ParentDashboard: React.FC<ParentProps> = ({ onNavigate, activityLog
         }));
 
         // Gamification Stats
-        const totalXP = calculateTotalXP(activityLog);
+        const totalXP = calculateTotalXP(visibleActivityLog);
         const levelInfo = calculateLevel(totalXP);
 
         // Weak areas (topics where score < 60)
@@ -105,7 +205,7 @@ export const ParentDashboard: React.FC<ParentProps> = ({ onNavigate, activityLog
         const uniqueWeakAreas = [...new Set(weakAreas)];
 
         // Smart Usage
-        const aiUses = activityLog.filter(a => a.type === 'STUDY' || a.type === 'QUIZ').length;
+        const aiUses = visibleActivityLog.filter(a => a.type === 'STUDY' || a.type === 'QUIZ').length;
 
         return {
             totalQuizzes,
@@ -120,7 +220,7 @@ export const ParentDashboard: React.FC<ParentProps> = ({ onNavigate, activityLog
             weakAreas: uniqueWeakAreas,
             aiUses
         };
-    }, [activityLog]);
+    }, [visibleActivityLog]);
 
     const topSubjects = Object.entries(stats.subjects)
         .filter(([, count]) => (count as number) > 0)
@@ -155,7 +255,7 @@ export const ParentDashboard: React.FC<ParentProps> = ({ onNavigate, activityLog
     ];
 
     const weeklyTrend = useMemo(() => {
-        const quizzes = activityLog.filter(a => a.type === 'QUIZ' && a.score !== undefined);
+        const quizzes = visibleActivityLog.filter(a => a.type === 'QUIZ' && a.score !== undefined);
         const sorted = [...quizzes].sort((a, b) => {
             const ta = a.date ? new Date(a.date).getTime() : 0;
             const tb = b.date ? new Date(b.date).getTime() : 0;
@@ -200,7 +300,7 @@ export const ParentDashboard: React.FC<ParentProps> = ({ onNavigate, activityLog
             status,
             label
         };
-    }, [activityLog]);
+    }, [visibleActivityLog]);
 
     const proofStats = useMemo(() => {
         const parseDetails = (activity: LearnerActivity): Record<string, any> => {
@@ -215,7 +315,7 @@ export const ParentDashboard: React.FC<ParentProps> = ({ onNavigate, activityLog
         const sevenDaysAgo = new Date();
         sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
-        const recentActivities = activityLog.filter(activity => {
+        const recentActivities = visibleActivityLog.filter(activity => {
             if (!activity.date) return true;
             const parsed = new Date(activity.date);
             return Number.isNaN(parsed.getTime()) || parsed >= sevenDaysAgo;
@@ -260,7 +360,7 @@ export const ParentDashboard: React.FC<ParentProps> = ({ onNavigate, activityLog
             repairedQuestions,
             nextAction
         };
-    }, [activityLog, stats.weakAreas]);
+    }, [visibleActivityLog, stats.weakAreas]);
 
     const shareWeeklyProof = async () => {
         const summary = [
@@ -329,10 +429,24 @@ export const ParentDashboard: React.FC<ParentProps> = ({ onNavigate, activityLog
                             <Lock className="w-10 h-10 text-indigo-300" />
                         </div>
 
-                        <h2 className="text-3xl font-black text-white tracking-tight mb-2">Welcome, Parent!</h2>
-                        <p className="text-indigo-100/80 mb-8 px-4 font-medium leading-relaxed">
-                            Unlock real-time insights into your child&apos;s learning journey. Enter their Student ID to begin.
+                        <h2 className="text-3xl font-black text-white tracking-tight mb-2">See if screen time became learning.</h2>
+                        <p className="text-indigo-100/80 mb-6 px-4 font-medium leading-relaxed">
+                            Link your child&apos;s Student ID to see study actions, quiz scores, weak areas, and the next thing to practise.
                         </p>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-8 text-left">
+                            {[
+                                { icon: CheckCircle, title: 'Study Proof', body: 'Topics studied, quizzes taken, and recall breaks completed.' },
+                                { icon: TrendingUp, title: 'Score Trend', body: 'Average score, recent quiz movement, and weak areas.' },
+                                { icon: AlertCircle, title: 'Next Action', body: 'A simple parent move for tonight or this week.' }
+                            ].map((item) => (
+                                <div key={item.title} className="rounded-2xl bg-white/10 border border-white/15 p-3">
+                                    <item.icon className="w-5 h-5 text-indigo-200 mb-2" />
+                                    <p className="text-xs font-black text-white">{item.title}</p>
+                                    <p className="text-[10px] font-semibold text-indigo-100/75 leading-snug mt-1">{item.body}</p>
+                                </div>
+                            ))}
+                        </div>
 
                         <div className="space-y-6">
                             <div className="relative group">
@@ -342,7 +456,7 @@ export const ParentDashboard: React.FC<ParentProps> = ({ onNavigate, activityLog
                                     placeholder="SOMA-XXXX"
                                     className="w-full pl-14 pr-4 py-4.5 bg-slate-900/50 border border-slate-700/50 rounded-2xl text-xl font-bold tracking-widest text-white uppercase focus:border-indigo-500 focus:bg-slate-800 focus:ring-4 focus:ring-indigo-500/20 outline-none transition-all placeholder:text-slate-500"
                                     value={inputCode}
-                                    onChange={(e) => setInputCode(e.target.value)}
+                                    onChange={(e) => setInputCode(e.target.value.toUpperCase())}
                                 />
                             </div>
 
@@ -356,6 +470,39 @@ export const ParentDashboard: React.FC<ParentProps> = ({ onNavigate, activityLog
                                     onChange={(e) => setInputPhone(e.target.value)}
                                 />
                             </div>
+
+                            <label className="flex items-start gap-3 rounded-2xl border border-white/10 bg-white/5 p-4 text-left cursor-pointer">
+                                <input
+                                    type="checkbox"
+                                    checked={rememberLogin}
+                                    onChange={(e) => setRememberLogin(e.target.checked)}
+                                    className="mt-1 h-4 w-4 rounded border-slate-500 bg-slate-900 text-indigo-500 focus:ring-indigo-500"
+                                />
+                                <span>
+                                    <span className="block text-sm font-black text-white">Remember this parent login</span>
+                                    <span className="block text-xs font-semibold text-indigo-100/70 mt-1">
+                                        {hasRememberedLogin
+                                            ? 'Saved on this device for faster access next time.'
+                                            : 'Save the Student ID and parent phone on this device only.'}
+                                    </span>
+                                    {hasRememberedLogin && (
+                                        <button
+                                            type="button"
+                                            onClick={(event) => {
+                                                event.preventDefault();
+                                                localStorage.removeItem(PARENT_REMEMBER_LOGIN_KEY);
+                                                setInputCode('');
+                                                setInputPhone('');
+                                                setRememberLogin(false);
+                                                setHasRememberedLogin(false);
+                                            }}
+                                            className="mt-2 text-xs font-black text-indigo-200 underline decoration-indigo-300/50 underline-offset-4 hover:text-white"
+                                        >
+                                            Forget saved login
+                                        </button>
+                                    )}
+                                </span>
+                            </label>
 
                             {error && (
                                 <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} className="text-red-300 text-sm font-medium bg-red-500/10 border border-red-500/20 p-3 rounded-xl flex items-center justify-center gap-2">
@@ -377,9 +524,18 @@ export const ParentDashboard: React.FC<ParentProps> = ({ onNavigate, activityLog
                             </div>
                         ) : (
                             <div className="mt-8">
-                                <p className="text-xs font-semibold text-slate-300 bg-slate-800/50 py-2.5 px-5 rounded-full inline-block border border-slate-700">
-                                    Hint: <span onClick={() => navigate('/learner')} className="text-indigo-400 font-bold hover:text-indigo-300 transition-colors cursor-pointer">Register</span> a student profile first to generate an ID.
-                                </p>
+                                <div className="rounded-2xl bg-slate-800/60 border border-slate-700 p-4 text-left">
+                                    <p className="text-xs font-black text-white mb-1">No Student ID yet?</p>
+                                    <p className="text-[11px] font-semibold text-slate-300 leading-relaxed mb-3">
+                                        Create a learner profile first. The child gets a SOMA code, then you can return here and monitor progress.
+                                    </p>
+                                    <button
+                                        onClick={() => navigate('/learner')}
+                                        className="w-full rounded-xl bg-indigo-500 hover:bg-indigo-400 text-white py-2.5 text-xs font-black uppercase tracking-wider transition-colors"
+                                    >
+                                        Create Learner Profile
+                                    </button>
+                                </div>
                             </div>
                         )}
                     </motion.div>
@@ -465,6 +621,21 @@ export const ParentDashboard: React.FC<ParentProps> = ({ onNavigate, activityLog
                         </div>
                     </div>
                 </motion.div>
+
+                {(activityLoading || activityError) && (
+                    <div className={`rounded-2xl border p-4 ${
+                        activityError
+                            ? 'bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-900 text-amber-800 dark:text-amber-200'
+                            : 'bg-indigo-50 dark:bg-indigo-950/30 border-indigo-200 dark:border-indigo-900 text-indigo-800 dark:text-indigo-200'
+                    }`}>
+                        <p className="text-xs font-black uppercase tracking-[0.16em]">
+                            {activityError ? 'Activity Sync Notice' : 'Loading Learner Activity'}
+                        </p>
+                        <p className="text-sm font-semibold mt-1">
+                            {activityError || `Fetching study history for ${validStudentCode || 'this learner'}...`}
+                        </p>
+                    </div>
+                )}
 
                 {/* 1.25 PROOF OF LEARNING */}
                 <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl rounded-[2rem] p-6 md:p-7 shadow-xl shadow-slate-200/50 dark:shadow-none border border-white/60 dark:border-slate-800">
@@ -761,12 +932,12 @@ export const ParentDashboard: React.FC<ParentProps> = ({ onNavigate, activityLog
                         <Calendar className="w-6 h-6 text-indigo-500" /> Recent Activity
                     </h3>
                     <div className="space-y-3">
-                        {activityLog.length === 0 ? (
+                        {visibleActivityLog.length === 0 ? (
                             <div className="text-center py-10 bg-white rounded-[2rem] border border-slate-100">
-                                <p className="text-slate-400">No activity recorded yet.</p>
+                                <p className="text-slate-400">No activity recorded yet for {validStudentCode || 'this learner'}.</p>
                             </div>
                         ) : (
-                            activityLog.slice(0, 10).map((item, i) => (
+                            visibleActivityLog.slice(0, 10).map((item, i) => (
                                 <motion.div
                                     initial={{ opacity: 0, x: -10 }}
                                     animate={{ opacity: 1, x: 0 }}

@@ -127,6 +127,33 @@ const levelConfig: Record<
   },
 };
 
+const simplifyLearnerNavItems = (items: NavItem[]): NavItem[] => {
+  const labelById: Partial<Record<SidebarTab, string>> = {
+    HOME: 'Home',
+    SMART_TUTOR: 'Ask Akili',
+    RESOURCES: 'Library',
+    SUBJECTS: 'Exam Prep',
+    PROGRESS: 'Progress',
+    TALKBACK: 'Talk & Learn',
+    QUEST_MAP: 'Quest Map',
+    EXAM_ROOMS: 'Study Groups',
+    COMMUNITY: 'Community',
+    REFERRAL: 'Referral',
+  };
+
+  const primaryOrder: SidebarTab[] = ['HOME', 'SMART_TUTOR', 'RESOURCES', 'SUBJECTS', 'PROGRESS'];
+  const secondaryOrder: SidebarTab[] = ['TALKBACK', 'QUEST_MAP', 'EXAM_ROOMS', 'COMMUNITY', 'REFERRAL'];
+  const order = [...primaryOrder, ...secondaryOrder];
+
+  return [...items]
+    .map((item) => ({
+      ...item,
+      label: labelById[item.id] || item.label,
+      section: primaryOrder.includes(item.id) ? 'primary' as const : 'secondary' as const,
+    }))
+    .sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id));
+};
+
 
 export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
   isOpen,
@@ -141,7 +168,7 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
   const [showMoreTools, setShowMoreTools] = React.useState(false);
 
   const currentLevel = levelConfig[educationLevel] || levelConfig[EducationLevel.SENIOR];
-  const levelNavItems = getNavItems(educationLevel);
+  const levelNavItems = simplifyLearnerNavItems(getNavItems(educationLevel));
   const primaryNavItems = levelNavItems.filter((item) => item.section !== 'secondary');
   const secondaryNavItems = levelNavItems.filter((item) => item.section === 'secondary');
 
