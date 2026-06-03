@@ -37,6 +37,8 @@ let currentAudio: HTMLAudioElement | null = null;
  */
 const cleanForTTS = (raw: string): string => {
     return raw
+        .replace(/^Curriculum Alignment:.*$/gim, '') // metadata sounds robotic when narrated
+        .replace(/^Exam Insight:?/gim, 'Exam tip:')
         .replace(/#{1,6}\s*/g, '')           // remove markdown headers (# ## ###)
         .replace(/\*\*(.+?)\*\*/g, '$1')      // **bold** -> plain
         .replace(/\*(.+?)\*/g, '$1')          // *italic* -> plain
@@ -49,6 +51,20 @@ const cleanForTTS = (raw: string): string => {
         .replace(/\n/g, ' ')                  // single newlines -> space
         .replace(/\s{2,}/g, ' ')              // collapse whitespace
         .trim();
+};
+
+const LESSON_VOICE_SETTINGS = {
+    stability: 0.30,
+    similarity_boost: 0.86,
+    style: 0.62,
+    use_speaker_boost: true
+};
+
+const PODCAST_VOICE_SETTINGS = {
+    stability: 0.32,
+    similarity_boost: 0.84,
+    style: 0.70,
+    use_speaker_boost: true
 };
 
 export const stopSpeech = () => {
@@ -83,13 +99,8 @@ export const speak = async (text: string, language: 'EN' | 'SW' = 'EN'): Promise
                     `https://api.elevenlabs.io/v1/text-to-speech/${selectedVoiceId}`,
                     {
                         text: cleanText,
-                        model_id: "eleven_turbo_v2_5",
-                        voice_settings: {
-                            stability: 0.40,
-                            similarity_boost: 0.80,
-                            style: 0.30,
-                            use_speaker_boost: true
-                        },
+                        model_id: "eleven_multilingual_v2",
+                        voice_settings: LESSON_VOICE_SETTINGS,
                     },
                     {
                         headers: {
@@ -114,13 +125,8 @@ export const speak = async (text: string, language: 'EN' | 'SW' = 'EN'): Promise
                     body: JSON.stringify({
                         voiceId: selectedVoiceId,
                         text: cleanText,
-                        model_id: "eleven_turbo_v2_5",
-                        voice_settings: {
-                            stability: 0.40,
-                            similarity_boost: 0.80,
-                            style: 0.30,
-                            use_speaker_boost: true
-                        }
+                        model_id: "eleven_multilingual_v2",
+                        voice_settings: LESSON_VOICE_SETTINGS
                     })
                 });
 
@@ -147,30 +153,11 @@ export const speak = async (text: string, language: 'EN' | 'SW' = 'EN'): Promise
             });
         } catch (error: any) {
             console.error("ElevenLabs failed (General Speak):", error.response?.data || error.message);
+            throw new Error("ElevenLabs voice is unavailable. Please check the ElevenLabs proxy/API key instead of falling back to robotic browser speech.");
         }
     }
 
-    // Fallback: Browser Native TTS
-    return new Promise((resolve, reject) => {
-        if (!window.speechSynthesis) {
-            reject(new Error("No TTS supporting browser interface found."));
-            return;
-        }
-
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = 'en-US';
-        utterance.rate = 1.0;
-
-        // Find a better voice if possible (usually local voices sound better)
-        const voices = window.speechSynthesis.getVoices();
-        const googleVoice = voices.find(v => v.name.includes("Google") && v.lang.startsWith("en"));
-        if (googleVoice) utterance.voice = googleVoice;
-
-        utterance.onend = () => resolve();
-        utterance.onerror = (e) => { console.warn('Browser TTS fallback interrupted or failed', e); resolve(); };
-
-        window.speechSynthesis.speak(utterance);
-    });
+    throw new Error("ElevenLabs voice is not configured. Browser speech fallback is disabled for Listen & Learn quality.");
 };
 
 // --- PODCAST PLAYER ---
@@ -205,8 +192,7 @@ export const playPodcast = async (
     const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 
     if (isLocal && (!LOCAL_API_KEY || LOCAL_API_KEY.length < 5)) {
-        console.warn("ElevenLabs API Key is missing for local dev. Falling back to browser TTS.");
-        useElevenLabs = false;
+        throw new Error("ElevenLabs API key is missing locally, so Listen & Learn cannot use the natural voice.");
     }
 
     const VOICES = {
@@ -225,8 +211,8 @@ export const playPodcast = async (
                 `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`,
                 {
                     text,
-                    model_id: "eleven_turbo_v2_5",
-                    voice_settings: { stability: 0.38, similarity_boost: 0.82, style: 0.35, use_speaker_boost: true },
+                    model_id: "eleven_multilingual_v2",
+                    voice_settings: PODCAST_VOICE_SETTINGS,
                 },
                 {
                     headers: { 'xi-api-key': LOCAL_API_KEY, 'Content-Type': 'application/json' },
@@ -246,8 +232,8 @@ export const playPodcast = async (
                 body: JSON.stringify({
                     voiceId,
                     text,
-                    model_id: "eleven_turbo_v2_5",
-                    voice_settings: { stability: 0.38, similarity_boost: 0.82, style: 0.35, use_speaker_boost: true }
+                    model_id: "eleven_multilingual_v2",
+                    voice_settings: PODCAST_VOICE_SETTINGS
                 })
              });
              if (!response.ok) throw new Error("Proxy error for podcast");
@@ -332,8 +318,8 @@ export const playPodcast = async (
                         });
                     });
                 } catch (err: any) {
-                    console.warn("ElevenLabs failed during podcast, falling back to browser TTS.", err.message || err);
-                    useElevenLabs = false; // Fallback for this and all subsequent segments
+                    console.warn("ElevenLabs failed during podcast.", err.message || err);
+                    throw new Error("ElevenLabs podcast voice failed. Robotic browser fallback is disabled for Listen & Learn.");
                 }
             }
 

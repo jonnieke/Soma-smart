@@ -337,6 +337,9 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
   const [quizData, setQuizData] = useState<QuizData | null>(null);
   const [lastQuizReview, setLastQuizReview] = useState<QuizReviewSummary | null>(null);
   const [learningProofStatus, setLearningProofStatus] = useState<'idle' | 'copied' | 'shared'>('idle');
+  const [answerRevealUnlocked, setAnswerRevealUnlocked] = useState(false);
+  const [learnerTryText, setLearnerTryText] = useState('');
+  const [learningBreakRewarded, setLearningBreakRewarded] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [qualityWarning, setQualityWarning] = useState<{ show: boolean, issues: string[], file: File | null } | null>(null);
   // Separate warning object to match usage if needed, or just simplify
@@ -354,6 +357,9 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
     setCompletedRecallChecks([]);
     setRecallRewarded(false);
     setLearningProofStatus('idle');
+    setAnswerRevealUnlocked(false);
+    setLearnerTryText('');
+    setLearningBreakRewarded(false);
   }, [explanation?.topic]);
 
   const shareLearningProof = React.useCallback(async () => {
@@ -397,6 +403,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
     if (!explanation || recallRewarded || completedRecallChecks.length < 3) return;
 
     setRecallRewarded(true);
+    setAnswerRevealUnlocked(true);
     updateTopicMastery(explanation.topic, 55);
     saveActivity({
       id: `recall-${Date.now()}`,
@@ -2132,8 +2139,10 @@ ${explanation.explanation}
       await generateSpeech(textToRead, language);
     } catch (e: any) {
       console.error("TTS Error:", e);
-      // generateSpeech already has a fallback to browser TTS inside, 
-      // but if even that fails, we stop loading.
+      setError({
+        title: "Voice Unavailable",
+        message: e?.message || "The natural ElevenLabs voice could not load. Please check the voice service configuration."
+      });
     } finally {
       setIsPlaying(false);
       setLoading(false);
@@ -2168,7 +2177,10 @@ ${explanation.explanation}
         podcastScript.script,
         (idx) => setCurrentSegmentIndex(idx),
         () => setIsPodcastPlaying(false),
-        (err) => setError({ title: "Audio Error", message: err.message || "Failed to play audio segment." })
+        (err) => {
+          setIsPodcastPlaying(false);
+          setError({ title: "Voice Unavailable", message: err.message || "The natural ElevenLabs voice could not play." });
+        }
       );
       return;
     }
@@ -2199,7 +2211,10 @@ ${explanation.explanation}
         script.script,
         (idx) => setCurrentSegmentIndex(idx),
         () => setIsPodcastPlaying(false),
-        (err) => setError({ title: "Audio Error", message: err.message || "Failed to play audio segment." })
+        (err) => {
+          setIsPodcastPlaying(false);
+          setError({ title: "Voice Unavailable", message: err.message || "The natural ElevenLabs voice could not play." });
+        }
       );
 
     } catch (e) {
@@ -2226,7 +2241,10 @@ ${explanation.explanation}
       remaining,
       (idx) => setCurrentSegmentIndex(nextIdx + idx),
       () => setIsPodcastPlaying(false),
-      (err) => setError({ title: "Audio Error", message: err.message || "Failed to play segment." })
+      (err) => {
+        setIsPodcastPlaying(false);
+        setError({ title: "Voice Unavailable", message: err.message || "The natural ElevenLabs voice could not play." });
+      }
     );
   };
 
@@ -5889,14 +5907,135 @@ ${explanation.explanation}
               </div>
             </motion.div>
 
+            {/* No Copy Mode: reveal cost before full answer */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.18 }}
+              className={`rounded-3xl border-2 p-6 shadow-sm ${
+                answerRevealUnlocked
+                  ? 'bg-emerald-50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-900/70'
+                  : 'bg-white dark:bg-slate-900 border-indigo-200 dark:border-indigo-900/70'
+              }`}
+            >
+              <div className="flex items-start justify-between gap-4 mb-4">
+                <div>
+                  <p className={`text-[10px] font-black uppercase tracking-[0.2em] mb-1 ${answerRevealUnlocked ? 'text-emerald-700 dark:text-emerald-300' : 'text-indigo-600 dark:text-indigo-300'}`}>
+                    No Copy Mode
+                  </p>
+                  <h3 className="text-lg font-black text-slate-900 dark:text-white">
+                    {answerRevealUnlocked ? 'Full explanation unlocked' : 'Try one small step before the full answer'}
+                  </h3>
+                  <p className="text-sm font-semibold text-slate-600 dark:text-slate-300 mt-1">
+                    Soma should help you finish stronger, not turn your book into copy-paste.
+                  </p>
+                </div>
+                <div className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 ${answerRevealUnlocked ? 'bg-emerald-600 text-white' : 'bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-300'}`}>
+                  {answerRevealUnlocked ? <Trophy className="w-5 h-5" /> : <Hand className="w-5 h-5" />}
+                </div>
+              </div>
+
+              {!answerRevealUnlocked ? (
+                <div className="space-y-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                    {[
+                      'Write the first step',
+                      'Name one keyword',
+                      'Say what confuses you'
+                    ].map((item) => (
+                      <div key={item} className="rounded-2xl bg-indigo-50 dark:bg-indigo-950/30 border border-indigo-100 dark:border-indigo-900/70 p-3">
+                        <p className="text-xs font-black text-indigo-700 dark:text-indigo-200">{item}</p>
+                      </div>
+                    ))}
+                  </div>
+                  <textarea
+                    value={learnerTryText}
+                    onChange={(e) => setLearnerTryText(e.target.value)}
+                    placeholder={`Example: "I think the first step in ${explanation.topic} is..."`}
+                    rows={3}
+                    className="w-full rounded-2xl border-2 border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-4 py-3 text-sm font-semibold text-slate-800 dark:text-slate-100 outline-none focus:border-indigo-400 dark:focus:border-indigo-600 resize-none"
+                  />
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <button
+                      onClick={() => {
+                        if (learnerTryText.trim().length < 8) return;
+                        setAnswerRevealUnlocked(true);
+                        setLearningBreakRewarded(true);
+                        saveActivity({
+                          id: `try-first-${Date.now()}`,
+                          type: 'STUDY',
+                          topic: explanation.topic,
+                          date: new Date().toLocaleDateString(),
+                          details: JSON.stringify({
+                            mode: 'try_before_reveal',
+                            attemptPreview: learnerTryText.trim().slice(0, 160),
+                            xpEarned: 15
+                          })
+                        });
+                        trackFunnelEvent('learner_answer_reveal_unlocked', {
+                          topic: explanation.topic,
+                          method: 'try_first',
+                          attemptLength: learnerTryText.trim().length
+                        });
+                      }}
+                      disabled={learnerTryText.trim().length < 8}
+                      className={`flex-1 rounded-2xl px-5 py-3 text-xs font-black uppercase tracking-wider transition-colors ${
+                        learnerTryText.trim().length >= 8
+                          ? 'bg-indigo-600 hover:bg-indigo-700 text-white'
+                          : 'bg-slate-200 dark:bg-slate-800 text-slate-400 cursor-not-allowed'
+                      }`}
+                    >
+                      Unlock Full Explanation
+                    </button>
+                    <button
+                      onClick={() => {
+                        setCompletedRecallChecks([0, 1, 2]);
+                        setAnswerRevealUnlocked(true);
+                        setLearningBreakRewarded(true);
+                        trackFunnelEvent('learner_answer_reveal_unlocked', {
+                          topic: explanation.topic,
+                          method: 'active_recall_shortcut'
+                        });
+                      }}
+                      className="flex-1 rounded-2xl bg-white dark:bg-slate-950 border border-indigo-200 dark:border-indigo-900/70 text-indigo-700 dark:text-indigo-200 px-5 py-3 text-xs font-black uppercase tracking-wider hover:bg-indigo-50 dark:hover:bg-indigo-950/40 transition-colors"
+                    >
+                      I Completed Recall
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="rounded-2xl bg-white dark:bg-slate-900 border border-emerald-200 dark:border-emerald-900/70 p-4">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="w-5 h-5 text-emerald-600" />
+                    <p className="text-sm font-black text-emerald-800 dark:text-emerald-200">
+                      {learningBreakRewarded ? 'Learning break complete: effort rewarded.' : 'You can now continue to the full explanation.'}
+                    </p>
+                  </div>
+                  <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mt-2">
+                    Best path: read, quiz, repair mistakes, then retry tomorrow.
+                  </p>
+                </div>
+              )}
+            </motion.div>
+
             {/* Detailed Explanation */}
             <motion.article
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
-              className="bg-white dark:bg-slate-900 p-6 rounded-3xl shadow-sm border-2 border-slate-300 dark:border-slate-800 prose prose-sm md:prose-base prose-slate dark:prose-invert max-w-none prose-p:text-slate-600 dark:prose-p:text-slate-300 prose-headings:text-slate-800 dark:prose-headings:text-slate-100 prose-strong:text-slate-900 dark:prose-strong:text-white"
+              className={`bg-white dark:bg-slate-900 p-6 rounded-3xl shadow-sm border-2 border-slate-300 dark:border-slate-800 prose prose-sm md:prose-base prose-slate dark:prose-invert max-w-none prose-p:text-slate-600 dark:prose-p:text-slate-300 prose-headings:text-slate-800 dark:prose-headings:text-slate-100 prose-strong:text-slate-900 dark:prose-strong:text-white ${answerRevealUnlocked ? '' : 'relative overflow-hidden max-h-80'}`}
             >
-              <MarkdownText content={explanation.explanation} />
+              {!answerRevealUnlocked && (
+                <div className="absolute inset-0 z-10 bg-gradient-to-b from-white/35 via-white/90 to-white dark:from-slate-900/35 dark:via-slate-900/90 dark:to-slate-900 flex items-end justify-center p-6">
+                  <div className="rounded-2xl bg-slate-950 text-white px-5 py-3 shadow-xl text-center">
+                    <Lock className="w-5 h-5 mx-auto mb-2" />
+                    <p className="text-xs font-black uppercase tracking-wider">Try first to unlock full answer</p>
+                  </div>
+                </div>
+              )}
+              <div className={!answerRevealUnlocked ? 'blur-[3px] select-none pointer-events-none' : ''}>
+                <MarkdownText content={explanation.explanation} />
+              </div>
               {/* ACTION FOOTER */}
               <div className="mt-8 pt-6 border-t border-slate-100 flex flex-wrap gap-2 sm:gap-4">
                 <button

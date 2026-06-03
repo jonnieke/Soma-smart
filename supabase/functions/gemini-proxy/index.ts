@@ -15,6 +15,22 @@ const corsHeaders = {
 
 const FREE_AI_DAILY_LIMIT = Number(Deno.env.get('FREE_AI_DAILY_LIMIT') || '25');  // Registered free users
 const GUEST_AI_DAILY_LIMIT = Number(Deno.env.get('GUEST_AI_DAILY_LIMIT') || '3');  // Unregistered guests
+const DEFAULT_GEMINI_MODEL = Deno.env.get('GEMINI_MODEL') || 'gemini-2.5-flash';
+
+const normalizeGeminiModel = (model: string) => {
+    const requested = String(model || '').trim();
+    if (!requested) return requested;
+
+    // Older deployed clients can still request retired Gemini aliases. Keep the
+    // proxy compatible so cached browser chunks do not break learner sessions.
+    const retiredAliases = new Set([
+        'gemini-1.5-flash',
+        'gemini-1.5-pro',
+        'gemini-2.0-flash',
+    ]);
+
+    return retiredAliases.has(requested) ? DEFAULT_GEMINI_MODEL : requested;
+};
 
 const getClientIp = (req: Request) => {
     return (
@@ -188,8 +204,9 @@ serve(async (req) => {
         }
 
         const { model, contents, generationConfig, systemInstruction, stream } = await req.json();
+        const normalizedModel = normalizeGeminiModel(model);
 
-        if (!contents || !model) {
+        if (!contents || !normalizedModel) {
             return new Response(
                 JSON.stringify({ error: 'Missing required fields: model, contents' }),
                 { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
@@ -288,14 +305,14 @@ serve(async (req) => {
         let geminiUrl;
         let geminiBody: Record<string, unknown> = {};
 
-        if (model.includes('embedding')) {
+        if (normalizedModel.includes('embedding')) {
             // For embeddings, use embedContent endpoint
-            geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:embedContent?key=${GEMINI_API_KEY}`;
+            geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${normalizedModel}:embedContent?key=${GEMINI_API_KEY}`;
             geminiBody = { content: normalizedContents[0] }; // Embeddings take a single content object
         } else {
             // For generation, use generateContent or streamGenerateContent endpoint
             const endpoint = stream ? 'streamGenerateContent' : 'generateContent';
-            geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:${endpoint}?key=${GEMINI_API_KEY}`;
+            geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${normalizedModel}:${endpoint}?key=${GEMINI_API_KEY}`;
             geminiBody = { contents: normalizedContents };
             if (generationConfig) geminiBody.generationConfig = generationConfig;
             if (systemInstruction) geminiBody.systemInstruction = systemInstruction;

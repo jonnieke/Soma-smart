@@ -151,7 +151,7 @@ Return 6 topics max. Be specific to ${subject} content — not generic exam advi
 
   try {
     const result = await callGeminiProxy(
-      'gemini-2.0-flash',
+      MODEL_NAME,
       contents,
       { maxOutputTokens: 600, temperature: 0.3 },
       systemInstruction
@@ -212,7 +212,7 @@ Rules:
 
   try {
     const result = await callGeminiProxy(
-      'gemini-2.0-flash',
+      MODEL_NAME,
       contents,
       { maxOutputTokens: 800, temperature: 0.5 },
       systemInstruction
@@ -3120,7 +3120,7 @@ RULES:
 
   try {
     const result = await callGeminiProxy(
-      'gemini-2.0-flash',
+      MODEL_NAME,
       contents,
       { maxOutputTokens: 700, temperature: 0.35 },
       systemInstruction
@@ -3189,7 +3189,7 @@ ${candidateAnswer}`
 
   try {
     const result = await callGeminiProxy(
-      'gemini-2.0-flash',
+      MODEL_NAME,
       contents,
       { maxOutputTokens: 900, temperature: 0.2 },
       systemInstruction
