@@ -1784,10 +1784,53 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
     setLoadingText("Akili is listening...");
     setMode('SCAN'); // repurpose SCAN for loading view
 
-    try {
-      const reader = new FileReader();
-      reader.readAsDataURL(blob);
-      reader.onloadend = async () => {
+    const handleAudioFailure = (e: any) => {
+      console.error(e);
+
+      if (e instanceof RateLimitError || e?.name === 'RateLimitError') {
+        setLoading(false);
+        setMode('MENU');
+        setShowLogin(true);
+        return;
+      }
+
+      if (e?.name === 'SystemQuotaError' || e?.message?.toLowerCase?.().includes('rate-limiting')) {
+        setError({
+          title: "Akili Is Busy",
+          message: e?.message || "Too many AI requests are hitting the system right now. Please wait a few minutes, then try the recording again."
+        });
+        setLoading(false);
+        setMode('MENU');
+        return;
+      }
+
+      const isNet = !isOnline || !navigator.onLine || e.message?.includes('network') || e.message?.includes('Failed to fetch');
+      if (isNet) {
+        if (!navigator.onLine) {
+          setError({
+            title: "Offline Error",
+            message: "You are offline. Please check your internet to process audio."
+          });
+        } else {
+          setError({
+            title: "Connection Error",
+            message: "We couldn't connect to our servers. Please check your internet connection or try again shortly."
+          });
+        }
+      } else {
+        setError({
+          title: "Audio Error",
+          message: "We couldn't understand the audio. Please speak clearly or try again."
+        });
+      }
+      setLoading(false);
+      setMode('MENU');
+    };
+
+    const reader = new FileReader();
+    reader.onerror = () => handleAudioFailure(new Error("Could not read the audio recording."));
+    reader.onloadend = async () => {
+      try {
         const base64String = reader.result as string;
         const base64Data = base64String.split(',')[1];
 
@@ -1820,38 +1863,11 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
         generateQuickQuiz(result.explanation, result.topic, language)
           .then(data => setStickyQuizData(data))
           .catch(err => console.error("Background quiz gen failed", err));
-      };
-    } catch (e: any) {
-      console.error(e);
-
-      if (e instanceof RateLimitError || e?.name === 'RateLimitError') {
-        setLoading(false);
-        setMode('MENU');
-        setShowLogin(true);
-        return;
+      } catch (e: any) {
+        handleAudioFailure(e);
       }
-
-      const isNet = !isOnline || !navigator.onLine || e.message?.includes('network') || e.message?.includes('Failed to fetch');
-      if (isNet) {
-        if (!navigator.onLine) {
-          setError({
-            title: "Offline Error",
-            message: "You are offline. Please check your internet to process audio."
-          });
-        } else {
-          setError({
-            title: "Connection Error",
-            message: "We couldn't connect to our servers. Please check your internet connection or try again shortly."
-          });
-        }
-      } else {
-        setError({
-          title: "Audio Error",
-          message: "We couldn't understand the audio. Please speak clearly or try again."
-        });
-      }
-      setLoading(false);
-    }
+    };
+    reader.readAsDataURL(blob);
   };
 
   const handleRegenerate = async (newLevel: 'Simple' | 'Exam') => {

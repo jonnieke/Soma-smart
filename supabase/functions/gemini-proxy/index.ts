@@ -117,6 +117,25 @@ const firstRpcRow = (data: any) => {
     return data;
 };
 
+const limitResponse = (
+    code: string,
+    message: string,
+    extra: Record<string, unknown> = {},
+    retryAfterSeconds = 300,
+) => new Response(JSON.stringify({
+    error: message,
+    code,
+    retryAfterSeconds,
+    ...extra,
+}), {
+    status: 429,
+    headers: {
+        ...corsHeaders,
+        'Content-Type': 'application/json',
+        'Retry-After': String(retryAfterSeconds),
+    }
+});
+
 const enforceUsageLimit = async (req: Request) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
     const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
@@ -167,14 +186,10 @@ const enforceUsageLimit = async (req: Request) => {
 
             const usage = firstRpcRow(usageResult);
             if (!usage?.allowed) {
-                throw new Response(JSON.stringify({
-                    error: 'Daily free AI limit reached',
+                throw limitResponse('PLAN_LIMIT_REACHED', 'Daily free AI limit reached', {
                     limit: FREE_AI_DAILY_LIMIT,
                     usageCount: usage?.usage_count ?? FREE_AI_DAILY_LIMIT
-                }), {
-                    status: 429,
-                    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-                });
+                }, 86400);
             }
 
             return; // Authenticated, within limit — allow
@@ -206,14 +221,10 @@ const enforceUsageLimit = async (req: Request) => {
 
             const usage = firstRpcRow(usageResult);
             if (!usage?.allowed) {
-                throw new Response(JSON.stringify({
-                    error: 'Daily free AI limit reached',
+                throw limitResponse('PLAN_LIMIT_REACHED', 'Daily free AI limit reached', {
                     limit: FREE_AI_DAILY_LIMIT,
                     usageCount: usage?.usage_count ?? FREE_AI_DAILY_LIMIT
-                }), {
-                    status: 429,
-                    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-                });
+                }, 86400);
             }
 
             return; // Registered learner, within limit — allow
@@ -235,14 +246,10 @@ const enforceUsageLimit = async (req: Request) => {
 
     const guestUsage = firstRpcRow(guestUsageResult);
     if (!guestUsage?.allowed) {
-        throw new Response(JSON.stringify({
-            error: 'Daily guest AI limit reached',
+        throw limitResponse('GUEST_LIMIT_REACHED', 'Daily guest AI limit reached', {
             limit: GUEST_AI_DAILY_LIMIT,
             usageCount: guestUsage?.usage_count ?? GUEST_AI_DAILY_LIMIT
-        }), {
-            status: 429,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
+        }, 86400);
     }
 };
 
@@ -302,10 +309,11 @@ const enforceFeatureLimit = async (supabase: any, requester: any, feature: strin
     const plan = requester.plan || 'FREE';
     const limit = FEATURE_LIMITS[plan]?.[feature] ?? FEATURE_LIMITS.FREE[feature] ?? GUEST_AI_DAILY_LIMIT;
     if (limit <= 0) {
-        throw new Response(JSON.stringify({ error: `${feature.replace(/_/g, ' ')} is not included in this plan`, feature, plan, limit }), {
-            status: 429,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
+        throw limitResponse('FEATURE_NOT_INCLUDED', `${feature.replace(/_/g, ' ')} is not included in this plan`, {
+            feature,
+            plan,
+            limit,
+        }, 86400);
     }
 
     const since = new Date();
@@ -338,17 +346,13 @@ const enforceFeatureLimit = async (supabase: any, requester: any, feature: strin
                 return;
             }
         }
-        throw new Response(JSON.stringify({
-            error: `${feature.replace(/_/g, ' ')} daily limit reached`,
+        throw limitResponse('FEATURE_LIMIT_REACHED', `${feature.replace(/_/g, ' ')} daily limit reached`, {
             feature,
             plan,
             limit,
             usageCount: count || 0,
             canBuyCredits: true
-        }), {
-            status: 429,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
+        }, 86400);
     }
 };
 
@@ -528,6 +532,11 @@ serve(async (req) => {
         if (!geminiRes.ok) {
             const errText = await geminiRes.text();
             console.error('Gemini API Error:', geminiRes.status, errText);
+            if (geminiRes.status === 429) {
+                return limitResponse('SYSTEM_BUSY', 'Akili is temporarily busy. Please try again in a few minutes.', {
+                    details: errText,
+                }, 300);
+            }
             return new Response(
                 JSON.stringify({ error: 'Gemini API request failed', details: errText }),
                 { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: geminiRes.status }

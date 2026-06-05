@@ -19,6 +19,20 @@ const SchemaType = {
   OBJECT: "object"
 } as const;
 
+class LearnerRateLimitError extends Error {
+  constructor(message = 'Daily AI limit reached. Please register or log in to continue.') {
+    super(message);
+    this.name = 'RateLimitError';
+  }
+}
+
+class LearnerSystemQuotaError extends Error {
+  constructor(message = 'Akili is busy because our AI provider is rate-limiting requests. Please try again in a few minutes.') {
+    super(message);
+    this.name = 'SystemQuotaError';
+  }
+}
+
 const callGeminiProxy = async (model: string, contents: any, generationConfig: any = {}, systemInstruction: any = null) => {
   const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
   const localApiKey = import.meta.env.VITE_GEMINI_API;
@@ -66,9 +80,28 @@ const callGeminiProxy = async (model: string, contents: any, generationConfig: a
   });
 
   if (!response.ok) {
-    const error = await response.json();
+    let error: any = {};
+    try {
+      error = await response.json();
+    } catch (_) {
+      // Keep default error object for non-JSON responses.
+    }
+
+    if (response.status === 429) {
+      const message = error?.error?.message || error?.message || error?.error || '';
+      if (error?.code === 'SYSTEM_BUSY' || String(message).toLowerCase().includes('quota') || error?.error === 'Gemini API request failed') {
+        console.error("Gemini provider quota/rate limit:", error);
+        throw new LearnerSystemQuotaError(
+          error?.retryAfterSeconds
+            ? `Akili is busy because our AI provider is rate-limiting requests. Please try again in about ${Math.ceil(Number(error.retryAfterSeconds) / 60)} minutes.`
+            : undefined
+        );
+      }
+      throw new LearnerRateLimitError(message || undefined);
+    }
+
     console.error("Gemini Proxy Error:", error);
-    throw new Error(error.message || "Failed to call AI proxy");
+    throw new Error(error?.message || error?.error?.message || error?.error || "Failed to call AI proxy");
   }
 
   const data = await response.json();
