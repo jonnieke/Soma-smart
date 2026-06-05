@@ -9,16 +9,55 @@ export const ResetPassword = () => {
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [sessionReady, setSessionReady] = useState(false);
     const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
 
-    // Check if we have a hash fragment (standard Supabase flow)
     useEffect(() => {
-        const hash = window.location.hash;
-        if (!hash || !hash.includes('access_token')) {
-            // No token? Maybe they just navigated here manually.
-            // But if they clicked the email link, it should have the hash.
-        }
+        const initRecoverySession = async () => {
+            try {
+                const params = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+                const access_token = params.get('access_token');
+                const refresh_token = params.get('refresh_token');
+                const code = new URLSearchParams(window.location.search).get('code');
+
+                if (code) {
+                    const { error } = await supabase.auth.exchangeCodeForSession(code);
+                    if (error) throw error;
+                    setSessionReady(true);
+                    return;
+                }
+
+                if (access_token && refresh_token) {
+                    const { error } = await supabase.auth.setSession({ access_token, refresh_token });
+                    if (error) throw error;
+                    setSessionReady(true);
+                    return;
+                }
+
+                const { data } = await supabase.auth.getSession();
+                setSessionReady(Boolean(data.session));
+            } catch (error: any) {
+                setMessage({
+                    type: 'error',
+                    text: error.message || 'Auth session missing. Please open the password reset link from your email again.',
+                });
+                setSessionReady(false);
+            }
+        };
+
+        initRecoverySession();
     }, []);
+
+    // Keep user informed if they land here manually without the token
+    useEffect(() => {
+        if (sessionReady) return;
+        if (!window.location.hash && !new URLSearchParams(window.location.search).get('code')) {
+            setMessage({
+                type: 'error',
+                text: 'Open this page from the password reset email. A recovery session is required before you can change the password.',
+            });
+        }
+    }, [sessionReady]);
 
     const handleUpdatePassword = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -26,6 +65,11 @@ export const ResetPassword = () => {
         setMessage(null);
 
         try {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) {
+                throw new Error('Auth session missing. Please reopen the password reset link from your email.');
+            }
+
             const { error } = await supabase.auth.updateUser({ password });
 
             if (error) throw error;
@@ -84,8 +128,8 @@ export const ResetPassword = () => {
                         </div>
                     </div>
 
-                    <Button fullWidth type="submit" isLoading={loading}>
-                        Update Password
+                    <Button fullWidth type="submit" isLoading={loading} disabled={!sessionReady}>
+                        {sessionReady ? 'Update Password' : 'Waiting for reset session...'}
                     </Button>
                 </form>
 

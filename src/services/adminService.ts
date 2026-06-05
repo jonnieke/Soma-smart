@@ -9,7 +9,22 @@ export interface DashboardStats {
     totalStudents: number;
     totalTeachers: number;
     totalParents: number;
+    totalUsers: number;
+    totalKnowledgeDocs: number;
+    totalTeacherMaterials: number;
+    totalNotes: number;
+    totalPastPapers: number;
+    totalSyllabuses: number;
+    activeToday: number;
+    newUsers7d: number;
+    pageViews7d: number;
+    routeChanges7d: number;
+    authEvents7d: number;
+    topSubjects: { subject: string; count: number }[];
+    topPages: { path: string; count: number }[];
+    authBreakdown: { eventName: string; count: number }[];
     recentActivity: FeedItem[];
+    recentAnalyticsEvents: { id: string; eventName: string; eventType: string; path: string; time: string }[];
     activityTrend: number[]; // Last 14 days activity count
 }
 
@@ -20,79 +35,278 @@ export interface FeedItem {
     type: 'student' | 'teacher' | 'money' | 'parent' | 'system';
 }
 
+export interface UsageCostFeatureSummary {
+    feature: string;
+    calls: number;
+    estimatedCostKes: number;
+    inputTokens: number;
+    outputTokens: number;
+}
+
+export interface FinanceSummary {
+    totalRevenueKes: number;
+    aiCostKes: number;
+    grossMarginKes: number;
+    grossMarginPct: number;
+    aiCalls: number;
+    avgAiCostPerCallKes: number;
+    topFeatures: UsageCostFeatureSummary[];
+}
+
+export const fetchFinanceSummary = async (): Promise<FinanceSummary> => {
+    const defaultSummary: FinanceSummary = {
+        totalRevenueKes: 0,
+        aiCostKes: 0,
+        grossMarginKes: 0,
+        grossMarginPct: 0,
+        aiCalls: 0,
+        avgAiCostPerCallKes: 0,
+        topFeatures: []
+    };
+
+    try {
+        const since = new Date();
+        since.setDate(since.getDate() - 30);
+
+        const [{ data: transactions }, { data: usageEvents, error: usageError }] = await Promise.all([
+            supabase.from('transactions').select('amount, status, created_at').gte('created_at', since.toISOString()),
+            supabase.from('usage_cost_events').select('feature, input_tokens, output_tokens, estimated_cost_kes, created_at').gte('created_at', since.toISOString())
+        ]);
+
+        const totalRevenueKes = transactions
+            ?.filter((t: any) => t.status === 'SUCCESS')
+            .reduce((sum: number, t: any) => sum + (Number(t.amount) || 0), 0) || 0;
+
+        if (usageError) {
+            if (import.meta.env.DEV) console.warn('Usage cost summary unavailable:', usageError.message);
+            return {
+                ...defaultSummary,
+                totalRevenueKes,
+                grossMarginKes: totalRevenueKes,
+                grossMarginPct: totalRevenueKes > 0 ? 100 : 0
+            };
+        }
+
+        const featureMap = new Map<string, UsageCostFeatureSummary>();
+        let aiCostKes = 0;
+        let aiCalls = 0;
+
+        (usageEvents || []).forEach((event: any) => {
+            const feature = event.feature || 'unknown';
+            const cost = Number(event.estimated_cost_kes) || 0;
+            const inputTokens = Number(event.input_tokens) || 0;
+            const outputTokens = Number(event.output_tokens) || 0;
+            aiCostKes += cost;
+            aiCalls += 1;
+
+            const current = featureMap.get(feature) || {
+                feature,
+                calls: 0,
+                estimatedCostKes: 0,
+                inputTokens: 0,
+                outputTokens: 0
+            };
+            current.calls += 1;
+            current.estimatedCostKes += cost;
+            current.inputTokens += inputTokens;
+            current.outputTokens += outputTokens;
+            featureMap.set(feature, current);
+        });
+
+        const grossMarginKes = totalRevenueKes - aiCostKes;
+        const grossMarginPct = totalRevenueKes > 0 ? (grossMarginKes / totalRevenueKes) * 100 : 0;
+
+        return {
+            totalRevenueKes,
+            aiCostKes,
+            grossMarginKes,
+            grossMarginPct,
+            aiCalls,
+            avgAiCostPerCallKes: aiCalls > 0 ? aiCostKes / aiCalls : 0,
+            topFeatures: Array.from(featureMap.values())
+                .sort((a, b) => b.estimatedCostKes - a.estimatedCostKes)
+                .slice(0, 8)
+                .map(feature => ({
+                    ...feature,
+                    estimatedCostKes: Number(feature.estimatedCostKes.toFixed(2))
+                }))
+        };
+    } catch (error) {
+        console.error('Finance summary fetch failed:', error);
+        return defaultSummary;
+    }
+};
+
 export const fetchDashboardStats = async (): Promise<DashboardStats> => {
     try {
+        const now = new Date();
+        const sevenDaysAgo = new Date(now);
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+        const oneDayAgo = new Date(now);
+        oneDayAgo.setDate(oneDayAgo.getDate() - 1);
+
         // 1. User Counts
-        const { count: studentCount } = await supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'LEARNER');
-        const { count: teacherCount } = await supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'TEACHER');
-        const { count: parentCount } = await supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'PARENT');
+        const [
+            { count: studentCount },
+            { count: teacherCount },
+            { count: parentCount },
+            { count: revisionCount },
+            { count: schoolCount },
+            { count: newUsers7d },
+            { count: verifiedUsers }
+        ] = await Promise.all([
+            supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('role', 'LEARNER'),
+            supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('role', 'TEACHER'),
+            supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('role', 'PARENT'),
+            supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('role', 'REVISION'),
+            supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('role', 'SCHOOL'),
+            supabase.from('profiles').select('id', { count: 'exact', head: true }).gte('created_at', sevenDaysAgo.toISOString()),
+            supabase.from('profiles').select('id', { count: 'exact', head: true }).neq('subscription_tier', 'FREE')
+        ]);
 
-        // 2. Pro/Verified Stats (Mocked for now based on implementation plan as we don't have explicit columns yet)
-        // In real app: select count from profiles where is_pro = true
-        // We will assume 10% of users are pro for visual demo if column missing, or check if 'subscription_tier' exists. 
-        // Checking profiles table structure via a broad select in Overview showed basic fields. 
-        // Let's check for specific 'is_pro' or similar if it was added to types/context. 
-        // Context has isPro state but not explicitly saving to DB in the code I saw earlier (it said "Ideally save to DB").
-        // So we will use a heuristic or just mock the *Ratio* but use real *Total* base.
+        const totalStudents = studentCount || 0;
+        const totalTeachers = teacherCount || 0;
+        const totalParents = parentCount || 0;
+        const totalUsers = totalStudents + totalTeachers + totalParents + (revisionCount || 0) + (schoolCount || 0);
+        const activePro = verifiedUsers || 0;
 
-        const totalUsers = (studentCount || 0) + (teacherCount || 0) + (parentCount || 0);
-        const activePro = Math.floor(totalUsers * 0.15);
-        const verifiedUsers = Math.floor(totalUsers * 0.8);
+        // 2. Activity Feed
+        const [{ data: recentActivities, error: activityError }, { data: trendData }, { count: activeToday }] = await Promise.all([
+            supabase
+                .from('activities')
+                .select('id, type, topic, created_at, student_id, details')
+                .order('created_at', { ascending: false })
+                .limit(10),
+            supabase
+                .from('activities')
+                .select('created_at')
+                .order('created_at', { ascending: false })
+                .limit(500),
+            supabase.from('activities').select('id', { count: 'exact', head: true }).gte('created_at', oneDayAgo.toISOString())
+        ]);
 
-        // 3. Activity Feed (Real from activities table)
-        // Note: profiles(...) join requires the FK created in 20260303121500_fix_activities_relationship.sql
-        const { data: recentActivities, error: activityError } = await supabase
-            .from('activities')
-            .select('*, profiles(full_name, role)')
+        const { data: analyticsRows, error: analyticsError } = await supabase
+            .from('analytics_events')
+            .select('id, event_type, event_name, path, created_at')
+            .gte('created_at', sevenDaysAgo.toISOString())
             .order('created_at', { ascending: false })
-            .limit(10);
+            .limit(1000);
 
         if (activityError) {
-            console.warn("Activities fetch failed (likely relationship missing):", activityError.message);
+            console.warn("Activities fetch failed:", activityError.message);
+        }
+        if (analyticsError && import.meta.env.DEV) {
+            console.warn("Analytics events fetch failed:", analyticsError.message);
         }
 
         const recentActivity: FeedItem[] = recentActivities?.map((act: any) => ({
             id: act.id,
-            title: `${act.profiles?.full_name || 'System User'} completed a ${act.type.toLowerCase()}`,
+            title: `${act.student_id || 'System User'} completed a ${String(act.type || 'activity').toLowerCase()}`,
             time: new Date(act.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            type: act.profiles?.role === 'TEACHER' ? 'teacher' : (act.profiles?.role === 'LEARNER' ? 'student' : 'system')
+            type: String(act.type || '').toUpperCase().includes('PAY') ? 'money' : 'student'
         })) || [];
 
-        // 4. Activity Trend (Real-ish: Group by created_at date)
-        // Since we can't do complex group-by mainly in simple client query without RPG, we will just fetch last 100 activities and map dates in JS
-        const { data: trendData } = await supabase
-            .from('activities')
-            .select('created_at')
-            .order('created_at', { ascending: false })
-            .limit(500);
-
         const trendMap = new Array(14).fill(0);
-        const today = new Date();
         trendData?.forEach((d: any) => {
             const date = new Date(d.created_at);
-            const diffTime = Math.abs(today.getTime() - date.getTime());
+            const diffTime = Math.abs(now.getTime() - date.getTime());
             const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
             if (diffDays < 14) {
-                trendMap[13 - diffDays]++; // 13 is today, 0 is 14 days ago
+                trendMap[13 - diffDays]++;
             }
         });
 
+        const analyticsRowsSafe = analyticsRows || [];
+        const pageViews7d = analyticsRowsSafe.filter((row: any) => row.event_type === 'PAGE_VIEW').length;
+        const routeChanges7d = analyticsRowsSafe.filter((row: any) => row.event_type === 'ROUTE_CHANGE').length;
+        const authEvents7d = analyticsRowsSafe.filter((row: any) => row.event_type === 'AUTH_EVENT').length;
 
-        // 5. Financials (Real from transactions)
+        const pageCounts = new Map<string, number>();
+        const authCounts = new Map<string, number>();
+        analyticsRowsSafe.forEach((row: any) => {
+            const path = String(row.path || '/').split('?')[0] || '/';
+            pageCounts.set(path, (pageCounts.get(path) || 0) + 1);
+            const authName = String(row.event_name || 'unknown');
+            authCounts.set(authName, (authCounts.get(authName) || 0) + 1);
+        });
+
+        const topPages = Array.from(pageCounts.entries())
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 6)
+            .map(([path, count]) => ({ path, count }));
+
+        const authBreakdown = Array.from(authCounts.entries())
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 6)
+            .map(([eventName, count]) => ({ eventName, count }));
+
+        const recentAnalyticsEvents = analyticsRowsSafe.slice(0, 8).map((row: any) => ({
+            id: row.id,
+            eventName: row.event_name || 'unknown',
+            eventType: row.event_type || 'unknown',
+            path: row.path || '/',
+            time: new Date(row.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        }));
+
+        // 3. Financials (Real from transactions)
         const { data: transactions } = await supabase.from('transactions').select('amount, status, type');
         const realRevenue = transactions
             ?.filter((t: any) => t.status === 'SUCCESS')
             .reduce((sum: number, t: any) => sum + (Number(t.amount) || 0), 0) || 0;
 
+        // 4. Content inventory
+        const [
+            { count: totalKnowledgeDocs },
+            { count: totalTeacherMaterials },
+            { data: knowledgeRows },
+            { data: schoolMaterialRows },
+        ] = await Promise.all([
+            supabase.from('knowledge_base').select('id', { count: 'exact', head: true }),
+            supabase.from('school_materials').select('id', { count: 'exact', head: true }),
+            supabase.from('knowledge_base').select('subject, type, created_at'),
+            supabase.from('school_materials').select('target_subject, created_at')
+        ]);
+
+        const totalNotes = (knowledgeRows || []).filter((row: any) => row.type === 'NOTES').length;
+        const totalPastPapers = (knowledgeRows || []).filter((row: any) => row.type === 'PAST_PAPER').length;
+        const totalSyllabuses = (knowledgeRows || []).filter((row: any) => row.type === 'SYLLABUS').length;
+
+        const subjectCounts = new Map<string, number>();
+        [...(knowledgeRows || []), ...(schoolMaterialRows || [])].forEach((row: any) => {
+            const subject = String(row.subject || row.target_subject || 'General').trim();
+            if (!subject) return;
+            subjectCounts.set(subject, (subjectCounts.get(subject) || 0) + 1);
+        });
+
+        const topSubjects = Array.from(subjectCounts.entries())
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 6)
+            .map(([subject, count]) => ({ subject, count }));
+
         return {
             totalRevenue: realRevenue,
-            activeTrials: 12, // Still mock or check transactions for verified
-            verifiedUsers: verifiedUsers,
-            activePro: activePro,
-            totalStudents: studentCount || 0,
-            totalTeachers: teacherCount || 0,
-            totalParents: parentCount || 0,
+            activeTrials: 12,
+            verifiedUsers: verifiedUsers || 0,
+            activePro,
+            totalStudents,
+            totalTeachers,
+            totalParents,
+            totalUsers,
+            totalKnowledgeDocs: totalKnowledgeDocs || 0,
+            totalTeacherMaterials: totalTeacherMaterials || 0,
+            totalNotes,
+            totalPastPapers,
+            totalSyllabuses,
+            activeToday: activeToday || 0,
+            newUsers7d: newUsers7d || 0,
+            pageViews7d,
+            routeChanges7d,
+            authEvents7d,
+            topSubjects,
+            topPages,
+            authBreakdown,
             recentActivity,
+            recentAnalyticsEvents,
             activityTrend: trendMap
         };
 
@@ -106,7 +320,22 @@ export const fetchDashboardStats = async (): Promise<DashboardStats> => {
             totalStudents: 0,
             totalTeachers: 0,
             totalParents: 0,
+            totalUsers: 0,
+            totalKnowledgeDocs: 0,
+            totalTeacherMaterials: 0,
+            totalNotes: 0,
+            totalPastPapers: 0,
+            totalSyllabuses: 0,
+            activeToday: 0,
+            newUsers7d: 0,
+            pageViews7d: 0,
+            routeChanges7d: 0,
+            authEvents7d: 0,
+            topSubjects: [],
+            topPages: [],
+            authBreakdown: [],
             recentActivity: [],
+            recentAnalyticsEvents: [],
             activityTrend: new Array(14).fill(0)
         };
     }

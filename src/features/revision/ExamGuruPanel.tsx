@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkles, Send, X, User, CheckSquare, MessageCircle, ChevronRight, Loader, TrendingUp, AlertCircle, PenLine, LogIn, ShieldAlert } from 'lucide-react';
 import { getExamGuruResponse, markCandidateAnswer, getPredictedTopics, PredictedTopic, generatePracticeQuestions, PracticeQuestion, RateLimitError, SystemQuotaError } from '../../services/geminiService';
+import { PlanLimitError } from '../../services/planLimitService';
 
 interface Message {
     id: string;
@@ -10,12 +11,24 @@ interface Message {
     isMarkResult?: boolean;
 }
 
+const formatGuruMessage = (content: string) => content
+    .replace(/^#{1,6}\s*/gm, '')
+    .replace(/\*\*/g, '')
+    .replace(/^\s*[*]\s+/gm, '- ')
+    .trim();
+
+const formatMarkingResult = (content: string) => content
+    .replace(/^#{1,6}\s*/gm, '')
+    .replace(/\*\*/g, '')
+    .replace(/^\s*[*]\s+/gm, '- ')
+    .trim();
+
 const PROMPT_CHIPS = [
-    'How is Biology osmosis marked?',
-    'KCSE Maths P1 structure?',
-    'English essay format for KCSE?',
-    'Chemistry P3 practical tips?',
-    'Time plan for a 3-hour paper?',
+    'Give me a 5-question drill on photosynthesis',
+    'Mark my answer on osmosis',
+    'KCSE Maths Paper 1 hot topics',
+    'Explain this past paper question step by step',
+    'How do I score full marks in English essays?',
 ];
 
 const SUBJECTS = [
@@ -25,10 +38,10 @@ const SUBJECTS = [
     'Computer Studies', 'Home Science', 'Art & Design',
 ];
 
-type PanelMode = 'chat' | 'mark' | 'predict' | 'practice';
+export type PanelMode = 'chat' | 'mark' | 'predict' | 'practice';
 
-export const ExamGuruPanel: React.FC<{ onClose: () => void; onLogin?: () => void }> = ({ onClose, onLogin }) => {
-    const [mode, setMode] = useState<PanelMode>('chat');
+export const ExamGuruPanel: React.FC<{ onClose: () => void; onLogin?: () => void; initialMode?: PanelMode; initialPrompt?: string }> = ({ onClose, onLogin, initialMode = 'chat', initialPrompt = '' }) => {
+    const [mode, setMode] = useState<PanelMode>(initialMode);
     const [rateLimited, setRateLimited] = useState(false);
     const [quotaExceeded, setQuotaExceeded] = useState(false);
 
@@ -37,7 +50,7 @@ export const ExamGuruPanel: React.FC<{ onClose: () => void; onLogin?: () => void
         {
             id: '1',
             role: 'guru',
-            content: "Exam Guru online. Ask me any Biology, Chemistry, Maths, English or other subject question — I'll show you exactly how KNEC marks it and what earns full marks. No vague advice. Just marks.",
+            content: "Exam Guru online. Pick a drill, paste a question, or ask for a marking check. I will stay on the exact paper skill, show what earns marks, and keep the repair conversation on the missed point.",
         }
     ]);
     const [input, setInput] = useState('');
@@ -45,7 +58,7 @@ export const ExamGuruPanel: React.FC<{ onClose: () => void; onLogin?: () => void
     const scrollRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
 
-    // --- Practice Questions state ---
+    // --- Drill Questions state ---
     const [practiceSubject, setPracticeSubject] = useState('');
     const [practiceTopic, setPracticeTopic] = useState('');
     const [practiceExamType, setPracticeExamType] = useState<'KCSE' | 'KPSEA' | 'JSS'>('KCSE');
@@ -114,6 +127,11 @@ export const ExamGuruPanel: React.FC<{ onClose: () => void; onLogin?: () => void
         if (mode === 'chat') setTimeout(() => inputRef.current?.focus(), 300);
     }, [mode]);
 
+    useEffect(() => {
+        setMode(initialMode);
+        if (initialPrompt) setInput(initialPrompt);
+    }, [initialMode, initialPrompt]);
+
     const sendMessage = async (text: string) => {
         if (!text.trim() || isTyping) return;
         const userMsg: Message = { id: Date.now().toString(), role: 'user', content: text.trim() };
@@ -128,6 +146,7 @@ export const ExamGuruPanel: React.FC<{ onClose: () => void; onLogin?: () => void
         } catch (err: any) {
             if (err instanceof RateLimitError) { setRateLimited(true); }
             else if (err instanceof SystemQuotaError) { setQuotaExceeded(true); }
+            else if (err instanceof PlanLimitError) { setMessages(prev => [...prev, { id: (Date.now() + 1).toString(), role: 'guru', content: err.message }]); }
             else { setMessages(prev => [...prev, { id: (Date.now() + 1).toString(), role: 'guru', content: 'Connection issue. Please try again.' }]); }
         } finally {
             setIsTyping(false);
@@ -149,6 +168,7 @@ export const ExamGuruPanel: React.FC<{ onClose: () => void; onLogin?: () => void
         } catch (err: any) {
             if (err instanceof RateLimitError) { setRateLimited(true); }
             else if (err instanceof SystemQuotaError) { setQuotaExceeded(true); }
+            else if (err instanceof PlanLimitError) { setMarkResult(err.message); }
             else { setMarkResult('Marking failed. Please check your connection and try again.'); }
         } finally {
             setIsMarking(false);
@@ -160,6 +180,32 @@ export const ExamGuruPanel: React.FC<{ onClose: () => void; onLogin?: () => void
         setMarkQuestion('');
         setMarkAnswer('');
         setMarkMarks('');
+    };
+
+    const discussMarkingResult = async () => {
+        if (!markResult) return;
+        const question = markQuestion.trim();
+        const answer = markAnswer.trim();
+        const result = formatMarkingResult(markResult);
+        const subject = markSubject || 'this subject';
+        const followUpPrompt = `Continue this marking conversation. Stay on the same topic and do not introduce a new topic until I say I understand.
+
+Subject: ${subject}
+Question:
+${question}
+
+My answer:
+${answer}
+
+Your marking result:
+${result}
+
+Now help me repair only the missed areas. Start with the first lost mark only, explain it in simple terms, show the exact wording that would earn it, then ask me one follow-up question to check if I understand.
+Do not move to a new topic, new example, or new question until the candidate answers this follow-up or explicitly asks to continue.`;
+
+        setMode('chat');
+        setMarkResult(null);
+        await sendMessage(followUpPrompt);
     };
 
     return (
@@ -194,7 +240,7 @@ export const ExamGuruPanel: React.FC<{ onClose: () => void; onLogin?: () => void
                             <h3 className="text-white font-black text-sm">Exam Guru AI</h3>
                             <div className="flex items-center gap-1.5 mt-0.5">
                                 <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
-                                <span className="text-[10px] text-indigo-200 font-bold uppercase tracking-widest">KNEC Expert · Online</span>
+                                <span className="text-[10px] text-indigo-200 font-bold uppercase tracking-widest">KNEC Drill Desk · Online</span>
                             </div>
                         </div>
                     </div>
@@ -206,16 +252,16 @@ export const ExamGuruPanel: React.FC<{ onClose: () => void; onLogin?: () => void
                 {/* Mode Tabs */}
                 <div className="flex bg-slate-900 border-b border-white/5 shrink-0 overflow-x-auto no-scrollbar">
                     <button onClick={() => setMode('chat')} className={`shrink-0 flex-1 flex items-center justify-center gap-1 py-3 text-[9px] font-black uppercase tracking-wider transition-colors min-w-0 px-2 ${ mode === 'chat' ? 'text-white border-b-2 border-indigo-500' : 'text-slate-500 hover:text-slate-300' }`}>
-                        <MessageCircle className="w-3 h-3" /> Ask
+                        <MessageCircle className="w-3 h-3" /> Drill
                     </button>
                     <button onClick={() => setMode('mark')} className={`shrink-0 flex-1 flex items-center justify-center gap-1 py-3 text-[9px] font-black uppercase tracking-wider transition-colors min-w-0 px-2 ${ mode === 'mark' ? 'text-white border-b-2 border-emerald-500' : 'text-slate-500 hover:text-slate-300' }`}>
-                        <CheckSquare className="w-3 h-3" /> Mark Me
+                        <CheckSquare className="w-3 h-3" /> Mark
                     </button>
                     <button onClick={() => setMode('predict')} className={`shrink-0 flex-1 flex items-center justify-center gap-1 py-3 text-[9px] font-black uppercase tracking-wider transition-colors min-w-0 px-2 ${ mode === 'predict' ? 'text-white border-b-2 border-amber-500' : 'text-slate-500 hover:text-slate-300' }`}>
-                        <TrendingUp className="w-3 h-3" /> Hot Topics
+                        <TrendingUp className="w-3 h-3" /> High-Yield
                     </button>
                     <button onClick={() => setMode('practice')} className={`shrink-0 flex-1 flex items-center justify-center gap-1 py-3 text-[9px] font-black uppercase tracking-wider transition-colors min-w-0 px-2 ${ mode === 'practice' ? 'text-white border-b-2 border-rose-500' : 'text-slate-500 hover:text-slate-300' }`}>
-                        <PenLine className="w-3 h-3" /> Practice
+                        <PenLine className="w-3 h-3" /> Drill Set
                     </button>
                 </div>
 
@@ -316,7 +362,7 @@ export const ExamGuruPanel: React.FC<{ onClose: () => void; onLogin?: () => void
                                             ? 'bg-slate-800/80 text-slate-100 rounded-tl-none border border-white/5'
                                             : 'bg-indigo-600 text-white rounded-tr-none'
                                     }`}>
-                                        {msg.content}
+                                        {msg.role === 'guru' ? formatGuruMessage(msg.content) : msg.content}
                                     </div>
                                 </div>
                             ))}
@@ -347,7 +393,7 @@ export const ExamGuruPanel: React.FC<{ onClose: () => void; onLogin?: () => void
                                     value={input}
                                     onChange={e => setInput(e.target.value)}
                                     onKeyDown={e => e.key === 'Enter' && sendMessage(input)}
-                                    placeholder="Ask about any subject or exam strategy..."
+                                    placeholder="Type a topic, mark scheme question, or paper problem..."
                                     className="w-full bg-slate-900 border-2 border-slate-800 focus:border-indigo-600 rounded-2xl pl-4 pr-12 py-3.5 text-sm font-medium text-white placeholder:text-slate-600 outline-none transition-all"
                                 />
                                 <button
@@ -382,23 +428,13 @@ export const ExamGuruPanel: React.FC<{ onClose: () => void; onLogin?: () => void
                                     </button>
                                 </div>
                                 <div className="bg-slate-900 border border-white/10 rounded-2xl p-5 text-[13px] text-slate-200 leading-relaxed whitespace-pre-wrap font-medium">
-                                    {markResult}
+                                    {formatMarkingResult(markResult)}
                                 </div>
                                 <button
-                                    onClick={() => {
-                                        // Send to chat for follow-up questions
-                                        setMessages(prev => [...prev, {
-                                            id: Date.now().toString(),
-                                            role: 'guru',
-                                            content: `📝 Marking result for your ${markSubject || 'answer'}:\n\n${markResult}`,
-                                            isMarkResult: true
-                                        }]);
-                                        setMode('chat');
-                                        resetMark();
-                                    }}
+                                    onClick={discussMarkingResult}
                                     className="w-full py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-sm transition-colors"
                                 >
-                                    Discuss with Guru →
+                                    Repair Missed Marks with Guru
                                 </button>
                             </div>
                         ) : (
@@ -478,7 +514,7 @@ export const ExamGuruPanel: React.FC<{ onClose: () => void; onLogin?: () => void
                                     ) : (
                                         <>
                                             <CheckSquare className="w-4 h-4" />
-                                            Mark My Answer
+                                            Mark Answer
                                         </>
                                     )}
                                 </button>
@@ -539,7 +575,7 @@ export const ExamGuruPanel: React.FC<{ onClose: () => void; onLogin?: () => void
                             {isPredicting ? (
                                 <><Loader className="w-4 h-4 animate-spin" /> Analysing patterns...</>
                             ) : (
-                                <><TrendingUp className="w-4 h-4" /> Generate Hot Topics</>
+                                <><TrendingUp className="w-4 h-4" /> Generate High-Yield Topics</>
                             )}
                         </button>
 
@@ -582,7 +618,7 @@ export const ExamGuruPanel: React.FC<{ onClose: () => void; onLogin?: () => void
                                             }}
                                             className="mt-2 text-[10px] font-black text-amber-400 hover:text-amber-300 flex items-center gap-1 transition-colors"
                                         >
-                                            Ask Guru about this <ChevronRight className="w-3 h-3" />
+                                            Drill this topic <ChevronRight className="w-3 h-3" />
                                         </button>
                                     </div>
                                 ))}
@@ -596,7 +632,7 @@ export const ExamGuruPanel: React.FC<{ onClose: () => void; onLogin?: () => void
                     <div className="flex-1 overflow-y-auto p-5 space-y-4">
                         <div className="bg-rose-900/20 border border-rose-800/40 rounded-2xl p-4">
                             <p className="text-rose-300 text-xs font-bold leading-relaxed">
-                                ✍️ Generate real KCSE-style practice questions. Try to answer them before revealing the marking guide.
+                                ✍️ Generate real KCSE-style drill questions. Try to answer them before revealing the marking guide.
                             </p>
                         </div>
 
@@ -624,7 +660,7 @@ export const ExamGuruPanel: React.FC<{ onClose: () => void; onLogin?: () => void
 
                         <button onClick={handleGenerate} disabled={!practiceSubject || isGenerating}
                             className={`w-full py-3.5 rounded-2xl font-black text-sm flex items-center justify-center gap-2 transition-all ${practiceSubject && !isGenerating ? 'bg-rose-600 hover:bg-rose-500 text-white' : 'bg-slate-800 text-slate-600 cursor-not-allowed'}`}>
-                            {isGenerating ? <><Loader className="w-4 h-4 animate-spin" /> Generating...</> : <><PenLine className="w-4 h-4" /> Generate 3 Questions</>}
+                            {isGenerating ? <><Loader className="w-4 h-4 animate-spin" /> Generating...</> : <><PenLine className="w-4 h-4" /> Generate Drill</>}
                         </button>
 
                         {generateError && (
@@ -662,7 +698,7 @@ export const ExamGuruPanel: React.FC<{ onClose: () => void; onLogin?: () => void
                                             )}
                                             <button onClick={() => { sendMessage(`Explain this ${practiceExamType} ${practiceSubject} question in detail and show how to get full marks: "${q.text}"`); setMode('chat'); }}
                                                 className="text-[10px] font-black text-indigo-400 hover:text-indigo-300 flex items-center gap-1 transition-colors">
-                                                Ask Guru to explain <ChevronRight className="w-3 h-3" />
+                                                Explain this drill <ChevronRight className="w-3 h-3" />
                                             </button>
                                         </div>
                                     </div>

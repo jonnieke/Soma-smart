@@ -23,6 +23,8 @@ import heroBannerImg from '../assets/images/soma_smart_hero_graphic_with_teacher
 import heroLearnerImg from '../assets/images/hero_learner_emotional.png';
 import heroTeacherImg from '../assets/images/hero_teacher_emotional.png';
 import heroScienceLabImg from '../assets/images/hero_science_lab.png';
+import heroScienceLabAvif from '../assets/images/hero_science_lab.avif';
+import heroScienceLabWebp from '../assets/images/hero_science_lab.webp';
 import stepScanImg from '../assets/images/step_scan.png';
 import stepExplainImg from '../assets/images/step_explain.png';
 import stepQuizImg from '../assets/images/step_quiz.png';
@@ -57,6 +59,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
     const [showContact, setShowContact] = useState(false);
     const [showLogin, setShowLogin] = useState(false);
     const [showLogoutModal, setShowLogoutModal] = useState(false);
+    const [showNavigationGuide, setShowNavigationGuide] = useState(false);
     const [isClaimingOffer, setIsClaimingOffer] = useState(false);
     const [loginTab, setLoginTab] = useState<'STUDENT' | 'TEACHER' | 'SCHOOL'>('STUDENT');
 
@@ -79,6 +82,34 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
             // Non-blocking analytics
         }
     };
+
+    React.useEffect(() => {
+        try {
+            if (localStorage.getItem('soma_seen_navigation_guide') !== 'true') {
+                window.setTimeout(() => setShowNavigationGuide(true), 900);
+            }
+        } catch (_) {
+            window.setTimeout(() => setShowNavigationGuide(true), 900);
+        }
+    }, []);
+
+    const closeNavigationGuide = () => {
+        try {
+            localStorage.setItem('soma_seen_navigation_guide', 'true');
+        } catch (_) {
+            // Non-blocking local storage
+        }
+        setShowNavigationGuide(false);
+    };
+
+    React.useEffect(() => {
+        if (!showNavigationGuide) return;
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if (event.key === 'Escape') closeNavigationGuide();
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [showNavigationGuide]);
 
     const handleGenerateAnswer = async () => {
         if (!questionInput.trim()) return;
@@ -238,7 +269,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
         }
 
         setRole(UserRole.LEARNER);
-        navigate('/learner', { state: { targetTab: 'RESOURCES' } });
+        navigate('/learner', { state: { targetTab: 'RESOURCES', targetIntent: 'official_library' } });
     };
 
     const handleGetStarted = () => {
@@ -246,14 +277,126 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
         setShowRegistration(true);
     };
 
-    const handleLearnerQuickStart = (targetTab?: string) => {
+    const handleLearnerQuickStart = (targetTab?: string, targetIntent?: string) => {
         if (!isRegistered && role === UserRole.NONE) {
             startGuestSession();
         }
 
         setRole(UserRole.LEARNER);
-        navigate('/learner', targetTab ? { state: { targetTab } } : undefined);
+        navigate('/learner', targetTab ? { state: { targetTab, targetIntent } } : undefined);
     };
+
+    const scrollToFeatureLauncher = () => {
+        trackFunnelEvent('feature_launcher_nav_clicked', { source: 'landing_header' });
+        document.getElementById('feature-launcher')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    };
+
+    const handleFeatureLaunch = (feature: string, action: () => void) => {
+        trackFunnelEvent('feature_launcher_opened', { feature, source: 'landing_feature_launcher' });
+        action();
+    };
+
+    const navigationGuideItems = [
+        {
+            title: 'Learners',
+            description: 'Ask Akili, open notes, revise with past papers, take drills, and listen to lessons.',
+            icon: GraduationCap,
+            cta: 'Open Learner',
+            action: () => handleRoleSelect(UserRole.LEARNER),
+            tone: 'bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-950/40 dark:text-indigo-200 dark:border-indigo-800'
+        },
+        {
+            title: 'Teachers',
+            description: 'Create notes, lesson plans, homework, Darasa lessons, and marking feedback.',
+            icon: School,
+            cta: 'Open Teacher',
+            action: () => handleRoleSelect(UserRole.TEACHER),
+            tone: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-200 dark:border-emerald-800'
+        },
+        {
+            title: 'Parents',
+            description: 'Track learner effort, view progress proof, and manage paid access.',
+            icon: Users,
+            cta: 'Open Parent',
+            action: () => handleRoleSelect(UserRole.PARENT),
+            tone: 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950/40 dark:text-purple-200 dark:border-purple-800'
+        },
+        {
+            title: 'Library',
+            description: 'Browse official free notes, syllabus guides, and KCSE/KPSEA past papers.',
+            icon: BookOpen,
+            cta: 'Open Library',
+            action: handleLibraryAccess,
+            tone: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-200 dark:border-amber-800'
+        }
+    ];
+
+    const learnerFeatureLaunchers = [
+        {
+            title: 'Ask Akili',
+            kicker: 'Instant Doubt Solver',
+            description: 'For the "I am stuck" moment: quick explanation, step-by-step help, and follow-up practice.',
+            icon: MessageCircle,
+            cta: 'Ask now',
+            accent: 'bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-950/40 dark:text-indigo-200 dark:border-indigo-800',
+            button: 'bg-indigo-600 hover:bg-indigo-700 text-white',
+            action: () => handleLearnerQuickStart('SMART_TUTOR', 'ask_akili')
+        },
+        {
+            title: 'Exam Prep',
+            kicker: 'KCSE & KPSEA Drills',
+            description: 'Past-paper practice, examiner-style feedback, weak-area repair, and topic drills that do not stop at answers.',
+            icon: Target,
+            cta: 'Start prep',
+            accent: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-200 dark:border-amber-800',
+            button: 'bg-amber-500 hover:bg-amber-600 text-white',
+            action: () => handleLearnerQuickStart('SUBJECTS', 'exam_prep_papers')
+        },
+        {
+            title: 'Listen & Learn',
+            kicker: 'Audio Revision',
+            description: 'Turn notes into listening lessons for commutes, chores, revision breaks, and low-reading-energy days.',
+            icon: Headphones,
+            cta: 'Listen',
+            accent: 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/40 dark:text-rose-200 dark:border-rose-800',
+            button: 'bg-rose-600 hover:bg-rose-700 text-white',
+            action: () => handleLearnerQuickStart('TALKBACK', 'listen_and_learn')
+        },
+        {
+            title: 'Library',
+            kicker: 'Official Free Materials',
+            description: 'Open notes, syllabuses as guides, and past papers with grade, subject, and source filters.',
+            icon: BookOpen,
+            cta: 'Open library',
+            accent: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-200 dark:border-emerald-800',
+            button: 'bg-emerald-600 hover:bg-emerald-700 text-white',
+            action: handleLibraryAccess
+        }
+    ];
+
+    const teacherFeatureLaunchers = [
+        {
+            title: 'Create Notes & Lessons',
+            description: 'Generate class-ready notes, lesson flow, quizzes, and recap material from one teaching goal.',
+            icon: FileText,
+            cta: 'Create content',
+            action: () => navigate('/teacher/notes')
+        },
+        {
+            title: 'Darasa Mode',
+            description: 'Record or run a lesson, then turn it into notes, recap, questions, and learner follow-up.',
+            icon: Mic,
+            cta: 'Open Darasa',
+            action: () => navigate('/teacher/darasa')
+        },
+        {
+            title: 'Marking Engine',
+            description: 'Mark learner work, show lost marks clearly, and send repair feedback that points to the next action.',
+            icon: CheckCheck,
+            cta: 'Mark work',
+            action: () => navigate('/teacher/marking')
+        }
+    ];
 
     const handleRegistrationSuccess = () => {
         setShowRegistration(false);
@@ -444,6 +587,18 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                         {/* Desktop Nav */}
                         <nav aria-label="Main Navigation" className="hidden md:flex items-center gap-8">
                             <button
+                                onClick={() => setShowNavigationGuide(true)}
+                                className="text-slate-600 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 font-bold transition-colors text-sm flex items-center gap-1"
+                            >
+                                <MapPin className="w-3.5 h-3.5" /> Guide
+                            </button>
+                            <button
+                                onClick={scrollToFeatureLauncher}
+                                className="text-slate-600 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 font-bold transition-colors text-sm flex items-center gap-1"
+                            >
+                                <Sparkles className="w-3.5 h-3.5" /> Features
+                            </button>
+                            <button
                                 onClick={() => handleRoleSelect(UserRole.TEACHER)}
                                 className="text-emerald-700 dark:text-emerald-300 hover:text-emerald-800 dark:hover:text-emerald-200 font-bold transition-colors text-sm flex items-center gap-1.5"
                             >
@@ -509,6 +664,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                     <Users className="w-5 h-5 text-purple-500" /> Parent
                                 </button>
                                 <div className="h-px bg-slate-100 dark:bg-slate-800 my-2" />
+                                <button onClick={() => { setShowNavigationGuide(true); setMobileMenuOpen(false); }} className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 font-medium">
+                                    <MapPin className="w-5 h-5 text-indigo-500" /> Quick Guide
+                                </button>
+                                <button onClick={() => { scrollToFeatureLauncher(); setMobileMenuOpen(false); }} className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 font-medium">
+                                    <Sparkles className="w-5 h-5 text-indigo-500" /> Features
+                                </button>
                                 <button onClick={() => { handleLibraryAccess(); setMobileMenuOpen(false); }} className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 font-medium">
                                     <BookOpen className="w-5 h-5 text-emerald-500" /> Library
                                 </button>
@@ -537,7 +698,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
                     {/* Top two-column: Copy + Image */}
-                    <div className="flex flex-col lg:flex-row items-center gap-10 lg:gap-16 pt-20 pb-12 lg:pt-28 lg:pb-16">
+                    <div className="flex flex-col lg:flex-row items-center gap-8 lg:gap-16 pt-12 pb-10 sm:pt-20 sm:pb-12 lg:pt-28 lg:pb-16">
 
                         {/* LEFT: Urgent copy + Solve It chat */}
                         <motion.div
@@ -548,18 +709,18 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                 <Star className="w-3 h-3 fill-current" /> For Learners &amp; Teachers
                             </div>
 
-                            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-slate-900 dark:text-white tracking-tight leading-[1.1] mb-5">
-                                That question you've been<br />stuck on since 8pm?
-                                <span className="block text-indigo-600 dark:text-indigo-400 mt-2">Let's solve it now.</span>
+                            <h1 className="text-3xl sm:text-5xl lg:text-6xl font-bold text-slate-900 dark:text-white tracking-tight leading-[1.1] mb-5">
+                                Stuck on homework or revision?
+                                <span className="block text-indigo-600 dark:text-indigo-400 mt-2">Get unstuck in minutes.</span>
                             </h1>
-                            <p className="text-lg text-slate-600 dark:text-slate-400 font-medium leading-relaxed mb-8 max-w-lg">
-                                Instant step-by-step answers, audio explanations &amp; revision tools — every KCSE, KPSEA and CBC subject. No waiting. No judgment.
+                            <p className="text-base sm:text-lg text-slate-600 dark:text-slate-400 font-medium leading-relaxed mb-6 sm:mb-8 max-w-lg">
+                                Somo Smart explains the method, checks understanding with drills, reads lessons aloud, and gives parents progress proof - built around Kenyan exams and CBC learning.
                             </p>
 
                             {/* Solve It chat window */}
                             <div className="relative mb-5">
-                                <div className="flex items-center bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 rounded-2xl shadow-lg p-2.5 focus-within:border-indigo-400 dark:focus-within:border-indigo-600 transition-all">
-                                    <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center shrink-0 mr-3">
+                                <div className="flex flex-col sm:flex-row sm:items-center bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 rounded-2xl shadow-lg p-2.5 focus-within:border-indigo-400 dark:focus-within:border-indigo-600 transition-all">
+                                    <div className="hidden sm:flex w-10 h-10 bg-indigo-600 rounded-xl items-center justify-center shrink-0 mr-3">
                                         <Sparkles className="w-5 h-5 text-white" />
                                     </div>
                                     <input
@@ -568,11 +729,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                         onChange={(e) => { setQuestionInput(e.target.value); if (showMockAnswer) setShowMockAnswer(false); }}
                                         onKeyDown={(e) => { if (e.key === 'Enter') handleGenerateAnswer(); }}
                                         placeholder="Type your question... e.g. Solve 3x + 7 = 22"
-                                        className="flex-1 min-w-0 bg-transparent border-none focus:outline-none text-slate-800 dark:text-slate-200 placeholder-slate-400 text-base font-medium pr-2"
+                                        className="w-full flex-1 min-w-0 bg-transparent border-none focus:outline-none text-slate-800 dark:text-slate-200 placeholder-slate-400 text-base font-medium pr-2 py-2 sm:py-0"
                                     />
                                     <button
                                         onClick={handleGenerateAnswer}
-                                        className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 sm:px-6 py-3 rounded-xl font-bold text-sm shadow-md transition-all hover:scale-[1.02] active:scale-[0.98] whitespace-nowrap flex items-center gap-2 shrink-0"
+                                        className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white px-4 sm:px-6 py-3 rounded-xl font-bold text-sm shadow-md transition-all hover:scale-[1.02] active:scale-[0.98] whitespace-nowrap flex items-center justify-center gap-2 shrink-0"
                                     >
                                         Solve It <ArrowRight className="w-4 h-4" />
                                     </button>
@@ -635,7 +796,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                                                 }}
                                                                 className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-lg text-xs font-black transition-colors flex items-center justify-center gap-1 shadow-md shadow-indigo-200"
                                                             >
-                                                                Practice 5 Questions <ArrowRight className="w-3 h-3" />
+                                                                Start 5-Question Drill <ArrowRight className="w-3 h-3" />
                                                             </button>
 
                                                             <button
@@ -680,9 +841,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                             </div>
 
                             <div className="flex flex-wrap gap-x-5 gap-y-3 text-sm text-slate-500 dark:text-slate-400">
-                                <div className="flex items-center gap-1.5"><CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0" /> Try for Free — then KES 20/day</div>
-                                <div className="flex items-center gap-1.5"><CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0" /> Notes and past papers</div>
-                                <div className="flex items-center gap-1.5"><CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0" /> Teacher workspace included</div>
+                                <div className="flex items-center gap-1.5"><CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0" /> Free start, KES 20/day when ready</div>
+                                <div className="flex items-center gap-1.5"><CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0" /> Official notes and past papers</div>
+                                <div className="flex items-center gap-1.5"><CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0" /> Parent proof and teacher tools</div>
                             </div>
                             <div className="mt-6 flex flex-col sm:flex-row gap-3">
                                 <button
@@ -699,42 +860,51 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                 </button>
                             </div>
 
-                            <div className="hidden">
-                                <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500 mb-2">First Time Here?</p>
+                            <div className="mt-5 sm:mt-6 rounded-2xl border border-slate-200 bg-white/80 p-3 sm:p-4 shadow-sm backdrop-blur dark:border-slate-700 dark:bg-slate-800/70">
+                                <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400 mb-2">First time here?</p>
                                 <h3 className="text-sm font-black text-slate-900 dark:text-white mb-3">Choose what you need now</h3>
                                 <div className="grid grid-cols-2 gap-2">
                                     <button
-                                        onClick={() => handleLearnerQuickStart('SMART_TUTOR')}
+                                        onClick={() => handleLearnerQuickStart('SMART_TUTOR', 'ask_akili')}
                                         className="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 px-3 py-2.5 text-left hover:border-indigo-300 dark:hover:border-indigo-600 transition-colors"
                                     >
                                         <p className="text-xs font-black text-slate-800 dark:text-slate-100">Ask Akili</p>
                                         <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400">Stuck now</p>
                                     </button>
                                     <button
-                                        onClick={() => handleLearnerQuickStart('RESOURCES')}
+                                        onClick={() => handleLearnerQuickStart('RESOURCES', 'official_library')}
                                         className="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 px-3 py-2.5 text-left hover:border-blue-300 dark:hover:border-blue-600 transition-colors"
                                     >
                                         <p className="text-xs font-black text-slate-800 dark:text-slate-100">Library</p>
                                         <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400">Notes & papers</p>
                                     </button>
                                     <button
-                                        onClick={() => handleLearnerQuickStart('SUBJECTS')}
+                                        onClick={() => handleLearnerQuickStart('SUBJECTS', 'exam_prep_papers')}
                                         className="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 px-3 py-2.5 text-left hover:border-orange-300 dark:hover:border-orange-600 transition-colors"
                                     >
                                         <p className="text-xs font-black text-slate-800 dark:text-slate-100">Exam Prep</p>
-                                        <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400">Practice fast</p>
+                                        <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400">Past paper drills</p>
                                     </button>
                                     <button
-                                        onClick={() => handleLearnerQuickStart('TALKBACK')}
+                                        onClick={() => handleLearnerQuickStart('TALKBACK', 'listen_and_learn')}
                                         className="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 px-3 py-2.5 text-left hover:border-pink-300 dark:hover:border-pink-600 transition-colors"
                                     >
-                                        <p className="text-xs font-black text-slate-800 dark:text-slate-100">Talk &amp; Play</p>
+                                        <p className="text-xs font-black text-slate-800 dark:text-slate-100">Listen &amp; Learn</p>
                                         <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400">Audio learning</p>
                                     </button>
                                 </div>
+                                <button
+                                    onClick={() => {
+                                        trackFunnelEvent('navigation_guide_opened', { source: 'hero_quick_start' });
+                                        setShowNavigationGuide(true);
+                                    }}
+                                    className="mt-3 inline-flex items-center gap-1 text-[11px] font-black text-indigo-700 hover:text-indigo-900 dark:text-indigo-300 dark:hover:text-indigo-100"
+                                >
+                                    Not sure where to start? Open the 30-second guide <ArrowRight className="h-3.5 w-3.5" />
+                                </button>
                             </div>
                             <p className="mt-2 text-xs font-semibold text-emerald-700 dark:text-emerald-300">
-                                Teachers: generate schemes, lessons, quizzes, and marking guides in minutes.
+                                Teachers: cut prep and marking time with lesson notes, schemes, quizzes, Darasa mode, and marking guides.
                             </p>
                         </motion.div>
 
@@ -744,15 +914,21 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                             className="flex-1 w-full lg:max-w-[520px] relative"
                         >
                             <div className="relative rounded-3xl overflow-hidden shadow-2xl border border-slate-200 dark:border-slate-700">
-                                <img
-                                    src={heroScienceLabImg}
-                                    alt="Kenyan students studying in a science laboratory"
-                                    fetchPriority="high"
-                                    loading="eager"
-                                    decoding="async"
-                                    className="w-full h-auto object-cover"
-                                    style={{ maxHeight: '480px' }}
-                                />
+                                <picture>
+                                    <source srcSet={heroScienceLabAvif} type="image/avif" />
+                                    <source srcSet={heroScienceLabWebp} type="image/webp" />
+                                    <img
+                                        src={heroScienceLabImg}
+                                        alt="Kenyan students studying in a science laboratory"
+                                        fetchPriority="high"
+                                        loading="eager"
+                                        decoding="async"
+                                        width={768}
+                                        height={768}
+                                        className="w-full h-auto object-cover"
+                                        style={{ maxHeight: '480px' }}
+                                    />
+                                </picture>
                                 {/* Subtle overlay gradient at bottom */}
                                 <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-slate-900/60 to-transparent" />
                                 {/* Solution-based proof pill on image */}
@@ -862,6 +1038,135 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                     </motion.div>
                 </div>
             </section>
+
+            {/* --- FEATURE LAUNCHER --- */}
+            <section id="feature-launcher" className="py-16 bg-white dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 transition-colors scroll-mt-24">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6 mb-10">
+                        <div>
+                            <div className="inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.2em] text-indigo-700 dark:border-indigo-800 dark:bg-indigo-950/50 dark:text-indigo-200">
+                                <Sparkles className="h-3.5 w-3.5" /> Window shop the platform
+                            </div>
+                            <h2 className="mt-4 text-3xl md:text-4xl font-black tracking-tight text-slate-950 dark:text-white">
+                                Choose the problem. Somo opens the right tool.
+                            </h2>
+                            <p className="mt-3 max-w-2xl text-base font-medium leading-relaxed text-slate-600 dark:text-slate-300">
+                                From a stuck learner to a busy teacher or a parent checking progress, every path leads to a working feature, not a brochure page.
+                            </p>
+                        </div>
+                        <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-800 dark:bg-slate-900">
+                            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">Fast learner path</p>
+                            <p className="mt-1 text-sm font-bold text-slate-800 dark:text-slate-100">
+                                Notes &rarr; Ask Akili &rarr; Drill &rarr; Listen &rarr; Progress proof
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="mb-4 flex items-center justify-between gap-3">
+                        <h3 className="text-sm font-black uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Learner quick starts</h3>
+                        <button
+                            onClick={() => handleFeatureLaunch('learner_workspace', () => handleRoleSelect(UserRole.LEARNER))}
+                            className="hidden sm:inline-flex items-center gap-2 text-sm font-black text-indigo-700 hover:text-indigo-900 dark:text-indigo-300 dark:hover:text-indigo-100"
+                        >
+                            Open full learner workspace <ArrowRight className="h-4 w-4" />
+                        </button>
+                    </div>
+
+                    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                        {learnerFeatureLaunchers.map((feature) => {
+                            const Icon = feature.icon;
+                            return (
+                                <article
+                                    key={feature.title}
+                                    className="group flex min-h-[260px] flex-col rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:-translate-y-1 hover:shadow-xl dark:border-slate-800 dark:bg-slate-900"
+                                >
+                                    <div className={`mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl border ${feature.accent}`}>
+                                        <Icon className="h-6 w-6" />
+                                    </div>
+                                    <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">{feature.kicker}</p>
+                                    <h4 className="mt-2 text-xl font-black text-slate-950 dark:text-white">{feature.title}</h4>
+                                    <p className="mt-3 flex-1 text-sm font-medium leading-relaxed text-slate-600 dark:text-slate-300">{feature.description}</p>
+                                    <button
+                                        onClick={() => handleFeatureLaunch(feature.title, feature.action)}
+                                        className={`mt-5 inline-flex min-h-[42px] items-center justify-center gap-2 rounded-xl px-4 text-sm font-black transition-all ${feature.button}`}
+                                    >
+                                        {feature.cta} <ArrowRight className="h-4 w-4" />
+                                    </button>
+                                </article>
+                            );
+                        })}
+                    </div>
+
+                    <div className="mt-10 grid gap-5 lg:grid-cols-[1.5fr_1fr]">
+                        <div className="rounded-3xl border border-emerald-200 bg-emerald-50/70 p-5 dark:border-emerald-800 dark:bg-emerald-950/25">
+                            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                                <div>
+                                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-700 dark:text-emerald-300">Teacher productivity</p>
+                                    <h3 className="mt-2 text-2xl font-black text-slate-950 dark:text-white">Plan, teach, mark, and follow up faster.</h3>
+                                    <p className="mt-2 max-w-2xl text-sm font-medium leading-relaxed text-slate-700 dark:text-slate-300">
+                                        Teachers can start from the work they need done today: create a lesson, run Darasa mode, or mark learner work with useful feedback.
+                                    </p>
+                                </div>
+                                <button
+                                    onClick={() => handleFeatureLaunch('teacher_workspace', () => handleRoleSelect(UserRole.TEACHER))}
+                                    className="min-h-[44px] rounded-xl bg-emerald-700 px-5 text-sm font-black text-white transition-colors hover:bg-emerald-800"
+                                >
+                                    Teacher workspace
+                                </button>
+                            </div>
+                            <div className="mt-5 grid gap-3 md:grid-cols-3">
+                                {teacherFeatureLaunchers.map((feature) => {
+                                    const Icon = feature.icon;
+                                    return (
+                                        <button
+                                            key={feature.title}
+                                            onClick={() => handleFeatureLaunch(feature.title, feature.action)}
+                                            className="rounded-2xl border border-emerald-200 bg-white p-4 text-left transition-all hover:-translate-y-0.5 hover:border-emerald-400 hover:shadow-md dark:border-emerald-800 dark:bg-slate-900 dark:hover:border-emerald-500"
+                                        >
+                                            <Icon className="h-6 w-6 text-emerald-700 dark:text-emerald-300" />
+                                            <h4 className="mt-3 text-sm font-black text-slate-950 dark:text-white">{feature.title}</h4>
+                                            <p className="mt-2 min-h-[60px] text-xs font-medium leading-relaxed text-slate-600 dark:text-slate-300">{feature.description}</p>
+                                            <span className="mt-3 inline-flex items-center gap-1 text-xs font-black text-emerald-700 dark:text-emerald-300">
+                                                {feature.cta} <ArrowRight className="h-3.5 w-3.5" />
+                                            </span>
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </div>
+
+                        <div className="grid gap-5">
+                            <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5 dark:border-slate-800 dark:bg-slate-900">
+                                <ShieldCheck className="h-7 w-7 text-slate-700 dark:text-slate-200" />
+                                <h3 className="mt-3 text-xl font-black text-slate-950 dark:text-white">Parent proof</h3>
+                                <p className="mt-2 text-sm font-medium leading-relaxed text-slate-600 dark:text-slate-300">
+                                    Parents can see effort, practice, weak areas, and whether the paid plan is being used for real study.
+                                </p>
+                                <button
+                                    onClick={() => handleFeatureLaunch('parent_dashboard', () => navigate('/parent'))}
+                                    className="mt-4 inline-flex min-h-[42px] items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 text-sm font-black text-white hover:bg-slate-800 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-100"
+                                >
+                                    View parent dashboard <ArrowRight className="h-4 w-4" />
+                                </button>
+                            </div>
+                            <div className="rounded-3xl border border-indigo-200 bg-indigo-50 p-5 dark:border-indigo-800 dark:bg-indigo-950/30">
+                                <CreditCard className="h-7 w-7 text-indigo-700 dark:text-indigo-300" />
+                                <h3 className="mt-3 text-xl font-black text-slate-950 dark:text-white">Simple plans and credits</h3>
+                                <p className="mt-2 text-sm font-medium leading-relaxed text-slate-600 dark:text-slate-300">
+                                    Start small, add credits when needed, and block duplicate payments when a plan is already active.
+                                </p>
+                                <button
+                                    onClick={() => handleFeatureLaunch('pricing', () => navigate('/pricing'))}
+                                    className="mt-4 inline-flex min-h-[42px] items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 text-sm font-black text-white hover:bg-indigo-700"
+                                >
+                                    See pricing <ArrowRight className="h-4 w-4" />
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
             {false && (
             <>
             {/* --- PRESTIGE TICKER --- */}
@@ -909,7 +1214,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                     Meet your powerful new Exam Assistant.
                                 </h2>
                                 <p className="text-slate-300 text-lg md:text-xl font-medium max-w-2xl leading-relaxed">
-                                    Crush your KCSE & KPSEA exams with instant access to verified past papers, complete with auto-generated, step-by-step solutions mapping to KNEC rubrics.
+                                    Practice with past papers, get examiner-style explanations, repair weak topics, and build confidence before KCSE, KPSEA, and school exams.
                                 </p>
                             </div>
 
@@ -918,7 +1223,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                     onClick={() => navigate('/revision')}
                                     className="bg-white text-slate-900 hover:bg-slate-50 font-bold text-lg px-8 py-5 rounded-xl shadow-lg hover:-translate-y-1 transition-all flex items-center gap-3"
                                 >
-                                    Try it now <ChevronRight className="w-6 h-6" />
+                                    Start exam prep <ChevronRight className="w-6 h-6" />
                                 </button>
                             </div>
                         </div>
@@ -936,7 +1241,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                         <h2 className="text-3xl md:text-4xl font-bold text-slate-900 dark:text-white tracking-tight">
                             Kenyan students <span className="text-indigo-600 dark:text-indigo-400">are already winning</span>
                         </h2>
-                        <p className="text-slate-500 dark:text-slate-400 mt-3 text-base font-medium">No tutors. No study groups. Just Somo Smart — at midnight, before exams, anywhere.</p>
+                        <p className="text-slate-500 dark:text-slate-400 mt-3 text-base font-medium">Support for the late-night stuck moment, exam pressure, and daily practice between classes.</p>
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -944,29 +1249,29 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                             {
                                 quote: "I used to fail Chemistry consistently. After using Somo Smart for two weeks before my mid-term, I got a B+. The step-by-step mole calculations finally made sense.",
                                 name: "Kevin M.",
-                                tag: "Form 3 · Alliance High",
-                                emoji: "🧪",
+                                tag: "Form 3",
+                                emoji: "C",
                                 color: "indigo"
                             },
                             {
-                                quote: "It's honestly better than my physics teacher sometimes. I type the question from the past paper, it breaks it down, then asks me questions back. My KCSE mocks improved by 14 marks.",
+                                quote: "I type a question from a past paper, it breaks it down, then asks me follow-up questions. My KCSE mocks improved by 14 marks.",
                                 name: "Fatuma A.",
-                                tag: "Form 4 · Nairobi Girls",
-                                emoji: "⚡",
+                                tag: "Form 4",
+                                emoji: "P",
                                 color: "emerald"
                             },
                             {
                                 quote: "I'm in Form 2 and struggle with English essays. Somo Smart helped me understand how to structure arguments. My teacher noticed the improvement without me even telling her I was using it.",
                                 name: "Brian O.",
-                                tag: "Form 2 · Kisumu Day",
-                                emoji: "✍️",
+                                tag: "Form 2",
+                                emoji: "E",
                                 color: "purple"
                             },
                             {
                                 quote: "The voice feature helps me learn and solve problems. It also helps me improve on oral conversation.",
                                 name: "Gabu",
-                                tag: "Grade 7 · CBC",
-                                emoji: "🎙️",
+                                tag: "Grade 7 CBC",
+                                emoji: "V",
                                 color: "pink"
                             }
                         ].map(({ quote, name, tag, emoji, color }) => (
@@ -1010,7 +1315,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                             <Sparkles className="w-4 h-4" /> Zero Friction
                         </div>
                         <h2 className="text-3xl md:text-5xl font-bold text-slate-900 dark:text-white mb-6 tracking-tight">Learning Made <span className="text-blue-600 dark:text-blue-400">Simple</span></h2>
-                        <p className="text-slate-600 dark:text-slate-400 text-lg font-medium max-w-2xl mx-auto">Get from a confused student to a subject master in 4 incredibly easy steps.</p>
+                        <p className="text-slate-600 dark:text-slate-400 text-lg font-medium max-w-2xl mx-auto">Move from confusion to practice in four steps: ask, understand, test yourself, then track progress.</p>
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 relative z-10">
@@ -1028,8 +1333,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                             <div className="w-14 h-14 bg-purple-50 dark:bg-purple-900/40 text-purple-600 dark:text-purple-400 rounded-xl flex items-center justify-center mb-6">
                                 <MessageSquare className="w-7 h-7" />
                             </div>
-                            <h3 className="font-bold text-slate-900 dark:text-white text-lg mb-3">AI Analyzes</h3>
-                            <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">Our KNEC-aligned Assistant breaks down the problem step-by-step instantly.</p>
+                            <h3 className="font-bold text-slate-900 dark:text-white text-lg mb-3">Akili Explains</h3>
+                            <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">Ask Akili breaks the problem into plain steps and checks whether you understand the method.</p>
                         </div>
 
                         {/* Step 3 */}
@@ -1037,8 +1342,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                             <div className="w-14 h-14 bg-emerald-50 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 rounded-xl flex items-center justify-center mb-6">
                                 <CheckSquare className="w-7 h-7" />
                             </div>
-                            <h3 className="font-bold text-slate-900 dark:text-white text-lg mb-3">Practice Quizzes</h3>
-                            <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">Test your understanding with automatically generated follow-up questions.</p>
+                            <h3 className="font-bold text-slate-900 dark:text-white text-lg mb-3">Practice the Idea</h3>
+                            <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">Turn the explanation into short drills so you learn the method, not just the answer.</p>
                         </div>
 
                         {/* Step 4 */}
@@ -1046,8 +1351,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                             <div className="w-14 h-14 bg-orange-50 dark:bg-orange-900/40 text-orange-600 dark:text-orange-400 rounded-xl flex items-center justify-center mb-6">
                                 <Award className="w-7 h-7" />
                             </div>
-                            <h3 className="font-bold text-slate-900 dark:text-white text-lg mb-3">Master & Pass</h3>
-                            <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">Retain knowledge permanently and dramatically boost your KCSE mean grade.</p>
+                            <h3 className="font-bold text-slate-900 dark:text-white text-lg mb-3">Show Progress</h3>
+                            <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">Keep a record of effort, weak areas, and improvement so parents and teachers see real study.</p>
                         </div>
                     </div>
                 </div>
@@ -1287,10 +1592,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                     <BookOpen className="w-4 h-4" /> Content Library
                                 </div>
                                 <h2 className="text-3xl md:text-4xl font-black text-slate-950 dark:text-white tracking-tight mb-4">
-                                    Official Study Materials, All Free.
+                                    Official Study Materials, Free for Logged-In Learners.
                                 </h2>
                                 <p className="text-lg text-slate-600 dark:text-slate-300 leading-relaxed max-w-2xl mb-8">
-                                    Browse verified syllabuses, expert notes, and KCSE/KPSEA past papers free for every Kenyan learner.
+                                    Browse syllabus guides, expert notes, and KCSE/KPSEA past papers inside the learner library with grade and subject filters.
                                 </p>
                                 <div className="flex flex-wrap gap-3 mb-8">
                                     {['Verified syllabuses', 'Expert notes', 'KCSE/KPSEA past papers'].map((item) => (
@@ -1454,6 +1759,52 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
             </>
             )}
 
+            {/* --- FINAL DECISION CTA --- */}
+            <section className="bg-white py-14 dark:bg-slate-950">
+                <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                    <div className="rounded-[2rem] border border-slate-200 bg-slate-950 p-6 text-white shadow-2xl shadow-slate-300/40 dark:border-slate-800 dark:bg-slate-900 dark:shadow-black/30 sm:p-8 lg:p-10">
+                        <div className="flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between">
+                            <div className="max-w-2xl">
+                                <p className="text-[11px] font-black uppercase tracking-[0.24em] text-emerald-300">Choose your next step</p>
+                                <h2 className="mt-3 text-3xl font-black tracking-tight sm:text-4xl">
+                                    Start with one real school problem today.
+                                </h2>
+                                <p className="mt-4 text-base font-medium leading-relaxed text-slate-300">
+                                    A learner can solve one hard question, a teacher can prepare one lesson, and a parent can check whether study is actually happening.
+                                </p>
+                            </div>
+
+                            <div className="grid gap-3 sm:grid-cols-3 lg:min-w-[520px]">
+                                <button
+                                    onClick={() => handleFeatureLaunch('final_cta_learner', () => handleLearnerQuickStart('SMART_TUTOR', 'ask_akili'))}
+                                    className="rounded-2xl bg-white p-4 text-left text-slate-950 transition-all hover:-translate-y-0.5 hover:bg-indigo-50"
+                                >
+                                    <GraduationCap className="h-6 w-6 text-indigo-600" />
+                                    <span className="mt-3 block text-sm font-black">Learner</span>
+                                    <span className="mt-1 block text-xs font-bold leading-relaxed text-slate-600">Ask Akili and practice the method.</span>
+                                </button>
+                                <button
+                                    onClick={() => handleFeatureLaunch('final_cta_teacher', () => handleRoleSelect(UserRole.TEACHER))}
+                                    className="rounded-2xl bg-white p-4 text-left text-slate-950 transition-all hover:-translate-y-0.5 hover:bg-emerald-50"
+                                >
+                                    <School className="h-6 w-6 text-emerald-600" />
+                                    <span className="mt-3 block text-sm font-black">Teacher</span>
+                                    <span className="mt-1 block text-xs font-bold leading-relaxed text-slate-600">Create, teach, mark, and follow up.</span>
+                                </button>
+                                <button
+                                    onClick={() => handleFeatureLaunch('final_cta_parent', () => navigate('/parent'))}
+                                    className="rounded-2xl bg-white p-4 text-left text-slate-950 transition-all hover:-translate-y-0.5 hover:bg-purple-50"
+                                >
+                                    <Users className="h-6 w-6 text-purple-600" />
+                                    <span className="mt-3 block text-sm font-black">Parent</span>
+                                    <span className="mt-1 block text-xs font-bold leading-relaxed text-slate-600">See effort, weak areas, and plan use.</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
             {/* --- BOTTOM FOOTER --- */}
             <footer className="bg-white dark:bg-slate-950 py-12 border-t border-slate-100 dark:border-slate-800 transition-colors overflow-hidden">
                 <div className="max-w-7xl mx-auto px-4">
@@ -1482,7 +1833,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                             <h4 className="font-bold text-slate-900 dark:text-white mb-4 tracking-wide uppercase text-sm">Platform</h4>
                             <ul className="space-y-3 text-sm text-slate-500 dark:text-slate-400">
                                 <li><button onClick={() => navigate('/pricing')} className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">Pricing</button></li>
-                                <li><a href="#how-it-works" className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">How it Works</a></li>
+                                <li><button onClick={() => setShowNavigationGuide(true)} className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">How it Works</button></li>
                                 <li><button onClick={() => setShowLogin(true)} className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">Login</button></li>
                                 <li><button onClick={() => navigate('/blog')} className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">Somo Journal</button></li>
                                 <li><button onClick={() => navigate('/admin')} className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> System Admin</button></li>
@@ -1522,6 +1873,90 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                 </div>
             </footer>
             {/* --- MODALS --- */}
+            <AnimatePresence>
+                {showNavigationGuide && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/70 px-4 py-6 backdrop-blur-sm"
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="navigation-guide-title"
+                        onClick={closeNavigationGuide}
+                    >
+                        <motion.div
+                            initial={{ opacity: 0, y: 18, scale: 0.98 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: 18, scale: 0.98 }}
+                            className="w-full max-w-3xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-950"
+                            onClick={(event) => event.stopPropagation()}
+                        >
+                            <div className="flex items-start justify-between gap-4 border-b border-slate-100 p-5 dark:border-slate-800 sm:p-6">
+                                <div>
+                                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-600 dark:text-indigo-300">Quick navigation guide</p>
+                                    <h2 id="navigation-guide-title" className="mt-2 text-2xl font-black text-slate-950 dark:text-white">Find your way in 30 seconds.</h2>
+                                    <p className="mt-2 max-w-2xl text-sm font-medium leading-relaxed text-slate-600 dark:text-slate-300">
+                                        Pick the path that matches why you came. You can always return home and open this guide again.
+                                    </p>
+                                </div>
+                                <button
+                                    onClick={closeNavigationGuide}
+                                    className="rounded-xl border border-slate-200 p-2 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900 dark:border-slate-800 dark:text-slate-400 dark:hover:bg-slate-900 dark:hover:text-white"
+                                    aria-label="Close guide"
+                                >
+                                    <X className="h-5 w-5" />
+                                </button>
+                            </div>
+
+                            <div className="grid gap-3 p-5 sm:grid-cols-2 sm:p-6">
+                                {navigationGuideItems.map((item) => {
+                                    const Icon = item.icon;
+                                    return (
+                                        <button
+                                            key={item.title}
+                                            onClick={() => {
+                                                trackFunnelEvent('navigation_guide_action_clicked', {
+                                                    path: item.title,
+                                                    source: 'navigation_guide'
+                                                });
+                                                closeNavigationGuide();
+                                                item.action();
+                                            }}
+                                            className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-left transition-all hover:-translate-y-0.5 hover:border-indigo-300 hover:bg-white hover:shadow-lg dark:border-slate-800 dark:bg-slate-900 dark:hover:border-indigo-700 dark:hover:bg-slate-900/80"
+                                        >
+                                            <div className={`mb-3 inline-flex h-10 w-10 items-center justify-center rounded-xl border ${item.tone}`}>
+                                                <Icon className="h-5 w-5" />
+                                            </div>
+                                            <h3 className="text-base font-black text-slate-950 dark:text-white">{item.title}</h3>
+                                            <p className="mt-2 min-h-[44px] text-sm font-medium leading-relaxed text-slate-600 dark:text-slate-300">{item.description}</p>
+                                            <span className="mt-3 inline-flex items-center gap-1 text-xs font-black text-indigo-700 dark:text-indigo-300">
+                                                {item.cta} <ArrowRight className="h-3.5 w-3.5" />
+                                            </span>
+                                        </button>
+                                    );
+                                })}
+                            </div>
+
+                            <div className="flex flex-col gap-3 border-t border-slate-100 bg-slate-50 p-5 dark:border-slate-800 dark:bg-slate-900/70 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+                                <p className="text-xs font-bold text-slate-500 dark:text-slate-400">
+                                    Starter path: Learner &rarr; Library &rarr; Ask Akili &rarr; Exam Prep &rarr; Progress proof.
+                                </p>
+                                <button
+                                    onClick={() => {
+                                        closeNavigationGuide();
+                                        scrollToFeatureLauncher();
+                                    }}
+                                    className="inline-flex min-h-[42px] items-center justify-center gap-2 rounded-xl bg-slate-950 px-4 text-sm font-black text-white transition-colors hover:bg-slate-800 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-100"
+                                >
+                                    Browse all features <ChevronRight className="h-4 w-4" />
+                                </button>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
             <RegistrationModal
                 isOpen={showRegistration}
                 initialRole={registrationRole}

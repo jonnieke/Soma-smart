@@ -1011,11 +1011,11 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
             </div>
 
             <div className="max-w-5xl mx-auto px-4 sm:px-6 pt-5 sm:pt-8 pb-28 md:pb-24">
-                {teacherNotice && (
-                    <div className={`mb-6 flex items-start gap-3 rounded-2xl border px-4 py-3 ${teacherNotice.type === 'success'
-                        ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
-                        : teacherNotice.type === 'error'
-                            ? 'border-red-200 bg-red-50 text-red-800'
+            {teacherNotice && (
+                <div className={`mb-6 flex items-start gap-3 rounded-2xl border px-4 py-3 ${teacherNotice.type === 'success'
+                    ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
+                    : teacherNotice.type === 'error'
+                        ? 'border-red-200 bg-red-50 text-red-800'
                             : 'border-blue-200 bg-blue-50 text-blue-800'
                         }`}>
                         {teacherNotice.type === 'success' ? (
@@ -1026,9 +1026,56 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                             <Bell className="mt-0.5 h-4 w-4 flex-shrink-0" />
                         )}
                         <p className="text-sm font-semibold">{teacherNotice.text}</p>
+                </div>
+            )}
+
+            <div className="mb-6 rounded-[2rem] border border-emerald-100 bg-gradient-to-br from-emerald-50 via-white to-sky-50 p-5 shadow-sm">
+                <div className="flex flex-col lg:flex-row lg:items-center gap-4">
+                    <div className="flex-1 min-w-0">
+                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-600 mb-2">Start here</p>
+                        <h2 className="text-xl font-black text-slate-900 tracking-tight mb-2">
+                            {hasContextForSetup ? 'Your classroom is ready. Create and publish next.' : 'First set your class and subject, then create notes.'}
+                        </h2>
+                        <p className="text-sm text-slate-600 max-w-2xl">
+                            {hasContextForSetup
+                                ? 'Once your class and subject are set, the next step is to create notes, build an assessment, and publish it to the stream.'
+                                : 'Open Dashboard and choose your class plus subject before you create notes or an assessment.'}
+                        </p>
                     </div>
-                )}
-                <Suspense fallback={<TeacherToolFallback />}>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 lg:w-[28rem]">
+                        <button
+                            onClick={() => setActiveTab(hasContextForSetup ? 'CONVERT' : 'DASHBOARD')}
+                            className="rounded-2xl bg-slate-900 text-white px-4 py-3 text-left font-black text-sm hover:bg-slate-800 transition-colors"
+                        >
+                            {hasContextForSetup ? 'Create notes' : '1. Set class & subject'}
+                            <span className="block text-[10px] font-bold text-slate-300 mt-0.5">
+                                {hasContextForSetup ? 'Lesson file or voice' : 'Open Dashboard first'}
+                            </span>
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('CONVERT')}
+                            className="rounded-2xl bg-white border border-emerald-200 px-4 py-3 text-left font-black text-sm text-emerald-700 hover:bg-emerald-50 transition-colors"
+                        >
+                            2. Create notes
+                            <span className="block text-[10px] font-bold text-emerald-500 mt-0.5">Lesson file or voice</span>
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('MARKING')}
+                            className="rounded-2xl bg-white border border-slate-200 px-4 py-3 text-left font-black text-sm text-slate-700 hover:bg-slate-50 transition-colors"
+                        >
+                            3. Mark work
+                            <span className="block text-[10px] font-bold text-slate-500 mt-0.5">Feedback and scoring</span>
+                        </button>
+                    </div>
+                    <button
+                        onClick={() => setActiveTab('CREATION_HUB')}
+                        className="mt-3 text-xs font-black uppercase tracking-wider text-slate-500 hover:text-emerald-600 transition-colors"
+                    >
+                        Open full tool menu
+                    </button>
+                </div>
+            </div>
+            <Suspense fallback={<TeacherToolFallback />}>
 
                 {activeTab === 'DARASA_MODE' && (
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
@@ -1902,7 +1949,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                                                     teacherId: teacherProfile.id,
                                                     teacherName: teacherProfile.name,
                                                     title: listingTitle,
-                                                    description: `Premium ${listingCategory.toLowerCase()} for ${selectedClass} ${selectedSubject}.`,
+                                                    description: `${listingCategory.toLowerCase()} for ${selectedClass} ${selectedSubject}.`,
                                                     price: listingPrice,
                                                     grade: selectedClass,
                                                     subject: selectedSubject,
@@ -2336,7 +2383,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                                 transition={{ type: 'spring', damping: 25, stiffness: 300 }}
                                 className="bg-white w-full h-full md:max-w-lg md:h-[85vh] md:rounded-[2.5rem] shadow-2xl flex flex-col overflow-hidden relative"
                             >
-                                {/* Premium Chat Header */}
+                                {/* Teacher Chat Header */}
                                 <div className="bg-gradient-to-r from-emerald-600 to-teal-600 px-6 py-5 text-white relative overflow-hidden flex-shrink-0">
                                     <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 blur-2xl" />
                                     <div className="relative z-10 flex items-center gap-4">
@@ -2352,7 +2399,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                                         <div className="flex-1 min-w-0">
                                             <h2 className="font-black text-base truncate">{chatReq?.topic || 'Chat'}</h2>
                                             <p className="text-emerald-100 text-[11px] font-bold truncate">
-                                                {chatReq?.studentName || 'Student'} • {chatReq?.rating ? `★ ${chatReq.rating}/5` : 'Ongoing'}
+                                                {chatReq?.studentName || 'Student'} · {chatReq?.rating ? `★ ${chatReq.rating}/5` : 'Ongoing'}
                                             </p>
                                         </div>
                                         <button

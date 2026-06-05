@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Check, Zap, Star, ShieldCheck, Smartphone, Building2, UserCircle2, GraduationCap, ArrowRight, X } from 'lucide-react';
-import { STUDENT_PLANS, TEACHER_PLANS, SCHOOL_PLANS } from '../../data/pricing';
+import { LEARNING_CREDIT_PACKS, STUDENT_PLANS, TEACHER_PLANS, SCHOOL_PLANS } from '../../data/pricing';
 import { SubscriptionPlan, UserSegment } from '../../types';
+import { getPlanLimit } from '../../services/planLimitService';
 
 interface Props {
     onSelectPlan: (plan: SubscriptionPlan) => void;
@@ -139,18 +140,32 @@ export const PricingPage: React.FC<Props> = ({ onSelectPlan, onClose, currentTie
                         className="space-y-6"
                     >
                         {activeTab === 'STUDENT' && (
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                {STUDENT_PLANS.map((plan) => (
-                                    <PricingCard
-                                        key={plan.id}
-                                        plan={plan}
-                                        onSelect={() => onSelectPlan(plan)}
-                                        popular={plan.duration === 'MONTHLY'}
-                                        isCurrent={currentTier === plan.duration}
-                                        currentTier={currentTier}
-                                        disabled={isPro && currentTier === plan.duration}
-                                    />
-                                ))}
+                            <div className="space-y-10">
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                    {STUDENT_PLANS.map((plan) => (
+                                        <PricingCard
+                                            key={plan.id}
+                                            plan={plan}
+                                            onSelect={() => onSelectPlan(plan)}
+                                            popular={plan.duration === 'MONTHLY'}
+                                            isCurrent={currentTier === plan.duration}
+                                            currentTier={currentTier}
+                                            disabled={isPro && currentTier === plan.duration}
+                                        />
+                                    ))}
+                                </div>
+                                <section className="rounded-[2rem] border border-indigo-100 bg-indigo-50/70 p-5">
+                                    <div className="mb-4">
+                                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-500">Need to continue today?</p>
+                                        <h2 className="text-xl font-black text-slate-900 mt-1">Buy learning credits</h2>
+                                        <p className="text-sm font-semibold text-slate-600 mt-1">Credits extend capped tools without replacing your active plan. 1 credit = 1 extra AI action or about 1,000 voice characters.</p>
+                                    </div>
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                        {LEARNING_CREDIT_PACKS.map((pack) => (
+                                            <CreditPackCard key={pack.id} plan={pack} onSelect={() => onSelectPlan(pack)} />
+                                        ))}
+                                    </div>
+                                </section>
                             </div>
                         )}
 
@@ -237,6 +252,13 @@ const PricingCard = ({ plan, onSelect, popular, isCurrent, disabled, currentTier
         const perDay = plan.price / days;
         return perDay < 1 ? '< KES 1' : `KES ${perDay.toFixed(1)}`;
     };
+    const planMeters = plan.segment === 'STUDENT'
+        ? [
+            { label: 'Ask Akili', value: getPlanLimit('ai_generation', plan.duration) },
+            { label: 'Marking', value: getPlanLimit('exam_marking', plan.duration) },
+            { label: 'Voice', value: `${Math.floor(getPlanLimit('listen_and_learn_voice', plan.duration) / 1000)}k chars` },
+        ]
+        : [];
 
     return (
         <div className={`bg-white rounded-[2.5rem] p-8 shadow-xl border-2 transition-all group flex flex-col relative overflow-hidden ${popular ? 'border-indigo-500 scale-105 z-10' : 'border-slate-100 shadow-slate-200/50'
@@ -285,6 +307,17 @@ const PricingCard = ({ plan, onSelect, popular, isCurrent, disabled, currentTier
                     Just {getCostPerDay()} a day
                 </div>
             </div>
+
+            {planMeters.length > 0 && (
+                <div className="mb-6 grid grid-cols-3 gap-2">
+                    {planMeters.map((meter) => (
+                        <div key={meter.label} className="rounded-2xl bg-slate-50 border border-slate-100 px-2 py-3 text-center">
+                            <p className="text-sm font-black text-slate-900 leading-none">{meter.value}</p>
+                            <p className="mt-1 text-[9px] font-black uppercase tracking-wider text-slate-400">{meter.label}/day</p>
+                        </div>
+                    ))}
+                </div>
+            )}
 
             <div className="space-y-4 mb-10 flex-1">
                 {plan.features ? (
@@ -361,6 +394,32 @@ const SchoolCard = ({ plan, onSelect, isCurrent, currentTier }: { plan: any, onS
             className={`w-full py-4 rounded-2xl font-black text-sm flex items-center justify-center gap-2 transition-all shadow-xl shadow-slate-200 ${isCurrent ? 'bg-green-100 text-green-700' : 'bg-slate-900 text-white hover:bg-slate-800'}`}
         >
             {isCurrent ? 'Active Plan' : (currentTier && currentTier !== 'FREE' ? 'Upgrade Plan' : 'Select Plan')} {!isCurrent && <ArrowRight className="w-4 h-4" />}
+        </button>
+    </div>
+);
+
+const CreditPackCard = ({ plan, onSelect }: { plan: SubscriptionPlan, onSelect: () => void }) => (
+    <div className="bg-white rounded-3xl border border-indigo-100 p-5 shadow-sm flex flex-col">
+        <div className="flex items-start justify-between gap-3 mb-4">
+            <div>
+                <h3 className="text-lg font-black text-slate-900">{plan.name}</h3>
+                {plan.savings && <p className="text-[10px] font-black uppercase tracking-wider text-emerald-600 mt-1">{plan.savings}</p>}
+            </div>
+            <div className="text-right">
+                <p className="text-2xl font-black text-indigo-600">KES {plan.price}</p>
+                <p className="text-[10px] font-bold text-slate-400">{plan.credits} credits</p>
+            </div>
+        </div>
+        <div className="space-y-2 flex-1 mb-5">
+            {(plan.features || []).map((feature) => (
+                <Feature key={feature} item={feature} />
+            ))}
+        </div>
+        <button
+            onClick={onSelect}
+            className="w-full py-3 rounded-2xl bg-indigo-600 text-white text-xs font-black uppercase tracking-widest hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-200"
+        >
+            Buy Credits
         </button>
     </div>
 );

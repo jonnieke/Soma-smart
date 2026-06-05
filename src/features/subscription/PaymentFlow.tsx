@@ -16,7 +16,7 @@ interface Props {
 }
 
 export const PaymentFlow: React.FC<Props> = ({ plan, materialId, onSuccess, onCancel }) => {
-    const { userId, studentProfile, teacherProfile, role, login, registerStudent, refreshProfile } = useApp();
+    const { userId, studentProfile, teacherProfile, role, login, registerStudent, refreshProfile, grantLearningCredits } = useApp();
     const [step, setStep] = useState<'INPUT' | 'IFRAME' | 'PROCESSING' | 'SUCCESS' | 'ERROR'>('INPUT');
     const [phone, setPhone] = useState('');
     const [firstName, setFirstName] = useState('');
@@ -34,7 +34,8 @@ export const PaymentFlow: React.FC<Props> = ({ plan, materialId, onSuccess, onCa
     const [iframeLoaded, setIframeLoaded] = useState(false);
     const [autoOpenedCheckout, setAutoOpenedCheckout] = useState(false);
     const [error, setError] = useState('');
-    const isSubscriptionCheckout = Boolean(plan?.segment === 'STUDENT' || plan?.segment === 'TEACHER') && plan?.id !== 'download_pack_5' && !materialId;
+    const isCreditPackCheckout = Boolean(plan?.isCreditPack || String(plan?.id || '').startsWith('credit_'));
+    const isSubscriptionCheckout = Boolean(plan?.segment === 'STUDENT' || plan?.segment === 'TEACHER') && plan?.id !== 'download_pack_5' && !materialId && !isCreditPackCheckout;
     
     const getPlanLabel = (tier?: string | null) => {
         const t = String(tier || '').toUpperCase();
@@ -121,7 +122,7 @@ export const PaymentFlow: React.FC<Props> = ({ plan, materialId, onSuccess, onCa
             const existingSub = await hasActiveSubscription(profileId);
             if (cancelled || !existingSub.active) return;
 
-            setError(`Already subscribed: ${getPlanLabel(existingSub.plan)} is still active. Redirecting...`);
+            setError(`Already subscribed: ${getPlanLabel(existingSub.plan)} is still active. Returning to your dashboard...`);
             setStep('SUCCESS');
             await refreshProfile();
             window.setTimeout(onSuccess, 700);
@@ -184,7 +185,23 @@ export const PaymentFlow: React.FC<Props> = ({ plan, materialId, onSuccess, onCa
                             return false;
                         };
 
-                        // Always attempt account handoff after success to avoid guest/paywall loops.
+                        if (isCreditPackCheckout && plan?.credits) {
+                            grantLearningCredits(plan.credits);
+                        }
+
+                        // Credit packs do not change subscription tier, so avoid waiting for a
+                        // subscription profile update that will never happen.
+                        if (isCreditPackCheckout) {
+                            if (!isRegistered && existingStudentCode) {
+                                await login(existingStudentCode);
+                            } else {
+                                await refreshProfile();
+                            }
+                            onSuccess();
+                            return;
+                        }
+
+                        // Always attempt account handoff after subscription success to avoid guest/paywall loops.
                         if (!isRegistered) {
                             if (existingStudentCode) {
                                 // Guest used existing student ID
@@ -220,7 +237,7 @@ export const PaymentFlow: React.FC<Props> = ({ plan, materialId, onSuccess, onCa
         }, 3000); // Check every 3 seconds
 
         return () => clearInterval(interval);
-    }, [step, paymentUserId, userId, studentProfile, teacherProfile, existingStudentProfileId, paymentReference, onSuccess, isRegistered, existingStudentCode, login]);
+    }, [step, paymentUserId, userId, studentProfile, teacherProfile, existingStudentProfileId, paymentReference, onSuccess, isRegistered, existingStudentCode, login, isCreditPackCheckout, plan?.credits, grantLearningCredits, refreshProfile]);
 
     const resolveExistingStudent = async (): Promise<boolean> => {
         const code = existingStudentCode.trim().toUpperCase();
@@ -655,8 +672,14 @@ export const PaymentFlow: React.FC<Props> = ({ plan, materialId, onSuccess, onCa
                             <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6 text-green-600">
                                 <CheckCircle2 className="w-12 h-12" />
                             </div>
-                            <h2 className="text-3xl font-black text-slate-900 mb-2">Karibu Pro! 🎉</h2>
-                            <p className="text-slate-500 font-medium mb-6">Payment received. Your account is being upgraded right now.</p>
+                            <h2 className="text-3xl font-black text-slate-900 mb-2">
+                                {isCreditPackCheckout ? 'Credits Added' : 'Karibu Pro!'}
+                            </h2>
+                            <p className="text-slate-500 font-medium mb-6">
+                                {isCreditPackCheckout
+                                    ? `${plan?.credits || 0} learning credits are being added to your wallet.`
+                                    : 'Payment received. Your account is being upgraded right now.'}
+                            </p>
                             
                             {!isRegistered && existingStudentCode && payerMode === 'NEW' && (
                                 <div className="bg-indigo-50 p-4 rounded-xl border border-indigo-100 text-left">

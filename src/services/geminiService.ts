@@ -8,6 +8,8 @@ import { buildPersonaInstruction, recommendPersona } from "./adminAgentService";
 // We no longer use VITE_GEMINI_API_KEY on the client.
 // Instead, we call a Supabase Edge Function which adds the key server-side.
 import { supabase } from "../lib/supabase";
+import { buildGeminiUsagePayload, trackUsageCost } from "./usageCostService";
+import { assertPlanLimit, recordPlanUsage } from "./planLimitService";
 
 // Custom error thrown when the backend returns 429 (usage limit exceeded).
 // Callers can instanceof-check this to show login/register UI instead of a generic error.
@@ -37,6 +39,8 @@ const SchemaType = {
 export const callGeminiProxy = async (model: string, contents: any, generationConfig: any = {}, systemInstruction: any = null) => {
   const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
   const localApiKey = import.meta.env.VITE_GEMINI_API;
+  const feature = inferAiFeature(contents, systemInstruction);
+  assertPlanLimit(feature);
 
   if (isLocal && localApiKey) {
     const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${localApiKey}`;
@@ -57,6 +61,8 @@ export const callGeminiProxy = async (model: string, contents: any, generationCo
     }
 
     const data = await response.json();
+    recordPlanUsage(feature);
+    void trackUsageCost(buildGeminiUsagePayload(model, contents, systemInstruction, data, feature));
     return {
       response: {
         text: () => data.candidates?.[0]?.content?.parts?.[0]?.text || "",
@@ -104,6 +110,7 @@ export const callGeminiProxy = async (model: string, contents: any, generationCo
   }
 
   const data = await response.json();
+  recordPlanUsage(feature);
 
   // Convert the raw response to match the structure expected by the rest of the file
   return {
@@ -386,6 +393,9 @@ SOCRATIC TUTORING MODE:
 - Provide small logical hints that nudge them toward the answer.
 - Focus on conceptual understanding ("Why does this happen?") rather than just facts.
 - Use a friendly, conversational tone.
+- If the user asks for a quiz, generate the quiz immediately instead of explaining what a quiz is.
+- If the user asks for past paper help, stay on the exact question and command word; do not introduce a new topic or generic exam intro.
+- If the user asks to repair mistakes, stay on the missed mark until it is fixed.
 `;
 
 const SOLUTION_ASSISTANT_INSTRUCTION = `
@@ -395,6 +405,8 @@ SOLUTION ASSISTANT MODE:
 - For math/science, show the step-by-step calculation clearly.
 - For humanities, provide structured model answers with clear formatting.
 - Focus on accuracy and efficiency so the student can check their work.
+- If the request is to create a quiz, return the quiz only and do not explain what a quiz is.
+- If the request is exam-style help, answer like an examiner, not a general tutor.
 `;
 
 // --- Helper: File to Base64 ---
@@ -3082,6 +3094,7 @@ export const getExamGuruResponse = async (
   chatHistory: { role: 'user' | 'guru', content: string }[],
   language: 'EN' | 'SW' = 'EN'
 ): Promise<string> => {
+  const asksForLikelyTopics = /\b(likely|guaranteed|almost guaranteed|hot topics?|predicted|prediction|appear|coming|paper\s*1|paper\s*2)\b/i.test(userQuery);
   const history = chatHistory
     .slice(-10)
     .map(m => `${m.role === 'guru' ? 'Guru' : 'Candidate'}: ${m.content}`)
@@ -3089,7 +3102,7 @@ export const getExamGuruResponse = async (
 
   const systemInstruction = {
     parts: [{
-      text: `You are the Somo Smart Exam Guru — a seasoned Kenyan examiner who has marked KCSE, KPSEA, and KCPE papers for over 15 years.
+        text: `You are the Somo Smart Exam Guru — a seasoned Kenyan examiner who has marked KCSE, KPSEA, and KCPE papers for over 15 years.
 
 YOUR MANDATE: Give candidates answers that SCORE MARKS. Be concrete, specific, exam-aware.
 
@@ -3102,7 +3115,9 @@ RULES:
 6. Reference KCSE paper sections (P1 Section A, P2 Section B, etc.) when relevant.
 7. NO padding, NO "Great question!", NO vague motivation. Just marks.
 8. End with one practical tip as "🎯 Guru Tip:".
-9. Respond in ${isSwahiliSubject(undefined, userQuery) || isSwahiliSubject(undefined, history) ? 'Kiswahili' : 'English'}. All subjects other than Swahili/Kiswahili must be explained or strategy/guidance given exclusively in English. Let the default language be English unless the query is explicitly Swahili or the history shows a Swahili context.`
+9. Never define what an exam, paper, quiz, or marking scheme is unless the candidate explicitly asks.
+10. If the candidate asks for likely topics, hot topics, Paper 1, or Paper 2, answer only with likely topics, why they appear, what to practise, paper trap, and a short drill list. Do not add a generic exam intro or extra teaching paragraph.
+11. Respond in ${isSwahiliSubject(undefined, userQuery) || isSwahiliSubject(undefined, history) ? 'Kiswahili' : 'English'}. All subjects other than Swahili/Kiswahili must be explained or strategy/guidance given exclusively in English. Let the default language be English unless the query is explicitly Swahili or the history shows a Swahili context.`
     }]
   };
 
@@ -3116,7 +3131,20 @@ RULES:
     }] : []),
     {
       role: 'user' as const,
-      parts: [{ text: userQuery }]
+      parts: [{
+        text: `Candidate question:\n${userQuery}\n\nExam Guru response rule:
+- Use plain text only. Do not use Markdown headings, #, **, or decorative symbols.
+- Do not waste space defining the paper unless the candidate asks for structure.
+- If this asks about likely topics, hot topics, almost guaranteed topics, Paper 1, or Paper 2, answer as an examiner with concrete revision guidance.
+- Format likely-topic answers exactly like this:
+KCSE Mathematics Paper 1 - High-Yield Topics
+1. Linear equations and inequalities - why it appears, what to practise, paper trap.
+2. Commercial arithmetic - why it appears, what to practise, paper trap.
+3. Mensuration - why it appears, what to practise, paper trap.
+Continue with 8 to 12 useful topics, then add "Tonight's drill" with 5 practice actions.
+        - Keep the answer complete, specific, and useful for scoring marks.
+        - If the candidate asks for repair help, stay on the same missed point until they say they understand.`
+      }]
     }
   ];
 
@@ -3124,11 +3152,19 @@ RULES:
     const result = await callGeminiProxy(
       MODEL_NAME,
       contents,
-      { maxOutputTokens: 700, temperature: 0.35 },
+      { maxOutputTokens: asksForLikelyTopics ? 2600 : 1800, temperature: 0.25 },
       systemInstruction
     );
     const text = result.response.text();
-    return text || "Check your connection and try again.";
+    if (!text) return "Check your connection and try again.";
+    const cleaned = text
+      .replace(/^#{1,6}\s*/gm, '')
+      .replace(/\*\*/g, '')
+      .replace(/^\s*[-*]\s+/gm, '- ')
+      .trim();
+    if (asksForLikelyTopics) return cleaned;
+    if (/Guru Tip:|Tonight's drill|Ask me for a drill/i.test(cleaned)) return cleaned;
+    return `${cleaned}\n\nGuru Tip: Pick one topic above and ask me for a 5-question drill.`;
   } catch (error: any) {
     console.error("Exam Guru error:", error);
     if (error instanceof RateLimitError) throw error;
@@ -3150,30 +3186,42 @@ export const markCandidateAnswer = async (
     parts: [{
       text: `You are a KNEC chief examiner with 20 years of experience marking ${subject || 'Kenyan national exam'} papers.
 
-YOUR JOB: Mark the candidate's answer EXACTLY as KNEC would. Be strict but fair.
+YOUR JOB: Mark the candidate's answer exactly as KNEC would. Be strict, specific, and useful for improvement.
 
-FORMAT YOUR RESPONSE AS FOLLOWS:
+FORMAT YOUR RESPONSE EXACTLY LIKE THIS:
 
-**SCORE: X / Y marks**
+SCORE: X / Y marks
 
-**What You Got Right ✅**
-• [point] — [1 mk] (or however many marks it earns)
-(list each correct point with marks awarded)
+What You Got Right
+- If the candidate earned marks, list each exact point and the mark earned.
+- If the candidate earned 0 marks, write: "No mark-scoring point was clear enough." Then explain why in one sentence.
 
-**What You Missed ❌**
-• [missing point] — [1 mk lost]
-(list each missing point that costs marks)
+What You Missed
+- Break down every lost mark using this format:
+  - Expected: [specific marking-scheme point] - [1 mk lost]
+  - Your answer problem: [quote or describe what the candidate wrote incorrectly or vaguely]
+  - How to fix it: [exact wording or step that would earn the mark]
 
-**Paper Trap ⚠️** (if they made a classic KNEC mistake, call it out)
-• [explain the mistake]
+Paper Trap
+- Name the exact exam mistake. Do not be generic.
 
-**Model Answer (KNEC Standard)**
-[Write a clean, full-marks answer showing exactly what earns each mark]
+Model Answer (KNEC Standard)
+- Write a clean full-marks answer.
+- Annotate mark points inline using [1 mk], [2 mks], etc.
 
-**Guru Verdict 🎯**
-[One sentence: what they should focus on to improve]
+Repair Drill
+- Give 2 short follow-up questions on the missed area.
+- Do not introduce a new topic.
 
-Be strict. Do not award marks for vague or incomplete points. ${marksHint}`
+Guru Verdict
+- One sentence naming the exact area the candidate must repair before moving on.
+
+Rules:
+- Plain text only. Do not use **, #, Markdown headings, or decorative formatting.
+- Never write "None" alone.
+- Do not be vague. Every lost mark must say what was expected and how to fix it.
+- Stay on the same question/topic until the candidate understands the mistake.
+- Do not award marks for vague or incomplete points. ${marksHint}`
     }]
   };
 
@@ -3198,7 +3246,12 @@ ${candidateAnswer}`
       systemInstruction
     );
     const text = result.response.text();
-    return text || 'Could not mark answer. Please try again.';
+    if (!text) return 'Could not mark answer. Please try again.';
+    return text
+      .replace(/^#{1,6}\s*/gm, '')
+      .replace(/\*\*/g, '')
+      .replace(/^\s*[*]\s+/gm, '- ')
+      .trim();
   } catch (error: any) {
     console.error('Mark My Answer error:', error);
     if (error instanceof RateLimitError) throw error;

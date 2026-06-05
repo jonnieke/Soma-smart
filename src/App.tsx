@@ -11,6 +11,7 @@ import ReactGA from "react-ga4";
 import { useLocation } from 'react-router-dom';
 import { flushMasterySyncQueue } from './services/learnerMemoryService';
 import { safeImport } from './utils/safeImport';
+import { trackAnalyticsEvent } from './services/analyticsEventService';
 
 // Lazy Load Pages for Performance
 const LandingPage = React.lazy(() => safeImport(() => import('./pages/LandingPage').then(module => ({ default: module.LandingPage }))));
@@ -54,6 +55,7 @@ const App: React.FC = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const hideGlobalAssistant = ['/learner', '/teacher', '/revision'].some(path => location.pathname.startsWith(path));
+    const previousPathRef = React.useRef<string | null>(null);
 
     // Initialize Google Analytics
     React.useEffect(() => {
@@ -70,12 +72,55 @@ const App: React.FC = () => {
         }
     }, [location]);
 
+    React.useEffect(() => {
+        const currentPath = `${location.pathname}${location.search}`;
+        const previousPath = previousPathRef.current;
+
+        void trackAnalyticsEvent({
+            eventType: 'PAGE_VIEW',
+            eventName: 'page_view',
+            path: currentPath,
+            previousPath: previousPath || undefined,
+            metadata: {
+                title: document.title
+            }
+        });
+
+        if (previousPath && previousPath !== currentPath) {
+            void trackAnalyticsEvent({
+                eventType: 'ROUTE_CHANGE',
+                eventName: 'route_change',
+                path: currentPath,
+                previousPath,
+                metadata: {
+                    from: previousPath,
+                    to: currentPath
+                }
+            });
+        }
+
+        previousPathRef.current = currentPath;
+    }, [location.pathname, location.search]);
+
     // Listen for auth state changes (Recovery flow)
     React.useEffect(() => {
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+            if (event !== 'INITIAL_SESSION') {
+                void trackAnalyticsEvent({
+                    eventType: 'AUTH_EVENT',
+                    eventName: String(event).toLowerCase(),
+                    path: `${window.location.pathname}${window.location.search}`,
+                    metadata: {
+                        has_session: Boolean(session),
+                        email: session?.user?.email || null
+                    }
+                });
+            }
+
             if (event === 'PASSWORD_RECOVERY') {
                 console.log("Password recovery event detected, redirecting...");
-                navigate('/reset-password');
+                const recoveryUrl = `/reset-password${window.location.search}${window.location.hash}`;
+                navigate(recoveryUrl, { replace: true });
             }
         });
 

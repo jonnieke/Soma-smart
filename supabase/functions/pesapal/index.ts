@@ -96,10 +96,31 @@ serve(async (req) => {
                     .update({ status: 'SUCCESS', order_tracking_id: resolvedTrackingId })
                     .eq('reference_code', merchant_reference)
 
-                // 2. Update Profile (Subscription)
+                // 2. Apply purchased entitlement
                 const { data: tx } = await supabase.from('transactions').select('user_id, amount').eq('reference_code', merchant_reference).single()
 
                 if (tx) {
+                    if (merchant_reference.startsWith('CREDIT_')) {
+                        const parts = merchant_reference.split('_')
+                        let credits = Number(parts[1] || 0)
+                        if (!credits) {
+                            if (tx.amount === 20) credits = 30
+                            else if (tx.amount === 50) credits = 100
+                            else if (tx.amount === 100) credits = 250
+                        }
+                        if (credits > 0) {
+                            await supabase.rpc('grant_learning_credits', {
+                                p_profile_id: tx.user_id,
+                                p_credits: credits
+                            })
+                        }
+                        return statusData
+                    }
+
+                    if (!merchant_reference.startsWith('SUB_')) {
+                        return statusData
+                    }
+
                     // Parse Plan from reference (Format: SUB_DURATION_USERID_TIMESTAMP)
                     const parts = merchant_reference.split('_')
                     let duration = parts[1]

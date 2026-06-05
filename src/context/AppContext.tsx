@@ -4,6 +4,7 @@ import { processQuizResult, getDueTopics, getWeakTopics, loadSRFromLocal, loadMa
 import { loadStrategiesFromLocal, approveStrategy as approveStrategyFn, rejectStrategy as rejectStrategyFn, addStrategies, getActiveStrategies, getPendingStrategies } from '../services/strategyService';
 import { classroomService } from '../services/classroomService';
 import { warnIfDev } from '../utils/logger';
+import { getLearningCredits, grantLearningCredits as grantLocalLearningCredits } from '../services/planLimitService';
 
 // Update interface
 interface AppContextType {
@@ -126,6 +127,8 @@ interface AppContextType {
   incrementDownloadUsage: () => void;
   extraDownloads: number;
   grantExtraDownloads: (amount: number) => void;
+  learningCredits: number;
+  grantLearningCredits: (amount: number) => void;
   // Theme
   theme: 'light' | 'dark';
   toggleTheme: () => void;
@@ -284,7 +287,34 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [extraDownloads, setExtraDownloads] = useState<number>(() => {
     return parseInt(localStorage.getItem('soma_extra_downloads') || '0');
   });
+  const [learningCredits, setLearningCredits] = useState<number>(() => getLearningCredits());
   const [userId, setUserId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const handleCreditChange = (event: Event) => {
+      const next = (event as CustomEvent<{ credits?: number }>).detail?.credits;
+      setLearningCredits(typeof next === 'number' ? next : getLearningCredits());
+    };
+    window.addEventListener('soma-learning-credits-changed', handleCreditChange);
+    return () => window.removeEventListener('soma-learning-credits-changed', handleCreditChange);
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem('soma_subscription_plan', isPro ? subscriptionPlan : 'FREE');
+    if (subscriptionExpiry) {
+      localStorage.setItem('soma_subscription_expiry', subscriptionExpiry);
+    } else {
+      localStorage.removeItem('soma_subscription_expiry');
+    }
+  }, [isPro, subscriptionPlan, subscriptionExpiry]);
+
+  useEffect(() => {
+    if (role && role !== UserRole.NONE) {
+      localStorage.setItem('soma_user_role', role);
+    } else {
+      localStorage.removeItem('soma_user_role');
+    }
+  }, [role]);
 
   const flushLocalLearnerHistoryToCloud = async (targetUserId: string) => {
     if (!targetUserId || !isOnline) return;
@@ -585,6 +615,18 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         setIsPro(access.isPro);
         setSubscriptionPlan(access.tier);
         setSubscriptionExpiry(access.expiry);
+
+        const { data: creditRow, error: creditError } = await supabase
+          .from('learning_credit_balances')
+          .select('credits')
+          .eq('profile_id', currentUserId)
+          .maybeSingle();
+        if (!creditError && typeof creditRow?.credits === 'number') {
+          localStorage.setItem('soma_learning_credits', String(creditRow.credits));
+          setLearningCredits(creditRow.credits);
+        } else if (creditError) {
+          warnIfDev('Learning credits unavailable:', creditError);
+        }
       }
     }
   };
@@ -1864,6 +1906,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     localStorage.setItem('soma_extra_downloads', newValue.toString());
   };
 
+  const grantLearningCredits = (amount: number) => {
+    const next = grantLocalLearningCredits(amount);
+    setLearningCredits(next);
+  };
+
   const fetchResources = async (grade?: string, subject?: string) => {
     try {
       let query = supabase.from('knowledge_base').select('*').order('created_at', { ascending: false });
@@ -3030,6 +3077,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     language, toggleLanguage, startGuestSession, resources, fetchResources,
     sessionError, resolveSessionConflict, setSessionError, refreshProfile,
     downloadUsageCount, incrementDownloadUsage, extraDownloads, grantExtraDownloads,
+    learningCredits, grantLearningCredits,
     theme, toggleTheme,
     lowDataMode, toggleLowDataMode,
     masteryGraph, spacedRepetitionItems, dueForReview, weakTopics,

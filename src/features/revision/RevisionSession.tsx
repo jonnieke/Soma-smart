@@ -303,7 +303,7 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
                 isCorrect: false,
                 modelAnswer: 'AI could not generate a model answer at this time.',
                 feedback: 'We encountered an error while marking. Please try again.',
-                examTip: 'Practice writing clear, structured answers.'
+                examTip: 'Write clear, structured answers.'
             });
             setShowModelAnswer(true);
         } finally {
@@ -638,7 +638,7 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
                                         onClick={() => startQuiz(ExamPracticeMode.PRACTICE_BY_TOPIC, predictions.questions)}
                                         className="text-[10px] font-black bg-amber-500 hover:bg-amber-600 text-white px-3 py-1 rounded-full transition-colors"
                                     >
-                                        Practice These
+                                        Attempt These
                                     </button>
                                 </div>
                                 <div className="p-4 space-y-3">

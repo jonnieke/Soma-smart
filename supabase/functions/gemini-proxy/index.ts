@@ -16,6 +16,25 @@ const corsHeaders = {
 const FREE_AI_DAILY_LIMIT = Number(Deno.env.get('FREE_AI_DAILY_LIMIT') || '25');  // Registered free users
 const GUEST_AI_DAILY_LIMIT = Number(Deno.env.get('GUEST_AI_DAILY_LIMIT') || '3');  // Unregistered guests
 const DEFAULT_GEMINI_MODEL = Deno.env.get('GEMINI_MODEL') || 'gemini-2.5-flash';
+const KES_PER_USD = 130;
+
+const FEATURE_LIMITS: Record<string, Record<string, number>> = {
+    FREE: { ai_generation: 3, exam_guru: 3, exam_marking: 1, quiz_generation: 2, practice_generation: 2, notes_generation: 2, teacher_ai: 3 },
+    DAILY: { ai_generation: 20, exam_guru: 15, exam_marking: 6, quiz_generation: 10, practice_generation: 12, notes_generation: 10, teacher_ai: 10 },
+    WEEKLY: { ai_generation: 120, exam_guru: 80, exam_marking: 35, quiz_generation: 60, practice_generation: 80, notes_generation: 60, teacher_ai: 60 },
+    MONTHLY: { ai_generation: 450, exam_guru: 300, exam_marking: 150, quiz_generation: 250, practice_generation: 300, notes_generation: 220, teacher_ai: 220 },
+    TERMLY: { ai_generation: 1200, exam_guru: 800, exam_marking: 420, quiz_generation: 700, practice_generation: 850, notes_generation: 650, teacher_ai: 650 },
+    ANNUAL: { ai_generation: 4000, exam_guru: 2500, exam_marking: 1500, quiz_generation: 2200, practice_generation: 2800, notes_generation: 2000, teacher_ai: 2000 },
+    PRO: { ai_generation: 450, exam_guru: 300, exam_marking: 150, quiz_generation: 250, practice_generation: 300, notes_generation: 220, teacher_ai: 220 },
+};
+
+const MODEL_PRICING_USD_PER_1M: Record<string, { input: number; output: number }> = {
+    'gemini-1.5-flash': { input: 0.075, output: 0.30 },
+    'gemini-1.5-pro': { input: 1.25, output: 5.00 },
+    'gemini-2.0-flash': { input: 0.10, output: 0.40 },
+    'gemini-2.5-flash': { input: 0.30, output: 2.50 },
+    default: { input: 0.30, output: 2.50 },
+};
 
 const normalizeGeminiModel = (model: string) => {
     const requested = String(model || '').trim();
@@ -53,6 +72,44 @@ const isActivePro = (profile: any) => {
 
 const usageKindForProfile = (profile: any) => {
     return profile?.role === 'TEACHER' ? 'teacher' : 'learner';
+};
+
+const effectivePlanForProfile = (profile: any) => {
+    const tier = String(profile?.subscription_tier || profile?.subscription_status || 'FREE').toUpperCase();
+    if (!tier || tier === 'TRIAL') return 'FREE';
+    if (tier !== 'FREE') {
+        const expiry = profile?.subscription_expiry || profile?.expiry;
+        if (!expiry || new Date(expiry).getTime() > Date.now()) return tier;
+    }
+    return 'FREE';
+};
+
+const roughlyCountTokens = (value: unknown) => {
+    try {
+        const text = typeof value === 'string' ? value : JSON.stringify(value);
+        return Math.max(1, Math.ceil((text || '').length / 4));
+    } catch {
+        return 1;
+    }
+};
+
+const inferAiFeature = (contents: unknown, systemInstruction: unknown) => {
+    const haystack = `${JSON.stringify(systemInstruction || {})} ${JSON.stringify(contents || {})}`.toLowerCase();
+    if (haystack.includes('mark the candidate') || haystack.includes('knec chief examiner')) return 'exam_marking';
+    if (haystack.includes('exam guru')) return 'exam_guru';
+    if (haystack.includes('practice questions') || haystack.includes('generate 3 questions')) return 'practice_generation';
+    if (haystack.includes('quiz')) return 'quiz_generation';
+    if (haystack.includes('study notes') || haystack.includes('detailed study notes')) return 'notes_generation';
+    if (haystack.includes('teacher') || haystack.includes('lesson plan') || haystack.includes('scheme of work')) return 'teacher_ai';
+    return 'ai_generation';
+};
+
+const estimateGeminiCostKes = (model: string, inputTokens = 0, outputTokens = 0) => {
+    const normalized = String(model || '').toLowerCase();
+    const key = Object.keys(MODEL_PRICING_USD_PER_1M).find(k => normalized.includes(k)) || 'default';
+    const pricing = MODEL_PRICING_USD_PER_1M[key];
+    const usd = ((inputTokens / 1_000_000) * pricing.input) + ((outputTokens / 1_000_000) * pricing.output);
+    return Number((usd * KES_PER_USD).toFixed(4));
 };
 
 const firstRpcRow = (data: any) => {
@@ -189,6 +246,150 @@ const enforceUsageLimit = async (req: Request) => {
     }
 };
 
+const getSupabaseAdmin = () => {
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
+    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+    if (!supabaseUrl || !serviceRoleKey) throw new Error('Supabase service credentials are not configured');
+    return createClient(supabaseUrl, serviceRoleKey);
+};
+
+const resolveRequester = async (req: Request, supabase: any) => {
+    const authHeader = req.headers.get('Authorization') || '';
+    const rawToken = authHeader.replace(/^Bearer\s+/i, '').trim();
+    const token = (rawToken && rawToken !== 'undefined' && rawToken !== 'null') ? rawToken : '';
+
+    if (token) {
+        const { data: userData } = await supabase.auth.getUser(token);
+        if (userData?.user?.id) {
+            const { data: profile } = await supabase
+                .from('profiles')
+                .select('id, role, subscription_tier, subscription_status, subscription_expiry, expiry, student_id')
+                .eq('id', userData.user.id)
+                .maybeSingle();
+            return {
+                userId: userData.user.id,
+                studentCode: profile?.student_id || null,
+                plan: profile ? effectivePlanForProfile(profile) : 'FREE',
+                identifier: `user:${userData.user.id}`,
+                profile,
+            };
+        }
+    }
+
+    const studentCode = req.headers.get('x-student-code')?.trim();
+    if (studentCode && studentCode.startsWith('SOMA-')) {
+        const { data: profile } = await supabase
+            .from('profiles')
+            .select('id, role, subscription_tier, subscription_status, subscription_expiry, expiry, student_id')
+            .eq('student_id', studentCode)
+            .maybeSingle();
+        if (profile) {
+            return {
+                userId: profile.id,
+                studentCode,
+                plan: effectivePlanForProfile(profile),
+                identifier: `student:${studentCode}`,
+                profile,
+            };
+        }
+    }
+
+    const identifier = `ip:${getClientIp(req)}`;
+    return { userId: null, studentCode: null, plan: 'FREE', identifier, profile: null };
+};
+
+const enforceFeatureLimit = async (supabase: any, requester: any, feature: string) => {
+    const plan = requester.plan || 'FREE';
+    const limit = FEATURE_LIMITS[plan]?.[feature] ?? FEATURE_LIMITS.FREE[feature] ?? GUEST_AI_DAILY_LIMIT;
+    if (limit <= 0) {
+        throw new Response(JSON.stringify({ error: `${feature.replace(/_/g, ' ')} is not included in this plan`, feature, plan, limit }), {
+            status: 429,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+    }
+
+    const since = new Date();
+    since.setHours(0, 0, 0, 0);
+    const query = supabase
+        .from('usage_cost_events')
+        .select('id', { count: 'exact', head: true })
+        .eq('feature', feature)
+        .gte('created_at', since.toISOString());
+
+    if (requester.userId) query.eq('user_id', requester.userId);
+    else query.eq('metadata->>identifier', requester.identifier);
+
+    const { count, error } = await query;
+    if (error) {
+        console.error('Feature limit count failed, falling back to legacy limiter:', error);
+        return;
+    }
+
+    if ((count || 0) >= limit) {
+        if (requester.userId) {
+            const { data: creditResult, error: creditError } = await supabase.rpc('consume_learning_credits', {
+                p_profile_id: requester.userId,
+                p_credits: 1
+            });
+            const creditRow = Array.isArray(creditResult) ? creditResult[0] : creditResult;
+            if (!creditError && creditRow?.allowed) {
+                requester.usedCredit = true;
+                requester.creditsRemaining = creditRow.credits_remaining;
+                return;
+            }
+        }
+        throw new Response(JSON.stringify({
+            error: `${feature.replace(/_/g, ' ')} daily limit reached`,
+            feature,
+            plan,
+            limit,
+            usageCount: count || 0,
+            canBuyCredits: true
+        }), {
+            status: 429,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+    }
+};
+
+const recordGeminiUsageCost = async (
+    supabase: any,
+    requester: any,
+    model: string,
+    feature: string,
+    contents: unknown,
+    systemInstruction: unknown,
+    rawResponse: any,
+) => {
+    try {
+        const usage = rawResponse?.usageMetadata || {};
+        const inputTokens = Number(usage.promptTokenCount || usage.inputTokenCount || roughlyCountTokens({ contents, systemInstruction }));
+        const outputText = rawResponse?.candidates?.[0]?.content?.parts?.map((p: any) => p.text || '').join('\n') || '';
+        const outputTokens = Number(usage.candidatesTokenCount || usage.outputTokenCount || roughlyCountTokens(outputText));
+        await supabase.from('usage_cost_events').insert({
+            user_id: requester.userId,
+            student_code: requester.studentCode,
+            plan: requester.plan,
+            provider: 'gemini',
+            model,
+            feature,
+            input_tokens: inputTokens,
+            output_tokens: outputTokens,
+            estimated_cost_kes: estimateGeminiCostKes(model, inputTokens, outputTokens),
+            metadata: {
+                identifier: requester.identifier,
+                edge_enforced: true,
+                used_credit: Boolean(requester.usedCredit),
+                credits_remaining: requester.creditsRemaining ?? null,
+                total_tokens: usage.totalTokenCount || inputTokens + outputTokens,
+                local_estimate: !rawResponse?.usageMetadata,
+            }
+        });
+    } catch (error) {
+        console.error('Usage cost insert failed:', error);
+    }
+};
+
 serve(async (req) => {
     if (req.method === 'OPTIONS') {
         return new Response('ok', { headers: corsHeaders });
@@ -205,6 +406,9 @@ serve(async (req) => {
 
         const { model, contents, generationConfig, systemInstruction, stream } = await req.json();
         const normalizedModel = normalizeGeminiModel(model);
+        const feature = inferAiFeature(contents, systemInstruction);
+        const supabase = getSupabaseAdmin();
+        const requester = await resolveRequester(req, supabase);
 
         if (!contents || !normalizedModel) {
             return new Response(
@@ -213,17 +417,14 @@ serve(async (req) => {
             );
         }
 
-        // AI Usage limits temporarily bypassed as requested by user (Unlimited Key Active)
-        /*
         try {
-            await enforceUsageLimit(req);
+            await enforceFeatureLimit(supabase, requester, feature);
         } catch (limitError) {
             if (limitError instanceof Response) {
                 return limitError;
             }
             throw limitError;
         }
-        */
 
         // Gemini expects contents to be an array of objects with { role: "user|model", parts: [...] }
         // The client often sends an array of strings or simple objects for generateContent.
@@ -335,6 +536,12 @@ serve(async (req) => {
 
         // Handle streaming response
         if (stream) {
+            await recordGeminiUsageCost(supabase, requester, normalizedModel, feature, contents, systemInstruction, {
+                usageMetadata: {
+                    promptTokenCount: roughlyCountTokens({ contents, systemInstruction }),
+                    candidatesTokenCount: 0,
+                }
+            });
             return new Response(geminiRes.body, {
                 headers: { 
                     ...corsHeaders, 
@@ -347,6 +554,7 @@ serve(async (req) => {
         }
 
         const data = await geminiRes.json();
+        await recordGeminiUsageCost(supabase, requester, normalizedModel, feature, contents, systemInstruction, data);
 
         return new Response(
             JSON.stringify(data),

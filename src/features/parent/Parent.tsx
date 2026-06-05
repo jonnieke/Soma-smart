@@ -12,6 +12,7 @@ import { MasteryDashboard } from '../../components/MasteryDashboard';
 import { supabase } from '../../lib/supabase';
 
 const PARENT_REMEMBER_LOGIN_KEY = 'soma_parent_remembered_login';
+const parentSnapshotKey = (studentCode: string) => `soma_parent_snapshot_${studentCode.trim().toUpperCase()}`;
 
 interface ParentProps {
     onNavigate: (view: ViewState) => void;
@@ -35,6 +36,7 @@ export const ParentDashboard: React.FC<ParentProps> = ({ onNavigate, activityLog
     const [parentActivityLog, setParentActivityLog] = useState<LearnerActivity[] | null>(null);
     const [activityLoading, setActivityLoading] = useState(false);
     const [activityError, setActivityError] = useState('');
+    const [autoLoginAttempted, setAutoLoginAttempted] = useState(false);
     
     // Cloud Memory State
     const [cloudMemoryRow, setCloudMemoryRow] = useState<any>(null);
@@ -66,14 +68,64 @@ export const ParentDashboard: React.FC<ParentProps> = ({ onNavigate, activityLog
         }
     }, []);
 
+    React.useEffect(() => {
+        if (autoLoginAttempted || isAuthenticated || loading || !hasRememberedLogin || !inputCode || !inputPhone) return;
+        setAutoLoginAttempted(true);
+        setLoading(true);
+        setError('');
+
+        login(inputCode, inputPhone).then((result) => {
+            if (result.success) {
+                setIsAuthenticated(true);
+            } else {
+                setError(result.message || 'We could not restore the parent session. Please sign in again.');
+            }
+        }).catch(() => {
+            setError('We could not restore the parent session. Please sign in again.');
+        }).finally(() => {
+            setLoading(false);
+        });
+    }, [autoLoginAttempted, isAuthenticated, loading, hasRememberedLogin, inputCode, inputPhone, login]);
+
     // Fetch live mastery from cloud when authenticated
     React.useEffect(() => {
         if (isAuthenticated && studentId) {
+            const snapshotCode = validStudentCode || '';
+            if (snapshotCode) {
+                try {
+                    const raw = localStorage.getItem(parentSnapshotKey(snapshotCode));
+                    if (raw) {
+                        const snapshot = JSON.parse(raw);
+                        if (Array.isArray(snapshot?.activityLog)) {
+                            setParentActivityLog(snapshot.activityLog);
+                        }
+                        if (snapshot?.cloudMemoryRow) {
+                            setCloudMemoryRow(snapshot.cloudMemoryRow);
+                        }
+                    }
+                } catch (_) {
+                    localStorage.removeItem(parentSnapshotKey(snapshotCode));
+                }
+            }
+
             loadMasteryFromCloud(studentId).then(({ cloudRow }) => {
                 if (cloudRow) setCloudMemoryRow(cloudRow);
             }).catch(() => {});
         }
-    }, [isAuthenticated, studentId]);
+    }, [isAuthenticated, studentId, validStudentCode]);
+
+    React.useEffect(() => {
+        if (!isAuthenticated || !validStudentCode) return;
+        try {
+            localStorage.setItem(parentSnapshotKey(validStudentCode), JSON.stringify({
+                activityLog: parentActivityLog || [],
+                cloudMemoryRow: cloudMemoryRow || null,
+                savedAt: Date.now()
+            }));
+        } catch (_) {
+            // Snapshot cache is optional.
+        }
+    }, [isAuthenticated, validStudentCode, parentActivityLog, cloudMemoryRow]);
 
     React.useEffect(() => {
         if (!isAuthenticated || !studentId) return;
@@ -132,7 +184,7 @@ export const ParentDashboard: React.FC<ParentProps> = ({ onNavigate, activityLog
         };
 
         loadParentActivities();
-    }, [isAuthenticated, studentId]);
+    }, [isAuthenticated, studentId, validStudentCode]);
 
     const visibleActivityLog = parentActivityLog ?? activityLog;
 
@@ -169,14 +221,21 @@ export const ParentDashboard: React.FC<ParentProps> = ({ onNavigate, activityLog
     };
 
     // --- ANALYTICS ENGINE ---
+    const cloudMasteryGraph = cloudMemoryRow?.mastery_graph || {};
+    const cloudWeakTopics = (cloudMemoryRow?.weak_topics || []).filter(Boolean).slice(0, 3);
+    const cloudStrongTopics = (cloudMemoryRow?.strong_topics || []).filter(Boolean).slice(0, 3);
+
     const stats = useMemo(() => {
         const quizzes = visibleActivityLog.filter(a => a.type === 'QUIZ' && a.score !== undefined);
         const topics = visibleActivityLog.filter(a => a.type === 'EXPLANATION');
+        const masteryEntries = Object.values(cloudMasteryGraph).filter(value => typeof value === 'number') as number[];
 
         const totalQuizzes = quizzes.length;
         const avgScore = totalQuizzes > 0
             ? Math.round(quizzes.reduce((acc, curr) => acc + (curr.score || 0), 0) / totalQuizzes)
-            : 0;
+            : masteryEntries.length > 0
+                ? Math.round(masteryEntries.reduce((acc, curr) => acc + curr, 0) / masteryEntries.length)
+                : 0;
 
         const masteryLevel = avgScore >= 80 ? 'Master' : avgScore >= 50 ? 'Developing' : 'Beginner';
 
@@ -189,12 +248,26 @@ export const ParentDashboard: React.FC<ParentProps> = ({ onNavigate, activityLog
             else if (lower.match(/history|war|ancient|king|queen|year/)) subjects['History']++;
             else subjects['English']++;
         });
+        if (topics.length === 0 && cloudStrongTopics.length > 0) {
+            cloudStrongTopics.forEach((topic, idx) => {
+                const bucket = idx === 0 ? 'Math' : idx === 1 ? 'Science' : 'English';
+                subjects[bucket] = (subjects[bucket] || 0) + 1;
+            });
+        }
 
         // Prepare Graph Data (Last 7 Quizzes)
         const graphData = quizzes.slice(0, 7).reverse().map((q, i) => ({
             label: `Q${i + 1}`,
             value: q.score || 0
         }));
+        if (graphData.length === 0 && masteryEntries.length > 0) {
+            graphData.push(
+                ...masteryEntries.slice(0, 7).map((value, i) => ({
+                    label: `M${i + 1}`,
+                    value
+                }))
+            );
+        }
 
         // Gamification Stats
         const totalXP = calculateTotalXP(visibleActivityLog);
@@ -202,10 +275,10 @@ export const ParentDashboard: React.FC<ParentProps> = ({ onNavigate, activityLog
 
         // Weak areas (topics where score < 60)
         const weakAreas = quizzes.filter(q => (q.score || 0) < 60).map(q => q.topic);
-        const uniqueWeakAreas = [...new Set(weakAreas)];
+        const uniqueWeakAreas = [...new Set(weakAreas.length > 0 ? weakAreas : cloudWeakTopics)];
 
         // Smart Usage
-        const aiUses = visibleActivityLog.filter(a => a.type === 'STUDY' || a.type === 'QUIZ').length;
+        const aiUses = visibleActivityLog.filter(a => a.type === 'STUDY' || a.type === 'QUIZ').length || (cloudMemoryRow?.total_sessions ?? 0);
 
         return {
             totalQuizzes,
@@ -220,7 +293,7 @@ export const ParentDashboard: React.FC<ParentProps> = ({ onNavigate, activityLog
             weakAreas: uniqueWeakAreas,
             aiUses
         };
-    }, [visibleActivityLog]);
+    }, [visibleActivityLog, cloudMasteryGraph, cloudWeakTopics, cloudStrongTopics, cloudMemoryRow?.total_sessions]);
 
     const topSubjects = Object.entries(stats.subjects)
         .filter(([, count]) => (count as number) > 0)
@@ -242,11 +315,15 @@ export const ParentDashboard: React.FC<ParentProps> = ({ onNavigate, activityLog
             'Day 7: Take one full mixed quiz to maintain momentum.'
         ];
 
+    const lastTopicLabel = cloudMemoryRow?.last_topic || (visibleActivityLog.find(a => a.topic)?.topic) || 'No topic yet';
+
     const weeklyNarrative = stats.avgScore >= 80
         ? `This week, your child stayed strong in ${topSubjects[0] || 'core subjects'} and maintained high consistency across quizzes.`
         : stats.avgScore >= 50
             ? `This week, your child made steady progress, with the biggest growth in ${topSubjects[0] || 'key topics'}.`
-            : `This week, your child showed effort and needs focused support in ${stats.weakAreas[0] || 'core basics'} to build momentum.`;
+            : visibleActivityLog.length > 0
+                ? `This week, your child needs focused support in ${stats.weakAreas[0] || 'core basics'} to build momentum.`
+                : `There is not enough quiz history yet. The last topic we can see is ${lastTopicLabel}, so ask the learner to open the dashboard once or take one short quiz to create proof.`;
 
     const parentDailyActions = [
         '5 min: Ask what topic they studied today.',
@@ -342,15 +419,17 @@ export const ParentDashboard: React.FC<ParentProps> = ({ onNavigate, activityLog
 
         const studySessions = recentActivities.filter(activity => (
             activity.type === 'EXPLANATION' || activity.type === 'STUDY'
-        )).length;
+        )).length || (cloudMemoryRow?.total_sessions ?? 0);
 
         const nextAction = stats.weakAreas.length > 0
             ? `Ask your child to redo ${stats.weakAreas[0]} and explain one correction aloud.`
             : studyMissions === 0
-                ? 'Ask your child to complete one full library study mission: read, clarify, then test.'
-            : activeRecallBreaks > 0
-                ? 'Keep the daily recall habit and add one timed quiz this week.'
-                : 'Ask your child to complete one recall break after the next explanation.';
+                ? (visibleActivityLog.length === 0
+                    ? 'Ask your child to open the learner dashboard and complete one quiz so the parent proof becomes visible.'
+                    : 'Ask your child to complete one full library study mission: read, clarify, then test.')
+                : activeRecallBreaks > 0
+                    ? 'Keep the daily recall habit and add one timed quiz this week.'
+                    : 'Ask your child to complete one recall break after the next explanation.';
 
         return {
             studySessions,
@@ -360,7 +439,7 @@ export const ParentDashboard: React.FC<ParentProps> = ({ onNavigate, activityLog
             repairedQuestions,
             nextAction
         };
-    }, [visibleActivityLog, stats.weakAreas]);
+    }, [visibleActivityLog, stats.weakAreas, cloudMemoryRow?.total_sessions]);
 
     const shareWeeklyProof = async () => {
         const summary = [
@@ -587,6 +666,84 @@ export const ParentDashboard: React.FC<ParentProps> = ({ onNavigate, activityLog
             />
 
             <main className="p-6 space-y-8">
+
+                {/* 0. QUICK PARENT SNAPSHOT */}
+                <div className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
+                    <div className="bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 rounded-[2rem] p-6 md:p-7 text-white shadow-2xl shadow-slate-900/20 border border-white/10 relative overflow-hidden">
+                        <div className="absolute inset-0 pointer-events-none opacity-30">
+                            <div className="absolute -right-10 -top-10 w-40 h-40 rounded-full bg-indigo-500/20 blur-3xl" />
+                            <div className="absolute left-0 bottom-0 w-56 h-56 rounded-full bg-purple-500/20 blur-3xl" />
+                        </div>
+
+                        <div className="relative z-10">
+                            <p className="text-[10px] font-black uppercase tracking-[0.22em] text-indigo-200 mb-2">Parent quick view</p>
+                            <h2 className="text-2xl md:text-3xl font-black tracking-tight mb-2">What changed this week?</h2>
+                            <p className="text-sm md:text-[15px] font-medium text-slate-200/80 max-w-2xl leading-relaxed">
+                                A parent should not have to guess. See the child&apos;s latest proof of learning, the current weak spot, and the next thing to do tonight.
+                            </p>
+
+                            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-6">
+                                {[
+                                    { label: 'Average Score', value: `${stats.avgScore}%` },
+                                    { label: 'Touches This Week', value: String(proofStats.studySessions) },
+                                    { label: 'Quizzes', value: String(proofStats.quizzes) },
+                                    { label: 'Repairs Needed', value: String(proofStats.repairedQuestions) }
+                                ].map((item) => (
+                                    <div key={item.label} className="rounded-2xl bg-white/10 border border-white/10 p-3">
+                                        <p className="text-[10px] font-black uppercase tracking-widest text-indigo-200/80">{item.label}</p>
+                                        <p className="text-xl font-black mt-1 text-white">{item.value}</p>
+                                    </div>
+                                ))}
+                            </div>
+
+                            <div className="mt-4 rounded-2xl bg-white/8 border border-white/10 p-4">
+                                <p className="text-[10px] font-black uppercase tracking-[0.22em] text-indigo-200/80">Last Visible Topic</p>
+                                <p className="text-sm font-bold text-white mt-1">{lastTopicLabel}</p>
+                                <p className="text-xs text-slate-200/80 mt-1">
+                                    If this looks blank, ask the learner to open the dashboard once or complete one quick quiz.
+                                </p>
+                            </div>
+
+                            <div className="flex flex-col sm:flex-row gap-3 mt-6">
+                                <button
+                                    onClick={shareWeeklyProof}
+                                    className="rounded-2xl bg-white text-slate-950 px-5 py-3 text-xs font-black uppercase tracking-wider hover:bg-slate-100 transition-colors"
+                                >
+                                    Share Weekly Proof
+                                </button>
+                                <button
+                                    onClick={() => navigate('/learner')}
+                                    className="rounded-2xl bg-white/10 border border-white/15 text-white px-5 py-3 text-xs font-black uppercase tracking-wider hover:bg-white/15 transition-colors"
+                                >
+                                    Open Learner View
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl rounded-[2rem] p-6 shadow-xl shadow-slate-200/50 dark:shadow-none border border-white/50 dark:border-slate-800">
+                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-600 dark:text-indigo-300 mb-2">Next Parent Move</p>
+                        <h3 className="text-xl font-black text-slate-900 dark:text-white mb-2">{proofStats.nextAction}</h3>
+                        <p className="text-sm font-semibold text-slate-500 dark:text-slate-400 leading-relaxed">
+                            Keep the next step short and specific. One correction, one explanation, one small win.
+                        </p>
+
+                        <div className="mt-5 grid grid-cols-2 gap-3">
+                            <button
+                                onClick={() => navigate('/pricing')}
+                                className="rounded-2xl bg-slate-900 dark:bg-white text-white dark:text-slate-950 px-4 py-3 text-[11px] font-black uppercase tracking-wider hover:opacity-90 transition-opacity"
+                            >
+                                Plans & Credits
+                            </button>
+                            <button
+                                onClick={() => navigate('/learner')}
+                                className="rounded-2xl bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-200 border border-indigo-100 dark:border-indigo-900 px-4 py-3 text-[11px] font-black uppercase tracking-wider hover:bg-indigo-100 dark:hover:bg-indigo-950/60 transition-colors"
+                            >
+                                Go to Learner
+                            </button>
+                        </div>
+                    </div>
+                </div>
 
                 {/* 1. HERO GREETING */}
                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="relative bg-gradient-to-br from-indigo-600 via-indigo-700 to-purple-800 rounded-[2.5rem] p-8 md:p-10 text-white shadow-2xl shadow-indigo-600/20 overflow-hidden">

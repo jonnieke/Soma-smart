@@ -7,6 +7,8 @@ import { buildTargetedStrategiesInstruction } from "./strategyService";
 // We no longer use VITE_GEMINI_API_KEY on the client.
 // Instead, we call a Supabase Edge Function which adds the key server-side.
 import { supabase } from "../lib/supabase";
+import { buildGeminiUsagePayload, inferAiFeature, trackUsageCost } from "./usageCostService";
+import { assertPlanLimit, recordPlanUsage } from "./planLimitService";
 
 const SchemaType = {
   STRING: "string",
@@ -20,6 +22,8 @@ const SchemaType = {
 const callGeminiProxy = async (model: string, contents: any, generationConfig: any = {}, systemInstruction: any = null) => {
   const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
   const localApiKey = import.meta.env.VITE_GEMINI_API;
+  const feature = inferAiFeature(contents, systemInstruction);
+  assertPlanLimit(feature);
 
   if (isLocal && localApiKey) {
     const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${localApiKey}`;
@@ -40,6 +44,8 @@ const callGeminiProxy = async (model: string, contents: any, generationConfig: a
     }
 
     const data = await response.json();
+    recordPlanUsage(feature);
+    void trackUsageCost(buildGeminiUsagePayload(model, contents, systemInstruction, data, feature));
     return {
       response: {
         text: () => data.candidates?.[0]?.content?.parts?.[0]?.text || "",
@@ -66,6 +72,7 @@ const callGeminiProxy = async (model: string, contents: any, generationConfig: a
   }
 
   const data = await response.json();
+  recordPlanUsage(feature);
 
   // Convert the raw response to match the structure expected by the rest of the file
   return {

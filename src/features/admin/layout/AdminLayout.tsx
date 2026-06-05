@@ -1,8 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { LayoutDashboard, Users, CreditCard, Settings, LogOut, Menu, X, Bell, BookOpen, ClipboardCheck, BarChart3, Brain, FileText } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ViewState } from '../../../types';
 
 interface AdminLayoutProps {
     children: React.ReactNode;
@@ -60,7 +59,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children, activeTab, o
                                     onTabChange(item.id);
                                 }
                             }}
-                            className={`w - full flex items - center gap - 4 px - 4 py - 3 rounded - xl transition - all ${activeTab === item.id
+                            className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-all ${activeTab === item.id
                                 ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-900/50'
                                 : 'hover:bg-slate-800 hover:text-white'
                                 } `}
@@ -130,10 +129,14 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children, activeTab, o
                                     <button
                                         key={item.id}
                                         onClick={() => {
-                                            onTabChange(item.id);
+                                            if (item.id === 'KNOWLEDGE') {
+                                                navigate('/admin/knowledge');
+                                            } else {
+                                                onTabChange(item.id);
+                                            }
                                             setIsMobileMenuOpen(false);
                                         }}
-                                        className={`w - full flex items - center gap - 4 px - 4 py - 3 rounded - xl transition - all ${activeTab === item.id
+                                        className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-all ${activeTab === item.id
                                             ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-900/50'
                                             : 'hover:bg-slate-800 hover:text-white'
                                             } `}

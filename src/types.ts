@@ -421,6 +421,8 @@ export interface SubscriptionPlan {
   teacherLimit?: number;
   studentLimit?: number;
   features?: string[];
+  credits?: number;
+  isCreditPack?: boolean;
 }
 
 // --- MONETIZATION TYPES ---

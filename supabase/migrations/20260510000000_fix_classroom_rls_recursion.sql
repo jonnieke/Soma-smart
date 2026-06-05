@@ -89,6 +89,7 @@ DROP POLICY IF EXISTS "Teachers can insert their own classes" ON public.classes;
 DROP POLICY IF EXISTS "Teachers can update their own classes" ON public.classes;
 DROP POLICY IF EXISTS "Teachers can delete their own classes" ON public.classes;
 DROP POLICY IF EXISTS "Students can view classes they are members of" ON public.classes;
+DROP POLICY IF EXISTS "Teachers and members can view classes" ON public.classes;
 
 CREATE POLICY "Teachers and members can view classes"
     ON public.classes FOR SELECT
@@ -112,6 +113,10 @@ CREATE POLICY "Teachers can delete their own classes"
 
 DROP POLICY IF EXISTS "Teachers can manage members of their classes" ON public.class_members;
 DROP POLICY IF EXISTS "Students can view their own memberships" ON public.class_members;
+DROP POLICY IF EXISTS "Teachers and students can view memberships" ON public.class_members;
+DROP POLICY IF EXISTS "Teachers can add class members" ON public.class_members;
+DROP POLICY IF EXISTS "Teachers can update class members" ON public.class_members;
+DROP POLICY IF EXISTS "Teachers and students can remove memberships" ON public.class_members;
 
 CREATE POLICY "Teachers and students can view memberships"
     ON public.class_members FOR SELECT
@@ -141,6 +146,10 @@ CREATE POLICY "Teachers and students can remove memberships"
 
 DROP POLICY IF EXISTS "Teachers can manage posts in their classes" ON public.class_posts;
 DROP POLICY IF EXISTS "Students can view posts in their classes" ON public.class_posts;
+DROP POLICY IF EXISTS "Teachers and members can view class posts" ON public.class_posts;
+DROP POLICY IF EXISTS "Teachers can insert class posts" ON public.class_posts;
+DROP POLICY IF EXISTS "Teachers can update class posts" ON public.class_posts;
+DROP POLICY IF EXISTS "Teachers can delete class posts" ON public.class_posts;
 
 CREATE POLICY "Teachers and members can view class posts"
     ON public.class_posts FOR SELECT
@@ -176,6 +185,10 @@ CREATE POLICY "Teachers can delete class posts"
 
 DROP POLICY IF EXISTS "Teachers can manage grades in their classes" ON public.gradebook_entries;
 DROP POLICY IF EXISTS "Students can view their own grades" ON public.gradebook_entries;
+DROP POLICY IF EXISTS "Teachers and students can view gradebook entries" ON public.gradebook_entries;
+DROP POLICY IF EXISTS "Teachers can insert gradebook entries" ON public.gradebook_entries;
+DROP POLICY IF EXISTS "Teachers can update gradebook entries" ON public.gradebook_entries;
+DROP POLICY IF EXISTS "Teachers can delete gradebook entries" ON public.gradebook_entries;
 
 CREATE POLICY "Teachers and students can view gradebook entries"
     ON public.gradebook_entries FOR SELECT

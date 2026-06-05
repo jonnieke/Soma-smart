@@ -313,7 +313,7 @@ export const NotesViewer: React.FC<Props> = ({ data, onStartPractice, onExit }) 
                             className="bg-emerald-600 text-white px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5"
                         >
                             <Trophy className="w-3 h-3" />
-                            Start Exam Practice ({fullAnalysis.questions.length} Qs)
+                            Start Exam Drill ({fullAnalysis.questions.length} Qs)
                         </button>
                     )}
                 </div>
@@ -490,7 +490,7 @@ export const NotesViewer: React.FC<Props> = ({ data, onStartPractice, onExit }) 
                                                             className="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2"
                                                         >
                                                             <Trophy className="w-4 h-4" />
-                                                            Start Topic Practice
+                                                            Start Topic Drill
                                                         </button>
                                                     </div>
                                                 )}

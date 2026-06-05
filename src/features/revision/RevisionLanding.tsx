@@ -3,14 +3,15 @@ import { useApp } from '../../context/AppContext';
 import {
     Upload, BookOpen, Brain, ArrowRight, ScanLine, X,
     CheckCircle, LogOut, Search, FileText, ChevronRight, GraduationCap,
-    Sparkles, MessageCircle, MoreHorizontal, Target, Lightbulb
+    Sparkles, MessageCircle, MoreHorizontal, Target, Lightbulb,
+    CalendarDays, ClipboardCheck, TimerReset, TrendingUp, PenLine
 } from 'lucide-react';
 import { ViewState, RevisionMode, TeacherActivity } from '../../types';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Helmet } from 'react-helmet-async';
 import { LogoutModal } from '../../components/LogoutModal';
 import { ThemeToggle } from '../../components/ThemeToggle';
-import { ExamGuruPanel } from './ExamGuruPanel';
+import { ExamGuruPanel, PanelMode } from './ExamGuruPanel';
 import { LoginModal } from '../../components/LoginModal';
 
 const SUBJECT_TIPS: Record<string, { tip: string; trap: string }> = {
@@ -25,6 +26,64 @@ const SUBJECT_TIPS: Record<string, { tip: string; trap: string }> = {
     'CRE':              { tip: 'Quote scripture references accurately — they earn marks independently of your explanation.', trap: 'Telling a Bible story without linking it to the lesson/theme asked loses half the marks.' },
     'Agriculture':      { tip: 'When asked about crop diseases, name the causal organism AND the control method for full marks.', trap: 'Writing generic controls like "spray pesticides" without naming the pesticide type.' },
     'Business Studies': { tip: 'Definitions must include all key elements — incomplete definitions score 0.', trap: 'Advantages/disadvantages: write distinct points, not paraphrases of the same idea.' },
+};
+
+const EXAM_TYPES = ['KCSE', 'KPSEA', 'JSS'] as const;
+const TARGET_GRADES = ['A', 'B+', 'B', 'C+', 'C', 'Pass'] as const;
+const REVISION_SUBJECTS = [
+    'Mathematics', 'Biology', 'Chemistry', 'Physics',
+    'English', 'Kiswahili', 'History', 'Geography',
+    'CRE', 'IRE', 'Agriculture', 'Business Studies',
+    'Computer Studies', 'Home Science', 'Art & Design',
+];
+const DEFAULT_GOAL = {
+    examType: 'KCSE',
+    subject: 'Mathematics',
+    targetGrade: 'B+',
+    examDate: ''
+};
+
+const SUBJECT_ALIASES: Array<{ subject: string; patterns: RegExp[] }> = [
+    { subject: 'Mathematics', patterns: [/\bmath(s|ematics)?\b/i, /\bmathematics\b/i] },
+    { subject: 'English', patterns: [/\benglish\b/i, /\beng\b/i] },
+    { subject: 'Kiswahili', patterns: [/\bkiswahili\b/i, /\bswahili\b/i, /\bkiswa\b/i] },
+    { subject: 'Biology', patterns: [/\bbiology\b/i, /\bbio\b/i] },
+    { subject: 'Chemistry', patterns: [/\bchemistry\b/i, /\bchem\b/i] },
+    { subject: 'Physics', patterns: [/\bphysics\b/i, /\bphy\b/i] },
+    { subject: 'History', patterns: [/\bhistory\b/i, /\bhistory\s*(and|&)\s*government\b/i] },
+    { subject: 'Geography', patterns: [/\bgeography\b/i, /\bgeo\b/i] },
+    { subject: 'CRE', patterns: [/\bc\.?\s*r\.?\s*e\.?\b/i, /\bcre\b/i, /\bchristian religious education\b/i] },
+    { subject: 'IRE', patterns: [/\bi\.?\s*r\.?\s*e\.?\b/i, /\bire\b/i, /\bislamic religious education\b/i] },
+    { subject: 'Agriculture', patterns: [/\bagriculture\b/i, /\bagric\b/i] },
+    { subject: 'Business Studies', patterns: [/\bbusiness\b/i, /\bb\/?studies\b/i] },
+    { subject: 'Computer Studies', patterns: [/\bcomputer\b/i, /\bict\b/i] },
+    { subject: 'Home Science', patterns: [/\bhome science\b/i, /\bhomescience\b/i] },
+    { subject: 'Integrated Science', patterns: [/\bintegrated science\b/i, /\bscience\b/i] },
+    { subject: 'Social Studies', patterns: [/\bsocial studies\b/i] },
+    { subject: 'French', patterns: [/\bfrench\b/i] },
+    { subject: 'German', patterns: [/\bgerman\b/i] },
+    { subject: 'Arabic', patterns: [/\barabic\b/i] },
+    { subject: 'Music', patterns: [/\bmusic\b/i] },
+    { subject: 'Art & Design', patterns: [/\bart\b/i, /\bcraft\b/i, /\bdesign\b/i] },
+    { subject: 'Physical Education (PE)', patterns: [/\bphysical education\b/i, /\bp\.?\s*e\.?\b/i, /\bphe\b/i] },
+];
+
+const normalizeRevisionSubject = (resource: any) => {
+    const rawSubject = String(resource.subject || '').trim();
+    const isUnknown = !rawSubject || /^(none|null|undefined|general|all)$/i.test(rawSubject);
+    if (!isUnknown) return rawSubject;
+
+    const searchable = [
+        resource.title,
+        resource.file_name,
+        resource.fileName,
+        resource.file_path,
+        resource.fileUrl,
+        resource.description
+    ].filter(Boolean).join(' ');
+
+    const match = SUBJECT_ALIASES.find(({ patterns }) => patterns.some(pattern => pattern.test(searchable)));
+    return match?.subject || 'Unsorted Papers';
 };
 
 interface Props {
@@ -90,9 +149,19 @@ export const RevisionLanding: React.FC<Props> = ({ onStartSession, onNavigate, o
     const [showCamera, setShowCamera] = useState(false);
     const [stream, setStream] = useState<MediaStream | null>(null);
     const [showGuru, setShowGuru] = useState(false);
+    const [guruMode, setGuruMode] = useState<PanelMode>('chat');
+    const [guruPrompt, setGuruPrompt] = useState('');
     const [loadingResources, setLoadingResources] = useState(false);
     const [overflowItem, setOverflowItem] = useState<any>(null);
     const [showLoginModal, setShowLoginModal] = useState(false);
+    const [examGoal, setExamGoal] = useState(() => {
+        try {
+            const saved = localStorage.getItem('soma_exam_goal');
+            return saved ? { ...DEFAULT_GOAL, ...JSON.parse(saved) } : DEFAULT_GOAL;
+        } catch {
+            return DEFAULT_GOAL;
+        }
+    });
 
     const videoRef = useRef<HTMLVideoElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -112,13 +181,25 @@ export const RevisionLanding: React.FC<Props> = ({ onStartSession, onNavigate, o
         };
     }, [stream]);
 
+    React.useEffect(() => {
+        localStorage.setItem('soma_exam_goal', JSON.stringify(examGoal));
+    }, [examGoal]);
+
+    const getRevisionItemType = (resource: any) => {
+        const rawType = String(resource.type || resource.category || resource.resource_type || '').toUpperCase().replace(/[\s-]+/g, '_');
+        const title = String(resource.title || '').toLowerCase();
+        if (rawType === 'SYLLABUS') return 'syllabus';
+        if (['PAST_PAPER', 'PAST_PAPERS', 'PASTPAPER', 'REVISION_PAPER', 'REVISIONPAPER', 'EXAM', 'EXAM_PAPER'].includes(rawType)) return 'paper';
+        if (title.includes('past paper') || title.includes('paper') || title.includes('kcse') || title.includes('kpsea') || title.includes('mock')) return 'paper';
+        return 'notes';
+    };
+
     // All resources merged
     const allItems = useMemo(() => {
         const typed = resources.map(r => ({
             ...r,
-            _type: r.type === 'SYLLABUS' ? 'syllabus'
-                : (r.title?.toLowerCase().includes('paper') || r.title?.toLowerCase().includes('kcse') || r.title?.toLowerCase().includes('kpsea') || r.title?.toLowerCase().includes('mock'))
-                    ? 'paper' : 'notes'
+            subject: normalizeRevisionSubject(r),
+            _type: getRevisionItemType(r)
         }));
         // Filter by grade range on profile level for notes and past papers
         return typed.filter(item => {
@@ -130,25 +211,51 @@ export const RevisionLanding: React.FC<Props> = ({ onStartSession, onNavigate, o
         });
     }, [resources, studentProfile?.grade]);
 
-    const subjects = useMemo(() => {
-        const s = new Set(allItems.map(r => r.subject).filter(Boolean));
-        const uniqueSubjects = Array.from(s).filter(sub => sub.toLowerCase() !== 'all');
-        return ['All', ...uniqueSubjects];
+    const pastPaperItems = useMemo(() => {
+        return allItems.filter(item => item._type === 'paper');
     }, [allItems]);
 
+    const subjects = useMemo(() => {
+        const s = new Set(pastPaperItems.map(r => r.subject).filter(Boolean));
+        const uniqueSubjects = Array.from(s).filter(sub => sub.toLowerCase() !== 'all');
+        return ['All', ...uniqueSubjects];
+    }, [pastPaperItems]);
+
     const filteredItems = useMemo(() => {
-        return allItems.filter(item => {
+        return pastPaperItems.filter(item => {
             const matchSub = activeSubject === 'All' || item.subject === activeSubject;
             const q = searchQuery.toLowerCase();
             const matchQ = !q || item.title?.toLowerCase().includes(q) || item.subject?.toLowerCase().includes(q);
             return matchSub && matchQ;
         });
-    }, [allItems, activeSubject, searchQuery]);
+    }, [pastPaperItems, activeSubject, searchQuery]);
 
     const typeConfig: Record<string, { label: string; icon: React.ReactNode; color: string }> = {
         paper: { label: 'Past Paper', icon: <FileText className="w-4 h-4" />, color: 'bg-indigo-50 text-indigo-600 dark:bg-indigo-900/40 dark:text-indigo-400' },
         notes: { label: 'Notes', icon: <BookOpen className="w-4 h-4" />, color: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-400' },
         syllabus: { label: 'Syllabus', icon: <GraduationCap className="w-4 h-4" />, color: 'bg-amber-50 text-amber-600 dark:bg-amber-900/40 dark:text-amber-400' },
+    };
+
+    const daysToExam = useMemo(() => {
+        if (!examGoal.examDate) return null;
+        const target = new Date(`${examGoal.examDate}T00:00:00`);
+        if (Number.isNaN(target.getTime())) return null;
+        const diff = Math.ceil((target.getTime() - Date.now()) / 86400000);
+        return Math.max(diff, 0);
+    }, [examGoal.examDate]);
+
+    const missionTopic = weakTopics[0] || (activeSubject !== 'All' ? activeSubject : examGoal.subject);
+    const missionTitle = weakTopics[0]
+        ? `${examGoal.subject}: fix ${missionTopic}`
+        : `${examGoal.subject}: start with a scored drill`;
+    const missionResource = filteredItems.find(item =>
+        item.subject === examGoal.subject
+    ) || filteredItems[0];
+
+    const openGuru = (mode: PanelMode = 'chat', prompt = '') => {
+        setGuruMode(mode);
+        setGuruPrompt(prompt);
+        setShowGuru(true);
     };
 
     // Camera helpers
@@ -226,7 +333,74 @@ export const RevisionLanding: React.FC<Props> = ({ onStartSession, onNavigate, o
             <main className="max-w-3xl mx-auto px-4 pt-6 pb-28 space-y-8">
 
                 {/* ── ZONE 1: HERO ACTION BAR ── */}
-                <section className="grid grid-cols-3 gap-3">
+                <section className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-4 sm:p-5 shadow-sm">
+                    <div className="flex items-start justify-between gap-3 mb-4">
+                        <div>
+                            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-500 mb-1">Candidate Command Centre</p>
+                            <h1 className="text-xl sm:text-2xl font-black text-slate-950 dark:text-white leading-tight">What paper are we training for today?</h1>
+                            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1 font-medium">
+                                Set your exam goal once. Soma turns it into marking, drills, and paper drills.
+                            </p>
+                        </div>
+                        <div className="hidden sm:flex w-12 h-12 rounded-2xl bg-indigo-600 text-white items-center justify-center shrink-0">
+                            <Target className="w-6 h-6" />
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                        <select
+                            value={examGoal.examType}
+                            onChange={e => setExamGoal(prev => ({ ...prev, examType: e.target.value }))}
+                            className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl px-3 py-3 text-xs font-black text-slate-800 dark:text-slate-100 outline-none"
+                            aria-label="Exam type"
+                        >
+                            {EXAM_TYPES.map(type => <option key={type} value={type}>{type}</option>)}
+                        </select>
+                        <select
+                            value={examGoal.subject}
+                            onChange={e => {
+                                setExamGoal(prev => ({ ...prev, subject: e.target.value }));
+                                setActiveSubject(e.target.value);
+                            }}
+                            className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl px-3 py-3 text-xs font-black text-slate-800 dark:text-slate-100 outline-none"
+                            aria-label="Revision subject"
+                        >
+                            {REVISION_SUBJECTS.map(subject => <option key={subject} value={subject}>{subject}</option>)}
+                        </select>
+                        <select
+                            value={examGoal.targetGrade}
+                            onChange={e => setExamGoal(prev => ({ ...prev, targetGrade: e.target.value }))}
+                            className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl px-3 py-3 text-xs font-black text-slate-800 dark:text-slate-100 outline-none"
+                            aria-label="Target grade"
+                        >
+                            {TARGET_GRADES.map(grade => <option key={grade} value={grade}>Target {grade}</option>)}
+                        </select>
+                        <input
+                            type="date"
+                            value={examGoal.examDate}
+                            onChange={e => setExamGoal(prev => ({ ...prev, examDate: e.target.value }))}
+                            className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl px-3 py-3 text-xs font-black text-slate-800 dark:text-slate-100 outline-none"
+                            aria-label="Exam date"
+                        />
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-2 mt-4">
+                        <button onClick={() => openGuru('mark')} className="rounded-2xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white px-3 py-3 transition-all text-left">
+                            <ClipboardCheck className="w-5 h-5 mb-2" />
+                            <span className="block text-xs font-black leading-tight">Mark<br />My Answer</span>
+                        </button>
+                        <button onClick={() => openGuru('practice')} className="rounded-2xl bg-rose-600 hover:bg-rose-700 active:scale-95 text-white px-3 py-3 transition-all text-left">
+                            <PenLine className="w-5 h-5 mb-2" />
+                            <span className="block text-xs font-black leading-tight">Timed<br />Drill</span>
+                        </button>
+                        <button onClick={() => openGuru('predict')} className="rounded-2xl bg-amber-500 hover:bg-amber-600 active:scale-95 text-white px-3 py-3 transition-all text-left">
+                            <TrendingUp className="w-5 h-5 mb-2" />
+                            <span className="block text-xs font-black leading-tight">Hot<br />Topics</span>
+                        </button>
+                    </div>
+                </section>
+
+                <section className="hidden">
                     {/* Scan */}
                     <button
                         onClick={startCamera}
@@ -266,6 +440,69 @@ export const RevisionLanding: React.FC<Props> = ({ onStartSession, onNavigate, o
                 </section>
 
                 {/* ── ZONE 2: FOCUS AREA ── */}
+                <section className="bg-slate-950 text-white rounded-3xl p-4 sm:p-5 overflow-hidden relative">
+                    <div className="absolute -right-10 -top-10 w-32 h-32 bg-indigo-500/20 rounded-full blur-3xl" />
+                    <div className="relative">
+                        <div className="flex items-start justify-between gap-3">
+                            <div>
+                            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-300 mb-1">Today's Exam Mission</p>
+                            <h2 className="text-lg sm:text-xl font-black leading-tight">
+                                {missionTitle}
+                            </h2>
+                                <p className="text-xs text-slate-300 mt-1 font-medium">
+                                    Target {examGoal.targetGrade} in {examGoal.examType}
+                                    {daysToExam !== null ? ` · ${daysToExam} day${daysToExam === 1 ? '' : 's'} left` : ' · add exam date for countdown'}
+                                </p>
+                            </div>
+                            <div className="w-12 h-12 rounded-2xl bg-white/10 border border-white/10 flex items-center justify-center shrink-0">
+                                {daysToExam !== null ? <CalendarDays className="w-6 h-6 text-emerald-300" /> : <TimerReset className="w-6 h-6 text-emerald-300" />}
+                            </div>
+                        </div>
+
+                        <div className="grid sm:grid-cols-3 gap-2 mt-4">
+                            <button onClick={() => openGuru('practice')} className="bg-white/10 hover:bg-white/15 border border-white/10 rounded-2xl p-3 text-left transition-colors">
+                                <span className="text-[10px] font-black text-emerald-300 uppercase tracking-wider">Step 1</span>
+                                <p className="text-sm font-black mt-1">Attempt 3 questions</p>
+                                <p className="text-[11px] text-slate-400 mt-1">Generate a short paper-style drill before seeing answers.</p>
+                            </button>
+                            <button onClick={() => openGuru('mark')} className="bg-white/10 hover:bg-white/15 border border-white/10 rounded-2xl p-3 text-left transition-colors">
+                                <span className="text-[10px] font-black text-emerald-300 uppercase tracking-wider">Step 2</span>
+                                <p className="text-sm font-black mt-1">Mark your answer</p>
+                                <p className="text-[11px] text-slate-400 mt-1">See where marks were won or lost.</p>
+                            </button>
+                            <button
+                                onClick={() => {
+                                    if (missionResource) onStartSession(missionResource, RevisionMode.EXAM);
+                                    else openGuru('predict');
+                                }}
+                                className="bg-white/10 hover:bg-white/15 border border-white/10 rounded-2xl p-3 text-left transition-colors"
+                            >
+                                <span className="text-[10px] font-black text-emerald-300 uppercase tracking-wider">Step 3</span>
+                                <p className="text-sm font-black mt-1">Do paper drills</p>
+                                <p className="text-[11px] text-slate-400 mt-1">Use a real paper or the hot-topic list you just drilled.</p>
+                            </button>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-2 mt-3">
+                            <button onClick={startCamera} className="flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-500 rounded-2xl py-3 text-xs font-black transition-colors">
+                                <ScanLine className="w-4 h-4" /> Scan Question
+                            </button>
+                            <label className="flex items-center justify-center gap-2 bg-white text-slate-900 hover:bg-slate-100 rounded-2xl py-3 text-xs font-black transition-colors cursor-pointer">
+                                <Upload className="w-4 h-4" /> Upload Paper
+                                <input
+                                    type="file"
+                                    className="hidden"
+                                    accept="image/*"
+                                    onChange={e => {
+                                        const f = e.target.files?.[0];
+                                        if (f) onStartSession(f, RevisionMode.LEARN);
+                                    }}
+                                />
+                            </label>
+                        </div>
+                    </div>
+                </section>
+
                 <section>
                     {hasHistory ? (
                         <div>
@@ -328,7 +565,7 @@ export const RevisionLanding: React.FC<Props> = ({ onStartSession, onNavigate, o
                             type="text"
                             value={searchQuery}
                             onChange={e => setSearchQuery(e.target.value)}
-                            placeholder="Search papers, notes, syllabus..."
+                            placeholder="Search past papers..."
                             className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl pl-10 pr-10 py-3 text-sm font-medium placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-800 focus:border-indigo-300 dark:focus:border-indigo-700 outline-none transition-all"
                         />
                         {searchQuery && (
@@ -387,13 +624,13 @@ export const RevisionLanding: React.FC<Props> = ({ onStartSession, onNavigate, o
                     ) : filteredItems.length === 0 ? (
                         <div className="py-12 text-center bg-white dark:bg-slate-900/50 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800">
                             <FileText className="w-8 h-8 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
-                            <p className="font-bold text-slate-500 dark:text-slate-400 mb-1">No resources found</p>
-                            <p className="text-xs text-slate-400 dark:text-slate-500">Try a different subject or search term</p>
+                            <p className="font-bold text-slate-500 dark:text-slate-400 mb-1">No past papers found</p>
+                            <p className="text-xs text-slate-400 dark:text-slate-500">Try another subject or search term</p>
                         </div>
                     ) : (
                         <div className="space-y-2">
                             <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-3">
-                                {filteredItems.length} resource{filteredItems.length !== 1 ? 's' : ''}
+                                {filteredItems.length} past paper{filteredItems.length !== 1 ? 's' : ''}
                                 {activeSubject !== 'All' ? ` · ${activeSubject}` : ''}
                             </p>
                             {filteredItems.map((item: any, idx: number) => {
@@ -538,7 +775,14 @@ export const RevisionLanding: React.FC<Props> = ({ onStartSession, onNavigate, o
 
             {/* ── EXAM GURU PANEL ── */}
             <AnimatePresence>
-                {showGuru && <ExamGuruPanel onClose={() => setShowGuru(false)} onLogin={() => setShowLoginModal(true)} />}
+                {showGuru && (
+                    <ExamGuruPanel
+                        onClose={() => setShowGuru(false)}
+                        onLogin={() => setShowLoginModal(true)}
+                        initialMode={guruMode}
+                        initialPrompt={guruPrompt}
+                    />
+                )}
             </AnimatePresence>
 
             {/* ── LOGOUT MODAL ── */}

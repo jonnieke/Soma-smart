@@ -13,7 +13,7 @@ import { useApp } from '../../context/AppContext';
 import { ExplanationResult, QuizData, ViewState, SubscriptionPlan, LearnerProfile, LearnerActivity, UserRole, PodcastScript, ChatMessage, RevisionMode, TeacherActivity, EducationLevel } from '../../types';
 import { PricingPage } from '../subscription/PricingPage';
 import { PaymentFlow } from '../subscription/PaymentFlow';
-import { STUDENT_PLANS, TEACHER_PLANS, DOWNLOAD_PASS } from '../../data/pricing';
+import { LEARNING_CREDIT_PACKS, STUDENT_PLANS, TEACHER_PLANS, DOWNLOAD_PASS } from '../../data/pricing';
 import { RegistrationModal } from '../../components/RegistrationModal'; // Assuming path
 import { LoginModal } from '../../components/LoginModal'; // Assuming path
 import { AIFeedbackButtons } from '../../components/AIFeedbackButtons';
@@ -33,6 +33,7 @@ import { classroomService, StudentClassroomSummary } from '../../services/classr
 import { getLearnerCtaVariant } from '../../utils/abExperiments';
 import { QuestRoadmap } from './QuestRoadmap';
 import { safeImport } from '../../utils/safeImport';
+import { PlanLimitError, getPlanLimit, getPlanUsage } from '../../services/planLimitService';
 
 const RevisionLanding = React.lazy(() => safeImport(() => import('../revision/RevisionLanding').then(module => ({ default: module.RevisionLanding }))));
 const RevisionSession = React.lazy(() => safeImport(() => import('../revision/RevisionSession').then(module => ({ default: module.RevisionSession }))));
@@ -64,6 +65,14 @@ const speak = async (...args: any[]) => ((await loadElevenLabsService()).speak a
 const stopSpeechElevenLabs = () => { void loadElevenLabsService().then(service => service.stopSpeech()); };
 const playPodcast = async (...args: any[]) => ((await loadElevenLabsService()).playPodcast as any)(...args);
 const cancelPodcast = () => { void loadElevenLabsService().then(service => service.cancelPodcast()); };
+
+const formatUsageRemaining = (remaining: number, unit: 'calls' | 'characters') => {
+  if (unit === 'characters') {
+    if (remaining >= 1000) return `${Math.floor(remaining / 1000)}k chars`;
+    return `${remaining} chars`;
+  }
+  return `${remaining} left`;
+};
 
 // ─── Branded lazy-load skeleton ───────────────────────────────────────────────
 const DeferredViewLoader = () => (
@@ -102,6 +111,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
     marketplaceMaterials, purchasedMaterialIds, purchaseMaterial,
     resources, fetchResources,
     extraDownloads, grantExtraDownloads,
+    learningCredits,
     verifySubscription, login,
     // Phase 2/3: Adaptive Tutoring & Evolutionary Educator
     masteryGraph, spacedRepetitionItems, dueForReview, weakTopics, processQuizCompletion, addSpacedRepetitionItem,
@@ -122,6 +132,12 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
 
   // Read target tab from navigation state if coming from another route (like /exam-rooms)
   const initialTab = (location.state as any)?.targetTab as SidebarTab || 'HOME';
+  const initialTargetIntent = (location.state as any)?.targetIntent as
+    | 'ask_akili'
+    | 'official_library'
+    | 'exam_prep_papers'
+    | 'listen_and_learn'
+    | undefined;
   const initialMode = initialTab === 'SMART_TUTOR' || initialTab === 'HOMEWORK' ? 'SCAN_EXPLAIN' :
     initialTab === 'RESOURCES' ? 'MARKETPLACE' :
       initialTab === 'PROGRESS' ? 'HISTORY' :
@@ -424,9 +440,11 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
   }, [completedRecallChecks.length, explanation, recallRewarded, saveActivity, trackFunnelEvent, triggerMemorySync, updateTopicMastery]);
   const [showTutoringModal, setShowTutoringModal] = useState(false);
   const [showExpiryModal, setShowExpiryModal] = useState(false); // New State
+  const [showLimitModal, setShowLimitModal] = useState(false);
   const [hasRecentPaymentUnlock, setHasRecentPaymentUnlock] = useState(false);
   const resumeBypassRef = useRef(false);
   const subscriptionRepairAttemptedRef = useRef(false);
+  const paywallRecoveryAttemptedRef = useRef(false);
 
   // --- Spaced Repetition (Flashcards) States & Confetti Hook ---
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
@@ -454,6 +472,33 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
       console.warn('Subscription self-heal check failed:', err);
     });
   }, [isRegistered, isPro, verifySubscription]);
+
+  useEffect(() => {
+    if (!showLimitModal || !isRegistered || isPro || paywallRecoveryAttemptedRef.current) return;
+    paywallRecoveryAttemptedRef.current = true;
+    verifySubscription()
+      .catch((err) => {
+        console.warn('Paywall recovery check failed:', err);
+      })
+      .finally(() => {
+        window.setTimeout(() => {
+          paywallRecoveryAttemptedRef.current = false;
+        }, 1500);
+      });
+  }, [showLimitModal, isRegistered, isPro, verifySubscription]);
+
+  useEffect(() => {
+    const hasClientActiveSubscription =
+      subscriptionPlan !== 'FREE' &&
+      !!subscriptionExpiry &&
+      !isNaN(new Date(subscriptionExpiry).getTime()) &&
+      new Date(subscriptionExpiry) > new Date();
+
+    if (showLimitModal && (isPro || hasRecentPaymentUnlock || hasClientActiveSubscription)) {
+      setShowLimitModal(false);
+      setHasRecentPaymentUnlock(true);
+    }
+  }, [showLimitModal, isPro, hasRecentPaymentUnlock, subscriptionPlan, subscriptionExpiry]);
 
   // Subscription Expiry Check
   useEffect(() => {
@@ -862,7 +907,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
                     setMode('QUIZ');
                   } catch {
                     setError({
-                      title: "Practice Quiz Unavailable",
+                      title: "Quiz Unavailable",
                       message: "We generated your answer, but couldn't start the quiz right now. Please try again in a moment."
                     });
                   }
@@ -1074,7 +1119,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
       doc.text("Somo Smart Revision", pageWidth / 2, 22, { align: 'center' });
 
       doc.setFontSize(10);
-      doc.text("Elite Learning Material - CBC/KCSE Aligned", pageWidth / 2, 32, { align: 'center' });
+      doc.text("Official Study Material - CBC/KCSE Aligned", pageWidth / 2, 32, { align: 'center' });
 
       yPos = 55;
       doc.setFontSize(18);
@@ -1423,9 +1468,9 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
   // REMOVE duplicate useApp call that was around here
   const [showRegistration, setShowRegistration] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
-  const [showLimitModal, setShowLimitModal] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarTab, setSidebarTab] = useState<SidebarTab>(initialTab);
+  const [entryIntent, setEntryIntent] = useState(initialTargetIntent || null);
 
   type PendingPaywallAction = 
     | { type: 'PROCESS_FILE', file: File }
@@ -1478,6 +1523,33 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
         break;
     }
   };
+
+  useEffect(() => {
+    if (!entryIntent) return;
+
+    trackFunnelEvent('learner_deep_link_consumed', {
+      intent: entryIntent,
+      target_tab: initialTab
+    });
+
+    if (entryIntent === 'ask_akili') {
+      setSidebarTab('SMART_TUTOR');
+      setMode('SCAN_EXPLAIN');
+    } else if (entryIntent === 'official_library') {
+      setSidebarTab('RESOURCES');
+      setLibraryView('UNLOCKED');
+      setMode('MARKETPLACE');
+    } else if (entryIntent === 'exam_prep_papers') {
+      setSidebarTab('SUBJECTS');
+      setMode('REVISION');
+    } else if (entryIntent === 'listen_and_learn') {
+      setSidebarTab('TALKBACK');
+      setMode('TALKBACK');
+    }
+
+    setEntryIntent(null);
+    navigate(location.pathname, { replace: true, state: {} });
+  }, [entryIntent, initialTab, location.pathname, navigate, trackFunnelEvent]);
 
   const checkLimit = (action?: PendingPaywallAction): boolean => {
     if (resumeBypassRef.current) {
@@ -1888,7 +1960,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
 
       if (requestedQuizTopic) {
         const quiz = await generateQuickQuiz(
-          `Create a learner-ready quiz on ${requestedQuizTopic}. Test key definitions, process steps, misconceptions, and exam-style understanding.`,
+          `Create a learner-ready quiz on ${requestedQuizTopic}. Test key definitions, process steps, misconceptions, and exam-style understanding. Do not explain what a quiz is, and do not add an introduction or tutorial text.`,
           requestedQuizTopic,
           language
         );
@@ -2139,6 +2211,14 @@ ${explanation.explanation}
       await generateSpeech(textToRead, language);
     } catch (e: any) {
       console.error("TTS Error:", e);
+      if (e instanceof PlanLimitError || e?.name === 'PlanLimitError') {
+        setShowLimitModal(true);
+        setError({
+          title: "Voice Limit Reached",
+          message: "Your Listen & Learn voice allowance is used up. Buy learning credits or upgrade your plan to continue with natural ElevenLabs audio."
+        });
+        return;
+      }
       setError({
         title: "Voice Unavailable",
         message: e?.message || "The natural ElevenLabs voice could not load. Please check the voice service configuration."
@@ -2281,7 +2361,7 @@ ${explanation.explanation}
     setMode('SCAN'); // Show loading screen
     try {
       const quiz = await generateQuickQuiz(
-        `Create a learner-ready quiz on ${topic}. Test key definitions, process steps, misconceptions, and exam-style understanding.`,
+        `Create a learner-ready quiz on ${topic}. Test key definitions, process steps, misconceptions, and exam-style understanding. Do not explain what a quiz is, and do not add an introduction or tutorial text.`,
         topic,
         language
       );
@@ -2408,7 +2488,7 @@ ${explanation.explanation}
                   }}
                   className="px-8 py-3.5 bg-slate-800 hover:bg-slate-700/85 border border-slate-700 text-slate-200 rounded-2xl font-bold text-sm transition-all active:scale-95 duration-200 cursor-pointer text-center"
                 >
-                  Practice Deck Again
+                  Review Deck Again
                 </button>
               </div>
             </div>
@@ -2437,7 +2517,7 @@ ${explanation.explanation}
               <div>
                 <h1 className="text-base font-extrabold tracking-wide flex items-center gap-2">
                   <Brain className="w-5 h-5 text-indigo-400 animate-pulse" />
-                  Active Recall Practice
+                  Active Recall Review
                 </h1>
                 <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest">
                   Spaced Repetition Queue
@@ -2475,7 +2555,7 @@ ${explanation.explanation}
                       : 'text-slate-400 hover:text-slate-200'
                   }`}
                 >
-                  Practice All ({totalFlashcards})
+                  Review All ({totalFlashcards})
                 </button>
               </div>
             )}
@@ -2512,7 +2592,7 @@ ${explanation.explanation}
                       }}
                       className="px-6 py-3 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 rounded-xl text-xs font-bold transition-all active:scale-95 duration-200 cursor-pointer"
                     >
-                      Practice All ({totalFlashcards})
+                      Review All ({totalFlashcards})
                     </button>
                   )}
                 </div>
@@ -3307,6 +3387,24 @@ ${explanation.explanation}
       const averageQuizScore = scoredQuizzes.length
         ? Math.round(scoredQuizzes.reduce((sum, item) => sum + item.score, 0) / scoredQuizzes.length)
         : null;
+      const effectivePlan = isPro ? subscriptionPlan : 'FREE';
+      const planMeters = [
+        { feature: 'ai_generation', label: 'Ask Akili', icon: <Sparkles className="w-4 h-4" />, unit: 'calls' as const },
+        { feature: 'exam_guru', label: 'Exam Guru', icon: <ClipboardList className="w-4 h-4" />, unit: 'calls' as const },
+        { feature: 'exam_marking', label: 'Smart Marking', icon: <PenTool className="w-4 h-4" />, unit: 'calls' as const },
+        { feature: 'listen_and_learn_voice', label: 'Voice Lessons', icon: <Headphones className="w-4 h-4" />, unit: 'characters' as const },
+      ].map(item => {
+        const limit = getPlanLimit(item.feature, effectivePlan);
+        const used = getPlanUsage(item.feature, effectivePlan);
+        const remaining = Math.max(0, limit - used);
+        return {
+          ...item,
+          limit,
+          used,
+          remaining,
+          pct: limit > 0 ? Math.min(100, Math.round((used / limit) * 100)) : 100
+        };
+      });
       const dueFlashcardsCountForNext = dueForReview?.filter(i => i.question && i.answer).length || 0;
       const focusTopic = (lastQuizReview?.missedQuestions.length && explanation?.topic)
         ? explanation.topic
@@ -3372,32 +3470,32 @@ ${explanation.explanation}
         {
           label: 'Hint First',
           body: 'Get guidance without giving away the answer.',
-          buildPrompt: (question: string) => `Do not give me the final answer immediately. Give me one hint first, ask me to try, then reveal the next step only after I respond.\n\nMy question: ${question || '[type or paste your question here]'}`
+          buildPrompt: (question: string) => `Act like a tutor, not a lecturer. Give me one hint first, ask me to try, then reveal the next step only after I respond.\n\nDo not explain what a quiz, exam, or lesson is.\n\nMy question: ${question || '[type or paste your question here]'}`
         },
         {
           label: 'Mark My Working',
           body: 'Paste your attempt and get corrections.',
-          buildPrompt: (question: string) => `Mark my working like a teacher. Identify the first mistake, explain why it is wrong, and give me one similar practice question.\n\nMy working: ${question || '[paste your working here]'}`
+          buildPrompt: (question: string) => `Mark my working like a KNEC examiner. Identify the first mistake, explain why it is wrong, and give me one similar practice question.\n\nDo not give a lesson about what marking is. Go straight to the correction.\n\nMy working: ${question || '[paste your working here]'}`
         },
         {
           label: 'Quiz Me',
           body: 'Turn this topic into a self-test.',
-          buildPrompt: (question: string) => `Create a 5-question quiz on this topic. Ask one question at a time, wait for my answer, then mark it and explain the correction.\n\nTopic: ${question || '[type the topic here]'}`
+          buildPrompt: (question: string) => `Create a 5-question quiz on this topic only. Do not explain what a quiz is, what a test is, or add an introduction.\n\nAsk one question at a time, wait for my answer, then mark it and explain the correction.\n\nTopic: ${question || '[type the topic here]'}`
         },
         {
           label: 'Past Paper Coach',
           body: 'Work through exam questions step by step.',
-          buildPrompt: (question: string) => `Help me solve this past paper question like an exam coach. First identify the topic and command word, then guide me through the method. Do not give the final answer until I try.\n\nQuestion: ${question || '[paste the past paper question here]'}`
+          buildPrompt: (question: string) => `Help me solve this past paper question like an exam coach. First identify the topic and command word, then guide me through the method.\n\nDo not explain what a past paper is. Do not give the final answer until I try.\n\nQuestion: ${question || '[paste the past paper question here]'}`
         },
         {
           label: 'Explain Simply',
           body: 'Break it down for a stuck learner.',
-          buildPrompt: (question: string) => `Explain this in simple language for a Kenyan learner. Use a short example, then ask me one check question before giving a quiz.\n\nTopic or question: ${question || '[type what you do not understand here]'}`
+          buildPrompt: (question: string) => `Explain this in simple language for a Kenyan learner. Go straight to the idea, use a short example, then ask me one check question before giving a quiz.\n\nDo not define the learning tool itself.\n\nTopic or question: ${question || '[type what you do not understand here]'}`
         },
         {
           label: 'Swahili Support',
           body: 'Use simple English with Kiswahili help.',
-          buildPrompt: (question: string) => `Explain this using simple English, and add short Kiswahili support for hard words. Then ask me to explain it back in my own words.\n\nTopic or question: ${question || '[type your question here]'}`
+          buildPrompt: (question: string) => `Explain this using simple English, and add short Kiswahili support for hard words. Then ask me to explain it back in my own words.\n\nDo not add generic tutorial text.\n\nTopic or question: ${question || '[type your question here]'}`
         }
       ];
 
@@ -3481,7 +3579,7 @@ ${explanation.explanation}
               <motion.div
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="hidden"
+                className="mb-6 rounded-3xl bg-gradient-to-br from-indigo-600 via-blue-600 to-slate-900 p-5 sm:p-6 text-white shadow-lg shadow-indigo-500/20"
               >
                 <div className="flex items-start gap-4">
                   <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center shrink-0 text-xl">🚀</div>
@@ -3540,7 +3638,7 @@ ${explanation.explanation}
                       className="rounded-2xl bg-white/12 hover:bg-white/20 border border-white/15 px-4 py-3 text-left font-black text-sm transition-colors"
                     >
                       Exam Prep
-                      <span className="block text-[10px] font-bold text-indigo-100 mt-0.5">Practice under pressure</span>
+                      <span className="block text-[10px] font-bold text-indigo-100 mt-0.5">Exam-style drills</span>
                     </button>
                   </div>
                 </div>
@@ -3636,6 +3734,69 @@ ${explanation.explanation}
                 </div>
               </motion.div>
             )}
+
+            <div className="mb-6 rounded-2xl border-2 border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-[0.18em] text-indigo-500">Today&apos;s Plan Balance</p>
+                  <h2 className="text-base font-black text-slate-900 dark:text-white mt-0.5">
+                    {isPro ? `${subscriptionPlan.toLowerCase()} plan controls` : 'Free trial controls'}
+                  </h2>
+                </div>
+                <button
+                  onClick={() => {
+                    trackFunnelEvent('credit_pack_selected', {
+                      source: 'learner_plan_balance',
+                      credits: LEARNING_CREDIT_PACKS[0].credits,
+                      amount_kes: LEARNING_CREDIT_PACKS[0].price
+                    });
+                    setSelectedPlan(LEARNING_CREDIT_PACKS[0]);
+                    setMode('PAYMENT' as any);
+                  }}
+                  className="self-start sm:self-auto rounded-xl bg-slate-100 dark:bg-slate-800 px-3 py-2 text-[11px] font-black uppercase tracking-wider text-slate-600 dark:text-slate-300 hover:bg-indigo-50 hover:text-indigo-700 dark:hover:bg-indigo-950/50 dark:hover:text-indigo-300 transition-colors"
+                >
+                  Buy Credits
+                </button>
+              </div>
+              <div className="mb-4 flex items-center justify-between rounded-2xl bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-900 px-4 py-3">
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-[0.16em] text-indigo-500">Credit Wallet</p>
+                  <p className="text-xs font-bold text-slate-600 dark:text-slate-300 mt-0.5">Used only after your daily plan balance runs out.</p>
+                </div>
+                <p className="text-2xl font-black text-indigo-700 dark:text-indigo-300">{learningCredits}</p>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                {planMeters.map((meter) => (
+                  <div key={meter.feature} className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/50 p-3">
+                    <div className="flex items-center justify-between gap-2 mb-2">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <div className="w-8 h-8 rounded-xl bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-300 flex items-center justify-center shadow-sm shrink-0">
+                          {meter.icon}
+                        </div>
+                        <p className="text-xs font-black text-slate-800 dark:text-slate-100 truncate">{meter.label}</p>
+                      </div>
+                      <p className={`text-[10px] font-black ${meter.remaining <= 0 ? 'text-rose-500' : meter.pct >= 75 ? 'text-amber-500' : 'text-emerald-600'}`}>
+                        {formatUsageRemaining(meter.remaining, meter.unit)}
+                      </p>
+                    </div>
+                    <div className="h-2 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden">
+                      <div
+                        className={`h-full rounded-full ${meter.remaining <= 0 ? 'bg-rose-500' : meter.pct >= 75 ? 'bg-amber-400' : 'bg-emerald-500'}`}
+                        style={{ width: `${meter.pct}%` }}
+                      />
+                    </div>
+                    <p className="mt-2 text-[10px] font-bold text-slate-400">
+                      {meter.unit === 'characters'
+                        ? `${meter.used.toLocaleString()} / ${meter.limit.toLocaleString()} chars today`
+                        : `${meter.used} / ${meter.limit} uses today`}
+                    </p>
+                  </div>
+                ))}
+              </div>
+              <p className="mt-3 text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+                Limits reset daily and keep Soma affordable while protecting high-value tools like marking and voice lessons.
+              </p>
+            </div>
 
 
             {/* HEADER METRICS */}
@@ -3840,12 +4001,12 @@ ${explanation.explanation}
                   <div className="bg-gradient-to-r from-indigo-600 to-blue-600 rounded-3xl p-6 text-white shadow-xl shadow-indigo-200">
                     <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-100 mb-2">Start Here</p>
                     <h2 className="text-2xl font-black tracking-tight mb-2">
-                      {learnerCtaVariant === 'A' ? 'Study a topic, then test yourself' : 'Open one topic now and finish with a score'}
+                      {learnerCtaVariant === 'A' ? 'Open one topic and finish with a score' : 'Pick one topic and test yourself'}
                     </h2>
                     <p className="text-sm font-medium text-indigo-100 mb-5">
                       {learnerCtaVariant === 'A'
-                        ? 'Open notes or past papers, ask Akili for a clear explanation, then generate a quick quiz.'
-                        : 'Pick a note or past paper, ask Akili for clarity, and complete a quick quiz in one flow.'}
+                        ? 'Open notes or past papers, get help, then take a quick quiz.'
+                        : 'Choose one note or paper, get help, then finish with a short quiz.'}
                     </p>
                     <div className="flex flex-col sm:flex-row gap-3">
                       <button
@@ -3875,10 +4036,10 @@ ${explanation.explanation}
                     <div className="flex items-center justify-between mb-4">
                       <div>
                         <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-1">Solve It Now</p>
-                        <h3 className="text-base font-bold text-slate-800 dark:text-white">Pick what you need help with right now</h3>
+                        <h3 className="text-base font-bold text-slate-800 dark:text-white">Choose one thing to do now</h3>
                       </div>
                     </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                       <button
                         onClick={() => setMode('SCAN_EXPLAIN')}
                         className="text-left rounded-2xl border-2 border-slate-200 dark:border-slate-800 p-4 hover:border-blue-300 dark:hover:border-blue-700 transition-colors"
@@ -3900,37 +4061,20 @@ ${explanation.explanation}
                         <p className="text-sm font-bold text-slate-800 dark:text-slate-100">I need notes or past papers now</p>
                         <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-1">Open the library with all materials.</p>
                       </button>
+                    </div>
+                    <div className="mt-3 flex flex-wrap gap-2">
                       <button
                         onClick={() => handleSidebarTabChange('TALKBACK')}
-                        className="text-left rounded-2xl border-2 border-slate-200 dark:border-slate-800 p-4 hover:border-pink-300 dark:hover:border-pink-700 transition-colors"
+                        className="rounded-full border border-pink-200 dark:border-pink-900/40 bg-pink-50 dark:bg-pink-950/30 px-4 py-2 text-xs font-black text-pink-700 dark:text-pink-300"
                       >
-                        <p className="text-sm font-bold text-slate-800 dark:text-slate-100">I learn better by listening</p>
-                        <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-1">Use Talk and Play for audio learning.</p>
+                        Listen to a lesson
                       </button>
-                    </div>
-                    <div className="mt-4 rounded-2xl border border-emerald-200 dark:border-emerald-900 bg-emerald-50 dark:bg-emerald-950/30 p-4">
-                      <p className="text-[10px] font-black uppercase tracking-[0.18em] text-emerald-700 dark:text-emerald-300 mb-1">Learn, Do Not Copy</p>
-                      <p className="text-sm font-bold text-emerald-950 dark:text-emerald-100">
-                        Akili now guides you through a try-first step, a worked method, and a short practice check so you remember the idea for exams.
-                      </p>
-                    </div>
-                    <div className="mt-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/40 p-4">
-                      <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400 mb-3">Score Improvement Loop</p>
-                      <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
-                        {[
-                          { label: 'Learn', body: 'Understand the idea' },
-                          { label: 'Recall', body: 'Try without copying' },
-                          { label: 'Quiz', body: 'Test immediately' },
-                          { label: 'Repair', body: 'Fix missed questions' },
-                          { label: 'Retry', body: 'Drill weak spots' }
-                        ].map((step, i) => (
-                          <div key={step.label} className="rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3">
-                            <div className="w-6 h-6 rounded-full bg-indigo-600 text-white flex items-center justify-center text-[10px] font-black mb-2">{i + 1}</div>
-                            <p className="text-xs font-black text-slate-900 dark:text-white">{step.label}</p>
-                            <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 mt-0.5 leading-snug">{step.body}</p>
-                          </div>
-                        ))}
-                      </div>
+                      <button
+                        onClick={() => setMode('SCAN_EXPLAIN')}
+                        className="rounded-full border border-indigo-200 dark:border-indigo-900/40 bg-indigo-50 dark:bg-indigo-950/30 px-4 py-2 text-xs font-black text-indigo-700 dark:text-indigo-300"
+                      >
+                        Open Ask Akili
+                      </button>
                     </div>
                   </div>
 
@@ -3945,7 +4089,7 @@ ${explanation.explanation}
                         <div className="mb-3">
                           <h2 className="text-base font-bold text-slate-800 dark:text-white">Ask Akili</h2>
                           <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mt-1">
-                            Ask a question, scan work, or upload notes. Akili guides you step by step instead of giving copy-paste answers.
+                            Type, scan, or upload. Akili helps step by step.
                           </p>
                         </div>
                         <div className="bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-3 border-2 border-slate-300 dark:border-slate-700 focus-within:border-blue-400 focus-within:ring-4 focus-within:ring-blue-50 dark:focus-within:ring-blue-900/20 transition-all">
@@ -3955,7 +4099,7 @@ ${explanation.explanation}
                             onKeyDown={(e) => {
                               if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handlePromptSubmit(); }
                             }}
-                            placeholder={educationLevel === 'JUNIOR' ? "Hey Akili, help me with..." : educationLevel === 'CAMPUS' ? "Ask Akili to research anything..." : "Ask Akili anything about your studies..."}
+                            placeholder={educationLevel === 'JUNIOR' ? "Hey Akili, help me with..." : educationLevel === 'CAMPUS' ? "Ask Akili to research..." : "Ask Akili about your studies..."}
                             rows={2}
                             className="w-full bg-transparent border-0 focus:ring-0 text-sm font-medium py-2 px-2 resize-none outline-none text-slate-800 dark:text-slate-100 placeholder:text-slate-400"
                           />
@@ -3986,8 +4130,8 @@ ${explanation.explanation}
                                 <button onClick={startCamera} className="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 rounded-xl transition-colors" title="Scan Document"><Camera className="w-4 h-4" /></button>
                              </div>
                              <button onClick={handlePromptSubmit} disabled={(!promptText.trim() && !pendingMedia) || loading} className="px-5 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-200 disabled:text-slate-400 text-white text-xs font-bold rounded-xl transition-colors flex items-center gap-2 shadow-sm">
-                                {loading ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Ask Step-by-step'}
-                             </button>
+                                {loading ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Get Help'}
+                              </button>
                           </div>
                         </div>
                       </div>
@@ -4257,7 +4401,7 @@ ${explanation.explanation}
                                   }}
                                   className="w-full py-3 bg-slate-800 hover:bg-slate-700/80 border border-slate-700 text-slate-200 rounded-2xl text-xs font-bold transition-all active:scale-95 duration-200 cursor-pointer text-center"
                                 >
-                                  Practice All Decks
+                                  Review All Decks
                                 </button>
                               )}
                               <button
@@ -4518,7 +4662,7 @@ ${explanation.explanation}
                 </h4>
                 <ul className="text-xs font-medium text-amber-700/80 dark:text-amber-500/80 space-y-2 mt-3">
                   <li className="flex gap-2"><span>•</span> Save your learning history and streaks</li>
-                  <li className="flex gap-2"><span>•</span> Unlock unlimited AI explanations</li>
+                  <li className="flex gap-2"><span>•</span> Unlock high daily AI study limits</li>
                   <li className="flex gap-2"><span>•</span> Get a personalized study buddy profile</li>
                 </ul>
               </div>
@@ -4652,19 +4796,19 @@ ${explanation.explanation}
                     <div className="bg-indigo-100 p-2 rounded-full"><CreditCard className="w-5 h-5 text-indigo-600" /></div>
                     <div>
                       <p className="text-sm font-bold text-slate-900">Missing a Purchase?</p>
-                      <p className="text-[10px] text-slate-500">Restore your subscription if it's not showing.</p>
+                      <p className="text-[10px] text-slate-500">If you already paid, tap restore and we will refresh access.</p>
                     </div>
                   </div>
                   <Button
                     variant="ghost"
                     className="text-indigo-600 hover:bg-indigo-100 font-bold text-xs"
                     onClick={async () => {
-                      if (confirm("Check for missing payments? This will scan your transaction history.")) {
+                      if (confirm("Check for missing payments? This will scan your transaction history and restore access if a valid payment is found.")) {
                         setLoading(true);
                         setLoadingText("Verifying Transactions...");
                         await verifySubscription();
                         setLoading(false);
-                        alert("Verification Complete. If a valid payment was found, your subscription has been restored.");
+                        alert("Verification complete. If a valid payment was found, your subscription has been restored.");
                       }
                     }}
                   >
@@ -4708,7 +4852,7 @@ ${explanation.explanation}
                       <p className="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
                         {isPro && subscriptionExpiry && !isNaN(new Date(subscriptionExpiry).getTime())
                           ? <><Clock className="w-3.5 h-3.5" /> Valid until {new Date(subscriptionExpiry).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</>
-                          : <><Sparkles className="w-3.5 h-3.5" /> Free Access · 3 Queries Left Today</>}
+                          : <><Sparkles className="w-3.5 h-3.5" /> Free access - 3 queries left today</>}
                       </p>
                     </div>
                   </div>
@@ -4728,7 +4872,7 @@ ${explanation.explanation}
                         : 'bg-amber-500 text-white hover:bg-amber-600 shadow-amber-200'
                       }`}
                     >
-                      {isPro ? 'Manage Plan' : 'Go Pro'}
+                      {isPro ? 'Manage Plan' : 'Unlock Learning'}
                     </Button>
                   </div>
                 </div>
@@ -6507,7 +6651,7 @@ ${explanation.explanation}
               !isNaN(new Date(subscriptionExpiry).getTime()) &&
               new Date(subscriptionExpiry) > new Date();
 
-            if (isPro || hasKnownActiveSubscription) {
+            if (!(plan as any)?.isCreditPack && (isPro || hasKnownActiveSubscription)) {
               setHasRecentPaymentUnlock(true);
               setShowLimitModal(false);
               setMode('MENU');
@@ -6601,21 +6745,21 @@ ${explanation.explanation}
             <div className="flex items-center gap-4">
               <button onClick={() => setMode('MENU')} className="p-2 hover:bg-slate-100 rounded-full transition-colors"><ArrowRight className="w-5 h-5 rotate-180" /></button>
               <div>
-                <p className="text-[9px] font-black text-indigo-500 uppercase tracking-[0.2em] mt-1.5">Premium Resource Center</p>
+                <p className="text-[9px] font-black text-indigo-500 uppercase tracking-[0.2em] mt-1.5">Official Study Library</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
               {!isPro && (
                 <div className="flex items-center gap-2">
                   <div className="hidden sm:flex flex-col items-end mr-2">
-                    <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Free Sessions</p>
+                    <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Free trials</p>
                     <p className="text-[10px] font-black text-indigo-600">{Math.max(0, 3 - usageCount)} / 3 Left</p>
                   </div>
                   <button
                     onClick={() => handlePricingNavigation()}
                     className="bg-amber-100 text-amber-700 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider border border-amber-200 shadow-sm"
                   >
-                    Go Pro
+                    Unlock Full Access
                   </button>
                 </div>
               )}
@@ -6641,7 +6785,7 @@ ${explanation.explanation}
                       <CheckCircle className="w-2 h-2" /> Verified
                     </span>
                   </div>
-                  <h3 className="text-2xl font-black tracking-tight leading-tight mb-1">Elite Library.</h3>
+                  <h3 className="text-2xl font-black tracking-tight leading-tight mb-1">Official Study Library.</h3>
                   <p className="opacity-80 text-xs font-medium max-w-[200px] mx-auto md:mx-0 leading-relaxed">
                     {educationLevel === EducationLevel.CAMPUS
                       ? 'University lecture notes & course materials.'
@@ -7615,7 +7759,7 @@ ${explanation.explanation}
                   <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-500 mb-2">What parents and learners get</p>
                   <ul className="space-y-1.5 text-xs font-bold text-slate-700">
                     <li>Step-by-step Ask Akili help that asks the learner to try first</li>
-                    <li>Unlimited quizzes, instant marking, and repair drills</li>
+                    <li>High daily limits for quizzes, instant marking, and repair drills</li>
                     <li>Notes, past papers, and shareable parent progress proof</li>
                   </ul>
                 </div>
@@ -7636,6 +7780,28 @@ ${explanation.explanation}
                   >
                     View Learner Plans
                   </Button>
+                  <button
+                    onClick={() => {
+                      trackFunnelEvent('credit_pack_selected', {
+                        source: 'learner_limit_modal',
+                        credits: LEARNING_CREDIT_PACKS[0].credits,
+                        amount_kes: LEARNING_CREDIT_PACKS[0].price
+                      });
+                      setShowLimitModal(false);
+                      setSelectedPlan(LEARNING_CREDIT_PACKS[0]);
+                      setMode('PAYMENT' as any);
+                    }}
+                    className="w-full rounded-2xl border-2 border-indigo-100 bg-indigo-50 px-4 py-3 text-left hover:border-indigo-200 hover:bg-indigo-100 transition-colors"
+                  >
+                    <span className="block text-[10px] font-black uppercase tracking-[0.18em] text-indigo-500">Need just a top-up?</span>
+                    <span className="mt-1 flex items-center justify-between gap-3">
+                      <span className="text-sm font-black text-slate-800">Buy 30 Learning Credits</span>
+                      <span className="text-sm font-black text-indigo-700">KES 20</span>
+                    </span>
+                    <span className="mt-1 block text-[11px] font-bold text-slate-500">
+                      Current wallet: {learningCredits} credit{learningCredits === 1 ? '' : 's'}
+                    </span>
+                  </button>
                   <button
                     onClick={async () => {
                       setLoading(true);
@@ -7671,7 +7837,7 @@ ${explanation.explanation}
                     }}
                     className="w-full text-indigo-600 hover:text-indigo-700 font-bold text-xs uppercase tracking-widest transition-colors py-1 block"
                   >
-                    Already subscribed? Restore or log in
+                    Already subscribed? Restore access
                   </button>
                   <button
                     onClick={() => setShowLimitModal(false)}
@@ -7705,7 +7871,7 @@ ${explanation.explanation}
 
                 <h3 className="text-xl font-black text-slate-800 mb-2">Subscription Expired</h3>
                 <p className="text-slate-500 text-sm leading-relaxed mb-6">
-                  Your premium access has expired. Renew now to continue enjoying <span className="text-indigo-600 font-bold">unlimited access</span> to learning for as little as <span className="text-indigo-600 font-bold">20 KES</span>.
+                  Your premium access has expired. Renew now to continue enjoying <span className="text-indigo-600 font-bold">full plan access</span> to learning for as little as <span className="text-indigo-600 font-bold">20 KES</span>.
                 </p>
 
                 <div className="space-y-3">

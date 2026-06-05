@@ -1,11 +1,11 @@
 import { SubscriptionPlan } from '../types';
 
 export const STUDENT_PLANS: SubscriptionPlan[] = [
-    { id: 's_daily', segment: 'STUDENT', name: 'Daily Dash', price: 20, duration: 'DAILY', features: ['Ask Akili step-by-step help', 'Try-first answer guidance', 'Quick quizzes with marking'] },
-    { id: 's_weekly', segment: 'STUDENT', name: 'Weekly Warrior', price: 100, duration: 'WEEKLY', savings: 'Save 28%', features: ['Ask Akili step-by-step help', 'Notes and past papers access', 'Quick quizzes with marking', 'Parent progress proof'] },
-    { id: 's_monthly', segment: 'STUDENT', name: 'Monthly Master', price: 300, duration: 'MONTHLY', savings: 'Save 50%', features: ['Ask Akili step-by-step help', 'Notes and past papers access', 'Unlimited quiz and repair drills', 'Parent progress proof', 'Audio learning and scans'] },
-    { id: 's_termly', segment: 'STUDENT', name: 'Term Lite', price: 700, duration: 'TERMLY', savings: 'Save 61%', features: ['Ask Akili step-by-step help', 'Notes and past papers access', 'Unlimited quiz and repair drills', 'Parent progress proof', 'Audio learning and scans'] },
-    { id: 's_annual', segment: 'STUDENT', name: 'Annual Ace', price: 2000, duration: 'ANNUAL', savings: 'Save 72%', features: ['Ask Akili step-by-step help', 'Notes and past papers access', 'Unlimited quiz and repair drills', 'Parent progress proof', 'Audio learning and scans', 'Exam prep habit tracking'] },
+    { id: 's_daily', segment: 'STUDENT', name: 'Daily Dash', price: 20, duration: 'DAILY', features: ['20 guided AI study actions/day', '6 smart marking checks/day', 'Notes and past papers access', 'Voice lessons for focused revision'] },
+    { id: 's_weekly', segment: 'STUDENT', name: 'Weekly Warrior', price: 100, duration: 'WEEKLY', savings: 'Save 28%', features: ['120 guided AI study actions/day', '35 smart marking checks/day', 'Notes and past papers access', 'Parent progress proof'] },
+    { id: 's_monthly', segment: 'STUDENT', name: 'Monthly Master', price: 300, duration: 'MONTHLY', savings: 'Save 50%', features: ['450 guided AI study actions/day', '150 smart marking checks/day', 'High-limit quiz and repair drills', 'Parent progress proof', 'Audio learning and scans'] },
+    { id: 's_termly', segment: 'STUDENT', name: 'Term Lite', price: 700, duration: 'TERMLY', savings: 'Save 61%', features: ['1,200 guided AI study actions/day', '420 smart marking checks/day', 'High-limit quiz and repair drills', 'Parent progress proof', 'Audio learning and scans'] },
+    { id: 's_annual', segment: 'STUDENT', name: 'Annual Ace', price: 2000, duration: 'ANNUAL', savings: 'Save 72%', features: ['4,000 guided AI study actions/day', '1,500 smart marking checks/day', 'High-limit quiz and repair drills', 'Parent progress proof', 'Audio learning and scans', 'Exam prep habit tracking'] },
 ];
 
 export const TEACHER_PLANS: SubscriptionPlan[] = [
@@ -21,6 +21,41 @@ export const DOWNLOAD_PASS: SubscriptionPlan = {
     price: 20,
     duration: 'DAILY', // Re-using DAILY for backend compatibility (same price point)
 };
+
+export const LEARNING_CREDIT_PACKS: SubscriptionPlan[] = [
+    {
+        id: 'credit_30',
+        segment: 'STUDENT',
+        name: '30 Learning Credits',
+        price: 20,
+        duration: 'DAILY',
+        credits: 30,
+        isCreditPack: true,
+        features: ['30 extra AI actions or marking checks', 'Can extend voice lessons', 'Does not replace your active plan']
+    },
+    {
+        id: 'credit_100',
+        segment: 'STUDENT',
+        name: '100 Learning Credits',
+        price: 50,
+        duration: 'WEEKLY',
+        credits: 100,
+        isCreditPack: true,
+        savings: 'Best top-up',
+        features: ['100 extra AI actions or marking checks', 'Useful during exam revision', 'Credits remain available after today']
+    },
+    {
+        id: 'credit_250',
+        segment: 'STUDENT',
+        name: '250 Learning Credits',
+        price: 100,
+        duration: 'MONTHLY',
+        credits: 250,
+        isCreditPack: true,
+        savings: 'Most value',
+        features: ['250 extra AI actions or marking checks', 'Best for heavy Exam Prep weeks', 'Credits remain available after today']
+    },
+];
 
 export const SCHOOL_PLANS: SubscriptionPlan[] = [
     { id: 'sch_small', segment: 'SCHOOL', name: 'Small School', price: 10000, duration: 'TERMLY', teacherLimit: 3, studentLimit: 50 },

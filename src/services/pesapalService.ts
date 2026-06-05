@@ -11,16 +11,19 @@ export const pesapalService = {
      */
     async initiatePayment(userId: string, plan: SubscriptionPlan, customer: { email: string, firstName: string, lastName: string, phone: string }, materialId?: string) {
         // Encode duration in reference for Edge Function to parse
-        const reference = `SUB_${plan.duration}_${userId.slice(0, 5)}_${Date.now()}`;
+        const reference = plan.isCreditPack
+            ? `CREDIT_${plan.credits || 0}_${userId.slice(0, 5)}_${Date.now()}`
+            : `SUB_${plan.duration}_${userId.slice(0, 5)}_${Date.now()}`;
 
         // ... existing transaction logic ...
         await supabase.from('transactions').insert({
             user_id: userId,
             amount: plan.price,
-            type: 'SUBSCRIPTION',
+            type: plan.isCreditPack ? 'CREDIT_PACK' : 'SUBSCRIPTION',
             status: 'PENDING',
             method: 'MPESA',
             reference_code: reference,
+            description: plan.isCreditPack ? `${plan.credits || 0} learning credits` : `Somo Smart ${plan.name}`,
             created_at: new Date().toISOString()
         });
 
@@ -34,7 +37,7 @@ export const pesapalService = {
         const { data, error } = await supabase.functions.invoke('pesapal/initiate-order', {
             body: {
                 amount: plan.price,
-                description: `Somo Smart ${plan.name} Subscription`,
+                description: plan.isCreditPack ? `Somo Smart ${plan.name}` : `Somo Smart ${plan.name} Subscription`,
                 reference: reference,
                 callback_url: callbackUrl,
                 billing_address: {

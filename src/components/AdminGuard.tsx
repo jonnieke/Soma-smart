@@ -23,6 +23,7 @@ export const AdminGuard: React.FC<AdminGuardProps> = ({ children, onNavigateBack
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [errorMessage, setErrorMessage] = useState('');
+    const [successMessage, setSuccessMessage] = useState('');
     const [authStatus, setAuthStatus] = useState<AuthStatus>('idle');
     const [checkingSession, setCheckingSession] = useState(true);
 
@@ -50,6 +51,7 @@ export const AdminGuard: React.FC<AdminGuardProps> = ({ children, onNavigateBack
 
     const handleUnlock = async () => {
         setErrorMessage('');
+        setSuccessMessage('');
         setAuthStatus('authenticating');
 
         const normalizedEmail = email.trim().toLowerCase();
@@ -66,7 +68,7 @@ export const AdminGuard: React.FC<AdminGuardProps> = ({ children, onNavigateBack
 
         if (signInError) {
             setAuthStatus('failed');
-            setErrorMessage('Invalid admin credentials.');
+            setErrorMessage('Invalid login credentials. Use the password for this email inbox, then reset it if needed.');
             return;
         }
 
@@ -74,12 +76,34 @@ export const AdminGuard: React.FC<AdminGuardProps> = ({ children, onNavigateBack
         if (!isAdmin) {
             await supabase.auth.signOut();
             setAuthStatus('failed');
-            setErrorMessage('This account is not authorized for admin access.');
+            setErrorMessage('This account is signed in, but it is not on the admin allowlist yet. A teacher account can still be used for admin if its email is added to ADMIN_EMAILS.');
             return;
         }
 
         setUnlocked(true);
         setAuthStatus('authenticated');
+    };
+
+    const handleForgotPassword = async () => {
+        setErrorMessage('');
+        setSuccessMessage('');
+
+        const normalizedEmail = email.trim().toLowerCase();
+        if (!normalizedEmail) {
+            setErrorMessage('Enter your admin email first.');
+            return;
+        }
+
+        const { error } = await supabase.auth.resetPasswordForEmail(normalizedEmail, {
+            redirectTo: `${window.location.origin}/reset-password`,
+        });
+
+        if (error) {
+            setErrorMessage(error.message || 'Failed to send reset email.');
+            return;
+        }
+
+        setSuccessMessage(`Password reset link sent to ${normalizedEmail}.`);
     };
 
     if (checkingSession) {
@@ -101,6 +125,9 @@ export const AdminGuard: React.FC<AdminGuardProps> = ({ children, onNavigateBack
                     </div>
                     <h2 className="text-2xl font-bold text-white mb-2">Somo Admin</h2>
                     <p className="text-slate-400 text-sm mb-6">Sign in with an authorized admin account.</p>
+                    <p className="text-slate-500 text-xs mb-6 leading-relaxed">
+                        A teacher email can also unlock admin, as long as it&apos;s added to the admin allowlist.
+                    </p>
 
                     <div className="space-y-3 text-left">
                         <label className="block">
@@ -141,14 +168,29 @@ export const AdminGuard: React.FC<AdminGuardProps> = ({ children, onNavigateBack
                         </p>
                     )}
 
-                    <button
-                        onClick={handleUnlock}
-                        disabled={isLoading}
-                        className="mt-5 w-full bg-indigo-600 hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-60 text-white font-bold py-3 rounded-xl transition-colors shadow-lg shadow-indigo-900/50 flex items-center justify-center gap-2"
-                    >
-                        {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
-                        {isLoading ? 'Verifying...' : 'Unlock Dashboard'}
-                    </button>
+                    {successMessage && (
+                        <p className="mt-4 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-sm font-medium text-emerald-200">
+                            {successMessage}
+                        </p>
+                    )}
+
+                    <div className="mt-5 space-y-3">
+                        <button
+                            onClick={handleUnlock}
+                            disabled={isLoading}
+                            className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-60 text-white font-bold py-3 rounded-xl transition-colors shadow-lg shadow-indigo-900/50 flex items-center justify-center gap-2"
+                        >
+                            {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
+                            {isLoading ? 'Verifying...' : 'Unlock Dashboard'}
+                        </button>
+
+                        <button
+                            onClick={handleForgotPassword}
+                            className="w-full text-slate-400 text-sm hover:text-slate-200 transition-colors font-medium"
+                        >
+                            Forgot password?
+                        </button>
+                    </div>
 
                     <button onClick={onNavigateBack} className="text-slate-500 text-sm mt-6 hover:text-slate-300 transition-colors">
                         Return to Application
