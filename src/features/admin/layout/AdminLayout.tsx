@@ -1,7 +1,8 @@
 import React from 'react';
-import { LayoutDashboard, Users, CreditCard, Settings, LogOut, Menu, X, Bell, BookOpen, ClipboardCheck, BarChart3, Brain, FileText } from 'lucide-react';
+import { LayoutDashboard, Users, CreditCard, Settings, LogOut, Menu, X, BookOpen, ClipboardCheck, BarChart3, Brain, FileText } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import { supabase } from '../../../lib/supabase';
 
 interface AdminLayoutProps {
     children: React.ReactNode;
@@ -15,6 +16,33 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children, activeTab, o
     const navigate = useNavigate();
     const [isSidebarOpen, setIsSidebarOpen] = React.useState(true);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
+    const [adminEmail, setAdminEmail] = React.useState<string | null>(null);
+
+    React.useEffect(() => {
+        let mounted = true;
+
+        (async () => {
+            const { data } = await supabase.auth.getUser();
+            if (!mounted) return;
+            setAdminEmail(data.user?.email || null);
+        })();
+
+        return () => {
+            mounted = false;
+        };
+    }, []);
+
+    const adminInitials = React.useMemo(() => {
+        if (!adminEmail) return 'SM';
+        const localPart = adminEmail.split('@')[0] || '';
+        const parts = localPart
+            .replace(/[._-]+/g, ' ')
+            .split(' ')
+            .filter(Boolean);
+        if (parts.length === 0) return adminEmail.slice(0, 2).toUpperCase();
+        if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+        return `${parts[0][0] || ''}${parts[1][0] || ''}`.toUpperCase();
+    }, [adminEmail]);
 
     const navItems = [
         { id: 'OVERVIEW', label: 'Overview', icon: <LayoutDashboard className="w-5 h-5" /> },
@@ -193,12 +221,16 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children, activeTab, o
                                     authStatus === 'failed' ? 'Auth Failed (401 Risk)' : 'No Session'}
                         </div>
 
-                        <button className="p-2 text-slate-400 hover:bg-slate-50 rounded-full relative">
-                            <Bell className="w-5 h-5" />
-                            <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border border-white"></span>
-                        </button>
-                        <div className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-700 font-bold text-sm">
-                            AD
+                        <div className="hidden sm:flex items-center gap-3 pl-2 border-l border-slate-200">
+                            <div className="w-9 h-9 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-700 font-black text-xs">
+                                {adminInitials}
+                            </div>
+                            <div className="leading-tight">
+                                <p className="text-xs font-black text-slate-700">Admin</p>
+                                <p className="text-[11px] text-slate-500 max-w-[180px] truncate">
+                                    {adminEmail || 'Signed in'}
+                                </p>
+                            </div>
                         </div>
                     </div>
                 </header>

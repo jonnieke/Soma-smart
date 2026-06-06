@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ClipboardCheck, Plus, Trash2, Loader2, Search, FileText, CheckCircle, AlertCircle, Upload, FileUp, Sparkles } from 'lucide-react';
+import { ClipboardCheck, Plus, Trash2, Loader2, Search, FileText, CheckCircle, AlertCircle, Upload, FileUp, Sparkles, ExternalLink, BadgeInfo } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import { Button } from '../../../components/Shared';
 import { ingestPastPaper } from '../../../services/geminiService';
@@ -12,6 +12,9 @@ interface Exam {
     subject: string;
     className: string;
     created_at: string;
+    fileUrl?: string | null;
+    filePath?: string | null;
+    source: 'knowledge_base' | 'legacy_activity';
 }
 
 export const ExamsView: React.FC = () => {
@@ -39,23 +42,55 @@ export const ExamsView: React.FC = () => {
     const fetchExams = async () => {
         try {
             setLoading(true);
-            const { data, error } = await supabase
-                .from('activities')
-                .select('*')
-                .eq('student_id', 'ADMIN')
-                .eq('type', 'QUIZ')
-                .order('created_at', { ascending: false });
+            const [
+                { data: knowledgePapers, error: kbError },
+                { data: legacyPapers, error: legacyError }
+            ] = await Promise.all([
+                supabase
+                    .from('knowledge_base')
+                    .select('id, title, subject, grade, file_url, file_path, created_at, type')
+                    .eq('type', 'PAST_PAPER')
+                    .order('created_at', { ascending: false }),
+                supabase
+                    .from('activities')
+                    .select('id, topic, subject, class_name, created_at, details, student_id, type')
+                    .eq('student_id', 'ADMIN')
+                    .eq('type', 'QUIZ')
+                    .order('created_at', { ascending: false })
+            ]);
 
-            if (error) throw error;
+            if (kbError) console.warn('Knowledge base paper fetch failed:', kbError);
+            if (legacyError) console.warn('Legacy paper fetch failed:', legacyError);
 
-            const mapped = (data || []).map((d: any) => ({
-                id: d.id,
+            const mappedKnowledge = (knowledgePapers || []).map((d: any) => ({
+                id: `kb-${d.id}`,
+                title: d.title,
+                subject: d.subject || 'General',
+                className: d.grade || 'Any',
+                created_at: d.created_at,
+                fileUrl: d.file_url,
+                filePath: d.file_path,
+                source: 'knowledge_base' as const
+            }));
+
+            const mappedLegacy = (legacyPapers || []).map((d: any) => ({
+                id: `legacy-${d.id}`,
                 title: d.topic,
                 subject: d.subject || d.details?.subject || 'General',
                 className: d.class_name || d.details?.className || 'Any',
-                created_at: d.created_at
+                created_at: d.created_at,
+                source: 'legacy_activity' as const
             }));
-            setExams(mapped);
+
+            const unique = new Map<string, Exam>();
+            [...mappedKnowledge, ...mappedLegacy].forEach((paper) => {
+                const key = `${paper.title}__${paper.subject}__${paper.className}`.toLowerCase();
+                if (!unique.has(key) || new Date(unique.get(key)!.created_at) < new Date(paper.created_at)) {
+                    unique.set(key, paper);
+                }
+            });
+
+            setExams(Array.from(unique.values()).sort((a, b) => +new Date(b.created_at) - +new Date(a.created_at)));
         } catch (e) {
             console.error("Failed to fetch exams:", e);
         } finally {
@@ -83,32 +118,32 @@ export const ExamsView: React.FC = () => {
 
     const handleCreateExam = async (e: React.FormEvent) => {
         e.preventDefault();
-        const finalContent = analyzedData ? JSON.stringify(analyzedData.questions) : content;
-        if (!title || !finalContent) return;
+        const finalContent = analyzedData ? JSON.stringify(analyzedData.questions, null, 2) : content;
+        if (!title || !finalContent || !file) return;
 
         setSaving(true);
         try {
-            // Parse content to ensure valid JSON
-            let parsedContent;
-            try {
-                parsedContent = JSON.parse(finalContent);
-            } catch {
-                alert("Invalid format for Paper Content.");
-                setSaving(false);
-                return;
-            }
+            const fileExt = file.name.split('.').pop() || 'txt';
+            const safeTitle = title.replace(/[^a-z0-9-_]+/gi, '_').replace(/^_+|_+$/g, '').slice(0, 80) || 'past_paper';
+            const filePath = `${grade}/${subject}/${Date.now()}_${safeTitle}.${fileExt}`;
 
-            const { error } = await supabase.from('activities').insert({
-                student_id: 'ADMIN',
-                type: 'QUIZ',
-                topic: title,
-                subject: subject,
-                class_name: grade,
-                details: {
-                    className: grade,
-                    subject: subject,
-                    content: parsedContent
-                }
+            const { error: uploadError } = await supabase.storage
+                .from('syllabus-docs')
+                .upload(filePath, file, { upsert: false });
+
+            if (uploadError) throw uploadError;
+
+            const { data: { publicUrl } } = supabase.storage
+                .from('syllabus-docs')
+                .getPublicUrl(filePath);
+
+            const { error } = await supabase.from('knowledge_base').insert({
+                title,
+                grade,
+                subject,
+                type: 'PAST_PAPER',
+                file_url: publicUrl,
+                file_path: filePath
             });
 
             if (error) throw error;
@@ -131,8 +166,22 @@ export const ExamsView: React.FC = () => {
         if (!confirm("Are you sure you want to delete this exam?")) return;
 
         try {
-            const { error } = await supabase.from('activities').delete().eq('id', id);
-            if (error) throw error;
+            const target = exams.find(exam => exam.id === id);
+            if (!target) return;
+
+            if (target.source === 'legacy_activity') {
+                const legacyId = id.replace('legacy-', '');
+                const { error } = await supabase.from('activities').delete().eq('id', legacyId);
+                if (error) throw error;
+            } else {
+                const kbId = id.replace('kb-', '');
+                if (target.filePath) {
+                    await supabase.storage.from('syllabus-docs').remove([target.filePath]).catch(() => null);
+                }
+                const { error } = await supabase.from('knowledge_base').delete().eq('id', kbId);
+                if (error) throw error;
+            }
+
             setExams(prev => prev.filter(e => e.id !== id));
         } catch (e) {
             console.error("Delete failed:", e);
@@ -224,14 +273,27 @@ export const ExamsView: React.FC = () => {
                                             {exam.className}
                                         </span>
                                     </td>
-                                    <td className="px-6 py-4 text-right">
-                                        <button
-                                            onClick={() => handleDelete(exam.id)}
-                                            className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
-                                            title="Delete Paper"
-                                        >
-                                            <Trash2 className="w-5 h-5" />
-                                        </button>
+                                    <td className="px-6 py-4">
+                                        <div className="flex items-center gap-2 justify-end">
+                                            {exam.fileUrl && (
+                                                <a
+                                                    href={exam.fileUrl}
+                                                    target="_blank"
+                                                    rel="noreferrer"
+                                                    className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all"
+                                                    title="Open Paper"
+                                                >
+                                                    <ExternalLink className="w-5 h-5" />
+                                                </a>
+                                            )}
+                                            <button
+                                                onClick={() => handleDelete(exam.id)}
+                                                className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                                                title="Delete Paper"
+                                            >
+                                                <Trash2 className="w-5 h-5" />
+                                            </button>
+                                        </div>
                                     </td>
                                 </tr>
                             ))}
@@ -275,8 +337,14 @@ export const ExamsView: React.FC = () => {
                                                 <p className="font-bold text-slate-800 text-lg mb-1">
                                                     {file ? file.name : "Choose Paper File"}
                                                 </p>
-                                                <p className="text-slate-500 text-sm mb-6">PDF or Images (JPG, PNG) supported</p>
-                                            </label>
+                                                    <p className="text-slate-500 text-sm mb-6">PDF or Images (JPG, PNG) supported</p>
+                                                    {file && (
+                                                        <p className="inline-flex items-center gap-2 text-xs font-bold text-slate-500 bg-slate-100 px-3 py-1 rounded-full">
+                                                            <BadgeInfo className="w-4 h-4" />
+                                                            New papers will be stored in Knowledge Base, not activities.
+                                                        </p>
+                                                    )}
+                                                </label>
 
                                             {file && (
                                                 <Button

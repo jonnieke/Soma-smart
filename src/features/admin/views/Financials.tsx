@@ -21,6 +21,36 @@ export const FinancialsView: React.FC = () => {
     const marginPct = finance?.grossMarginPct ?? (totalRevenue > 0 ? 100 : 0);
     const marginRisk = totalRevenue > 0 && marginPct < 50;
 
+    const exportCsv = () => {
+        const rows = [
+            ['Transaction ID', 'User', 'Type', 'Method', 'Amount (KES)', 'Status', 'Date'],
+            ...transactions.map((t) => [
+                t.id,
+                t.user,
+                t.type,
+                t.method,
+                String(t.amount),
+                t.status,
+                t.date
+            ])
+        ];
+
+        const csv = rows
+            .map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+            .join('\n');
+
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `soma-financials-${new Date().toISOString().slice(0, 10)}.csv`;
+        link.style.display = 'none';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    };
+
     return (
         <div className="space-y-6">
             <div className="flex justify-between items-center">
@@ -28,7 +58,9 @@ export const FinancialsView: React.FC = () => {
                     <h2 className="text-xl font-bold text-slate-800">Financial Records</h2>
                     <p className="text-sm text-slate-500 font-medium">30-day revenue, estimated AI overhead, and gross margin signals.</p>
                 </div>
-                <Button variant="outline" className="gap-2"><Download className="w-4 h-4" /> Export CSV</Button>
+                <Button variant="outline" className="gap-2" onClick={exportCsv} disabled={transactions.length === 0}>
+                    <Download className="w-4 h-4" /> Export CSV
+                </Button>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">

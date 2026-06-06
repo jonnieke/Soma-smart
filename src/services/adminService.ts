@@ -145,6 +145,12 @@ export const fetchDashboardStats = async (): Promise<DashboardStats> => {
         const oneDayAgo = new Date(now);
         oneDayAgo.setDate(oneDayAgo.getDate() - 1);
 
+        const isActiveTrialProfile = (profile: any) => {
+            const tier = String(profile?.subscription_tier || '').toUpperCase();
+            const status = String(profile?.subscription_status || '').toUpperCase();
+            return status === 'TRIAL' || tier === 'TRIAL';
+        };
+
         // 1. User Counts
         const [
             { count: studentCount },
@@ -153,7 +159,8 @@ export const fetchDashboardStats = async (): Promise<DashboardStats> => {
             { count: revisionCount },
             { count: schoolCount },
             { count: newUsers7d },
-            { count: verifiedUsers }
+            { count: verifiedUsers },
+            { data: trialProfiles, error: trialError }
         ] = await Promise.all([
             supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('role', 'LEARNER'),
             supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('role', 'TEACHER'),
@@ -161,7 +168,8 @@ export const fetchDashboardStats = async (): Promise<DashboardStats> => {
             supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('role', 'REVISION'),
             supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('role', 'SCHOOL'),
             supabase.from('profiles').select('id', { count: 'exact', head: true }).gte('created_at', sevenDaysAgo.toISOString()),
-            supabase.from('profiles').select('id', { count: 'exact', head: true }).neq('subscription_tier', 'FREE')
+            supabase.from('profiles').select('id', { count: 'exact', head: true }).neq('subscription_tier', 'FREE'),
+            supabase.from('profiles').select('subscription_tier, subscription_status')
         ]);
 
         const totalStudents = studentCount || 0;
@@ -169,6 +177,7 @@ export const fetchDashboardStats = async (): Promise<DashboardStats> => {
         const totalParents = parentCount || 0;
         const totalUsers = totalStudents + totalTeachers + totalParents + (revisionCount || 0) + (schoolCount || 0);
         const activePro = verifiedUsers || 0;
+        const activeTrials = trialError ? 0 : (trialProfiles || []).filter(isActiveTrialProfile).length;
 
         // 2. Activity Feed
         const [{ data: recentActivities, error: activityError }, { data: trendData }, { count: activeToday }] = await Promise.all([
@@ -199,11 +208,50 @@ export const fetchDashboardStats = async (): Promise<DashboardStats> => {
             console.warn("Analytics events fetch failed:", analyticsError.message);
         }
 
+        const recentActivityIds = Array.from(
+            new Set(
+                (recentActivities || [])
+                    .map((act: any) => act.student_id)
+                    .filter((id: any) => typeof id === 'string' && id.trim().length > 0)
+            )
+        );
+
+        const { data: recentProfiles } = recentActivityIds.length > 0
+            ? await supabase
+                .from('profiles')
+                .select('id, full_name, student_id, role')
+                .in('id', recentActivityIds)
+            : { data: [] as any[] };
+
+        const profileById = new Map<string, any>();
+        (recentProfiles || []).forEach((profile: any) => {
+            profileById.set(profile.id, profile);
+        });
+
+        const resolveActorLabel = (studentId: any) => {
+            const raw = String(studentId || '').trim();
+            if (!raw) return 'System';
+
+            const profile = profileById.get(raw);
+            const fullName = String(profile?.full_name || '').trim();
+            const schoolCode = String(profile?.student_id || '').trim();
+            if (fullName && schoolCode) return `${fullName} (${schoolCode})`;
+            if (fullName) return fullName;
+            if (schoolCode) return schoolCode;
+
+            if (/^[0-9a-f-]{8,}$/i.test(raw)) return `Student ${raw.slice(0, 8)}...`;
+            return raw;
+        };
+
         const recentActivity: FeedItem[] = recentActivities?.map((act: any) => ({
             id: act.id,
-            title: `${act.student_id || 'System User'} completed a ${String(act.type || 'activity').toLowerCase()}`,
+            title: `${resolveActorLabel(act.student_id)} completed a ${String(act.type || 'activity').toLowerCase()}`,
             time: new Date(act.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            type: String(act.type || '').toUpperCase().includes('PAY') ? 'money' : 'student'
+            type: String(act.type || '').toUpperCase().includes('PAY')
+                ? 'money'
+                : String(act.type || '').toUpperCase().includes('TEACH')
+                    ? 'teacher'
+                    : 'student'
         })) || [];
 
         const trendMap = new Array(14).fill(0);
@@ -285,7 +333,7 @@ export const fetchDashboardStats = async (): Promise<DashboardStats> => {
 
         return {
             totalRevenue: realRevenue,
-            activeTrials: 12,
+            activeTrials,
             verifiedUsers: verifiedUsers || 0,
             activePro,
             totalStudents,
