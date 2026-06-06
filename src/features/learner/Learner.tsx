@@ -1499,7 +1499,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
         setMode('QUEST_MAP');
         break;
       case 'RESOURCES':
-        setMode('MARKETPLACE');
+        setMode('LIBRARY');
         break;
       case 'PROGRESS':
         setMode('ANALYTICS');
@@ -1538,7 +1538,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
     } else if (entryIntent === 'official_library') {
       setSidebarTab('RESOURCES');
       setLibraryView('UNLOCKED');
-      setMode('MARKETPLACE');
+      setMode('LIBRARY');
     } else if (entryIntent === 'exam_prep_papers') {
       setSidebarTab('SUBJECTS');
       setMode('REVISION');
@@ -4046,6 +4046,48 @@ ${explanation.explanation}
                     </div>
                   </div>
                   )}
+
+                  {/* ASK AKILI QUICK ENTRY */}
+                  <div className="bg-gradient-to-r from-sky-600 via-blue-600 to-indigo-600 rounded-3xl p-5 text-white shadow-xl shadow-sky-200">
+                    <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+                      <div className="max-w-xl">
+                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-sky-100 mb-2">Ask Akili</p>
+                        <h3 className="text-xl font-black tracking-tight leading-tight">Stuck on a question? Start here.</h3>
+                        <p className="text-sm font-medium text-sky-100/90 mt-2 leading-relaxed">
+                          Get a hint, a worked method, or a quick quiz. Type, scan, or talk to Akili in one tap.
+                        </p>
+                      </div>
+                      <div className="flex flex-col sm:items-end gap-2 shrink-0">
+                        <button
+                          onClick={() => setMode('SCAN_EXPLAIN')}
+                          className="inline-flex items-center justify-center gap-2 rounded-2xl bg-white text-blue-700 hover:bg-blue-50 px-4 py-3 text-sm font-black shadow-sm transition-colors"
+                        >
+                          <Sparkles className="w-4 h-4" />
+                          Open Ask Akili
+                        </button>
+                        <div className="flex flex-wrap gap-2 justify-start sm:justify-end">
+                          <button
+                            onClick={() => setMode('SCAN_EXPLAIN')}
+                            className="rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-[11px] font-black text-white hover:bg-white/20 transition-colors"
+                          >
+                            Scan
+                          </button>
+                          <button
+                            onClick={() => setMode('SCAN_EXPLAIN')}
+                            className="rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-[11px] font-black text-white hover:bg-white/20 transition-colors"
+                          >
+                            Type
+                          </button>
+                          <button
+                            onClick={() => handleSidebarTabChange('TALKBACK')}
+                            className="rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-[11px] font-black text-white hover:bg-white/20 transition-colors"
+                          >
+                            Talk
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
 
                   {/* SOLVE IT NOW: immediate student pain points */}
                   <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-sm border-2 border-slate-300 dark:border-slate-800 p-6">
