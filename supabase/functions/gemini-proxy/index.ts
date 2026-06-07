@@ -19,8 +19,12 @@ const DEFAULT_GEMINI_MODEL = Deno.env.get('GEMINI_MODEL') || 'gemini-2.5-flash';
 const KES_PER_USD = 130;
 
 const FEATURE_LIMITS: Record<string, Record<string, number>> = {
-    FREE: { ai_generation: 3, exam_guru: 3, exam_marking: 1, quiz_generation: 2, practice_generation: 2, notes_generation: 2, teacher_ai: 3 },
-    DAILY: { ai_generation: 20, exam_guru: 15, exam_marking: 6, quiz_generation: 10, practice_generation: 12, notes_generation: 10, teacher_ai: 10 },
+    // Unauthenticated visitors — enough to demo the product, not enough to replace a plan
+    GUEST: { ai_generation: 5, exam_guru: 1, exam_marking: 0, quiz_generation: 1, practice_generation: 1, notes_generation: 1, teacher_ai: 0 },
+    // Registered free users — enough to feel real value and hit a natural upgrade moment
+    FREE: { ai_generation: 10, exam_guru: 3, exam_marking: 1, quiz_generation: 3, practice_generation: 3, notes_generation: 3, teacher_ai: 3 },
+    // Paid tiers — always clearly more than FREE so the upgrade makes sense
+    DAILY: { ai_generation: 30, exam_guru: 15, exam_marking: 6, quiz_generation: 10, practice_generation: 12, notes_generation: 10, teacher_ai: 10 },
     WEEKLY: { ai_generation: 120, exam_guru: 80, exam_marking: 35, quiz_generation: 60, practice_generation: 80, notes_generation: 60, teacher_ai: 60 },
     MONTHLY: { ai_generation: 450, exam_guru: 300, exam_marking: 150, quiz_generation: 250, practice_generation: 300, notes_generation: 220, teacher_ai: 220 },
     TERMLY: { ai_generation: 1200, exam_guru: 800, exam_marking: 420, quiz_generation: 700, practice_generation: 850, notes_generation: 650, teacher_ai: 650 },
@@ -302,7 +306,7 @@ const resolveRequester = async (req: Request, supabase: any) => {
     }
 
     const identifier = `ip:${getClientIp(req)}`;
-    return { userId: null, studentCode: null, plan: 'FREE', identifier, profile: null };
+    return { userId: null, studentCode: null, plan: 'GUEST', identifier, profile: null };
 };
 
 const enforceFeatureLimit = async (supabase: any, requester: any, feature: string) => {

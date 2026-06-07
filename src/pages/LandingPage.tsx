@@ -12,6 +12,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import ReactGA from 'react-ga4';
 import { UserRole } from '../types';
 import { useApp } from '../context/AppContext';
+import { supabase } from '../lib/supabase';
 
 // Import Assets
 import learnerImg from '../assets/images/learner.png';
@@ -50,7 +51,7 @@ interface LandingPageProps {
 export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuthError }) => {
     const navigate = useNavigate();
     const location = useLocation();
-    const { setRole, role, logout, isRegistered, isPro, language, toggleLanguage, startGuestSession, teacherUsageCount, lowDataMode, toggleLowDataMode } = useApp();
+    const { setRole, role, logout, isRegistered, isPro, language, toggleLanguage, startGuestSession, teacherUsageCount, lowDataMode, toggleLowDataMode, studentCode, studentProfile, teacherProfile } = useApp();
     const [authError, setAuthError] = useState<{ code: string, description: string } | null>(initialAuthError || null);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [showRegistration, setShowRegistration] = useState(false);
@@ -72,6 +73,19 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
     const [showMockAnswer, setShowMockAnswer] = useState(false);
     const [isGenerating, setIsGenerating] = useState(false);
     const [generatedAnswer, setGeneratedAnswer] = useState<string | null>(null);
+    const [showDetailedView, setShowDetailedView] = useState(false);
+    const [detailedAnswer, setDetailedAnswer] = useState<string | null>(null);
+    const [isGeneratingDetailed, setIsGeneratingDetailed] = useState(false);
+    const [heroLimitReached, setHeroLimitReached] = useState(false);
+    const [detailedLimitReached, setDetailedLimitReached] = useState(false);
+    const [detailedUsesLeft, setDetailedUsesLeft] = useState<number>(() => {
+        try {
+            const count = parseInt(localStorage.getItem('soma_hero_detailed_uses') || '0', 10);
+            return Math.max(0, 3 - count);
+        } catch {
+            return 3;
+        }
+    });
 
     const trackFunnelEvent = (eventName: string, params: Record<string, unknown> = {}) => {
         try {
@@ -82,6 +96,15 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
             // Non-blocking analytics
         }
     };
+
+    // When the user signs in, lift the guest rate-limit gate and sync auth state
+    React.useEffect(() => {
+        if (isRegistered) {
+            setHeroLimitReached(false);
+            setShowLogin(false);
+            setShowRegistration(false);
+        }
+    }, [isRegistered]);
 
     React.useEffect(() => {
         try {
@@ -111,35 +134,130 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [showNavigationGuide]);
 
+    const callGeminiProxy = async (prompt: string): Promise<string> => {
+        const payload = {
+            model: 'gemini-2.5-flash',
+            contents: [{ role: 'user', parts: [{ text: prompt }] }]
+        };
+        // Use the real session JWT when logged in so the edge function applies
+        // the higher per-user limit (25/day free) instead of the guest IP limit (3/day).
+        let authToken = import.meta.env.VITE_SUPABASE_ANON_KEY;
+        const extraHeaders: Record<string, string> = {};
+        try {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session?.access_token) {
+                authToken = session.access_token;
+            } else if (studentCode) {
+                extraHeaders['x-student-code'] = studentCode;
+            }
+        } catch {}
+        const headers: Record<string, string> = {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`,
+            ...extraHeaders
+        };
+        // One retry after 2 s on transient 429 (system busy), but not on quota limits
+        for (let attempt = 0; attempt < 2; attempt++) {
+            const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/gemini-proxy`, {
+                method: 'POST', headers, body: JSON.stringify(payload)
+            });
+            if (response.status === 429) {
+                let code = 'RATE_LIMIT';
+                try { const body = await response.json(); code = body?.code ?? code; } catch {}
+                // Quota limits (per-user/IP daily limit) — don't retry, surface the code
+                if (code === 'GUEST_LIMIT_REACHED' || code === 'PLAN_LIMIT_REACHED' || code === 'FEATURE_LIMIT_REACHED') {
+                    throw new Error(code);
+                }
+                // Transient busy (Gemini-side) — retry once after 2 s
+                if (attempt === 0) { await new Promise(r => setTimeout(r, 2000)); continue; }
+                throw new Error('RATE_LIMIT');
+            }
+            if (!response.ok) throw new Error('API_ERROR');
+            const data = await response.json();
+            return data.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
+        }
+        throw new Error('RATE_LIMIT');
+    };
+
     const handleGenerateAnswer = async () => {
         if (!questionInput.trim()) return;
         setShowMockAnswer(true);
         setIsGenerating(true);
         setGeneratedAnswer(null);
+        setDetailedAnswer(null);
+        setHeroLimitReached(false);
+        setDetailedLimitReached(false);
         try {
-            const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/gemini-proxy`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
-                },
-                body: JSON.stringify({
-                    model: 'gemini-2.5-flash',
-                    contents: [{ role: 'user', parts: [{ text: `Answer this academic question in 1 or 2 concise, factual sentences for a student. Do not use markdown headers or formatting. State the answer playfully but smartly. Question: ${questionInput}` }] }]
-                })
-            });
-            if (!response.ok) throw new Error('API Error');
-            const data = await response.json();
-            const text = data.candidates?.[0]?.content?.parts?.[0]?.text || 'I analyzed this but could not generate a summary.';
-            setGeneratedAnswer(text);
+            const text = await callGeminiProxy(
+                `Answer this academic question in exactly 1 precise sentence. No markdown, no formatting. Use correct curriculum terminology relevant to the Kenyan KCSE/CBC syllabus. State only the essential result or definition — no explanation of method. Question: ${questionInput}`
+            );
+            setGeneratedAnswer(text || 'I analysed this but could not generate a summary.');
             trackFunnelEvent('learner_answer_generated', {
                 source: 'landing_hero',
                 question_length: questionInput.trim().length
             });
-        } catch (err) {
-            setGeneratedAnswer('An error occurred while generating the answer. Please check your connection.');
+        } catch (err: any) {
+            const code = err?.message ?? '';
+            if (code === 'GUEST_LIMIT_REACHED' || code === 'PLAN_LIMIT_REACHED' || code === 'FEATURE_LIMIT_REACHED') {
+                setHeroLimitReached(true);
+                trackFunnelEvent('hero_limit_reached', { source: 'landing_hero', code });
+            } else if (code === 'RATE_LIMIT') {
+                setGeneratedAnswer('High demand right now — please try again in a few seconds.');
+            } else {
+                setGeneratedAnswer('Could not reach the server. Please check your connection and try again.');
+            }
         } finally {
             setIsGenerating(false);
+        }
+    };
+
+    const handleOpenDetailedView = async () => {
+        if (!questionInput.trim()) return;
+        trackFunnelEvent('detailed_view_clicked', { source: 'landing_hero', is_registered: isRegistered });
+
+        // Registered users go straight to the learner workspace — they have full access
+        if (isRegistered || role !== UserRole.NONE) {
+            setRole(UserRole.LEARNER);
+            navigate('/learner', { state: { pendingHeroQuestion: questionInput } });
+            return;
+        }
+
+        // Unregistered visitors: show the teaser modal with login gate
+        let count = 0;
+        try { count = parseInt(localStorage.getItem('soma_hero_detailed_uses') || '0', 10); } catch {}
+        setShowDetailedView(true);
+        if (count >= 3) return;
+        try {
+            localStorage.setItem('soma_hero_detailed_uses', String(count + 1));
+            setDetailedUsesLeft(Math.max(0, 3 - (count + 1)));
+        } catch {}
+        if (detailedAnswer || isGeneratingDetailed) return;
+        setIsGeneratingDetailed(true);
+        try {
+            const text = await callGeminiProxy(
+                `Provide a structured step-by-step academic explanation for the following question, aligned to the Kenyan KCSE/CBC curriculum. Number each step. Show all working clearly. Use precise academic language. End with the final answer stated explicitly. Question: ${questionInput}`
+            );
+            const cleaned = (text || '')
+                .replace(/\*\*(.*?)\*\*/g, '$1')    // **bold** → plain (no s: don't cross lines)
+                .replace(/^[*\-]\s/gm, '• ')         // line-start * / - bullets → • (before italic strip)
+                .replace(/^#{1,6}\s*/gm, '')          // ## headers → plain
+                .replace(/\*(.*?)\*/g, '$1')          // *italic* → plain (no s: don't cross lines)
+                .replace(/\*/g, '');                  // any remaining *
+            setDetailedAnswer(cleaned || 'Unable to generate explanation.');
+            trackFunnelEvent('detailed_view_opened', { source: 'landing_hero', uses_left: Math.max(0, 2 - count) });
+        } catch (err: any) {
+            const code = err?.message ?? '';
+            if (code === 'GUEST_LIMIT_REACHED' || code === 'PLAN_LIMIT_REACHED' || code === 'FEATURE_LIMIT_REACHED') {
+                setDetailedLimitReached(true);
+            } else if (code === 'RATE_LIMIT') {
+                setDetailedAnswer('High demand right now — please close and try again in a few seconds.');
+            } else if (err instanceof TypeError) {
+                setDetailedAnswer('No connection. Please check your internet and try again.');
+            } else {
+                setDetailedAnswer('Could not load the explanation. Please try again.');
+            }
+        } finally {
+            setIsGeneratingDetailed(false);
         }
     };
 
@@ -612,13 +730,32 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                             </button>
                             <ThemeToggle />
                             <div className="flex items-center gap-4 border-l border-slate-200 dark:border-slate-700 pl-8">
-                                <button onClick={() => setShowLogin(true)} className="text-slate-800 dark:text-slate-200 hover:text-indigo-600 dark:hover:text-indigo-400 font-bold transition-colors text-sm">Sign In</button>
-                                <button
-                                    onClick={() => setShowRegistration(true)}
-                                    className="bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-6 py-2.5 rounded-full font-bold text-sm hover:bg-slate-800 dark:hover:bg-slate-100 transition-all shadow-sm"
-                                >
-                                    Get Started
-                                </button>
+                                {isRegistered ? (
+                                    <>
+                                        <span className="text-sm font-bold text-slate-600 dark:text-slate-300 truncate max-w-[140px]">
+                                            {studentProfile?.name || teacherProfile?.name || 'Welcome back'}
+                                        </span>
+                                        <button
+                                            onClick={() => navigate(role === UserRole.TEACHER ? '/teacher' : role === UserRole.SCHOOL ? '/school' : role === UserRole.PARENT ? '/parent' : '/learner')}
+                                            className="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-full font-bold text-sm transition-all shadow-sm flex items-center gap-1.5"
+                                        >
+                                            My Dashboard <ArrowRight className="w-3.5 h-3.5" />
+                                        </button>
+                                        <button onClick={() => setShowLogoutModal(true)} className="p-2 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors" title="Sign out">
+                                            <LogOut className="w-4 h-4" />
+                                        </button>
+                                    </>
+                                ) : (
+                                    <>
+                                        <button onClick={() => setShowLogin(true)} className="text-slate-800 dark:text-slate-200 hover:text-indigo-600 dark:hover:text-indigo-400 font-bold transition-colors text-sm">Sign In</button>
+                                        <button
+                                            onClick={() => setShowRegistration(true)}
+                                            className="bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-6 py-2.5 rounded-full font-bold text-sm hover:bg-slate-800 dark:hover:bg-slate-100 transition-all shadow-sm"
+                                        >
+                                            Get Started
+                                        </button>
+                                    </>
+                                )}
                             </div>
                         </nav>
 
@@ -679,9 +816,15 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                 <button onClick={() => { navigate('/blog'); setMobileMenuOpen(false); }} className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 font-medium">
                                     <BookOpen className="w-5 h-5 text-slate-400" /> Journal
                                 </button>
-                                <button onClick={() => { setShowLogin(true); setMobileMenuOpen(false); }} className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 font-medium">
-                                    <Users className="w-5 h-5 text-slate-400" /> Sign In
-                                </button>
+                                {isRegistered ? (
+                                    <button onClick={() => { navigate(role === UserRole.TEACHER ? '/teacher' : role === UserRole.SCHOOL ? '/school' : role === UserRole.PARENT ? '/parent' : '/learner'); setMobileMenuOpen(false); }} className="flex items-center gap-3 p-3 rounded-lg bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 font-bold">
+                                        <ArrowRight className="w-5 h-5" /> My Dashboard
+                                    </button>
+                                ) : (
+                                    <button onClick={() => { setShowLogin(true); setMobileMenuOpen(false); }} className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 font-medium">
+                                        <Users className="w-5 h-5 text-slate-400" /> Sign In
+                                    </button>
+                                )}
                                 <button onClick={() => { toggleLanguage(); setMobileMenuOpen(false); }} className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 text-slate-400 font-medium text-sm">
                                     <Globe className="w-4 h-4" /> {language === 'EN' ? 'Français' : 'English'}
                                 </button>
@@ -706,7 +849,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                             className="flex-1 max-w-2xl"
                         >
                             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-indigo-100 dark:bg-indigo-900/50 border border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 text-xs font-bold uppercase tracking-widest mb-6">
-                                <Star className="w-3 h-3 fill-current" /> For Learners &amp; Teachers
+                                <Star className="w-3 h-3 fill-current" /> Loved by 10,000+ Kenyan Learners &amp; Teachers
                             </div>
 
                             <h1 className="text-3xl sm:text-5xl lg:text-6xl font-bold text-slate-900 dark:text-white tracking-tight leading-[1.1] mb-5">
@@ -714,7 +857,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                 <span className="block text-indigo-600 dark:text-indigo-400 mt-2">Get unstuck in minutes.</span>
                             </h1>
                             <p className="text-base sm:text-lg text-slate-600 dark:text-slate-400 font-medium leading-relaxed mb-6 sm:mb-8 max-w-lg">
-                                Somo Smart explains the method, checks understanding with drills, reads lessons aloud, and gives parents progress proof - built around Kenyan exams and CBC learning.
+                                Somo Smart explains the method, builds practice drills, reads lessons aloud, and shows parents real progress proof — built around KCSE, KPSEA, and CBC learning.
                             </p>
 
                             {/* Solve It chat window */}
@@ -726,7 +869,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                     <input
                                         type="text"
                                         value={questionInput}
-                                        onChange={(e) => { setQuestionInput(e.target.value); if (showMockAnswer) setShowMockAnswer(false); }}
+                                        onChange={(e) => { setQuestionInput(e.target.value); if (showMockAnswer) setShowMockAnswer(false); if (heroLimitReached) setHeroLimitReached(false); }}
                                         onKeyDown={(e) => { if (e.key === 'Enter') handleGenerateAnswer(); }}
                                         placeholder="Type your question... e.g. Solve 3x + 7 = 22"
                                         className="w-full flex-1 min-w-0 bg-transparent border-none focus:outline-none text-slate-800 dark:text-slate-200 placeholder-slate-400 text-base font-medium pr-2 py-2 sm:py-0"
@@ -756,6 +899,26 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                                             <div className="h-3 bg-slate-200 dark:bg-slate-700 rounded-full w-full animate-pulse" />
                                                             <div className="h-3 bg-slate-200 dark:bg-slate-700 rounded-full w-3/4 animate-pulse" />
                                                         </div>
+                                                    ) : heroLimitReached ? (
+                                                        /* Conversion card — shown instead of error when guest daily quota is used up */
+                                                        <div>
+                                                            <p className="text-sm font-black text-slate-900 dark:text-white leading-snug">You've used today's 3 free answers.</p>
+                                                            <p className="mt-1 text-xs font-medium text-slate-500 dark:text-slate-400">Create a free account to get 10 answers per day — no card needed.</p>
+                                                            <div className="mt-3 flex flex-col sm:flex-row gap-2">
+                                                                <button
+                                                                    onClick={() => { trackFunnelEvent('hero_limit_register_clicked', { source: 'landing_hero' }); setShowRegistration(true); }}
+                                                                    className="flex-1 min-h-[38px] bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-black transition-colors flex items-center justify-center gap-1"
+                                                                >
+                                                                    Register Free <ArrowRight className="w-3 h-3" />
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => { setShowLogin(true); }}
+                                                                    className="flex-1 min-h-[38px] border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-lg text-xs font-black transition-colors"
+                                                                >
+                                                                    Sign In
+                                                                </button>
+                                                            </div>
+                                                        </div>
                                                     ) : (
                                                         <>
                                                             <p className="text-slate-800 dark:text-slate-200 font-medium text-sm leading-relaxed">{generatedAnswer}</p>
@@ -772,7 +935,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                                             </div>
                                                         </>
                                                     )}
-                                                    {!isGenerating && (
+                                                    {!isGenerating && !heroLimitReached && (
                                                         <div className="mt-3">
                                                             <button
                                                                 onClick={() => {
@@ -800,26 +963,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                                             </button>
 
                                                             <button
-                                                                onClick={() => {
-                                                                    trackFunnelEvent('learner_answer_cta_clicked', {
-                                                                        source: 'landing_hero',
-                                                                        cta: 'full_step_by_step'
-                                                                    });
-                                                                    if (isRegistered || role !== UserRole.NONE) {
-                                                                        setRole(UserRole.LEARNER);
-                                                                        navigate('/learner', { state: { pendingHeroQuestion: questionInput } });
-                                                                        return;
-                                                                    }
-
-                                                                    setRole(UserRole.LEARNER);
-                                                                    setRegistrationRole('STUDENT');
-                                                                    setPendingRoute('/learner');
-                                                                    setPendingRouteState({ pendingHeroQuestion: questionInput });
-                                                                    setShowRegistration(true);
-                                                                }}
-                                                                className="mt-2 text-[11px] font-bold text-slate-500 hover:text-indigo-700 transition-colors flex items-center gap-1"
+                                                                onClick={handleOpenDetailedView}
+                                                                className="mt-2 text-[11px] font-bold text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-200 transition-colors flex items-center gap-1"
                                                             >
-                                                                Need full step-by-step notes? Open detailed view <ArrowRight className="w-3 h-3" />
+                                                                To earn more marks? Open step-by-step notes <ArrowRight className="w-3 h-3" />
                                                             </button>
                                                         </div>
                                                     )}
@@ -831,8 +978,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                             </div>
 
                             {/* Quick-prompt chips */}
-                            <div className="hidden">
-                                {['Photosynthesis explained simply', 'How do I find the gradient?', "Kenya's major rivers"].map((q, i) => (
+                            <div className="flex flex-wrap gap-2 mt-3">
+                                {['Photosynthesis explained simply', 'How do I find the gradient?', "Kenya's major rivers", 'Expand (x+2)(x-3)'].map((q, i) => (
                                     <button key={i} onClick={() => { setQuestionInput(q); setShowMockAnswer(false); }}
                                         className="px-3 py-1.5 rounded-full text-xs font-bold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 hover:text-indigo-700 hover:border-indigo-200 transition-all">
                                         {q}
@@ -850,7 +997,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                     onClick={() => handleRoleSelect(UserRole.LEARNER)}
                                     className="w-full sm:w-auto min-h-[46px] rounded-xl bg-indigo-600 hover:bg-indigo-700 px-5 text-sm font-black text-white flex items-center justify-center gap-2"
                                 >
-                                    Open Learner Workspace <ChevronRight className="w-4 h-4" />
+                                    Try Free — No Sign-up Needed <ChevronRight className="w-4 h-4" />
                                 </button>
                                 <button
                                     onClick={() => handleRoleSelect(UserRole.TEACHER)}
@@ -1167,8 +1314,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                 </div>
             </section>
 
-            {false && (
-            <>
             {/* --- PRESTIGE TICKER --- */}
 
             <div className="border-y border-slate-200/50 dark:border-slate-800/80 bg-white/50 dark:bg-slate-950/50 py-6 sm:py-8 overflow-hidden relative backdrop-blur-sm">
@@ -1197,6 +1342,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                     <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-[0.3em]">Built to Kenyan Curriculum Standards</span>
                 </div>
             </div>
+            {false && (
+            <>
             {/* --- EXAM ASSISTANT CTA --- */}
             <section className="py-12 relative overflow-hidden bg-white dark:bg-slate-950 transition-colors">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
@@ -1230,6 +1377,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                     </div>
                 </div>
             </section>
+            </>
+            )}
 
             {/* --- STUDENT TESTIMONIALS --- */}
             <section className="py-16 bg-white dark:bg-slate-950 transition-colors border-t border-slate-200 dark:border-slate-800">
@@ -1239,7 +1388,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                             <Star className="w-3.5 h-3.5 fill-current" /> Real Students, Real Results
                         </div>
                         <h2 className="text-3xl md:text-4xl font-bold text-slate-900 dark:text-white tracking-tight">
-                            Kenyan students <span className="text-indigo-600 dark:text-indigo-400">are already winning</span>
+                            Kenyan students <span className="text-indigo-600 dark:text-indigo-400">saw real grade improvements</span>
                         </h2>
                         <p className="text-slate-500 dark:text-slate-400 mt-3 text-base font-medium">Support for the late-night stuck moment, exam pressure, and daily practice between classes.</p>
                     </div>
@@ -1324,8 +1473,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                             <div className="w-14 h-14 bg-blue-50 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 rounded-xl flex items-center justify-center mb-6">
                                 <ScanLine className="w-7 h-7" />
                             </div>
-                            <h3 className="font-bold text-slate-900 dark:text-white text-lg mb-3">Snap a Photo</h3>
-                            <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">Take a photo of any exam paper, homework problem, or textbook page.</p>
+                            <h3 className="font-bold text-slate-900 dark:text-white text-lg mb-3">Ask or Snap</h3>
+                            <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">Type any question or snap a photo of an exam paper, homework, or textbook page to get instant help.</p>
                         </div>
 
                         {/* Step 2 */}
@@ -1358,6 +1507,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                 </div>
             </section>
 
+            {false && (
+            <>
             {/* --- CORE FEATURES BENTO BOX --- */}
             <section className="py-16 bg-white dark:bg-slate-950 transition-colors border-t border-slate-200 dark:border-slate-800">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -1485,6 +1636,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
             <SchoolCalendar />
 
             <div className="w-full h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent opacity-20"></div>
+            </>
+            )}
 
             {/* --- TESTIMONIALS --- */}
             <section className="py-16 bg-white dark:bg-slate-950 transition-colors border-t border-slate-200 dark:border-slate-800">
@@ -1493,8 +1646,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 font-bold text-xs mb-6 uppercase tracking-wider border border-blue-200 dark:border-blue-800 shadow-sm">
                             <Star className="w-4 h-4" /> Rated 4.9/5 by 10,000+ Users
                         </div>
-                        <h2 className="text-3xl md:text-5xl font-bold text-slate-900 dark:text-white mb-6 tracking-tight">Voices of <span className="text-blue-600 dark:text-blue-400">Success</span></h2>
-                        <p className="text-lg text-slate-600 dark:text-slate-400 max-w-2xl mx-auto font-medium">See how Somo Smart is transforming the educational landscape for Kenyan students, teachers, and parents.</p>
+                        <h2 className="text-3xl md:text-5xl font-bold text-slate-900 dark:text-white mb-6 tracking-tight">What learners, teachers, <span className="text-blue-600 dark:text-blue-400">and parents say</span></h2>
+                        <p className="text-lg text-slate-600 dark:text-slate-400 max-w-2xl mx-auto font-medium">Real results from Kenyan classrooms — better grades, less marking time, and clear progress proof for families.</p>
                     </div>
 
                     <div className="grid md:grid-cols-3 gap-6">
@@ -1573,9 +1726,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                 </div>
             </section>
 
-            </>
-            )}
-
             {/* --- PUBLIC LIBRARY ACCESS CARD --- */}
             <section id="library" className="py-16 bg-slate-50 dark:bg-slate-950 border-y border-slate-200 dark:border-slate-900 transition-colors">
                 <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -1592,7 +1742,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                     <BookOpen className="w-4 h-4" /> Content Library
                                 </div>
                                 <h2 className="text-3xl md:text-4xl font-black text-slate-950 dark:text-white tracking-tight mb-4">
-                                    Official Study Materials, Free for Logged-In Learners.
+                                    Official Notes &amp; Past Papers — Free Inside the App.
                                 </h2>
                                 <p className="text-lg text-slate-600 dark:text-slate-300 leading-relaxed max-w-2xl mb-8">
                                     Browse syllabus guides, expert notes, and KCSE/KPSEA past papers inside the learner library with grade and subject filters.
@@ -1765,12 +1915,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                     <div className="rounded-[2rem] border border-slate-200 bg-slate-950 p-6 text-white shadow-2xl shadow-slate-300/40 dark:border-slate-800 dark:bg-slate-900 dark:shadow-black/30 sm:p-8 lg:p-10">
                         <div className="flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between">
                             <div className="max-w-2xl">
-                                <p className="text-[11px] font-black uppercase tracking-[0.24em] text-emerald-300">Choose your next step</p>
+                                <p className="text-[11px] font-black uppercase tracking-[0.24em] text-emerald-300">No sign-up required to start</p>
                                 <h2 className="mt-3 text-3xl font-black tracking-tight sm:text-4xl">
-                                    Start with one real school problem today.
+                                    Open the app. Solve a real problem in the next 2 minutes.
                                 </h2>
                                 <p className="mt-4 text-base font-medium leading-relaxed text-slate-300">
-                                    A learner can solve one hard question, a teacher can prepare one lesson, and a parent can check whether study is actually happening.
+                                    A learner can solve one hard question, a teacher can prepare one lesson, and a parent can check whether study is actually happening — right now, for free.
                                 </p>
                             </div>
 
@@ -1872,6 +2022,128 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                     </div>
                 </div>
             </footer>
+            {/* --- DETAILED VIEW MODAL --- */}
+            <AnimatePresence>
+                {showDetailedView && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-slate-950/70 px-0 sm:px-4 py-0 sm:py-6 backdrop-blur-sm"
+                        onClick={() => setShowDetailedView(false)}
+                    >
+                        <motion.div
+                            initial={{ opacity: 0, y: 32, scale: 0.98 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: 32, scale: 0.98 }}
+                            className="w-full sm:max-w-2xl overflow-hidden rounded-t-3xl sm:rounded-3xl border border-slate-200 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-950 flex flex-col"
+                            style={{ maxHeight: '88vh' }}
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            {/* Header */}
+                            <div className="flex items-start justify-between gap-4 border-b border-slate-100 p-5 dark:border-slate-800 shrink-0">
+                                <div className="min-w-0">
+                                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-600 dark:text-indigo-300">Step-by-step notes</p>
+                                    <h2 className="mt-1 text-base font-black text-slate-950 dark:text-white truncate">{questionInput}</h2>
+                                </div>
+                                <button
+                                    onClick={() => setShowDetailedView(false)}
+                                    className="rounded-xl border border-slate-200 p-2 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900 dark:border-slate-800 dark:text-slate-400 dark:hover:bg-slate-900 dark:hover:text-white shrink-0"
+                                >
+                                    <X className="h-5 w-5" />
+                                </button>
+                            </div>
+
+                            {/* Body */}
+                            {((!isRegistered && detailedUsesLeft === 0 && !detailedAnswer) || detailedLimitReached) ? (
+                                /* Full gate — guest preview limit OR registered user daily limit reached */
+                                <div className="flex flex-col items-center justify-center gap-5 p-8 text-center flex-1">
+                                    <div className="w-14 h-14 rounded-2xl bg-indigo-50 dark:bg-indigo-950/50 flex items-center justify-center">
+                                        <BookOpen className="w-7 h-7 text-indigo-600 dark:text-indigo-300" />
+                                    </div>
+                                    {isRegistered ? (
+                                        <div>
+                                            <p className="text-xs font-black uppercase tracking-widest text-slate-400 mb-2">Daily limit reached</p>
+                                            <h3 className="text-xl font-black text-slate-900 dark:text-white">You've used today's free AI calls</h3>
+                                            <p className="mt-2 text-sm text-slate-600 dark:text-slate-300 leading-relaxed max-w-xs mx-auto">
+                                                Upgrade to a plan for unlimited step-by-step notes, exam prep, and audio lessons.
+                                            </p>
+                                        </div>
+                                    ) : (
+                                        <div>
+                                            <p className="text-xs font-black uppercase tracking-widest text-slate-400 mb-2">3 free previews used</p>
+                                            <h3 className="text-xl font-black text-slate-900 dark:text-white">Create a free account to keep going</h3>
+                                            <p className="mt-2 text-sm text-slate-600 dark:text-slate-300 leading-relaxed max-w-xs mx-auto">
+                                                Unlock full step-by-step notes for any question, practice drills, and progress tracking — free to start.
+                                            </p>
+                                        </div>
+                                    )}
+                                    <div className="flex flex-col sm:flex-row gap-3 w-full max-w-xs">
+                                        {isRegistered ? (
+                                            <button onClick={() => { setShowDetailedView(false); navigate('/pricing'); }} className="flex-1 min-h-[46px] bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-black text-sm transition-colors">See Plans</button>
+                                        ) : (
+                                            <>
+                                                <button onClick={() => { setShowDetailedView(false); setShowRegistration(true); }} className="flex-1 min-h-[46px] bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-black text-sm transition-colors">Register Free</button>
+                                                <button onClick={() => { setShowDetailedView(false); setShowLogin(true); }} className="flex-1 min-h-[46px] border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-900 text-slate-800 dark:text-slate-200 rounded-xl font-black text-sm transition-colors">Sign In</button>
+                                            </>
+                                        )}
+                                    </div>
+                                </div>
+                            ) : (
+                                /* Partial view with blur gate */
+                                <div className="relative flex-1 min-h-0">
+                                    {/* Scrollable content */}
+                                    <div className="overflow-y-auto h-full p-5 pb-36">
+                                        {isGeneratingDetailed ? (
+                                            <div className="space-y-3 py-2">
+                                                {[100, 90, 100, 75, 100, 88, 60].map((w, i) => (
+                                                    <div key={i} className={`h-3 bg-slate-200 dark:bg-slate-700 rounded-full animate-pulse`} style={{ width: `${w}%` }} />
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <div className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-wrap font-medium">
+                                                {detailedAnswer}
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Gradient fade + blur overlay on bottom half */}
+                                    {!isRegistered && (
+                                        <>
+                                            <div className="absolute bottom-[112px] left-0 right-0 h-28 bg-gradient-to-b from-transparent to-white dark:to-slate-950 pointer-events-none" />
+                                            <div className="absolute bottom-[112px] left-0 right-0 h-6 backdrop-blur-sm pointer-events-none" />
+                                        </>
+                                    )}
+
+                                    {/* Login gate docked at bottom */}
+                                    {!isRegistered && (
+                                        <div className="absolute bottom-0 left-0 right-0 border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-950 p-4">
+                                            <div className="flex items-start gap-3 mb-3">
+                                                <div className="w-9 h-9 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 flex items-center justify-center shrink-0">
+                                                    <BookOpen className="w-4 h-4 text-indigo-600 dark:text-indigo-300" />
+                                                </div>
+                                                <div className="min-w-0">
+                                                    <p className="text-sm font-black text-slate-900 dark:text-white leading-tight">Sign in to see the full explanation</p>
+                                                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                                                        {detailedUsesLeft > 0
+                                                            ? `${detailedUsesLeft} free preview${detailedUsesLeft !== 1 ? 's' : ''} remaining — no payment needed`
+                                                            : 'Free account unlocks unlimited step-by-step notes'}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <div className="flex gap-2">
+                                                <button onClick={() => { setShowDetailedView(false); setShowRegistration(true); }} className="flex-1 min-h-[40px] bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-black text-xs transition-colors">Register Free</button>
+                                                <button onClick={() => { setShowDetailedView(false); setShowLogin(true); }} className="flex-1 min-h-[40px] border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-900 text-slate-700 dark:text-slate-300 rounded-xl font-black text-xs transition-colors">Sign In</button>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
             {/* --- MODALS --- */}
             <AnimatePresence>
                 {showNavigationGuide && (
