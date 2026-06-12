@@ -3590,6 +3590,53 @@ ${explanation.explanation}
             </AnimatePresence>
 
 
+            {/* WELCOME CARD — newly registered users on first login (registered + zero history) */}
+            {isRegistered && !hasHistory && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mb-6 rounded-3xl bg-gradient-to-br from-emerald-600 via-teal-600 to-blue-700 p-5 sm:p-6 text-white shadow-lg shadow-emerald-500/20"
+              >
+                <div className="flex items-start gap-4">
+                  <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center shrink-0 text-xl">🎓</div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-200 mb-1">
+                      Welcome, {profile?.name?.split(' ')[0] || 'Learner'}!
+                    </p>
+                    <p className="font-bold text-base mb-3">Your learning dashboard is ready — here&apos;s how to start</p>
+                    <div className="space-y-2 mb-4">
+                      {[
+                        { icon: '❓', label: 'Type any question or topic below — Akili explains it step by step' },
+                        { icon: '📸', label: 'Scan or upload your textbook page to get instant notes' },
+                        { icon: '✅', label: 'Take a quick quiz to test yourself and track your progress' },
+                      ].map(({ icon, label }) => (
+                        <div key={label} className="flex items-start gap-2.5 text-sm font-medium text-white/90">
+                          <span className="text-base shrink-0 mt-0.5">{icon}</span>
+                          <span>{label}</span>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        onClick={() => setMode('SCAN_EXPLAIN')}
+                        className="rounded-xl bg-white text-emerald-700 hover:bg-emerald-50 px-3 py-2.5 text-left font-black text-sm transition-colors"
+                      >
+                        Ask a Question
+                        <span className="block text-[10px] font-bold text-emerald-500 mt-0.5">Type or scan work</span>
+                      </button>
+                      <button
+                        onClick={() => handleSidebarTabChange('RESOURCES')}
+                        className="rounded-xl bg-white/15 hover:bg-white/25 border border-white/20 px-3 py-2.5 text-left font-black text-sm transition-colors"
+                      >
+                        Browse Library
+                        <span className="block text-[10px] font-bold text-emerald-100 mt-0.5">Notes &amp; past papers</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
             {/* START HERE — Onboarding card for brand-new users (zero history, not registered) */}
             {!isRegistered && !hasHistory && (
               <motion.div
@@ -3736,7 +3783,7 @@ ${explanation.explanation}
                           : 'bg-indigo-600 text-white hover:bg-indigo-700'
                       }`}
                     >
-                      {freeUsesLeft === 0 ? 'Continue With Plan' : 'Plans From KES 20'}
+                      {freeUsesLeft === 0 ? 'Continue With Plan' : 'Plans From KES 20 · M-PESA'}
                     </button>
                     {freeUsesLeft === 0 && (
                       <button

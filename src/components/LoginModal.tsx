@@ -9,7 +9,6 @@ interface LoginModalProps {
     onClose: () => void;
     initialTab?: 'STUDENT' | 'TEACHER' | 'SCHOOL';
     onSwitchToRegister?: (role?: 'STUDENT' | 'SCHOOL' | 'TEACHER') => void;
-    onSwitchToRegister?: (role?: 'STUDENT' | 'SCHOOL' | 'TEACHER') => void;
     onSuccess?: (tab: 'STUDENT' | 'TEACHER' | 'SCHOOL') => void;
 }
 

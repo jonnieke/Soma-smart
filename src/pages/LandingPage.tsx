@@ -107,13 +107,15 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
     }, [isRegistered]);
 
     React.useEffect(() => {
+        if (isRegistered) return; // Registered users go to their dashboard — no guide needed
         try {
             if (localStorage.getItem('soma_seen_navigation_guide') !== 'true') {
-                window.setTimeout(() => setShowNavigationGuide(true), 900);
+                window.setTimeout(() => setShowNavigationGuide(true), 3500);
             }
         } catch (_) {
-            window.setTimeout(() => setShowNavigationGuide(true), 900);
+            window.setTimeout(() => setShowNavigationGuide(true), 3500);
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const closeNavigationGuide = () => {
@@ -988,9 +990,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                             </div>
 
                             <div className="flex flex-wrap gap-x-5 gap-y-3 text-sm text-slate-500 dark:text-slate-400">
-                                <div className="flex items-center gap-1.5"><CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0" /> Free start, KES 20/day when ready</div>
+                                <div className="flex items-center gap-1.5"><CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0" /> Free start · KES 20/day via M-PESA</div>
                                 <div className="flex items-center gap-1.5"><CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0" /> Official notes and past papers</div>
-                                <div className="flex items-center gap-1.5"><CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0" /> Parent proof and teacher tools</div>
+                                <div className="flex items-center gap-1.5"><CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0" /> Parent progress proof · teacher tools</div>
                             </div>
                             <div className="mt-6 flex flex-col sm:flex-row gap-3">
                                 <button
@@ -2361,19 +2363,21 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                 }
             />
 
-            {/* --- MOBILE STICKY CTA --- */}
-            <div className="md:hidden fixed bottom-6 left-4 right-4 p-2.5 bg-slate-900/95 dark:bg-slate-800/95 backdrop-blur-xl border border-slate-700/50 shadow-2xl z-50 rounded-2xl flex items-center justify-around pointer-events-auto">
-                <div className="flex flex-col pl-2">
-                    <span className="text-white text-xs font-black tracking-tight leading-none mb-1">Ready to pass?</span>
-                    <span className="text-blue-300 text-[9px] font-bold uppercase tracking-widest">Solutions for KCSE & CBC</span>
+            {/* --- MOBILE STICKY CTA (guests only) --- */}
+            {!isRegistered && (
+                <div className="md:hidden fixed bottom-6 left-4 right-4 p-2.5 bg-slate-900/95 dark:bg-slate-800/95 backdrop-blur-xl border border-slate-700/50 shadow-2xl z-50 rounded-2xl flex items-center justify-around pointer-events-auto">
+                    <div className="flex flex-col pl-2">
+                        <span className="text-white text-xs font-black tracking-tight leading-none mb-1">Join 10,000+ learners</span>
+                        <span className="text-blue-300 text-[9px] font-bold uppercase tracking-widest">KCSE · CBC · Free to start</span>
+                    </div>
+                    <button
+                        onClick={() => handleRoleSelect(UserRole.LEARNER)}
+                        className="bg-blue-600 hover:bg-blue-500 text-white py-2.5 px-5 rounded-xl font-bold text-sm shadow-md shadow-blue-500/20 active:scale-95 transition-all flex items-center gap-2"
+                    >
+                        Start Free <ChevronRight className="w-4 h-4 text-blue-200" />
+                    </button>
                 </div>
-                <button
-                    onClick={() => handleRoleSelect(UserRole.LEARNER)}
-                    className="bg-blue-600 hover:bg-blue-500 text-white py-2.5 px-5 rounded-xl font-bold text-sm shadow-md shadow-blue-500/20 active:scale-95 transition-all flex items-center gap-2"
-                >
-                    Start Free <ChevronRight className="w-4 h-4 text-blue-200" />
-                </button>
-            </div>
+            )}
 
             {/* --- WHATSAPP FLOATING BUTTON (icon-only) --- */}
             <a
