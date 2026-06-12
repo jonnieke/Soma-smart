@@ -78,12 +78,18 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
     }, [isOpen, initialRole]);
 
     // Grade options per education level
+    // Kenya 2025: CBC (Grade 1-10, Grade 11 from 2026) runs alongside 8-4-4 (Form 1-4 / KCSE)
     const getGradeOptions = () => {
         switch (educationLevel) {
             case EducationLevel.JUNIOR:
                 return ["Play Group", "PP1", "PP2", "Grade 1", "Grade 2", "Grade 3", "Grade 4", "Grade 5", "Grade 6"];
             case EducationLevel.SENIOR:
-                return ["Grade 7 (JSS)", "Grade 8 (JSS)", "Grade 9 (JSS)", "Grade 10", "Grade 11", "Grade 12 / Form 4"];
+                return [
+                    "Grade 7 (JSS)", "Grade 8 (JSS)", "Grade 9 (JSS)",
+                    "Grade 10 (CBC Senior)",
+                    "Grade 11 (CBC — 2026)",
+                    "Form 1", "Form 2", "Form 3 (KCSE)", "Form 4 (KCSE)"
+                ];
             case EducationLevel.CAMPUS:
                 return ["Year 1", "Year 2", "Year 3", "Year 4", "Year 5", "Postgraduate"];
             default:
@@ -591,7 +597,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
                                                 <div>
                                                     <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Classes I Teach</label>
                                                     <div className="grid grid-cols-2 gap-2">
-                                                        {["Grade 1-6", "Grade 7-9 (JSS)", "Grade 10-12", "Campus"].map(c => (
+                                                        {["Grade 1-6", "Grade 7-9 (JSS)", "Form 1-4 (KCSE)", "Grade 10+ (CBC Senior)", "Campus / University"].map(c => (
                                                             <button
                                                                 type="button"
                                                                 key={c}
