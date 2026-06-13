@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Upload, FileText, Trash2, CheckCircle, Search, Filter, BookOpen, AlertTriangle, Edit2, X, Check } from 'lucide-react';
+import { Upload, FileText, Trash2, CheckCircle, Search, Filter, BookOpen, AlertTriangle, Edit2, X, Check, RefreshCw } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { Button, Card } from '../../components/Shared';
 import { AdminLayout } from './layout/AdminLayout';
@@ -15,6 +15,36 @@ interface Document {
     created_at: string;
     file_path: string;
     file_url: string;
+    source?: string;
+    is_official?: boolean;
+    indexing_status?: 'PENDING' | 'PROCESSING' | 'READY' | 'FAILED' | string;
+    chunk_count?: number;
+    last_index_error?: string | null;
+}
+
+interface RagTestChunk {
+    id: number;
+    content: string;
+    title?: string;
+    grade?: string;
+    subject?: string;
+    type?: string;
+    similarity?: number;
+    combined_score?: number;
+}
+
+interface RagTestResult {
+    chunks: RagTestChunk[];
+    sources: Array<{
+        document_id: number;
+        title: string;
+        grade: string;
+        subject: string;
+        type: string;
+        chunk_count: number;
+        top_score: number;
+    }>;
+    match_count: number;
 }
 
 interface AdminKnowledgeBaseProps {
@@ -44,6 +74,23 @@ export const AdminKnowledgeBase: React.FC<AdminKnowledgeBaseProps> = ({ authStat
     const [newDocSubject, setNewDocSubject] = useState('');
     const [newDocType, setNewDocType] = useState<Document['type']>('SYLLABUS');
     const [uploadKey, setUploadKey] = useState(0); // To reset file input
+    const [ragTestQuery, setRagTestQuery] = useState('');
+    const [ragTestLoading, setRagTestLoading] = useState(false);
+    const [ragTestResult, setRagTestResult] = useState<RagTestResult | null>(null);
+    const [ragTestError, setRagTestError] = useState('');
+
+    const getIndexStatusStyle = (status?: string) => {
+        switch ((status || 'PENDING').toUpperCase()) {
+            case 'READY':
+                return 'bg-emerald-50 text-emerald-700 border-emerald-100';
+            case 'PROCESSING':
+                return 'bg-blue-50 text-blue-700 border-blue-100';
+            case 'FAILED':
+                return 'bg-red-50 text-red-700 border-red-100';
+            default:
+                return 'bg-amber-50 text-amber-700 border-amber-100';
+        }
+    };
 
     useEffect(() => {
         fetchDocuments();
@@ -108,7 +155,10 @@ export const AdminKnowledgeBase: React.FC<AdminKnowledgeBaseProps> = ({ authStat
                     subject: newDocSubject,
                     type: newDocType,
                     file_url: publicUrl,
-                    file_path: filePath
+                    file_path: filePath,
+                    source: 'SOMA',
+                    is_official: ['SYLLABUS', 'PAST_PAPER', 'NOTES'].includes(newDocType),
+                    indexing_status: 'PENDING'
                 }]);
 
             if (dbError) {
@@ -210,6 +260,93 @@ export const AdminKnowledgeBase: React.FC<AdminKnowledgeBaseProps> = ({ authStat
         } catch (error: any) {
             console.error('Update failed:', error);
             alert(`Update failed: ${error.message}`);
+        }
+    };
+
+    const triggerDocumentIndexing = async (docs: Document[]) => {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+            throw new Error('No active admin session. Please re-login.');
+        }
+
+        await Promise.allSettled(
+            docs
+                .filter(doc => doc.file_url)
+                .map(doc =>
+                    fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ingest-document`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${session.access_token}`
+                        },
+                        body: JSON.stringify({ record: doc })
+                    })
+                )
+        );
+    };
+
+    const handleReindexVisibleDocs = async () => {
+        const docsToIndex = filteredDocs.filter(doc => doc.file_url);
+        if (docsToIndex.length === 0) return;
+
+        if (!confirm(`Re-index ${docsToIndex.length} visible document(s) for grounded Ask Akili and Exam Prep answers?`)) return;
+
+        try {
+            setUploading(true);
+            setDocuments(prev => prev.map(doc =>
+                docsToIndex.some(target => target.id === doc.id)
+                    ? { ...doc, indexing_status: 'PROCESSING', last_index_error: null }
+                    : doc
+            ));
+            await triggerDocumentIndexing(docsToIndex);
+            setTimeout(fetchDocuments, 2500);
+            alert('Re-indexing started. Large PDFs may take a few minutes to show as ready.');
+        } catch (error: any) {
+            console.error('Re-index failed:', error);
+            alert(`Re-index failed: ${error.message || 'Please try again.'}`);
+        } finally {
+            setUploading(false);
+        }
+    };
+
+    const handleRagTest = async () => {
+        const query = ragTestQuery.trim();
+        if (!query) return;
+
+        try {
+            setRagTestLoading(true);
+            setRagTestError('');
+            setRagTestResult(null);
+
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) {
+                throw new Error('No active admin session. Please re-login.');
+            }
+
+            const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/search-knowledge`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${session.access_token}`
+                },
+                body: JSON.stringify({
+                    query,
+                    grade: filterGrade === 'All' ? undefined : filterGrade,
+                    subject: filterSubject === 'All' ? undefined : filterSubject,
+                    match_count: 6,
+                    match_threshold: 0.2
+                })
+            });
+
+            const payload = await response.json();
+            if (!response.ok) throw new Error(payload.error || 'RAG search failed.');
+
+            setRagTestResult(payload);
+        } catch (error: any) {
+            console.error('RAG test failed:', error);
+            setRagTestError(error.message || 'RAG test failed.');
+        } finally {
+            setRagTestLoading(false);
         }
     };
 
@@ -396,6 +533,14 @@ export const AdminKnowledgeBase: React.FC<AdminKnowledgeBaseProps> = ({ authStat
                                 >
                                     <Filter className="w-5 h-5" />
                                 </button>
+                                <button
+                                    onClick={handleReindexVisibleDocs}
+                                    disabled={uploading || filteredDocs.length === 0}
+                                    className="p-3 rounded-xl shadow-sm border bg-white border-slate-200 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-200 text-slate-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                    title="Re-index visible documents for AI retrieval"
+                                >
+                                    <RefreshCw className={`w-5 h-5 ${uploading ? 'animate-spin' : ''}`} />
+                                </button>
                             </div>
 
                             {/* FILTER DROPDOWN UI */}
@@ -471,6 +616,102 @@ export const AdminKnowledgeBase: React.FC<AdminKnowledgeBaseProps> = ({ authStat
                             )}
                         </div>
 
+                        {/* RAG QUALITY TESTER */}
+                        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4">
+                            <div className="flex flex-col lg:flex-row lg:items-start gap-4">
+                                <div className="flex-1">
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                                            <Search className="w-4 h-4" />
+                                        </div>
+                                        <div>
+                                            <h3 className="text-sm font-black text-slate-900">RAG Quality Test</h3>
+                                            <p className="text-xs font-semibold text-slate-500">
+                                                Test what Ask Akili retrieves from the current grade/subject filters.
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div className="flex flex-col sm:flex-row gap-2">
+                                        <input
+                                            value={ragTestQuery}
+                                            onChange={e => setRagTestQuery(e.target.value)}
+                                            onKeyDown={e => {
+                                                if (e.key === 'Enter') handleRagTest();
+                                            }}
+                                            placeholder="e.g. KCSE Biology: explain photosynthesis limiting factors"
+                                            className="flex-1 rounded-xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-800 outline-none focus:ring-2 focus:ring-emerald-500"
+                                        />
+                                        <button
+                                            onClick={handleRagTest}
+                                            disabled={ragTestLoading || !ragTestQuery.trim()}
+                                            className="rounded-xl bg-emerald-600 px-5 py-3 text-xs font-black uppercase tracking-wider text-white hover:bg-emerald-700 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed"
+                                        >
+                                            {ragTestLoading ? 'Testing...' : 'Test Retrieval'}
+                                        </button>
+                                    </div>
+                                    <p className="mt-2 text-[11px] font-semibold text-slate-400">
+                                        Active filters: {filterGrade === 'All' ? 'All grades' : filterGrade} / {filterSubject === 'All' ? 'All subjects' : filterSubject}
+                                    </p>
+                                </div>
+                                <div className="rounded-2xl bg-slate-50 border border-slate-200 p-3 min-w-[180px]">
+                                    <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">Index Health</p>
+                                    <p className="text-sm font-black text-slate-900 mt-1">
+                                        {documents.filter(doc => (doc.indexing_status || '').toUpperCase() === 'READY').length} ready
+                                    </p>
+                                    <p className="text-xs font-semibold text-slate-500">
+                                        {documents.filter(doc => (doc.indexing_status || '').toUpperCase() === 'FAILED').length} failed / {documents.length} total
+                                    </p>
+                                </div>
+                            </div>
+
+                            {ragTestError && (
+                                <div className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+                                    {ragTestError}
+                                </div>
+                            )}
+
+                            {ragTestResult && (
+                                <div className="mt-4 space-y-4">
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        <span className="rounded-full bg-emerald-50 border border-emerald-100 px-3 py-1 text-xs font-black text-emerald-700">
+                                            {ragTestResult.match_count || 0} chunks found
+                                        </span>
+                                        {ragTestResult.sources?.slice(0, 4).map(source => (
+                                            <span key={source.document_id} className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-700">
+                                                {source.title}
+                                            </span>
+                                        ))}
+                                    </div>
+
+                                    {ragTestResult.chunks?.length ? (
+                                        <div className="grid gap-3">
+                                            {ragTestResult.chunks.slice(0, 4).map((chunk, index) => (
+                                                <div key={`${chunk.id}-${index}`} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                                                    <div className="flex flex-wrap items-center gap-2 mb-2">
+                                                        <span className="rounded-full bg-white border border-slate-200 px-2 py-0.5 text-[10px] font-black text-slate-500">
+                                                            #{index + 1}
+                                                        </span>
+                                                        <span className="text-xs font-black text-slate-900">{chunk.title || 'Untitled material'}</span>
+                                                        <span className="text-[11px] font-semibold text-slate-500">{chunk.grade || 'All'} / {chunk.subject || 'General'} / {chunk.type || 'Material'}</span>
+                                                        <span className="text-[11px] font-black text-emerald-700">
+                                                            score {Math.round(((chunk.combined_score ?? chunk.similarity ?? 0) as number) * 100)}%
+                                                        </span>
+                                                    </div>
+                                                    <p className="text-xs leading-relaxed text-slate-600 line-clamp-4">
+                                                        {chunk.content}
+                                                    </p>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-800">
+                                            No chunks found. Re-index the visible documents or lower the filters, then test again.
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+
                         {/* LIST */}
                         {loading ? (
                             <div className="text-center py-20 text-slate-400">Loading documents...</div>
@@ -516,7 +757,7 @@ export const AdminKnowledgeBase: React.FC<AdminKnowledgeBaseProps> = ({ authStat
                                                 ) : (
                                                     <h3 className="font-bold text-slate-800">{doc.title}</h3>
                                                 )}
-                                                <div className="flex items-center gap-2 text-xs text-slate-500 mt-1">
+                                                <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500 mt-1">
                                                     <span className="bg-slate-100 px-2 py-0.5 rounded text-slate-600 font-medium">{doc.grade}</span>
                                                     <span>•</span>
                                                     <span>{doc.subject}</span>
@@ -524,7 +765,16 @@ export const AdminKnowledgeBase: React.FC<AdminKnowledgeBaseProps> = ({ authStat
                                                     <span>{doc.type.replace('_', ' ')}</span>
                                                     <span>•</span>
                                                     <span>{new Date(doc.created_at).toLocaleDateString()}</span>
+                                                    <span className={`border px-2 py-0.5 rounded-full font-semibold ${getIndexStatusStyle(doc.indexing_status)}`}>
+                                                        {(doc.indexing_status || 'PENDING').toLowerCase()}
+                                                        {doc.chunk_count ? ` · ${doc.chunk_count} chunks` : ''}
+                                                    </span>
                                                 </div>
+                                                {doc.last_index_error && (
+                                                    <p className="text-xs text-red-500 mt-1 max-w-2xl truncate" title={doc.last_index_error}>
+                                                        Indexing issue: {doc.last_index_error}
+                                                    </p>
+                                                )}
                                             </div>
                                         </div>
 

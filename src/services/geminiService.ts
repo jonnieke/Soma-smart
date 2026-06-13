@@ -37,38 +37,8 @@ const SchemaType = {
 } as const;
 
 export const callGeminiProxy = async (model: string, contents: any, generationConfig: any = {}, systemInstruction: any = null) => {
-  const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-  const localApiKey = import.meta.env.VITE_GEMINI_API;
   const feature = inferAiFeature(contents, systemInstruction);
   assertPlanLimit(feature);
-
-  if (isLocal && localApiKey) {
-    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${localApiKey}`;
-    const body: any = { contents };
-    if (generationConfig) body.generationConfig = generationConfig;
-    if (systemInstruction) body.systemInstruction = systemInstruction;
-
-    const response = await fetch(endpoint, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body)
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      console.error("Gemini Direct Error:", error);
-      throw new Error(error.error?.message || "Failed to call AI directly");
-    }
-
-    const data = await response.json();
-    recordPlanUsage(feature);
-    void trackUsageCost(buildGeminiUsagePayload(model, contents, systemInstruction, data, feature));
-    return {
-      response: {
-        text: () => data.candidates?.[0]?.content?.parts?.[0]?.text || "",
-      }
-    };
-  }
 
   const { data: { session } } = await supabase.auth.getSession();
   const token = session?.access_token;
@@ -236,32 +206,6 @@ Rules:
 
 // --- STREAMING PROXY HELPER ---
 const callGeminiProxyStream = async (model: string, contents: any, generationConfig: any = {}, systemInstruction: any = null) => {
-  const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-  const localApiKey = import.meta.env.VITE_GEMINI_API;
-
-  if (isLocal && localApiKey) {
-    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:streamGenerateContent?alt=sse&key=${localApiKey}`;
-    const body: any = { contents };
-    if (generationConfig) body.generationConfig = generationConfig;
-    if (systemInstruction) body.systemInstruction = systemInstruction;
-
-    const response = await fetch(endpoint, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body)
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("Gemini Direct Stream Error:", response.status, errorText);
-      let message = "Failed to call AI directly";
-      try { message = JSON.parse(errorText)?.error?.message || message; } catch { /* raw text */ }
-      throw new Error(message);
-    }
-
-    return response.body as ReadableStream<Uint8Array>;
-  }
-
   const { data: { session } } = await supabase.auth.getSession();
   const token = session?.access_token;
 
@@ -646,33 +590,68 @@ export const processDarasaRecording = async (audioBlob: Blob, mimeType: string, 
 import { getContext } from './contextService';
 
 // --- RAG HELPER ---
-const retrieveContext = async (query: string, documentId?: string, grade?: string, subject?: string): Promise<string> => {
+type RetrievedContext = {
+  text: string;
+  sources: string[];
+};
+
+const retrieveContext = async (
+  query: string,
+  documentId?: string,
+  grade?: string,
+  subject?: string,
+  type?: string
+): Promise<RetrievedContext> => {
   try {
     const { data: { session } } = await supabase.auth.getSession();
     const token = session?.access_token;
-
-    if (!token) return "";
+    const studentCode = localStorage.getItem("soma_student_code") || localStorage.getItem("somaStudentCode") || "";
 
     const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/search-knowledge`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+        ...(studentCode ? { 'x-student-code': studentCode } : {})
       },
-      body: JSON.stringify({ query, document_id: documentId, grade, subject })
+      body: JSON.stringify({
+        query,
+        document_id: documentId,
+        grade,
+        subject,
+        type,
+        match_count: documentId ? 10 : 8,
+        match_threshold: documentId ? 0.25 : 0.36
+      })
     });
 
-    if (!response.ok) return "";
+    if (!response.ok) return { text: "", sources: [] };
 
-    const { chunks } = await response.json();
-    if (!chunks || chunks.length === 0) return "";
+    const { context, chunks, sources } = await response.json();
+    if ((!context || !String(context).trim()) && (!chunks || chunks.length === 0)) return { text: "", sources: [] };
 
-    // Deduplicate and join chunks
-    const uniqueChunks = Array.from(new Set(chunks.map((c: any) => c.content)));
-    return uniqueChunks.join('\n\n---\n\n');
+    const sourceNames = (sources || [])
+      .slice(0, 5)
+      .map((source: any) => source.title)
+      .filter(Boolean);
+
+    const sourceList = (sources || [])
+      .slice(0, 5)
+      .map((source: any, index: number) => `${index + 1}. ${source.title} (${source.grade || 'All grades'}, ${source.subject || 'General'}, ${source.type || 'Material'})`)
+      .join('\n');
+
+    const fallbackContext = Array.from(new Set((chunks || []).map((c: any) => c.content))).join('\n\n---\n\n');
+    return {
+      text: [
+      'SOMA LIBRARY RETRIEVED CONTEXT',
+      sourceList ? `Sources:\n${sourceList}` : '',
+      String(context || fallbackContext).slice(0, 9000)
+      ].filter(Boolean).join('\n\n'),
+      sources: sourceNames
+    };
   } catch (error) {
     console.warn("RAG Retrieval failed:", error);
-    return "";
+    return { text: "", sources: [] };
   }
 };
 
@@ -756,17 +735,17 @@ export const explainTopic = async (
   // 2. Retrieve RAG Context (Knowledge Base)
   const ragContext = await retrieveContext(topic, documentId, searchGrade, searchSubject);
   let ragInstruction = "";
-  if (ragContext) {
+  if (ragContext.text) {
     ragInstruction = `
-    OFFICIAL CBE CONTEXT FOUND:
-    The following text is from the official Kenya Competency-Based Curriculum (Syllabus/Past Papers).
+    RETRIEVED CONTEXT FROM SOMA LIBRARY:
+    The following source snippets come from Soma Library materials such as official notes, syllabus guides, and past papers.
     
-    "${ragContext.substring(0, 5000)}"
+    ${ragContext.text.substring(0, 9000)}
     
     INSTRUCTION: 
-    Prioritize the definitions, scope, and terminology from this Official Context. 
-    You may use your broader knowledge to explain concepts, but ensure they ALIGN with this grade-level standard. 
-    If the Official Context contradicts general knowledge, follow the Official Context (it is the exam standard).
+    Prioritize the definitions, scope, examples, question style, and terminology from the retrieved Soma Library context.
+    When useful, mention the source title naturally, for example "In the referenced past paper..." or "According to the retrieved notes..."
+    You may use broader Kenyan curriculum knowledge to explain, but do not contradict the retrieved context.
     `;
   }
 
@@ -835,7 +814,7 @@ export const explainTopic = async (
     if (!text) throw new Error("No response from AI");
 
     const json = JSON.parse(text);
-    return { ...json, level } as ExplanationResult;
+    return { ...json, level, grounding: { used: !!ragContext.text, sources: ragContext.sources } } as ExplanationResult;
   } catch (error) {
     console.error("Error explaining topic:", error);
     throw error;
@@ -844,7 +823,7 @@ export const explainTopic = async (
 
 export const summarizeDocument = async (title: string, documentId: string, language: 'EN' | 'SW' = 'EN', subject?: string, grade?: string): Promise<ExplanationResult> => {
   // We use search-knowledge to get a broad overview of the document
-  const ragContext = await retrieveContext("Explain the main content and purpose of this document", documentId);
+  const ragContext = await retrieveContext("Analyze this document and explain the main content, purpose, examinable areas, and learner takeaways", documentId);
 
   const model = genAI.getGenerativeModel({
     model: MODEL_NAME,
@@ -912,7 +891,7 @@ export const summarizeDocument = async (title: string, documentId: string, langu
     - P.E. = Physical Education.
     
     Source Content Snippets:
-  "${ragContext.substring(0, 10000)}"
+  "${ragContext.text.substring(0, 10000)}"
     
     CRITICAL RULES:
     - ** STRICT SOURCE GROUNDING **: Your primary authority is the "Source Content Snippets" provided above.You MUST strictly follow the themes, topics, and terminology found in the snippets.
@@ -962,7 +941,7 @@ export const summarizeDocument = async (title: string, documentId: string, langu
     const result = await model.generateContent(prompt);
     const text = result.response.text();
     if (!text) throw new Error("No response");
-    return JSON.parse(text) as ExplanationResult;
+    return { ...JSON.parse(text), grounding: { used: !!ragContext.text, sources: ragContext.sources } } as ExplanationResult;
   } catch (error) {
     console.error("Error summarizing document:", error);
     throw error;
@@ -970,7 +949,7 @@ export const summarizeDocument = async (title: string, documentId: string, langu
 };
 
 export const generateRichLessonNotes = async (title: string, documentId: string, language: 'EN' | 'SW' = 'EN', subject?: string, grade?: string): Promise<ExplanationResult> => {
-  const ragContext = await retrieveContext("Provide a deep, comprehensive and pedagogical explanation of the subject matter for exam revision", documentId);
+  const ragContext = await retrieveContext("Deep document analysis: provide a comprehensive pedagogical explanation, exam focus, common mistakes, and revision notes", documentId);
 
   const model = genAI.getGenerativeModel({
     model: MODEL_NAME,
@@ -1010,7 +989,7 @@ export const generateRichLessonNotes = async (title: string, documentId: string,
     - ** CURRICULUM EXPANSION **: If a section(like Examples or Definitions) is requested but not explicitly in the source, use your expert knowledge of the KENYAN CURRICULUM for "${subject}" at "${grade}" level.This expansion MUST be 100 % relevant to the subject and grade.
     
     Source Content Snippets:
-"${ragContext.substring(0, 15000)}"
+"${ragContext.text.substring(0, 15000)}"
 
 GUIDELINES:
 1. ** Pedagogical Structure **: Start with an "Introduction/Overview", followed by "Core Concepts"(detailed), "Key Formulas/Definitions", "Practical Examples/Context", and "Advanced Insights for Higher Grades".
@@ -1030,7 +1009,7 @@ GUIDELINES:
     const result = await model.generateContent(prompt);
     const text = result.response.text();
     if (!text) throw new Error("No response");
-    return JSON.parse(text) as ExplanationResult;
+    return { ...JSON.parse(text), grounding: { used: !!ragContext.text, sources: ragContext.sources } } as ExplanationResult;
   } catch (error) {
     console.error("Error generating rich notes:", error);
     throw error;
@@ -1899,6 +1878,72 @@ export const analyzeExamPaperUrl = async (fileUrl: string, mimeType: string): Pr
     console.error("Error analyzing exam from URL:", error);
     throw error;
   }
+};
+
+export const reconstructPaperQuestions = async (
+  subject: string,
+  grade: string,
+  paperTitle: string,
+  language: 'EN' | 'SW' = 'EN'
+): Promise<ExamAnalysis> => {
+  const model = genAI.getGenerativeModel({
+    model: MODEL_NAME,
+    generationConfig: {
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: SchemaType.OBJECT,
+        properties: {
+          subject: { type: SchemaType.STRING },
+          grade: { type: SchemaType.STRING },
+          questions: {
+            type: SchemaType.ARRAY,
+            items: {
+              type: SchemaType.OBJECT,
+              properties: {
+                id: { type: SchemaType.INTEGER },
+                number: { type: SchemaType.STRING },
+                text: { type: SchemaType.STRING },
+                topic: { type: SchemaType.STRING },
+                subStrand: { type: SchemaType.STRING },
+                competency: { type: SchemaType.STRING },
+                marks: { type: SchemaType.INTEGER }
+              },
+              required: ["id", "number", "text", "topic", "competency"]
+            }
+          }
+        },
+        required: ["subject", "grade", "questions"]
+      }
+    }
+  });
+
+  const useSwahili = isSwahiliSubject(subject);
+  const langInstruction = useSwahili
+    ? "Respond in Swahili (Kiswahili Sanifu)."
+    : "Respond exclusively in English.";
+
+  const prompt = `
+    You are rebuilding a student-facing exam practice set from a past paper title when the source PDF is too messy to extract cleanly.
+
+    Paper title: ${paperTitle}
+    Subject: ${subject || 'Identify from the paper title'}
+    Grade: ${grade || 'Identify from the paper title'}
+    ${langInstruction}
+
+    Task:
+    1. Create a structured exam-style question set that matches the likely format of this paper.
+    2. Preserve realistic KNEC/CBC exam ordering: start with simpler recall or short-answer items, then move to application and higher-order items.
+    3. Keep the questions in a usable exam flow so the learner can fill them in and be marked one by one.
+    4. Return 5 to 8 questions.
+    5. Use plain exam wording, not explanations about the paper.
+
+    Output JSON only.
+  `;
+
+  const result = await model.generateContent(prompt);
+  const text = result.response.text();
+  if (!text) throw new Error("No response from AI");
+  return JSON.parse(text) as ExamAnalysis;
 };
 
 export const getRevisionTutorResponse = async (
@@ -3095,10 +3140,45 @@ export const getExamGuruResponse = async (
   language: 'EN' | 'SW' = 'EN'
 ): Promise<string> => {
   const asksForLikelyTopics = /\b(likely|guaranteed|almost guaranteed|hot topics?|predicted|prediction|appear|coming|paper\s*1|paper\s*2)\b/i.test(userQuery);
+  const inferGuruSubject = (text: string) => {
+    const subjects = [
+      'Mathematics', 'Biology', 'Chemistry', 'Physics', 'English', 'Kiswahili',
+      'History', 'Geography', 'CRE', 'IRE', 'Agriculture', 'Business Studies',
+      'Computer Studies', 'Home Science', 'Integrated Science', 'Social Studies'
+    ];
+    const normalized = text.toLowerCase();
+    return subjects.find(subject => {
+      const s = subject.toLowerCase();
+      if (s === 'cre') return /\bcre\b|christian religious education/i.test(text);
+      if (s === 'ire') return /\bire\b|islamic religious education/i.test(text);
+      return normalized.includes(s) || normalized.includes(s.split(' ')[0]);
+    });
+  };
   const history = chatHistory
     .slice(-10)
     .map(m => `${m.role === 'guru' ? 'Guru' : 'Candidate'}: ${m.content}`)
     .join('\n');
+  const inferredSubject = inferGuruSubject(`${userQuery}\n${history}`);
+  const paperTypeHint = /\bpast\s*paper|kcse|kpsea|knec|paper\s*[12]|mock|marking scheme/i.test(userQuery)
+    ? 'PAST_PAPER'
+    : undefined;
+  const retrievedContext = await retrieveContext(
+    `Exam Guru grounded past paper help: ${userQuery}`,
+    undefined,
+    undefined,
+    inferredSubject,
+    paperTypeHint
+  );
+  const groundingInstruction = retrievedContext.text ? `
+SOMA LIBRARY RETRIEVED CONTEXT:
+${retrievedContext.text.substring(0, 8500)}
+
+GROUNDING RULE:
+- Use the retrieved Soma Library past-paper/source context where relevant.
+- If the retrieved source contains a similar question, pattern, command word, marking point, or topic, use it to shape the answer.
+- Mention the source naturally only when it builds trust, for example "This matches the retrieved KCSE paper pattern..."
+- If the context is weak or not directly relevant, do not force it. Answer from Kenyan examiner knowledge.
+` : '';
 
   const systemInstruction = {
     parts: [{
@@ -3132,7 +3212,8 @@ RULES:
     {
       role: 'user' as const,
       parts: [{
-        text: `Candidate question:\n${userQuery}\n\nExam Guru response rule:
+        text: `${groundingInstruction}
+Candidate question:\n${userQuery}\n\nExam Guru response rule:
 - Use plain text only. Do not use Markdown headings, #, **, or decorative symbols.
 - Do not waste space defining the paper unless the candidate asks for structure.
 - If this asks about likely topics, hot topics, almost guaranteed topics, Paper 1, or Paper 2, answer as an examiner with concrete revision guidance.

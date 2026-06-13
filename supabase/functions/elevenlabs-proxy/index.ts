@@ -13,13 +13,13 @@ const KES_PER_USD = 130;
 const ELEVENLABS_USD_PER_1000_CHARS = 0.30;
 
 const VOICE_LIMITS: Record<string, Record<string, number>> = {
-    FREE: { listen_and_learn_voice: 1200, listen_and_learn_podcast: 0, conversational_voice: 1200 },
-    DAILY: { listen_and_learn_voice: 9000, listen_and_learn_podcast: 7000, conversational_voice: 7000 },
-    WEEKLY: { listen_and_learn_voice: 50000, listen_and_learn_podcast: 35000, conversational_voice: 35000 },
-    MONTHLY: { listen_and_learn_voice: 180000, listen_and_learn_podcast: 120000, conversational_voice: 120000 },
-    TERMLY: { listen_and_learn_voice: 500000, listen_and_learn_podcast: 330000, conversational_voice: 330000 },
-    ANNUAL: { listen_and_learn_voice: 1800000, listen_and_learn_podcast: 1200000, conversational_voice: 1200000 },
-    PRO: { listen_and_learn_voice: 180000, listen_and_learn_podcast: 120000, conversational_voice: 120000 },
+    FREE: { listen_and_learn_voice: 30000, listen_and_learn_podcast: 8000, conversational_voice: 12000 },
+    DAILY: { listen_and_learn_voice: 80000, listen_and_learn_podcast: 30000, conversational_voice: 30000 },
+    WEEKLY: { listen_and_learn_voice: 350000, listen_and_learn_podcast: 140000, conversational_voice: 140000 },
+    MONTHLY: { listen_and_learn_voice: 1200000, listen_and_learn_podcast: 500000, conversational_voice: 500000 },
+    TERMLY: { listen_and_learn_voice: 3500000, listen_and_learn_podcast: 1500000, conversational_voice: 1500000 },
+    ANNUAL: { listen_and_learn_voice: 15000000, listen_and_learn_podcast: 6500000, conversational_voice: 6500000 },
+    PRO: { listen_and_learn_voice: 1200000, listen_and_learn_podcast: 500000, conversational_voice: 500000 },
 };
 
 const getClientIp = (req: Request) => (

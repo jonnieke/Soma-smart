@@ -137,16 +137,35 @@ export const ExamsView: React.FC = () => {
                 .from('syllabus-docs')
                 .getPublicUrl(filePath);
 
-            const { error } = await supabase.from('knowledge_base').insert({
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) {
+                throw new Error('No active admin session. Please log in again before uploading papers.');
+            }
+
+            const { data: insertedPaper, error } = await supabase.from('knowledge_base').insert({
                 title,
                 grade,
                 subject,
                 type: 'PAST_PAPER',
                 file_url: publicUrl,
-                file_path: filePath
-            });
+                file_path: filePath,
+                source: 'SOMA',
+                is_official: true,
+                indexing_status: 'PENDING'
+            }).select('*').single();
 
             if (error) throw error;
+
+            if (insertedPaper) {
+                fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ingest-document`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${session.access_token}`
+                    },
+                    body: JSON.stringify({ record: insertedPaper })
+                }).catch(err => console.error("Past paper indexing trigger failed:", err));
+            }
 
             setShowAdd(false);
             setTitle("");

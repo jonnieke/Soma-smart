@@ -297,6 +297,8 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
   const [expandedRecaps, setExpandedRecaps] = useState<number[]>([]);
   const [completedRecallChecks, setCompletedRecallChecks] = useState<number[]>([]);
   const [recallRewarded, setRecallRewarded] = useState(false);
+  const [showExitRecallPrompt, setShowExitRecallPrompt] = useState(false);
+  const [pendingExitAction, setPendingExitAction] = useState<(() => void) | null>(null);
   const [studyMissionChecks, setStudyMissionChecks] = useState<number[]>([]);
   const [studyMissionRewarded, setStudyMissionRewarded] = useState(false);
   const [activeRevisionSession, setActiveRevisionSession] = useState<{ data: any, mode: 'LEARN' | 'EXAM' } | null>(null);
@@ -304,6 +306,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<{ title: string, message: string } | null>(null);
+  const [micPermissionNotice, setMicPermissionNotice] = useState(false);
   const [loadingText, setLoadingText] = useState("Akili is on it...");
   const [audioData, setAudioData] = useState<{ base64: string, mimeType: string } | null>(null);
 
@@ -368,6 +371,22 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
   const [scanStatus, setScanStatus] = useState<'idle' | 'scanning' | 'success' | 'STABILIZING' | 'CAPTURING' | 'LOOKING'>('idle');
   const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan | null>(null);
   const [promptText, setPromptText] = useState("");
+  const [groundedAnswerMode, setGroundedAnswerMode] = useState(() => localStorage.getItem('soma_grounded_answer_mode') !== 'off');
+
+  useEffect(() => {
+    localStorage.setItem('soma_grounded_answer_mode', groundedAnswerMode ? 'on' : 'off');
+  }, [groundedAnswerMode]);
+
+  const shouldPromptRecallOnExit = mode === 'RESULT' && !!explanation && !recallRewarded;
+
+  const runWithRecallExitGuard = React.useCallback((action: () => void) => {
+    if (shouldPromptRecallOnExit) {
+      setPendingExitAction(() => action);
+      setShowExitRecallPrompt(true);
+      return;
+    }
+    action();
+  }, [shouldPromptRecallOnExit]);
 
   useEffect(() => {
     setCompletedRecallChecks([]);
@@ -438,6 +457,20 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
     });
     triggerMemorySync();
   }, [completedRecallChecks.length, explanation, recallRewarded, saveActivity, trackFunnelEvent, triggerMemorySync, updateTopicMastery]);
+
+  useEffect(() => {
+    if (!shouldPromptRecallOnExit) return;
+
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = 'Finish your active recall break before leaving this explanation.';
+      return event.returnValue;
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [shouldPromptRecallOnExit]);
+
   const [showTutoringModal, setShowTutoringModal] = useState(false);
   const [showExpiryModal, setShowExpiryModal] = useState(false); // New State
   const [showLimitModal, setShowLimitModal] = useState(false);
@@ -494,11 +527,11 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
       !isNaN(new Date(subscriptionExpiry).getTime()) &&
       new Date(subscriptionExpiry) > new Date();
 
-    if (showLimitModal && (isPro || hasRecentPaymentUnlock || hasClientActiveSubscription)) {
+    if (showLimitModal && (isPro || hasRecentPaymentUnlock || hasClientActiveSubscription || learningCredits > 0)) {
       setShowLimitModal(false);
       setHasRecentPaymentUnlock(true);
     }
-  }, [showLimitModal, isPro, hasRecentPaymentUnlock, subscriptionPlan, subscriptionExpiry]);
+  }, [showLimitModal, isPro, hasRecentPaymentUnlock, subscriptionPlan, subscriptionExpiry, learningCredits]);
 
   // Subscription Expiry Check
   useEffect(() => {
@@ -507,16 +540,24 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
       const now = new Date();
       // Check if expired
       if (expiryDate < now) {
+        if (learningCredits > 0) {
+          setShowExpiryModal(false);
+          setHasRecentPaymentUnlock(true);
+          return;
+        }
         setShowExpiryModal(true);
+      } else {
+        setShowExpiryModal(false);
       }
     }
-  }, [isPro, subscriptionExpiry]);
+  }, [isPro, subscriptionExpiry, learningCredits]);
 
   const [tutoringTopic, setTutoringTopic] = useState("");
   const [materialCategory, setMaterialCategory] = useState<'ALL' | 'NOTES' | 'PAST_PAPER' | 'SYLLABUS'>('ALL');
   const [libraryView, setLibraryView] = useState<'UNLOCKED' | 'PURCHASED' | 'PRO_VAULT'>('UNLOCKED');
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const learnerCtaVariant = React.useMemo(() => getLearnerCtaVariant(), []);
+  const creditMeterPct = Math.min(100, Math.round((learningCredits / 30) * 100));
 
   // PWA Install Prompt Logic
   useEffect(() => {
@@ -927,12 +968,15 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
     // Handle auto-opening material after successful payment
     if (state?.materialId) {
       const material = unifiedMaterials.find(m => m.id === state.materialId || (m as any).realId === state.materialId);
-      if (material && material.fileUrl) {
-        window.open(material.fileUrl, '_blank');
+      const normalizedCategory = normalizeMaterialCategory(material?.category);
+      if (material && ['PAST_PAPER', 'SYLLABUS', 'NOTES'].includes(normalizedCategory)) {
+        startStudySession(material);
+      } else if (material) {
+        startStudySession(material);
         // Clear state to avoid re-triggering
-        navigate(location.pathname, { replace: true, state: {} });
-        return;
       }
+      navigate(location.pathname, { replace: true, state: {} });
+      return;
     }
 
     // New Direct Payment handling
@@ -972,6 +1016,27 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
 
   // --- STUDY CENTER (NotebookLM) ---
   const startStudySession = async (material: any) => {
+    const normalizedCategory = normalizeMaterialCategory(material?.category);
+    const isPastPaperMaterial = normalizedCategory === 'PAST_PAPER';
+
+    if (isPastPaperMaterial) {
+      if (!checkLimit({ type: 'REVISION_ENTRY' })) return;
+
+      trackFunnelEvent('library_action_explain', {
+        source: mode === 'LIBRARY' ? 'library' : 'marketplace',
+        material_id: material.id,
+        material_category: material.category,
+        subject: material.subject,
+        grade: material.grade,
+        action: 'paper_exam'
+      });
+
+      setCurrentDocument(material);
+      setActiveRevisionSession({ data: material, mode: 'EXAM' });
+      setMode('REVISION_SESSION');
+      return;
+    }
+
     // Paywall Check: 3 free usages for non-pro users
     if (!checkLimit({ type: 'STUDY_SESSION', material, materialName: material.title })) return;
     trackFunnelEvent('library_action_explain', {
@@ -1485,39 +1550,38 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
     | { type: 'TALKBACK_MESSAGE' };
   const [pendingPaywallAction, setPendingPaywallAction] = useState<PendingPaywallAction | null>(null);
 
-
   const handleSidebarTabChange = (tab: SidebarTab) => {
     setSidebarTab(tab);
     switch (tab) {
       case 'HOME':
-        setMode('MENU');
+        runWithRecallExitGuard(() => setMode('MENU'));
         break;
       case 'SMART_TUTOR':
-        setMode('SCAN_EXPLAIN');
+        runWithRecallExitGuard(() => setMode('SCAN_EXPLAIN'));
         break;
       case 'QUEST_MAP':
-        setMode('QUEST_MAP');
+        runWithRecallExitGuard(() => setMode('QUEST_MAP'));
         break;
       case 'RESOURCES':
-        setMode('LIBRARY');
+        runWithRecallExitGuard(() => setMode('LIBRARY'));
         break;
       case 'PROGRESS':
-        setMode('ANALYTICS');
+        runWithRecallExitGuard(() => setMode('ANALYTICS'));
         break;
       case 'SUBJECTS':
-        setMode('REVISION');
+        runWithRecallExitGuard(() => setMode('REVISION'));
         break;
       case 'EXAM_ROOMS':
-        navigate('/exam-rooms');
+        runWithRecallExitGuard(() => navigate('/exam-rooms'));
         break;
       case 'COMMUNITY':
-        setMode('COMMUNITY');
+        runWithRecallExitGuard(() => setMode('COMMUNITY'));
         break;
       case 'REFERRAL':
-        setMode('REFERRAL');
+        runWithRecallExitGuard(() => setMode('REFERRAL'));
         break;
       case 'TALKBACK':
-        setMode('TALKBACK');
+        runWithRecallExitGuard(() => setMode('TALKBACK'));
         break;
       default:
         break;
@@ -1564,7 +1628,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
       new Date(subscriptionExpiry) > new Date();
 
     // Pro = Unlimited Checks
-    if (isPro || hasRecentPaymentUnlock || hasClientActiveSubscription) return true;
+    if (isPro || hasRecentPaymentUnlock || hasClientActiveSubscription || learningCredits > 0) return true;
 
     // Defensive: If we are registered but isPro is not yet set (or false), 
     // we should still allow access if usage is below limit.
@@ -1708,6 +1772,8 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
     // ConversationalTutor (TALKBACK) manages its own recording — don't interfere.
     if (mode === 'TALKBACK') return;
     try {
+      setMicPermissionNotice(false);
+
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         throw new Error("Microphone access is not supported in this browser or context (HTTPS may be required).");
       }
@@ -1760,11 +1826,22 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
     } catch (e: any) {
       console.error("Failed to start recording:", e);
       setIsRecording(false);
+      const message = String(e?.message || '');
+      const isPermissionError =
+        e?.name === 'NotAllowedError' ||
+        e?.name === 'PermissionDeniedError' ||
+        message.toLowerCase().includes('denied') ||
+        message.toLowerCase().includes('permission');
+
+      if (isPermissionError) {
+        setError(null);
+        setMicPermissionNotice(true);
+        return;
+      }
+
       setError({
         title: "Microphone Error",
-        message: e.message?.includes('denied') || e.message?.includes('Permission')
-          ? "Please allow microphone access in your browser settings to use voice features."
-          : "Microphone access denied or unavailable."
+        message: "Your browser could not start the microphone. Check that your device has a working mic, then try again."
       });
     }
   };
@@ -1886,7 +1963,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
         result = await explainImage(imageData.base64, imageData.mimeType, newLevel, language, 'TUTOR', educationLevel);
       } else if (explanation?.topic) {
         // Fallback for topic based regeneration
-        result = await explainTopic(explanation.topic, newLevel, language, undefined, currentDocument?.subject, currentDocument?.grade, undefined, { masteryGraph, recentHurdles: weakTopics }, activeStrategies, 'TUTOR', educationLevel);
+        result = await explainTopic(explanation.topic, newLevel, language, undefined, currentDocument?.subject, currentDocument?.grade, undefined, { masteryGraph, recentHurdles: weakTopics }, activeStrategies, 'TUTOR', educationLevel, groundedAnswerMode);
       }
 
       if (result) {
@@ -2001,9 +2078,16 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
         { masteryGraph, recentHurdles: weakTopics },
         activeStrategies,
         purpose,
-        educationLevel
+        educationLevel,
+        groundedAnswerMode
       );
       setExplanation(result);
+      trackFunnelEvent('learner_grounding_result', {
+        requested: groundedAnswerMode,
+        used: !!result.grounding?.used,
+        sourceCount: result.grounding?.sources?.length || 0,
+        topic: result.topic
+      });
 
       if (result.flashcard) {
         addSpacedRepetitionItem({
@@ -3595,7 +3679,7 @@ ${explanation.explanation}
               <motion.div
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="mb-6 rounded-3xl bg-gradient-to-br from-indigo-600 via-blue-600 to-slate-900 p-5 sm:p-6 text-white shadow-lg shadow-indigo-500/20"
+                className="hidden"
               >
                 <div className="flex items-start gap-4">
                   <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center shrink-0 text-xl">🚀</div>
@@ -3624,7 +3708,7 @@ ${explanation.explanation}
               <motion.div
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="mb-6 bg-gradient-to-br from-indigo-600 via-blue-600 to-slate-900 rounded-3xl p-5 sm:p-6 text-white shadow-lg shadow-indigo-500/20"
+                className="hidden"
               >
                 <div className="flex flex-col lg:flex-row lg:items-center gap-5">
                   <div className="flex-1 min-w-0">
@@ -3661,7 +3745,7 @@ ${explanation.explanation}
               </motion.div>
             )}
 
-            {!isPro && !isRegistered && (
+            {!isPro && !isRegistered && freeUsesLeft === 0 && (
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -3751,7 +3835,41 @@ ${explanation.explanation}
               </motion.div>
             )}
 
-            <div className="mb-6 rounded-2xl border-2 border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm">
+            <div className="mb-8">
+              <div className="mb-4 flex flex-col gap-3 rounded-3xl border border-indigo-100/80 bg-white/90 p-4 shadow-sm shadow-indigo-50 dark:border-slate-800 dark:bg-slate-900/70">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-[0.18em] text-indigo-500">Credit Wallet</p>
+                    <h2 className="text-base font-black text-slate-900 dark:text-white mt-0.5">
+                      {learningCredits > 0 ? `${learningCredits} credits available` : 'No credits available'}
+                    </h2>
+                  </div>
+                  <button
+                    onClick={() => {
+                      trackFunnelEvent('credit_pack_selected', {
+                        source: 'learner_plan_balance',
+                        credits: LEARNING_CREDIT_PACKS[0].credits,
+                        amount_kes: LEARNING_CREDIT_PACKS[0].price
+                      });
+                      setSelectedPlan(LEARNING_CREDIT_PACKS[0]);
+                      setMode('PAYMENT' as any);
+                    }}
+                    className="self-start sm:self-auto rounded-xl bg-slate-100 dark:bg-slate-800 px-3 py-2 text-[11px] font-black uppercase tracking-wider text-slate-600 dark:text-slate-300 hover:bg-indigo-50 hover:text-indigo-700 dark:hover:bg-indigo-950/50 dark:hover:text-indigo-300 transition-colors"
+                  >
+                    Buy Credits
+                  </button>
+                </div>
+                <div className="h-2 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden">
+                  <div
+                    className={`h-full rounded-full ${learningCredits <= 0 ? 'bg-slate-400' : learningCredits < 10 ? 'bg-amber-500' : 'bg-emerald-500'}`}
+                    style={{ width: `${creditMeterPct}%` }}
+                  />
+                </div>
+                <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+                  Credits are used for metered actions like grounded answers, marking, deep document analysis, and voice.
+                </p>
+              </div>
+
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
                 <div>
                   <p className="text-[10px] font-black uppercase tracking-[0.18em] text-indigo-500">Today&apos;s Plan Balance</p>
@@ -3903,7 +4021,7 @@ ${explanation.explanation}
               </div>
             </div>
 
-            <div className="mb-6 grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div className="hidden">
               {[
                 {
                   icon: <Lightbulb className="w-4 h-4" />,
@@ -4012,9 +4130,108 @@ ${explanation.explanation}
                     </motion.div>
                   )}
 
+                  <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-sm border-2 border-slate-200 dark:border-slate-800 p-4 sm:p-5">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
+                      <div>
+                        <p className="text-[10px] font-black uppercase tracking-[0.18em] text-indigo-500">Start Learning</p>
+                        <h2 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">What do you need help with?</h2>
+                        <p className="mt-1 text-xs font-semibold text-slate-500 dark:text-slate-400">Basic help starts fast. Grounded library answers, marking, deep exam analysis, and voice use your plan or credits.</p>
+                      </div>
+                      <button
+                        onClick={() => setSidebarOpen(true)}
+                        className="self-start sm:self-auto rounded-xl border border-slate-200 dark:border-slate-700 px-3 py-2 text-[11px] font-black uppercase tracking-wider text-slate-500 dark:text-slate-300 hover:border-indigo-300 hover:text-indigo-600 dark:hover:border-indigo-600 dark:hover:text-indigo-300"
+                      >
+                        More Tools
+                      </button>
+                    </div>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                      {[
+                        {
+                          title: 'Ask Akili',
+                          body: 'Basic help',
+                          icon: <Sparkles className="w-5 h-5" />,
+                          className: 'bg-blue-600 text-white border-blue-600',
+                          action: () => setMode('SCAN_EXPLAIN')
+                        },
+                        {
+                          title: 'Scan',
+                          body: 'Photo question',
+                          icon: <ScanLine className="w-5 h-5" />,
+                          className: 'bg-white dark:bg-slate-950 text-slate-900 dark:text-white border-slate-200 dark:border-slate-700',
+                          action: () => setMode('SCAN')
+                        },
+                        {
+                          title: 'Library',
+                          body: isPro ? 'Grounded help' : 'Notes & papers',
+                          icon: <Library className="w-5 h-5" />,
+                          className: 'bg-white dark:bg-slate-950 text-slate-900 dark:text-white border-slate-200 dark:border-slate-700',
+                          action: () => handleSidebarTabChange('RESOURCES')
+                        },
+                        {
+                          title: 'Exam Prep',
+                          body: isPro ? 'Exam Coach' : 'Practice drills',
+                          icon: <ClipboardList className="w-5 h-5" />,
+                          className: 'bg-white dark:bg-slate-950 text-slate-900 dark:text-white border-slate-200 dark:border-slate-700',
+                          action: () => handleSidebarTabChange('SUBJECTS')
+                        },
+                        {
+                          title: 'Listen',
+                          body: learningCredits > 0 ? `${learningCredits} credits` : 'Audio lesson',
+                          icon: <Headphones className="w-5 h-5" />,
+                          className: 'bg-white dark:bg-slate-950 text-slate-900 dark:text-white border-slate-200 dark:border-slate-700',
+                          action: () => handleSidebarTabChange('TALKBACK')
+                        },
+                        {
+                          title: dueFlashcardsCountForNext > 0 ? 'Review' : 'Progress',
+                          body: dueFlashcardsCountForNext > 0 ? `${dueFlashcardsCountForNext} due` : `${totalXP} points`,
+                          icon: dueFlashcardsCountForNext > 0 ? <Brain className="w-5 h-5" /> : <Trophy className="w-5 h-5" />,
+                          className: 'bg-white dark:bg-slate-950 text-slate-900 dark:text-white border-slate-200 dark:border-slate-700',
+                          action: () => {
+                            if (dueFlashcardsCountForNext > 0) {
+                              setPracticeMode('due');
+                              setCurrentCardIndex(0);
+                              setIsFlipped(false);
+                              setReviewComplete(false);
+                              setMode('FLASHCARDS');
+                            } else {
+                              setShowMasteryDashboard(true);
+                            }
+                          }
+                        }
+                      ].map((tool) => (
+                        <button
+                          key={tool.title}
+                          onClick={tool.action}
+                          className={`min-h-[92px] rounded-2xl border-2 p-4 text-left transition-all hover:-translate-y-0.5 hover:shadow-md active:scale-[0.99] ${tool.className}`}
+                        >
+                          <div className="flex items-center justify-between gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-black/5 dark:bg-white/10 flex items-center justify-center shrink-0">
+                              {tool.icon}
+                            </div>
+                            <ArrowRight className="w-4 h-4 opacity-50" />
+                          </div>
+                          <p className="mt-3 text-sm font-black leading-tight">{tool.title}</p>
+                          <p className="mt-0.5 text-[11px] font-bold opacity-70">{tool.body}</p>
+                        </button>
+                      ))}
+                    </div>
+                    <div className="mt-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/50 p-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                      <div>
+                        <p className="text-xs font-black text-slate-900 dark:text-white">Advanced Mode</p>
+                        <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">Soma-grounded answers, deep document analysis, smart marking, and voice practice are premium/credit-powered so basic learning stays affordable.</p>
+                      </div>
+                      <button
+                        onClick={handlePricingNavigation}
+                        className="self-start sm:self-auto rounded-xl bg-indigo-600 px-4 py-2 text-[11px] font-black uppercase tracking-wider text-white hover:bg-indigo-700"
+                      >
+                        Plans & Credits
+                      </button>
+                    </div>
+                  </div>
+
                   {/* START HERE: PRIMARY FIRST-SESSION PATH — for returning users or registered with history */}
                   {(!isRegistered || hasHistory || hasProgress) && (
-                  <div className="bg-gradient-to-r from-indigo-600 to-blue-600 rounded-3xl p-6 text-white shadow-xl shadow-indigo-200">
+                  <div className="hidden">
                     <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-100 mb-2">Start Here</p>
                     <h2 className="text-2xl font-black tracking-tight mb-2">
                       {learnerCtaVariant === 'A' ? 'Open one topic and finish with a score' : 'Pick one topic and test yourself'}
@@ -4048,7 +4265,7 @@ ${explanation.explanation}
                   )}
 
                   {/* ASK AKILI QUICK ENTRY */}
-                  <div className="bg-gradient-to-r from-sky-600 via-blue-600 to-indigo-600 rounded-3xl p-5 text-white shadow-xl shadow-sky-200">
+                  <div className="hidden">
                     <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
                       <div className="max-w-xl">
                         <p className="text-[10px] font-black uppercase tracking-[0.2em] text-sky-100 mb-2">Ask Akili</p>
@@ -4090,7 +4307,7 @@ ${explanation.explanation}
                   </div>
 
                   {/* SOLVE IT NOW: immediate student pain points */}
-                  <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-sm border-2 border-slate-300 dark:border-slate-800 p-6">
+                  <div className="hidden">
                     <div className="flex items-center justify-between mb-4">
                       <div>
                         <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-1">Solve It Now</p>
@@ -4150,6 +4367,23 @@ ${explanation.explanation}
                             Type, scan, or upload. Akili helps step by step.
                           </p>
                         </div>
+                        <div className="mb-3 rounded-2xl border border-emerald-200 dark:border-emerald-900/60 bg-emerald-50 dark:bg-emerald-950/20 p-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                          <div>
+                            <p className="text-xs font-black text-emerald-800 dark:text-emerald-200">Soma Library grounding</p>
+                            <p className="text-[11px] font-semibold text-emerald-700/80 dark:text-emerald-300/80">
+                              Akili will try to use indexed notes and past papers before answering.
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setGroundedAnswerMode(prev => !prev)}
+                            className={`relative h-8 w-16 rounded-full p-1 transition-colors ${groundedAnswerMode ? 'bg-emerald-600' : 'bg-slate-300 dark:bg-slate-700'}`}
+                            aria-pressed={groundedAnswerMode}
+                            aria-label="Toggle Soma Library grounding"
+                          >
+                            <span className={`block h-6 w-6 rounded-full bg-white shadow transition-transform ${groundedAnswerMode ? 'translate-x-8' : 'translate-x-0'}`} />
+                          </button>
+                        </div>
                         <div className="bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-3 border-2 border-slate-300 dark:border-slate-700 focus-within:border-blue-400 focus-within:ring-4 focus-within:ring-blue-50 dark:focus-within:ring-blue-900/20 transition-all">
                           <textarea
                             value={promptText}
@@ -4161,8 +4395,8 @@ ${explanation.explanation}
                             rows={2}
                             className="w-full bg-transparent border-0 focus:ring-0 text-sm font-medium py-2 px-2 resize-none outline-none text-slate-800 dark:text-slate-100 placeholder:text-slate-400"
                           />
-                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-2">
-                            {learningModePrompts.map((modePrompt) => (
+                          <div className="flex flex-wrap gap-2 mt-2">
+                            {learningModePrompts.slice(0, 4).map((modePrompt) => (
                               <button
                                 key={modePrompt.label}
                                 type="button"
@@ -4174,10 +4408,9 @@ ${explanation.explanation}
                                     handlePromptSubmit(nextPromptValue);
                                   }
                                 }}
-                                className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-left hover:border-blue-300 dark:hover:border-blue-700 transition-colors"
+                                className="rounded-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-1.5 text-left hover:border-blue-300 dark:hover:border-blue-700 transition-colors"
                               >
                                 <span className="block text-[11px] font-black text-slate-800 dark:text-white">{modePrompt.label}</span>
-                                <span className="block text-[10px] font-semibold text-slate-500 dark:text-slate-400 mt-0.5 leading-snug">{modePrompt.body}</span>
                               </button>
                             ))}
                           </div>
@@ -4250,7 +4483,7 @@ ${explanation.explanation}
 
               <div className="space-y-6">
                   {/* PARENT VALUE CARD */}
-                  <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-sm border-2 border-emerald-200 dark:border-emerald-900/60 p-6">
+                  <div className="hidden">
                     <div className="flex items-start justify-between gap-3 mb-4">
                       <div>
                         <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-600 dark:text-emerald-300 mb-1">Parent Confidence</p>
@@ -6028,6 +6261,45 @@ ${explanation.explanation}
               ))}
             </div>
 
+            <div className={`rounded-3xl border-2 p-4 shadow-sm ${
+              explanation.grounding?.used
+                ? 'bg-emerald-50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-900/70'
+                : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800'
+            }`}>
+              <div className="flex items-start gap-3">
+                <div className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 ${
+                  explanation.grounding?.used
+                    ? 'bg-emerald-600 text-white'
+                    : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-300'
+                }`}>
+                  <Library className="w-5 h-5" />
+                </div>
+                <div className="min-w-0">
+                  <p className={`text-xs font-black uppercase tracking-[0.16em] ${
+                    explanation.grounding?.used ? 'text-emerald-700 dark:text-emerald-300' : 'text-slate-500 dark:text-slate-400'
+                  }`}>
+                    {explanation.grounding?.used ? 'Grounded by Soma Library' : 'General Akili answer'}
+                  </p>
+                  <p className="mt-1 text-sm font-semibold text-slate-700 dark:text-slate-300">
+                    {explanation.grounding?.used
+                      ? 'This answer used indexed Soma notes, syllabuses, or past papers where relevant.'
+                      : groundedAnswerMode
+                        ? 'No matching indexed source was found, so Akili answered from general curriculum knowledge.'
+                        : 'Soma Library grounding was switched off for this answer.'}
+                  </p>
+                  {explanation.grounding?.sources && explanation.grounding.sources.length > 0 && (
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {explanation.grounding.sources.slice(0, 4).map((source) => (
+                        <span key={source} className="rounded-full bg-white dark:bg-slate-900 border border-emerald-200 dark:border-emerald-900/70 px-3 py-1 text-[11px] font-bold text-emerald-800 dark:text-emerald-200 truncate max-w-full">
+                          {source}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
             {/* Mobile-Only Audio Button (Prominent) */}
             <div className="md:hidden w-full mb-6">
               <button
@@ -6146,211 +6418,10 @@ ${explanation.explanation}
               </motion.div>
             )}
 
-            {/* Concept Map: visual structure without expensive generated images */}
-            {(() => {
-              const conceptItems = (explanation.recapNodes && explanation.recapNodes.length > 0)
-                ? explanation.recapNodes.map(node => node.point)
-                : (explanation.subtopics && explanation.subtopics.length > 0)
-                  ? explanation.subtopics.map(sub => sub.title)
-                  : explanation.summaryPoints.slice(0, 3);
-
-              if (conceptItems.length === 0) return null;
-
-              return (
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.08 }}
-                  className="bg-white dark:bg-slate-900 p-6 rounded-3xl border-2 border-slate-300 dark:border-slate-800 shadow-sm"
-                >
-                  <div className="flex items-center justify-between gap-3 mb-5">
-                    <div>
-                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-500 mb-1">Visual Map</p>
-                      <h3 className="font-bold text-slate-900 dark:text-white text-lg">How this topic connects</h3>
-                    </div>
-                    <div className="w-10 h-10 rounded-2xl bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-300 flex items-center justify-center">
-                      <Layers className="w-5 h-5" />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] gap-3 md:gap-4 items-center">
-                    <div className="rounded-2xl bg-indigo-600 text-white p-4 text-center shadow-md shadow-indigo-100">
-                      <p className="text-[10px] font-black uppercase tracking-[0.18em] text-indigo-100 mb-1">Main Idea</p>
-                      <p className="text-base font-black leading-tight">{explanation.topic}</p>
-                    </div>
-                    <div className="hidden md:flex w-10 h-px bg-slate-300 dark:bg-slate-700" />
-                    <div className="grid grid-cols-1 gap-2">
-                      {conceptItems.map((item, i) => (
-                        <button
-                          key={`${item}-${i}`}
-                          onClick={() => {
-                            setStudyTab('RECAP');
-                            setExpandedRecaps(prev => prev.includes(i) ? prev : [...prev, i]);
-                          }}
-                          className="text-left rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/40 hover:border-indigo-300 dark:hover:border-indigo-700 p-3 transition-colors"
-                        >
-                          <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Concept {i + 1}</span>
-                          <p className="text-sm font-bold text-slate-800 dark:text-slate-100 mt-0.5">{item}</p>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </motion.div>
-              );
-            })()}
-
-            {/* Active Recall Break */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
-              className="bg-amber-50 dark:bg-amber-950/20 p-6 rounded-3xl border-2 border-amber-200 dark:border-amber-900/60 shadow-sm"
-            >
-              <div className="flex items-start justify-between gap-4 mb-5">
-                <div>
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-700 dark:text-amber-300 mb-1">Active Recall Break</p>
-                  <h3 className="font-bold text-slate-900 dark:text-white text-lg">Pause before copying. Prove you understood it.</h3>
-                  <p className="text-sm font-semibold text-slate-600 dark:text-slate-300 mt-1">Tap each checkpoint after answering it in your head or notebook.</p>
-                </div>
-                <div className="w-10 h-10 rounded-2xl bg-white dark:bg-slate-900 text-amber-600 flex items-center justify-center shrink-0">
-                  <Lightbulb className="w-5 h-5" />
-                </div>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                {[
-                  `What is the first step in ${explanation.topic}?`,
-                  'Name one key idea without looking back.',
-                  'Can you solve one similar question now?'
-                ].map((prompt, i) => {
-                  const done = completedRecallChecks.includes(i);
-                  return (
-                    <button
-                      key={prompt}
-                      onClick={() => {
-                        setCompletedRecallChecks(prev => prev.includes(i) ? prev.filter(item => item !== i) : [...prev, i]);
-                        trackFunnelEvent('active_recall_checkpoint_toggled', {
-                          topic: explanation.topic,
-                          checkpoint: i + 1,
-                          completed: !done
-                        });
-                      }}
-                      className={`text-left rounded-2xl border p-4 transition-all ${done
-                        ? 'bg-emerald-600 border-emerald-600 text-white shadow-md shadow-emerald-100'
-                        : 'bg-white dark:bg-slate-900 border-amber-200 dark:border-amber-900/70 text-slate-800 dark:text-slate-100 hover:border-amber-400'
-                        }`}
-                    >
-                      <div className="flex items-center gap-2 mb-2">
-                        <CheckCircle className={`w-4 h-4 ${done ? 'text-white' : 'text-amber-500'}`} />
-                        <span className="text-[10px] font-black uppercase tracking-widest">{done ? 'Done' : `Check ${i + 1}`}</span>
-                      </div>
-                      <p className="text-sm font-bold leading-snug">{prompt}</p>
-                    </button>
-                  );
-                })}
-              </div>
-              <div className="mt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                <p className="text-xs font-bold text-amber-800 dark:text-amber-200">
-                  {recallRewarded
-                    ? 'Recall break completed. Study XP added to your progress.'
-                    : `${completedRecallChecks.length}/3 checks completed. The goal is memory, not just an answer.`}
-                </p>
-                <div className="flex flex-col sm:flex-row gap-2">
-                  {recallRewarded && (
-                    <button
-                      onClick={shareLearningProof}
-                      className="rounded-2xl bg-white dark:bg-slate-900 border border-amber-200 dark:border-amber-900/70 text-amber-800 dark:text-amber-200 px-5 py-3 text-xs font-black uppercase tracking-wider hover:bg-amber-100 dark:hover:bg-amber-950/40 transition-colors"
-                    >
-                      {learningProofStatus === 'shared'
-                        ? 'Progress Shared'
-                        : learningProofStatus === 'copied'
-                          ? 'Progress Copied'
-                          : 'Share Progress'}
-                    </button>
-                  )}
-                  <button
-                    onClick={handleGenerateQuiz}
-                    className="rounded-2xl bg-slate-900 dark:bg-white text-white dark:text-slate-950 px-5 py-3 text-xs font-black uppercase tracking-wider hover:opacity-90 transition-opacity"
-                  >
-                    Turn This Into A Quiz
-                  </button>
-                </div>
-              </div>
-              {recallRewarded && (
-                <div className="mt-4 rounded-2xl bg-white dark:bg-slate-900 border border-amber-200 dark:border-amber-900/70 p-4">
-                  <p className="text-[10px] font-black uppercase tracking-[0.18em] text-amber-700 dark:text-amber-300 mb-2">Learning Receipt</p>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                    {[
-                      { label: 'Topic', value: explanation.topic },
-                      { label: 'Recall Checks', value: '3 of 3 complete' },
-                      { label: 'Reward', value: 'Study XP added' }
-                    ].map((item) => (
-                      <div key={item.label} className="rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-100 dark:border-amber-900/60 p-3">
-                        <p className="text-[9px] font-black uppercase tracking-widest text-amber-700 dark:text-amber-300">{item.label}</p>
-                        <p className="text-xs font-black text-slate-900 dark:text-white mt-1 line-clamp-2">{item.value}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </motion.div>
-
-            {/* Key Points - Modernized */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
-              className="bg-white dark:bg-slate-900 p-6 rounded-3xl border-2 border-slate-300 dark:border-slate-800 shadow-sm relative overflow-hidden"
-            >
-              <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-amber-400"></div>
-              <h3 className="font-bold text-slate-900 mb-6 flex items-center gap-3 text-lg">
-                <div className="w-8 h-8 rounded-lg bg-amber-50 flex items-center justify-center">
-                  <BookOpen className="w-5 h-5 text-amber-600" />
-                </div>
-                Key Takeaways
-              </h3>
-              <ul className="space-y-4">
-                {explanation.summaryPoints.map((point, i) => (
-                  <li key={i} className="flex gap-4 text-slate-600 leading-relaxed font-medium">
-                    <div className="w-6 h-6 rounded-full bg-slate-50 text-slate-400 border-2 border-slate-300 flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5">{i + 1}</div>
-                    <span className="text-sm md:text-base">{point}</span>
-                  </li>
-                ))}
-              </ul>
-            </motion.div>
-
-            {/* QUIZ NUDGE: convert explanation intent into quiz starts */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.15 }}
-              className="bg-gradient-to-r from-emerald-600 to-teal-600 rounded-3xl p-5 text-white shadow-lg shadow-emerald-200"
-            >
-              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                <div>
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-100 mb-1">Next Step</p>
-                  <h3 className="text-lg font-black">Lock this in with a 60-second quiz</h3>
-                  <p className="text-xs font-semibold text-emerald-100 mt-1">Best results come when you test immediately after learning.</p>
-                </div>
-                <button
-                  onClick={() => {
-                    trackFunnelEvent('learner_quiz_nudge_clicked', {
-                      source: 'result_quiz_nudge',
-                      topic: explanation.topic
-                    });
-                    handleGenerateQuiz();
-                  }}
-                  className="bg-white text-emerald-700 hover:bg-emerald-50 rounded-2xl px-5 py-3 text-sm font-black uppercase tracking-wider"
-                >
-                  Start Quiz
-                </button>
-              </div>
-            </motion.div>
-
-            {/* No Copy Mode: reveal cost before full answer */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.18 }}
+              transition={{ delay: 0.04 }}
               className={`rounded-3xl border-2 p-6 shadow-sm ${
                 answerRevealUnlocked
                   ? 'bg-emerald-50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-900/70'
@@ -6434,29 +6505,124 @@ ${explanation.explanation}
                         setLearnerTryText(prev => prev.trim()
                           ? prev
                           : `I think one important idea in ${explanation.topic} is `);
-                        trackFunnelEvent('learner_try_first_hint_clicked', {
-                          topic: explanation.topic
-                        });
                       }}
-                      className="flex-1 rounded-2xl bg-white dark:bg-slate-950 border border-indigo-200 dark:border-indigo-900/70 text-indigo-700 dark:text-indigo-200 px-5 py-3 text-xs font-black uppercase tracking-wider hover:bg-indigo-50 dark:hover:bg-indigo-950/40 transition-colors"
+                      className="flex-1 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 px-5 py-3 text-xs font-black uppercase tracking-wider hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
                     >
-                      Give Me a Hint
+                      Give Me A Starter Line
                     </button>
                   </div>
                 </div>
               ) : (
-                <div className="rounded-2xl bg-white dark:bg-slate-900 border border-emerald-200 dark:border-emerald-900/70 p-4">
-                  <div className="flex items-center gap-2">
-                    <CheckCircle className="w-5 h-5 text-emerald-600" />
-                    <p className="text-sm font-black text-emerald-800 dark:text-emerald-200">
-                      {learningBreakRewarded ? 'Learning break complete: effort rewarded.' : 'You can now continue to the full explanation.'}
-                    </p>
-                  </div>
-                  <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mt-2">
-                    Best path: read, quiz, repair mistakes, then retry tomorrow.
+                <div className="rounded-2xl bg-white dark:bg-slate-900 border border-emerald-100 dark:border-emerald-900/70 p-4">
+                  <p className="text-sm font-bold text-emerald-800 dark:text-emerald-200">
+                    You unlocked the full explanation. Finish with a quick recall check before leaving so the idea sticks.
                   </p>
                 </div>
               )}
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.06 }}
+              className="bg-white dark:bg-slate-900 p-6 rounded-3xl border-2 border-slate-300 dark:border-slate-800 shadow-sm relative overflow-hidden"
+            >
+              <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-amber-400"></div>
+              <h3 className="font-bold text-slate-900 mb-6 flex items-center gap-3 text-lg">
+                <div className="w-8 h-8 rounded-lg bg-amber-50 flex items-center justify-center">
+                  <BookOpen className="w-5 h-5 text-amber-600" />
+                </div>
+                Key Takeaways
+              </h3>
+              <ul className="space-y-4">
+                {explanation.summaryPoints.map((point, i) => (
+                  <li key={i} className="flex gap-4 text-slate-600 leading-relaxed font-medium">
+                    <div className="w-6 h-6 rounded-full bg-slate-50 text-slate-400 border-2 border-slate-300 flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5">{i + 1}</div>
+                    <span className="text-sm md:text-base">{point}</span>
+                  </li>
+                ))}
+              </ul>
+            </motion.div>
+
+            {/* Concept Map: visual structure without expensive generated images */}
+            {(() => {
+              const conceptItems = (explanation.recapNodes && explanation.recapNodes.length > 0)
+                ? explanation.recapNodes.map(node => node.point)
+                : (explanation.subtopics && explanation.subtopics.length > 0)
+                  ? explanation.subtopics.map(sub => sub.title)
+                  : explanation.summaryPoints.slice(0, 3);
+
+              if (conceptItems.length === 0) return null;
+
+              return (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.08 }}
+                  className="bg-white dark:bg-slate-900 p-6 rounded-3xl border-2 border-slate-300 dark:border-slate-800 shadow-sm"
+                >
+                  <div className="flex items-center justify-between gap-3 mb-5">
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-500 mb-1">Visual Map</p>
+                      <h3 className="font-bold text-slate-900 dark:text-white text-lg">How this topic connects</h3>
+                    </div>
+                    <div className="w-10 h-10 rounded-2xl bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-300 flex items-center justify-center">
+                      <Layers className="w-5 h-5" />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] gap-3 md:gap-4 items-center">
+                    <div className="rounded-2xl bg-indigo-600 text-white p-4 text-center shadow-md shadow-indigo-100">
+                      <p className="text-[10px] font-black uppercase tracking-[0.18em] text-indigo-100 mb-1">Main Idea</p>
+                      <p className="text-base font-black leading-tight">{explanation.topic}</p>
+                    </div>
+                    <div className="hidden md:flex w-10 h-px bg-slate-300 dark:bg-slate-700" />
+                    <div className="grid grid-cols-1 gap-2">
+                      {conceptItems.map((item, i) => (
+                        <button
+                          key={`${item}-${i}`}
+                          onClick={() => {
+                            setStudyTab('RECAP');
+                            setExpandedRecaps(prev => prev.includes(i) ? prev : [...prev, i]);
+                          }}
+                          className="text-left rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/40 hover:border-indigo-300 dark:hover:border-indigo-700 p-3 transition-colors"
+                        >
+                          <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Concept {i + 1}</span>
+                          <p className="text-sm font-bold text-slate-800 dark:text-slate-100 mt-0.5">{item}</p>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </motion.div>
+              );
+            })()}
+
+            {/* QUIZ NUDGE: convert explanation intent into quiz starts */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.15 }}
+              className="bg-gradient-to-r from-emerald-600 to-teal-600 rounded-3xl p-5 text-white shadow-lg shadow-emerald-200"
+            >
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-100 mb-1">Next Step</p>
+                  <h3 className="text-lg font-black">Lock this in with a 60-second quiz</h3>
+                  <p className="text-xs font-semibold text-emerald-100 mt-1">Best results come when you test immediately after learning.</p>
+                </div>
+                <button
+                  onClick={() => {
+                    trackFunnelEvent('learner_quiz_nudge_clicked', {
+                      source: 'result_quiz_nudge',
+                      topic: explanation.topic
+                    });
+                    handleGenerateQuiz();
+                  }}
+                  className="bg-white text-emerald-700 hover:bg-emerald-50 rounded-2xl px-5 py-3 text-sm font-black uppercase tracking-wider"
+                >
+                  Start Quiz
+                </button>
+              </div>
             </motion.div>
 
             {/* Detailed Explanation */}
@@ -6761,7 +6927,14 @@ ${explanation.explanation}
               }, 100);
             } else if (pendingMaterialId) {
               const material = unifiedMaterials.find(m => m.id === pendingMaterialId || (m as any).realId === pendingMaterialId);
-              if (material?.fileUrl) window.open(material.fileUrl, '_blank');
+              const normalizedCategory = normalizeMaterialCategory(material?.category);
+              if (material && normalizedCategory === 'PAST_PAPER') {
+                startStudySession(material);
+              } else if (material && normalizedCategory === 'SYLLABUS') {
+                startStudySession(material);
+              } else if (material) {
+                startStudySession(material);
+              }
               setPendingMaterialId(null);
             }
           }}
@@ -7225,7 +7398,7 @@ ${explanation.explanation}
                                   subject: item.subject,
                                   grade: item.grade
                                 });
-                                if (item.fileUrl) window.open(item.fileUrl, '_blank');
+                                startStudySession(item);
                                 return;
                               }
                               startStudySession(item);
@@ -7239,7 +7412,10 @@ ${explanation.explanation}
                             variant="ghost"
                             className="rounded-xl p-2.5 bg-white text-indigo-600 hover:bg-indigo-50 border border-indigo-100 shadow-sm transition-all"
                             onClick={() => {
-                              if (status === 'OWNED' || status === 'PRO_INCLUDED' || status === 'FREE') {
+                              const normalizedCategory = normalizeMaterialCategory(item.category);
+                              if (normalizedCategory === 'PAST_PAPER') {
+                                startStudySession(item);
+                              } else if (status === 'OWNED' || status === 'PRO_INCLUDED' || status === 'FREE') {
                                 handleDownloadAIRevisionNotes(item);
                               } else if (status === 'PRO_LOCKED') {
                                 setPendingMaterialId(item.id);
@@ -7402,7 +7578,16 @@ ${explanation.explanation}
                         grade: item.grade,
                         source: libraryView
                       });
-                      if (item.fileUrl) window.open(item.fileUrl, '_blank');
+                      const normalizedCategory = normalizeMaterialCategory(item.category);
+                      if (normalizedCategory === 'SYLLABUS') {
+                        startStudySession(item);
+                        return;
+                      }
+                      if (normalizedCategory === 'PAST_PAPER') {
+                        startStudySession(item);
+                        return;
+                      }
+                      startStudySession(item);
                     }}
                     className="bg-white dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-800 rounded-[2.5rem] p-6 shadow-sm flex items-center gap-6 group hover:border-indigo-100 dark:hover:border-indigo-800 hover:shadow-xl hover:shadow-indigo-50/30 dark:hover:shadow-black/30 transition-all cursor-pointer relative overflow-hidden"
                   >
@@ -7600,13 +7785,179 @@ ${explanation.explanation}
         activeTab={sidebarTab}
         onTabChange={handleSidebarTabChange}
         onLogout={() => setShowLogoutModal(true)}
-        onProfile={() => setMode('PROFILE')}
+        onProfile={() => runWithRecallExitGuard(() => setMode('PROFILE'))}
       />
 
       {/* Main Content */}
       <div className="lg:ml-[260px] min-h-screen overflow-x-hidden min-w-0">
         {renderMode()}
       </div>
+
+      <AnimatePresence>
+        {micPermissionNotice && (
+          <motion.div
+            role="alert"
+            initial={{ opacity: 0, y: -16 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -16 }}
+            className="fixed top-4 left-4 right-4 md:left-auto md:right-6 md:w-[430px] z-[130] rounded-2xl border border-amber-200 bg-white shadow-2xl shadow-slate-900/15 dark:border-amber-500/40 dark:bg-slate-900"
+          >
+            <div className="p-4 flex gap-3">
+              <div className="mt-1 h-10 w-10 shrink-0 rounded-xl bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300 flex items-center justify-center">
+                <Mic className="h-5 w-5" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-start justify-between gap-3">
+                  <h3 className="font-black text-slate-900 dark:text-white">Enable microphone access</h3>
+                  <button
+                    type="button"
+                    onClick={() => setMicPermissionNotice(false)}
+                    className="rounded-full p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-200"
+                    aria-label="Dismiss microphone notice"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+                <p className="mt-1 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
+                  Your browser blocked Soma from using the mic. Click the lock icon near the address bar, allow Microphone for this site, then reload or test the mic again.
+                </p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => window.location.reload()}
+                    className="rounded-xl bg-amber-500 px-4 py-2 text-xs font-black uppercase tracking-wide text-white hover:bg-amber-600"
+                  >
+                    Reload After Enabling
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMicPermissionNotice(false);
+                      setError({
+                        title: "Enable Microphone",
+                        message: "Open the lock icon in your browser address bar, allow Microphone for Soma, then come back and tap the mic again."
+                      });
+                    }}
+                    className="rounded-xl border border-amber-300 px-4 py-2 text-xs font-black uppercase tracking-wide text-amber-700 hover:bg-amber-50 dark:border-amber-500/40 dark:text-amber-300 dark:hover:bg-amber-500/10"
+                  >
+                    Show Steps
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setMicPermissionNotice(false)}
+                    className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-black uppercase tracking-wide text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+                  >
+                    Not Now
+                  </button>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showExitRecallPrompt && explanation && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[115] flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm"
+          >
+            <motion.div
+              initial={{ scale: 0.96, y: 16 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.96, y: 16 }}
+              className="w-full max-w-2xl rounded-[2rem] bg-white dark:bg-slate-900 border border-amber-200 dark:border-amber-900/50 shadow-2xl overflow-hidden"
+            >
+              <div className="p-6 border-b border-slate-100 dark:border-slate-800">
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-700 dark:text-amber-300 mb-2">Before You Leave</p>
+                <h3 className="text-2xl font-black text-slate-900 dark:text-white">Take a quick active recall break</h3>
+                <p className="mt-2 text-sm font-semibold text-slate-600 dark:text-slate-300">
+                  You have the explanation. Lock it in by answering these in your head or notebook before you navigate away.
+                </p>
+              </div>
+
+              <div className="p-6 space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  {[
+                    `What is the first step in ${explanation.topic}?`,
+                    'Name one key idea without looking back.',
+                    'Can you solve one similar question now?'
+                  ].map((prompt, i) => {
+                    const done = completedRecallChecks.includes(i);
+                    return (
+                      <button
+                        key={prompt}
+                        onClick={() => {
+                          setCompletedRecallChecks(prev => prev.includes(i) ? prev.filter(item => item !== i) : [...prev, i]);
+                          trackFunnelEvent('active_recall_checkpoint_toggled', {
+                            topic: explanation.topic,
+                            checkpoint: i + 1,
+                            completed: !done
+                          });
+                        }}
+                        className={`text-left rounded-2xl border p-4 transition-all ${done
+                          ? 'bg-emerald-600 border-emerald-600 text-white shadow-md shadow-emerald-100'
+                          : 'bg-white dark:bg-slate-950 border-amber-200 dark:border-amber-900/70 text-slate-800 dark:text-slate-100 hover:border-amber-400'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2 mb-2">
+                          <CheckCircle className={`w-4 h-4 ${done ? 'text-white' : 'text-amber-500'}`} />
+                          <span className="text-[10px] font-black uppercase tracking-widest">{done ? 'Done' : `Check ${i + 1}`}</span>
+                        </div>
+                        <p className="text-sm font-bold leading-snug">{prompt}</p>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <div className="rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-100 dark:border-amber-900/60 p-4">
+                  <p className="text-xs font-bold text-amber-800 dark:text-amber-200">
+                    {recallRewarded
+                      ? 'Recall break completed. Study XP added to your progress.'
+                      : `${completedRecallChecks.length}/3 checks completed. Finish them, or leave anyway if you need to move on.`}
+                  </p>
+                </div>
+              </div>
+
+              <div className="p-6 border-t border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
+                <div className="flex flex-col sm:flex-row gap-2">
+                  {recallRewarded && (
+                    <button
+                      onClick={shareLearningProof}
+                      className="rounded-2xl bg-white dark:bg-slate-950 border border-amber-200 dark:border-amber-900/70 text-amber-800 dark:text-amber-200 px-5 py-3 text-xs font-black uppercase tracking-wider hover:bg-amber-100 dark:hover:bg-amber-950/40 transition-colors"
+                    >
+                      {learningProofStatus === 'shared'
+                        ? 'Progress Shared'
+                        : learningProofStatus === 'copied'
+                          ? 'Progress Copied'
+                          : 'Share Progress'}
+                    </button>
+                  )}
+                  <button
+                    onClick={() => setShowExitRecallPrompt(false)}
+                    className="rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 px-5 py-3 text-xs font-black uppercase tracking-wider hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                  >
+                    Continue Learning
+                  </button>
+                </div>
+                <button
+                  onClick={() => {
+                    setShowExitRecallPrompt(false);
+                    const action = pendingExitAction;
+                    setPendingExitAction(null);
+                    action?.();
+                  }}
+                  className="rounded-2xl bg-slate-900 dark:bg-white text-white dark:text-slate-950 px-5 py-3 text-xs font-black uppercase tracking-wider hover:opacity-90 transition-opacity"
+                >
+                  Leave Anyway
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Faded Solution Paywall Modal */}
       <AnimatePresence>
@@ -7929,25 +8280,42 @@ ${explanation.explanation}
 
                 <h3 className="text-xl font-black text-slate-800 mb-2">Subscription Expired</h3>
                 <p className="text-slate-500 text-sm leading-relaxed mb-6">
-                  Your premium access has expired. Renew now to continue enjoying <span className="text-indigo-600 font-bold">full plan access</span> to learning for as little as <span className="text-indigo-600 font-bold">20 KES</span>.
+                  Your premium access has expired. If you still have learning credits, you can keep using Soma Smart with metered access. Otherwise renew now to continue enjoying <span className="text-indigo-600 font-bold">full plan access</span> to learning for as little as <span className="text-indigo-600 font-bold">20 KES</span>.
                 </p>
+
+                <div className="mb-5 rounded-2xl border border-indigo-100 bg-indigo-50 px-4 py-3 text-left">
+                  <p className="text-[10px] font-black uppercase tracking-[0.18em] text-indigo-500">Wallet status</p>
+                  <p className="mt-1 text-sm font-bold text-slate-800">
+                    {learningCredits > 0
+                      ? `${learningCredits} learning credit${learningCredits === 1 ? '' : 's'} available`
+                      : 'No learning credits available'}
+                  </p>
+                </div>
 
                 <div className="space-y-3">
                   <Button
                     fullWidth
                     onClick={() => {
+                      if (learningCredits > 0) {
+                        setShowExpiryModal(false);
+                        setHasRecentPaymentUnlock(true);
+                        return;
+                      }
                       setShowExpiryModal(false);
                       handlePricingNavigation();
                     }}
                     className="py-4 text-base shadow-xl shadow-red-200 bg-red-600 hover:bg-red-700"
                   >
-                    Renew Now
+                    {learningCredits > 0 ? 'Continue with Credits' : 'Renew Now'}
                   </Button>
                   <button
-                    onClick={() => setShowExpiryModal(false)}
+                    onClick={() => {
+                      setShowExpiryModal(false);
+                      if (learningCredits > 0) setHasRecentPaymentUnlock(true);
+                    }}
                     className="text-slate-400 font-bold text-xs uppercase tracking-widest hover:text-slate-600 transition-colors"
                   >
-                    Continue to Dashboard
+                    {learningCredits > 0 ? 'Go to Dashboard' : 'Continue to Dashboard'}
                   </button>
                 </div>
               </div>

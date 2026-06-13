@@ -59,6 +59,10 @@ export interface ExplanationResult {
   relatedTopics?: string[];
   transcript?: string;
   flashcard?: { question: string; answer: string }; // Spaced Repetition AI Q&A Pair
+  grounding?: {
+    used: boolean;
+    sources: string[];
+  };
 }
 
 export interface QuizQuestion {

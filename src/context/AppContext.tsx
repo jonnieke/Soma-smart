@@ -622,8 +622,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           .eq('profile_id', currentUserId)
           .maybeSingle();
         if (!creditError && typeof creditRow?.credits === 'number') {
-          localStorage.setItem('soma_learning_credits', String(creditRow.credits));
-          setLearningCredits(creditRow.credits);
+          const localCredits = Number(localStorage.getItem('soma_learning_credits') || 0);
+          const syncedCredits = Math.max(localCredits, creditRow.credits);
+          localStorage.setItem('soma_learning_credits', String(syncedCredits));
+          setLearningCredits(syncedCredits);
         } else if (creditError) {
           warnIfDev('Learning credits unavailable:', creditError);
         }

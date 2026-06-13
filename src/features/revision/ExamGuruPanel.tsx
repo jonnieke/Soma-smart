@@ -57,6 +57,7 @@ export const ExamGuruPanel: React.FC<{ onClose: () => void; onLogin?: () => void
     const [isTyping, setIsTyping] = useState(false);
     const scrollRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
+    const autoSentInitialPromptRef = useRef('');
 
     // --- Drill Questions state ---
     const [practiceSubject, setPracticeSubject] = useState('');
@@ -129,8 +130,7 @@ export const ExamGuruPanel: React.FC<{ onClose: () => void; onLogin?: () => void
 
     useEffect(() => {
         setMode(initialMode);
-        if (initialPrompt) setInput(initialPrompt);
-    }, [initialMode, initialPrompt]);
+    }, [initialMode]);
 
     const sendMessage = async (text: string) => {
         if (!text.trim() || isTyping) return;
@@ -152,6 +152,21 @@ export const ExamGuruPanel: React.FC<{ onClose: () => void; onLogin?: () => void
             setIsTyping(false);
         }
     };
+
+    useEffect(() => {
+        const prompt = initialPrompt.trim();
+        if (!prompt) return;
+
+        if (initialMode !== 'chat') {
+            setInput(prompt);
+            return;
+        }
+
+        if (autoSentInitialPromptRef.current === prompt) return;
+        autoSentInitialPromptRef.current = prompt;
+        setInput('');
+        void sendMessage(prompt);
+    }, [initialMode, initialPrompt]);
 
     const handleMark = async () => {
         if (!markQuestion.trim() || !markAnswer.trim()) return;
@@ -240,7 +255,7 @@ Do not move to a new topic, new example, or new question until the candidate ans
                             <h3 className="text-white font-black text-sm">Exam Guru AI</h3>
                             <div className="flex items-center gap-1.5 mt-0.5">
                                 <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
-                                <span className="text-[10px] text-indigo-200 font-bold uppercase tracking-widest">KNEC Drill Desk · Online</span>
+                                <span className="text-[10px] text-indigo-200 font-bold uppercase tracking-widest">KNEC Drill Desk · Soma Library grounded</span>
                             </div>
                         </div>
                     </div>
@@ -336,6 +351,9 @@ Do not move to a new topic, new example, or new question until the candidate ans
                     <>
                         {/* Prompt chips */}
                         <div className="px-4 py-2.5 bg-slate-900 border-b border-white/5 flex gap-2 overflow-x-auto no-scrollbar shrink-0">
+                            <span className="shrink-0 text-[10px] font-black text-emerald-300 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1.5 rounded-xl whitespace-nowrap">
+                                Uses indexed past papers when available
+                            </span>
                             {PROMPT_CHIPS.map(chip => (
                                 <button
                                     key={chip}
