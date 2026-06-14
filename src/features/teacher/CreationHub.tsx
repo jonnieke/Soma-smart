@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { Sparkles, FileText, Brain, Mic, ScanLine, FileUp, Zap, ChevronRight, GraduationCap, Monitor } from 'lucide-react';
 
 interface CreationHubProps {
-    onNavigateToTool: (tool: 'CONVERT' | 'QUIZ' | 'DARASA_MODE' | 'MARKING' | 'SCHEMES' | 'LESSON_POLISH' | 'HOMEWORK' | 'CPD_HUB' | 'CLASSROOM_SIMULATOR') => void;
+    onNavigateToTool: (tool: 'CONVERT' | 'QUIZ' | 'DARASA_MODE' | 'MARKING' | 'SCHEMES' | 'LESSON_POLISH' | 'HOMEWORK' | 'CPD_HUB' | 'CLASSROOM_SIMULATOR' | 'LESSON_PLAN_GENERATOR') => void;
 }
 
 export const CreationHub: React.FC<CreationHubProps> = ({ onNavigateToTool }) => {
@@ -176,6 +176,29 @@ export const CreationHub: React.FC<CreationHubProps> = ({ onNavigateToTool }) =>
                     </p>
                     <div className="flex items-center text-sm font-black text-indigo-600 dark:text-indigo-400 tracking-wider uppercase mt-auto">
                         Start Simulation <ChevronRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
+                    </div>
+                </motion.div>
+
+                {/* AI Lesson Plan Generator */}
+                <motion.div
+                    variants={{
+                        hidden: { opacity: 0, y: 20 },
+                        visible: { opacity: 1, y: 0 }
+                    }}
+                    onClick={() => onNavigateToTool('LESSON_PLAN_GENERATOR')}
+                    className={cardClass}
+                >
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-bl-[100px] -z-10 group-hover:bg-emerald-500/20 transition-colors"></div>
+                    <div className="w-14 h-14 bg-gradient-to-br from-emerald-500 to-teal-700 text-white rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-emerald-500/30 group-hover:scale-110 transition-transform relative">
+                        <FileText className="w-7 h-7" />
+                        <span className="absolute -top-2 -right-2 bg-blue-500 text-white text-[8px] font-black px-1.5 py-0.5 rounded uppercase tracking-widest border-2 border-white shadow-sm">New</span>
+                    </div>
+                    <h3 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight mb-2">AI Lesson Planner</h3>
+                    <p className="text-slate-500 dark:text-slate-400 font-medium text-sm mb-6 leading-relaxed">
+                        Generate a complete CBC 5E lesson plan in seconds. Topic in → structured plan out. PDF export included.
+                    </p>
+                    <div className="flex items-center text-sm font-black text-emerald-600 dark:text-emerald-400 tracking-wider uppercase mt-auto">
+                        Generate Plan <ChevronRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
                     </div>
                 </motion.div>
 

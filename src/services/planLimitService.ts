@@ -214,9 +214,16 @@ export const assertPlanLimit = (feature: string, units = 1) => {
   if (limit <= 0 || used + units > limit) {
     const creditsNeeded = creditUnitsForFeature(normalized, units);
     if (spendLearningCredits(creditsNeeded)) return;
+    // Fire global upgrade modal event so the UI can intercept before re-throw
+    try {
+      window.dispatchEvent(new CustomEvent('soma-show-upgrade-modal', {
+        detail: { feature: normalized, plan, limit }
+      }));
+    } catch (_) { /* ignore SSR or test environments */ }
     throw new PlanLimitError(normalized, plan, limit);
   }
 };
+
 
 export const recordPlanUsage = (feature: string, units = 1) => {
   const plan = getStoredPlan();

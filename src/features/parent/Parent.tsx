@@ -9,6 +9,7 @@ import { LogoutModal } from '../../components/LogoutModal';
 import { Book, CheckCircle, Clock, Lock, User, TrendingUp, Award, AlertCircle, ChevronRight, Activity, Calendar, Star, Zap, Home, X, LogOut, CreditCard, Sparkles, Brain } from 'lucide-react';
 import { loadMasteryFromCloud } from '../../services/learnerMemoryService';
 import { MasteryDashboard } from '../../components/MasteryDashboard';
+import { SubjectHeatmap, ParentAIInsight } from './ParentEnhancements';
 import { supabase } from '../../lib/supabase';
 
 const PARENT_REMEMBER_LOGIN_KEY = 'soma_parent_remembered_login';
@@ -1082,6 +1083,18 @@ export const ParentDashboard: React.FC<ParentProps> = ({ onNavigate, activityLog
                         </div>
                     </div>
                 </div>
+
+                {/* 3.5 AI INSIGHT + HEATMAP */}
+                <ParentAIInsight
+                    studentName={validStudentCode || 'Your child'}
+                    activityLog={visibleActivityLog.map(a => ({ created_at: a.date, subject: a.subject, score: a.score }))}
+                    masteryMap={cloudMasteryGraph as Record<string, number>}
+                    streak={cloudMemoryRow?.streak_days ?? 0}
+                />
+                <SubjectHeatmap
+                    activityLog={visibleActivityLog.map(a => ({ created_at: a.date, subject: a.subject, score: a.score }))}
+                    masteryMap={cloudMasteryGraph as Record<string, number>}
+                />
 
                 {/* 4. ACTIVITY FEED */}
                 <div>

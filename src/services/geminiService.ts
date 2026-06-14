@@ -8,7 +8,7 @@ import { buildPersonaInstruction, recommendPersona } from "./adminAgentService";
 // We no longer use VITE_GEMINI_API_KEY on the client.
 // Instead, we call a Supabase Edge Function which adds the key server-side.
 import { supabase } from "../lib/supabase";
-import { buildGeminiUsagePayload, trackUsageCost } from "./usageCostService";
+import { buildGeminiUsagePayload, inferAiFeature, trackUsageCost } from "./usageCostService";
 import { assertPlanLimit, recordPlanUsage } from "./planLimitService";
 
 // Custom error thrown when the backend returns 429 (usage limit exceeded).
@@ -3907,3 +3907,98 @@ Calibrate to the student preset: ${preset} (struggling class = harder to get hig
   }
 };
 
+
+// -----------------------------------------------------------------------------
+// LESSON PLAN GENERATOR
+// -----------------------------------------------------------------------------
+
+export interface LessonPlanOutput {
+  title: string;
+  grade: string;
+  subject: string;
+  duration: string;
+  learningOutcomes: string[];
+  resources: string[];
+  activities: {
+    phase: string;
+    duration: string;
+    teacherActivity: string;
+    studentActivity: string;
+    cbcCompetency: string;
+  }[];
+  assessment: string;
+  differentiation: { struggling: string; gifted: string };
+  cbcValues: string[];
+  homework: string;
+}
+
+export const generateLessonPlan = async (
+  topic: string,
+  grade: string,
+  subject: string,
+  duration: string,
+  objectives: string
+): Promise<LessonPlanOutput> => {
+  const systemInstruction = {
+    parts: [{
+      text: `You are an expert Kenyan CBC curriculum designer. Generate a complete, detailed lesson plan.
+OUTPUT FORMAT — strict JSON only (no markdown fences):
+{"title":"...","grade":"${grade}","subject":"${subject}","duration":"${duration}","learningOutcomes":["..."],"resources":["..."],"activities":[{"phase":"Engage","duration":"X min","teacherActivity":"...","studentActivity":"...","cbcCompetency":"..."},{"phase":"Explore","duration":"X min","teacherActivity":"...","studentActivity":"...","cbcCompetency":"..."},{"phase":"Explain","duration":"X min","teacherActivity":"...","studentActivity":"...","cbcCompetency":"..."},{"phase":"Elaborate","duration":"X min","teacherActivity":"...","studentActivity":"...","cbcCompetency":"..."},{"phase":"Evaluate","duration":"X min","teacherActivity":"...","studentActivity":"...","cbcCompetency":"..."}],"assessment":"...","differentiation":{"struggling":"...","gifted":"..."},"cbcValues":["..."],"homework":"..."}
+RULES: Use Kenya CBC 5E model. Align to KICD for ${grade} ${subject}. Use Kenyan contexts. Output ONLY valid JSON.`
+    }]
+  };
+  const contents = [{ role: 'user' as const, parts: [{ text: `Generate CBC lesson plan. Topic: ${topic}, Grade: ${grade}, Subject: ${subject}, Duration: ${duration}, Objectives: ${objectives || 'appropriate for grade'}` }] }];
+  const defaultPlan: LessonPlanOutput = { title: `${topic} — ${grade} ${subject}`, grade, subject, duration, learningOutcomes: [`Explain ${topic}`, `Apply ${topic} to real-world problems`, `Evaluate findings on ${topic}`], resources: ['Textbook', 'Exercise books', 'Locally available materials'], activities: [{ phase: 'Engage', duration: '10 min', teacherActivity: 'Pose a thought-provoking question', studentActivity: 'Discuss prior knowledge in pairs', cbcCompetency: 'Communication' }, { phase: 'Explore', duration: '15 min', teacherActivity: 'Guide discovery activity', studentActivity: 'Conduct activity and record observations', cbcCompetency: 'Critical Thinking' }, { phase: 'Explain', duration: '10 min', teacherActivity: 'Explain core concepts', studentActivity: 'Take notes and ask questions', cbcCompetency: 'Learning to Learn' }, { phase: 'Elaborate', duration: '10 min', teacherActivity: 'Give application task', studentActivity: 'Solve problems in groups', cbcCompetency: 'Collaboration' }, { phase: 'Evaluate', duration: '5 min', teacherActivity: 'Pose exit ticket', studentActivity: 'Answer 3 short questions', cbcCompetency: 'Self-efficacy' }], assessment: 'Observation during activities, exit ticket, group presentation', differentiation: { struggling: 'Provide visual aids and peer support', gifted: 'Extension investigative challenge' }, cbcValues: ['Integrity', 'Responsibility'], homework: `Research three real-life applications of ${topic}` };
+  try {
+    const result = await callGeminiProxy(MODEL_NAME, contents, { maxOutputTokens: 2000, temperature: 0.4 }, systemInstruction);
+    const text = result.response.text() || '';
+    const cleaned = text.replace(/```json|```/g, '').trim();
+    return JSON.parse(cleaned) as LessonPlanOutput;
+  } catch (error) {
+    console.error('Lesson plan generation error:', error);
+    return defaultPlan;
+  }
+};
+
+export const generateTermReportNarrative = async (stats: { className: string; subject: string; term: string; classAverage: number; passRate: number; topTopic: string; weakestTopic: string; totalStudents: number; }): Promise<string> => {
+  const contents = [{ role: 'user' as const, parts: [{ text: `Write a professional 2-paragraph teacher term report narrative. Class: ${stats.className}, Subject: ${stats.subject}, Term: ${stats.term}, Average: ${stats.classAverage}%, Pass Rate: ${stats.passRate}%, Strongest Topic: ${stats.topTopic}, Weakest: ${stats.weakestTopic}, Students: ${stats.totalStudents}. Formal Kenyan education report style. Include forward-looking recommendation.` }] }];
+  try {
+    const result = await callGeminiProxy(MODEL_NAME, contents, { maxOutputTokens: 400, temperature: 0.5 });
+    return result.response.text() || 'The class performed satisfactorily this term.';
+  } catch { return 'The class performed satisfactorily this term with notable progress across key topics.'; }
+};
+
+export const generateParentInsight = async (studentName: string, weeklyActivityCount: number, subjectSummary: { subject: string; score: number }[], streak: number): Promise<string> => {
+  const sorted = [...subjectSummary].sort((a, b) => b.score - a.score);
+  const top = sorted[0]; const weak = sorted[sorted.length - 1];
+  const contents = [{ role: 'user' as const, parts: [{ text: `Write a warm 2-sentence parent update for Kenyan student ${studentName}. Sessions this week: ${weeklyActivityCount}. Streak: ${streak} days. Strongest: ${top?.subject || 'N/A'} (${top?.score || 0}%). Needs practice: ${weak?.subject || 'N/A'} (${weak?.score || 0}%). Write as AI tutor to parent. Be warm and motivational.` }] }];
+  try {
+    const result = await callGeminiProxy(MODEL_NAME, contents, { maxOutputTokens: 150, temperature: 0.7 });
+    return result.response.text() || `${studentName} has been working hard this week!`;
+  } catch { return `${studentName} has been working hard this week! Keep encouraging them to study daily.`; }
+};
+
+export interface LearningPathTopic {
+  topic: string;
+  subject: string;
+  masteryPercent: number;
+  status: 'MASTERED' | 'IN_PROGRESS' | 'RECOMMENDED' | 'LOCKED';
+  difficulty: 'EASY' | 'MEDIUM' | 'HARD';
+  estimatedMinutes: number;
+  rationale: string;
+  prerequisite?: string;
+}
+
+export const generatePersonalisedPath = async (grade: string, subjects: string[], masteryMap: Record<string, number>, completedTopics: string[], weakTopics: string[]): Promise<LearningPathTopic[]> => {
+  const snap = Object.entries(masteryMap).slice(0, 15).map(([t, s]) => `${t}: ${s}%`).join(', ');
+  const contents = [{ role: 'user' as const, parts: [{ text: `Generate a personalised CBC learning path for Kenyan ${grade} student. Subjects: ${subjects.join(', ')}. Mastery: ${snap || 'none'}. Mastered: ${completedTopics.slice(0,8).join(', ') || 'none'}. Weak: ${weakTopics.slice(0,5).join(', ') || 'none'}. Return JSON array of 8-10 topics: [{"topic":"...","subject":"...","masteryPercent":0-100,"status":"MASTERED|IN_PROGRESS|RECOMMENDED|LOCKED","difficulty":"EASY|MEDIUM|HARD","estimatedMinutes":15-45,"rationale":"one sentence","prerequisite":"topic or null"}]. Order: weak remediation first, current level middle, stretch last. Use real CBC Kenya topic names. Output ONLY JSON array.` }] }];
+  const defaultPath: LearningPathTopic[] = weakTopics.slice(0, 3).map((t, i) => ({ topic: t, subject: subjects[0] || 'Mathematics', masteryPercent: masteryMap[t] || 20, status: i === 0 ? 'RECOMMENDED' : 'LOCKED', difficulty: 'MEDIUM', estimatedMinutes: 25, rationale: 'Needs more practice based on recent results.' }));
+  try {
+    const result = await callGeminiProxy(MODEL_NAME, contents, { maxOutputTokens: 1500, temperature: 0.4 });
+    const text = result.response.text() || '';
+    return JSON.parse(text.replace(/```json|```/g, '').trim()) as LearningPathTopic[];
+  } catch (error) {
+    console.error('Learning path error:', error);
+    return defaultPath;
+  }
+};

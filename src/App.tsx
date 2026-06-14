@@ -4,6 +4,7 @@ import { HelmetProvider } from 'react-helmet-async';
 import { ConnectivityBanner } from './components/ConnectivityBanner';
 import { SessionConflictModal } from './components/SessionConflictModal';
 import { SubscriptionExpiredModal } from './components/SubscriptionExpiredModal';
+import { UpgradeModal } from './components/UpgradeModal';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { supabase } from './lib/supabase';
 import { AdminGuard } from './components/AdminGuard';
@@ -133,14 +134,8 @@ const App: React.FC = () => {
             console.log("Internet restored. Flushing mastery sync queue...");
             flushMasterySyncQueue();
         };
-
         window.addEventListener('online', handleOnline);
-        
-        // Also try flushing on initial load if we are already online
-        if (navigator.onLine) {
-            flushMasterySyncQueue();
-        }
-
+        if (navigator.onLine) flushMasterySyncQueue();
         return () => window.removeEventListener('online', handleOnline);
     }, []);
 
@@ -156,6 +151,7 @@ const App: React.FC = () => {
                 )}
                 <SessionConflictModal />
                 <SubscriptionExpiredModal />
+                <UpgradeModal onUpgrade={(_planId) => navigate('/pricing')} />
                 <Suspense fallback={<PageLoader />}>
                     <main id="main-content">
                         <Routes>
