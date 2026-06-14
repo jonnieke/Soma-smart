@@ -18,12 +18,12 @@ const DAILY_KEY = () => new Date().toISOString().slice(0, 10);
 
 const PLAN_LIMITS: PlanLimitMap = {
   FREE: {
-    ai_generation: 3,
+    ai_generation: 10,
     exam_guru: 3,
     exam_marking: 1,
-    quiz_generation: 2,
-    practice_generation: 2,
-    notes_generation: 2,
+    quiz_generation: 5,
+    practice_generation: 5,
+    notes_generation: 5,
     listen_and_learn_voice: 6000,
     listen_and_learn_podcast: 0,
     conversational_voice: 4000,
