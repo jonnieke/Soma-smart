@@ -40,6 +40,7 @@ const LessonPolisherView = React.lazy(() => safeImport(() => import('./LessonPol
 const DigitalBlackboard = React.lazy(() => safeImport(() => import('./DigitalBlackboard').then(module => ({ default: module.DigitalBlackboard }))));
 const HomeworkCreator = React.lazy(() => safeImport(() => import('./HomeworkCreator').then(module => ({ default: module.HomeworkCreator }))));
 const PdfPageSelector = React.lazy(() => safeImport(() => import('../../components/PdfPageSelector').then(module => ({ default: module.PdfPageSelector }))));
+const CPDHub = React.lazy(() => safeImport(() => import('./CPDHub').then(module => ({ default: module.CPDHub }))));
 
 const TeacherToolFallback = () => (
     <div className="min-h-[320px] rounded-[2rem] border-2 border-slate-100 bg-white flex flex-col items-center justify-center text-slate-400">
@@ -55,7 +56,7 @@ const processDarasaAudioFile: TeacherGeminiService['processDarasaRecording'] = a
 
 interface TeacherProps {
     onNavigate: (view: ViewState) => void;
-    initialTab?: 'DASHBOARD' | 'CREATION_HUB' | 'STUDENTS' | 'MARKING' | 'EARNINGS' | 'LIBRARY' | 'HOME' | 'CONVERT' | 'VOICE' | 'QUIZ' | 'MARKETPLACE' | 'PROFILE' | 'REPORTS' | 'DARASA_MODE' | 'HOMEWORK';
+    initialTab?: 'DASHBOARD' | 'CREATION_HUB' | 'STUDENTS' | 'MARKING' | 'EARNINGS' | 'LIBRARY' | 'HOME' | 'CONVERT' | 'VOICE' | 'QUIZ' | 'MARKETPLACE' | 'PROFILE' | 'REPORTS' | 'DARASA_MODE' | 'HOMEWORK' | 'CPD_HUB';
 }
 
 export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTab }) => {
@@ -124,7 +125,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
         }
     });
     const [teacherNotice, setTeacherNotice] = useState<{ type: 'success' | 'error' | 'info'; text: string } | null>(null);
-    const [activeTab, setActiveTab] = useState<'DASHBOARD' | 'CREATION_HUB' | 'STUDENTS' | 'MARKING' | 'EARNINGS' | 'LIBRARY' | 'CONVERT' | 'VOICE' | 'QUIZ' | 'HOME' | 'MARKETPLACE' | 'PROFILE' | 'REPORTS' | 'DARASA_MODE' | 'SCHEMES' | 'LESSON_POLISH' | 'BLACKBOARD' | 'HOMEWORK'>(initialTab || 'DASHBOARD');
+    const [activeTab, setActiveTab] = useState<'DASHBOARD' | 'CREATION_HUB' | 'STUDENTS' | 'MARKING' | 'EARNINGS' | 'LIBRARY' | 'CONVERT' | 'VOICE' | 'QUIZ' | 'HOME' | 'MARKETPLACE' | 'PROFILE' | 'REPORTS' | 'DARASA_MODE' | 'SCHEMES' | 'LESSON_POLISH' | 'BLACKBOARD' | 'HOMEWORK' | 'CPD_HUB'>(initialTab || 'DASHBOARD');
     const [loading, setLoading] = useState(false);
 
     const trackFunnelEvent = (eventName: string, params: Record<string, unknown> = {}) => {
@@ -849,6 +850,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
         { tab: 'STUDENTS', label: 'Classroom' },
         { tab: 'MARKING', label: 'Marking' },
         { tab: 'LIBRARY', label: 'Library' },
+        { tab: 'CPD_HUB', label: 'CPD & Training' },
     ] as const;
     const normalizedClassForSetup = String(selectedClass || '').trim().toLowerCase();
     const normalizedSubjectForSetup = String(selectedSubject || '').trim().toLowerCase();
@@ -1117,6 +1119,12 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                 {activeTab === 'CREATION_HUB' && (
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
                         <CreationHub onNavigateToTool={(tool) => setActiveTab(tool)} />
+                    </motion.div>
+                )}
+
+                {activeTab === 'CPD_HUB' && (
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                        <CPDHub />
                     </motion.div>
                 )}
 

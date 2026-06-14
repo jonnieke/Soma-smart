@@ -1,9 +1,9 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Sparkles, FileText, Brain, Mic, ScanLine, FileUp, Zap, ChevronRight } from 'lucide-react';
+import { Sparkles, FileText, Brain, Mic, ScanLine, FileUp, Zap, ChevronRight, GraduationCap } from 'lucide-react';
 
 interface CreationHubProps {
-    onNavigateToTool: (tool: 'CONVERT' | 'QUIZ' | 'DARASA_MODE' | 'MARKING' | 'SCHEMES' | 'LESSON_POLISH' | 'HOMEWORK') => void;
+    onNavigateToTool: (tool: 'CONVERT' | 'QUIZ' | 'DARASA_MODE' | 'MARKING' | 'SCHEMES' | 'LESSON_POLISH' | 'HOMEWORK' | 'CPD_HUB') => void;
 }
 
 export const CreationHub: React.FC<CreationHubProps> = ({ onNavigateToTool }) => {
@@ -131,6 +131,28 @@ export const CreationHub: React.FC<CreationHubProps> = ({ onNavigateToTool }) =>
                     </p>
                     <div className="flex items-center text-sm font-black text-emerald-600 dark:text-emerald-400 tracking-wider uppercase mt-auto">
                         Capture Lesson <ChevronRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
+                    </div>
+                </motion.div>
+
+                {/* CPD & Training Hub */}
+                <motion.div
+                    variants={{
+                        hidden: { opacity: 0, y: 20 },
+                        visible: { opacity: 1, y: 0 }
+                    }}
+                    onClick={() => onNavigateToTool('CPD_HUB')}
+                    className={cardClass}
+                >
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-violet-500/10 rounded-bl-[100px] -z-10 group-hover:bg-violet-500/20 transition-colors"></div>
+                    <div className="w-14 h-14 bg-gradient-to-br from-violet-500 to-indigo-700 text-white rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-violet-500/30 group-hover:scale-110 transition-transform">
+                        <GraduationCap className="w-7 h-7" />
+                    </div>
+                    <h3 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight mb-2">CPD & Training Hub</h3>
+                    <p className="text-slate-500 dark:text-slate-400 font-medium text-sm mb-6 leading-relaxed">
+                        Access interactive CBC pedagogical courses, query the AI Pedagogy Coach, and download KICD-compliant templates.
+                    </p>
+                    <div className="flex items-center text-sm font-black text-violet-600 dark:text-violet-400 tracking-wider uppercase mt-auto">
+                        Enter CPD Hub <ChevronRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
                     </div>
                 </motion.div>
 

@@ -3133,6 +3133,42 @@ export const polishLessonPlan = async (
   }
 };
 
+export const askPedagogyCoach = async (
+  userQuery: string,
+  chatHistory: { role: 'user' | 'model'; text: string }[]
+): Promise<string> => {
+  const model = genAI.getGenerativeModel({ model: MODEL_NAME });
+
+  const systemInstruction = `You are Mwalimu Trainer, a Senior Kenyan CBC Teacher Trainer and pedagogical expert.
+Your job is to support teachers in designing high-quality lesson plans, understanding CBC guidelines, time-allocations, KICD compliance, and active learning strategies.
+
+YOUR TONE:
+- Professional, encouraging, and highly knowledgeable about Kenyan education.
+- Use encouraging Kenyan teaching phrases (e.g. "Excellent work", "Kazi nzuri", "Habari mwalimu").
+- Keep explanations structured, practical, and directly actionable. Use bullet points or numbered lists.
+
+TOPICS YOU HANDLE:
+1. Lesson Planning: Explain the 5-E Model (Engage, Explore, Explain, Elaborate, Evaluate). Help draft components.
+2. Schemes of Work: Advise on strand mapping, assessment methods, and resource integration.
+3. Formative Assessments: Suggest rubrics, checklists, and oral inquiry questions.
+4. CBC Pedagogy: Guide on competency-based values, key inquiry questions, and inclusive classroom practices.
+
+Keep responses concise, clear, and focused on helping the teacher succeed in the classroom.`;
+
+  const historyText = chatHistory.map(msg => `${msg.role === 'user' ? 'Teacher' : 'Trainer'}: ${msg.text}`).join('\n');
+  const fullPrompt = `${systemInstruction}\n\n${historyText}\nTeacher: ${userQuery}\nTrainer:`;
+
+  try {
+    const result = await model.generateContent(fullPrompt);
+    const text = result.response.text();
+    if (!text) return "Mwalimu Trainer is thinking... Try rephrasing your question! 📝";
+    return text;
+  } catch (error) {
+    console.error("Error asking Pedagogy Coach:", error);
+    return "Oops! I encountered an issue. Let's try again shortly!";
+  }
+};
+
 export const getExamGuruResponse = async (
   userQuery: string,
   chatHistory: { role: 'user' | 'guru', content: string }[],
