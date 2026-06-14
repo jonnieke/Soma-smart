@@ -3732,3 +3732,178 @@ export const getPhoneticCoaching = async (
 // Backward compatibility for cached files
 export const askSoma = askSomo;
 
+// --- CLASSROOM SIMULATOR ---
+
+import type { SimulationPreset, SimulationTurn, SimulationScorecard } from '../types';
+
+const STUDENT_PERSONAS: Record<SimulationPreset, string> = {
+  STRUGGLING: `You play 4 Kenyan Grade 8 students who are struggling with the topic.
+- Mwangi (confused, asks basic "what does that mean?" questions)
+- Achieng (shy, barely speaks, occasionally whispers wrong answers)
+- Nekesa (distracted, asks off-topic questions or makes classroom noise)
+- Kamau (trying hard but makes common misconceptions)
+All responses are in Kenyan classroom English, occasionally mixing Swahili phrases (e.g. "Mwalimu, sijui" = "Teacher, I don't know").`,
+
+  INQUISITIVE: `You play 4 very curious Kenyan Grade 8 students who love the topic.
+- Mwangi (asks deep "why" and "how" follow-up questions)
+- Achieng (connects lessons to real-life Kenyan examples like farming or Nairobi)
+- Nekesa (challenges the teacher politely with alternative ideas)
+- Kamau (gives correct answers and asks for extra information)
+Responses are enthusiastic and educational. Mix Kenyan English with occasional Swahili for warmth.`,
+
+  BALANCED: `You play 4 typical Kenyan Grade 8 students with mixed abilities.
+- Mwangi (average, answers when called, sometimes correct)
+- Achieng (slightly above average, eager to answer)
+- Nekesa (easily distracted, needs re-engagement)
+- Kamau (quiet but solid understanding, only speaks if directly asked)
+Responses are realistic classroom banter, some correct some partially wrong. Kenyan English mix.`,
+
+  HYPERACTIVE: `You play 4 very energetic and talkative Kenyan Grade 8 students.
+- Mwangi (always talking, sometimes interrupts the teacher)
+- Achieng (very enthusiastic, gives answers before teacher finishes)
+- Nekesa (makes jokes and distracts class, needs firm handling)
+- Kamau (competitive, argues with other students over answers)
+Responses are lively and sometimes chaotic. Teacher must maintain classroom control.`,
+};
+
+/**
+ * Runs one classroom simulation turn.
+ * The AI responds as the 4 virtual students based on the teacher's last message.
+ */
+export const runClassroomSimulationTurn = async (
+  teacherMessage: string,
+  lessonTopic: string,
+  grade: string,
+  subject: string,
+  preset: SimulationPreset,
+  chatHistory: SimulationTurn[]
+): Promise<string> => {
+  const personaInstruction = STUDENT_PERSONAS[preset];
+
+  const systemInstruction = {
+    parts: [{
+      text: `You are running an Interactive Classroom Simulator for a Kenyan CBC teacher.
+
+LESSON CONTEXT:
+- Topic: ${lessonTopic}
+- Grade: ${grade}
+- Subject: ${subject}
+
+STUDENT PERSONAS:
+${personaInstruction}
+
+RULES:
+1. You MUST respond as the 4 students reacting to the teacher's message.
+2. Each student's name should appear before their dialogue (e.g. "Mwangi: ...").
+3. Keep each student's response to 1–2 sentences maximum.
+4. Be authentic to the preset personality and the Kenyan classroom setting.
+5. Do NOT break character. Do NOT write as the teacher.
+6. If the teacher asks a direct question, have 1-2 students answer and 1-2 react differently based on their persona.
+7. Naturally progress the lesson — students can show understanding OR confusion based on preset.`
+    }]
+  };
+
+  const history = chatHistory.slice(-10).map(turn => ({
+    role: turn.role === 'teacher' ? 'user' as const : 'model' as const,
+    parts: [{ text: turn.text }]
+  }));
+
+  const contents = [
+    ...history,
+    { role: 'user' as const, parts: [{ text: `Teacher says: "${teacherMessage}"` }] }
+  ];
+
+  try {
+    const result = await callGeminiProxy(
+      MODEL_NAME,
+      contents,
+      { maxOutputTokens: 400, temperature: 0.85 },
+      systemInstruction
+    );
+    return result.response.text() || 'The class is silent...';
+  } catch (error) {
+    console.error('Classroom simulation turn error:', error);
+    return 'Mwangi: Mwalimu, tunaelewa. (Class nods quietly)';
+  }
+};
+
+/**
+ * Evaluates the completed classroom simulation and returns a scorecard.
+ */
+export const evaluateClassroomSimulation = async (
+  lessonTopic: string,
+  grade: string,
+  subject: string,
+  preset: SimulationPreset,
+  chatHistory: SimulationTurn[]
+): Promise<SimulationScorecard> => {
+  const teacherTurns = chatHistory.filter(t => t.role === 'teacher');
+  const totalTurns = teacherTurns.length;
+
+  const systemInstruction = {
+    parts: [{
+      text: `You are a Kenyan CBC pedagogical evaluator assessing a teacher's simulated lesson delivery.
+
+EVALUATION CRITERIA (score each 0–100):
+1. clarity: How clearly did the teacher explain concepts? (varied sentence structures, no jargon without explanation)
+2. inquiryQuestions: Did the teacher ask CBC-style open-ended inquiry questions (5-E model)?
+3. engagement: Did the teacher actively engage all students and manage the class?
+4. scaffolding: Did the teacher scaffold learning (building from simple to complex)?
+5. cbcValues: Did the teacher embed CBC core competencies (critical thinking, citizenship, creativity)?
+
+OUTPUT FORMAT (strict JSON, no markdown):
+{
+  "scorecard": { "clarity": 0-100, "inquiryQuestions": 0-100, "engagement": 0-100, "scaffolding": 0-100, "cbcValues": 0-100 },
+  "overallScore": 0-100,
+  "strengths": ["strength 1", "strength 2", "strength 3"],
+  "recommendations": ["recommendation 1", "recommendation 2", "recommendation 3"],
+  "understandingCurve": [array of ${totalTurns} values 0–100 representing class understanding after each teacher turn],
+  "xpEarned": 50-300
+}
+
+Be specific and reference actual things the teacher said in your strengths and recommendations.
+Calibrate to the student preset: ${preset} (struggling class = harder to get high engagement score).`
+    }]
+  };
+
+  const transcript = chatHistory.map(t =>
+    `${t.role === 'teacher' ? '>>> TEACHER' : '--- STUDENTS'}: ${t.text}`
+  ).join('\n');
+
+  const contents = [{
+    role: 'user' as const,
+    parts: [{
+      text: `Evaluate this CBC classroom simulation.\n\nLESSON: ${lessonTopic} | ${subject} | ${grade}\nPRESET: ${preset}\n\nTRANSCRIPT:\n${transcript}`
+    }]
+  }];
+
+  const defaultScorecard: SimulationScorecard = {
+    scorecard: { clarity: 70, inquiryQuestions: 60, engagement: 65, scaffolding: 55, cbcValues: 60 },
+    overallScore: 63,
+    strengths: ['You introduced the topic clearly.', 'You maintained teacher-student dialogue.', 'Good use of Kenyan examples.'],
+    recommendations: ['Try asking more open-ended inquiry questions.', 'Scaffold from prior knowledge before introducing new concepts.', 'Acknowledge struggling students individually.'],
+    understandingCurve: Array.from({ length: Math.max(totalTurns, 1) }, (_, i) => Math.min(30 + i * 8, 85)),
+    xpEarned: 100
+  };
+
+  try {
+    const result = await callGeminiProxy(
+      MODEL_NAME,
+      contents,
+      { maxOutputTokens: 1200, temperature: 0.3 },
+      systemInstruction
+    );
+    const text = result.response.text() || '';
+    const cleaned = text.replace(/```json|```/g, '').trim();
+    const parsed = JSON.parse(cleaned) as SimulationScorecard;
+    // Ensure understandingCurve has enough entries
+    if (!parsed.understandingCurve || parsed.understandingCurve.length < 1) {
+      parsed.understandingCurve = defaultScorecard.understandingCurve;
+    }
+    return parsed;
+  } catch (error) {
+    console.error('Classroom evaluation error:', error);
+    return defaultScorecard;
+  }
+};
+

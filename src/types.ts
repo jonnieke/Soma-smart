@@ -639,3 +639,28 @@ export interface Comment {
   createdAt: string;
   upvotes: number;
 }
+
+// --- CLASSROOM SIMULATOR TYPES ---
+export type SimulationPreset = 'STRUGGLING' | 'INQUISITIVE' | 'BALANCED' | 'HYPERACTIVE';
+
+export interface SimulationTurn {
+  id: string;
+  role: 'teacher' | 'students';
+  text: string;
+  timestamp: number;
+}
+
+export interface SimulationScorecard {
+  scorecard: {
+    clarity: number;          // 0–100
+    inquiryQuestions: number; // 0–100
+    engagement: number;       // 0–100
+    scaffolding: number;      // 0–100
+    cbcValues: number;        // 0–100
+  };
+  overallScore: number;       // 0–100
+  strengths: string[];
+  recommendations: string[];
+  understandingCurve: number[]; // per-turn score 0-100
+  xpEarned: number;
+}

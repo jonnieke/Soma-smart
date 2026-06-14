@@ -1,9 +1,9 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Sparkles, FileText, Brain, Mic, ScanLine, FileUp, Zap, ChevronRight, GraduationCap } from 'lucide-react';
+import { Sparkles, FileText, Brain, Mic, ScanLine, FileUp, Zap, ChevronRight, GraduationCap, Monitor } from 'lucide-react';
 
 interface CreationHubProps {
-    onNavigateToTool: (tool: 'CONVERT' | 'QUIZ' | 'DARASA_MODE' | 'MARKING' | 'SCHEMES' | 'LESSON_POLISH' | 'HOMEWORK' | 'CPD_HUB') => void;
+    onNavigateToTool: (tool: 'CONVERT' | 'QUIZ' | 'DARASA_MODE' | 'MARKING' | 'SCHEMES' | 'LESSON_POLISH' | 'HOMEWORK' | 'CPD_HUB' | 'CLASSROOM_SIMULATOR') => void;
 }
 
 export const CreationHub: React.FC<CreationHubProps> = ({ onNavigateToTool }) => {
@@ -153,6 +153,29 @@ export const CreationHub: React.FC<CreationHubProps> = ({ onNavigateToTool }) =>
                     </p>
                     <div className="flex items-center text-sm font-black text-violet-600 dark:text-violet-400 tracking-wider uppercase mt-auto">
                         Enter CPD Hub <ChevronRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
+                    </div>
+                </motion.div>
+
+                {/* Interactive Classroom Simulator */}
+                <motion.div
+                    variants={{
+                        hidden: { opacity: 0, y: 20 },
+                        visible: { opacity: 1, y: 0 }
+                    }}
+                    onClick={() => onNavigateToTool('CLASSROOM_SIMULATOR')}
+                    className={cardClass}
+                >
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 rounded-bl-[100px] -z-10 group-hover:bg-indigo-500/20 transition-colors"></div>
+                    <div className="w-14 h-14 bg-gradient-to-br from-indigo-500 to-purple-700 text-white rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-indigo-500/30 group-hover:scale-110 transition-transform relative">
+                        <Monitor className="w-7 h-7" />
+                        <span className="absolute -top-2 -right-2 bg-emerald-500 text-white text-[8px] font-black px-1.5 py-0.5 rounded uppercase tracking-widest border-2 border-white shadow-sm">New</span>
+                    </div>
+                    <h3 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight mb-2">Classroom Simulator</h3>
+                    <p className="text-slate-500 dark:text-slate-400 font-medium text-sm mb-6 leading-relaxed">
+                        Rehearse your lesson with AI-powered Kenyan students and get a CBC scorecard before the real class.
+                    </p>
+                    <div className="flex items-center text-sm font-black text-indigo-600 dark:text-indigo-400 tracking-wider uppercase mt-auto">
+                        Start Simulation <ChevronRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
                     </div>
                 </motion.div>
 
