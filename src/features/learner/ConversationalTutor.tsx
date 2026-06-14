@@ -225,7 +225,7 @@ const PRONUNCIATION_CHALLENGES: Record<'easy' | 'medium' | 'hard', string[]> = {
 
 // ─── Pronunciation Matching Helper ─────────────────────────────────
 const checkPronunciationMatch = (target: string, spoken: string): Array<{ word: string; isMatch: boolean }> => {
-    const clean = (str: string) => str.toLowerCase().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()?"]/g, "").trim();
+    const clean = (str: string) => str.toLowerCase().replace(new RegExp('[.,/#!$%^&*;:{}=\\-_`~()?"]', 'g'), "").trim();
     const targetWords = target.split(/\s+/);
     const spokenWords = spoken.split(/\s+/).map(clean).filter(Boolean);
     
@@ -849,7 +849,7 @@ export const ConversationalTutor: React.FC<ConversationalTutorProps> = ({
 
                             <div className="flex-1 text-center sm:text-left">
                                 <span className="text-[10px] font-black uppercase tracking-wider text-blue-600 dark:text-blue-400 block mb-1">
-                                    Mwalimu's Feedback
+                                    {"Mwalimu's Feedback"}
                                 </span>
                                 <p className="text-sm font-semibold text-slate-800 dark:text-slate-200 leading-relaxed">
                                     {phoneticCoaching.feedback}
