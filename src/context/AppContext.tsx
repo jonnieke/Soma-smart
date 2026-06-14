@@ -89,7 +89,7 @@ interface AppContextType {
   subscriptionPlan: SubscriptionTier;
   subscriptionExpiry: string | null;
   upgradeAccount: (plan: SubscriptionPlan) => Promise<boolean>;
-  verifySubscription: () => Promise<void>;
+  verifySubscription: (customReferenceCode?: string) => Promise<boolean>;
   logout: () => Promise<void>;
   userId: string | null;
   isOnline: boolean;
@@ -3237,7 +3237,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     return () => clearInterval(interval);
   }, [role, userId, educationLevel]);
 
-  const verifySubscription = async () => {
+  const verifySubscription = async (customReferenceCode?: string): Promise<boolean> => {
     let resolvedUserId = userId;
 
     if (!resolvedUserId) {
@@ -3255,10 +3255,106 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       }
     }
 
-    if (!resolvedUserId) return;
+    if (!resolvedUserId) return false;
 
-    await verifyAndFixSubscription(resolvedUserId);
+    try {
+      if (customReferenceCode) {
+        const cleanRef = customReferenceCode.trim();
+        const { data: tx, error: txError } = await supabase
+          .from('transactions')
+          .select('*')
+          .eq('reference_code', cleanRef)
+          .maybeSingle();
+
+        if (txError) throw txError;
+
+        if (tx) {
+          if (tx.status !== 'SUCCESS' && tx.order_tracking_id) {
+            try {
+              const statusResponse = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/pesapal/check-status`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  OrderTrackingId: tx.order_tracking_id,
+                  merchantReference: cleanRef
+                })
+              });
+              if (statusResponse.ok) {
+                const updatedTx = await supabase
+                  .from('transactions')
+                  .select('*')
+                  .eq('reference_code', cleanRef)
+                  .maybeSingle();
+                if (updatedTx?.data) {
+                  tx.status = updatedTx.data.status;
+                }
+              }
+            } catch (err) {
+              console.warn("Custom check-status trigger failed:", err);
+            }
+          }
+
+          // Link transaction to this user
+          await supabase
+            .from('transactions')
+            .update({ user_id: resolvedUserId })
+            .eq('reference_code', cleanRef);
+
+          if (tx.status === 'SUCCESS' || tx.status === 'success') {
+            if (cleanRef.startsWith('CREDIT_')) {
+              const parts = cleanRef.split('_');
+              let credits = Number(parts[1] || 0);
+              if (!credits) {
+                if (tx.amount === 20) credits = 30;
+                else if (tx.amount === 50) credits = 100;
+                else if (tx.amount === 100) credits = 250;
+              }
+              if (credits > 0) {
+                await supabase.rpc('grant_learning_credits', {
+                  p_profile_id: resolvedUserId,
+                  p_credits: credits
+                });
+              }
+            } else if (cleanRef.startsWith('SUB_') || tx.type === 'SUBSCRIPTION') {
+              const parts = cleanRef.split('_');
+              let duration = parts[1];
+              if (tx.amount === 20) duration = 'DAILY';
+              else if (tx.amount === 100) duration = 'WEEKLY';
+              else if (tx.amount === 300 || tx.amount === 600) duration = 'MONTHLY';
+              else if (tx.amount === 700 || tx.amount === 1600) duration = 'TERMLY';
+              else if (tx.amount === 2000 || tx.amount === 5000) duration = 'ANNUAL';
+              
+              if (!duration) duration = 'MONTHLY';
+
+              const now = new Date();
+              let expiryDate = new Date(now);
+              switch (duration) {
+                case 'DAILY': expiryDate.setDate(now.getDate() + 1); break;
+                case 'WEEKLY': expiryDate.setDate(now.getDate() + 7); break;
+                case 'MONTHLY': expiryDate.setMonth(now.getMonth() + 1); break;
+                case 'TERMLY': expiryDate.setMonth(now.getMonth() + 3); break;
+                case 'ANNUAL': expiryDate.setFullYear(now.getFullYear() + 1); break;
+                default: expiryDate.setMonth(now.getMonth() + 1);
+              }
+
+              await supabase.from('profiles').update({
+                subscription_tier: duration,
+                subscription_expiry: expiryDate.toISOString()
+              }).eq('id', resolvedUserId);
+            }
+          }
+        } else {
+          return false;
+        }
+      }
+    } catch (e) {
+      console.error("Custom reference verification failed:", e);
+    }
+
+    const success = await verifyAndFixSubscription(resolvedUserId);
     await refreshProfile();
+    await syncLearningCredits(resolvedUserId, studentCode);
+    return success || (customReferenceCode ? true : false);
   };
 
 
