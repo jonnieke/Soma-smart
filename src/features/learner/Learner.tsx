@@ -438,6 +438,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
 
   const [studyTab, setStudyTab] = useState<'LESSON' | 'RECAP' | 'QNA' | 'QUIZ' | 'REFERENCES'>('LESSON');
   const [studyViewMode, setStudyViewMode] = useState<'guide' | 'original'>('guide');
+  const [originalViewType, setOriginalViewType] = useState<'text' | 'pdf'>('text');
   const [extractedOriginalPages, setExtractedOriginalPages] = useState<string[]>([]);
   const [isExtractingOriginal, setIsExtractingOriginal] = useState<boolean>(false);
   const [originalPageIndex, setOriginalPageIndex] = useState<number>(0);
@@ -1560,6 +1561,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
     setStudyChat([]);
     
     setStudyViewMode('guide');
+    setOriginalViewType('text');
     setExtractedOriginalPages([]);
     setOriginalPageIndex(0);
 
@@ -6147,6 +6149,23 @@ ${explanation.explanation}
                       </button>
                     </div>
                   )}
+
+                  {studyViewMode === 'original' && extractedOriginalPages.length > 0 && (
+                    <div className="flex bg-slate-100 dark:bg-slate-800 p-0.5 rounded-lg text-[10px] font-black select-none border border-slate-200/10 ml-2">
+                      <button
+                        onClick={() => setOriginalViewType('text')}
+                        className={`px-2.5 py-1 rounded-md transition-all ${originalViewType === 'text' ? 'bg-white dark:bg-slate-700 text-indigo-750 dark:text-indigo-400 shadow-sm font-black' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
+                      >
+                        📖 Text
+                      </button>
+                      <button
+                        onClick={() => setOriginalViewType('pdf')}
+                        className={`px-2.5 py-1 rounded-md transition-all ${originalViewType === 'pdf' ? 'bg-white dark:bg-slate-700 text-indigo-750 dark:text-indigo-400 shadow-sm font-black' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
+                      >
+                        📄 PDF
+                      </button>
+                    </div>
+                  )}
                   
                   {/* Listen & Learn Audio Lesson Button */}
                   <button
@@ -6493,8 +6512,8 @@ ${explanation.explanation}
                         <div className="w-10 h-10 border-4 border-indigo-200 border-t-indigo-650 rounded-full animate-spin mx-auto mb-4" />
                         <p className="text-xs font-black uppercase tracking-widest text-indigo-500 animate-pulse">Extracting Textbook Pages...</p>
                       </div>
-                    ) : extractedOriginalPages.length === 0 ? (
-                      /* Fallback to original PDF embed if extraction failed/empty (e.g. scanned image) */
+                    ) : (extractedOriginalPages.length === 0 || originalViewType === 'pdf') ? (
+                      /* Fallback to original PDF embed if extraction failed/empty (e.g. scanned image) or user toggles PDF view */
                       <div className="h-[calc(100vh-280px)] rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-white shadow-sm">
                         <embed
                           src={currentDocument.fileUrl || currentDocument.file_url}
@@ -6551,7 +6570,7 @@ ${explanation.explanation}
 
               {/* Reader Footer Page Navigation controls */}
               {((studyViewMode === 'guide' && !isSummarizing && explanation) || 
-                (studyViewMode === 'original' && !isExtractingOriginal && extractedOriginalPages.length > 0)) && (
+                (studyViewMode === 'original' && !isExtractingOriginal && extractedOriginalPages.length > 0 && originalViewType === 'text')) && (
                 <div className="bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 px-6 py-4 flex items-center justify-between shrink-0">
                   <button
                     disabled={studyViewMode === 'guide' ? readerPage === 0 : originalPageIndex === 0}
