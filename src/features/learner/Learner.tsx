@@ -9363,7 +9363,7 @@ ${explanation.explanation}
                         } else {
                           // Ask for custom reference code
                           const codeInput = prompt(
-                            "Auto-scan did not find a recent payment. If you paid as a guest or on a different device, please enter your Pesapal Merchant Reference code (e.g. SUB_DAILY_...) to link it:"
+                            "Auto-scan did not find a recent payment. If you paid on a different device or account, please enter that device's Student Code (e.g. SOM-1234), your phone number, or receipt reference code to link it:"
                           );
                           if (codeInput && codeInput.trim()) {
                             setLoading(true);

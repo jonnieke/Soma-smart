@@ -3257,104 +3257,259 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
     if (!resolvedUserId) return false;
 
+    // Helper to process and link a specific transaction reference
+    const processReference = async (refCode: string): Promise<boolean> => {
+      const cleanRef = refCode.trim();
+      const { data: tx, error: txError } = await supabase
+        .from('transactions')
+        .select('*')
+        .eq('reference_code', cleanRef)
+        .maybeSingle();
+
+      if (txError || !tx) return false;
+
+      // If transaction is not SUCCESS, trigger check-status edge function
+      if (tx.status !== 'SUCCESS' && tx.order_tracking_id) {
+        try {
+          const statusResponse = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/pesapal/check-status`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              OrderTrackingId: tx.order_tracking_id,
+              merchantReference: cleanRef
+            })
+          });
+          if (statusResponse.ok) {
+            const updatedTx = await supabase
+              .from('transactions')
+              .select('*')
+              .eq('reference_code', cleanRef)
+              .maybeSingle();
+            if (updatedTx?.data) {
+              tx.status = updatedTx.data.status;
+            }
+          }
+        } catch (err) {
+          console.warn("Custom check-status trigger failed:", err);
+        }
+      }
+
+      // Link transaction to this user
+      await supabase
+        .from('transactions')
+        .update({ user_id: resolvedUserId })
+        .eq('reference_code', cleanRef);
+
+      if (tx.status === 'SUCCESS' || tx.status === 'success') {
+        if (cleanRef.startsWith('CREDIT_')) {
+          const parts = cleanRef.split('_');
+          let credits = Number(parts[1] || 0);
+          if (!credits) {
+            if (tx.amount === 20) credits = 30;
+            else if (tx.amount === 50) credits = 100;
+            else if (tx.amount === 100) credits = 250;
+          }
+          if (credits > 0) {
+            await supabase.rpc('grant_learning_credits', {
+              p_profile_id: resolvedUserId,
+              p_credits: credits
+            });
+          }
+        } else if (cleanRef.startsWith('SUB_') || tx.type === 'SUBSCRIPTION') {
+          const parts = cleanRef.split('_');
+          let duration = parts[1];
+          if (tx.amount === 20) duration = 'DAILY';
+          else if (tx.amount === 100) duration = 'WEEKLY';
+          else if (tx.amount === 300 || tx.amount === 600) duration = 'MONTHLY';
+          else if (tx.amount === 700 || tx.amount === 1600) duration = 'TERMLY';
+          else if (tx.amount === 2000 || tx.amount === 5000) duration = 'ANNUAL';
+          
+          if (!duration) duration = 'MONTHLY';
+
+          const now = new Date();
+          let expiryDate = new Date(now);
+          switch (duration) {
+            case 'DAILY': expiryDate.setDate(now.getDate() + 1); break;
+            case 'WEEKLY': expiryDate.setDate(now.getDate() + 7); break;
+            case 'MONTHLY': expiryDate.setMonth(now.getMonth() + 1); break;
+            case 'TERMLY': expiryDate.setMonth(now.getMonth() + 3); break;
+            case 'ANNUAL': expiryDate.setFullYear(now.getFullYear() + 1); break;
+            default: expiryDate.setMonth(now.getMonth() + 1);
+          }
+
+          await supabase.from('profiles').update({
+            subscription_tier: duration,
+            subscription_expiry: expiryDate.toISOString()
+          }).eq('id', resolvedUserId);
+        }
+        return true;
+      }
+      return false;
+    };
+
     try {
+      // 1. If customReferenceCode is explicitly provided, verify it
       if (customReferenceCode) {
-        const cleanRef = customReferenceCode.trim();
-        const { data: tx, error: txError } = await supabase
+        const input = customReferenceCode.trim();
+        let targetUserIds: string[] = [];
+
+        // Check if input is a Student Code (e.g., SOM-1234 or SOM1234)
+        if (/^SOM-?\d+/i.test(input) || /^[A-Z]{3}-\d+$/i.test(input)) {
+          let normalizedCode = input.toUpperCase();
+          if (!normalizedCode.includes('-') && normalizedCode.startsWith('SOM')) {
+            normalizedCode = 'SOM-' + normalizedCode.substring(3);
+          }
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('id')
+            .eq('student_id', normalizedCode)
+            .maybeSingle();
+          if (profile?.id) {
+            targetUserIds.push(profile.id);
+          }
+        } 
+        // Check if input is an email address
+        else if (input.includes('@')) {
+          const { data: profiles } = await supabase
+            .from('profiles')
+            .select('id')
+            .eq('email', input.toLowerCase());
+          if (profiles) {
+            targetUserIds.push(...profiles.map(p => p.id));
+          }
+        }
+        // Check if input is a phone number (e.g. 07..., 254..., +254...)
+        else if (/^\+?\d{8,15}$/.test(input)) {
+          let cleanPhone = input.replace('+', '');
+          if (cleanPhone.startsWith('0')) {
+            cleanPhone = '254' + cleanPhone.substring(1);
+          }
+          const phoneVariants = [cleanPhone];
+          if (cleanPhone.startsWith('254')) {
+            phoneVariants.push('0' + cleanPhone.substring(3));
+          } else if (cleanPhone.startsWith('0')) {
+            phoneVariants.push('254' + cleanPhone.substring(1));
+          }
+          const { data: profiles } = await supabase
+            .from('profiles')
+            .select('id')
+            .in('parent_phone', phoneVariants);
+          if (profiles) {
+            targetUserIds.push(...profiles.map(p => p.id));
+          }
+        }
+
+        // If we found target user(s) from student code / phone / email, scan recent transactions
+        if (targetUserIds.length > 0) {
+          let matchedAny = false;
+          const twoDaysAgo = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString();
+          
+          for (const targetUid of targetUserIds) {
+            const prefix = targetUid.slice(0, 5);
+            const { data: recentTxs } = await supabase
+              .from('transactions')
+              .select('reference_code')
+              .like('reference_code', `%_${prefix}_%`)
+              .gt('created_at', twoDaysAgo)
+              .order('created_at', { ascending: false });
+
+            if (recentTxs && recentTxs.length > 0) {
+              for (const tx of recentTxs) {
+                const success = await processReference(tx.reference_code);
+                if (success) matchedAny = true;
+              }
+            }
+          }
+
+          if (matchedAny) {
+            await verifyAndFixSubscription(resolvedUserId);
+            await refreshProfile();
+            await syncLearningCredits(resolvedUserId, studentCode);
+            return true;
+          }
+        }
+
+        // Default fallback: treat customReferenceCode as direct transaction reference code
+        const success = await processReference(input);
+        if (success) {
+          await verifyAndFixSubscription(resolvedUserId);
+          await refreshProfile();
+          await syncLearningCredits(resolvedUserId, studentCode);
+          return true;
+        }
+
+        // Also check if they passed order_tracking_id or transaction reference code directly
+        const { data: txRef } = await supabase
           .from('transactions')
-          .select('*')
-          .eq('reference_code', cleanRef)
+          .select('reference_code')
+          .eq('reference_code', input)
           .maybeSingle();
 
-        if (txError) throw txError;
-
-        if (tx) {
-          if (tx.status !== 'SUCCESS' && tx.order_tracking_id) {
-            try {
-              const statusResponse = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/pesapal/check-status`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  OrderTrackingId: tx.order_tracking_id,
-                  merchantReference: cleanRef
-                })
-              });
-              if (statusResponse.ok) {
-                const updatedTx = await supabase
-                  .from('transactions')
-                  .select('*')
-                  .eq('reference_code', cleanRef)
-                  .maybeSingle();
-                if (updatedTx?.data) {
-                  tx.status = updatedTx.data.status;
-                }
-              }
-            } catch (err) {
-              console.warn("Custom check-status trigger failed:", err);
-            }
-          }
-
-          // Link transaction to this user
-          await supabase
+        let refToUse = txRef?.reference_code;
+        if (!refToUse) {
+          const { data: txTrack } = await supabase
             .from('transactions')
-            .update({ user_id: resolvedUserId })
-            .eq('reference_code', cleanRef);
+            .select('reference_code')
+            .eq('order_tracking_id', input)
+            .maybeSingle();
+          refToUse = txTrack?.reference_code;
+        }
 
-          if (tx.status === 'SUCCESS' || tx.status === 'success') {
-            if (cleanRef.startsWith('CREDIT_')) {
-              const parts = cleanRef.split('_');
-              let credits = Number(parts[1] || 0);
-              if (!credits) {
-                if (tx.amount === 20) credits = 30;
-                else if (tx.amount === 50) credits = 100;
-                else if (tx.amount === 100) credits = 250;
-              }
-              if (credits > 0) {
-                await supabase.rpc('grant_learning_credits', {
-                  p_profile_id: resolvedUserId,
-                  p_credits: credits
-                });
-              }
-            } else if (cleanRef.startsWith('SUB_') || tx.type === 'SUBSCRIPTION') {
-              const parts = cleanRef.split('_');
-              let duration = parts[1];
-              if (tx.amount === 20) duration = 'DAILY';
-              else if (tx.amount === 100) duration = 'WEEKLY';
-              else if (tx.amount === 300 || tx.amount === 600) duration = 'MONTHLY';
-              else if (tx.amount === 700 || tx.amount === 1600) duration = 'TERMLY';
-              else if (tx.amount === 2000 || tx.amount === 5000) duration = 'ANNUAL';
-              
-              if (!duration) duration = 'MONTHLY';
-
-              const now = new Date();
-              let expiryDate = new Date(now);
-              switch (duration) {
-                case 'DAILY': expiryDate.setDate(now.getDate() + 1); break;
-                case 'WEEKLY': expiryDate.setDate(now.getDate() + 7); break;
-                case 'MONTHLY': expiryDate.setMonth(now.getMonth() + 1); break;
-                case 'TERMLY': expiryDate.setMonth(now.getMonth() + 3); break;
-                case 'ANNUAL': expiryDate.setFullYear(now.getFullYear() + 1); break;
-                default: expiryDate.setMonth(now.getMonth() + 1);
-              }
-
-              await supabase.from('profiles').update({
-                subscription_tier: duration,
-                subscription_expiry: expiryDate.toISOString()
-              }).eq('id', resolvedUserId);
-            }
+        if (refToUse) {
+          const success = await processReference(refToUse);
+          if (success) {
+            await verifyAndFixSubscription(resolvedUserId);
+            await refreshProfile();
+            await syncLearningCredits(resolvedUserId, studentCode);
+            return true;
           }
-        } else {
-          return false;
+        }
+      }
+
+      // 2. Automatic check: try the stored reference in localStorage
+      const lastRef = localStorage.getItem('soma_last_payment_reference');
+      if (lastRef) {
+        const success = await processReference(lastRef);
+        if (success) {
+          localStorage.removeItem('soma_last_payment_reference'); // clean up
+          await verifyAndFixSubscription(resolvedUserId);
+          await refreshProfile();
+          await syncLearningCredits(resolvedUserId, studentCode);
+          return true;
+        }
+      }
+
+      // 3. Smart scan: query recent transactions that contain user ID prefix (e.g. within 2 days)
+      const userPrefix = resolvedUserId.slice(0, 5);
+      const twoDaysAgo = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString();
+      const { data: recentTxs } = await supabase
+        .from('transactions')
+        .select('*')
+        .like('reference_code', `%_${userPrefix}_%`)
+        .gt('created_at', twoDaysAgo)
+        .order('created_at', { ascending: false });
+
+      if (recentTxs && recentTxs.length > 0) {
+        let matchedAny = false;
+        for (const tx of recentTxs) {
+          const success = await processReference(tx.reference_code);
+          if (success) matchedAny = true;
+        }
+        if (matchedAny) {
+          await verifyAndFixSubscription(resolvedUserId);
+          await refreshProfile();
+          await syncLearningCredits(resolvedUserId, studentCode);
+          return true;
         }
       }
     } catch (e) {
-      console.error("Custom reference verification failed:", e);
+      console.error("Auto-restore verify failed:", e);
     }
 
     const success = await verifyAndFixSubscription(resolvedUserId);
     await refreshProfile();
     await syncLearningCredits(resolvedUserId, studentCode);
-    return success || (customReferenceCode ? true : false);
+    return success;
   };
 
 
