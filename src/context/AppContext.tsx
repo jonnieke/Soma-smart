@@ -148,6 +148,66 @@ import { offlineService } from '../services/offlineService';
 import { dbService } from '../services/dbService';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
 
+const MOCK_PEER_MATERIALS: MaterialListing[] = [
+  {
+    id: "peer_material_1",
+    teacherId: "mock_teacher_joseph",
+    teacherName: "Mwalimu Joseph",
+    title: "Grade 7 Coding & Robotics Term 1 Lesson Plans",
+    description: "Detailed week-by-week lesson plans aligned to the KICD CBC syllabus. Includes student activities, inquiry questions, and Scratch project templates.",
+    price: 200,
+    grade: "Grade 7",
+    subject: "Science",
+    category: "NOTES",
+    downloadCount: 42,
+    rating: 4.8,
+    fileUrl: "https://example.com/mock_coding_plans.pdf",
+    createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+    approvalStatus: "APPROVED",
+    approvedBy: "Principal Mutua",
+    reviews: [
+      { reviewerName: "Teacher Mercy", rating: 5, accuracy: 5, readability: 5, engagement: 5, comment: "Excellent flow! My students loved the Scratch projects.", createdAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString() },
+      { reviewerName: "Mwalimu Alice", rating: 4, accuracy: 4, readability: 5, engagement: 3, comment: "Very detailed, although some lessons need more than 40 minutes.", createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString() }
+    ]
+  },
+  {
+    id: "peer_material_2",
+    teacherId: "mock_teacher_mercy",
+    teacherName: "Teacher Mercy",
+    title: "Grade 8 English Composition Marking Rubric & Guide",
+    description: "Formative rubric for evaluating imaginative writing. Explains Exceeding (EE), Meeting (ME), and Approaching (AE) expectations criteria.",
+    price: 150,
+    grade: "Grade 8",
+    subject: "English",
+    category: "REVISION_PAPER",
+    downloadCount: 19,
+    rating: 4.7,
+    fileUrl: "https://example.com/english_rubric.pdf",
+    createdAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
+    approvalStatus: "PENDING",
+    reviews: [
+      { reviewerName: "Mwalimu Joseph", rating: 4.7, accuracy: 5, readability: 4.5, engagement: 4.5, comment: "Saves so much grading time. Highly recommended for JSS language teachers.", createdAt: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString() }
+    ]
+  },
+  {
+    id: "peer_material_3",
+    teacherId: "mock_teacher_alice",
+    teacherName: "Mwalimu Alice",
+    title: "Grade 7 Agriculture & Nutrition Term 2 Scheme of Work",
+    description: "Complete 13-week scheme of work mapping out crop conservation and healthy eating strands. Features lesson outcomes and local resources lists.",
+    price: 250,
+    grade: "Grade 7",
+    subject: "Agriculture",
+    category: "NOTES",
+    downloadCount: 8,
+    rating: 4.3,
+    fileUrl: "https://example.com/agri_nutrition_scheme.pdf",
+    createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+    approvalStatus: "PENDING",
+    reviews: []
+  }
+];
+
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [role, setRole] = useState<UserRole>(UserRole.NONE);
 
@@ -2968,7 +3028,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           return itemLevel === educationLevel;
         });
 
-        setMarketplaceMaterials(filtered.map((m: any) => ({
+        const mappedList = filtered.map((m: any) => ({
           id: m.id,
           teacherId: m.teacher_id,
           teacherName: m.teacher_name,
@@ -2982,12 +3042,132 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           rating: m.rating,
           fileUrl: m.file_url,
           previewUrl: m.preview_url,
-          createdAt: m.created_at
-        })));
+          createdAt: m.created_at,
+          approvalStatus: m.approval_status || 'PENDING',
+          approvedBy: m.approved_by,
+          reviews: m.reviews || []
+        }));
+
+        // Filter mock peer materials that match current educationLevel
+        const filteredMockPeer = MOCK_PEER_MATERIALS.filter(m => getEducationLevelFromGrade(m.grade) === educationLevel);
+
+        // Combine DB materials and Mock Peer materials, ensuring no duplicate IDs
+        const combined = [...mappedList];
+        filteredMockPeer.forEach(mock => {
+          if (!combined.some(c => c.id === mock.id)) {
+            combined.push(mock);
+          }
+        });
+
+        setMarketplaceMaterials(combined);
       }
     } catch (_) {
       markOptionalDataUnavailable('marketplace_materials');
       setMarketplaceMaterials([]);
+    }
+  };
+
+  const submitPeerReview = async (
+    materialId: string,
+    reviewerName: string,
+    rating: number,
+    accuracy: number,
+    readability: number,
+    engagement: number,
+    comment: string
+  ): Promise<{ success: boolean; message: string }> => {
+    try {
+      // Find the material first to get current reviews
+      const material = marketplaceMaterials.find(m => m.id === materialId);
+      if (!material) return { success: false, message: "Material not found" };
+
+      const newReview = {
+        reviewerName,
+        rating,
+        accuracy,
+        readability,
+        engagement,
+        comment,
+        createdAt: new Date().toISOString()
+      };
+
+      const currentReviews = material.reviews || [];
+      const updatedReviews = [...currentReviews, newReview];
+      const avgRating = parseFloat((updatedReviews.reduce((acc, r) => acc + r.rating, 0) / updatedReviews.length).toFixed(1));
+
+      // Update local state immediately
+      setMarketplaceMaterials(prev => prev.map(m => {
+        if (m.id === materialId) {
+          return {
+            ...m,
+            reviews: updatedReviews,
+            rating: avgRating
+          };
+        }
+        return m;
+      }));
+
+      // Update database if online
+      if (isOnline && userId) {
+        const { error } = await supabase
+          .from('marketplace_materials')
+          .update({
+            reviews: updatedReviews,
+            rating: avgRating
+          })
+          .eq('id', materialId);
+        
+        if (error) {
+          console.warn("DB review update failed, fell back to local state:", error);
+        }
+      }
+
+      return { success: true, message: "Review submitted successfully!" };
+    } catch (e: any) {
+      return { success: false, message: e.message || "Failed to submit review." };
+    }
+  };
+
+  const updateMaterialApproval = async (
+    materialId: string,
+    status: 'APPROVED' | 'REJECTED',
+    reviewerName: string
+  ): Promise<{ success: boolean; message: string }> => {
+    try {
+      // Find material
+      const material = marketplaceMaterials.find(m => m.id === materialId);
+      if (!material) return { success: false, message: "Material not found" };
+
+      // Update local state immediately
+      setMarketplaceMaterials(prev => prev.map(m => {
+        if (m.id === materialId) {
+          return {
+            ...m,
+            approvalStatus: status,
+            approvedBy: status === 'APPROVED' ? reviewerName : undefined
+          };
+        }
+        return m;
+      }));
+
+      // Update database if online
+      if (isOnline && userId) {
+        const { error } = await supabase
+          .from('marketplace_materials')
+          .update({
+            approval_status: status,
+            approved_by: status === 'APPROVED' ? reviewerName : null
+          })
+          .eq('id', materialId);
+        
+        if (error) {
+          console.warn("DB approval update failed, fell back to local state:", error);
+        }
+      }
+
+      return { success: true, message: `Material ${status.toLowerCase()} successfully!` };
+    } catch (e: any) {
+      return { success: false, message: e.message || "Failed to update approval status." };
     }
   };
 
@@ -3094,7 +3274,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     acceptTutoringRequest, submitTutoringResponse, rateTutoringResponse,
     chatMessages, sendChatMessage, fetchChatMessages, chatApproved, setParentPin,
     verifyChatPin, marketplaceMaterials, purchasedMaterialIds, listMaterial,
-    purchaseMaterial, revisionUsageCount, incrementRevisionUsage, isPro,
+    purchaseMaterial, submitPeerReview, updateMaterialApproval, revisionUsageCount, incrementRevisionUsage, isPro,
     subscriptionPlan, subscriptionExpiry, upgradeAccount, verifySubscription,
     logout, userId, isOnline, availableQuizzes, fetchAvailableQuizzes,
     schoolProfile, loginSchool, registerSchool, registerStudentForSchool,

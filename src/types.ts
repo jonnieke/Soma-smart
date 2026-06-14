@@ -483,6 +483,9 @@ export interface MaterialListing {
   fileUrl: string;
   previewUrl?: string;
   createdAt: string;
+  approvalStatus?: 'PENDING' | 'APPROVED' | 'REJECTED';
+  approvedBy?: string;
+  reviews?: { reviewerName: string; rating: number; accuracy: number; readability: number; engagement: number; comment: string; createdAt: string }[];
 }
 
 // Chat Message Types
