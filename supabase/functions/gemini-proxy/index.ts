@@ -20,16 +20,16 @@ const KES_PER_USD = 130;
 
 const FEATURE_LIMITS: Record<string, Record<string, number>> = {
     // Unauthenticated visitors — enough to demo the product, not enough to replace a plan
-    GUEST: { ai_generation: 5, exam_guru: 1, exam_marking: 0, quiz_generation: 1, practice_generation: 1, notes_generation: 1, teacher_ai: 0 },
+    GUEST: { ai_generation: 5, exam_guru: 1, exam_marking: 0, quiz_generation: 1, practice_generation: 1, notes_generation: 1, grounded_library_help: 0, deep_document_analysis: 0, teacher_ai: 0 },
     // Registered free users — enough to feel real value and hit a natural upgrade moment
-    FREE: { ai_generation: 10, exam_guru: 3, exam_marking: 1, quiz_generation: 3, practice_generation: 3, notes_generation: 3, teacher_ai: 3 },
+    FREE: { ai_generation: 10, exam_guru: 3, exam_marking: 1, quiz_generation: 3, practice_generation: 3, notes_generation: 3, grounded_library_help: 1, deep_document_analysis: 0, teacher_ai: 3 },
     // Paid tiers — always clearly more than FREE so the upgrade makes sense
-    DAILY: { ai_generation: 30, exam_guru: 15, exam_marking: 6, quiz_generation: 10, practice_generation: 12, notes_generation: 10, teacher_ai: 10 },
-    WEEKLY: { ai_generation: 120, exam_guru: 80, exam_marking: 35, quiz_generation: 60, practice_generation: 80, notes_generation: 60, teacher_ai: 60 },
-    MONTHLY: { ai_generation: 450, exam_guru: 300, exam_marking: 150, quiz_generation: 250, practice_generation: 300, notes_generation: 220, teacher_ai: 220 },
-    TERMLY: { ai_generation: 1200, exam_guru: 800, exam_marking: 420, quiz_generation: 700, practice_generation: 850, notes_generation: 650, teacher_ai: 650 },
-    ANNUAL: { ai_generation: 4000, exam_guru: 2500, exam_marking: 1500, quiz_generation: 2200, practice_generation: 2800, notes_generation: 2000, teacher_ai: 2000 },
-    PRO: { ai_generation: 450, exam_guru: 300, exam_marking: 150, quiz_generation: 250, practice_generation: 300, notes_generation: 220, teacher_ai: 220 },
+    DAILY: { ai_generation: 30, exam_guru: 15, exam_marking: 6, quiz_generation: 10, practice_generation: 12, notes_generation: 10, grounded_library_help: 12, deep_document_analysis: 3, teacher_ai: 10 },
+    WEEKLY: { ai_generation: 120, exam_guru: 80, exam_marking: 35, quiz_generation: 60, practice_generation: 80, notes_generation: 60, grounded_library_help: 70, deep_document_analysis: 18, teacher_ai: 60 },
+    MONTHLY: { ai_generation: 450, exam_guru: 300, exam_marking: 150, quiz_generation: 250, practice_generation: 300, notes_generation: 220, grounded_library_help: 300, deep_document_analysis: 80, teacher_ai: 220 },
+    TERMLY: { ai_generation: 1200, exam_guru: 800, exam_marking: 420, quiz_generation: 700, practice_generation: 850, notes_generation: 650, grounded_library_help: 850, deep_document_analysis: 240, teacher_ai: 650 },
+    ANNUAL: { ai_generation: 4000, exam_guru: 2500, exam_marking: 1500, quiz_generation: 2200, practice_generation: 2800, notes_generation: 2000, grounded_library_help: 3000, deep_document_analysis: 900, teacher_ai: 2000 },
+    PRO: { ai_generation: 450, exam_guru: 300, exam_marking: 150, quiz_generation: 250, practice_generation: 300, notes_generation: 220, grounded_library_help: 300, deep_document_analysis: 80, teacher_ai: 220 },
 };
 
 const MODEL_PRICING_USD_PER_1M: Record<string, { input: number; output: number }> = {
@@ -39,6 +39,74 @@ const MODEL_PRICING_USD_PER_1M: Record<string, { input: number; output: number }
     'gemini-2.5-flash': { input: 0.30, output: 2.50 },
     default: { input: 0.30, output: 2.50 },
 };
+
+function base64url(buffer: Uint8Array): string {
+    const bin = Array.from(buffer).map(x => String.fromCharCode(x)).join('');
+    return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+async function getVertexAccessToken(clientEmail: string, privateKeyPem: string): Promise<string> {
+    const pemHeader = "-----BEGIN PRIVATE KEY-----";
+    const pemFooter = "-----END PRIVATE KEY-----";
+    const pemContents = privateKeyPem
+        .replace(pemHeader, "")
+        .replace(pemFooter, "")
+        .replace(/\s/g, "");
+    
+    const binary = atob(pemContents);
+    const der = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) {
+        der[i] = binary.charCodeAt(i);
+    }
+
+    const key = await crypto.subtle.importKey(
+        "pkcs8",
+        der,
+        { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" },
+        false,
+        ["sign"]
+    );
+
+    const iat = Math.floor(Date.now() / 1000);
+    const exp = iat + 3600;
+    const header = { alg: "RS256", typ: "JWT" };
+    const claim = {
+        iss: clientEmail,
+        scope: "https://www.googleapis.com/auth/cloud-platform",
+        aud: "https://oauth2.googleapis.com/token",
+        exp,
+        iat
+    };
+
+    const encoder = new TextEncoder();
+    const encodedHeader = base64url(encoder.encode(JSON.stringify(header)));
+    const encodedClaim = base64url(encoder.encode(JSON.stringify(claim)));
+    const jwtInput = `${encodedHeader}.${encodedClaim}`;
+
+    const signatureBuffer = await crypto.subtle.sign(
+        { name: "RSASSA-PKCS1-v1_5" },
+        key,
+        encoder.encode(jwtInput)
+    );
+    const jwt = `${jwtInput}.${base64url(new Uint8Array(signatureBuffer))}`;
+
+    const res = await fetch("https://oauth2.googleapis.com/token", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({
+            grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer",
+            assertion: jwt
+        })
+    });
+
+    if (!res.ok) {
+        const err = await res.text();
+        throw new Error(`Google OAuth failed: ${res.status} ${err}`);
+    }
+
+    const data = await res.json();
+    return data.access_token;
+}
 
 const normalizeGeminiModel = (model: string) => {
     const requested = String(model || '').trim();
@@ -99,6 +167,8 @@ const roughlyCountTokens = (value: unknown) => {
 
 const inferAiFeature = (contents: unknown, systemInstruction: unknown) => {
     const haystack = `${JSON.stringify(systemInstruction || {})} ${JSON.stringify(contents || {})}`.toLowerCase();
+    if (haystack.includes('rag') || haystack.includes('grounded') || haystack.includes('retrieved context') || haystack.includes('soma library')) return 'grounded_library_help';
+    if (haystack.includes('full pdf') || haystack.includes('deep document') || haystack.includes('analyze this document') || haystack.includes('document-grounded')) return 'deep_document_analysis';
     if (haystack.includes('mark the candidate') || haystack.includes('knec chief examiner')) return 'exam_marking';
     if (haystack.includes('exam guru')) return 'exam_guru';
     if (haystack.includes('practice questions') || haystack.includes('generate 3 questions')) return 'practice_generation';
@@ -106,6 +176,12 @@ const inferAiFeature = (contents: unknown, systemInstruction: unknown) => {
     if (haystack.includes('study notes') || haystack.includes('detailed study notes')) return 'notes_generation';
     if (haystack.includes('teacher') || haystack.includes('lesson plan') || haystack.includes('scheme of work')) return 'teacher_ai';
     return 'ai_generation';
+};
+
+const creditsForFeature = (feature: string) => {
+    if (feature === 'deep_document_analysis') return 2;
+    if (feature === 'exam_marking') return 2;
+    return 1;
 };
 
 const estimateGeminiCostKes = (model: string, inputTokens = 0, outputTokens = 0) => {
@@ -339,14 +415,16 @@ const enforceFeatureLimit = async (supabase: any, requester: any, feature: strin
 
     if ((count || 0) >= limit) {
         if (requester.userId) {
+            const creditsNeeded = creditsForFeature(feature);
             const { data: creditResult, error: creditError } = await supabase.rpc('consume_learning_credits', {
                 p_profile_id: requester.userId,
-                p_credits: 1
+                p_credits: creditsNeeded
             });
             const creditRow = Array.isArray(creditResult) ? creditResult[0] : creditResult;
             if (!creditError && creditRow?.allowed) {
                 requester.usedCredit = true;
                 requester.creditsRemaining = creditRow.credits_remaining;
+                requester.creditsUsed = creditsNeeded;
                 return;
             }
         }
@@ -388,6 +466,7 @@ const recordGeminiUsageCost = async (
                 identifier: requester.identifier,
                 edge_enforced: true,
                 used_credit: Boolean(requester.usedCredit),
+                credits_used: requester.creditsUsed ?? 0,
                 credits_remaining: requester.creditsRemaining ?? null,
                 total_tokens: usage.totalTokenCount || inputTokens + outputTokens,
                 local_estimate: !rawResponse?.usageMetadata,
@@ -403,16 +482,106 @@ serve(async (req) => {
         return new Response('ok', { headers: corsHeaders });
     }
 
+    if (req.headers.get("upgrade") === "websocket") {
+        const apiKey = Deno.env.get("GEMINI_API_KEY");
+        if (!apiKey) {
+            return new Response("GEMINI_API_KEY not configured on server", { status: 500 });
+        }
+
+        const { socket: clientSocket, response } = Deno.upgradeWebSocket(req);
+        
+        const googleSocket = new WebSocket(`wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContent?key=${apiKey}`);
+        
+        clientSocket.onmessage = (event) => {
+            if (googleSocket.readyState === WebSocket.OPEN) {
+                googleSocket.send(event.data);
+            }
+        };
+        
+        googleSocket.onmessage = (event) => {
+            if (clientSocket.readyState === WebSocket.OPEN) {
+                clientSocket.send(event.data);
+            }
+        };
+        
+        clientSocket.onclose = () => {
+            if (googleSocket.readyState === WebSocket.OPEN) googleSocket.close();
+        };
+        
+        googleSocket.onclose = () => {
+            if (clientSocket.readyState === WebSocket.OPEN) clientSocket.close();
+        };
+        
+        clientSocket.onerror = (err) => console.error("Client WS Error:", err);
+        googleSocket.onerror = (err) => console.error("Google WS Error:", err);
+
+        return response;
+    }
+
     try {
+        const GCP_PROJECT_ID = Deno.env.get('GCP_PROJECT_ID');
+        const GCP_CLIENT_EMAIL = Deno.env.get('GCP_CLIENT_EMAIL');
+        const GCP_PRIVATE_KEY = Deno.env.get('GCP_PRIVATE_KEY');
         const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
-        if (!GEMINI_API_KEY) {
+
+        const url = new URL(req.url);
+        const isCacheRequest = url.pathname.endsWith('/cache') || url.pathname.endsWith('/cache/create');
+
+        if (isCacheRequest) {
+            if (!GEMINI_API_KEY) {
+                return new Response(
+                    JSON.stringify({ error: 'GEMINI_API_KEY not configured on server' }),
+                    { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+                );
+            }
+            
+            const supabase = getSupabaseAdmin();
+            const requester = await resolveRequester(req, supabase);
+            if (!requester.userId && !requester.studentCode) {
+                return new Response(
+                    JSON.stringify({ error: "Unauthorized access" }),
+                    { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 }
+                );
+            }
+
+            const body = await req.json();
+            const { model, contents, ttl, displayName, systemInstruction } = body;
+            const normalizedModel = normalizeGeminiModel(model) || "gemini-3.5-flash";
+
+            const requestBody: Record<string, any> = {
+                model: `models/${normalizedModel}`,
+                ttl: ttl || "1800s",
+            };
+            if (contents) requestBody.contents = contents;
+            if (displayName) requestBody.displayName = displayName;
+            if (systemInstruction) requestBody.systemInstruction = systemInstruction;
+
+            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/cachedContents?key=${GEMINI_API_KEY}`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(requestBody),
+            });
+
+            const data = await res.json();
+            if (!res.ok) {
+                return new Response(
+                    JSON.stringify({ error: "Failed to create context cache", details: data }),
+                    { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: res.status }
+                );
+            }
+            return new Response(JSON.stringify(data), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+        }
+
+        const useVertex = !!(GCP_PROJECT_ID && GCP_CLIENT_EMAIL && GCP_PRIVATE_KEY);
+
+        if (!useVertex && !GEMINI_API_KEY) {
             return new Response(
-                JSON.stringify({ error: 'GEMINI_API_KEY not configured on server' }),
+                JSON.stringify({ error: 'GCP Service Account or GEMINI_API_KEY not configured on server' }),
                 { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
             );
         }
 
-        const { model, contents, generationConfig, systemInstruction, stream } = await req.json();
+        const { model, contents, generationConfig, systemInstruction, stream, cachedContent } = await req.json();
         const normalizedModel = normalizeGeminiModel(model);
         const feature = inferAiFeature(contents, systemInstruction);
         const supabase = getSupabaseAdmin();
@@ -511,25 +680,44 @@ serve(async (req) => {
         }
 
         // Build the Gemini API request based on model type
-        let geminiUrl;
+        let urlTarget;
         let geminiBody: Record<string, unknown> = {};
+        const requestHeaders: Record<string, string> = { 'Content-Type': 'application/json' };
 
-        if (normalizedModel.includes('embedding')) {
-            // For embeddings, use embedContent endpoint
-            geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${normalizedModel}:embedContent?key=${GEMINI_API_KEY}`;
-            geminiBody = { content: normalizedContents[0] }; // Embeddings take a single content object
+        if (useVertex) {
+            const region = Deno.env.get('GCP_REGION') || 'us-central1';
+            const cleanKey = GCP_PRIVATE_KEY!.replace(/\\n/g, '\n');
+            const token = await getVertexAccessToken(GCP_CLIENT_EMAIL!, cleanKey);
+            requestHeaders['Authorization'] = `Bearer ${token}`;
+
+            if (normalizedModel.includes('embedding')) {
+                urlTarget = `https://${region}-aiplatform.googleapis.com/v1/projects/${GCP_PROJECT_ID}/locations/${region}/publishers/google/models/${normalizedModel}:embedContent`;
+                geminiBody = { content: normalizedContents[0] };
+            } else {
+                const endpoint = stream ? 'streamGenerateContent' : 'generateContent';
+                urlTarget = `https://${region}-aiplatform.googleapis.com/v1/projects/${GCP_PROJECT_ID}/locations/${region}/publishers/google/models/${normalizedModel}:${endpoint}`;
+                geminiBody = { contents: normalizedContents };
+                if (generationConfig) geminiBody.generationConfig = generationConfig;
+                if (systemInstruction) geminiBody.systemInstruction = systemInstruction;
+                if (cachedContent) geminiBody.cachedContent = cachedContent;
+            }
         } else {
-            // For generation, use generateContent or streamGenerateContent endpoint
-            const endpoint = stream ? 'streamGenerateContent' : 'generateContent';
-            geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${normalizedModel}:${endpoint}?key=${GEMINI_API_KEY}`;
-            geminiBody = { contents: normalizedContents };
-            if (generationConfig) geminiBody.generationConfig = generationConfig;
-            if (systemInstruction) geminiBody.systemInstruction = systemInstruction;
+            if (normalizedModel.includes('embedding')) {
+                urlTarget = `https://generativelanguage.googleapis.com/v1beta/models/${normalizedModel}:embedContent?key=${GEMINI_API_KEY}`;
+                geminiBody = { content: normalizedContents[0] };
+            } else {
+                const endpoint = stream ? 'streamGenerateContent' : 'generateContent';
+                urlTarget = `https://generativelanguage.googleapis.com/v1beta/models/${normalizedModel}:${endpoint}?key=${GEMINI_API_KEY}`;
+                geminiBody = { contents: normalizedContents };
+                if (generationConfig) geminiBody.generationConfig = generationConfig;
+                if (systemInstruction) geminiBody.systemInstruction = systemInstruction;
+                if (cachedContent) geminiBody.cachedContent = cachedContent;
+            }
         }
 
-        const geminiRes = await fetch(geminiUrl, {
+        const geminiRes = await fetch(urlTarget, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: requestHeaders,
             body: JSON.stringify(geminiBody),
         });
 

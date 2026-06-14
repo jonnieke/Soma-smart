@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Check, Zap, Star, ShieldCheck, Smartphone, Building2, UserCircle2, GraduationCap, ArrowRight, X } from 'lucide-react';
+import { Check, Zap, Star, ShieldCheck, Smartphone, Building2, UserCircle2, GraduationCap, ArrowRight, X, BookOpen, FileSearch, Mic } from 'lucide-react';
 import { LEARNING_CREDIT_PACKS, STUDENT_PLANS, TEACHER_PLANS, SCHOOL_PLANS } from '../../data/pricing';
 import { SubscriptionPlan, UserSegment } from '../../types';
 import { getPlanLimit } from '../../services/planLimitService';
@@ -158,7 +158,20 @@ export const PricingPage: React.FC<Props> = ({ onSelectPlan, onClose, currentTie
                                     <div className="mb-4">
                                         <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-500">Need to continue today?</p>
                                         <h2 className="text-xl font-black text-slate-900 mt-1">Buy learning credits</h2>
-                                        <p className="text-sm font-semibold text-slate-600 mt-1">Credits extend capped tools without replacing your active plan. 1 credit = 1 extra AI action or about 1,000 voice characters.</p>
+                                        <p className="text-sm font-semibold text-slate-600 mt-1">Credits extend capped tools without replacing your active plan. Basic Ask Akili stays plan-based; credits are for heavier work like grounded answers, marking, deep documents, and voice.</p>
+                                    </div>
+                                    <div className="mb-4 grid grid-cols-1 md:grid-cols-3 gap-3">
+                                        {[
+                                            { icon: BookOpen, title: 'Grounded Library Help', body: 'Answers from Soma notes, syllabus guides, and past papers.' },
+                                            { icon: FileSearch, title: 'Deep Exam Analysis', body: 'Long paper/PDF analysis costs more, so it uses plans or credits.' },
+                                            { icon: Mic, title: 'Voice Practice', body: 'Speech, pronunciation, and audio lessons use credits by length.' },
+                                        ].map((item) => (
+                                            <div key={item.title} className="rounded-2xl border border-indigo-100 bg-white/80 p-4">
+                                                <item.icon className="h-5 w-5 text-indigo-600 mb-2" />
+                                                <p className="text-xs font-black text-slate-900">{item.title}</p>
+                                                <p className="mt-1 text-[11px] font-semibold leading-snug text-slate-500">{item.body}</p>
+                                            </div>
+                                        ))}
                                     </div>
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                         {LEARNING_CREDIT_PACKS.map((pack) => (
@@ -255,8 +268,8 @@ const PricingCard = ({ plan, onSelect, popular, isCurrent, disabled, currentTier
     const planMeters = plan.segment === 'STUDENT'
         ? [
             { label: 'Ask Akili', value: getPlanLimit('ai_generation', plan.duration) },
+            { label: 'Grounded', value: getPlanLimit('grounded_library_help', plan.duration) },
             { label: 'Marking', value: getPlanLimit('exam_marking', plan.duration) },
-            { label: 'Voice', value: `${Math.floor(getPlanLimit('listen_and_learn_voice', plan.duration) / 1000)}k chars` },
         ]
         : [];
 

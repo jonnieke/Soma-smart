@@ -185,8 +185,23 @@ export const PaymentFlow: React.FC<Props> = ({ plan, materialId, onSuccess, onCa
                             return false;
                         };
 
+                        const creditProfileId = studentProfile?.id || teacherProfile?.id || paymentUserId || existingStudentProfileId || userId;
                         if (isCreditPackCheckout && plan?.credits) {
-                            grantLearningCredits(plan.credits);
+                            try {
+                                if (creditProfileId) {
+                                    const { error: creditErr } = await supabase.rpc('grant_learning_credits', {
+                                        p_profile_id: creditProfileId,
+                                        p_credits: plan.credits
+                                    });
+                                    if (creditErr) throw creditErr;
+                                    grantLearningCredits(plan.credits);
+                                } else {
+                                    grantLearningCredits(plan.credits);
+                                }
+                            } catch (creditErr) {
+                                console.warn('Could not persist learning credits, falling back to local wallet:', creditErr);
+                                grantLearningCredits(plan.credits);
+                            }
                         }
 
                         // Credit packs do not change subscription tier, so avoid waiting for a

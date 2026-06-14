@@ -12,7 +12,7 @@ import {
 } from '../../types';
 import {
     analyzeExamPaper, analyzeExamPaperUrl, fileToGenerativePart, markStudentAnswer,
-    predictLikelyQuestions, getPaperGuidance, explainQuestion
+    predictLikelyQuestions, getPaperGuidance, explainQuestion, reconstructPaperQuestions
 } from '../../services/geminiService';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -40,6 +40,15 @@ const savePerformanceRecord = (record: PerformanceRecord) => {
     // Keep last 50 records
     if (records.length > 50) records.splice(0, records.length - 50);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+};
+
+const shuffleQuestions = <T,>(items: T[]) => {
+    const copy = [...items];
+    for (let i = copy.length - 1; i > 0; i -= 1) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [copy[i], copy[j]] = [copy[j], copy[i]];
+    }
+    return copy;
 };
 
 export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, onExit }) => {
@@ -115,7 +124,7 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
                     setLoadingText('AI is analyzing your exam paper...');
                     const result = await analyzeExamPaper(base64, data.type);
                     setAnalysis(result);
-                } else if ('file_path' in (data as any)) {
+                } else if ('file_path' in (data as any) || (data as any)?.fileUrl || (data as any)?.file_url) {
                     const res = data as any;
                     const encodedPath = res.file_path ? res.file_path.split('/').map(encodeURIComponent).join('/') : '';
                     const fallbackUrl = `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/syllabus-docs/${encodedPath}`;
@@ -124,7 +133,17 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
 
                     try {
                         const result = await analyzeExamPaperUrl(docUrl, 'application/pdf');
-                        setAnalysis(result);
+                        if (result?.questions?.length) {
+                            setAnalysis(result);
+                        } else {
+                            const reconstructed = await reconstructPaperQuestions(
+                                res.subject || result?.subject || 'General',
+                                res.grade || result?.grade || 'KCSE',
+                                res.title || 'Past Paper',
+                                language
+                            );
+                            setAnalysis(reconstructed);
+                        }
                     } catch (fetchErr: any) {
                         console.error('[RevisionSession] Fallback triggered due to:', fetchErr);
                         console.error('[RevisionSession] Error name:', fetchErr?.name, 'message:', fetchErr?.message);
@@ -205,7 +224,8 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
     // ==================== QUIZ CONTROL ====================
     const startQuiz = (mode: ExamPracticeMode, questions?: ExamQuestion[], overrideSecs?: number) => {
         const qs = questions || analysis?.questions || [];
-        setQuizQuestions(qs);
+        const preparedQuestions = mode === ExamPracticeMode.PRACTICE_BY_TOPIC && qs.length > 1 ? shuffleQuestions(qs) : qs;
+        setQuizQuestions(preparedQuestions);
         setPracticeMode(mode);
         setCurrentQuestionIdx(0);
         setAttempts([]);
@@ -219,16 +239,16 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
         setConfidenceLevel(0);
 
         if (mode === ExamPracticeMode.TIMED_QUIZ) {
-            const totalTime = overrideSecs ?? qs.length * 120;
+            const totalTime = overrideSecs ?? preparedQuestions.length * 120;
             setTimeLimit(totalTime);
             setTimeRemaining(totalTime);
             setTimerActive(true);
         }
 
         // If explain-first mode, load explanation for first question
-        if (explainFirst && qs.length > 0) {
+        if (explainFirst && preparedQuestions.length > 0) {
             setPhase('EXPLAINING');
-            loadExplanation(qs[0]);
+            loadExplanation(preparedQuestions[0]);
         } else {
             setPhase('QUIZ_ACTIVE');
             setTimeout(() => answerInputRef.current?.focus(), 300);

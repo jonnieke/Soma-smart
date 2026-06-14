@@ -258,6 +258,97 @@ export const RevisionLanding: React.FC<Props> = ({ onStartSession, onNavigate, o
         setShowGuru(true);
     };
 
+    const getPaperIndexStatus = (item: any) => String(item?.indexing_status || '').toUpperCase();
+
+    const getPaperChunkCount = (item: any) => {
+        const count = Number(item?.chunk_count || 0);
+        return Number.isFinite(count) ? count : 0;
+    };
+
+    const isPaperGroundedReady = (item: any) => {
+        return getPaperIndexStatus(item) === 'READY' && getPaperChunkCount(item) > 0;
+    };
+
+    const getPaperGroundingBadge = (item: any) => {
+        const status = getPaperIndexStatus(item);
+        const chunks = getPaperChunkCount(item);
+        if (status === 'READY' && chunks > 0) {
+            return {
+                label: `Grounded · ${chunks} chunk${chunks === 1 ? '' : 's'}`,
+                title: 'Exam Guru can use indexed Soma Library context from this paper.',
+                className: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300'
+            };
+        }
+        if (status === 'PROCESSING') {
+            return {
+                label: 'Indexing',
+                title: 'This paper is being prepared for stronger Exam Guru answers.',
+                className: 'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300'
+            };
+        }
+        if (status === 'FAILED') {
+            return {
+                label: 'Index failed',
+                title: item?.last_index_error || 'This paper needs re-indexing in admin.',
+                className: 'bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300'
+            };
+        }
+        return {
+            label: 'Needs indexing',
+            title: 'Read and exam modes still work, but grounded Guru coaching needs admin indexing.',
+            className: 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400'
+        };
+    };
+
+    const getPaperGroundingInstruction = (item: any) => {
+        if (isPaperGroundedReady(item)) {
+            return `Grounding status: READY with ${getPaperChunkCount(item)} indexed chunks. Use this selected paper and retrieved Soma Library context strongly.`;
+        }
+        const status = getPaperIndexStatus(item) || 'NOT_INDEXED';
+        return `Grounding status: ${status}. If retrieved context is weak, give useful examiner guidance from the paper title, subject, and level, then tell the learner this paper needs indexing for stronger source-grounded coaching.`;
+    };
+
+    const buildPaperCoachPrompt = (item: any) => {
+        const title = item?.title || 'this past paper';
+        const subject = item?.subject || activeSubject || examGoal.subject || 'the subject';
+        const grade = item?.grade || studentProfile?.grade || examGoal.examType || 'KCSE';
+        return `Use Soma Library grounding to coach me through this paper.
+
+Paper: ${title}
+Subject: ${subject}
+Level: ${grade}
+${getPaperGroundingInstruction(item)}
+
+Give me:
+1. What this paper is mainly testing.
+2. The high-yield topics I should revise first.
+3. The paper traps candidates lose marks on.
+4. A 5-question drill based on this paper style.
+
+Do not explain what a past paper is. Be specific and examiner-focused.`;
+    };
+
+    const buildPaperHotTopicsPrompt = (item: any) => {
+        const title = item?.title || 'this past paper';
+        const subject = item?.subject || activeSubject || examGoal.subject || 'the subject';
+        const grade = item?.grade || studentProfile?.grade || examGoal.examType || 'KCSE';
+        return `From the indexed Soma past papers and this selected paper, identify likely/high-yield topics.
+
+Paper: ${title}
+Subject: ${subject}
+Level: ${grade}
+${getPaperGroundingInstruction(item)}
+
+Answer with:
+1. 8 to 12 high-yield topics.
+2. Why each topic is likely or important.
+3. What exactly I should practise.
+4. One paper trap per topic.
+5. Tonight's drill with 5 actions.
+
+Use plain text. No markdown headings or symbols.`;
+    };
+
     // Camera helpers
     const startCamera = async () => {
         try {
@@ -635,6 +726,7 @@ export const RevisionLanding: React.FC<Props> = ({ onStartSession, onNavigate, o
                             </p>
                             {filteredItems.map((item: any, idx: number) => {
                                 const tc = typeConfig[item._type] || typeConfig.paper;
+                                const groundingBadge = getPaperGroundingBadge(item);
                                 return (
                                     <motion.div
                                         key={item.id || idx}
@@ -668,10 +760,26 @@ export const RevisionLanding: React.FC<Props> = ({ onStartSession, onNavigate, o
                                                         <CheckCircle className="w-2.5 h-2.5" /> Verified
                                                     </span>
                                                 )}
+                                                <span
+                                                    title={groundingBadge.title}
+                                                    className={`text-[10px] font-black px-1.5 py-0.5 rounded-md ${groundingBadge.className}`}
+                                                >
+                                                    {groundingBadge.label}
+                                                </span>
                                             </div>
                                         </button>
 
                                         {/* ⋯ overflow — Exam mode / Read PDF */}
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                openGuru('chat', buildPaperCoachPrompt(item));
+                                            }}
+                                            className="hidden sm:inline-flex items-center gap-1.5 rounded-xl bg-purple-50 dark:bg-purple-950/30 text-purple-700 dark:text-purple-300 px-3 py-2 text-[11px] font-black hover:bg-purple-100 dark:hover:bg-purple-900/40 transition-colors shrink-0"
+                                        >
+                                            <MessageCircle className="w-3.5 h-3.5" />
+                                            Coach
+                                        </button>
                                         <button
                                             onClick={(e) => { e.stopPropagation(); setOverflowItem(item); }}
                                             className="p-2 text-slate-300 dark:text-slate-700 hover:text-slate-500 dark:hover:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl transition-colors shrink-0"
@@ -689,6 +797,9 @@ export const RevisionLanding: React.FC<Props> = ({ onStartSession, onNavigate, o
             {/* ── OVERFLOW MENU MODAL ── */}
             <AnimatePresence>
                 {overflowItem && (
+                    (() => {
+                        const groundingBadge = getPaperGroundingBadge(overflowItem);
+                        return (
                     <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm"
                         onClick={() => setOverflowItem(null)}>
                         <motion.div
@@ -701,7 +812,15 @@ export const RevisionLanding: React.FC<Props> = ({ onStartSession, onNavigate, o
                             <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
                                 <div>
                                     <p className="font-black text-slate-900 dark:text-white text-sm truncate max-w-[240px]">{overflowItem.title}</p>
-                                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">{overflowItem.subject}</p>
+                                    <div className="flex items-center gap-2 mt-1">
+                                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{overflowItem.subject}</p>
+                                        <span
+                                            title={groundingBadge.title}
+                                            className={`text-[10px] font-black px-1.5 py-0.5 rounded-md ${groundingBadge.className}`}
+                                        >
+                                            {groundingBadge.label}
+                                        </span>
+                                    </div>
                                 </div>
                                 <button onClick={() => setOverflowItem(null)} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl text-slate-400">
                                     <X className="w-4 h-4" />
@@ -722,18 +841,33 @@ export const RevisionLanding: React.FC<Props> = ({ onStartSession, onNavigate, o
                                     <Brain className="w-5 h-5" /> Take as Exam
                                     <ChevronRight className="w-4 h-4 ml-auto" />
                                 </button>
-                                {(overflowItem.fileUrl || overflowItem.file_url) && (
-                                    <button
-                                        onClick={() => { window.open(overflowItem.fileUrl || overflowItem.file_url, '_blank'); setOverflowItem(null); }}
-                                        className="w-full flex items-center gap-3 p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 font-bold text-sm transition-colors"
-                                    >
-                                        <FileText className="w-5 h-5" /> Read Document
-                                        <ChevronRight className="w-4 h-4 ml-auto" />
-                                    </button>
-                                )}
+                                <button
+                                    onClick={() => {
+                                        const prompt = buildPaperCoachPrompt(overflowItem);
+                                        setOverflowItem(null);
+                                        openGuru('chat', prompt);
+                                    }}
+                                    className="w-full flex items-center gap-3 p-3.5 rounded-2xl bg-purple-50 dark:bg-purple-900/30 hover:bg-purple-100 dark:hover:bg-purple-900/50 text-purple-700 dark:text-purple-400 font-bold text-sm transition-colors"
+                                >
+                                    <MessageCircle className="w-5 h-5" /> Ask Guru About This Paper
+                                    <ChevronRight className="w-4 h-4 ml-auto" />
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        const prompt = buildPaperHotTopicsPrompt(overflowItem);
+                                        setOverflowItem(null);
+                                        openGuru('chat', prompt);
+                                    }}
+                                    className="w-full flex items-center gap-3 p-3.5 rounded-2xl bg-rose-50 dark:bg-rose-900/30 hover:bg-rose-100 dark:hover:bg-rose-900/50 text-rose-700 dark:text-rose-400 font-bold text-sm transition-colors"
+                                >
+                                    <TrendingUp className="w-5 h-5" /> High-Yield From This Paper
+                                    <ChevronRight className="w-4 h-4 ml-auto" />
+                                </button>
                             </div>
                         </motion.div>
                     </div>
+                        );
+                    })()
                 )}
             </AnimatePresence>
 

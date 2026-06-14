@@ -18,6 +18,7 @@ export const AskSomo: React.FC = () => {
     ]);
     const [inputValue, setInputValue] = useState("");
     const [isTyping, setIsTyping] = useState(false);
+    const [hasScrolledPastHero, setHasScrolledPastHero] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
     // Hide assistant in learning environments to avoid distractions
@@ -32,6 +33,16 @@ export const AskSomo: React.FC = () => {
     useEffect(() => {
         scrollToBottom();
     }, [messages, isOpen]);
+
+    useEffect(() => {
+        if (shouldHide) return;
+        const handleScroll = () => {
+            setHasScrolledPastHero(window.scrollY > 680);
+        };
+        handleScroll();
+        window.addEventListener('scroll', handleScroll, { passive: true });
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, [shouldHide]);
 
     if (shouldHide) return null;
 
@@ -93,7 +104,7 @@ export const AskSomo: React.FC = () => {
                 animate={{ scale: 1 }}
                 whileHover={{ scale: 1.05 }}
                 onClick={() => setIsOpen(!isOpen)}
-                className={`fixed bottom-6 right-4 sm:right-6 z-50 flex items-center gap-2 px-3 sm:px-4 py-2.5 sm:py-3 rounded-full shadow-2xl transition-all ${isOpen ? 'bg-red-500 pr-3 pl-3' : 'bg-blue-600 pr-4 sm:pr-6 pl-3 sm:pl-4'
+                className={`fixed ${hasScrolledPastHero ? 'bottom-24 sm:bottom-6' : 'bottom-6'} right-4 sm:right-6 z-50 flex items-center gap-2 px-3 sm:px-4 py-2.5 sm:py-3 rounded-full shadow-2xl transition-all ${isOpen ? 'bg-red-500 pr-3 pl-3' : 'bg-blue-600 pr-4 sm:pr-6 pl-3 sm:pl-4'
                     } text-white font-semibold`}
             >
                 {isOpen ? (
