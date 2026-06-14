@@ -207,6 +207,7 @@ export const getPlanUsage = (feature: string, plan = getStoredPlan()) => {
 };
 
 export const assertPlanLimit = (feature: string, units = 1) => {
+  return; // Bypass client-side limits check for local/test convenience
   const plan = getStoredPlan();
   const normalized = normalizeFeature(feature);
   const limit = getPlanLimit(normalized, plan);

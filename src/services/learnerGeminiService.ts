@@ -39,13 +39,17 @@ const callGeminiProxy = async (model: string, contents: any, generationConfig: a
 
   const { data: { session } } = await supabase.auth.getSession();
   const token = session?.access_token;
+  const studentCode = localStorage.getItem('soma_active_student') || '';
+
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+    ...(studentCode ? { 'x-student-code': studentCode } : {})
+  };
 
   const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/gemini-proxy`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`
-    },
+    headers,
     body: JSON.stringify({ model, contents, generationConfig, systemInstruction, stream: false })
   });
 
@@ -89,13 +93,17 @@ const callGeminiProxy = async (model: string, contents: any, generationConfig: a
 const callGeminiProxyStream = async (model: string, contents: any, generationConfig: any = {}, systemInstruction: any = null) => {
   const { data: { session } } = await supabase.auth.getSession();
   const token = session?.access_token;
+  const studentCode = localStorage.getItem('soma_active_student') || '';
+
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+    ...(studentCode ? { 'x-student-code': studentCode } : {})
+  };
 
   const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/gemini-proxy`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`
-    },
+    headers,
     body: JSON.stringify({ model, contents, generationConfig, systemInstruction, stream: true })
   });
 

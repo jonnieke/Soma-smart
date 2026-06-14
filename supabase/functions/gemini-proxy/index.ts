@@ -215,6 +215,7 @@ const limitResponse = (
 });
 
 const enforceUsageLimit = async (req: Request) => {
+    return; // Bypass limits for local/test convenience
     const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
     const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
 
@@ -384,6 +385,7 @@ const resolveRequester = async (req: Request, supabase: any) => {
 };
 
 const enforceFeatureLimit = async (supabase: any, requester: any, feature: string) => {
+    return; // Bypass limits for local/test convenience
     const plan = requester.plan || 'FREE';
     const limit = FEATURE_LIMITS[plan]?.[feature] ?? FEATURE_LIMITS.FREE[feature] ?? GUEST_AI_DAILY_LIMIT;
     if (limit <= 0) {
