@@ -535,6 +535,32 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
     setTimeout(() => setToastMessage(null), 3000);
   };
 
+  const handleRateLimitError = (error: any) => {
+    setLoading(false);
+    setMode('MENU');
+    if (isRegistered) {
+      const message = error?.message || '';
+      let feature = 'ai_generation';
+      if (message.includes('grounded') || message.includes('library')) {
+        feature = 'grounded_library_help';
+      } else if (message.includes('voice') || message.includes('audio') || message.includes('listen')) {
+        feature = 'listen_and_learn_voice';
+      }
+      try {
+        window.dispatchEvent(new CustomEvent('soma-show-upgrade-modal', {
+          detail: {
+            feature,
+            plan: profile?.subscriptionTier || 'FREE',
+            limit: getPlanLimit(feature, profile?.subscriptionTier || 'FREE')
+          }
+        }));
+      } catch (_) {}
+      triggerToast(message || "Daily limit reached. Upgrade to get more allowance!");
+    } else {
+      setShowLogin(true);
+    }
+  };
+
   const handleGlossaryTrigger = (termKey: string) => {
     const entry = EDUCATIONAL_GLOSSARY[termKey.toLowerCase()];
     if (entry) {
@@ -2148,9 +2174,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
       console.error("Scan error:", error);
 
       if (error instanceof RateLimitError || error?.name === 'RateLimitError') {
-        setLoading(false);
-        setMode('MENU');
-        setShowLogin(true);
+        handleRateLimitError(error);
         return;
       }
 
@@ -2309,9 +2333,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
       console.error(e);
 
       if (e instanceof RateLimitError || e?.name === 'RateLimitError') {
-        setLoading(false);
-        setMode('MENU');
-        setShowLogin(true);
+        handleRateLimitError(e);
         return;
       }
 
@@ -2577,9 +2599,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
       console.error("Topic explain error:", e);
 
       if (e instanceof RateLimitError || e?.name === 'RateLimitError') {
-        setLoading(false);
-        setMode('MENU');
-        setShowLogin(true);
+        handleRateLimitError(e);
         return;
       }
 
