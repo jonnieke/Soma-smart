@@ -37,6 +37,7 @@ import { safeImport } from '../../utils/safeImport';
 import { PlanLimitError, getPlanLimit, getPlanUsage } from '../../services/planLimitService';
 import { pesapalService } from '../../services/pesapalService';
 import { supabase } from '../../lib/supabase';
+import { extractTextFromURL } from '../../services/contextService';
 
 const RevisionLanding = React.lazy(() => safeImport(() => import('../revision/RevisionLanding').then(module => ({ default: module.RevisionLanding }))));
 const RevisionSession = React.lazy(() => safeImport(() => import('../revision/RevisionSession').then(module => ({ default: module.RevisionSession }))));
@@ -436,6 +437,10 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
   }, [studentCode, studentProfile?.id, history, streak, totalXP]);
 
   const [studyTab, setStudyTab] = useState<'LESSON' | 'RECAP' | 'QNA' | 'QUIZ' | 'REFERENCES'>('LESSON');
+  const [studyViewMode, setStudyViewMode] = useState<'guide' | 'original'>('guide');
+  const [extractedOriginalPages, setExtractedOriginalPages] = useState<string[]>([]);
+  const [isExtractingOriginal, setIsExtractingOriginal] = useState<boolean>(false);
+  const [originalPageIndex, setOriginalPageIndex] = useState<number>(0);
   const [fontScale, setFontScale] = useState<number>(1.0);
   const [fontFamily, setFontFamily] = useState<'sans' | 'serif'>('sans');
   const [readerSearchTerm, setReaderSearchTerm] = useState<string>('');
@@ -818,6 +823,40 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [shouldPromptRecallOnExit]);
+
+  useEffect(() => {
+    const handleSelection = () => {
+      const selection = window.getSelection();
+      if (!selection || selection.isCollapsed) {
+        return;
+      }
+      const text = selection.toString().trim();
+      if (text.length > 3) {
+        const range = selection.getRangeAt(0);
+        const rect = range.getBoundingClientRect();
+        setSelectedText(text);
+        setSelectionCoords({
+          x: rect.left + rect.width / 2,
+          y: rect.top
+        });
+      }
+    };
+
+    const handleClearSelection = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest('.pointer-events-auto') && !window.getSelection()?.toString().trim()) {
+        setSelectedText('');
+        setSelectionCoords(null);
+      }
+    };
+
+    document.addEventListener('mouseup', handleSelection);
+    document.addEventListener('click', handleClearSelection);
+    return () => {
+      document.removeEventListener('mouseup', handleSelection);
+      document.removeEventListener('click', handleClearSelection);
+    };
+  }, []);
 
   const [showTutoringModal, setShowTutoringModal] = useState(false);
   const [showExpiryModal, setShowExpiryModal] = useState(false); // New State
@@ -1519,6 +1558,27 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
     setLoadingText("Akili is building your study guide...");
     setIsSummarizing(true);
     setStudyChat([]);
+    
+    setStudyViewMode('guide');
+    setExtractedOriginalPages([]);
+    setOriginalPageIndex(0);
+
+    const docUrl = material.fileUrl || material.file_url;
+    if (docUrl) {
+      setIsExtractingOriginal(true);
+      extractTextFromURL(docUrl)
+        .then(fullText => {
+          if (fullText) {
+            const rawPages = fullText.split(/--- Page \d+ ---/);
+            const parsedPages = rawPages
+              .map(p => p.trim())
+              .filter(p => p.length > 0);
+            setExtractedOriginalPages(parsedPages);
+          }
+        })
+        .catch(err => console.error("Error extracting original textbook pages:", err))
+        .finally(() => setIsExtractingOriginal(false));
+    }
 
     // Save Study Activity for History Tracking
     saveActivity({
@@ -1796,8 +1856,24 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
     setLoadingText("Akili is thinking...");
 
     try {
+      let activePageText = "";
+      if (studyViewMode === 'original' && extractedOriginalPages[originalPageIndex]) {
+        activePageText = extractedOriginalPages[originalPageIndex];
+      } else if (studyViewMode === 'guide' && explanation) {
+        if (readerPage === 0) {
+          activePageText = explanation.explanation;
+        } else if (readerPage > 0 && readerPage <= (explanation.subtopics?.length || 0)) {
+          const sub = explanation.subtopics[readerPage - 1];
+          activePageText = `${sub.title}\n\n${sub.content}`;
+        }
+      }
+
+      const finalQuery = activePageText
+        ? `Here is the context from the page of the study material the student is currently reading:\n"""\n${activePageText}\n"""\n\nQuestion: ${query || (pendingMedia?.type === 'AUDIO' ? "Voice Message" : "Image/File Analysis")}`
+        : (query || (pendingMedia?.type === 'AUDIO' ? "Voice Message" : "Image/File Analysis"));
+
       const result = await explainTopic(
-        query || (pendingMedia?.type === 'AUDIO' ? "Voice Message" : "Image/File Analysis"),
+        finalQuery,
         level,
         language,
         currentDocument.realId || currentDocument.id,
@@ -5926,6 +6002,13 @@ ${explanation.explanation}
         setSelectionCoords(null);
       };
 
+      const handleOriginalPageChange = (p: number) => {
+        setOriginalPageIndex(Math.max(0, Math.min(extractedOriginalPages.length - 1, p)));
+        setSelectedText('');
+        setSelectionCoords(null);
+      };
+
+
       return (
         <div className="bg-slate-50 min-h-screen flex flex-col md:flex-row max-w-[1440px] mx-auto shadow-2xl border-x border-slate-100 overflow-hidden relative">
           
@@ -6038,9 +6121,32 @@ ${explanation.explanation}
               {/* Reader Header / Toolbar */}
               <div className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 shrink-0 z-10 shadow-sm">
                 <div className="flex flex-wrap items-center gap-3">
-                  <span className="text-xs font-black bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300 px-2.5 py-1 rounded-full uppercase tracking-wider font-semibold">
-                    Page {readerPage + 1} of {totalPages}
-                  </span>
+                  {studyViewMode === 'guide' ? (
+                    <span className="text-xs font-black bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300 px-2.5 py-1 rounded-full uppercase tracking-wider font-semibold">
+                      Page {readerPage + 1} of {totalPages}
+                    </span>
+                  ) : (
+                    <span className="text-xs font-black bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300 px-2.5 py-1 rounded-full uppercase tracking-wider font-semibold">
+                      Page {originalPageIndex + 1} of {extractedOriginalPages.length || 1}
+                    </span>
+                  )}
+
+                  {currentDocument.fileUrl && (
+                    <div className="flex bg-slate-100 dark:bg-slate-800 p-0.5 rounded-lg text-[10px] font-black select-none border border-slate-200/10 ml-2">
+                      <button
+                        onClick={() => setStudyViewMode('guide')}
+                        className={`px-2.5 py-1 rounded-md transition-all ${studyViewMode === 'guide' ? 'bg-white dark:bg-slate-700 text-indigo-750 dark:text-indigo-400 shadow-sm font-black' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
+                      >
+                        Study Guide
+                      </button>
+                      <button
+                        onClick={() => setStudyViewMode('original')}
+                        className={`px-2.5 py-1 rounded-md transition-all ${studyViewMode === 'original' ? 'bg-white dark:bg-slate-700 text-indigo-750 dark:text-indigo-400 shadow-sm font-black' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
+                      >
+                        Original Book
+                      </button>
+                    </div>
+                  )}
                   
                   {/* Listen & Learn Audio Lesson Button */}
                   <button
@@ -6115,301 +6221,382 @@ ${explanation.explanation}
                 className="flex-1 overflow-y-auto p-6 md:p-10 no-scrollbar bg-slate-50 dark:bg-slate-950"
               >
                 <div className="max-w-3xl mx-auto bg-white dark:bg-slate-900 p-8 md:p-14 rounded-3xl shadow-sm border border-slate-200 dark:border-slate-800 relative">
-                  
-                  {isSummarizing ? (
-                    <div className="space-y-6 animate-pulse">
-                      <div className="h-8 bg-slate-100 dark:bg-slate-800 rounded-lg w-1/3 mb-10"></div>
-                      <div className="h-4 bg-slate-100 dark:bg-slate-800 rounded w-full"></div>
-                      <div className="h-4 bg-slate-100 dark:bg-slate-800 rounded w-11/12"></div>
-                      <div className="h-4 bg-slate-100 dark:bg-slate-800 rounded w-full"></div>
-                      <div className="h-4 bg-slate-100 dark:bg-slate-800 rounded w-5/6 mt-8"></div>
-                      <div className="h-4 bg-slate-100 dark:bg-slate-800 rounded w-full"></div>
-                    </div>
-                  ) : explanation ? (
-                    <div className="prose prose-slate prose-lg max-w-none dark:prose-invert">
-                      {/* Active Study Mission Banner */}
-                      {readerPage === 0 && (
-                        <div className="mb-10 rounded-2xl border border-emerald-100 dark:border-emerald-900 bg-emerald-50 dark:bg-emerald-950/20 p-5 not-prose">
-                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                            <div>
-                              <p className="text-[9px] font-black uppercase tracking-[0.2em] text-emerald-700 dark:text-emerald-400 mb-1">Active Study Mission</p>
-                              <h3 className="text-base font-black text-slate-900 dark:text-white">Learn actively, unlock your future</h3>
-                              <p className="text-xs font-semibold text-slate-600 dark:text-slate-400 mt-1">Check off the classroom steps to record your progress.</p>
+                  {studyViewMode === 'guide' ? (
+                    isSummarizing ? (
+                      <div className="space-y-6 animate-pulse">
+                        <div className="h-8 bg-slate-100 dark:bg-slate-800 rounded-lg w-1/3 mb-10"></div>
+                        <div className="h-4 bg-slate-100 dark:bg-slate-800 rounded w-full"></div>
+                        <div className="h-4 bg-slate-100 dark:bg-slate-800 rounded w-11/12"></div>
+                        <div className="h-4 bg-slate-100 dark:bg-slate-800 rounded w-full"></div>
+                        <div className="h-4 bg-slate-100 dark:bg-slate-800 rounded w-5/6 mt-8"></div>
+                        <div className="h-4 bg-slate-100 dark:bg-slate-800 rounded w-full"></div>
+                      </div>
+                    ) : explanation ? (
+                      <div className="prose prose-slate prose-lg max-w-none dark:prose-invert">
+                        {/* Active Study Mission Banner */}
+                        {readerPage === 0 && (
+                          <div className="mb-10 rounded-2xl border border-emerald-100 dark:border-emerald-900 bg-emerald-50 dark:bg-emerald-950/20 p-5 not-prose">
+                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                              <div>
+                                <p className="text-[9px] font-black uppercase tracking-[0.2em] text-emerald-700 dark:text-emerald-400 mb-1">Active Study Mission</p>
+                                <h3 className="text-base font-black text-slate-900 dark:text-white">Learn actively, unlock your future</h3>
+                                <p className="text-xs font-semibold text-slate-600 dark:text-slate-400 mt-1">Check off the classroom steps to record your progress.</p>
+                              </div>
+                              <div className="rounded-xl bg-white dark:bg-slate-800 border border-emerald-100 dark:border-emerald-900 px-3.5 py-2 min-w-[80px] text-center">
+                                <p className="text-[8px] font-black uppercase tracking-widest text-emerald-600">Done</p>
+                                <p className="text-xl font-black text-emerald-800 dark:text-emerald-400">{studyMissionChecks.length}/3</p>
+                              </div>
                             </div>
-                            <div className="rounded-xl bg-white dark:bg-slate-800 border border-emerald-100 dark:border-emerald-900 px-3.5 py-2 min-w-[80px] text-center">
-                              <p className="text-[8px] font-black uppercase tracking-widest text-emerald-600">Done</p>
-                              <p className="text-xl font-black text-emerald-800 dark:text-emerald-400">{studyMissionChecks.length}/3</p>
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 mt-4">
+                              {['Read Notes', 'Ask Questions', 'Take Quiz'].map((lbl, idx) => {
+                                const done = studyMissionChecks.includes(idx);
+                                return (
+                                  <button
+                                    key={lbl}
+                                    onClick={() => {
+                                      if (idx === 1) setStudyTab('QNA');
+                                      else if (idx === 2) setStudyTab('QUIZ');
+                                      else {
+                                        toggleStudyMissionCheck(0);
+                                      }
+                                    }}
+                                    className={`px-3 py-2 rounded-xl border text-xs font-black uppercase tracking-wider flex items-center justify-between transition-all ${
+                                      done ? 'bg-emerald-600 border-emerald-600 text-white font-semibold' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-emerald-400 font-semibold'
+                                    }`}
+                                  >
+                                    <span>{lbl}</span>
+                                    <CheckCircle className={`w-3.5 h-3.5 ${done ? 'text-white' : 'text-slate-300'}`} />
+                                  </button>
+                                );
+                              })}
                             </div>
                           </div>
-                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 mt-4">
-                            {['Read Notes', 'Ask Questions', 'Take Quiz'].map((lbl, idx) => {
-                              const done = studyMissionChecks.includes(idx);
-                              return (
-                                <button
-                                  key={lbl}
-                                  onClick={() => {
-                                    if (idx === 1) setStudyTab('QNA');
-                                    else if (idx === 2) setStudyTab('QUIZ');
-                                    else {
-                                      toggleStudyMissionCheck(0);
-                                    }
-                                  }}
-                                  className={`px-3 py-2 rounded-xl border text-xs font-black uppercase tracking-wider flex items-center justify-between transition-all ${
-                                    done ? 'bg-emerald-600 border-emerald-600 text-white font-semibold' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-emerald-400 font-semibold'
-                                  }`}
-                                >
-                                  <span>{lbl}</span>
-                                  <CheckCircle className={`w-3.5 h-3.5 ${done ? 'text-white' : 'text-slate-300'}`} />
-                                </button>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      )}
+                        )}
 
-                      {/* PAGE 0: Overview */}
-                      {readerPage === 0 && (
-                        <div>
-                          <div className="flex items-center gap-3.5 mb-8 border-b border-indigo-50 dark:border-slate-800 pb-4">
-                            <div className="p-3 bg-indigo-50 dark:bg-indigo-950/50 rounded-2xl">
-                              <BookOpen className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
-                            </div>
-                            <div>
-                              <h2 className="text-2xl font-black text-slate-800 dark:text-white m-0">Introduction</h2>
-                              <p className="text-xs font-medium text-slate-500 m-0 leading-none mt-1.5">Overview of this material</p>
-                            </div>
-                          </div>
-                          
-                          <div className="relative group/paragraph flex items-start gap-4">
-                            <div className="flex-1">
-                              <p style={{ fontSize: `${fontScale}rem` }} className={`text-slate-700 dark:text-slate-300 leading-relaxed m-0 whitespace-pre-line ${fontFamily === 'serif' ? 'font-serif' : 'font-sans'}`}>
-                                {renderFormattedText(explanation.explanation, readerSearchTerm, handleGlossaryTrigger)}
-                              </p>
-                            </div>
-                            <div className="opacity-0 group-hover/paragraph:opacity-100 flex flex-col gap-1.5 shrink-0 transition-opacity duration-200">
-                              <button
-                                onClick={() => handleParagraphAsk(explanation.explanation)}
-                                className="p-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-indigo-600 hover:bg-indigo-50 hover:border-indigo-200 rounded-lg shadow-sm"
-                                title="Ask Akili about this paragraph"
-                              >
-                                <Sparkles className="w-3.5 h-3.5" />
-                              </button>
-                              <button
-                                onClick={() => handleParagraphCopyCitation(explanation.explanation)}
-                                className="p-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500 hover:bg-indigo-50 hover:text-indigo-600 rounded-lg shadow-sm"
-                                title="Copy Citation"
-                              >
-                                <FileText className="w-3.5 h-3.5" />
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* SUBTOPIC PAGES */}
-                      {readerPage > 0 && readerPage <= subtopics.length && (() => {
-                        const sub = subtopics[readerPage - 1];
-                        return (
+                        {/* PAGE 0: Overview */}
+                        {readerPage === 0 && (
                           <div>
                             <div className="flex items-center gap-3.5 mb-8 border-b border-indigo-50 dark:border-slate-800 pb-4">
                               <div className="p-3 bg-indigo-50 dark:bg-indigo-950/50 rounded-2xl">
-                                <FileText className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
+                                <BookOpen className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
                               </div>
                               <div>
-                                <h2 className="text-2xl font-black text-slate-800 dark:text-white m-0 truncate max-w-xl">{sub.title}</h2>
-                                <p className="text-xs font-medium text-slate-500 m-0 leading-none mt-1.5">Syllabus Section {readerPage}</p>
+                                <h2 className="text-2xl font-black text-slate-800 dark:text-white m-0">Introduction</h2>
+                                <p className="text-xs font-medium text-slate-500 m-0 leading-none mt-1.5">Overview of this material</p>
                               </div>
                             </div>
-
-                            {sub.blocks && sub.blocks.length > 0 ? (
-                              <div className="space-y-6">
-                                {sub.blocks.map((block, bIdx) => (
-                                  <React.Fragment key={bIdx}>
-                                    {block.type === 'paragraph' && block.text && (
-                                      <div className="relative group/paragraph flex items-start gap-4">
-                                        <div className="flex-1">
-                                          <p style={{ fontSize: `${fontScale}rem` }} className={`text-slate-700 dark:text-slate-300 leading-relaxed m-0 whitespace-pre-line ${fontFamily === 'serif' ? 'font-serif' : 'font-sans'}`}>
-                                            {renderFormattedText(block.text, readerSearchTerm, handleGlossaryTrigger)}
-                                          </p>
-                                        </div>
-                                        <div className="opacity-0 group-hover/paragraph:opacity-100 flex flex-col gap-1.5 shrink-0 transition-opacity duration-200">
-                                          <button
-                                            onClick={() => handleParagraphAsk(block.text)}
-                                            className="p-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-indigo-600 hover:bg-indigo-50 hover:border-indigo-200 rounded-lg shadow-sm"
-                                            title="Ask Akili"
-                                          >
-                                            <Sparkles className="w-3.5 h-3.5" />
-                                          </button>
-                                          <button
-                                            onClick={() => handleParagraphCopyCitation(block.text)}
-                                            className="p-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500 hover:bg-indigo-50 hover:text-indigo-600 rounded-lg shadow-sm"
-                                            title="Copy Citation"
-                                          >
-                                            <FileText className="w-3.5 h-3.5" />
-                                          </button>
-                                        </div>
-                                      </div>
-                                    )}
-
-                                    {block.type === 'list' && block.items && block.items.length > 0 && (
-                                      <ul className={`list-disc list-outside ml-6 space-y-2 m-0 text-slate-700 dark:text-slate-300 ${fontFamily === 'serif' ? 'font-serif' : 'font-sans'}`} style={{ fontSize: `${fontScale}rem` }}>
-                                        {block.items.map((item, iIdx) => (
-                                          <li key={iIdx} className="pl-2 leading-relaxed">
-                                            {renderFormattedText(item, readerSearchTerm, handleGlossaryTrigger)}
-                                          </li>
-                                        ))}
-                                      </ul>
-                                    )}
-                                  </React.Fragment>
-                                ))}
+                            
+                            <div className="relative group/paragraph flex items-start gap-4">
+                              <div className="flex-1">
+                                <p style={{ fontSize: `${fontScale}rem` }} className={`text-slate-700 dark:text-slate-300 leading-relaxed m-0 whitespace-pre-line ${fontFamily === 'serif' ? 'font-serif' : 'font-sans'}`}>
+                                  {renderFormattedText(explanation.explanation, readerSearchTerm, handleGlossaryTrigger)}
+                                </p>
                               </div>
-                            ) : sub.content ? (
-                              <div style={{ fontSize: `${fontScale}rem` }} className={fontFamily === 'serif' ? 'font-serif' : 'font-sans'}>
-                                <MarkdownText content={sub.content} />
+                              <div className="opacity-0 group-hover/paragraph:opacity-100 flex flex-col gap-1.5 shrink-0 transition-opacity duration-200">
+                                <button
+                                  onClick={() => handleParagraphAsk(explanation.explanation)}
+                                  className="p-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-indigo-600 hover:bg-indigo-50 hover:border-indigo-200 rounded-lg shadow-sm"
+                                  title="Ask Akili about this paragraph"
+                                >
+                                  <Sparkles className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  onClick={() => handleParagraphCopyCitation(explanation.explanation)}
+                                  className="p-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500 hover:bg-indigo-50 hover:text-indigo-600 rounded-lg shadow-sm"
+                                  title="Copy Citation"
+                                >
+                                  <FileText className="w-3.5 h-3.5" />
+                                </button>
                               </div>
-                            ) : null}
+                            </div>
                           </div>
-                        );
-                      })()}
+                        )}
 
-                      {/* LAST PAGE: Summary & References */}
-                      {readerPage === totalPages - 1 && (
-                        <div className="space-y-10">
-                          <div className="flex items-center gap-3.5 mb-6 border-b border-slate-150 dark:border-slate-800 pb-4">
-                            <div className="p-3 bg-emerald-50 dark:bg-emerald-950/50 rounded-2xl">
-                              <CheckCircle className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
-                            </div>
+                        {/* SUBTOPIC PAGES */}
+                        {readerPage > 0 && readerPage <= subtopics.length && (() => {
+                          const sub = subtopics[readerPage - 1];
+                          return (
                             <div>
-                              <h2 className="text-2xl font-black text-slate-800 dark:text-white m-0">Summary & Standards</h2>
-                              <p className="text-xs font-medium text-slate-500 m-0 leading-none mt-1.5">Curriculum alignment & Citation builder</p>
-                            </div>
-                          </div>
+                              <div className="flex items-center gap-3.5 mb-8 border-b border-indigo-50 dark:border-slate-800 pb-4">
+                                <div className="p-3 bg-indigo-50 dark:bg-indigo-950/50 rounded-2xl">
+                                  <FileText className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
+                                </div>
+                                <div>
+                                  <h2 className="text-2xl font-black text-slate-800 dark:text-white m-0 truncate max-w-xl">{sub.title}</h2>
+                                  <p className="text-xs font-medium text-slate-500 m-0 leading-none mt-1.5">Syllabus Section {readerPage}</p>
+                                </div>
+                              </div>
 
-                          {/* Quick summary points */}
-                          <div>
-                            <h3 className="text-base font-black text-slate-800 dark:text-white mb-3 uppercase tracking-wider font-semibold">Key Takeaways</h3>
-                            <ul className="list-disc list-outside ml-6 space-y-2.5 text-slate-700 dark:text-slate-300">
-                              {(explanation.summaryPoints || []).map((pt, i) => (
-                                <li key={i} className="text-sm font-semibold leading-relaxed">
-                                  {renderFormattedText(pt, readerSearchTerm, handleGlossaryTrigger)}
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
+                              {sub.blocks && sub.blocks.length > 0 ? (
+                                <div className="space-y-6">
+                                  {sub.blocks.map((block, bIdx) => (
+                                    <React.Fragment key={bIdx}>
+                                      {block.type === 'paragraph' && block.text && (
+                                        <div className="relative group/paragraph flex items-start gap-4">
+                                          <div className="flex-1">
+                                            <p style={{ fontSize: `${fontScale}rem` }} className={`text-slate-700 dark:text-slate-300 leading-relaxed m-0 whitespace-pre-line ${fontFamily === 'serif' ? 'font-serif' : 'font-sans'}`}>
+                                              {renderFormattedText(block.text, readerSearchTerm, handleGlossaryTrigger)}
+                                            </p>
+                                          </div>
+                                          <div className="opacity-0 group-hover/paragraph:opacity-100 flex flex-col gap-1.5 shrink-0 transition-opacity duration-200">
+                                            <button
+                                              onClick={() => handleParagraphAsk(block.text)}
+                                              className="p-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-indigo-600 hover:bg-indigo-50 hover:border-indigo-200 rounded-lg shadow-sm"
+                                              title="Ask Akili"
+                                            >
+                                              <Sparkles className="w-3.5 h-3.5" />
+                                            </button>
+                                            <button
+                                              onClick={() => handleParagraphCopyCitation(block.text)}
+                                              className="p-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500 hover:bg-indigo-50 hover:text-indigo-600 rounded-lg shadow-sm"
+                                              title="Copy Citation"
+                                            >
+                                              <FileText className="w-3.5 h-3.5" />
+                                            </button>
+                                          </div>
+                                        </div>
+                                      )}
 
-                          {/* Syllabus Alignment Card */}
-                          <div className="p-6 bg-gradient-to-br from-indigo-50/50 to-white dark:from-slate-900 dark:to-slate-900 border border-indigo-100 dark:border-slate-800 rounded-3xl not-prose">
-                            <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-600 dark:text-indigo-400 mb-2 font-semibold">Kenyan Curriculum Mapping</h4>
-                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 border-b border-indigo-100/50 dark:border-slate-800 pb-4 mb-4">
-                              <div>
-                                <span className="block text-[8px] font-black uppercase tracking-widest text-slate-400">Curriculum</span>
-                                <span className="text-xs font-bold text-slate-800 dark:text-white">{syllabus.curriculum}</span>
+                                      {block.type === 'list' && block.items && block.items.length > 0 && (
+                                        <ul className={`list-disc list-outside ml-6 space-y-2 m-0 text-slate-700 dark:text-slate-300 ${fontFamily === 'serif' ? 'font-serif' : 'font-sans'}`} style={{ fontSize: `${fontScale}rem` }}>
+                                          {block.items.map((item, iIdx) => (
+                                            <li key={iIdx} className="pl-2 leading-relaxed">
+                                              {renderFormattedText(item, readerSearchTerm, handleGlossaryTrigger)}
+                                            </li>
+                                          ))}
+                                        </ul>
+                                      )}
+                                    </React.Fragment>
+                                  ))}
+                                </div>
+                              ) : sub.content ? (
+                                <div style={{ fontSize: `${fontScale}rem` }} className={fontFamily === 'serif' ? 'font-serif' : 'font-sans'}>
+                                  <MarkdownText content={sub.content} />
+                                </div>
+                              ) : null}
+                            </div>
+                          );
+                        })()}
+
+                        {/* LAST PAGE: Summary & References */}
+                        {readerPage === totalPages - 1 && (
+                          <div className="space-y-10">
+                            <div className="flex items-center gap-3.5 mb-6 border-b border-slate-150 dark:border-slate-800 pb-4">
+                              <div className="p-3 bg-emerald-50 dark:bg-emerald-950/50 rounded-2xl">
+                                <CheckCircle className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
                               </div>
                               <div>
-                                <span className="block text-[8px] font-black uppercase tracking-widest text-slate-400">Strand</span>
-                                <span className="text-xs font-bold text-slate-800 dark:text-white">{syllabus.strand}</span>
-                              </div>
-                              <div>
-                                <span className="block text-[8px] font-black uppercase tracking-widest text-slate-400">Sub-Strand</span>
-                                <span className="text-xs font-bold text-slate-800 dark:text-white">{syllabus.subStrand}</span>
+                                <h2 className="text-2xl font-black text-slate-800 dark:text-white m-0">Summary & Standards</h2>
+                                <p className="text-xs font-medium text-slate-500 m-0 leading-none mt-1.5">Curriculum alignment & Citation builder</p>
                               </div>
                             </div>
+
+                            {/* Quick summary points */}
                             <div>
-                              <span className="block text-[8px] font-black uppercase tracking-widest text-slate-400 mb-2">Target Learning Outcomes</span>
-                              <ul className="space-y-1.5">
-                                {syllabus.outcomes.map((out, i) => (
-                                  <li key={i} className="text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-start gap-2">
-                                    <span className="text-emerald-500 mt-0.5">✔</span>
-                                    <span>{out}</span>
+                              <h3 className="text-base font-black text-slate-800 dark:text-white mb-3 uppercase tracking-wider font-semibold">Key Takeaways</h3>
+                              <ul className="list-disc list-outside ml-6 space-y-2.5 text-slate-700 dark:text-slate-300">
+                                {(explanation.summaryPoints || []).map((pt, i) => (
+                                  <li key={i} className="text-sm font-semibold leading-relaxed">
+                                    {renderFormattedText(pt, readerSearchTerm, handleGlossaryTrigger)}
                                   </li>
                                 ))}
                               </ul>
                             </div>
-                          </div>
 
-                          {/* Academic Citation Builder */}
-                          <div className="p-6 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-3xl not-prose">
-                            <div className="flex items-center justify-between mb-4">
-                              <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Academic Citation Builder</h4>
-                              <div className="flex bg-slate-200 dark:bg-slate-850 p-0.5 rounded-lg text-[9px] font-bold">
-                                {(['SOMA', 'APA', 'MLA', 'HARVARD'] as const).map(fmt => (
-                                  <button
-                                    key={fmt}
-                                    onClick={() => setCitationFormat(fmt)}
-                                    className={`px-2 py-1 rounded-md uppercase tracking-wider transition-all ${
-                                      citationFormat === fmt ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm' : 'text-slate-500 hover:text-slate-800'
-                                    }`}
-                                  >
-                                    {fmt}
-                                  </button>
-                                ))}
+                            {/* Syllabus Alignment Card */}
+                            <div className="p-6 bg-gradient-to-br from-indigo-50/50 to-white dark:from-slate-900 dark:to-slate-900 border border-indigo-100 dark:border-slate-800 rounded-3xl not-prose">
+                              <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-600 dark:text-indigo-400 mb-2 font-semibold">Kenyan Curriculum Mapping</h4>
+                              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 border-b border-indigo-100/50 dark:border-slate-800 pb-4 mb-4">
+                                <div>
+                                  <span className="block text-[8px] font-black uppercase tracking-widest text-slate-400">Curriculum</span>
+                                  <span className="text-xs font-bold text-slate-800 dark:text-white">{syllabus.curriculum}</span>
+                                </div>
+                                <div>
+                                  <span className="block text-[8px] font-black uppercase tracking-widest text-slate-400">Strand</span>
+                                  <span className="text-xs font-bold text-slate-800 dark:text-white">{syllabus.strand}</span>
+                                </div>
+                                <div>
+                                  <span className="block text-[8px] font-black uppercase tracking-widest text-slate-400">Sub-Strand</span>
+                                  <span className="text-xs font-bold text-slate-800 dark:text-white">{syllabus.subStrand}</span>
+                                </div>
+                              </div>
+                              <div>
+                                <span className="block text-[8px] font-black uppercase tracking-widest text-slate-400 mb-2">Target Learning Outcomes</span>
+                                <ul className="space-y-1.5">
+                                  {syllabus.outcomes.map((out, i) => (
+                                    <li key={i} className="text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-start gap-2">
+                                      <span className="text-emerald-500 mt-0.5">✔</span>
+                                      <span>{out}</span>
+                                    </li>
+                                  ))}
+                                </ul>
                               </div>
                             </div>
 
-                            <div className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 p-4 rounded-2xl text-xs text-slate-650 dark:text-slate-400 italic font-mono leading-relaxed select-all">
-                              {citationFormat === 'APA' && `Soma Smart. (${new Date().getFullYear()}). ${currentDocument.title} [Study Material]. Retrieved from Soma AI Library.`}
-                              {citationFormat === 'MLA' && `Soma Smart. "${currentDocument.title}." Soma AI Library, ${new Date().getFullYear()}.`}
-                              {citationFormat === 'HARVARD' && `Soma Smart, ${new Date().getFullYear()}. ${currentDocument.title}, Soma AI Library. Available at: Soma Smart.`}
-                              {citationFormat === 'SOMA' && `Soma AI Library: Grade ${cleanGrade} ${cleanSubject} (${currentDocument.title}). Reference ID: ${currentDocument.realId || currentDocument.id}`}
-                            </div>
+                            {/* Academic Citation Builder */}
+                            <div className="p-6 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-3xl not-prose">
+                              <div className="flex items-center justify-between mb-4">
+                                <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Academic Citation Builder</h4>
+                                <div className="flex bg-slate-200 dark:bg-slate-850 p-0.5 rounded-lg text-[9px] font-bold">
+                                  {(['SOMA', 'APA', 'MLA', 'HARVARD'] as const).map(fmt => (
+                                    <button
+                                      key={fmt}
+                                      onClick={() => setCitationFormat(fmt)}
+                                      className={`px-2 py-1 rounded-md uppercase tracking-wider transition-all ${
+                                        citationFormat === fmt ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm' : 'text-slate-500 hover:text-slate-800'
+                                      }`}
+                                    >
+                                      {fmt}
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
 
+                              <div className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 p-4 rounded-2xl text-xs text-slate-650 dark:text-slate-400 italic font-mono leading-relaxed select-all">
+                                {citationFormat === 'APA' && `Soma Smart. (${new Date().getFullYear()}). ${currentDocument.title} [Study Material]. Retrieved from Soma AI Library.`}
+                                {citationFormat === 'MLA' && `Soma Smart. "${currentDocument.title}." Soma AI Library, ${new Date().getFullYear()}.`}
+                                {citationFormat === 'HARVARD' && `Soma Smart, ${new Date().getFullYear()}. ${currentDocument.title}, Soma AI Library. Available at: Soma Smart.`}
+                                {citationFormat === 'SOMA' && `Soma AI Library: Grade ${cleanGrade} ${cleanSubject} (${currentDocument.title}). Reference ID: ${currentDocument.realId || currentDocument.id}`}
+                              </div>
+
+                              <button
+                                onClick={() => {
+                                  const textRef =
+                                    citationFormat === 'APA' ? `Soma Smart. (${new Date().getFullYear()}). ${currentDocument.title} [Study Material]. Retrieved from Soma AI Library.` :
+                                    citationFormat === 'MLA' ? `Soma Smart. "${currentDocument.title}." Soma AI Library, ${new Date().getFullYear()}.` :
+                                    citationFormat === 'HARVARD' ? `Soma Smart, ${new Date().getFullYear()}. ${currentDocument.title}, Soma AI Library. Available at: Soma Smart.` :
+                                    `Soma AI Library: Grade ${cleanGrade} ${cleanSubject} (${currentDocument.title}). Reference ID: ${currentDocument.realId || currentDocument.id}`;
+                                  navigator.clipboard.writeText(textRef);
+                                  triggerToast(`Copied ${citationFormat} Reference!`);
+                                }}
+                                className="mt-3 inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-indigo-600 dark:text-indigo-400 hover:underline font-semibold"
+                              >
+                                <FileText className="w-3.5 h-3.5" />
+                                Copy Reference
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="text-center py-32 flex flex-col items-center">
+                        <div className="w-20 h-20 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mb-6">
+                          <BookOpen className="w-10 h-10 text-slate-300 animate-pulse" />
+                        </div>
+                        <h3 className="text-xl font-black text-slate-400">Loading lesson material...</h3>
+                      </div>
+                    )
+                  ) : (
+                    /* studyViewMode === 'original' */
+                    isExtractingOriginal ? (
+                      <div className="space-y-6 animate-pulse py-12 text-center text-slate-400">
+                        <div className="w-10 h-10 border-4 border-indigo-200 border-t-indigo-650 rounded-full animate-spin mx-auto mb-4" />
+                        <p className="text-xs font-black uppercase tracking-widest text-indigo-500 animate-pulse">Extracting Textbook Pages...</p>
+                      </div>
+                    ) : extractedOriginalPages.length === 0 ? (
+                      /* Fallback to original PDF embed if extraction failed/empty (e.g. scanned image) */
+                      <div className="h-[calc(100vh-280px)] rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-white shadow-sm">
+                        <embed
+                          src={currentDocument.fileUrl || currentDocument.file_url}
+                          type="application/pdf"
+                          className="w-full h-full"
+                          style={{ minHeight: 'calc(100vh - 280px)' }}
+                        />
+                      </div>
+                    ) : (
+                      /* Render clean extracted page */
+                      <div className="prose prose-slate prose-lg max-w-none dark:prose-invert">
+                        <div className="flex items-center gap-3.5 mb-8 border-b border-indigo-50 dark:border-slate-800 pb-4">
+                          <div className="p-3 bg-indigo-50 dark:bg-indigo-950/50 rounded-2xl">
+                            <BookOpen className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
+                          </div>
+                          <div>
+                            <h2 className="text-2xl font-black text-slate-850 dark:text-white m-0">Original Page Content</h2>
+                            <p className="text-xs font-medium text-slate-500 m-0 leading-none mt-1.5">Page {originalPageIndex + 1} of {extractedOriginalPages.length}</p>
+                          </div>
+                        </div>
+
+                        <div className="relative group/paragraph flex items-start gap-4">
+                          <div className="flex-1">
+                            <p 
+                              style={{ fontSize: `${fontScale}rem` }} 
+                              className={`text-slate-755 dark:text-slate-350 leading-relaxed m-0 whitespace-pre-line select-text ${fontFamily === 'serif' ? 'font-serif' : 'font-sans'}`}
+                            >
+                              {renderFormattedText(extractedOriginalPages[originalPageIndex], readerSearchTerm, handleGlossaryTrigger)}
+                            </p>
+                          </div>
+                          <div className="opacity-0 group-hover/paragraph:opacity-100 flex flex-col gap-1.5 shrink-0 transition-opacity duration-200">
                             <button
-                              onClick={() => {
-                                const textRef =
-                                  citationFormat === 'APA' ? `Soma Smart. (${new Date().getFullYear()}). ${currentDocument.title} [Study Material]. Retrieved from Soma AI Library.` :
-                                  citationFormat === 'MLA' ? `Soma Smart. "${currentDocument.title}." Soma AI Library, ${new Date().getFullYear()}.` :
-                                  citationFormat === 'HARVARD' ? `Soma Smart, ${new Date().getFullYear()}. ${currentDocument.title}, Soma AI Library. Available at: Soma Smart.` :
-                                  `Soma AI Library: Grade ${cleanGrade} ${cleanSubject} (${currentDocument.title}). Reference ID: ${currentDocument.realId || currentDocument.id}`;
-                                navigator.clipboard.writeText(textRef);
-                                triggerToast(`Copied ${citationFormat} Reference!`);
-                              }}
-                              className="mt-3 inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-indigo-600 dark:text-indigo-400 hover:underline font-semibold"
+                              onClick={() => handleParagraphAsk(extractedOriginalPages[originalPageIndex])}
+                              className="p-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-indigo-600 hover:bg-indigo-50 hover:border-indigo-200 rounded-lg shadow-sm"
+                              title="Ask Akili about this page"
+                            >
+                              <Sparkles className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => handleParagraphCopyCitation(extractedOriginalPages[originalPageIndex])}
+                              className="p-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500 hover:bg-indigo-50 hover:text-indigo-600 rounded-lg shadow-sm"
+                              title="Copy Citation"
                             >
                               <FileText className="w-3.5 h-3.5" />
-                              Copy Reference
                             </button>
                           </div>
                         </div>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="text-center py-32 flex flex-col items-center">
-                      <div className="w-20 h-20 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mb-6">
-                        <BookOpen className="w-10 h-10 text-slate-300 animate-pulse" />
                       </div>
-                      <h3 className="text-xl font-black text-slate-400">Loading lesson material...</h3>
-                    </div>
+                    )
                   )}
 
                 </div>
               </div>
 
               {/* Reader Footer Page Navigation controls */}
-              {!isSummarizing && explanation && (
+              {((studyViewMode === 'guide' && !isSummarizing && explanation) || 
+                (studyViewMode === 'original' && !isExtractingOriginal && extractedOriginalPages.length > 0)) && (
                 <div className="bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 px-6 py-4 flex items-center justify-between shrink-0">
                   <button
-                    disabled={readerPage === 0}
-                    onClick={() => handlePageChange(readerPage - 1)}
+                    disabled={studyViewMode === 'guide' ? readerPage === 0 : originalPageIndex === 0}
+                    onClick={() => {
+                      if (studyViewMode === 'guide') {
+                        handlePageChange(readerPage - 1);
+                      } else {
+                        handleOriginalPageChange(originalPageIndex - 1);
+                      }
+                    }}
                     className="flex items-center gap-2 px-4 py-2 border border-slate-200 dark:border-slate-700 rounded-full text-xs font-black uppercase tracking-wider text-slate-650 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-50 disabled:hover:bg-transparent transition-all font-semibold"
                   >
                     ← Previous
                   </button>
                   <div className="flex items-center gap-1 overflow-x-auto max-w-[200px] sm:max-w-none no-scrollbar">
-                    {Array.from({ length: totalPages }).map((_, i) => (
-                      <button
-                        key={i}
-                        onClick={() => handlePageChange(i)}
-                        className={`w-7 h-7 rounded-full text-xs font-bold transition-all flex items-center justify-center shrink-0 ${
-                          readerPage === i ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
-                        }`}
-                      >
-                        {i + 1}
-                      </button>
-                    ))}
+                    {Array.from({ length: studyViewMode === 'guide' ? totalPages : extractedOriginalPages.length }).map((_, i) => {
+                      const isActive = studyViewMode === 'guide' ? readerPage === i : originalPageIndex === i;
+                      return (
+                        <button
+                          key={i}
+                          onClick={() => {
+                            if (studyViewMode === 'guide') {
+                              handlePageChange(i);
+                            } else {
+                              handleOriginalPageChange(i);
+                            }
+                          }}
+                          className={`w-7 h-7 rounded-full text-xs font-bold transition-all flex items-center justify-center shrink-0 ${
+                            isActive ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
+                          }`}
+                        >
+                          {i + 1}
+                        </button>
+                      );
+                    })}
                   </div>
                   <button
-                    disabled={readerPage === totalPages - 1}
-                    onClick={() => handlePageChange(readerPage + 1)}
+                    disabled={studyViewMode === 'guide' ? readerPage === totalPages - 1 : originalPageIndex === extractedOriginalPages.length - 1}
+                    onClick={() => {
+                      if (studyViewMode === 'guide') {
+                        handlePageChange(readerPage + 1);
+                      } else {
+                        handleOriginalPageChange(originalPageIndex + 1);
+                      }
+                    }}
                     className="flex items-center gap-2 px-4 py-2 border border-slate-200 dark:border-slate-700 rounded-full text-xs font-black uppercase tracking-wider text-slate-650 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-50 disabled:hover:bg-transparent transition-all font-semibold"
                   >
                     Next →
