@@ -37,8 +37,12 @@ import { ContactModal } from '../components/ContactModal';
 import { LoginModal } from '../components/LoginModal';
 import { LogoutModal } from '../components/LogoutModal';
 import { translations } from '../data/translations';
-import { SchoolCalendar } from '../components/SchoolCalendar';
 import { ThemeToggle } from '../components/ThemeToggle';
+import { safeImport } from '../utils/safeImport';
+
+const SchoolCalendar = React.lazy(() =>
+    safeImport(() => import('../components/SchoolCalendar').then(module => ({ default: module.SchoolCalendar })))
+);
 
 interface LandingPageProps {
     authError?: {
@@ -72,6 +76,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
     const [showMockAnswer, setShowMockAnswer] = useState(false);
     const [isGenerating, setIsGenerating] = useState(false);
     const [generatedAnswer, setGeneratedAnswer] = useState<string | null>(null);
+    const [showMobileStickyCta, setShowMobileStickyCta] = useState(false);
 
     const trackFunnelEvent = (eventName: string, params: Record<string, unknown> = {}) => {
         try {
@@ -110,6 +115,15 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [showNavigationGuide]);
+
+    React.useEffect(() => {
+        const handleScroll = () => {
+            setShowMobileStickyCta(window.scrollY > 680);
+        };
+        handleScroll();
+        window.addEventListener('scroll', handleScroll, { passive: true });
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, []);
 
     const handleGenerateAnswer = async () => {
         if (!questionInput.trim()) return;
@@ -508,9 +522,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
 
             <Helmet>
                 <html lang="en" />
-                <title>Somo Smart | Kenya's #1 Smart Exam & Revision Assistant (KCSE, KPSEA, JSS)</title>
-                <meta name="description" content="Master your exams with Somo Smart. Kenya's premier Smart platform for KCSE, KPSEA, and Junior School revision. Get instant explanations, auto-marked past papers, and personalized study notes." />
-                <meta name="keywords" content="Somo Smart, KCSE revision 2024, KPSEA past papers, JSS revision notes, Smart tutor Kenya, Kenyan curriculum Smart tool, SomoSmart app, KILEA revision, CBE study assistant" />
+                <title>Somo Smart | KCSE, KPSEA and CBC Study Support for Kenya</title>
+                <meta name="description" content="Somo Smart helps Kenyan learners, teachers and parents with step-by-step answers, exam prep, official notes, past papers, audio learning and progress tracking." />
+                <meta name="keywords" content="Somo Smart, KCSE revision, KPSEA past papers, CBC notes, Kenyan learner app, teacher lesson notes, parent progress tracking" />
 
                 {/* AIO/SEO specific meta tags */}
                 <meta name="smart-search-index" content="index" />
@@ -520,30 +534,33 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                 <meta name="core-features" content="Smart Exam Assistant, Instant Explanations, Auto-Grading, Topical Quizzes, CBE Notes" />
 
                 {/* Search Engine Optimization */}
-                <meta name="robots" content="index, follow" />
+                <meta name="robots" content="index, follow, max-image-preview:large" />
                 <meta name="author" content="Somo Smart" />
-                <meta property="og:title" content="Somo Smart | Your Smart Exam Assistant - Improve Grades NOW!" />
-                <meta property="og:description" content="Transform your revision with our Smart Assistant. Access verified KCSE, KPSEA, and JSS materials with instant smart feedback." />
-                <meta property="og:image" content="https://somaai.co.ke/og-image.jpg" />
+                <meta property="og:site_name" content="Somo Smart" />
+                <meta property="og:title" content="Somo Smart | KCSE, KPSEA and CBC Study Support for Kenya" />
+                <meta property="og:description" content="Step-by-step answers, exam prep, official notes, past papers, audio learning and progress tracking for Kenyan learners, parents and teachers." />
+                <meta property="og:image" content="https://somaai.co.ke/og-image.png" />
                 <meta property="og:type" content="website" />
                 <meta property="og:url" content="https://somaai.co.ke/" />
 
                 {/* Twitter Meta */}
                 <meta name="twitter:card" content="summary_large_image" />
-                <meta name="twitter:title" content="Somo Smart | Kenya's Best Smart Study App" />
-                <meta name="twitter:description" content="Improve your grades with our Smart Assistant. All Kenyan exams supported: KCSE, KPSEA, JSS." />
+                <meta name="twitter:site" content="@somasmart" />
+                <meta name="twitter:title" content="Somo Smart | KCSE, KPSEA and CBC Study Support for Kenya" />
+                <meta name="twitter:description" content="Step-by-step answers, exam prep, official notes, past papers, audio learning and progress tracking." />
 
                 <link rel="canonical" href="https://somaai.co.ke/" />
+                <link rel="preload" as="image" href={heroScienceLabWebp} type="image/webp" />
 
                 {/* Structured Data / AIO */}
                 <script type="application/ld+json">
                     {JSON.stringify({
                         "@context": "https://schema.org",
-                        "@type": "Organization",
+                        "@type": "EducationalOrganization",
                         "name": "Somo Smart",
                         "url": "https://somaai.co.ke",
                         "logo": "https://somaai.co.ke/main_logo.png",
-                        "description": "Kenya's #1 Smart Exam & Revision Assistant for KCSE, KPSEA, and JSS.",
+                        "description": "Study support for Kenyan learners, teachers and parents across KCSE, KPSEA and CBC.",
                         "sameAs": [
                             "https://twitter.com/somasmart",
                             "https://facebook.com/somasmart"
@@ -559,14 +576,55 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                         "applicationCategory": "EducationApplication",
                         "offers": {
                             "@type": "Offer",
-                            "price": "0",
+                            "price": "20",
                             "priceCurrency": "KES"
                         },
-                        "aggregateRating": {
-                            "@type": "AggregateRating",
-                            "ratingValue": "4.9",
-                            "ratingCount": "1200"
+                        "description": "Step-by-step answers, exam prep, official notes, past papers, audio learning and progress tracking."
+                    })}
+                </script>
+                <script type="application/ld+json">
+                    {JSON.stringify({
+                        "@context": "https://schema.org",
+                        "@type": "WebSite",
+                        "name": "Somo Smart",
+                        "url": "https://somaai.co.ke",
+                        "potentialAction": {
+                            "@type": "SearchAction",
+                            "target": "https://somaai.co.ke/?q={search_term_string}",
+                            "query-input": "required name=search_term_string"
                         }
+                    })}
+                </script>
+                <script type="application/ld+json">
+                    {JSON.stringify({
+                        "@context": "https://schema.org",
+                        "@type": "FAQPage",
+                        "mainEntity": [
+                            {
+                                "@type": "Question",
+                                "name": "What does Somo Smart do?",
+                                "acceptedAnswer": {
+                                    "@type": "Answer",
+                                    "text": "It helps Kenyan learners, teachers and parents with step-by-step answers, exam prep, official notes, past papers, audio learning and progress tracking."
+                                }
+                            },
+                            {
+                                "@type": "Question",
+                                "name": "Can teachers use Somo Smart?",
+                                "acceptedAnswer": {
+                                    "@type": "Answer",
+                                    "text": "Yes. Teachers can create notes, lesson flow, quizzes, Darasa recaps and marking feedback."
+                                }
+                            },
+                            {
+                                "@type": "Question",
+                                "name": "Does the library include notes and past papers?",
+                                "acceptedAnswer": {
+                                    "@type": "Answer",
+                                    "text": "Yes. Logged-in learners can access official notes, syllabus guides and KCSE/KPSEA past papers inside the library."
+                                }
+                            }
+                        ]
                     })}
                 </script>
             </Helmet>
@@ -706,7 +764,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                             className="flex-1 max-w-2xl"
                         >
                             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-indigo-100 dark:bg-indigo-900/50 border border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 text-xs font-bold uppercase tracking-widest mb-6">
-                                <Star className="w-3 h-3 fill-current" /> For Learners &amp; Teachers
+                                <Star className="w-3 h-3 fill-current" /> Kenyan Learners, Parents &amp; Teachers
                             </div>
 
                             <h1 className="text-3xl sm:text-5xl lg:text-6xl font-bold text-slate-900 dark:text-white tracking-tight leading-[1.1] mb-5">
@@ -714,7 +772,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                 <span className="block text-indigo-600 dark:text-indigo-400 mt-2">Get unstuck in minutes.</span>
                             </h1>
                             <p className="text-base sm:text-lg text-slate-600 dark:text-slate-400 font-medium leading-relaxed mb-6 sm:mb-8 max-w-lg">
-                                Somo Smart explains the method, checks understanding with drills, reads lessons aloud, and gives parents progress proof - built around Kenyan exams and CBC learning.
+                                Ask a school question, get the method, practise with drills, listen to lessons, and show parents real progress - built around Kenyan exams and CBC learning.
                             </p>
 
                             {/* Solve It chat window */}
@@ -840,17 +898,17 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                 ))}
                             </div>
 
-                            <div className="flex flex-wrap gap-x-5 gap-y-3 text-sm text-slate-500 dark:text-slate-400">
-                                <div className="flex items-center gap-1.5"><CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0" /> Free start, KES 20/day when ready</div>
-                                <div className="flex items-center gap-1.5"><CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0" /> Official notes and past papers</div>
-                                <div className="flex items-center gap-1.5"><CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0" /> Parent proof and teacher tools</div>
+                            <div className="grid gap-2 text-sm text-slate-500 dark:text-slate-400 sm:grid-cols-3">
+                                <div className="flex items-center gap-1.5"><CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0" /> Start free</div>
+                                <div className="flex items-center gap-1.5"><CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0" /> KES 20/day option</div>
+                                <div className="flex items-center gap-1.5"><CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0" /> Notes and past papers</div>
                             </div>
                             <div className="mt-6 flex flex-col sm:flex-row gap-3">
                                 <button
                                     onClick={() => handleRoleSelect(UserRole.LEARNER)}
                                     className="w-full sm:w-auto min-h-[46px] rounded-xl bg-indigo-600 hover:bg-indigo-700 px-5 text-sm font-black text-white flex items-center justify-center gap-2"
                                 >
-                                    Open Learner Workspace <ChevronRight className="w-4 h-4" />
+                                    Start Learning Free <ChevronRight className="w-4 h-4" />
                                 </button>
                                 <button
                                     onClick={() => handleRoleSelect(UserRole.TEACHER)}
@@ -860,7 +918,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                 </button>
                             </div>
 
-                            <div className="mt-5 sm:mt-6 rounded-2xl border border-slate-200 bg-white/80 p-3 sm:p-4 shadow-sm backdrop-blur dark:border-slate-700 dark:bg-slate-800/70">
+                            <div className="mt-5 sm:mt-6 hidden sm:block rounded-2xl border border-slate-200 bg-white/80 p-3 sm:p-4 shadow-sm backdrop-blur dark:border-slate-700 dark:bg-slate-800/70">
                                 <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400 mb-2">First time here?</p>
                                 <h3 className="text-sm font-black text-slate-900 dark:text-white mb-3">Choose what you need now</h3>
                                 <div className="grid grid-cols-2 gap-2">
@@ -903,8 +961,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                     Not sure where to start? Open the 30-second guide <ArrowRight className="h-3.5 w-3.5" />
                                 </button>
                             </div>
-                            <p className="mt-2 text-xs font-semibold text-emerald-700 dark:text-emerald-300">
-                                Teachers: cut prep and marking time with lesson notes, schemes, quizzes, Darasa mode, and marking guides.
+                            <p className="mt-4 text-xs font-semibold text-emerald-700 dark:text-emerald-300">
+                                Teachers: save prep and marking time without replacing your classroom judgement.
                             </p>
                         </motion.div>
 
@@ -1036,6 +1094,35 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                             </button>
                         </div>
                     </motion.div>
+                </div>
+            </section>
+
+            {/* --- CONVERSION PROOF STRIP --- */}
+            <section className="bg-white dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                    <div className="grid gap-4 md:grid-cols-3">
+                        <div className="rounded-2xl border border-indigo-100 bg-indigo-50/70 p-5 dark:border-indigo-900 dark:bg-indigo-950/30">
+                            <GraduationCap className="h-7 w-7 text-indigo-700 dark:text-indigo-300" />
+                            <h2 className="mt-3 text-lg font-black text-slate-950 dark:text-white">For learners</h2>
+                            <p className="mt-2 text-sm font-semibold leading-relaxed text-slate-600 dark:text-slate-300">
+                                Get unstuck, practise the method, and build confidence before homework, CATs, KPSEA, KCSE, or end-term exams.
+                            </p>
+                        </div>
+                        <div className="rounded-2xl border border-purple-100 bg-purple-50/70 p-5 dark:border-purple-900 dark:bg-purple-950/30">
+                            <ShieldCheck className="h-7 w-7 text-purple-700 dark:text-purple-300" />
+                            <h2 className="mt-3 text-lg font-black text-slate-950 dark:text-white">For parents</h2>
+                            <p className="mt-2 text-sm font-semibold leading-relaxed text-slate-600 dark:text-slate-300">
+                                See effort, weak topics, practice history, plan use, and whether learning is actually happening after payment.
+                            </p>
+                        </div>
+                        <div className="rounded-2xl border border-emerald-100 bg-emerald-50/70 p-5 dark:border-emerald-900 dark:bg-emerald-950/30">
+                            <BookOpen className="h-7 w-7 text-emerald-700 dark:text-emerald-300" />
+                            <h2 className="mt-3 text-lg font-black text-slate-950 dark:text-white">For teachers</h2>
+                            <p className="mt-2 text-sm font-semibold leading-relaxed text-slate-600 dark:text-slate-300">
+                                Create lessons, schemes, quizzes, Darasa recaps, and marking feedback faster. The teacher stays in control.
+                            </p>
+                        </div>
+                    </div>
                 </div>
             </section>
 
@@ -1482,7 +1569,27 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
 
 
             {/* --- SCHOOL CALENDAR --- */}
-            <SchoolCalendar />
+            <React.Suspense
+                fallback={
+                    <section className="py-16 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800">
+                        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                            <div className="h-10 w-48 rounded-full bg-slate-100 dark:bg-slate-800 animate-pulse mb-6" />
+                            <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-4">
+                                {Array.from({ length: 4 }).map((_, i) => (
+                                    <div key={i} className="rounded-3xl border border-slate-200 dark:border-slate-800 p-6 bg-slate-50 dark:bg-slate-950 animate-pulse">
+                                        <div className="h-10 w-10 rounded-xl bg-slate-200 dark:bg-slate-800 mb-4" />
+                                        <div className="h-5 w-2/3 bg-slate-200 dark:bg-slate-800 rounded mb-3" />
+                                        <div className="h-4 w-full bg-slate-200 dark:bg-slate-800 rounded mb-2" />
+                                        <div className="h-4 w-5/6 bg-slate-200 dark:bg-slate-800 rounded" />
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </section>
+                }
+            >
+                <SchoolCalendar />
+            </React.Suspense>
 
             <div className="w-full h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent opacity-20"></div>
 
@@ -2090,25 +2197,43 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
             />
 
             {/* --- MOBILE STICKY CTA --- */}
-            <div className="md:hidden fixed bottom-6 left-4 right-4 p-2.5 bg-slate-900/95 dark:bg-slate-800/95 backdrop-blur-xl border border-slate-700/50 shadow-2xl z-50 rounded-2xl flex items-center justify-around pointer-events-auto">
-                <div className="flex flex-col pl-2">
-                    <span className="text-white text-xs font-black tracking-tight leading-none mb-1">Ready to pass?</span>
-                    <span className="text-blue-300 text-[9px] font-bold uppercase tracking-widest">Solutions for KCSE & CBC</span>
-                </div>
-                <button
-                    onClick={() => handleRoleSelect(UserRole.LEARNER)}
-                    className="bg-blue-600 hover:bg-blue-500 text-white py-2.5 px-5 rounded-xl font-bold text-sm shadow-md shadow-blue-500/20 active:scale-95 transition-all flex items-center gap-2"
-                >
-                    Start Free <ChevronRight className="w-4 h-4 text-blue-200" />
-                </button>
-            </div>
+            <AnimatePresence>
+                {showMobileStickyCta && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 24 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 24 }}
+                        className="md:hidden fixed bottom-6 left-4 right-4 p-2.5 bg-slate-900/95 dark:bg-slate-800/95 backdrop-blur-xl border border-slate-700/50 shadow-2xl z-50 rounded-2xl flex items-center gap-2 pointer-events-auto"
+                    >
+                        <div className="flex flex-col pl-2 min-w-0 flex-1">
+                            <span className="text-white text-xs font-black tracking-tight leading-none mb-1">Ready to improve?</span>
+                            <span className="text-blue-300 text-[9px] font-bold uppercase tracking-widest">Start free, pay when ready</span>
+                        </div>
+                        <a
+                            href="https://wa.me/254722763760"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="shrink-0 bg-white/10 hover:bg-white/15 text-white py-2.5 px-3 rounded-xl font-black text-xs active:scale-95 transition-all flex items-center gap-1 border border-white/10"
+                            aria-label="Chat with us on WhatsApp"
+                        >
+                            Chat
+                        </a>
+                        <button
+                            onClick={() => handleRoleSelect(UserRole.LEARNER)}
+                            className="shrink-0 bg-blue-600 hover:bg-blue-500 text-white py-2.5 px-4 rounded-xl font-bold text-sm shadow-md shadow-blue-500/20 active:scale-95 transition-all flex items-center gap-1"
+                        >
+                            Start Free <ChevronRight className="w-4 h-4 text-blue-200" />
+                        </button>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             {/* --- WHATSAPP FLOATING BUTTON (icon-only) --- */}
             <a
                 href="https://wa.me/254722763760"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="fixed bottom-24 left-4 md:bottom-8 md:left-8 z-[60] flex items-center justify-center bg-[#25D366] text-white p-3.5 rounded-full shadow-2xl hover:bg-[#20bd5a] hover:scale-110 active:scale-95 transition-all border-4 border-white/50 backdrop-blur-sm"
+                className="hidden md:flex fixed bottom-8 left-8 z-[60] items-center justify-center bg-[#25D366] text-white p-3.5 rounded-full shadow-2xl hover:bg-[#20bd5a] hover:scale-110 active:scale-95 transition-all border-4 border-white/50 backdrop-blur-sm"
                 title="Chat with us on WhatsApp"
                 aria-label="Chat with us on WhatsApp"
             >

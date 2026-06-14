@@ -34,6 +34,8 @@ import { getLearnerCtaVariant } from '../../utils/abExperiments';
 import { QuestRoadmap } from './QuestRoadmap';
 import { safeImport } from '../../utils/safeImport';
 import { PlanLimitError, getPlanLimit, getPlanUsage } from '../../services/planLimitService';
+import { pesapalService } from '../../services/pesapalService';
+import { supabase } from '../../lib/supabase';
 
 const RevisionLanding = React.lazy(() => safeImport(() => import('../revision/RevisionLanding').then(module => ({ default: module.RevisionLanding }))));
 const RevisionSession = React.lazy(() => safeImport(() => import('../revision/RevisionSession').then(module => ({ default: module.RevisionSession }))));
@@ -111,11 +113,12 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
     marketplaceMaterials, purchasedMaterialIds, purchaseMaterial,
     resources, fetchResources,
     extraDownloads, grantExtraDownloads,
-    learningCredits,
+    learningCredits, grantLearningCredits,
     verifySubscription, login,
     // Phase 2/3: Adaptive Tutoring & Evolutionary Educator
     masteryGraph, spacedRepetitionItems, dueForReview, weakTopics, processQuizCompletion, addSpacedRepetitionItem,
-    getPersonalizedDailyChallenge, activeStrategies, educationLevel, updateTopicMastery
+    getPersonalizedDailyChallenge, activeStrategies, educationLevel, updateTopicMastery,
+    userId
   } = useApp();
   const t = translations[language];
   const location = useLocation();
@@ -478,6 +481,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
   const resumeBypassRef = useRef(false);
   const subscriptionRepairAttemptedRef = useRef(false);
   const paywallRecoveryAttemptedRef = useRef(false);
+  const creditRecoveryAttemptedRef = useRef<string | null>(null);
 
   // --- Spaced Repetition (Flashcards) States & Confetti Hook ---
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
@@ -498,6 +502,82 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
     }
   }, [reviewComplete]);
 
+  const restoreMissingCreditWallet = React.useCallback(async () => {
+    if (!isRegistered || learningCredits > 0) return false;
+    const profileId = studentProfile?.id || userId;
+    if (!profileId) return false;
+
+    try {
+      const { data: txs, error } = await supabase
+        .from('transactions')
+        .select('reference_code, amount, status, description, created_at')
+        .eq('user_id', profileId)
+        .order('created_at', { ascending: false })
+        .limit(20);
+
+      if (error || !txs?.length) return false;
+
+      for (const tx of txs as Array<any>) {
+        const reference = String(tx.reference_code || '');
+        const recoveryKey = `soma_credit_recovered_${reference || tx.created_at}`;
+        if (localStorage.getItem(recoveryKey) === '1') continue;
+
+        let status = String(tx.status || '').toUpperCase();
+        let remoteStatus: any = null;
+        if (status !== 'SUCCESS' && reference) {
+          try {
+            remoteStatus = await pesapalService.checkTransactionStatus({ merchantReference: reference });
+            const statusText = String(
+              remoteStatus?.payment_status_description ||
+              remoteStatus?.status_description ||
+              remoteStatus?.status ||
+              ''
+            ).toLowerCase();
+            if (statusText.includes('completed') || statusText.includes('success')) {
+              status = 'SUCCESS';
+            }
+          } catch {
+            // Keep the local transaction status as the fallback signal.
+          }
+        }
+
+        if (status !== 'SUCCESS') continue;
+
+        const isCreditReference = reference.startsWith('CREDIT_');
+        const isCreditDescription = /credit/i.test(String(tx.description || ''));
+        const amount = Number(tx.amount || 0);
+        const isCreditAmount = amount === 20 || amount === 50 || amount === 100;
+        if (!isCreditReference && !isCreditDescription && !isCreditAmount) continue;
+
+        const creditsFromReference = isCreditReference ? Number(reference.split('_')[1] || 0) : 0;
+        const creditsFromDescription = Number(String(tx.description || '').match(/(\d+)\s+learning credits/i)?.[1] || 0);
+        const creditsFromStatus = Number(remoteStatus?.learning_credits || remoteStatus?.credits_granted || 0);
+        const credits =
+          creditsFromStatus ||
+          creditsFromReference ||
+          creditsFromDescription ||
+          (amount === 20 ? 30 : amount === 50 ? 100 : amount === 100 ? 250 : 0);
+
+        if (credits <= 0) continue;
+
+        grantLearningCredits(credits);
+        localStorage.setItem(recoveryKey, '1');
+        setShowLimitModal(false);
+        setShowExpiryModal(false);
+        setHasRecentPaymentUnlock(true);
+        return true;
+      }
+    } catch (err) {
+      console.warn('Credit transaction recovery failed:', err);
+    }
+
+    return false;
+  }, [isRegistered, learningCredits, studentProfile?.id, userId, grantLearningCredits]);
+
+  useEffect(() => {
+    restoreMissingCreditWallet();
+  }, [restoreMissingCreditWallet]);
+
   useEffect(() => {
     if (!isRegistered || isPro || subscriptionRepairAttemptedRef.current) return;
     subscriptionRepairAttemptedRef.current = true;
@@ -505,6 +585,47 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
       console.warn('Subscription self-heal check failed:', err);
     });
   }, [isRegistered, isPro, verifySubscription]);
+
+  useEffect(() => {
+    if (!isRegistered || learningCredits > 0) return;
+    const reference = localStorage.getItem('soma_last_payment_reference') || '';
+    if (!reference.startsWith('CREDIT_') || creditRecoveryAttemptedRef.current === reference) return;
+    if (localStorage.getItem(`soma_credit_recovered_${reference}`) === '1') return;
+
+    creditRecoveryAttemptedRef.current = reference;
+    const recoverCreditPayment = async () => {
+      try {
+        const status = await pesapalService.checkTransactionStatus({ merchantReference: reference });
+        const statusText = String(
+          status?.payment_status_description ||
+          status?.status_description ||
+          status?.status ||
+          ''
+        ).toLowerCase();
+
+        if (!statusText.includes('completed') && !statusText.includes('success')) return;
+
+        const creditsFromReference = Number(reference.split('_')[1] || 0);
+        const lastAmount = Number(localStorage.getItem('soma_last_payment_amount') || 0);
+        const creditsFromStatus = Number(status?.learning_credits || status?.credits_granted || 0);
+        const credits =
+          creditsFromStatus ||
+          creditsFromReference ||
+          (lastAmount === 20 ? 30 : lastAmount === 50 ? 100 : lastAmount === 100 ? 250 : 0);
+
+        if (credits <= 0) return;
+        grantLearningCredits(credits);
+        localStorage.setItem(`soma_credit_recovered_${reference}`, '1');
+        setShowLimitModal(false);
+        setShowExpiryModal(false);
+        setHasRecentPaymentUnlock(true);
+      } catch (err) {
+        console.warn('Credit payment recovery failed:', err);
+      }
+    };
+
+    recoverCreditPayment();
+  }, [isRegistered, learningCredits, grantLearningCredits]);
 
   useEffect(() => {
     if (!showLimitModal || !isRegistered || isPro || paywallRecoveryAttemptedRef.current) return;
@@ -3841,23 +3962,50 @@ ${explanation.explanation}
                   <div>
                     <p className="text-[10px] font-black uppercase tracking-[0.18em] text-indigo-500">Credit Wallet</p>
                     <h2 className="text-base font-black text-slate-900 dark:text-white mt-0.5">
-                      {learningCredits > 0 ? `${learningCredits} credits available` : 'No credits available'}
+                      {!isRegistered
+                        ? 'Log in to view credits'
+                        : learningCredits > 0
+                          ? `${learningCredits} credits available`
+                          : 'No credits available'}
                     </h2>
                   </div>
-                  <button
-                    onClick={() => {
-                      trackFunnelEvent('credit_pack_selected', {
-                        source: 'learner_plan_balance',
-                        credits: LEARNING_CREDIT_PACKS[0].credits,
-                        amount_kes: LEARNING_CREDIT_PACKS[0].price
-                      });
-                      setSelectedPlan(LEARNING_CREDIT_PACKS[0]);
-                      setMode('PAYMENT' as any);
-                    }}
-                    className="self-start sm:self-auto rounded-xl bg-slate-100 dark:bg-slate-800 px-3 py-2 text-[11px] font-black uppercase tracking-wider text-slate-600 dark:text-slate-300 hover:bg-indigo-50 hover:text-indigo-700 dark:hover:bg-indigo-950/50 dark:hover:text-indigo-300 transition-colors"
-                  >
-                    Buy Credits
-                  </button>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      onClick={async () => {
+                        if (!isRegistered) {
+                          setShowLogin(true);
+                          return;
+                        }
+                        setLoading(true);
+                        setLoadingText('Checking credit payments...');
+                        const restored = await restoreMissingCreditWallet();
+                        setLoading(false);
+                        if (!restored) {
+                          setError({
+                            title: 'No Credit Payment Found',
+                            message: 'We could not find a completed credit-pack payment for this learner yet. If you just paid, wait a moment and try again.'
+                          });
+                        }
+                      }}
+                      className="self-start sm:self-auto rounded-xl bg-white dark:bg-slate-950 px-3 py-2 text-[11px] font-black uppercase tracking-wider text-indigo-700 dark:text-indigo-300 border border-indigo-100 dark:border-indigo-900 hover:bg-indigo-50 dark:hover:bg-indigo-950/50 transition-colors"
+                    >
+                      {isRegistered ? 'Restore Credits' : 'Log In'}
+                    </button>
+                    <button
+                      onClick={() => {
+                        trackFunnelEvent('credit_pack_selected', {
+                          source: 'learner_plan_balance',
+                          credits: LEARNING_CREDIT_PACKS[0].credits,
+                          amount_kes: LEARNING_CREDIT_PACKS[0].price
+                        });
+                        setSelectedPlan(LEARNING_CREDIT_PACKS[0]);
+                        setMode('PAYMENT' as any);
+                      }}
+                      className="self-start sm:self-auto rounded-xl bg-slate-100 dark:bg-slate-800 px-3 py-2 text-[11px] font-black uppercase tracking-wider text-slate-600 dark:text-slate-300 hover:bg-indigo-50 hover:text-indigo-700 dark:hover:bg-indigo-950/50 dark:hover:text-indigo-300 transition-colors"
+                    >
+                      Buy Credits
+                    </button>
+                  </div>
                 </div>
                 <div className="h-2 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden">
                   <div
@@ -3866,7 +4014,9 @@ ${explanation.explanation}
                   />
                 </div>
                 <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
-                  Credits are used for metered actions like grounded answers, marking, deep document analysis, and voice.
+                  {isRegistered
+                    ? 'Credits are used for metered actions like grounded answers, marking, deep document analysis, and voice.'
+                    : 'Credits are tied to your Soma student account. Log in with your Student ID after payment to see and use them.'}
                 </p>
               </div>
 

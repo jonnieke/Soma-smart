@@ -189,13 +189,12 @@ export const PaymentFlow: React.FC<Props> = ({ plan, materialId, onSuccess, onCa
                         if (isCreditPackCheckout && plan?.credits) {
                             try {
                                 if (creditProfileId) {
-                                    const { data: credited, error: creditErr } = await supabase.rpc('grant_learning_credits', {
+                                    const { error: creditErr } = await supabase.rpc('grant_learning_credits', {
                                         p_profile_id: creditProfileId,
                                         p_credits: plan.credits
                                     });
                                     if (creditErr) throw creditErr;
-                                    const walletCredits = typeof credited === 'number' ? credited : plan.credits;
-                                    grantLearningCredits(walletCredits);
+                                    grantLearningCredits(plan.credits);
                                 } else {
                                     grantLearningCredits(plan.credits);
                                 }

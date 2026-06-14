@@ -1866,8 +1866,7 @@ export const analyzeExamPaperUrl = async (fileUrl: string, mimeType: string): Pr
   try {
     const result = await model.generateContent([
       prompt,
-      // @ts-ignore - fetchUrl is our custom property handled by gemini-proxy
-      { fetchUrl: { url: fileUrl, mimeType: mimeType } }
+      { fetchUrl: { url: fileUrl, mimeType: mimeType } } as any
     ]);
 
     const text = result.response.text();

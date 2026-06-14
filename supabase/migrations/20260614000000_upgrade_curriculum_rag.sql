@@ -31,8 +31,7 @@ create index if not exists idx_knowledge_vectors_content_fts
   on public.knowledge_vectors using gin (to_tsvector('english', content));
 
 create index if not exists idx_knowledge_vectors_embedding_cosine
-  on public.knowledge_vectors using ivfflat (embedding vector_cosine_ops)
-  with (lists = 100);
+  on public.knowledge_vectors using hnsw (embedding vector_cosine_ops);
 
 drop function if exists match_documents(vector, float, int);
 drop function if exists match_documents(vector, float, int, bigint);

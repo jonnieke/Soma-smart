@@ -8,8 +8,8 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-const EMBEDDING_MODEL = Deno.env.get("GEMINI_EMBEDDING_MODEL") || "text-embedding-004";
-const EXTRACTION_MODEL = Deno.env.get("GEMINI_EXTRACTION_MODEL") || "gemini-2.5-flash";
+const EMBEDDING_MODEL = Deno.env.get("GEMINI_EMBEDDING_MODEL") || "text-embedding-005";
+const EXTRACTION_MODEL = Deno.env.get("GEMINI_EXTRACTION_MODEL") || "gemini-3.5-flash";
 const MAX_CHUNKS = Number(Deno.env.get("RAG_MAX_CHUNKS_PER_DOCUMENT") || "240");
 
 const json = (body: unknown, status = 200) =>

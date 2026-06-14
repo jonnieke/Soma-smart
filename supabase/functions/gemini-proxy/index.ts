@@ -478,11 +478,95 @@ serve(async (req) => {
         return new Response('ok', { headers: corsHeaders });
     }
 
+    if (req.headers.get("upgrade") === "websocket") {
+        const apiKey = Deno.env.get("GEMINI_API_KEY");
+        if (!apiKey) {
+            return new Response("GEMINI_API_KEY not configured on server", { status: 500 });
+        }
+
+        const { socket: clientSocket, response } = Deno.upgradeWebSocket(req);
+        
+        const googleSocket = new WebSocket(`wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContent?key=${apiKey}`);
+        
+        clientSocket.onmessage = (event) => {
+            if (googleSocket.readyState === WebSocket.OPEN) {
+                googleSocket.send(event.data);
+            }
+        };
+        
+        googleSocket.onmessage = (event) => {
+            if (clientSocket.readyState === WebSocket.OPEN) {
+                clientSocket.send(event.data);
+            }
+        };
+        
+        clientSocket.onclose = () => {
+            if (googleSocket.readyState === WebSocket.OPEN) googleSocket.close();
+        };
+        
+        googleSocket.onclose = () => {
+            if (clientSocket.readyState === WebSocket.OPEN) clientSocket.close();
+        };
+        
+        clientSocket.onerror = (err) => console.error("Client WS Error:", err);
+        googleSocket.onerror = (err) => console.error("Google WS Error:", err);
+
+        return response;
+    }
+
     try {
         const GCP_PROJECT_ID = Deno.env.get('GCP_PROJECT_ID');
         const GCP_CLIENT_EMAIL = Deno.env.get('GCP_CLIENT_EMAIL');
         const GCP_PRIVATE_KEY = Deno.env.get('GCP_PRIVATE_KEY');
         const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
+
+        const url = new URL(req.url);
+        const isCacheRequest = url.pathname.endsWith('/cache') || url.pathname.endsWith('/cache/create');
+
+        if (isCacheRequest) {
+            if (!GEMINI_API_KEY) {
+                return new Response(
+                    JSON.stringify({ error: 'GEMINI_API_KEY not configured on server' }),
+                    { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+                );
+            }
+            
+            const supabase = getSupabaseAdmin();
+            const requester = await resolveRequester(req, supabase);
+            if (!requester.userId && !requester.studentCode) {
+                return new Response(
+                    JSON.stringify({ error: "Unauthorized access" }),
+                    { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 }
+                );
+            }
+
+            const body = await req.json();
+            const { model, contents, ttl, displayName, systemInstruction } = body;
+            const normalizedModel = normalizeGeminiModel(model) || "gemini-3.5-flash";
+
+            const requestBody: Record<string, any> = {
+                model: `models/${normalizedModel}`,
+                ttl: ttl || "1800s",
+            };
+            if (contents) requestBody.contents = contents;
+            if (displayName) requestBody.displayName = displayName;
+            if (systemInstruction) requestBody.systemInstruction = systemInstruction;
+
+            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/cachedContents?key=${GEMINI_API_KEY}`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(requestBody),
+            });
+
+            const data = await res.json();
+            if (!res.ok) {
+                return new Response(
+                    JSON.stringify({ error: "Failed to create context cache", details: data }),
+                    { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: res.status }
+                );
+            }
+            return new Response(JSON.stringify(data), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+        }
 
         const useVertex = !!(GCP_PROJECT_ID && GCP_CLIENT_EMAIL && GCP_PRIVATE_KEY);
 
@@ -493,7 +577,7 @@ serve(async (req) => {
             );
         }
 
-        const { model, contents, generationConfig, systemInstruction, stream } = await req.json();
+        const { model, contents, generationConfig, systemInstruction, stream, cachedContent } = await req.json();
         const normalizedModel = normalizeGeminiModel(model);
         const feature = inferAiFeature(contents, systemInstruction);
         const supabase = getSupabaseAdmin();
@@ -611,6 +695,7 @@ serve(async (req) => {
                 geminiBody = { contents: normalizedContents };
                 if (generationConfig) geminiBody.generationConfig = generationConfig;
                 if (systemInstruction) geminiBody.systemInstruction = systemInstruction;
+                if (cachedContent) geminiBody.cachedContent = cachedContent;
             }
         } else {
             if (normalizedModel.includes('embedding')) {
@@ -622,6 +707,7 @@ serve(async (req) => {
                 geminiBody = { contents: normalizedContents };
                 if (generationConfig) geminiBody.generationConfig = generationConfig;
                 if (systemInstruction) geminiBody.systemInstruction = systemInstruction;
+                if (cachedContent) geminiBody.cachedContent = cachedContent;
             }
         }
 

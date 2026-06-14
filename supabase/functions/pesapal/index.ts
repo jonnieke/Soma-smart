@@ -109,10 +109,15 @@ serve(async (req) => {
                             else if (tx.amount === 100) credits = 250
                         }
                         if (credits > 0) {
-                            await supabase.rpc('grant_learning_credits', {
+                            const { data: walletCredits } = await supabase.rpc('grant_learning_credits', {
                                 p_profile_id: tx.user_id,
                                 p_credits: credits
                             })
+                            return {
+                                ...statusData,
+                                credits_granted: credits,
+                                learning_credits: typeof walletCredits === 'number' ? walletCredits : credits
+                            }
                         }
                         return statusData
                     }

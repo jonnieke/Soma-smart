@@ -616,19 +616,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         setSubscriptionPlan(access.tier);
         setSubscriptionExpiry(access.expiry);
 
-        const { data: creditRow, error: creditError } = await supabase
-          .from('learning_credit_balances')
-          .select('credits')
-          .eq('profile_id', currentUserId)
-          .maybeSingle();
-        if (!creditError && typeof creditRow?.credits === 'number') {
-          const localCredits = Number(localStorage.getItem('soma_learning_credits') || 0);
-          const syncedCredits = Math.max(localCredits, creditRow.credits);
-          localStorage.setItem('soma_learning_credits', String(syncedCredits));
-          setLearningCredits(syncedCredits);
-        } else if (creditError) {
-          warnIfDev('Learning credits unavailable:', creditError);
-        }
+        await syncLearningCredits(currentUserId, studentCode || localStorage.getItem('soma_active_student'));
       }
     }
   };
@@ -1913,6 +1901,42 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setLearningCredits(next);
   };
 
+  const syncLearningCredits = async (profileId: string, studentId?: string | null) => {
+    if (!profileId) return;
+
+    const localCredits = Number(localStorage.getItem('soma_learning_credits') || 0);
+
+    try {
+      const { data: rpcCredits, error: rpcError } = await supabase.rpc('get_learning_credits', {
+        p_profile_id: profileId,
+        p_student_id: studentId || null
+      });
+
+      if (!rpcError && typeof rpcCredits === 'number') {
+        const syncedCredits = Math.max(localCredits, rpcCredits);
+        localStorage.setItem('soma_learning_credits', String(syncedCredits));
+        setLearningCredits(syncedCredits);
+        return;
+      }
+    } catch (err) {
+      warnIfDev('Learning credit RPC sync failed:', err);
+    }
+
+    const { data: creditRow, error: creditError } = await supabase
+      .from('learning_credit_balances')
+      .select('credits')
+      .eq('profile_id', profileId)
+      .maybeSingle();
+
+    if (!creditError && typeof creditRow?.credits === 'number') {
+      const syncedCredits = Math.max(localCredits, creditRow.credits);
+      localStorage.setItem('soma_learning_credits', String(syncedCredits));
+      setLearningCredits(syncedCredits);
+    } else if (creditError) {
+      warnIfDev('Learning credits unavailable:', creditError);
+    }
+  };
+
   const fetchResources = async (grade?: string, subject?: string) => {
     try {
       let query = supabase.from('knowledge_base').select('*').order('created_at', { ascending: false });
@@ -2206,6 +2230,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
       // PERSIST LOGIN
       localStorage.setItem('soma_active_student', profile.student_id);
+      await syncLearningCredits(profile.id, profile.student_id);
 
       // Update Session ID for Single Device Login
       // If profile has no session_id, we claim it.

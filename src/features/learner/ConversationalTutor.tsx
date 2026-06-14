@@ -4,7 +4,8 @@ import {
     Mic, MicOff, Volume2, VolumeX, Send, ArrowLeft,
     MessageCircle, Languages, Sparkles,
     Globe, Loader2, RefreshCw,
-    Headphones, PenTool, BookText
+    Headphones, PenTool, BookText,
+    PhoneCall, PhoneOff
 } from 'lucide-react';
 import {
     chatTalkback, chatLanguageTutor, transcribeAudioForChat,
@@ -19,6 +20,7 @@ import {
 } from '../../services/elevenLabsService';
 
 import somoBuddyImg from '../../assets/images/somo_buddy_avatar.png';
+import { GeminiLiveSession } from '../../services/geminiLiveService';
 import mwalimuSomoImg from '../../assets/images/mwalimu_somo_avatar.png';
 
 // ─── Types ───────────────────────────────────────────────────────
@@ -155,7 +157,7 @@ const ChatBubble: React.FC<{
                         )}
                         {tutorResponse.exampleSentence && (
                             <div className="px-3 py-2 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800/30 text-xs text-emerald-800 dark:text-emerald-300 italic">
-                                "{tutorResponse.exampleSentence}"
+                                &ldquo;{tutorResponse.exampleSentence}&rdquo;
                             </div>
                         )}
                         {tutorResponse.encouragement && (
@@ -212,6 +214,8 @@ export const ConversationalTutor: React.FC<ConversationalTutorProps> = ({ onBack
     const [isSpeaking, setIsSpeaking] = useState(false);
     const [isRecording, setIsRecording] = useState(false);
     const [recordingTime, setRecordingTime] = useState(0);
+    const [isLiveCall, setIsLiveCall] = useState(false);
+    const liveSessionRef = useRef<GeminiLiveSession | null>(null);
 
     const chatEndRef = useRef<HTMLDivElement>(null);
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -228,6 +232,9 @@ export const ConversationalTutor: React.FC<ConversationalTutorProps> = ({ onBack
     useEffect(() => {
         return () => {
             stopSpeech();
+            if (liveSessionRef.current) {
+                liveSessionRef.current.stop();
+            }
             if (timerRef.current) clearInterval(timerRef.current);
             if (mediaRecorderRef.current?.state === 'recording') {
                 mediaRecorderRef.current.stop();
@@ -238,6 +245,11 @@ export const ConversationalTutor: React.FC<ConversationalTutorProps> = ({ onBack
     // Switch mode — reset chat with appropriate greeting
     const switchMode = useCallback((mode: ActiveMode) => {
         stopSpeech();
+        if (liveSessionRef.current) {
+            liveSessionRef.current.stop();
+            liveSessionRef.current = null;
+            setIsLiveCall(false);
+        }
         setActiveMode(mode);
         setMessages([{
             role: 'ai',
@@ -251,6 +263,11 @@ export const ConversationalTutor: React.FC<ConversationalTutorProps> = ({ onBack
     // Reset current chat
     const resetChat = useCallback(() => {
         stopSpeech();
+        if (liveSessionRef.current) {
+            liveSessionRef.current.stop();
+            liveSessionRef.current = null;
+            setIsLiveCall(false);
+        }
         setMessages([{
             role: 'ai',
             text: isTutor ? TUTOR_GREETING[chatLang] : GREETING[chatLang],
@@ -259,6 +276,74 @@ export const ConversationalTutor: React.FC<ConversationalTutorProps> = ({ onBack
         setTutorResponses(new Map());
         setInputText('');
     }, [isTutor, chatLang]);
+
+    const toggleLiveCall = useCallback(async () => {
+        if (isLiveCall) {
+            if (liveSessionRef.current) {
+                liveSessionRef.current.stop();
+                liveSessionRef.current = null;
+            }
+            setIsLiveCall(false);
+            setMessages(prev => [...prev, {
+                role: 'ai',
+                text: chatLang === 'sw' ? 'Simu ya moja kwa moja imekatika. 👋' : 'Live call disconnected. 👋',
+                timestamp: Date.now()
+            }]);
+        } else {
+            stopSpeech();
+            clearSpeechQueue();
+
+            const sysInstruction = `You are "Akili", a warm, helpful Kenyan study companion. 
+            The student's education grade/level is ${educationLevel || 'Secondary School'}.
+            You must speak exclusively in ${chatLang === 'sw' ? 'Kiswahili Sanifu' : 'English'}.
+            Keep your spoken sentences short (1-3 sentences max) so that it is easy and comfortable to listen to in real-time.
+            Encourage the student and guide them like a tutor. Ask short follow-up questions to test their understanding.`;
+
+            const session = new GeminiLiveSession(
+                sysInstruction,
+                (text) => {
+                    setMessages(prev => {
+                        const newMessages = [...prev];
+                        const lastMsg = newMessages[newMessages.length - 1];
+                        if (lastMsg && lastMsg.role === 'ai' && lastMsg.text.startsWith('📞')) {
+                            lastMsg.text = text;
+                        } else if (lastMsg && lastMsg.role === 'ai' && !lastMsg.text.startsWith('Live call disconnected')) {
+                            lastMsg.text += text;
+                        } else {
+                            newMessages.push({ role: 'ai', text, timestamp: Date.now() });
+                        }
+                        return newMessages;
+                    });
+                },
+                (playing) => {
+                    setIsSpeaking(playing);
+                },
+                (err) => {
+                    console.error("Live call error:", err);
+                    setIsLiveCall(false);
+                    if (liveSessionRef.current) {
+                        liveSessionRef.current.stop();
+                        liveSessionRef.current = null;
+                    }
+                }
+            );
+
+            liveSessionRef.current = session;
+            setIsLiveCall(true);
+            setMessages(prev => [...prev, {
+                role: 'ai',
+                text: chatLang === 'sw' ? '📞 Anapiga...' : '📞 Calling...',
+                timestamp: Date.now()
+            }]);
+            
+            try {
+                await session.start();
+            } catch (err) {
+                console.error("Failed to start Live Session:", err);
+                setIsLiveCall(false);
+            }
+        }
+    }, [isLiveCall, chatLang, educationLevel]);
 
     // ─── Send Message ────────────────────────────────────────────
     const handleSendMessage = useCallback(async (text: string) => {
@@ -474,7 +559,7 @@ export const ConversationalTutor: React.FC<ConversationalTutorProps> = ({ onBack
                     <div className="flex gap-1.5">
                         <button
                             onClick={() => switchMode('TALKBACK')}
-                            className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-[11px] font-black uppercase tracking-wide whitespace-nowrap transition-all border ${activeMode === 'TALKBACK'
+                            className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-[11px] font-black uppercase tracking-wide whitespace-nowrap transition-all border ${activeMode === 'TALKBACK' && !isLiveCall
                                 ? 'bg-white text-indigo-700 border-white shadow-lg'
                                 : 'bg-white/10 text-white/80 border-white/10 hover:bg-white/20'
                             }`}
@@ -484,13 +569,24 @@ export const ConversationalTutor: React.FC<ConversationalTutorProps> = ({ onBack
                         </button>
                         <button
                             onClick={() => switchMode('LANGUAGE_TUTOR')}
-                            className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-[11px] font-black uppercase tracking-wide whitespace-nowrap transition-all border ${activeMode === 'LANGUAGE_TUTOR'
+                            className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-[11px] font-black uppercase tracking-wide whitespace-nowrap transition-all border ${activeMode === 'LANGUAGE_TUTOR' && !isLiveCall
                                 ? 'bg-white text-indigo-700 border-white shadow-lg'
                                 : 'bg-white/10 text-white/80 border-white/10 hover:bg-white/20'
                             }`}
                         >
                             <Languages className="w-3.5 h-3.5" />
                             Language Coach
+                        </button>
+
+                        <button
+                            onClick={toggleLiveCall}
+                            className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-[11px] font-black uppercase tracking-wide whitespace-nowrap transition-all border ${isLiveCall
+                                ? 'bg-rose-600 text-white border-rose-600 shadow-lg shadow-rose-500/20'
+                                : 'bg-white/10 text-white/80 border-white/10 hover:bg-white/20'
+                            }`}
+                        >
+                            {isLiveCall ? <PhoneOff className="w-3.5 h-3.5" /> : <PhoneCall className="w-3.5 h-3.5" />}
+                            {isLiveCall ? 'Hang Up' : 'Live Call'}
                         </button>
 
                         {/* Audio wave if speaking */}
@@ -637,12 +733,13 @@ export const ConversationalTutor: React.FC<ConversationalTutorProps> = ({ onBack
                                     handleSendMessage(inputText);
                                 }
                             }}
-                            placeholder={
+                             placeholder={
+                                isLiveCall ? (chatLang === 'sw' ? 'Unazungumza moja kwa moja na Akili...' : 'Live call active...') :
                                 isRecording ? 'Listening...' :
                                 chatLang === 'sw' ? 'Andika ujumbe...' : 'Ask anything...'
                             }
                             className="w-full px-5 py-3.5 rounded-2xl text-sm text-slate-900 dark:text-white placeholder:text-slate-400 bg-slate-100 dark:bg-slate-800 border-2 border-slate-300 dark:border-slate-700 focus:outline-none focus:border-indigo-400 focus:bg-white dark:focus:bg-slate-700 transition-all"
-                            disabled={isLoading || isRecording}
+                            disabled={isLoading || isRecording || isLiveCall}
                         />
                     </div>
 
@@ -654,10 +751,10 @@ export const ConversationalTutor: React.FC<ConversationalTutorProps> = ({ onBack
                                     animate={{ scale: 1, opacity: 1 }}
                                     exit={{ scale: 0.5, opacity: 0 }}
                                     onClick={() => handleSendMessage(inputText)}
-                                    disabled={isLoading}
+                                    disabled={isLoading || isLiveCall}
                                     className="w-12 h-12 rounded-2xl flex items-center justify-center bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-500/20 transition-all hover:scale-105 active:scale-95 disabled:opacity-50"
                                 >
-                                    <Send className="w-4 h-4" />
+                                        <Send className="w-4 h-4" />
                                 </motion.button>
                             )}
                         </AnimatePresence>
@@ -665,7 +762,7 @@ export const ConversationalTutor: React.FC<ConversationalTutorProps> = ({ onBack
                         <motion.button
                             whileTap={{ scale: 0.9 }}
                             onClick={isRecording ? stopRecording : startRecording}
-                            disabled={isLoading}
+                            disabled={isLoading || isLiveCall}
                             className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg transition-all hover:scale-105 active:scale-95 ${isRecording
                                 ? 'bg-red-500 text-white shadow-red-500/30 animate-pulse'
                                 : 'bg-indigo-500 text-white shadow-indigo-500/20'

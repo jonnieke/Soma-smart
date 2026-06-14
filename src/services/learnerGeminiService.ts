@@ -168,7 +168,8 @@ const genAI = {
   })
 };
 
-const MODEL_NAME = "gemini-2.5-flash"; // GA and widely supported
+const MODEL_NAME = "gemini-3.1-flash-lite"; // High-speed, low-cost default for chat
+const HEAVY_MODEL_NAME = "gemini-3.5-flash"; // Upgraded to Gemini 3.5 Flash for complex reasoning and schema compliance
 
 // --- SUPER TEACHER INSTRUCTIONS ---
 const SYLLABUS_GROUNDING_INSTRUCTION = `
@@ -336,7 +337,7 @@ export const explainImage = async (
   educationLevel?: string
 ): Promise<ExplanationResult> => {
   const model = genAI.getGenerativeModel({
-    model: MODEL_NAME,
+    model: HEAVY_MODEL_NAME,
     generationConfig: {
       responseMimeType: "application/json",
       responseSchema: {
@@ -398,7 +399,7 @@ export const explainImage = async (
 
 export const explainAudio = async (base64Audio: string, mimeType: string, level: 'Simple' | 'Exam', language: 'EN' | 'SW' = 'EN', educationLevel?: string): Promise<ExplanationResult> => {
   const model = genAI.getGenerativeModel({
-    model: MODEL_NAME,
+    model: HEAVY_MODEL_NAME,
     generationConfig: {
       responseMimeType: "application/json",
       responseSchema: {
@@ -461,7 +462,7 @@ export const processDarasaRecording = async (audioBlob: Blob, mimeType: string, 
   const base64Audio = await fileToGenerativePart(new File([audioBlob], 'darasa.webm', { type: mimeType }));
 
   const model = genAI.getGenerativeModel({
-    model: MODEL_NAME,
+    model: HEAVY_MODEL_NAME,
     generationConfig: {
       responseMimeType: "application/json",
       responseSchema: {
@@ -624,7 +625,7 @@ export const explainTopic = async (
   groundingEnabled = true
 ): Promise<ExplanationResult> => {
   const model = genAI.getGenerativeModel({
-    model: MODEL_NAME,
+    model: HEAVY_MODEL_NAME,
     generationConfig: {
       responseMimeType: "application/json",
       maxOutputTokens: 8192,
@@ -790,7 +791,7 @@ export const summarizeDocument = async (title: string, documentId: string, langu
   const ragContext = await retrieveContext("Analyze this document and explain the main content, purpose, examinable areas, and learner takeaways", documentId);
 
   const model = genAI.getGenerativeModel({
-    model: MODEL_NAME,
+    model: HEAVY_MODEL_NAME,
     generationConfig: {
       responseMimeType: "application/json",
       maxOutputTokens: 8192,
@@ -916,7 +917,7 @@ export const generateRichLessonNotes = async (title: string, documentId: string,
   const ragContext = await retrieveContext("Deep document analysis: provide a comprehensive pedagogical explanation, exam focus, common mistakes, and revision notes", documentId);
 
   const model = genAI.getGenerativeModel({
-    model: MODEL_NAME,
+    model: HEAVY_MODEL_NAME,
     generationConfig: {
       responseMimeType: "application/json",
       responseSchema: {
@@ -1176,7 +1177,7 @@ import { LessonRecap } from "../types";
 
 export const generateLessonRecap = async (inputBase64: string, mimeType: string, audience: 'LEARNER' | 'TEACHER', language: 'EN' | 'SW' = 'EN'): Promise<LessonRecap> => {
   const model = genAI.getGenerativeModel({
-    model: MODEL_NAME,
+    model: HEAVY_MODEL_NAME,
     generationConfig: {
       responseMimeType: "application/json",
       responseSchema: {
