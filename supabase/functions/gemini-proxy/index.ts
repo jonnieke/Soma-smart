@@ -1,7 +1,5 @@
 // Supabase Edge Function: Proxies Gemini AI calls so the API key stays server-side.
 // The client sends the prompt/model config, this function adds the key and forwards to Google.
-// Supabase Edge Function: Proxies Gemini AI calls so the API key stays server-side.
-// The client sends the prompt/model config, this function adds the key and forwards to Google.
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { encode as encodeBase64 } from "https://deno.land/std@0.168.0/encoding/base64.ts";
