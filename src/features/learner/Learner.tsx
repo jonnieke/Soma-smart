@@ -7245,12 +7245,12 @@ ${explanation.explanation}
 
           <div className="p-4 space-y-6 max-w-2xl mx-auto">
 
-            {/* Media Section */}
+            {/* Media Section (Your Question - Image/Audio) */}
             {(imageData || audioData) && (
               <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="bg-white dark:bg-slate-900 p-2 rounded-2xl shadow-sm border-2 border-slate-300 dark:border-slate-800"
+                className="bg-white dark:bg-slate-900 p-2 rounded-2xl shadow-sm border-2 border-slate-300 dark:border-slate-800 animate-in fade-in zoom-in duration-300"
               >
                 {imageData && (
                   <div className="relative rounded-xl overflow-hidden bg-slate-100 max-h-60">
@@ -7271,6 +7271,51 @@ ${explanation.explanation}
                     <audio controls src={`data:${audioData.mimeType};base64,${audioData.base64}`} className="w-full h-10" />
                   </div>
                 )}
+              </motion.div>
+            )}
+
+            {/* Your Question (Text query) */}
+            {!imageData && !audioData && explanation?.topic && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="bg-white dark:bg-slate-900 p-5 rounded-[2rem] shadow-sm border-2 border-slate-300 dark:border-slate-800 animate-in fade-in zoom-in duration-300"
+              >
+                <div className="flex items-start gap-3">
+                  <div className="w-10 h-10 rounded-2xl bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-300 flex items-center justify-center shrink-0">
+                    <Brain className="w-5 h-5" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400 mb-1">Your Question</p>
+                    <h3 className="font-bold text-slate-800 dark:text-white text-base leading-snug">{explanation.topic}</h3>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {/* Key Takeaways - Placed on top below 'your question' card */}
+            {explanation.summaryPoints && explanation.summaryPoints.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.06 }}
+                className="bg-white dark:bg-slate-900 p-6 rounded-3xl border-2 border-slate-300 dark:border-slate-800 shadow-sm relative overflow-hidden"
+              >
+                <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-amber-400"></div>
+                <h3 className="font-bold text-slate-900 dark:text-white mb-6 flex items-center gap-3 text-lg">
+                  <div className="w-8 h-8 rounded-lg bg-amber-50 dark:bg-amber-950/40 flex items-center justify-center">
+                    <BookOpen className="w-5 h-5 text-amber-600" />
+                  </div>
+                  Key Takeaways
+                </h3>
+                <ul className="space-y-4">
+                  {explanation.summaryPoints.map((point, i) => (
+                    <li key={i} className="flex gap-4 text-slate-600 dark:text-slate-300 leading-relaxed font-medium">
+                      <div className="w-6 h-6 rounded-full bg-slate-50 dark:bg-slate-800 text-slate-400 border-2 border-slate-300 dark:border-slate-700 flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5">{i + 1}</div>
+                      <span className="text-sm md:text-base">{point}</span>
+                    </li>
+                  ))}
+                </ul>
               </motion.div>
             )}
 
@@ -7386,20 +7431,7 @@ ${explanation.explanation}
               )}
             </AnimatePresence>
 
-            {/* Level Switcher */}
-            <div className="flex bg-white dark:bg-slate-900 p-1.5 rounded-xl shadow-sm border-2 border-slate-300 dark:border-slate-800">
-              {(['Simple', 'Exam'] as const).map((l) => (
-                <button
-                  key={l}
-                  onClick={() => handleRegenerate(l)}
-                  disabled={loading || explanation.level === l}
-                  className={`flex-1 py-2.5 text-sm font-bold rounded-lg transition-all ${explanation.level === l ? (l === 'Simple' ? 'bg-indigo-100 text-indigo-700 shadow-sm' : 'bg-blue-100 text-blue-700 shadow-sm') : 'text-slate-400 hover:text-slate-600'}`}
-                >
-                  {l === 'Simple' ? 'Explain Simply' : 'Exam Mode'}
-                </button>
-              ))}
-            </div>
-
+            {/* General Akili answer / Grounded by Soma Library notice */}
             <div className={`rounded-3xl border-2 p-4 shadow-sm ${
               explanation.grounding?.used
                 ? 'bg-emerald-50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-900/70'
@@ -7437,6 +7469,20 @@ ${explanation.explanation}
                   )}
                 </div>
               </div>
+            </div>
+
+            {/* Level Switcher */}
+            <div className="flex bg-white dark:bg-slate-900 p-1.5 rounded-xl shadow-sm border-2 border-slate-300 dark:border-slate-800">
+              {(['Simple', 'Exam'] as const).map((l) => (
+                <button
+                  key={l}
+                  onClick={() => handleRegenerate(l)}
+                  disabled={loading || explanation.level === l}
+                  className={`flex-1 py-2.5 text-sm font-bold rounded-lg transition-all ${explanation.level === l ? (l === 'Simple' ? 'bg-indigo-100 text-indigo-700 shadow-sm' : 'bg-blue-100 text-blue-700 shadow-sm') : 'text-slate-400 hover:text-slate-600'}`}
+                >
+                  {l === 'Simple' ? 'Explain Simply' : 'Exam Mode'}
+                </button>
+              ))}
             </div>
 
             {/* Mobile-Only Audio Button (Prominent) */}
@@ -7660,28 +7706,7 @@ ${explanation.explanation}
               )}
             </motion.div>
 
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.06 }}
-              className="bg-white dark:bg-slate-900 p-6 rounded-3xl border-2 border-slate-300 dark:border-slate-800 shadow-sm relative overflow-hidden"
-            >
-              <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-amber-400"></div>
-              <h3 className="font-bold text-slate-900 mb-6 flex items-center gap-3 text-lg">
-                <div className="w-8 h-8 rounded-lg bg-amber-50 flex items-center justify-center">
-                  <BookOpen className="w-5 h-5 text-amber-600" />
-                </div>
-                Key Takeaways
-              </h3>
-              <ul className="space-y-4">
-                {explanation.summaryPoints.map((point, i) => (
-                  <li key={i} className="flex gap-4 text-slate-600 leading-relaxed font-medium">
-                    <div className="w-6 h-6 rounded-full bg-slate-50 text-slate-400 border-2 border-slate-300 flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5">{i + 1}</div>
-                    <span className="text-sm md:text-base">{point}</span>
-                  </li>
-                ))}
-              </ul>
-            </motion.div>
+            {/* Key Takeaways moved to top */}
 
             {/* Concept Map: visual structure without expensive generated images */}
             {(() => {
