@@ -298,6 +298,8 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
 
   const [studyTab, setStudyTab] = useState<'LESSON' | 'RECAP' | 'QNA' | 'QUIZ'>('LESSON');
   const [expandedRecaps, setExpandedRecaps] = useState<number[]>([]);
+  const [tutorInitialActiveMode, setTutorInitialActiveMode] = useState<'TALKBACK' | 'LANGUAGE_TUTOR'>('TALKBACK');
+  const [tutorInitialTutorMode, setTutorInitialTutorMode] = useState<'conversation' | 'pronunciation' | 'sentences' | 'story'>('conversation');
   const [completedRecallChecks, setCompletedRecallChecks] = useState<number[]>([]);
   const [recallRewarded, setRecallRewarded] = useState(false);
   const [showExitRecallPrompt, setShowExitRecallPrompt] = useState(false);
@@ -1671,7 +1673,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
     | { type: 'TALKBACK_MESSAGE' };
   const [pendingPaywallAction, setPendingPaywallAction] = useState<PendingPaywallAction | null>(null);
 
-  const handleSidebarTabChange = (tab: SidebarTab) => {
+  const handleSidebarTabChange = (tab: SidebarTab, preserveTutorState = false) => {
     setSidebarTab(tab);
     switch (tab) {
       case 'HOME':
@@ -1702,6 +1704,10 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
         runWithRecallExitGuard(() => setMode('REFERRAL'));
         break;
       case 'TALKBACK':
+        if (!preserveTutorState) {
+          setTutorInitialActiveMode('TALKBACK');
+          setTutorInitialTutorMode('conversation');
+        }
         runWithRecallExitGuard(() => setMode('TALKBACK'));
         break;
       default:
@@ -2993,6 +2999,8 @@ ${explanation.explanation}
         <React.Suspense fallback={<DeferredViewLoader />}>
           <ConversationalTutor
             onBeforeMessage={() => checkLimit({ type: 'TALKBACK_MESSAGE' })}
+            initialActiveMode={tutorInitialActiveMode}
+            initialTutorMode={tutorInitialTutorMode}
             onBack={() => {
               setMode('MENU');
               setSidebarTab('HOME');
@@ -4376,7 +4384,22 @@ ${explanation.explanation}
                           body: learningCredits > 0 ? `${learningCredits} credits` : 'Audio lesson',
                           icon: <Headphones className="w-5 h-5" />,
                           className: 'bg-white dark:bg-slate-950 text-slate-900 dark:text-white border-slate-200 dark:border-slate-700',
-                          action: () => handleSidebarTabChange('TALKBACK')
+                          action: () => {
+                            setTutorInitialActiveMode('TALKBACK');
+                            setTutorInitialTutorMode('conversation');
+                            handleSidebarTabChange('TALKBACK', true);
+                          }
+                        },
+                        {
+                          title: 'Speak & Pronounce',
+                          body: 'Learn to Speak',
+                          icon: <Mic className="w-5 h-5 text-indigo-500" />,
+                          className: 'bg-white dark:bg-slate-950 text-slate-900 dark:text-white border-slate-200 dark:border-slate-700',
+                          action: () => {
+                            setTutorInitialActiveMode('LANGUAGE_TUTOR');
+                            setTutorInitialTutorMode('pronunciation');
+                            handleSidebarTabChange('TALKBACK', true);
+                          }
                         },
                         {
                           title: dueFlashcardsCountForNext > 0 ? 'Review' : 'Progress',

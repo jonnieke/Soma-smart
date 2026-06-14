@@ -31,6 +31,8 @@ type ChatLang = 'en' | 'sw';
 interface ConversationalTutorProps {
     onBack: () => void;
     onBeforeMessage?: () => boolean;
+    initialActiveMode?: ActiveMode;
+    initialTutorMode?: TutorMode;
 }
 
 // ─── Constants ───────────────────────────────────────────────────
@@ -248,15 +250,20 @@ const checkPronunciationMatch = (target: string, spoken: string): Array<{ word: 
 };
 
 // ─── Main Component ──────────────────────────────────────────────
-export const ConversationalTutor: React.FC<ConversationalTutorProps> = ({ onBack, onBeforeMessage }) => {
+export const ConversationalTutor: React.FC<ConversationalTutorProps> = ({ 
+    onBack, 
+    onBeforeMessage,
+    initialActiveMode = 'TALKBACK',
+    initialTutorMode = 'conversation'
+}) => {
     const { educationLevel } = useApp();
-    const [activeMode, setActiveMode] = useState<ActiveMode>('TALKBACK');
+    const [activeMode, setActiveMode] = useState<ActiveMode>(initialActiveMode);
     const [chatLang, setChatLang] = useState<ChatLang>('en');
-    const [tutorMode, setTutorMode] = useState<TutorMode>('conversation');
+    const [tutorMode, setTutorMode] = useState<TutorMode>(initialTutorMode);
 
-    const [messages, setMessages] = useState<TalkbackMessage[]>([{
+    const [messages, setMessages] = useState<TalkbackMessage[]>(() => [{
         role: 'ai',
-        text: GREETING['en'],
+        text: initialActiveMode === 'TALKBACK' ? GREETING['en'] : TUTOR_GREETING['en'],
         timestamp: Date.now()
     }]);
     const [tutorResponses, setTutorResponses] = useState<Map<number, LanguageTutorResponse>>(new Map());
