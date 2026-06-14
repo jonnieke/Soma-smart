@@ -3626,5 +3626,73 @@ export const chatLanguageTutor = async (
   }
 };
 
+export interface PhoneticCoachingResult {
+  score: number;
+  feedback: string;
+  phoneticTips: Array<{ word: string; tip: string }>;
+}
+
+export const getPhoneticCoaching = async (
+  targetPhrase: string,
+  spokenText: string
+): Promise<PhoneticCoachingResult> => {
+  const model = genAI.getGenerativeModel({
+    model: MODEL_NAME,
+    generationConfig: {
+      responseMimeType: "application/json",
+      maxOutputTokens: 800,
+      responseSchema: {
+        type: SchemaType.OBJECT,
+        properties: {
+          score: { type: SchemaType.INTEGER, description: "Pronunciation score from 0 to 100 based on comparison" },
+          feedback: { type: SchemaType.STRING, description: "A warm, encouraging coaching feedback paragraph in English, explaining the main pronunciation errors and how to correct them." },
+          phoneticTips: {
+            type: SchemaType.ARRAY,
+            items: {
+              type: SchemaType.OBJECT,
+              properties: {
+                word: { type: SchemaType.STRING, description: "The specific word that needs pronunciation correction or tips" },
+                tip: { type: SchemaType.STRING, description: "A simple phonetic breakdown and mouth-movement guide (e.g. 'pronounced like f-ox, keep your lips rounded')" }
+              },
+              required: ["word", "tip"]
+            }
+          }
+        },
+        required: ["score", "feedback", "phoneticTips"]
+      }
+    }
+  });
+
+  const prompt = `
+    You are "Mwalimu Somo", a patient English speaking coach.
+    Compare the TARGET phrase: "${targetPhrase}"
+    With the learner's SPOKEN transcript: "${spokenText}"
+    
+    Task:
+    1. Assess how accurately the learner spoke the words.
+    2. Provide a score from 0 to 100.
+    3. Write a warm, coaching feedback paragraph in English (no Swahili). Suggest how they can improve.
+    4. Provide specific word-by-word phonetic guides and mouth-position tips for any misspelled or poorly pronounced words.
+    5. Output JSON.
+  `;
+
+  try {
+    const result = await model.generateContent(prompt);
+    const text = result.response.text();
+    if (!text) throw new Error("No response from AI");
+    return JSON.parse(text) as PhoneticCoachingResult;
+  } catch (error) {
+    console.error("Phonetic coaching error:", error);
+    return {
+      score: 50,
+      feedback: "Good try! Keep practicing reading the words slowly and focusing on each sound.",
+      phoneticTips: [
+        { word: targetPhrase.split(" ")[0] || "practice", tip: "Read standard syllables slowly." }
+      ]
+    };
+  }
+};
+
 // Backward compatibility for cached files
 export const askSoma = askSomo;
+
