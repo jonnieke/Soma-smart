@@ -731,16 +731,30 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
     return elements.length > 0 ? elements : text;
   };
 
-  const shouldPromptRecallOnExit = mode === 'RESULT' && !!explanation && !recallRewarded;
-
   const runWithRecallExitGuard = React.useCallback((action: () => void) => {
-    if (shouldPromptRecallOnExit) {
+    if (mode === 'RESULT' && explanation && !stickyQuizTaken) {
       setPendingExitAction(() => action);
-      setShowExitRecallPrompt(true);
+
+      if (stickyQuizData) {
+        setQuizData(stickyQuizData);
+        setMode('QUIZ');
+      } else {
+        setLoading(true);
+        setLoadingText("Akili is preparing a short quiz to verify your understanding...");
+        generateQuickQuiz(explanation.explanation, explanation.topic, language)
+          .then(quiz => {
+            setQuizData(quiz);
+            setMode('QUIZ');
+          })
+          .catch(() => {
+            action();
+          })
+          .finally(() => setLoading(false));
+      }
       return;
     }
     action();
-  }, [shouldPromptRecallOnExit]);
+  }, [mode, explanation, stickyQuizTaken, stickyQuizData, language]);
 
   useEffect(() => {
     setCompletedRecallChecks([]);
@@ -749,6 +763,8 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
     setAnswerRevealUnlocked(false);
     setLearnerTryText('');
     setLearningBreakRewarded(false);
+    setStickyQuizTaken(false);
+    setStickyQuizData(null);
   }, [explanation?.topic]);
 
   const shareLearningProof = React.useCallback(async () => {
@@ -7204,7 +7220,7 @@ ${explanation.explanation}
         <div className="bg-slate-50 dark:bg-slate-950 min-h-screen pb-32 max-w-4xl mx-auto shadow-2xl border-x border-slate-100 dark:border-slate-800">
           {/* Sticky Glass Header */}
           <div className="sticky top-0 z-40 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 px-4 py-3 flex items-center gap-3">
-            <button onClick={() => { cancelPodcast(); handleExitResult(); }} className="flex items-center gap-2 px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-all group">
+            <button onClick={() => runWithRecallExitGuard(() => { cancelPodcast(); handleExitResult(); })} className="flex items-center gap-2 px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-all group">
               <ArrowRight className="w-5 h-5 text-slate-500 rotate-180 group-hover:text-blue-600" />
               <span className="text-xs font-bold text-slate-500 group-hover:text-blue-600">Dashboard</span>
             </button>
@@ -7603,169 +7619,41 @@ ${explanation.explanation}
               </motion.div>
             )}
 
-            <motion.div
+            {/* Detailed Explanation */}
+            <motion.article
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.04 }}
-              className={`rounded-3xl border-2 p-6 shadow-sm ${
-                answerRevealUnlocked
-                  ? 'bg-emerald-50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-900/70'
-                  : 'bg-white dark:bg-slate-900 border-indigo-200 dark:border-indigo-900/70'
-              }`}
+              transition={{ delay: 0.08 }}
+              className="bg-white dark:bg-slate-900 p-6 rounded-3xl shadow-sm border-2 border-slate-300 dark:border-slate-800 prose prose-sm md:prose-base prose-slate dark:prose-invert max-w-none prose-p:text-slate-600 dark:prose-p:text-slate-300 prose-headings:text-slate-800 dark:prose-headings:text-slate-100 prose-strong:text-slate-900 dark:prose-strong:text-white"
             >
-              <div className="flex items-start justify-between gap-4 mb-4">
-                <div>
-                  <p className={`text-[10px] font-black uppercase tracking-[0.2em] mb-1 ${answerRevealUnlocked ? 'text-emerald-700 dark:text-emerald-300' : 'text-indigo-600 dark:text-indigo-300'}`}>
-                    No Copy Mode
-                  </p>
-                  <h3 className="text-lg font-black text-slate-900 dark:text-white">
-                    {answerRevealUnlocked ? 'Full explanation unlocked' : 'Try one small step before the full answer'}
-                  </h3>
-                  <p className="text-sm font-semibold text-slate-600 dark:text-slate-300 mt-1">
-                    Soma should help you finish stronger, not turn your book into copy-paste.
-                  </p>
-                </div>
-                <div className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 ${answerRevealUnlocked ? 'bg-emerald-600 text-white' : 'bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-300'}`}>
-                  {answerRevealUnlocked ? <Trophy className="w-5 h-5" /> : <Hand className="w-5 h-5" />}
-                </div>
+              <div>
+                <MarkdownText content={explanation.explanation} />
               </div>
-
-              {!answerRevealUnlocked ? (
-                <div className="space-y-3">
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                    {[
-                      'Write the first step',
-                      'Name one keyword',
-                      'Say what confuses you'
-                    ].map((item) => (
-                      <div key={item} className="rounded-2xl bg-indigo-50 dark:bg-indigo-950/30 border border-indigo-100 dark:border-indigo-900/70 p-3">
-                        <p className="text-xs font-black text-indigo-700 dark:text-indigo-200">{item}</p>
-                      </div>
-                    ))}
-                  </div>
-                  <textarea
-                    value={learnerTryText}
-                    onChange={(e) => setLearnerTryText(e.target.value)}
-                    placeholder={`Example: "I think the first step in ${explanation.topic} is..."`}
-                    rows={3}
-                    className="w-full rounded-2xl border-2 border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-4 py-3 text-sm font-semibold text-slate-800 dark:text-slate-100 outline-none focus:border-indigo-400 dark:focus:border-indigo-600 resize-none"
-                  />
-                  <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400">
-                    Write at least 30 characters in your own words. A rough attempt is enough.
-                  </p>
-                  <div className="flex flex-col sm:flex-row gap-2">
-                    <button
-                      onClick={() => {
-                        if (learnerTryText.trim().length < 30) return;
-                        setAnswerRevealUnlocked(true);
-                        setLearningBreakRewarded(true);
-                        saveActivity({
-                          id: `try-first-${Date.now()}`,
-                          type: 'STUDY',
-                          topic: explanation.topic,
-                          date: new Date().toLocaleDateString(),
-                          details: JSON.stringify({
-                            mode: 'try_before_reveal',
-                            attemptPreview: learnerTryText.trim().slice(0, 160),
-                            xpEarned: 15
-                          })
-                        });
-                        trackFunnelEvent('learner_answer_reveal_unlocked', {
-                          topic: explanation.topic,
-                          method: 'try_first',
-                          attemptLength: learnerTryText.trim().length
-                        });
-                      }}
-                      disabled={learnerTryText.trim().length < 30}
-                      className={`flex-1 rounded-2xl px-5 py-3 text-xs font-black uppercase tracking-wider transition-colors ${
-                        learnerTryText.trim().length >= 30
-                          ? 'bg-indigo-600 hover:bg-indigo-700 text-white'
-                          : 'bg-slate-200 dark:bg-slate-800 text-slate-400 cursor-not-allowed'
-                      }`}
-                    >
-                      Unlock Full Explanation
-                    </button>
-                    <button
-                      onClick={() => {
-                        setLearnerTryText(prev => prev.trim()
-                          ? prev
-                          : `I think one important idea in ${explanation.topic} is `);
-                      }}
-                      className="flex-1 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 px-5 py-3 text-xs font-black uppercase tracking-wider hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
-                    >
-                      Give Me A Starter Line
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <div className="rounded-2xl bg-white dark:bg-slate-900 border border-emerald-100 dark:border-emerald-900/70 p-4">
-                  <p className="text-sm font-bold text-emerald-800 dark:text-emerald-200">
-                    You unlocked the full explanation. Finish with a quick recall check before leaving so the idea sticks.
-                  </p>
-                </div>
-              )}
-            </motion.div>
-
-            {/* Key Takeaways moved to top */}
-
-            {/* Concept Map: visual structure without expensive generated images */}
-            {(() => {
-              const conceptItems = (explanation.recapNodes && explanation.recapNodes.length > 0)
-                ? explanation.recapNodes.map(node => node.point)
-                : (explanation.subtopics && explanation.subtopics.length > 0)
-                  ? explanation.subtopics.map(sub => sub.title)
-                  : explanation.summaryPoints.slice(0, 3);
-
-              if (conceptItems.length === 0) return null;
-
-              return (
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.08 }}
-                  className="bg-white dark:bg-slate-900 p-6 rounded-3xl border-2 border-slate-300 dark:border-slate-800 shadow-sm"
+              {/* ACTION FOOTER */}
+              <div className="mt-8 pt-6 border-t border-slate-100 flex flex-wrap gap-2 sm:gap-4">
+                <button
+                  onClick={handleTTS}
+                  className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm px-4 sm:px-5 py-3 rounded-xl transition-colors"
                 >
-                  <div className="flex items-center justify-between gap-3 mb-5">
-                    <div>
-                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-500 mb-1">Visual Map</p>
-                      <h3 className="font-bold text-slate-900 dark:text-white text-lg">How this topic connects</h3>
-                    </div>
-                    <div className="w-10 h-10 rounded-2xl bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-300 flex items-center justify-center">
-                      <Layers className="w-5 h-5" />
-                    </div>
-                  </div>
+                  {isPlaying ? <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" /> : <Volume2 className="w-4 h-4" />}
+                  {isPlaying ? "Stop" : "Listen"}
+                </button>
 
-                  <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] gap-3 md:gap-4 items-center">
-                    <div className="rounded-2xl bg-indigo-600 text-white p-4 text-center shadow-md shadow-indigo-100">
-                      <p className="text-[10px] font-black uppercase tracking-[0.18em] text-indigo-100 mb-1">Main Idea</p>
-                      <p className="text-base font-black leading-tight">{explanation.topic}</p>
-                    </div>
-                    <div className="hidden md:flex w-10 h-px bg-slate-300 dark:bg-slate-700" />
-                    <div className="grid grid-cols-1 gap-2">
-                      {conceptItems.map((item, i) => (
-                        <button
-                          key={`${item}-${i}`}
-                          onClick={() => {
-                            setStudyTab('RECAP');
-                            setExpandedRecaps(prev => prev.includes(i) ? prev : [...prev, i]);
-                          }}
-                          className="text-left rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/40 hover:border-indigo-300 dark:hover:border-indigo-700 p-3 transition-colors"
-                        >
-                          <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Concept {i + 1}</span>
-                          <p className="text-sm font-bold text-slate-800 dark:text-slate-100 mt-0.5">{item}</p>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </motion.div>
-              );
-            })()}
+                <button
+                  onClick={handleGenerateQuiz}
+                  className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-sm px-4 sm:px-5 py-3 rounded-xl transition-colors border border-indigo-100"
+                >
+                  <Clock className="w-4 h-4" />
+                  Take Quiz
+                </button>
+              </div>
+            </motion.article>
 
             {/* QUIZ NUDGE: convert explanation intent into quiz starts */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.15 }}
+              transition={{ delay: 0.12 }}
               className="bg-gradient-to-r from-emerald-600 to-teal-600 rounded-3xl p-5 text-white shadow-lg shadow-emerald-200"
             >
               <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -7789,44 +7677,6 @@ ${explanation.explanation}
               </div>
             </motion.div>
 
-            {/* Detailed Explanation */}
-            <motion.article
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              className={`bg-white dark:bg-slate-900 p-6 rounded-3xl shadow-sm border-2 border-slate-300 dark:border-slate-800 prose prose-sm md:prose-base prose-slate dark:prose-invert max-w-none prose-p:text-slate-600 dark:prose-p:text-slate-300 prose-headings:text-slate-800 dark:prose-headings:text-slate-100 prose-strong:text-slate-900 dark:prose-strong:text-white ${answerRevealUnlocked ? '' : 'relative overflow-hidden max-h-80'}`}
-            >
-              {!answerRevealUnlocked && (
-                <div className="absolute inset-0 z-10 bg-gradient-to-b from-white/35 via-white/90 to-white dark:from-slate-900/35 dark:via-slate-900/90 dark:to-slate-900 flex items-end justify-center p-6">
-                  <div className="rounded-2xl bg-slate-950 text-white px-5 py-3 shadow-xl text-center">
-                    <Lock className="w-5 h-5 mx-auto mb-2" />
-                    <p className="text-xs font-black uppercase tracking-wider">Try first to unlock full answer</p>
-                  </div>
-                </div>
-              )}
-              <div className={!answerRevealUnlocked ? 'blur-[3px] select-none pointer-events-none' : ''}>
-                <MarkdownText content={explanation.explanation} />
-              </div>
-              {/* ACTION FOOTER */}
-              <div className="mt-8 pt-6 border-t border-slate-100 flex flex-wrap gap-2 sm:gap-4">
-                <button
-                  onClick={handleTTS}
-                  className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm px-4 sm:px-5 py-3 rounded-xl transition-colors"
-                >
-                  {isPlaying ? <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" /> : <Volume2 className="w-4 h-4" />}
-                  {isPlaying ? "Stop" : "Listen"}
-                </button>
-
-                <button
-                  onClick={handleGenerateQuiz}
-                  className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-sm px-4 sm:px-5 py-3 rounded-xl transition-colors border border-indigo-100"
-                >
-                  <Clock className="w-4 h-4" />
-                  Take Quiz
-                </button>
-              </div>
-            </motion.article>
-
             {/* Need more help? - Phase 2 */}
 
             {/* CONTINUE RESEARCHING */}
@@ -7847,16 +7697,44 @@ ${explanation.explanation}
                   type="text"
                   placeholder="e.g. Give me more examples..."
                   className="flex-1 p-4 rounded-xl border-2 border-slate-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none transition-all"
-                  onKeyDown={async (e) => {
+                  onKeyDown={(e) => {
                     if (e.key === 'Enter') {
                       const target = e.target as HTMLInputElement;
                       const query = target.value;
                       if (!query.trim() || !explanation) return;
 
-                      target.value = '';
+                      runWithRecallExitGuard(async () => {
+                        target.value = '';
+                        setLoading(true);
+                        setLoadingText("Researching your question...");
+                        setMode('SCAN'); // Show loading
+
+                        try {
+                          const result = await continueResearch(explanation.topic, explanation.explanation, query, level, language);
+                          setExplanation(result);
+                          setMode('RESULT');
+                        } catch (err) {
+                          console.error(err);
+                          setError({ title: "Research Failed", message: "Could not update the explanation. Please try again." });
+                          setLoading(false);
+                          setMode('RESULT');
+                        }
+                      });
+                    }
+                  }}
+                />
+                <button
+                  className="bg-indigo-600 text-white p-4 rounded-xl hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-100"
+                  onClick={(e) => {
+                    const input = e.currentTarget.previousElementSibling as HTMLInputElement;
+                    const query = input.value;
+                    if (!query.trim() || !explanation) return;
+
+                    runWithRecallExitGuard(async () => {
+                      input.value = '';
                       setLoading(true);
                       setLoadingText("Researching your question...");
-                      setMode('SCAN'); // Show loading
+                      setMode('SCAN');
 
                       try {
                         const result = await continueResearch(explanation.topic, explanation.explanation, query, level, language);
@@ -7868,31 +7746,7 @@ ${explanation.explanation}
                         setLoading(false);
                         setMode('RESULT');
                       }
-                    }
-                  }}
-                />
-                <button
-                  className="bg-indigo-600 text-white p-4 rounded-xl hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-100"
-                  onClick={async (e) => {
-                    const input = e.currentTarget.previousElementSibling as HTMLInputElement;
-                    const query = input.value;
-                    if (!query.trim() || !explanation) return;
-
-                    input.value = '';
-                    setLoading(true);
-                    setLoadingText("Researching your question...");
-                    setMode('SCAN');
-
-                    try {
-                      const result = await continueResearch(explanation.topic, explanation.explanation, query, level, language);
-                      setExplanation(result);
-                      setMode('RESULT');
-                    } catch (err) {
-                      console.error(err);
-                      setError({ title: "Research Failed", message: "Could not update the explanation. Please try again." });
-                      setLoading(false);
-                      setMode('RESULT');
-                    }
+                    });
                   }}
                 >
                   <ArrowRight className="w-5 h-5" />
@@ -7955,24 +7809,24 @@ ${explanation.explanation}
 
           {/* Global Bottom Nav */}
           <div className="fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 px-4 py-2.5 pb-safe flex justify-between items-center z-50 max-w-4xl mx-auto shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
-            <button onClick={() => setMode('MENU')} className="flex min-h-[52px] min-w-[52px] flex-col items-center justify-center gap-1 text-slate-400 hover:text-slate-600">
+            <button onClick={() => runWithRecallExitGuard(() => setMode('MENU'))} className="flex min-h-[52px] min-w-[52px] flex-col items-center justify-center gap-1 text-slate-400 hover:text-slate-600">
               <Home className="w-6 h-6" />
               <span className="text-[11px] font-black uppercase tracking-tight">Home</span>
             </button>
-            <button onClick={() => setMode('MARKETPLACE')} className="flex min-h-[52px] min-w-[52px] flex-col items-center justify-center gap-1 text-slate-400 hover:text-slate-600">
+            <button onClick={() => runWithRecallExitGuard(() => setMode('MARKETPLACE'))} className="flex min-h-[52px] min-w-[52px] flex-col items-center justify-center gap-1 text-slate-400 hover:text-slate-600">
               <ShoppingBag className="w-6 h-6" />
               <span className="text-[11px] font-black uppercase tracking-tight">Materials</span>
             </button>
             <div className="relative -mt-10">
-              <button onClick={() => setMode('SCAN')} className="relative w-16 h-16 bg-indigo-600 rounded-full flex items-center justify-center shadow-xl shadow-indigo-200 text-white transform hover:scale-110 active:scale-90 transition-all border-4 border-white">
+              <button onClick={() => runWithRecallExitGuard(() => setMode('SCAN'))} className="relative w-16 h-16 bg-indigo-600 rounded-full flex items-center justify-center shadow-xl shadow-indigo-200 text-white transform hover:scale-110 active:scale-90 transition-all border-4 border-white">
                 <ScanLine className="w-8 h-8" />
               </button>
             </div>
-            <button onClick={() => setMode('LIBRARY')} className="flex min-h-[52px] min-w-[52px] flex-col items-center justify-center gap-1 text-slate-400 hover:text-slate-600">
+            <button onClick={() => runWithRecallExitGuard(() => setMode('LIBRARY'))} className="flex min-h-[52px] min-w-[52px] flex-col items-center justify-center gap-1 text-slate-400 hover:text-slate-600">
               <Library className="w-6 h-6" />
               <span className="text-[11px] font-black uppercase tracking-tight">Library</span>
             </button>
-            <button onClick={() => isRegistered ? setMode('PROFILE') : setShowLogin(true)} className="flex min-h-[52px] min-w-[52px] flex-col items-center justify-center gap-1 text-slate-400 hover:text-slate-600">
+            <button onClick={() => runWithRecallExitGuard(() => isRegistered ? setMode('PROFILE') : setShowLogin(true))} className="flex min-h-[52px] min-w-[52px] flex-col items-center justify-center gap-1 text-slate-400 hover:text-slate-600">
               <UserCircle className="w-6 h-6" />
               <span className="text-[11px] font-black uppercase tracking-tight">Me</span>
             </button>
@@ -7983,6 +7837,7 @@ ${explanation.explanation}
 
     if (mode === 'QUIZ' && quizData) {
       return <QuizRunner data={quizData} onComplete={(score, review) => {
+        setStickyQuizTaken(true);
         setLastQuizReview(review);
         // Enrich topic with subject for better gamification tracking
         const subjectPrefix = currentDocument?.subject ? `${currentDocument.subject} - ` : "";
@@ -8013,9 +7868,18 @@ ${explanation.explanation}
           source: 'quiz_runner'
         });
 
-        // Return to the explanation when available so learners can repair weak spots.
-        setMode(explanation ? 'RESULT' : 'MARKETPLACE');
-      }} onExit={() => setMode('RESULT')} />;
+        const action = pendingExitAction;
+        setPendingExitAction(null);
+        if (action) {
+          action();
+        } else {
+          // Return to the explanation when available so learners can repair weak spots.
+          setMode(explanation ? 'RESULT' : 'MARKETPLACE');
+        }
+      }} onExit={() => {
+        setPendingExitAction(null);
+        setMode('RESULT');
+      }} />;
     }
 
     // --- PRICING & PAYMENT ---
@@ -9020,108 +8884,7 @@ ${explanation.explanation}
         )}
       </AnimatePresence>
 
-      <AnimatePresence>
-        {showExitRecallPrompt && explanation && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[115] flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm"
-          >
-            <motion.div
-              initial={{ scale: 0.96, y: 16 }}
-              animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.96, y: 16 }}
-              className="w-full max-w-2xl rounded-[2rem] bg-white dark:bg-slate-900 border border-amber-200 dark:border-amber-900/50 shadow-2xl overflow-hidden"
-            >
-              <div className="p-6 border-b border-slate-100 dark:border-slate-800">
-                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-700 dark:text-amber-300 mb-2">Before You Leave</p>
-                <h3 className="text-2xl font-black text-slate-900 dark:text-white">Take a quick active recall break</h3>
-                <p className="mt-2 text-sm font-semibold text-slate-600 dark:text-slate-300">
-                  You have the explanation. Lock it in by answering these in your head or notebook before you navigate away.
-                </p>
-              </div>
 
-              <div className="p-6 space-y-4">
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  {[
-                    `What is the first step in ${explanation.topic}?`,
-                    'Name one key idea without looking back.',
-                    'Can you solve one similar question now?'
-                  ].map((prompt, i) => {
-                    const done = completedRecallChecks.includes(i);
-                    return (
-                      <button
-                        key={prompt}
-                        onClick={() => {
-                          setCompletedRecallChecks(prev => prev.includes(i) ? prev.filter(item => item !== i) : [...prev, i]);
-                          trackFunnelEvent('active_recall_checkpoint_toggled', {
-                            topic: explanation.topic,
-                            checkpoint: i + 1,
-                            completed: !done
-                          });
-                        }}
-                        className={`text-left rounded-2xl border p-4 transition-all ${done
-                          ? 'bg-emerald-600 border-emerald-600 text-white shadow-md shadow-emerald-100'
-                          : 'bg-white dark:bg-slate-950 border-amber-200 dark:border-amber-900/70 text-slate-800 dark:text-slate-100 hover:border-amber-400'
-                        }`}
-                      >
-                        <div className="flex items-center gap-2 mb-2">
-                          <CheckCircle className={`w-4 h-4 ${done ? 'text-white' : 'text-amber-500'}`} />
-                          <span className="text-[10px] font-black uppercase tracking-widest">{done ? 'Done' : `Check ${i + 1}`}</span>
-                        </div>
-                        <p className="text-sm font-bold leading-snug">{prompt}</p>
-                      </button>
-                    );
-                  })}
-                </div>
-
-                <div className="rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-100 dark:border-amber-900/60 p-4">
-                  <p className="text-xs font-bold text-amber-800 dark:text-amber-200">
-                    {recallRewarded
-                      ? 'Recall break completed. Study XP added to your progress.'
-                      : `${completedRecallChecks.length}/3 checks completed. Finish them, or leave anyway if you need to move on.`}
-                  </p>
-                </div>
-              </div>
-
-              <div className="p-6 border-t border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
-                <div className="flex flex-col sm:flex-row gap-2">
-                  {recallRewarded && (
-                    <button
-                      onClick={shareLearningProof}
-                      className="rounded-2xl bg-white dark:bg-slate-950 border border-amber-200 dark:border-amber-900/70 text-amber-800 dark:text-amber-200 px-5 py-3 text-xs font-black uppercase tracking-wider hover:bg-amber-100 dark:hover:bg-amber-950/40 transition-colors"
-                    >
-                      {learningProofStatus === 'shared'
-                        ? 'Progress Shared'
-                        : learningProofStatus === 'copied'
-                          ? 'Progress Copied'
-                          : 'Share Progress'}
-                    </button>
-                  )}
-                  <button
-                    onClick={() => setShowExitRecallPrompt(false)}
-                    className="rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 px-5 py-3 text-xs font-black uppercase tracking-wider hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
-                  >
-                    Continue Learning
-                  </button>
-                </div>
-                <button
-                  onClick={() => {
-                    setShowExitRecallPrompt(false);
-                    const action = pendingExitAction;
-                    setPendingExitAction(null);
-                    action?.();
-                  }}
-                  className="rounded-2xl bg-slate-900 dark:bg-white text-white dark:text-slate-950 px-5 py-3 text-xs font-black uppercase tracking-wider hover:opacity-90 transition-opacity"
-                >
-                  Leave Anyway
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
       {/* Faded Solution Paywall Modal */}
       <AnimatePresence>
