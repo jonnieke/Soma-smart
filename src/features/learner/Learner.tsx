@@ -828,18 +828,6 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
     triggerMemorySync();
   }, [completedRecallChecks.length, explanation, recallRewarded, saveActivity, trackFunnelEvent, triggerMemorySync, updateTopicMastery]);
 
-  useEffect(() => {
-    if (!shouldPromptRecallOnExit) return;
-
-    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
-      event.preventDefault();
-      event.returnValue = 'Finish your active recall break before leaving this explanation.';
-      return event.returnValue;
-    };
-
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, [shouldPromptRecallOnExit]);
 
   useEffect(() => {
     const handleSelection = () => {
