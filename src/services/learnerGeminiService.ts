@@ -745,6 +745,7 @@ export const explainTopic = async (
     4. Provide a general overview in the 'explanation' field.
     5. DEEP LEARNING (subtopics): Break the topic down into EXACTLY 3 distinct, logical subtopics using the FORMATTING RULES above. For EACH subtopic, provide highly readable, bite-sized paragraph notes in plain text. Do NOT use ** (bold markers) or ## (headers) in the content. Use numbered lists and bullet points frequently to break down processes or features.
        - CRITICAL LIMIT: Do not generate excessively long notes. You MUST ensure the full JSON output is completed and valid without truncating. Keep it concise.
+       - Length constraints: For EACH subtopic block, limit paragraphs to a maximum of 3 sentences (under 60 words) and lists to a maximum of 4 items. Keep 'explanation' under 200 words. Keep 'recapNodes' details under 80 words. Strictly avoid verbose output so the JSON does not get truncated.
     6. INTERACTIVE RECAP (recapNodes): Provide EXACTLY 3 titled key concept names as "point" (NOT sentences). For EACH point, provide a detailed explanatory paragraph in the 'details' field in plain text.
 
     ${SYLLABUS_GROUNDING_INSTRUCTION}
@@ -771,7 +772,8 @@ export const explainTopic = async (
     const text = result.response.text();
     if (!text) throw new Error("No response from AI");
 
-    const json = JSON.parse(text);
+    const cleanedText = text.replace(/```json\n?|```/g, '').trim();
+    const json = JSON.parse(cleanedText);
     return { ...json, level, grounding: { used: !!ragContext.text, sources: ragContext.sources } } as ExplanationResult;
   } catch (error) {
     console.error("Error explaining topic:", error);
@@ -899,7 +901,8 @@ export const summarizeDocument = async (title: string, documentId: string, langu
     const result = await model.generateContent(prompt);
     const text = result.response.text();
     if (!text) throw new Error("No response");
-    return { ...JSON.parse(text), grounding: { used: !!ragContext.text, sources: ragContext.sources } } as ExplanationResult;
+    const cleanedText = text.replace(/```json\n?|```/g, '').trim();
+    return { ...JSON.parse(cleanedText), grounding: { used: !!ragContext.text, sources: ragContext.sources } } as ExplanationResult;
   } catch (error) {
     console.error("Error summarizing document:", error);
     throw error;
@@ -967,7 +970,8 @@ GUIDELINES:
     const result = await model.generateContent(prompt);
     const text = result.response.text();
     if (!text) throw new Error("No response");
-    return { ...JSON.parse(text), grounding: { used: !!ragContext.text, sources: ragContext.sources } } as ExplanationResult;
+    const cleanedText = text.replace(/```json\n?|```/g, '').trim();
+    return { ...JSON.parse(cleanedText), grounding: { used: !!ragContext.text, sources: ragContext.sources } } as ExplanationResult;
   } catch (error) {
     console.error("Error generating rich notes:", error);
     throw error;
