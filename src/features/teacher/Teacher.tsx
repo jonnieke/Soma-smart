@@ -69,7 +69,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
         deleteTeacherActivity,
         logout, isPro, upgradeAccount,
         isOnline, language,
-        teacherWallet, teacherDarasaUsage, isAvailableForTutoring, toggleTutoringAvailability, fetchEarnings,
+        teacherWallet, teacherDarasaUsage, isAvailableForTutoring, toggleTutoringAvailability, fetchEarnings, requestWithdrawal,
         activeTutoringRequests, acceptTutoringRequest, submitTutoringResponse,
         chatMessages, sendChatMessage, fetchChatMessages,
         marketplaceMaterials, listMaterial
@@ -130,6 +130,10 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
     const [teacherNotice, setTeacherNotice] = useState<{ type: 'success' | 'error' | 'info'; text: string } | null>(null);
     const [activeTab, setActiveTab] = useState<'DASHBOARD' | 'CREATION_HUB' | 'STUDENTS' | 'MARKING' | 'EARNINGS' | 'LIBRARY' | 'CONVERT' | 'VOICE' | 'QUIZ' | 'HOME' | 'MARKETPLACE' | 'PROFILE' | 'REPORTS' | 'DARASA_MODE' | 'SCHEMES' | 'LESSON_POLISH' | 'BLACKBOARD' | 'HOMEWORK' | 'CPD_HUB' | 'CLASSROOM_SIMULATOR' | 'LESSON_PLAN_GENERATOR'>(initialTab || 'DASHBOARD');
     const [loading, setLoading] = useState(false);
+    const [showWithdrawModal, setShowWithdrawModal] = useState(false);
+    const [withdrawAmount, setWithdrawAmount] = useState('');
+    const [withdrawLoading, setWithdrawLoading] = useState(false);
+    const [withdrawResult, setWithdrawResult] = useState<{ success: boolean; message: string } | null>(null);
 
     const trackFunnelEvent = (eventName: string, params: Record<string, unknown> = {}) => {
         try {
@@ -1338,7 +1342,14 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                                         <h4 className="text-3xl font-black text-slate-900 tracking-tight">{teacherWallet?.balance.toLocaleString()} <span className="text-lg text-slate-500">{teacherWallet?.currency}</span></h4>
                                         <p className="text-xs text-slate-500 font-bold mt-1">Available for withdrawal</p>
                                     </div>
-                                    <Button fullWidth className="mt-6 rounded-xl bg-slate-900 hover:bg-slate-800 text-xs font-black uppercase tracking-widest border-none py-4">Withdraw to M-Pesa</Button>
+                                    <Button
+                                        fullWidth
+                                        className="mt-6 rounded-xl bg-slate-900 hover:bg-slate-800 text-xs font-black uppercase tracking-widest border-none py-4"
+                                        onClick={() => { setWithdrawResult(null); setWithdrawAmount(''); setShowWithdrawModal(true); }}
+                                        disabled={!teacherWallet?.balance || teacherWallet.balance < 10}
+                                    >
+                                        Withdraw to M-Pesa
+                                    </Button>
                                 </div>
 
                                 <div className="md:col-span-2 bg-white p-6 rounded-[2.5rem] border-2 border-slate-100 shadow-sm relative overflow-hidden flex flex-col md:flex-row items-center gap-6">
@@ -1527,6 +1538,69 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                         </motion.div>
                     )
                 }
+
+                {/* Withdrawal Modal */}
+                {showWithdrawModal && (
+                    <div className="fixed inset-0 z-[200] bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => !withdrawLoading && setShowWithdrawModal(false)}>
+                        <div className="bg-white rounded-[2.5rem] p-8 max-w-sm w-full shadow-2xl" onClick={e => e.stopPropagation()}>
+                            {withdrawResult ? (
+                                <>
+                                    <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-5 ${withdrawResult.success ? 'bg-emerald-100 text-emerald-600' : 'bg-red-100 text-red-600'}`}>
+                                        {withdrawResult.success ? <CheckCircle2 className="w-8 h-8" /> : <AlertCircle className="w-8 h-8" />}
+                                    </div>
+                                    <h3 className="text-xl font-black text-slate-900 text-center mb-2">{withdrawResult.success ? 'Request Submitted' : 'Request Failed'}</h3>
+                                    <p className="text-slate-500 text-sm text-center font-medium mb-6">{withdrawResult.message}</p>
+                                    {withdrawResult.success && <p className="text-xs text-slate-400 text-center mb-6">Your M-Pesa payment will be sent within 24 hours.</p>}
+                                    <Button fullWidth className="rounded-xl bg-slate-900 text-white py-3.5 text-xs font-black uppercase tracking-widest border-none" onClick={() => setShowWithdrawModal(false)}>
+                                        Close
+                                    </Button>
+                                </>
+                            ) : (
+                                <>
+                                    <h3 className="text-xl font-black text-slate-900 mb-1">Withdraw to M-Pesa</h3>
+                                    <p className="text-sm text-slate-500 font-medium mb-6">Balance: <span className="font-black text-slate-800">KES {teacherWallet?.balance?.toLocaleString() || 0}</span></p>
+                                    <div className="space-y-4">
+                                        <div>
+                                            <label className="text-xs font-black text-slate-500 uppercase tracking-widest block mb-2">Amount (KES)</label>
+                                            <input
+                                                type="number"
+                                                min={10}
+                                                max={teacherWallet?.balance || 0}
+                                                value={withdrawAmount}
+                                                onChange={e => setWithdrawAmount(e.target.value)}
+                                                placeholder={`Max KES ${teacherWallet?.balance?.toLocaleString() || 0}`}
+                                                className="w-full border border-slate-200 rounded-xl px-4 py-3.5 text-sm font-bold text-slate-800 outline-none focus:border-indigo-400 transition-colors"
+                                            />
+                                        </div>
+                                        <p className="text-xs text-slate-400 font-medium">Withdrawals are processed via M-Pesa within 24 hours. Minimum withdrawal: KES 10.</p>
+                                        <div className="flex gap-3 pt-2">
+                                            <Button
+                                                className="flex-1 bg-slate-100 text-slate-700 hover:bg-slate-200 rounded-xl py-3.5 text-xs font-black uppercase tracking-widest border-none"
+                                                onClick={() => setShowWithdrawModal(false)}
+                                                disabled={withdrawLoading}
+                                            >
+                                                Cancel
+                                            </Button>
+                                            <Button
+                                                className="flex-1 bg-slate-900 hover:bg-slate-800 text-white rounded-xl py-3.5 text-xs font-black uppercase tracking-widest border-none"
+                                                disabled={withdrawLoading || !withdrawAmount || Number(withdrawAmount) < 10 || Number(withdrawAmount) > (teacherWallet?.balance || 0)}
+                                                onClick={async () => {
+                                                    setWithdrawLoading(true);
+                                                    const result = await requestWithdrawal(Number(withdrawAmount));
+                                                    setWithdrawResult(result);
+                                                    setWithdrawLoading(false);
+                                                }}
+                                            >
+                                                {withdrawLoading ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : 'Confirm'}
+                                            </Button>
+                                        </div>
+                                    </div>
+                                </>
+                            )}
+                        </div>
+                    </div>
+                )}
+
                 {
                     activeTab === 'REPORTS' && (
                         <TeacherReports />
