@@ -103,6 +103,23 @@ export const stopSpeech = () => {
     }
 };
 
+const speakWithBrowser = (text: string, language: 'EN' | 'SW' = 'EN'): Promise<void> => {
+    return new Promise((resolve, reject) => {
+        if (!window.speechSynthesis) {
+            reject(new Error('Speech playback is not available on this device.'));
+            return;
+        }
+
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = language === 'SW' ? 'sw-KE' : 'en-KE';
+        utterance.rate = 0.96;
+        utterance.pitch = 1;
+        utterance.onend = () => resolve();
+        utterance.onerror = () => reject(new Error('Device speech playback failed.'));
+        window.speechSynthesis.speak(utterance);
+    });
+};
 export const speak = async (text: string, language: 'EN' | 'SW' = 'EN'): Promise<void> => {
     stopSpeech(); // Stop any pending speech
 
@@ -110,7 +127,15 @@ export const speak = async (text: string, language: 'EN' | 'SW' = 'EN'): Promise
     // Pick voice based on language: Alice (EN) or Brian (SW)
     const selectedVoiceId = language === 'SW' ? VOICE_ID_SW : VOICE_ID_EN;
     const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-    assertPlanLimit('listen_and_learn_voice', cleanText.length);
+    const lowDataMode = localStorage.getItem('soma_low_data_mode') === 'true';
+    if (lowDataMode) return speakWithBrowser(cleanText, language);
+
+    try {
+        assertPlanLimit('listen_and_learn_voice', cleanText.length);
+    } catch (error) {
+        console.warn('Premium voice limit reached; using device speech fallback.', error);
+        return speakWithBrowser(cleanText, language);
+    }
 
     // Check if we should attempt TTS at all
     if (!isLocal && !import.meta.env.VITE_SUPABASE_URL) {
@@ -186,11 +211,12 @@ export const speak = async (text: string, language: 'EN' | 'SW' = 'EN'): Promise
             });
         } catch (error: any) {
             console.error("ElevenLabs failed (General Speak):", error.response?.data || error.message);
-            throw new Error("ElevenLabs voice is unavailable. Please check the ElevenLabs proxy/API key instead of falling back to robotic browser speech.");
+            console.warn('ElevenLabs voice is unavailable; using device speech.');
+            return speakWithBrowser(cleanText, language);
         }
     }
 
-    throw new Error("ElevenLabs voice is not configured. Browser speech fallback is disabled for Listen & Learn quality.");
+    return speakWithBrowser(cleanText, language);
 };
 
 // --- PODCAST PLAYER ---

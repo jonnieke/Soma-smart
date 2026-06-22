@@ -24,6 +24,7 @@ import { classroomService } from '../../services/classroomService';
 import { useNavigate, useLocation } from 'react-router-dom';
 import logoImg from '../../assets/images/main_logo.png';
 import { safeImport } from '../../utils/safeImport';
+import { launchFeatures } from '../../config/launchFeatures';
 
 type TeacherGeminiService = typeof import('../../services/geminiService');
 
@@ -988,7 +989,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                         {/* Notification Bell */}
                         <div className="relative cursor-pointer text-slate-500 hover:text-slate-900 transition-colors">
                             <Bell className="w-5 h-5" />
-                            {activeTutoringRequests.filter(r => r.status === 'PENDING').length > 0 && (
+                            {launchFeatures.tutoring && activeTutoringRequests.filter(r => r.status === 'PENDING').length > 0 && (
                                 <span className="absolute top-0 right-0 w-2 h-2 bg-amber-500 rounded-full border border-white"></span>
                             )}
                         </div>
@@ -1107,7 +1108,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                     </motion.div>
                 )}
 
-                {activeTab === 'MARKETPLACE' && (
+                {launchFeatures.marketplace && activeTab === 'MARKETPLACE' && (
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
                         <MarketplaceManager
                             teacherProfile={teacherProfile}
@@ -1356,7 +1357,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                                                 {isAvailableForTutoring ? <ToggleRight className="w-5 h-5" /> : <ToggleLeft className="w-5 h-5" />}
                                                 {isAvailableForTutoring ? 'Active to Tutor' : 'Go Available'}
                                             </button>
-                                            {isAvailableForTutoring && (
+                                            {launchFeatures.tutoring && isAvailableForTutoring && (
                                                 <span className="flex h-3 w-3 relative">
                                                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                                                     <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
@@ -1368,7 +1369,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                             </div>
 
                             {/* Active Tutoring Requests - Phase 2 */}
-                            {isAvailableForTutoring && (
+                            {launchFeatures.tutoring && isAvailableForTutoring && (
                                 <div className="bg-white rounded-[2.5rem] border-2 border-emerald-100 shadow-xl shadow-emerald-50/50 overflow-hidden">
                                     <div className="p-6 bg-emerald-600 text-white flex justify-between items-center">
                                         <h3 className="font-black text-lg flex items-center gap-2">

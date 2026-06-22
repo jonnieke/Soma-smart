@@ -6,11 +6,11 @@ import ReactGA from 'react-ga4';
 import {
   Sparkles, Home, X, XCircle, Camera, ScanLine, Mic, Upload, Clock,
   CheckCircle, Play, Pause, ChevronRight, Star, BookOpen, Brain, Lightbulb, Lock, Volume2, CreditCard, Crown,
-  ArrowRight, UserCircle, Download, ImageIcon, Trash2, AlertTriangle, LogOut, Users, DollarSign, FileText, ShoppingBag, Library, Layers,
+  ArrowRight, UserCircle, Download, ImageIcon, Trash2, AlertTriangle, LogOut, Users, DollarSign, FileText, ShoppingBag, Library, BookMarked, Layers,
   Calculator, FlaskConical, Globe, Languages, Loader2, Headphones, PenTool, Zap, ListChecks, Trophy, Hand, ClipboardList
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
-import { ExplanationResult, QuizData, ViewState, SubscriptionPlan, LearnerProfile, LearnerActivity, UserRole, PodcastScript, ChatMessage, RevisionMode, TeacherActivity, EducationLevel } from '../../types';
+import { ExplanationResult, QuizData, ViewState, SubscriptionPlan, LearnerProfile, LearnerActivity, UserRole, PodcastScript, ChatMessage, RevisionMode, TeacherActivity, EducationLevel, StudyNote } from '../../types';
 import { PricingPage } from '../subscription/PricingPage';
 import { PaymentFlow } from '../subscription/PaymentFlow';
 import { LEARNING_CREDIT_PACKS, STUDENT_PLANS, TEACHER_PLANS, DOWNLOAD_PASS } from '../../data/pricing';
@@ -38,6 +38,8 @@ import { PlanLimitError, getPlanLimit, getPlanUsage } from '../../services/planL
 import { pesapalService } from '../../services/pesapalService';
 import { supabase } from '../../lib/supabase';
 import { extractTextFromURL } from '../../services/contextService';
+import { LearnerNotebook } from './LearnerNotebook';
+import { getNotebookOwnerKey, migrateGuestNotebook, saveStudyNote } from '../../services/notebookService';
 
 const RevisionLanding = React.lazy(() => safeImport(() => import('../revision/RevisionLanding').then(module => ({ default: module.RevisionLanding }))));
 const RevisionSession = React.lazy(() => safeImport(() => import('../revision/RevisionSession').then(module => ({ default: module.RevisionSession }))));
@@ -281,6 +283,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
     | 'listen_and_learn'
     | undefined;
   const initialMode = initialTab === 'SMART_TUTOR' || initialTab === 'HOMEWORK' ? 'SCAN_EXPLAIN' :
+    initialTab === 'NOTEBOOK' ? 'NOTEBOOK' :
     initialTab === 'RESOURCES' ? 'MARKETPLACE' :
       initialTab === 'PROGRESS' ? 'HISTORY' :
         initialTab === 'SUBJECTS' ? 'REVISION' :
@@ -401,7 +404,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
     }
   }, [isRegistered, role, navigate, location]);
 
-  const [mode, setMode] = useState<'MENU' | 'SCAN' | 'RESULT' | 'QUIZ' | 'RECAP_RESULT' | 'PROFILE' | 'PRICING' | 'PAYMENT' | 'MARKETPLACE' | 'LIBRARY' | 'HISTORY' | 'SCAN_EXPLAIN' | 'STUDY' | 'REQUESTS' | 'COMMUNITY' | 'REVISION' | 'REVISION_SESSION' | 'ANALYTICS' | 'TALKBACK' | 'REFERRAL' | 'QUEST_MAP' | 'FLASHCARDS'>(initialMode as any);
+  const [mode, setMode] = useState<'MENU' | 'SCAN' | 'RESULT' | 'QUIZ' | 'RECAP_RESULT' | 'PROFILE' | 'PRICING' | 'PAYMENT' | 'MARKETPLACE' | 'LIBRARY' | 'HISTORY' | 'SCAN_EXPLAIN' | 'STUDY' | 'REQUESTS' | 'COMMUNITY' | 'REVISION' | 'REVISION_SESSION' | 'ANALYTICS' | 'TALKBACK' | 'REFERRAL' | 'QUEST_MAP' | 'FLASHCARDS' | 'NOTEBOOK'>(initialMode as any);
 
   // --- LEARNER MEMORY (Cloud Sync + Personalized Greeting) ---
   const [showMasteryDashboard, setShowMasteryDashboard] = useState(false);
@@ -541,6 +544,45 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
     setTimeout(() => setToastMessage(null), 3000);
   };
 
+  const handleSaveExplanationToNotebook = () => {
+    if (!explanation) return;
+    const note = saveStudyNote(notebookOwnerKey, {
+      title: explanation.topic,
+      topic: explanation.topic,
+      content: [
+        ...(explanation.summaryPoints || []),
+        explanation.explanation,
+      ].filter(Boolean).join('\n\n'),
+      subject: currentDocument?.subject || 'General',
+      grade: studentProfile?.grade || currentDocument?.grade || '',
+      source: 'ai_answer',
+      masteryStatus: 'learning',
+      userId: userId || undefined,
+      studentCode: studentCode || undefined,
+    });
+
+    if (isRegistered) {
+      saveActivity({
+        id: 'notebook-' + note.id,
+        type: 'STUDY',
+        topic: note.topic || note.title,
+        date: new Date().toLocaleDateString(),
+        details: JSON.stringify({
+          mode: 'notebook_saved',
+          noteId: note.id,
+          subject: note.subject,
+          grade: note.grade,
+        }),
+      });
+    }
+
+    trackFunnelEvent('notebook_saved', {
+      source: 'ask_akili_result',
+      subject: note.subject,
+      registered: isRegistered,
+    });
+    triggerToast(isRegistered ? 'Saved to My Notebook.' : 'Saved on this device. Register later to protect it.');
+  };
   const handleRateLimitError = (error: any) => {
     setLoading(false);
     setMode('MENU');
@@ -2084,6 +2126,18 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarTab, setSidebarTab] = useState<SidebarTab>(initialTab);
   const [entryIntent, setEntryIntent] = useState(initialTargetIntent || null);
+  const notebookOwnerKey = React.useMemo(
+    () => getNotebookOwnerKey(studentCode, userId),
+    [studentCode, userId]
+  );
+
+  useEffect(() => {
+    if (!isRegistered || notebookOwnerKey === 'guest') return;
+    const migratedCount = migrateGuestNotebook(notebookOwnerKey);
+    if (migratedCount > 0) {
+      trackFunnelEvent('guest_notebook_migrated', { note_count: migratedCount });
+    }
+  }, [isRegistered, notebookOwnerKey, trackFunnelEvent]);
 
   type PendingPaywallAction = 
     | { type: 'PROCESS_FILE', file: File }
@@ -2106,6 +2160,9 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
         break;
       case 'SMART_TUTOR':
         runWithRecallExitGuard(() => setMode('SCAN_EXPLAIN'));
+        break;
+      case 'NOTEBOOK':
+        runWithRecallExitGuard(() => setMode('NOTEBOOK'));
         break;
       case 'QUEST_MAP':
         runWithRecallExitGuard(() => setMode('QUEST_MAP'));
@@ -4817,11 +4874,11 @@ ${explanation.explanation}
                           action: () => setMode('SCAN_EXPLAIN')
                         },
                         {
-                          title: 'Scan',
-                          body: 'Photo question',
-                          icon: <ScanLine className="w-5 h-5" />,
+                          title: 'Notebook',
+                          body: 'Save & revise',
+                          icon: <BookMarked className="w-5 h-5" />,
                           className: 'bg-white dark:bg-slate-950 text-slate-900 dark:text-white border-slate-200 dark:border-slate-700',
-                          action: () => setMode('SCAN')
+                          action: () => handleSidebarTabChange('NOTEBOOK')
                         },
                         {
                           title: 'Library',
@@ -4838,7 +4895,7 @@ ${explanation.explanation}
                           action: () => handleSidebarTabChange('SUBJECTS')
                         },
                         {
-                          title: 'Listen',
+                          title: 'Listen & Learn',
                           body: learningCredits > 0 ? `${learningCredits} credits` : 'Audio lesson',
                           icon: <Headphones className="w-5 h-5" />,
                           className: 'bg-white dark:bg-slate-950 text-slate-900 dark:text-white border-slate-200 dark:border-slate-700',
@@ -4849,7 +4906,7 @@ ${explanation.explanation}
                           }
                         },
                         {
-                          title: 'Speak & Pronounce',
+                          title: 'Talk & Learn',
                           body: 'Learn to Speak',
                           icon: <Mic className="w-5 h-5 text-indigo-500" />,
                           className: 'bg-white dark:bg-slate-950 text-slate-900 dark:text-white border-slate-200 dark:border-slate-700',
@@ -5524,6 +5581,89 @@ ${explanation.explanation}
 
 
 
+    if (mode === 'NOTEBOOK') {
+      return (
+        <LearnerNotebook
+          ownerKey={notebookOwnerKey}
+          grade={studentProfile?.grade}
+          isRegistered={isRegistered}
+          onBack={() => setMode('MENU')}
+          onRegister={() => setShowRegistration(true)}
+          onNoteSaved={(note) => {
+            if (isRegistered) {
+              saveActivity({
+                id: 'notebook-' + note.id,
+                type: 'STUDY',
+                topic: note.topic || note.title,
+                date: new Date().toLocaleDateString(),
+                details: JSON.stringify({
+                  mode: 'manual_notebook_note',
+                  noteId: note.id,
+                  subject: note.subject,
+                  grade: note.grade,
+                }),
+              });
+            }
+            trackFunnelEvent('notebook_saved', {
+              source: 'manual_note',
+              subject: note.subject,
+              registered: isRegistered,
+            });
+            triggerToast('Note saved.');
+          }}
+          onOpenNote={(note) => {
+            const summaryPoints = note.content
+              .split(/[.!?]\s+/)
+              .map(point => point.trim())
+              .filter(Boolean)
+              .slice(0, 3);
+            setExplanation({
+              topic: note.topic || note.title,
+              explanation: note.content,
+              summaryPoints: summaryPoints.length > 0 ? summaryPoints : [note.title],
+              level: 'Simple',
+              relatedTopics: [],
+            });
+            setSidebarTab('NOTEBOOK');
+            setMode('RESULT');
+          }}
+          onListenNote={async (note) => {
+            try {
+              await speak(note.content, language);
+            } catch {
+              triggerToast('Audio is not available on this device right now.');
+            }
+          }}
+          onQuizNote={async (note) => {
+            setLoading(true);
+            setLoadingText('Akili is creating a short Notebook quiz...');
+            try {
+              const quiz = await generateQuickQuiz(note.content, note.topic || note.title, language);
+              setExplanation({
+                topic: note.topic || note.title,
+                explanation: note.content,
+                summaryPoints: [note.title],
+                level: 'Simple',
+                relatedTopics: [],
+              });
+              setQuizData(quiz);
+              setStickyQuizTaken(true);
+              trackFunnelEvent('notebook_quiz_generated', {
+                subject: note.subject,
+                topic: note.topic || note.title,
+              });
+              setMode('QUIZ');
+            } catch (error) {
+              console.error('Notebook quiz generation failed:', error);
+              triggerToast('Could not create the quiz. Please try again.');
+            } finally {
+              setLoading(false);
+            }
+          }}
+        />
+      );
+    }
+
     // --- HISTORY VIEW ---
     if (mode === 'HISTORY' as any) {
       return (
@@ -5957,9 +6097,9 @@ ${explanation.explanation}
               <Home className="w-6 h-6" />
               <span className="text-[11px] font-black uppercase tracking-tight">Home</span>
             </button>
-            <button onClick={() => setMode('MARKETPLACE')} className="flex min-h-[52px] min-w-[52px] flex-col items-center justify-center gap-1 text-slate-400 hover:text-slate-600">
-              <ShoppingBag className="w-6 h-6" />
-              <span className="text-[11px] font-black uppercase tracking-tight">Materials</span>
+            <button onClick={() => setMode('NOTEBOOK')} className="flex min-h-[52px] min-w-[52px] flex-col items-center justify-center gap-1 text-slate-400 hover:text-slate-600">
+              <BookMarked className="w-6 h-6" />
+              <span className="text-[11px] font-black uppercase tracking-tight">My Notes</span>
             </button>
             <div className="relative -mt-10">
               <button onClick={() => setMode('SCAN')} className="relative w-16 h-16 bg-indigo-600 rounded-full flex items-center justify-center shadow-xl shadow-indigo-200 text-white transform hover:scale-110 active:scale-90 transition-all border-4 border-white">
@@ -7620,6 +7760,14 @@ ${explanation.explanation}
               {/* ACTION FOOTER */}
               <div className="mt-8 pt-6 border-t border-slate-100 flex flex-wrap gap-2 sm:gap-4">
                 <button
+                  onClick={handleSaveExplanationToNotebook}
+                  className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-amber-50 hover:bg-amber-100 text-amber-800 font-bold text-sm px-4 sm:px-5 py-3 rounded-xl transition-colors border border-amber-200"
+                >
+                  <BookMarked className="w-4 h-4" />
+                  Save to Notebook
+                </button>
+
+                <button
                   onClick={handleTTS}
                   className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm px-4 sm:px-5 py-3 rounded-xl transition-colors"
                 >
@@ -7801,9 +7949,9 @@ ${explanation.explanation}
               <Home className="w-6 h-6" />
               <span className="text-[11px] font-black uppercase tracking-tight">Home</span>
             </button>
-            <button onClick={() => runWithRecallExitGuard(() => setMode('MARKETPLACE'))} className="flex min-h-[52px] min-w-[52px] flex-col items-center justify-center gap-1 text-slate-400 hover:text-slate-600">
-              <ShoppingBag className="w-6 h-6" />
-              <span className="text-[11px] font-black uppercase tracking-tight">Materials</span>
+            <button onClick={() => runWithRecallExitGuard(() => setMode('NOTEBOOK'))} className="flex min-h-[52px] min-w-[52px] flex-col items-center justify-center gap-1 text-slate-400 hover:text-slate-600">
+              <BookMarked className="w-6 h-6" />
+              <span className="text-[11px] font-black uppercase tracking-tight">My Notes</span>
             </button>
             <div className="relative -mt-10">
               <button onClick={() => runWithRecallExitGuard(() => setMode('SCAN'))} className="relative w-16 h-16 bg-indigo-600 rounded-full flex items-center justify-center shadow-xl shadow-indigo-200 text-white transform hover:scale-110 active:scale-90 transition-all border-4 border-white">
@@ -8460,9 +8608,9 @@ ${explanation.explanation}
               <Home className="w-6 h-6" />
               <span className="text-[11px] font-black uppercase tracking-tight">Home</span>
             </button>
-            <button onClick={() => setMode('MARKETPLACE')} className="flex min-h-[52px] min-w-[52px] flex-col items-center justify-center gap-1 text-indigo-600 scale-110">
-              <ShoppingBag className="w-6 h-6" />
-              <span className="text-[11px] font-black uppercase tracking-tight">Materials</span>
+            <button onClick={() => setMode('NOTEBOOK')} className="flex min-h-[52px] min-w-[52px] flex-col items-center justify-center gap-1 text-indigo-600 scale-110">
+              <BookMarked className="w-6 h-6" />
+              <span className="text-[11px] font-black uppercase tracking-tight">My Notes</span>
             </button>
             <div className="relative -mt-10">
               <button onClick={() => setMode('SCAN')} className="relative w-16 h-16 bg-indigo-600 rounded-full flex items-center justify-center shadow-xl shadow-indigo-200 text-white transform hover:scale-110 active:scale-90 transition-all border-4 border-white">
@@ -8633,9 +8781,9 @@ ${explanation.explanation}
               <Home className="w-6 h-6" />
               <span className="text-[11px] font-black uppercase tracking-tight">Home</span>
             </button>
-            <button onClick={() => setMode('MARKETPLACE')} className="flex min-h-[52px] min-w-[52px] flex-col items-center justify-center gap-1 text-slate-400 hover:text-slate-600">
-              <ShoppingBag className="w-6 h-6" />
-              <span className="text-[11px] font-black uppercase tracking-tight">Materials</span>
+            <button onClick={() => setMode('NOTEBOOK')} className="flex min-h-[52px] min-w-[52px] flex-col items-center justify-center gap-1 text-slate-400 hover:text-slate-600">
+              <BookMarked className="w-6 h-6" />
+              <span className="text-[11px] font-black uppercase tracking-tight">My Notes</span>
             </button>
             <div className="relative -mt-10">
               <button onClick={() => setMode('SCAN')} className="relative w-16 h-16 bg-indigo-600 rounded-full flex items-center justify-center shadow-xl shadow-indigo-200 text-white transform hover:scale-110 active:scale-90 transition-all border-4 border-white">

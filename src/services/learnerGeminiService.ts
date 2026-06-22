@@ -50,7 +50,7 @@ const callGeminiProxy = async (model: string, contents: any, generationConfig: a
   const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/gemini-proxy`, {
     method: 'POST',
     headers,
-    body: JSON.stringify({ model, contents, generationConfig, systemInstruction, stream: false })
+    body: JSON.stringify({ feature, contents, generationConfig, systemInstruction, stream: false })
   });
 
   if (!response.ok) {
@@ -90,7 +90,9 @@ const callGeminiProxy = async (model: string, contents: any, generationConfig: a
 };
 
 // --- STREAMING PROXY HELPER ---
-const callGeminiProxyStream = async (model: string, contents: any, generationConfig: any = {}, systemInstruction: any = null) => {
+const callGeminiProxyStream = async (_model: string, contents: any, generationConfig: any = {}, systemInstruction: any = null) => {
+  const feature = inferAiFeature(contents, systemInstruction);
+  assertPlanLimit(feature);
   const { data: { session } } = await supabase.auth.getSession();
   const token = session?.access_token;
   const studentCode = localStorage.getItem('soma_active_student') || '';
@@ -104,7 +106,7 @@ const callGeminiProxyStream = async (model: string, contents: any, generationCon
   const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/gemini-proxy`, {
     method: 'POST',
     headers,
-    body: JSON.stringify({ model, contents, generationConfig, systemInstruction, stream: true })
+    body: JSON.stringify({ feature, contents, generationConfig, systemInstruction, stream: true })
   });
 
   if (!response.ok) {

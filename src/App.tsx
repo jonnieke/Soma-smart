@@ -13,6 +13,7 @@ import { useLocation } from 'react-router-dom';
 import { flushMasterySyncQueue } from './services/learnerMemoryService';
 import { safeImport } from './utils/safeImport';
 import { trackAnalyticsEvent } from './services/analyticsEventService';
+import { launchFeatures } from './config/launchFeatures';
 
 // Lazy Load Pages for Performance
 const LandingPage = React.lazy(() => safeImport(() => import('./pages/LandingPage').then(module => ({ default: module.LandingPage }))));
@@ -113,7 +114,7 @@ const App: React.FC = () => {
                     path: `${window.location.pathname}${window.location.search}`,
                     metadata: {
                         has_session: Boolean(session),
-                        email: session?.user?.email || null
+                        auth_provider: session?.user?.app_metadata?.provider || null
                     }
                 });
             }
@@ -166,9 +167,9 @@ const App: React.FC = () => {
                             <Route path="/admin/knowledge" element={<AdminGuard onNavigateBack={() => navigate('/')}><AdminKnowledgeBase /></AdminGuard>} />
                             <Route path="/revision" element={<RevisionPortal />} />
                             <Route path="/revision/dashboard" element={<RevisionDashboard />} />
-                            <Route path="/exam-rooms" element={<ExamRoomsListPage />} />
-                            <Route path="/exam-rooms/:id" element={<ExamRoomChatPage />} />
-                            <Route path="/campus" element={<CampusPage />} />
+                            <Route path="/exam-rooms" element={launchFeatures.examRooms ? <ExamRoomsListPage /> : <Navigate to="/learner" replace />} />
+                            <Route path="/exam-rooms/:id" element={launchFeatures.examRooms ? <ExamRoomChatPage /> : <Navigate to="/learner" replace />} />
+                            <Route path="/campus" element={launchFeatures.campus ? <CampusPage /> : <Navigate to="/" replace />} />
                             <Route path="/teacher/darasa" element={<TeacherPage />} />
                             <Route path="/reset-password" element={<ResetPassword />} />
                             <Route path="/pricing" element={<PricingPage />} />

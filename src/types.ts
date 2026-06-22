@@ -360,6 +360,24 @@ export interface MarkingResult {
   examTip: string;
 }
 
+export type StudyNoteSource = 'ai_answer' | 'manual' | 'teacher' | 'library' | 'audio';
+export type StudyNoteMasteryStatus = 'new' | 'learning' | 'understood' | 'revise_again';
+
+export interface StudyNote {
+  id: string;
+  userId?: string;
+  studentCode?: string;
+  title: string;
+  content: string;
+  subject: string;
+  grade: string;
+  topic?: string;
+  source: StudyNoteSource;
+  createdAt: string;
+  updatedAt: string;
+  masteryStatus: StudyNoteMasteryStatus;
+  audioUrl?: string;
+}
 // --- AI STRUCTURED NOTES TYPES ---
 
 export interface StudyTopic {

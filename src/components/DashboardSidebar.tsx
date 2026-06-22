@@ -5,6 +5,7 @@ import {
   Map,
   Brain,
   BookOpen,
+  BookMarked,
   Users,
   FolderOpen,
   BarChart3,
@@ -30,10 +31,12 @@ import {
 
 import { useApp } from '../context/AppContext';
 import { EducationLevel } from '../types';
+import { launchFeatures } from '../config/launchFeatures';
 
 export type SidebarTab =
   | 'HOME'
   | 'SMART_TUTOR'
+  | 'NOTEBOOK'
   | 'QUEST_MAP'
   | 'SUBJECTS'
   | 'EXAM_ROOMS'
@@ -69,6 +72,7 @@ const getNavItems = (level: EducationLevel): NavItem[] => {
       return [
         { id: 'HOME', label: 'Home', icon: <Home className="w-5 h-5" />, section: 'primary' },
         { id: 'SMART_TUTOR', label: 'Akili Buddy 🤝', icon: <Sparkles className="w-5 h-5" />, section: 'primary' },
+        { id: 'NOTEBOOK', label: 'My Notebook', icon: <BookMarked className="w-5 h-5" />, section: 'primary' },
         { id: 'QUEST_MAP', label: 'Quest Map 🗺️', icon: <Map className="w-5 h-5" />, section: 'primary' },
         { id: 'SUBJECTS', label: 'Exam Prep', icon: <BookOpen className="w-5 h-5" />, section: 'primary' },
         { id: 'RESOURCES', label: 'Library 📚', icon: <FolderOpen className="w-5 h-5" />, section: 'primary' },
@@ -80,6 +84,7 @@ const getNavItems = (level: EducationLevel): NavItem[] => {
       return [
         { id: 'HOME', label: 'Home', icon: <Home className="w-5 h-5" />, section: 'primary' },
         { id: 'SMART_TUTOR', label: 'Ask Akili', icon: <ScanLine className="w-5 h-5" />, section: 'primary' },
+        { id: 'NOTEBOOK', label: 'My Notebook', icon: <BookMarked className="w-5 h-5" />, section: 'primary' },
         { id: 'QUEST_MAP', label: 'Quest Map 🗺️', icon: <Map className="w-5 h-5" />, section: 'primary' },
         { id: 'SUBJECTS', label: 'Courses', icon: <BookOpen className="w-5 h-5" />, section: 'primary' },
         { id: 'RESOURCES', label: 'Research Hub', icon: <FolderOpen className="w-5 h-5" />, section: 'primary' },
@@ -92,6 +97,7 @@ const getNavItems = (level: EducationLevel): NavItem[] => {
       return [
         { id: 'HOME', label: 'Home', icon: <Home className="w-5 h-5" />, section: 'primary' },
         { id: 'SMART_TUTOR', label: 'Ask Akili', icon: <Brain className="w-5 h-5" />, section: 'primary' },
+        { id: 'NOTEBOOK', label: 'My Notebook', icon: <BookMarked className="w-5 h-5" />, section: 'primary' },
         { id: 'QUEST_MAP', label: 'Quest Map 🗺️', icon: <Map className="w-5 h-5" />, section: 'primary' },
         { id: 'SUBJECTS', label: 'Exam Hall', icon: <BookOpen className="w-5 h-5" />, section: 'primary' },
         { id: 'RESOURCES', label: 'Library', icon: <FolderOpen className="w-5 h-5" />, section: 'primary' },
@@ -131,6 +137,7 @@ const simplifyLearnerNavItems = (items: NavItem[]): NavItem[] => {
   const labelById: Partial<Record<SidebarTab, string>> = {
     HOME: 'Home',
     SMART_TUTOR: 'Ask Akili',
+    NOTEBOOK: 'My Notebook',
     RESOURCES: 'Library',
     SUBJECTS: 'Exam Prep',
     PROGRESS: 'Progress',
@@ -141,11 +148,18 @@ const simplifyLearnerNavItems = (items: NavItem[]): NavItem[] => {
     REFERRAL: 'Referral',
   };
 
-  const primaryOrder: SidebarTab[] = ['HOME', 'SMART_TUTOR', 'RESOURCES', 'SUBJECTS', 'PROGRESS'];
+  const primaryOrder: SidebarTab[] = ['HOME', 'SMART_TUTOR', 'NOTEBOOK', 'RESOURCES', 'SUBJECTS', 'PROGRESS'];
   const secondaryOrder: SidebarTab[] = ['TALKBACK', 'QUEST_MAP', 'EXAM_ROOMS', 'COMMUNITY', 'REFERRAL'];
   const order = [...primaryOrder, ...secondaryOrder];
 
   return [...items]
+    .filter((item) => {
+      if (item.id === 'EXAM_ROOMS') return launchFeatures.examRooms;
+      if (item.id === 'COMMUNITY') return launchFeatures.community;
+      if (item.id === 'TALKBACK') return launchFeatures.talkAndLearn;
+      if (item.id === 'NOTEBOOK') return launchFeatures.notebook;
+      return true;
+    })
     .map((item) => ({
       ...item,
       label: labelById[item.id] || item.label,
@@ -245,7 +259,9 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
               exit={{ opacity: 0, height: 0 }}
               className="mt-2 space-y-1 overflow-hidden"
             >
-              {Object.entries(levelConfig).map(([level, config]) => (
+              {Object.entries(levelConfig)
+                .filter(([level]) => level !== EducationLevel.CAMPUS || launchFeatures.campus)
+                .map(([level, config]) => (
                 <button
                   key={level}
                   onClick={() => {

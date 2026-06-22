@@ -5,31 +5,62 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { encode as encodeBase64 } from "https://deno.land/std@0.168.0/encoding/base64.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-const corsHeaders = {
-    'Access-Control-Allow-Origin': '*',
+const BASE_CORS_HEADERS = {
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-student-code',
-    'Access-Control-Allow-Methods': 'POST, GET, OPTIONS, PUT, DELETE',
+    'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
+    'Vary': 'Origin',
 };
 
-const FREE_AI_DAILY_LIMIT = Number(Deno.env.get('FREE_AI_DAILY_LIMIT') || '25');  // Registered free users
-const GUEST_AI_DAILY_LIMIT = Number(Deno.env.get('GUEST_AI_DAILY_LIMIT') || '3');  // Unregistered guests
-const DEFAULT_GEMINI_MODEL = Deno.env.get('GEMINI_MODEL') || 'gemini-2.5-flash';
+const PRODUCTION_ORIGINS = new Set([
+    'https://somaai.co.ke',
+    'https://www.somaai.co.ke',
+]);
+
+const PREVIEW_ORIGINS = new Set(
+    String(Deno.env.get('ALLOWED_PREVIEW_ORIGINS') || '')
+        .split(',')
+        .map(origin => origin.trim())
+        .filter(Boolean)
+);
+
+const isAllowedOrigin = (origin: string | null) => {
+    if (!origin) return true;
+    if (PRODUCTION_ORIGINS.has(origin)) return true;
+    if (/^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) return true;
+    return PREVIEW_ORIGINS.has(origin);
+};
+
+const corsHeadersFor = (req: Request) => {
+    const origin = req.headers.get('Origin');
+    return {
+        ...BASE_CORS_HEADERS,
+        ...(origin && isAllowedOrigin(origin) ? { 'Access-Control-Allow-Origin': origin } : {}),
+    };
+};
+
+const envFlag = (name: string) => String(Deno.env.get(name) || '').toLowerCase() === 'true';
+const FREE_AI_DAILY_LIMIT = Number(Deno.env.get('FREE_AI_DAILY_LIMIT') || '10');
+const GUEST_AI_DAILY_LIMIT = Number(Deno.env.get('GUEST_AI_DAILY_LIMIT') || '3');
+const DEFAULT_GEMINI_MODEL = Deno.env.get('DEFAULT_GEMINI_MODEL') || Deno.env.get('GEMINI_MODEL') || 'gemini-2.5-flash';
+const HEAVY_GEMINI_MODEL = Deno.env.get('HEAVY_GEMINI_MODEL') || DEFAULT_GEMINI_MODEL;
+const EMBEDDING_MODEL = Deno.env.get('GEMINI_EMBEDDING_MODEL') || 'gemini-embedding-001';
+const MAX_OUTPUT_TOKENS_FREE = Number(Deno.env.get('MAX_OUTPUT_TOKENS_FREE') || '1200');
+const MAX_OUTPUT_TOKENS_PAID = Number(Deno.env.get('MAX_OUTPUT_TOKENS_PAID') || '3000');
+const DISABLE_GUEST_AI = envFlag('DISABLE_GUEST_AI');
+const DISABLE_AUDIO_GENERATION = envFlag('DISABLE_AUDIO_GENERATION');
+const DISABLE_TALK_AND_LEARN = envFlag('DISABLE_TALK_AND_LEARN');
 const KES_PER_USD = 130;
 
 const FEATURE_LIMITS: Record<string, Record<string, number>> = {
-    // Unauthenticated visitors — enough to demo the product, not enough to replace a plan
-    GUEST: { ai_generation: 5, exam_guru: 1, exam_marking: 0, quiz_generation: 1, practice_generation: 1, notes_generation: 1, grounded_library_help: 0, deep_document_analysis: 0, teacher_ai: 0 },
-    // Registered free users — enough to feel real value and hit a natural upgrade moment
-    FREE: { ai_generation: 10, exam_guru: 3, exam_marking: 1, quiz_generation: 3, practice_generation: 3, notes_generation: 3, grounded_library_help: 1, deep_document_analysis: 0, teacher_ai: 3 },
-    // Paid tiers — always clearly more than FREE so the upgrade makes sense
-    DAILY: { ai_generation: 30, exam_guru: 15, exam_marking: 6, quiz_generation: 10, practice_generation: 12, notes_generation: 10, grounded_library_help: 12, deep_document_analysis: 3, teacher_ai: 10 },
-    WEEKLY: { ai_generation: 120, exam_guru: 80, exam_marking: 35, quiz_generation: 60, practice_generation: 80, notes_generation: 60, grounded_library_help: 70, deep_document_analysis: 18, teacher_ai: 60 },
-    MONTHLY: { ai_generation: 450, exam_guru: 300, exam_marking: 150, quiz_generation: 250, practice_generation: 300, notes_generation: 220, grounded_library_help: 300, deep_document_analysis: 80, teacher_ai: 220 },
-    TERMLY: { ai_generation: 1200, exam_guru: 800, exam_marking: 420, quiz_generation: 700, practice_generation: 850, notes_generation: 650, grounded_library_help: 850, deep_document_analysis: 240, teacher_ai: 650 },
-    ANNUAL: { ai_generation: 4000, exam_guru: 2500, exam_marking: 1500, quiz_generation: 2200, practice_generation: 2800, notes_generation: 2000, grounded_library_help: 3000, deep_document_analysis: 900, teacher_ai: 2000 },
-    PRO: { ai_generation: 450, exam_guru: 300, exam_marking: 150, quiz_generation: 250, practice_generation: 300, notes_generation: 220, grounded_library_help: 300, deep_document_analysis: 80, teacher_ai: 220 },
+    GUEST: { ai_generation: 3, exam_guru: 1, exam_marking: 0, quiz_generation: 1, practice_generation: 1, notes_generation: 1, notebook_generation: 1, listen_and_learn: 1, talk_and_learn: 1, grounded_library_help: 0, deep_document_analysis: 0, teacher_ai: 0 },
+    FREE: { ai_generation: 10, exam_guru: 3, exam_marking: 1, quiz_generation: 3, practice_generation: 3, notes_generation: 3, notebook_generation: 5, listen_and_learn: 3, talk_and_learn: 3, grounded_library_help: 1, deep_document_analysis: 0, teacher_ai: 3 },
+    DAILY: { ai_generation: 30, exam_guru: 15, exam_marking: 6, quiz_generation: 10, practice_generation: 12, notes_generation: 10, notebook_generation: 15, listen_and_learn: 10, talk_and_learn: 10, grounded_library_help: 12, deep_document_analysis: 3, teacher_ai: 10 },
+    WEEKLY: { ai_generation: 120, exam_guru: 80, exam_marking: 35, quiz_generation: 60, practice_generation: 80, notes_generation: 60, notebook_generation: 80, listen_and_learn: 50, talk_and_learn: 50, grounded_library_help: 70, deep_document_analysis: 18, teacher_ai: 60 },
+    MONTHLY: { ai_generation: 450, exam_guru: 300, exam_marking: 150, quiz_generation: 250, practice_generation: 300, notes_generation: 220, notebook_generation: 250, listen_and_learn: 150, talk_and_learn: 150, grounded_library_help: 300, deep_document_analysis: 80, teacher_ai: 220 },
+    TERMLY: { ai_generation: 1200, exam_guru: 800, exam_marking: 420, quiz_generation: 700, practice_generation: 850, notes_generation: 650, notebook_generation: 700, listen_and_learn: 500, talk_and_learn: 500, grounded_library_help: 850, deep_document_analysis: 240, teacher_ai: 650 },
+    ANNUAL: { ai_generation: 4000, exam_guru: 2500, exam_marking: 1500, quiz_generation: 2200, practice_generation: 2800, notes_generation: 2000, notebook_generation: 2400, listen_and_learn: 1800, talk_and_learn: 1800, grounded_library_help: 3000, deep_document_analysis: 900, teacher_ai: 2000 },
+    PRO: { ai_generation: 450, exam_guru: 300, exam_marking: 150, quiz_generation: 250, practice_generation: 300, notes_generation: 220, notebook_generation: 250, listen_and_learn: 150, talk_and_learn: 150, grounded_library_help: 300, deep_document_analysis: 80, teacher_ai: 220 },
 };
-
 const MODEL_PRICING_USD_PER_1M: Record<string, { input: number; output: number }> = {
     'gemini-1.5-flash': { input: 0.075, output: 0.30 },
     'gemini-1.5-pro': { input: 1.25, output: 5.00 },
@@ -106,21 +137,25 @@ async function getVertexAccessToken(clientEmail: string, privateKeyPem: string):
     return data.access_token;
 }
 
-const normalizeGeminiModel = (model: string) => {
-    const requested = String(model || '').trim();
-    if (!requested) return requested;
-
-    // Older deployed clients can still request retired Gemini aliases. Keep the
-    // proxy compatible so cached browser chunks do not break learner sessions.
-    const retiredAliases = new Set([
-        'gemini-1.5-flash',
-        'gemini-1.5-pro',
-        'gemini-2.0-flash',
-    ]);
-
-    return retiredAliases.has(requested) ? DEFAULT_GEMINI_MODEL : requested;
+const normalizeFeatureHint = (hint: unknown, contents: unknown, systemInstruction: unknown) => {
+    const aliases: Record<string, string> = {
+        audio_learning: 'listen_and_learn',
+        listen_and_learn_voice: 'listen_and_learn',
+        listen_and_learn_podcast: 'listen_and_learn',
+        conversational_voice: 'talk_and_learn',
+    };
+    const requested = String(hint || '').trim().toLowerCase();
+    const normalized = aliases[requested] || requested;
+    if (normalized && FEATURE_LIMITS.FREE[normalized] !== undefined) return normalized;
+    return inferAiFeature(contents, systemInstruction);
 };
 
+const selectGeminiModel = (feature: string, requestedModel: unknown) => {
+    const requested = String(requestedModel || '').trim().toLowerCase();
+    if (requested.includes('embedding')) return EMBEDDING_MODEL;
+    if (feature === 'deep_document_analysis' || feature === 'exam_marking') return HEAVY_GEMINI_MODEL;
+    return DEFAULT_GEMINI_MODEL;
+};
 const getClientIp = (req: Request) => {
     return (
         req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
@@ -200,6 +235,7 @@ const limitResponse = (
     message: string,
     extra: Record<string, unknown> = {},
     retryAfterSeconds = 300,
+    corsHeaders: Record<string, string> = BASE_CORS_HEADERS,
 ) => new Response(JSON.stringify({
     error: message,
     code,
@@ -215,7 +251,6 @@ const limitResponse = (
 });
 
 const enforceUsageLimit = async (req: Request) => {
-    return; // Bypass limits for local/test convenience
     const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
     const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
 
@@ -384,16 +419,24 @@ const resolveRequester = async (req: Request, supabase: any) => {
     return { userId: null, studentCode: null, plan: 'GUEST', identifier, profile: null };
 };
 
-const enforceFeatureLimit = async (supabase: any, requester: any, feature: string) => {
-    return; // Bypass limits for local/test convenience
+const enforceFeatureLimit = async (supabase: any, requester: any, feature: string, corsHeaders: Record<string, string>) => {
     const plan = requester.plan || 'FREE';
+    if (plan === 'GUEST' && DISABLE_GUEST_AI) {
+        throw limitResponse('GUEST_AI_DISABLED', 'Guest AI is temporarily unavailable. Sign in to continue learning.', { feature, plan }, 900, corsHeaders);
+    }
+    if (feature === 'listen_and_learn' && DISABLE_AUDIO_GENERATION) {
+        throw limitResponse('AUDIO_TEMPORARILY_DISABLED', 'Generated audio is temporarily unavailable. Text learning remains available.', { feature, plan }, 900, corsHeaders);
+    }
+    if (feature === 'talk_and_learn' && DISABLE_TALK_AND_LEARN) {
+        throw limitResponse('TALK_TEMPORARILY_DISABLED', 'Talk & Learn is temporarily unavailable. Ask Akili remains available.', { feature, plan }, 900, corsHeaders);
+    }
     const limit = FEATURE_LIMITS[plan]?.[feature] ?? FEATURE_LIMITS.FREE[feature] ?? GUEST_AI_DAILY_LIMIT;
     if (limit <= 0) {
         throw limitResponse('FEATURE_NOT_INCLUDED', `${feature.replace(/_/g, ' ')} is not included in this plan`, {
             feature,
             plan,
             limit,
-        }, 86400);
+        }, 86400, corsHeaders);
     }
 
     const since = new Date();
@@ -434,7 +477,7 @@ const enforceFeatureLimit = async (supabase: any, requester: any, feature: strin
             limit,
             usageCount: count || 0,
             canBuyCredits: true
-        }, 86400);
+        }, 86400, corsHeaders);
     }
 };
 
@@ -478,6 +521,15 @@ const recordGeminiUsageCost = async (
 };
 
 serve(async (req) => {
+    const corsHeaders = corsHeadersFor(req);
+    const origin = req.headers.get('Origin');
+    if (!isAllowedOrigin(origin)) {
+        return new Response(JSON.stringify({ error: 'Origin not allowed' }), {
+            status: 403,
+            headers: { ...BASE_CORS_HEADERS, 'Content-Type': 'application/json' },
+        });
+    }
+
     if (req.method === 'OPTIONS') {
         return new Response('ok', { headers: corsHeaders });
     }
@@ -546,7 +598,7 @@ serve(async (req) => {
 
             const body = await req.json();
             const { model, contents, ttl, displayName, systemInstruction } = body;
-            const normalizedModel = normalizeGeminiModel(model) || "gemini-3.5-flash";
+            const normalizedModel = selectGeminiModel('deep_document_analysis', model);
 
             const requestBody: Record<string, any> = {
                 model: `models/${normalizedModel}`,
@@ -581,21 +633,28 @@ serve(async (req) => {
             );
         }
 
-        const { model, contents, generationConfig, systemInstruction, stream, cachedContent } = await req.json();
-        const normalizedModel = normalizeGeminiModel(model);
-        const feature = inferAiFeature(contents, systemInstruction);
+        const { model, feature: featureHint, contents, generationConfig, systemInstruction, stream, cachedContent } = await req.json();
+        const feature = normalizeFeatureHint(featureHint, contents, systemInstruction);
+        const normalizedModel = selectGeminiModel(feature, model);
         const supabase = getSupabaseAdmin();
         const requester = await resolveRequester(req, supabase);
+        const paidPlan = !['GUEST', 'FREE'].includes(String(requester.plan || 'FREE'));
+        const outputTokenCap = paidPlan ? MAX_OUTPUT_TOKENS_PAID : MAX_OUTPUT_TOKENS_FREE;
+        const requestedOutputTokens = Number(generationConfig?.maxOutputTokens || outputTokenCap);
+        const cappedGenerationConfig = {
+            ...(generationConfig || {}),
+            maxOutputTokens: Math.min(Number.isFinite(requestedOutputTokens) ? requestedOutputTokens : outputTokenCap, outputTokenCap),
+        };
 
-        if (!contents || !normalizedModel) {
+        if (!contents) {
             return new Response(
-                JSON.stringify({ error: 'Missing required fields: model, contents' }),
+                JSON.stringify({ error: 'Missing required field: contents' }),
                 { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
             );
         }
 
         try {
-            await enforceFeatureLimit(supabase, requester, feature);
+            await enforceFeatureLimit(supabase, requester, feature, corsHeaders);
         } catch (limitError) {
             if (limitError instanceof Response) {
                 return limitError;
@@ -697,7 +756,7 @@ serve(async (req) => {
                 const endpoint = stream ? 'streamGenerateContent' : 'generateContent';
                 urlTarget = `https://${region}-aiplatform.googleapis.com/v1/projects/${GCP_PROJECT_ID}/locations/${region}/publishers/google/models/${normalizedModel}:${endpoint}`;
                 geminiBody = { contents: normalizedContents };
-                if (generationConfig) geminiBody.generationConfig = generationConfig;
+                geminiBody.generationConfig = cappedGenerationConfig;
                 if (systemInstruction) geminiBody.systemInstruction = systemInstruction;
                 if (cachedContent) geminiBody.cachedContent = cachedContent;
             }
@@ -709,7 +768,7 @@ serve(async (req) => {
                 const endpoint = stream ? 'streamGenerateContent' : 'generateContent';
                 urlTarget = `https://generativelanguage.googleapis.com/v1beta/models/${normalizedModel}:${endpoint}?key=${GEMINI_API_KEY}`;
                 geminiBody = { contents: normalizedContents };
-                if (generationConfig) geminiBody.generationConfig = generationConfig;
+                geminiBody.generationConfig = cappedGenerationConfig;
                 if (systemInstruction) geminiBody.systemInstruction = systemInstruction;
                 if (cachedContent) geminiBody.cachedContent = cachedContent;
             }

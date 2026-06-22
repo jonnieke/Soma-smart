@@ -56,7 +56,7 @@ export const callGeminiProxy = async (model: string, contents: any, generationCo
   const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/gemini-proxy`, {
     method: 'POST',
     headers,
-    body: JSON.stringify({ model, contents, generationConfig, systemInstruction, stream: false })
+    body: JSON.stringify({ feature, contents, generationConfig, systemInstruction, stream: false })
   });
 
   if (!response.ok) {
@@ -205,7 +205,9 @@ Rules:
 };
 
 // --- STREAMING PROXY HELPER ---
-const callGeminiProxyStream = async (model: string, contents: any, generationConfig: any = {}, systemInstruction: any = null) => {
+const callGeminiProxyStream = async (_model: string, contents: any, generationConfig: any = {}, systemInstruction: any = null) => {
+  const feature = inferAiFeature(contents, systemInstruction);
+  assertPlanLimit(feature);
   const { data: { session } } = await supabase.auth.getSession();
   const token = session?.access_token;
 
@@ -215,7 +217,7 @@ const callGeminiProxyStream = async (model: string, contents: any, generationCon
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${token}`
     },
-    body: JSON.stringify({ model, contents, generationConfig, systemInstruction, stream: true })
+    body: JSON.stringify({ feature, contents, generationConfig, systemInstruction, stream: true })
   });
 
   if (!response.ok) {
@@ -3942,13 +3944,13 @@ export const generateLessonPlan = async (
   const systemInstruction = {
     parts: [{
       text: `You are an expert Kenyan CBC curriculum designer. Generate a complete, detailed lesson plan.
-OUTPUT FORMAT — strict JSON only (no markdown fences):
+OUTPUT FORMAT ï¿½ strict JSON only (no markdown fences):
 {"title":"...","grade":"${grade}","subject":"${subject}","duration":"${duration}","learningOutcomes":["..."],"resources":["..."],"activities":[{"phase":"Engage","duration":"X min","teacherActivity":"...","studentActivity":"...","cbcCompetency":"..."},{"phase":"Explore","duration":"X min","teacherActivity":"...","studentActivity":"...","cbcCompetency":"..."},{"phase":"Explain","duration":"X min","teacherActivity":"...","studentActivity":"...","cbcCompetency":"..."},{"phase":"Elaborate","duration":"X min","teacherActivity":"...","studentActivity":"...","cbcCompetency":"..."},{"phase":"Evaluate","duration":"X min","teacherActivity":"...","studentActivity":"...","cbcCompetency":"..."}],"assessment":"...","differentiation":{"struggling":"...","gifted":"..."},"cbcValues":["..."],"homework":"..."}
 RULES: Use Kenya CBC 5E model. Align to KICD for ${grade} ${subject}. Use Kenyan contexts. Output ONLY valid JSON.`
     }]
   };
   const contents = [{ role: 'user' as const, parts: [{ text: `Generate CBC lesson plan. Topic: ${topic}, Grade: ${grade}, Subject: ${subject}, Duration: ${duration}, Objectives: ${objectives || 'appropriate for grade'}` }] }];
-  const defaultPlan: LessonPlanOutput = { title: `${topic} — ${grade} ${subject}`, grade, subject, duration, learningOutcomes: [`Explain ${topic}`, `Apply ${topic} to real-world problems`, `Evaluate findings on ${topic}`], resources: ['Textbook', 'Exercise books', 'Locally available materials'], activities: [{ phase: 'Engage', duration: '10 min', teacherActivity: 'Pose a thought-provoking question', studentActivity: 'Discuss prior knowledge in pairs', cbcCompetency: 'Communication' }, { phase: 'Explore', duration: '15 min', teacherActivity: 'Guide discovery activity', studentActivity: 'Conduct activity and record observations', cbcCompetency: 'Critical Thinking' }, { phase: 'Explain', duration: '10 min', teacherActivity: 'Explain core concepts', studentActivity: 'Take notes and ask questions', cbcCompetency: 'Learning to Learn' }, { phase: 'Elaborate', duration: '10 min', teacherActivity: 'Give application task', studentActivity: 'Solve problems in groups', cbcCompetency: 'Collaboration' }, { phase: 'Evaluate', duration: '5 min', teacherActivity: 'Pose exit ticket', studentActivity: 'Answer 3 short questions', cbcCompetency: 'Self-efficacy' }], assessment: 'Observation during activities, exit ticket, group presentation', differentiation: { struggling: 'Provide visual aids and peer support', gifted: 'Extension investigative challenge' }, cbcValues: ['Integrity', 'Responsibility'], homework: `Research three real-life applications of ${topic}` };
+  const defaultPlan: LessonPlanOutput = { title: `${topic} ï¿½ ${grade} ${subject}`, grade, subject, duration, learningOutcomes: [`Explain ${topic}`, `Apply ${topic} to real-world problems`, `Evaluate findings on ${topic}`], resources: ['Textbook', 'Exercise books', 'Locally available materials'], activities: [{ phase: 'Engage', duration: '10 min', teacherActivity: 'Pose a thought-provoking question', studentActivity: 'Discuss prior knowledge in pairs', cbcCompetency: 'Communication' }, { phase: 'Explore', duration: '15 min', teacherActivity: 'Guide discovery activity', studentActivity: 'Conduct activity and record observations', cbcCompetency: 'Critical Thinking' }, { phase: 'Explain', duration: '10 min', teacherActivity: 'Explain core concepts', studentActivity: 'Take notes and ask questions', cbcCompetency: 'Learning to Learn' }, { phase: 'Elaborate', duration: '10 min', teacherActivity: 'Give application task', studentActivity: 'Solve problems in groups', cbcCompetency: 'Collaboration' }, { phase: 'Evaluate', duration: '5 min', teacherActivity: 'Pose exit ticket', studentActivity: 'Answer 3 short questions', cbcCompetency: 'Self-efficacy' }], assessment: 'Observation during activities, exit ticket, group presentation', differentiation: { struggling: 'Provide visual aids and peer support', gifted: 'Extension investigative challenge' }, cbcValues: ['Integrity', 'Responsibility'], homework: `Research three real-life applications of ${topic}` };
   try {
     const result = await callGeminiProxy(MODEL_NAME, contents, { maxOutputTokens: 2000, temperature: 0.4 }, systemInstruction);
     const text = result.response.text() || '';

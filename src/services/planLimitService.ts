@@ -18,94 +18,103 @@ type PlanLimitMap = Record<string, Partial<Record<BillableFeature, number>>>;
 
 const DAILY_KEY = () => new Date().toISOString().slice(0, 10);
 
-const PLAN_LIMITS: PlanLimitMap = {
+// UX mirror of the Edge Function limits. The backend remains authoritative.
+// Keep these values aligned with supabase/functions/gemini-proxy/index.ts.
+export const PLAN_LIMITS: PlanLimitMap = {
   FREE: {
-    ai_generation: 40,
-    exam_guru: 20,
-    exam_marking: 5,
-    quiz_generation: 20,
-    practice_generation: 25,
-    notes_generation: 12,
-    grounded_library_help: 6,
-    deep_document_analysis: 2,
+    ai_generation: 10,
+    exam_guru: 3,
+    exam_marking: 1,
+    quiz_generation: 3,
+    practice_generation: 3,
+    notes_generation: 3,
+    grounded_library_help: 1,
+    deep_document_analysis: 0,
+    teacher_ai: 3,
     listen_and_learn_voice: 30000,
     listen_and_learn_podcast: 8000,
     conversational_voice: 12000,
   },
   DAILY: {
-    ai_generation: 120,
-    exam_guru: 70,
-    exam_marking: 25,
-    quiz_generation: 70,
-    practice_generation: 90,
-    notes_generation: 50,
-    grounded_library_help: 45,
-    deep_document_analysis: 12,
+    ai_generation: 30,
+    exam_guru: 15,
+    exam_marking: 6,
+    quiz_generation: 10,
+    practice_generation: 12,
+    notes_generation: 10,
+    grounded_library_help: 12,
+    deep_document_analysis: 3,
+    teacher_ai: 10,
     listen_and_learn_voice: 80000,
     listen_and_learn_podcast: 30000,
     conversational_voice: 30000,
   },
   WEEKLY: {
-    ai_generation: 600,
-    exam_guru: 350,
-    exam_marking: 140,
-    quiz_generation: 350,
-    practice_generation: 450,
-    notes_generation: 250,
-    grounded_library_help: 240,
-    deep_document_analysis: 70,
+    ai_generation: 120,
+    exam_guru: 80,
+    exam_marking: 35,
+    quiz_generation: 60,
+    practice_generation: 80,
+    notes_generation: 60,
+    grounded_library_help: 70,
+    deep_document_analysis: 18,
+    teacher_ai: 60,
     listen_and_learn_voice: 350000,
     listen_and_learn_podcast: 140000,
     conversational_voice: 140000,
   },
   MONTHLY: {
-    ai_generation: 2500,
-    exam_guru: 1500,
-    exam_marking: 600,
-    quiz_generation: 1500,
-    practice_generation: 2000,
-    notes_generation: 1000,
-    grounded_library_help: 1000,
-    deep_document_analysis: 300,
+    ai_generation: 450,
+    exam_guru: 300,
+    exam_marking: 150,
+    quiz_generation: 250,
+    practice_generation: 300,
+    notes_generation: 220,
+    grounded_library_help: 300,
+    deep_document_analysis: 80,
+    teacher_ai: 220,
     listen_and_learn_voice: 1200000,
     listen_and_learn_podcast: 500000,
     conversational_voice: 500000,
   },
   TERMLY: {
-    ai_generation: 7000,
-    exam_guru: 4200,
-    exam_marking: 1800,
-    quiz_generation: 4200,
-    practice_generation: 5500,
-    notes_generation: 3000,
-    grounded_library_help: 2800,
-    deep_document_analysis: 900,
+    ai_generation: 1200,
+    exam_guru: 800,
+    exam_marking: 420,
+    quiz_generation: 700,
+    practice_generation: 850,
+    notes_generation: 650,
+    grounded_library_help: 850,
+    deep_document_analysis: 240,
+    teacher_ai: 650,
     listen_and_learn_voice: 3500000,
     listen_and_learn_podcast: 1500000,
     conversational_voice: 1500000,
   },
   ANNUAL: {
-    ai_generation: 30000,
-    exam_guru: 18000,
-    exam_marking: 7500,
-    quiz_generation: 18000,
-    practice_generation: 24000,
-    notes_generation: 12000,
-    grounded_library_help: 12000,
-    deep_document_analysis: 3500,
+    ai_generation: 4000,
+    exam_guru: 2500,
+    exam_marking: 1500,
+    quiz_generation: 2200,
+    practice_generation: 2800,
+    notes_generation: 2000,
+    grounded_library_help: 3000,
+    deep_document_analysis: 900,
+    teacher_ai: 2000,
     listen_and_learn_voice: 15000000,
     listen_and_learn_podcast: 6500000,
     conversational_voice: 6500000,
   },
   PRO: {
-    ai_generation: 2500,
-    exam_guru: 1500,
-    exam_marking: 600,
-    quiz_generation: 1500,
-    practice_generation: 2000,
-    notes_generation: 1000,
-    grounded_library_help: 1000,
-    deep_document_analysis: 300,
+    ai_generation: 450,
+    exam_guru: 300,
+    exam_marking: 150,
+    quiz_generation: 250,
+    practice_generation: 300,
+    notes_generation: 220,
+    grounded_library_help: 300,
+    deep_document_analysis: 80,
+    teacher_ai: 220,
     listen_and_learn_voice: 1200000,
     listen_and_learn_podcast: 500000,
     conversational_voice: 500000,
@@ -146,13 +155,6 @@ const getStoredPlan = (): SubscriptionTier => {
   const plan = (localStorage.getItem('soma_subscription_plan') || localStorage.getItem('soma_active_plan') || 'FREE') as SubscriptionTier;
   const expiry = localStorage.getItem('soma_subscription_expiry');
   if (plan !== 'FREE' && expiry && new Date(expiry) <= new Date()) return 'FREE';
-  const lastPaymentTime = Number(localStorage.getItem('soma_last_payment_time') || 0);
-  const lastPaymentAmount = Number(localStorage.getItem('soma_last_payment_amount') || 0);
-  const recentPaymentWindowMs = 24 * 60 * 60 * 1000;
-  if (plan === 'FREE' && lastPaymentTime > 0 && lastPaymentAmount > 0 && Date.now() - lastPaymentTime < recentPaymentWindowMs) {
-    if (lastPaymentAmount >= 100) return 'WEEKLY';
-    if (lastPaymentAmount >= 20) return 'DAILY';
-  }
   return plan || 'FREE';
 };
 
@@ -207,24 +209,26 @@ export const getPlanUsage = (feature: string, plan = getStoredPlan()) => {
 };
 
 export const assertPlanLimit = (feature: string, units = 1) => {
-  return; // Bypass client-side limits check for local/test convenience
   const plan = getStoredPlan();
   const normalized = normalizeFeature(feature);
   const limit = getPlanLimit(normalized, plan);
   const used = getPlanUsage(normalized, plan);
-  if (limit <= 0 || used + units > limit) {
-    const creditsNeeded = creditUnitsForFeature(normalized, units);
-    if (spendLearningCredits(creditsNeeded)) return;
-    // Fire global upgrade modal event so the UI can intercept before re-throw
-    try {
-      window.dispatchEvent(new CustomEvent('soma-show-upgrade-modal', {
-        detail: { feature: normalized, plan, limit }
-      }));
-    } catch (_) { /* ignore SSR or test environments */ }
-    throw new PlanLimitError(normalized, plan, limit);
-  }
-};
+  const withinLimit = limit > 0 && used + units <= limit;
 
+  if (!withinLimit) {
+    // This is an advisory UI signal only. The Edge Function verifies the
+    // account, consumes database credits, and decides whether to allow usage.
+    try {
+      window.dispatchEvent(new CustomEvent('soma-plan-limit-near', {
+        detail: { feature: normalized, plan, limit, used, units }
+      }));
+    } catch {
+      // Ignore environments without a browser event target.
+    }
+  }
+
+  return withinLimit;
+};
 
 export const recordPlanUsage = (feature: string, units = 1) => {
   const plan = getStoredPlan();

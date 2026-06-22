@@ -143,11 +143,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
 
     const callGeminiProxy = async (prompt: string): Promise<string> => {
         const payload = {
-            model: 'gemini-3.5-flash',
+            feature: 'ai_generation',
             contents: [{ role: 'user', parts: [{ text: prompt }] }]
         };
         // Use the real session JWT when logged in so the edge function applies
-        // the higher per-user limit (25/day free) instead of the guest IP limit (3/day).
+        // the higher registered-user limit instead of the guest IP limit (3/day).
         let authToken = import.meta.env.VITE_SUPABASE_ANON_KEY;
         const extraHeaders: Record<string, string> = {};
         try {

@@ -3,12 +3,35 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-const corsHeaders = {
-    'Access-Control-Allow-Origin': '*',
+const BASE_CORS_HEADERS = {
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-student-code',
-    'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Vary': 'Origin',
 };
 
+const PREVIEW_ORIGINS = new Set(
+    String(Deno.env.get('ALLOWED_PREVIEW_ORIGINS') || '')
+        .split(',')
+        .map(origin => origin.trim())
+        .filter(Boolean)
+);
+
+const isAllowedOrigin = (origin: string | null) => {
+    if (!origin) return true;
+    if (origin === 'https://somaai.co.ke' || origin === 'https://www.somaai.co.ke') return true;
+    if (/^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) return true;
+    return PREVIEW_ORIGINS.has(origin);
+};
+
+const corsHeadersFor = (req: Request) => {
+    const origin = req.headers.get('Origin');
+    return {
+        ...BASE_CORS_HEADERS,
+        ...(origin && isAllowedOrigin(origin) ? { 'Access-Control-Allow-Origin': origin } : {}),
+    };
+};
+
+const DISABLE_AUDIO_GENERATION = String(Deno.env.get('DISABLE_AUDIO_GENERATION') || '').toLowerCase() === 'true';
 const KES_PER_USD = 130;
 const ELEVENLABS_USD_PER_1000_CHARS = 0.30;
 
@@ -100,7 +123,7 @@ const estimateElevenLabsCostKes = (characters: number) => {
     return Number((((characters / 1000) * ELEVENLABS_USD_PER_1000_CHARS) * KES_PER_USD).toFixed(4));
 };
 
-const enforceVoiceLimit = async (supabase: any, requester: any, feature: string, characters: number) => {
+const enforceVoiceLimit = async (supabase: any, requester: any, feature: string, characters: number, corsHeaders: Record<string, string>) => {
     const plan = requester.plan || 'FREE';
     const limit = VOICE_LIMITS[plan]?.[feature] ?? VOICE_LIMITS.FREE[feature] ?? 0;
     const creditsNeeded = Math.max(1, Math.ceil(characters / 1000));
@@ -170,12 +193,28 @@ const enforceVoiceLimit = async (supabase: any, requester: any, feature: string,
 };
 
 serve(async (req) => {
+    const corsHeaders = corsHeadersFor(req);
+    const origin = req.headers.get('Origin');
+    if (!isAllowedOrigin(origin)) {
+        return new Response(JSON.stringify({ error: 'Origin not allowed' }), {
+            status: 403,
+            headers: { ...BASE_CORS_HEADERS, 'Content-Type': 'application/json' },
+        });
+    }
+
     // Handle CORS preflight
     if (req.method === 'OPTIONS') {
         return new Response('ok', { headers: corsHeaders });
     }
 
     try {
+        if (DISABLE_AUDIO_GENERATION) {
+            return new Response(JSON.stringify({ error: 'Generated audio is temporarily unavailable' }), {
+                status: 503,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+        }
+
         const ELEVEN_LABS_API_KEY = Deno.env.get('ELEVEN_LABS_API_KEY');
         if (!ELEVEN_LABS_API_KEY) {
             console.error("ELEVEN_LABS_API_KEY is missing from environment");
@@ -210,7 +249,7 @@ serve(async (req) => {
         }
 
         try {
-            await enforceVoiceLimit(supabase, requester, feature, characters);
+            await enforceVoiceLimit(supabase, requester, feature, characters, corsHeaders);
         } catch (limitError) {
             if (limitError instanceof Response) return limitError;
             throw limitError;
