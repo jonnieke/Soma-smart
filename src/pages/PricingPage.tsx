@@ -43,6 +43,7 @@ export const PricingPage: React.FC = () => {
         setVerifying(true);
         setVerifySuccess(false);
         setVerifyError('');
+        localStorage.setItem('soma_pending_payment_ref', reference);
 
         try {
             const statusData = await pesapalService.checkTransactionStatus({
@@ -55,8 +56,8 @@ export const PricingPage: React.FC = () => {
                 return;
             }
 
+            localStorage.removeItem('soma_pending_payment_ref');
             await refreshProfile();
-
             setVerifySuccess(true);
 
             setTimeout(() => {
@@ -70,6 +71,8 @@ export const PricingPage: React.FC = () => {
             setVerifying(false);
         }
     }, [orderTrackingId, refreshProfile, role]);
+
+    const pendingRef = ref || localStorage.getItem('soma_pending_payment_ref');
 
     React.useEffect(() => {
         if (status === 'verifying' && ref) {
@@ -122,13 +125,21 @@ export const PricingPage: React.FC = () => {
                         )}
                         {verifyError && (
                             <>
-                                <div className="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-6">
+                                <div className="w-16 h-16 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mx-auto mb-6">
                                     <ArrowLeft className="w-8 h-8" />
                                 </div>
-                                <h2 className="text-2xl font-black text-slate-900 mb-2">Verification Pending</h2>
+                                <h2 className="text-2xl font-black text-slate-900 mb-2">Payment Pending</h2>
                                 <p className="text-slate-500 font-medium mb-6">{verifyError}</p>
+                                {pendingRef && (
+                                    <Button
+                                        className="w-full bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl py-4 mb-3"
+                                        onClick={() => handleVerification(pendingRef)}
+                                    >
+                                        Try Again
+                                    </Button>
+                                )}
                                 <Button
-                                    className="w-full bg-slate-900 text-white rounded-xl py-4"
+                                    className="w-full bg-slate-100 text-slate-700 hover:bg-slate-200 rounded-xl py-4"
                                     onClick={() => setVerifyError('')}
                                 >
                                     View Pricing Plans
