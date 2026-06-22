@@ -10,15 +10,17 @@ import {
     CreditCard,
     FileText,
     GraduationCap,
+    RefreshCw,
     School,
     Sparkles,
     TrendingUp,
     Users,
     Users2,
     Wallet,
-    Clock3
+    Clock3,
+    Zap
 } from 'lucide-react';
-import { fetchAllUsers, fetchDashboardStats, fetchFinanceSummary, DashboardStats, SchoolCognitiveHealth, fetchSchoolWideMastery, FinanceSummary, AdminUser } from '../../../services/adminService';
+import { fetchAllUsers, fetchDashboardStats, fetchFinanceSummary, fetchTodayPilotStats, DashboardStats, SchoolCognitiveHealth, fetchSchoolWideMastery, FinanceSummary, AdminUser, TodayPilotStats } from '../../../services/adminService';
 
 type OverviewCardProps = {
     label: string;
@@ -56,6 +58,8 @@ export const Overview: React.FC = () => {
     const [cognitiveHealth, setCognitiveHealth] = useState<SchoolCognitiveHealth | null>(null);
     const [finance, setFinance] = useState<FinanceSummary | null>(null);
     const [users, setUsers] = useState<AdminUser[]>([]);
+    const [pilotStats, setPilotStats] = useState<TodayPilotStats | null>(null);
+    const [pilotRefreshing, setPilotRefreshing] = useState(false);
 
     useEffect(() => {
         Promise.all([
@@ -63,13 +67,22 @@ export const Overview: React.FC = () => {
             fetchSchoolWideMastery(),
             fetchFinanceSummary(),
             fetchAllUsers(),
-        ]).then(([dashboardStats, schoolHealth, financeSummary, allUsers]) => {
+            fetchTodayPilotStats(),
+        ]).then(([dashboardStats, schoolHealth, financeSummary, allUsers, todayStats]) => {
             setStats(dashboardStats);
             setCognitiveHealth(schoolHealth);
             setFinance(financeSummary);
             setUsers(allUsers);
+            setPilotStats(todayStats);
         });
     }, []);
+
+    const refreshPilot = async () => {
+        setPilotRefreshing(true);
+        const todayStats = await fetchTodayPilotStats();
+        setPilotStats(todayStats);
+        setPilotRefreshing(false);
+    };
 
     const latestUsers = useMemo(() => users.slice(0, 6), [users]);
     const roleCounts = useMemo(() => ({
@@ -328,6 +341,66 @@ export const Overview: React.FC = () => {
                         </div>
                     )}
                 </div>
+            </div>
+
+            {/* School Pilot Monitor */}
+            <div className="rounded-2xl border border-indigo-200 bg-gradient-to-br from-indigo-950 to-slate-900 p-6 text-white">
+                <div className="flex items-center justify-between mb-5">
+                    <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-xl bg-indigo-500/20 flex items-center justify-center">
+                            <Zap className="w-5 h-5 text-indigo-300" />
+                        </div>
+                        <div>
+                            <h3 className="font-black text-lg">Today's Pilot — {new Date().toLocaleDateString('en-KE', { weekday: 'short', month: 'short', day: 'numeric' })}</h3>
+                            <p className="text-slate-400 text-xs font-medium">Live usage since midnight — refresh to update</p>
+                        </div>
+                    </div>
+                    <button
+                        onClick={refreshPilot}
+                        disabled={pilotRefreshing}
+                        className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-xl text-xs font-black uppercase tracking-widest transition-colors disabled:opacity-50"
+                    >
+                        <RefreshCw className={`w-3.5 h-3.5 ${pilotRefreshing ? 'animate-spin' : ''}`} />
+                        Refresh
+                    </button>
+                </div>
+
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
+                    {[
+                        { label: 'Active users', value: pilotStats?.activeUsersToday ?? '—', color: 'text-sky-300' },
+                        { label: 'New signups', value: pilotStats?.newSignupsToday ?? '—', color: 'text-emerald-300' },
+                        { label: 'AI calls', value: pilotStats?.aiCallsToday ?? '—', color: 'text-indigo-300' },
+                        { label: 'Payments', value: pilotStats?.paymentsToday ?? '—', color: 'text-amber-300' },
+                    ].map(item => (
+                        <div key={item.label} className="bg-white/5 rounded-2xl p-4 border border-white/5">
+                            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">{item.label}</p>
+                            <p className={`text-3xl font-black ${item.color}`}>{item.value}</p>
+                        </div>
+                    ))}
+                </div>
+
+                {pilotStats && pilotStats.recentAiEvents.length > 0 && (
+                    <div className="bg-white/5 rounded-2xl border border-white/5 overflow-hidden">
+                        <div className="px-4 py-3 border-b border-white/5">
+                            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Recent AI calls today</p>
+                        </div>
+                        <div className="divide-y divide-white/5">
+                            {pilotStats.recentAiEvents.map((event, i) => (
+                                <div key={i} className="flex items-center justify-between px-4 py-2.5">
+                                    <span className="text-xs font-bold text-slate-300">{event.feature.replace(/_/g, ' ')}</span>
+                                    <div className="flex items-center gap-4">
+                                        <span className="text-xs text-slate-500 font-medium">{event.time}</span>
+                                        <span className="text-xs font-black text-amber-400">KES {event.costKes.toFixed(3)}</span>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {pilotStats && pilotStats.recentAiEvents.length === 0 && (
+                    <p className="text-sm text-slate-500 font-medium text-center py-4">No AI calls yet today — data updates as students use the platform.</p>
+                )}
             </div>
 
             <div className="bg-gradient-to-r from-indigo-50 via-white to-emerald-50 border border-slate-200 rounded-2xl p-6">

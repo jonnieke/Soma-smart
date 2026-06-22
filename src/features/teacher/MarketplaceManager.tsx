@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { TeacherProfile, MaterialListing } from '../../types';
 import { useApp } from '../../context/AppContext';
+import { pesapalService } from '../../services/pesapalService';
 
 interface MarketplaceManagerProps {
     teacherProfile: TeacherProfile | null;
@@ -15,20 +16,19 @@ interface MarketplaceManagerProps {
     onPublishNew: () => void;
 }
 
-export const MarketplaceManager: React.FC<MarketplaceManagerProps> = ({ 
-    teacherProfile, 
-    earnings, 
-    listings = [], 
-    onPublishNew 
+export const MarketplaceManager: React.FC<MarketplaceManagerProps> = ({
+    teacherProfile,
+    earnings,
+    listings = [],
+    onPublishNew
 }) => {
     // --- Context values ---
-    const { 
-        marketplaceMaterials, 
-        purchasedMaterialIds, 
-        purchaseMaterial, 
-        submitPeerReview, 
-        updateMaterialApproval 
-    } = useApp();
+    const appCtx = useApp() as any;
+    const marketplaceMaterials: MaterialListing[] = appCtx.marketplaceMaterials ?? [];
+    const purchasedMaterialIds: string[] = appCtx.purchasedMaterialIds ?? [];
+    const userId: string | null = appCtx.userId ?? null;
+    const submitPeerReview: ((...args: any[]) => Promise<any>) | undefined = appCtx.submitPeerReview;
+    const updateMaterialApproval: ((...args: any[]) => Promise<any>) | undefined = appCtx.updateMaterialApproval;
 
     // --- Local States ---
     const [activeTab, setActiveTab] = useState<'BROWSE' | 'MY_STORE' | 'APPROVALS'>('BROWSE');
@@ -39,6 +39,7 @@ export const MarketplaceManager: React.FC<MarketplaceManagerProps> = ({
 
     // Selected material for preview/modal
     const [previewMaterial, setPreviewMaterial] = useState<MaterialListing | null>(null);
+    const [purchasingId, setPurchasingId] = useState<string | null>(null);
 
     // Peer Review Form State
     const [reviewerName, setReviewerName] = useState(teacherProfile?.name || '');
@@ -74,16 +75,33 @@ export const MarketplaceManager: React.FC<MarketplaceManagerProps> = ({
 
     // --- Handlers ---
     const handlePurchase = async (id: string, price: number) => {
-        if (window.confirm(`Are you sure you want to purchase this resource for KES ${price}?`)) {
-            const res = await purchaseMaterial(id);
-            if (res.success) {
-                alert(res.message);
-                // Refresh preview if open
-                const updated = marketplaceMaterials.find(m => m.id === id);
-                if (updated) setPreviewMaterial(updated);
+        if (!userId || !teacherProfile) {
+            alert('Please log in to purchase materials.');
+            return;
+        }
+        setPurchasingId(id);
+        try {
+            const result = await pesapalService.initiateMaterialPayment(
+                userId,
+                id,
+                marketplaceMaterials.find((m: MaterialListing) => m.id === id)?.title || 'Material',
+                price,
+                {
+                    email: teacherProfile.email || '',
+                    firstName: (teacherProfile.name || '').split(' ')[0] || 'Teacher',
+                    lastName: (teacherProfile.name || '').split(' ').slice(1).join(' ') || 'User',
+                    phone: teacherProfile.phone || ''
+                }
+            );
+            if (result?.redirect_url) {
+                window.location.href = result.redirect_url;
             } else {
-                alert(res.message);
+                alert('Could not initiate payment. Please try again.');
             }
+        } catch (err: any) {
+            alert(err?.message || 'Payment initiation failed. Please try again.');
+        } finally {
+            setPurchasingId(null);
         }
     };
 
@@ -581,9 +599,10 @@ export const MarketplaceManager: React.FC<MarketplaceManagerProps> = ({
                                             ) : (
                                                 <button
                                                     onClick={() => handlePurchase(previewMaterial.id, previewMaterial.price)}
-                                                    className="w-full bg-slate-900 hover:bg-slate-800 text-white font-black text-xs uppercase tracking-widest py-4 px-6 rounded-2xl shadow-xl flex items-center justify-center gap-2"
+                                                    disabled={purchasingId === previewMaterial.id}
+                                                    className="w-full bg-slate-900 hover:bg-slate-800 disabled:opacity-60 text-white font-black text-xs uppercase tracking-widest py-4 px-6 rounded-2xl shadow-xl flex items-center justify-center gap-2 transition-opacity"
                                                 >
-                                                    Unlock Material (KES {previewMaterial.price})
+                                                    {purchasingId === previewMaterial.id ? 'Opening M-Pesa...' : `Pay KES ${previewMaterial.price} via M-Pesa`}
                                                 </button>
                                             )}
                                         </div>

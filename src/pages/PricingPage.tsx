@@ -6,6 +6,7 @@ import { Button } from '../components/Shared';
 import { ArrowLeft, Loader2, CheckCircle2 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { pesapalService } from '../services/pesapalService';
+import { supabase } from '../lib/supabase';
 
 type PaymentStatusResponse = {
     payment_status_description?: string;
@@ -57,6 +58,30 @@ export const PricingPage: React.FC = () => {
             }
 
             localStorage.removeItem('soma_pending_payment_ref');
+
+            // Handle marketplace material purchase
+            if (reference.startsWith('MKT_')) {
+                const { data: tx } = await supabase.from('transactions').select('description, user_id').eq('reference_code', reference).maybeSingle();
+                const match = tx?.description?.match(/MKT:([^|]+)/);
+                if (match) {
+                    const materialId = match[1];
+                    const { data: material } = await supabase.from('marketplace_materials').select('teacher_id, price, download_count').eq('id', materialId).maybeSingle();
+                    if (material) {
+                        const { data: wallet } = await supabase.from('teacher_wallets').select('balance').eq('id', material.teacher_id).maybeSingle();
+                        if (wallet) {
+                            await supabase.from('teacher_wallets').update({ balance: wallet.balance + material.price }).eq('id', material.teacher_id);
+                        } else {
+                            await supabase.from('teacher_wallets').insert({ id: material.teacher_id, balance: material.price, currency: 'KES' });
+                        }
+                        await supabase.from('marketplace_materials').update({ download_count: (material.download_count || 0) + 1 }).eq('id', materialId);
+                    }
+                    const purchased = JSON.parse(localStorage.getItem('soma_purchased_materials') || '[]');
+                    if (!purchased.includes(materialId)) {
+                        localStorage.setItem('soma_purchased_materials', JSON.stringify([...purchased, materialId]));
+                    }
+                }
+            }
+
             await refreshProfile();
             setVerifySuccess(true);
 
@@ -120,7 +145,9 @@ export const PricingPage: React.FC = () => {
                             <>
                                 <CheckCircle2 className="w-16 h-16 text-green-500 mx-auto mb-6" />
                                 <h2 className="text-2xl font-black text-slate-900 mb-2">Payment Confirmed!</h2>
-                                <p className="text-slate-500 font-medium">Welcome to Somo Pro. Redirecting you to your dashboard...</p>
+                                <p className="text-slate-500 font-medium">
+                                    {pendingRef?.startsWith('MKT_') ? 'Material unlocked! Redirecting to marketplace...' : 'Welcome to Somo Pro. Redirecting you to your dashboard...'}
+                                </p>
                             </>
                         )}
                         {verifyError && (

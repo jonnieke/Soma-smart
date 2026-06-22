@@ -63,6 +63,45 @@ export const pesapalService = {
     },
 
     /**
+     * Initiates a marketplace material purchase via Pesapal
+     */
+    async initiateMaterialPayment(userId: string, materialId: string, materialTitle: string, price: number, customer: { email: string; firstName: string; lastName: string; phone: string }) {
+        const reference = `MKT_${Date.now()}_${userId.slice(0, 5)}`;
+
+        await supabase.from('transactions').insert({
+            user_id: userId,
+            amount: price,
+            type: 'MARKETPLACE_PURCHASE',
+            status: 'PENDING',
+            method: 'MPESA',
+            reference_code: reference,
+            description: `MKT:${materialId}|${materialTitle.slice(0, 50)}`,
+            created_at: new Date().toISOString()
+        });
+
+        const callbackUrl = `${window.location.origin}/pricing?status=verifying&ref=${reference}`;
+
+        const { data, error } = await supabase.functions.invoke('pesapal/initiate-order', {
+            body: {
+                amount: price,
+                description: `Soma Smart Marketplace: ${materialTitle}`,
+                reference,
+                callback_url: callbackUrl,
+                billing_address: {
+                    email_address: customer.email,
+                    phone_number: customer.phone,
+                    first_name: customer.firstName,
+                    last_name: customer.lastName,
+                    country_code: 'KE'
+                }
+            }
+        });
+
+        if (error) throw error;
+        return { ...data, client_reference: reference };
+    },
+
+    /**
      * Checks the status of a specific order
      */
     async checkTransactionStatus(params: string | { orderTrackingId?: string | null; merchantReference?: string | null }) {

@@ -137,6 +137,50 @@ export const fetchFinanceSummary = async (): Promise<FinanceSummary> => {
     }
 };
 
+export interface TodayPilotStats {
+    activeUsersToday: number;
+    newSignupsToday: number;
+    paymentsToday: number;
+    aiCallsToday: number;
+    recentAiEvents: { feature: string; time: string; costKes: number }[];
+}
+
+export const fetchTodayPilotStats = async (): Promise<TodayPilotStats> => {
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    const iso = todayStart.toISOString();
+
+    try {
+        const [
+            { data: analyticsToday },
+            { data: signupsToday },
+            { data: paymentsToday },
+            { data: aiCallsToday }
+        ] = await Promise.all([
+            supabase.from('analytics_events').select('user_id').gte('created_at', iso),
+            supabase.from('profiles').select('id').gte('created_at', iso),
+            supabase.from('transactions').select('id').eq('status', 'SUCCESS').gte('created_at', iso),
+            supabase.from('usage_cost_events').select('feature, created_at, estimated_cost_kes').gte('created_at', iso).order('created_at', { ascending: false }).limit(20)
+        ]);
+
+        const uniqueUsers = new Set((analyticsToday || []).map((e: any) => e.user_id).filter(Boolean));
+
+        return {
+            activeUsersToday: uniqueUsers.size,
+            newSignupsToday: (signupsToday || []).length,
+            paymentsToday: (paymentsToday || []).length,
+            aiCallsToday: (aiCallsToday || []).length,
+            recentAiEvents: (aiCallsToday || []).slice(0, 10).map((e: any) => ({
+                feature: e.feature || 'ai',
+                time: new Date(e.created_at).toLocaleTimeString(),
+                costKes: Number(e.estimated_cost_kes) || 0
+            }))
+        };
+    } catch {
+        return { activeUsersToday: 0, newSignupsToday: 0, paymentsToday: 0, aiCallsToday: 0, recentAiEvents: [] };
+    }
+};
+
 export const fetchDashboardStats = async (): Promise<DashboardStats> => {
     try {
         const now = new Date();
