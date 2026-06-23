@@ -7,7 +7,8 @@ import {
   Sparkles, Home, X, XCircle, Camera, ScanLine, Mic, Upload, Clock,
   CheckCircle, Play, Pause, ChevronRight, Star, BookOpen, Brain, Lightbulb, Lock, Volume2, CreditCard, Crown,
   ArrowRight, UserCircle, Download, ImageIcon, Trash2, AlertTriangle, LogOut, Users, DollarSign, FileText, ShoppingBag, Library, BookMarked, Layers,
-  Calculator, FlaskConical, Globe, Languages, Loader2, Headphones, PenTool, Zap, ListChecks, Trophy, Hand, ClipboardList
+  Calculator, FlaskConical, Globe, Languages, Loader2, Headphones, PenTool, Zap, ListChecks, Trophy, Hand, ClipboardList,
+  BookmarkPlus, Share2
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { ExplanationResult, QuizData, ViewState, SubscriptionPlan, LearnerProfile, LearnerActivity, UserRole, PodcastScript, ChatMessage, RevisionMode, TeacherActivity, EducationLevel, StudyNote } from '../../types';
@@ -6091,6 +6092,78 @@ ${explanation.explanation}
               </Card>
             </section>
 
+            {/* Progress Report Card */}
+            {isRegistered && (
+              <section>
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl flex items-center justify-center shadow-lg shadow-emerald-100">
+                    <Share2 className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-black text-slate-900">Progress Report Card</h2>
+                    <p className="text-xs text-slate-400 font-medium">Share your weekly progress with parents or teachers</p>
+                  </div>
+                </div>
+                <Card className="p-6 space-y-4 bg-gradient-to-br from-emerald-50/50 to-teal-50/50 border-emerald-200">
+                  {(() => {
+                    const quizHistory = history.filter((h: any) => h.type === 'QUIZ' || (h.score && h.score > 0));
+                    const quizAvg = quizHistory.length > 0 ? Math.round(quizHistory.reduce((a: number, h: any) => a + (h.score || 0), 0) / quizHistory.length) : 0;
+                    const topSubjects = Object.entries(subjectPerformance as Record<string, { count: number; avgScore: number }>)
+                      .sort((a, b) => (b[1].count || 0) - (a[1].count || 0)).slice(0, 3).map(([s]) => s);
+                    const reportText = [
+                      `📊 *Somo Smart Progress Report*`,
+                      `👤 ${studentProfile?.name || 'Student'} | ${studentProfile?.grade ? `Grade ${studentProfile.grade}` : 'Learner'}`,
+                      `🆔 ID: ${studentCode || userId}`,
+                      ``,
+                      `🔥 Study streak: ${streak} day${streak !== 1 ? 's' : ''}`,
+                      `⭐ Level ${levelInfo?.level || 1} — ${totalXP} XP`,
+                      `📝 Sessions this week: ${history.filter((h: any) => { const d = new Date(h.date); return (Date.now() - d.getTime()) < 7 * 864e5; }).length}`,
+                      quizHistory.length > 0 ? `🎯 Quiz average: ${quizAvg}%` : null,
+                      topSubjects.length > 0 ? `📚 Top subjects: ${topSubjects.join(', ')}` : null,
+                      weakTopics?.length > 0 ? `📈 Revising: ${(weakTopics as string[]).slice(0, 2).join(', ')}` : null,
+                      ``,
+                      `Track progress at somaai.co.ke 🚀`,
+                    ].filter(Boolean).join('\n');
+                    return (
+                      <>
+                        <div className="grid grid-cols-3 gap-3 text-center">
+                          <div className="bg-white rounded-2xl p-3 border border-emerald-100">
+                            <p className="text-2xl font-black text-emerald-600">{streak}</p>
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Day Streak</p>
+                          </div>
+                          <div className="bg-white rounded-2xl p-3 border border-emerald-100">
+                            <p className="text-2xl font-black text-indigo-600">{levelInfo?.level || 1}</p>
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Level</p>
+                          </div>
+                          <div className="bg-white rounded-2xl p-3 border border-emerald-100">
+                            <p className="text-2xl font-black text-amber-600">{quizAvg > 0 ? `${quizAvg}%` : '—'}</p>
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Quiz Avg</p>
+                          </div>
+                        </div>
+                        <div className="flex gap-3">
+                          <a
+                            href={`https://wa.me/?text=${encodeURIComponent(reportText)}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex-1 bg-[#25D366] hover:bg-[#128C7E] text-white font-black py-3 rounded-xl flex items-center justify-center gap-2 text-sm transition-colors"
+                          >
+                            <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>
+                            Share on WhatsApp
+                          </a>
+                          <button
+                            onClick={() => { navigator.clipboard?.writeText(reportText); triggerToast('Report copied!'); }}
+                            className="bg-white border-2 border-emerald-200 text-emerald-700 font-black py-3 px-4 rounded-xl text-sm hover:bg-emerald-50 transition-colors"
+                          >
+                            Copy
+                          </button>
+                        </div>
+                      </>
+                    );
+                  })()}
+                </Card>
+              </section>
+            )}
+
             {/* PWA Install Section */}
             {deferredPrompt && (
               <section className="animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -6935,16 +7008,39 @@ ${explanation.explanation}
                         </div>
                       ) : (
                         studyChat.map((msg, i) => (
-                          <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                          <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} group`}>
                             {msg.role === 'model' && (
                               <div className="w-7 h-7 rounded-full bg-indigo-50 dark:bg-indigo-950 flex items-center justify-center mr-2 mt-1 shrink-0 border border-indigo-100 dark:border-indigo-900">
                                 <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
                               </div>
                             )}
-                            <div className={`max-w-[85%] px-4 py-3 rounded-2xl text-xs leading-relaxed shadow-sm ${
-                              msg.role === 'user' ? 'bg-indigo-600 text-white rounded-tr-none' : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-350 rounded-tl-none font-medium'
-                            }`}>
-                              <MarkdownText content={msg.text} />
+                            <div className="flex flex-col gap-1 max-w-[85%]">
+                              <div className={`px-4 py-3 rounded-2xl text-xs leading-relaxed shadow-sm ${
+                                msg.role === 'user' ? 'bg-indigo-600 text-white rounded-tr-none' : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-350 rounded-tl-none font-medium'
+                              }`}>
+                                <MarkdownText content={msg.text} />
+                              </div>
+                              {msg.role === 'model' && (
+                                <button
+                                  onClick={() => {
+                                    saveStudyNote(notebookOwnerKey, {
+                                      title: currentDocument?.title || 'AI Answer',
+                                      topic: currentDocument?.title || 'Study Chat',
+                                      content: msg.text,
+                                      subject: currentDocument?.subject || 'General',
+                                      grade: studentProfile?.grade || '',
+                                      source: 'ai_answer',
+                                      masteryStatus: 'learning',
+                                      userId: userId || undefined,
+                                      studentCode: studentCode || undefined,
+                                    });
+                                    triggerToast('Saved to Notebook');
+                                  }}
+                                  className="self-start text-[10px] font-bold text-indigo-400 hover:text-indigo-600 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity px-1"
+                                >
+                                  <BookmarkPlus className="w-3 h-3" /> Save to Notebook
+                                </button>
+                              )}
                             </div>
                           </motion.div>
                         ))

@@ -16,7 +16,7 @@ interface MyClassroomProps {
 }
 
 export const MyClassroom: React.FC<MyClassroomProps> = ({ teacherProfile, selectedClass, selectedSubject, onAssignQuiz, onWorkflowStepCompleted }) => {
-    const [view, setView] = useState<'STREAM' | 'GRADEBOOK' | 'ROSTER'>('STREAM');
+    const [view, setView] = useState<'STREAM' | 'GRADEBOOK' | 'ROSTER' | 'ANALYTICS'>('STREAM');
     const [selectedStudents, setSelectedStudents] = useState<string[]>([]);
     const [isAssigning, setIsAssigning] = useState(false);
     const [postText, setPostText] = useState("");
@@ -394,6 +394,12 @@ View full dashboard: https://somaai.co.ke/parent/${student.id}`;
                 >
                     <Users className="w-5 h-5" /> Roster
                 </button>
+                <button
+                    onClick={() => setView('ANALYTICS')}
+                    className={`flex min-h-[48px] items-center gap-2 px-4 sm:px-6 py-3 font-black text-xs sm:text-sm uppercase tracking-wider transition-all border-b-4 whitespace-nowrap ${view === 'ANALYTICS' ? 'text-indigo-600 border-indigo-600' : 'text-slate-400 border-transparent hover:text-slate-600'}`}
+                >
+                    <TrendingUp className="w-5 h-5" /> Analytics
+                </button>
             </div>
 
             {/* View Render */}
@@ -743,6 +749,90 @@ View full dashboard: https://somaai.co.ke/parent/${student.id}`;
                                         </div>
                                     </motion.div>
                                 ))}
+                            </div>
+                        </div>
+                    )}
+                    {view === 'ANALYTICS' && (
+                        <div className="space-y-6">
+                            {/* Summary KPIs */}
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                {[
+                                    { label: 'Students', value: decoratedStudents.length, color: 'text-slate-900', bg: 'bg-slate-50 border-slate-200' },
+                                    { label: 'Class Average', value: `${classAverage}%`, color: classAverage >= 60 ? 'text-emerald-600' : 'text-rose-600', bg: 'bg-white border-slate-200' },
+                                    { label: 'At Risk', value: atRiskStudents.length, color: atRiskStudents.length > 0 ? 'text-rose-600' : 'text-emerald-600', bg: 'bg-white border-slate-200' },
+                                    { label: 'Top Score', value: decoratedStudents.length > 0 ? `${Math.max(...decoratedStudents.map(s => s.averageScore))}%` : '—', color: 'text-indigo-600', bg: 'bg-white border-slate-200' },
+                                ].map(stat => (
+                                    <div key={stat.label} className={`${stat.bg} border-2 rounded-2xl p-4 text-center`}>
+                                        <p className={`text-3xl font-black ${stat.color}`}>{stat.value}</p>
+                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-1">{stat.label}</p>
+                                    </div>
+                                ))}
+                            </div>
+
+                            {/* Weak Topics Distribution */}
+                            <div className="bg-white border-2 border-slate-200 rounded-[2rem] p-6">
+                                <h3 className="text-sm font-black text-slate-700 uppercase tracking-wider mb-4 flex items-center gap-2">
+                                    <Brain className="w-4 h-4 text-indigo-500" /> Class Weak Topics
+                                </h3>
+                                {Object.keys(topicCounts).length === 0 ? (
+                                    <p className="text-xs text-slate-400 font-bold">No mastery data yet — students need to complete sessions first.</p>
+                                ) : (
+                                    <div className="space-y-3">
+                                        {Object.entries(topicCounts as Record<string, number>)
+                                            .sort((a, b) => b[1] - a[1]).slice(0, 6)
+                                            .map(([topic, count]) => {
+                                                const pct = Math.round((count / decoratedStudents.length) * 100);
+                                                return (
+                                                    <div key={topic}>
+                                                        <div className="flex justify-between items-center mb-1">
+                                                            <span className="text-xs font-bold text-slate-700 truncate max-w-[70%]">{topic}</span>
+                                                            <span className="text-xs font-black text-rose-500">{count} student{count > 1 ? 's' : ''}</span>
+                                                        </div>
+                                                        <div className="w-full bg-slate-100 rounded-full h-2">
+                                                            <div className="bg-rose-400 h-2 rounded-full transition-all" style={{ width: `${pct}%` }} />
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Student Activity Status */}
+                            <div className="bg-white border-2 border-slate-200 rounded-[2rem] p-6">
+                                <h3 className="text-sm font-black text-slate-700 uppercase tracking-wider mb-4 flex items-center gap-2">
+                                    <Users className="w-4 h-4 text-emerald-500" /> Student Activity
+                                </h3>
+                                {decoratedStudents.length === 0 ? (
+                                    <p className="text-xs text-slate-400 font-bold">No students yet.</p>
+                                ) : (
+                                    <div className="space-y-2">
+                                        {[...decoratedStudents].sort((a, b) => b.averageScore - a.averageScore).map(student => (
+                                            <div key={student.id} className="flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 transition-colors">
+                                                <div className="w-8 h-8 bg-gradient-to-br from-indigo-400 to-purple-500 rounded-full flex items-center justify-center text-white font-black text-xs flex-shrink-0">
+                                                    {student.avatar}
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="text-xs font-black text-slate-800 truncate">{student.name}</p>
+                                                    <p className="text-[10px] font-bold text-slate-400">Last active: {student.lastActive}</p>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <span className={`text-xs font-black px-2 py-1 rounded-lg ${student.averageScore >= 60 ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}`}>
+                                                        {student.averageScore}%
+                                                    </span>
+                                                    {student.averageScore < 50 && (
+                                                        <button
+                                                            onClick={() => onAssignQuiz([student.id], `${student.weakTopics[0]} Review`)}
+                                                            className="text-[10px] font-black bg-amber-100 text-amber-700 px-2 py-1 rounded-lg hover:bg-amber-200 transition-colors whitespace-nowrap"
+                                                        >
+                                                            Assign Help
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
                         </div>
                     )}
