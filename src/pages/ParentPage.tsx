@@ -38,8 +38,8 @@ export const ParentPage: React.FC = () => {
 
         const { data, error } = await supabase
             .from('profiles')
-            .select('id, name, full_name, student_code')
-            .or(`student_code.eq.${code},id.eq.${code}`)
+            .select('id, name, full_name, student_id')
+            .or(`student_id.eq.${code},id.eq.${code}`)
             .limit(1)
             .maybeSingle();
 
@@ -49,7 +49,7 @@ export const ParentPage: React.FC = () => {
             return;
         }
         const child: LinkedChild = {
-            studentCode: data.student_code || code,
+            studentCode: data.student_id || code,
             studentId: data.id,
             name: data.full_name || data.name || undefined
         };
@@ -149,3 +149,6 @@ export const ParentPage: React.FC = () => {
         </>
     );
 };
+
+
+

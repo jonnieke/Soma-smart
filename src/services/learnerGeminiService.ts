@@ -2,6 +2,7 @@ import { ExplanationResult, QuizData, TeacherNote, RevisionMode, TutoringStep, E
 import { speak as ttSpeak, stopSpeech as ttStop } from "./elevenLabsService";
 import { buildScaffoldingContext } from "./spacedRepetitionService";
 import { buildTargetedStrategiesInstruction } from "./strategyService";
+import { parseModelJson } from "./jsonResponse";
 
 // --- PROXY CONFIG ---
 // We no longer use VITE_GEMINI_API_KEY on the client.
@@ -50,7 +51,7 @@ const callGeminiProxy = async (model: string, contents: any, generationConfig: a
   const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/gemini-proxy`, {
     method: 'POST',
     headers,
-    body: JSON.stringify({ feature, contents, generationConfig, systemInstruction, stream: false })
+    body: JSON.stringify({ model, feature, contents, generationConfig, systemInstruction, stream: false })
   });
 
   if (!response.ok) {
@@ -106,7 +107,7 @@ const callGeminiProxyStream = async (_model: string, contents: any, generationCo
   const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/gemini-proxy`, {
     method: 'POST',
     headers,
-    body: JSON.stringify({ feature, contents, generationConfig, systemInstruction, stream: true })
+    body: JSON.stringify({ model: _model, feature, contents, generationConfig, systemInstruction, stream: true })
   });
 
   if (!response.ok) {
@@ -459,6 +460,8 @@ export const processDarasaRecording = async (audioBlob: Blob, mimeType: string, 
   const model = genAI.getGenerativeModel({
     model: HEAVY_MODEL_NAME,
     generationConfig: {
+      temperature: 0.2,
+      maxOutputTokens: 4096,
       responseMimeType: "application/json",
       responseSchema: {
         type: SchemaType.OBJECT,
@@ -502,24 +505,30 @@ export const processDarasaRecording = async (audioBlob: Blob, mimeType: string, 
   });
 
   const prompt = `
-    Listen to this audio recording of a live class lesson.
-    The subject is ${subject}, intended for ${grade} students in the Kenyan education system.
-    
-    TASK 1: Create Structured Student Notes
-    - Extract the core topic of the lesson.
-    - Write a detailed, beautifully formatted markdown note using H3 headers (###) and bullet points.
-    - Ensure the tone is educational and aligned with CBC standards.
-    - Provide 3 sticky summary points.
-    - Provide 3 related study topics.
-    
-    TASK 2: Generate a Revision Quiz
-    - Based EXACTLY on the material covered in the audio, generate a 10-question multiple-choice quiz.
-    - Give 4 plausible options per question, with exactly 1 correct answer.
-    - Assign realistic marks per question (usually 1 or 2).
-    
-    LANGUAGE RULE: Use ${isSwahiliSubject(subject) ? 'Swahili (Kiswahili Sanifu)' : 'English'}. All subjects other than Swahili/Kiswahili must be generated exclusively in English.
-    
-    Output JSON containing both "note" and "quiz" objects.
+You are a senior Kenyan teacher turning a live class recording into a proper lesson note and revision quiz.
+
+RULES:
+1. If the audio is unclear, return a safe fallback object, but still keep the JSON valid.
+2. If the audio is clear, write a full classroom-ready note, not a summary of the prompt.
+3. Use ${isSwahiliSubject(subject) ? 'Swahili (Kiswahili Sanifu)' : 'English'}.
+4. The note must be detailed, structured, and exam-friendly for ${grade} learners.
+5. note.explanation must be rich Markdown with these sections:
+   - ### Topic
+   - ### Learning Goals
+   - ### Core Explanation
+   - ### Example
+   - ### Common Mistakes
+   - ### Quick Recap
+   - ### Check Your Understanding
+6. note.summaryPoints must contain 5 concise sticky takeaways.
+7. note.relatedTopics must contain 3 to 5 related study areas.
+8. The quiz must contain 10 questions from easy to moderate difficulty, each with 4 options and one correct answer.
+9. Do not add preambles, apologies, or commentary outside JSON.
+
+Subject: ${subject}
+Grade: ${grade}
+
+Output JSON containing both "note" and "quiz" objects.
   `;
 
   try {
@@ -531,14 +540,13 @@ export const processDarasaRecording = async (audioBlob: Blob, mimeType: string, 
     const text = result.response.text();
     if (!text) throw new Error("No response from AI");
 
-    const json = JSON.parse(text);
+    const json = parseModelJson<{ note: TeacherNote, quiz: QuizData }>(text);
     return json as { note: TeacherNote, quiz: QuizData };
   } catch (error) {
     console.error("Error processing darasa recording:", error);
     throw error;
   }
 };
-
 // --- RAG HELPER ---
 type RetrievedContext = {
   text: string;
@@ -1302,6 +1310,111 @@ Material:
     return JSON.parse(text);
   } catch (error) {
     console.error("Error generating podcast script:", error);
+    throw error;
+  }
+};
+
+// --- TOPIC FLASHCARDS ---
+
+export interface TopicFlashcard {
+  term: string;
+  definition: string;
+}
+
+export const generateTopicFlashcards = async (content: string, topic: string): Promise<TopicFlashcard[]> => {
+  const model = genAI.getGenerativeModel({
+    model: MODEL_NAME,
+    generationConfig: {
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: SchemaType.ARRAY,
+        items: {
+          type: SchemaType.OBJECT,
+          properties: {
+            term: { type: SchemaType.STRING },
+            definition: { type: SchemaType.STRING }
+          },
+          required: ["term", "definition"]
+        }
+      }
+    }
+  });
+
+  const prompt = `From the following explanation of "${topic}", extract exactly 6 key flashcard pairs.
+Each pair should have a short TERM (a concept, formula, keyword, or definition header) and a clear DEFINITION (1-2 sentences).
+Focus on the most exam-relevant concepts a CBC/KCSE student should memorise.
+Use English only.
+
+Content:
+"${content.substring(0, 4000)}"
+
+Return a JSON array of {term, definition} objects.`;
+
+  try {
+    const result = await model.generateContent(prompt);
+    const text = result.response.text();
+    if (!text) throw new Error("No response from AI");
+    const parsed = JSON.parse(text);
+    return Array.isArray(parsed) ? parsed.slice(0, 6) : [];
+  } catch (error) {
+    console.error("Error generating flashcards:", error);
+    throw error;
+  }
+};
+
+// --- REVISION TIMETABLE ---
+
+export interface TimetableDay {
+  date: string;
+  dayLabel: string;
+  subject: string;
+  topics: string;
+  duration: string;
+}
+
+export const generateRevisionTimetable = async (examDate: string, subjects: string[]): Promise<TimetableDay[]> => {
+  const model = genAI.getGenerativeModel({
+    model: MODEL_NAME,
+    generationConfig: {
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: SchemaType.ARRAY,
+        items: {
+          type: SchemaType.OBJECT,
+          properties: {
+            date: { type: SchemaType.STRING },
+            dayLabel: { type: SchemaType.STRING },
+            subject: { type: SchemaType.STRING },
+            topics: { type: SchemaType.STRING },
+            duration: { type: SchemaType.STRING }
+          },
+          required: ["date", "dayLabel", "subject", "topics", "duration"]
+        }
+      }
+    }
+  });
+
+  const today = new Date().toISOString().split('T')[0];
+  const prompt = `Create a CBC/KCSE revision timetable from today (${today}) to the exam date (${examDate}).
+Subjects to cover: ${subjects.join(', ')}.
+
+Rules:
+- Distribute subjects evenly across the available days
+- Last 2 days before the exam: light revision only (no new topics)
+- Each day: one main subject, specific high-yield topics to revise, and a study duration (30-90 mins)
+- Max 14 days of entries (trim if exam is far away, show first 14)
+- date format: YYYY-MM-DD, dayLabel format: "Mon Jun 23"
+
+Return a JSON array of {date, dayLabel, subject, topics, duration}.`;
+
+  try {
+    const result = await model.generateContent(prompt);
+    const text = result.response.text();
+    if (!text) throw new Error("No response from AI");
+    const parsed = JSON.parse(text);
+    return Array.isArray(parsed) ? parsed.slice(0, 14) : [];
+  } catch (error) {
+    console.error("Error generating timetable:", error);
     throw error;
   }
 };

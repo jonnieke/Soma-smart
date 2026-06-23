@@ -251,7 +251,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
         setIsGeneratingDetailed(true);
         try {
             const text = await callGeminiProxy(
-                `Provide a structured step-by-step academic explanation for the following question, aligned to the Kenyan KCSE/CBC curriculum. Number each step. Show all working clearly. Use precise academic language. End with the final answer stated explicitly. Question: ${questionInput}`
+                `Provide a structured academic explanation for the following question, aligned to the Kenyan KCSE/CBC curriculum. Start with the final answer in one short line, then give the steps. Number each step clearly. Show working where needed. Use precise academic language. Question: ${questionInput}`
             );
             const cleaned = (text || '')
                 .replace(/\*\*(.*?)\*\*/g, '$1')    // **bold** → plain (no s: don't cross lines)
@@ -2517,3 +2517,4 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
         </div>
     );
 };
+

@@ -766,7 +766,7 @@ export const ClassroomSimulator: React.FC<ClassroomSimulatorProps> = ({ onBack, 
                             onClick={onBack}
                             className="flex-1 flex items-center justify-center gap-2 bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 font-black py-4 rounded-2xl hover:border-slate-300 transition-colors"
                         >
-                            <ArrowLeft className="w-5 h-5" /> Back to Creation Hub
+                            <ArrowLeft className="w-5 h-5" /> Back to Lesson Maker
                         </button>
                     </div>
                 </>
@@ -780,3 +780,4 @@ export const ClassroomSimulator: React.FC<ClassroomSimulatorProps> = ({ onBack, 
         </div>
     );
 };
+

@@ -66,7 +66,7 @@ export const DigitalBlackboard: React.FC<DigitalBlackboardProps> = ({ onClose, t
                     </button>
                     <div>
                         <h2 className="text-xl font-black tracking-tight">{title}</h2>
-                        <p className={`text-[10px] font-black uppercase tracking-widest mt-1 ${isDarkMode ? 'text-white/40' : 'text-slate-400'}`}>Digital Blackboard Mode</p>
+                        <p className={`text-[10px] font-black uppercase tracking-widest mt-1 ${isDarkMode ? 'text-white/40' : 'text-slate-400'}`}>Teach Mode</p>
                     </div>
                 </div>
 
@@ -154,8 +154,9 @@ export const DigitalBlackboard: React.FC<DigitalBlackboardProps> = ({ onClose, t
             {/* Watermark */}
             <div className="absolute bottom-8 right-8 opacity-20 flex items-center gap-2 pointer-events-none">
                 <MonitorPlay className="w-4 h-4" />
-                <span className="text-[10px] font-black uppercase tracking-widest">Somo Smart Projector View</span>
+                <span className="text-[10px] font-black uppercase tracking-widest">Somo Smart Teach Mode</span>
             </div>
         </motion.div>
     );
 };
+

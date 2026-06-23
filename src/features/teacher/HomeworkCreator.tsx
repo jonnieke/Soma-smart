@@ -48,7 +48,7 @@ export const HomeworkCreator: React.FC<{
         <div className="max-w-4xl mx-auto space-y-6 pb-24">
             <button onClick={onBack} className="flex items-center gap-2 text-slate-500 hover:text-indigo-600 transition-colors font-semibold">
                 <ArrowLeft className="w-5 h-5" />
-                Back to Creation Hub
+                Back to Lesson Maker
             </button>
 
             <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[2.5rem] p-8 md:p-12 shadow-xl">
@@ -152,3 +152,4 @@ export const HomeworkCreator: React.FC<{
         </div>
     );
 };
+

@@ -68,6 +68,8 @@ const continueResearch = async (...args: any[]) => ((await loadGeminiService()).
 const summarizeDocument = async (...args: any[]) => ((await loadGeminiService()).summarizeDocument as any)(...args);
 const generateRichLessonNotes = async (...args: any[]) => ((await loadGeminiService()).generateRichLessonNotes as any)(...args);
 const generatePodcastScript = async (...args: any[]) => ((await loadGeminiService()).generatePodcastScript as any)(...args);
+const generateTopicFlashcards = async (...args: any[]) => ((await loadGeminiService()).generateTopicFlashcards as any)(...args);
+const generateRevisionTimetable = async (...args: any[]) => ((await loadGeminiService()).generateRevisionTimetable as any)(...args);
 const loadElevenLabsService = () => safeImport(() => import('../../services/elevenLabsService'));
 const speak = async (...args: any[]) => ((await loadElevenLabsService()).speak as any)(...args);
 const stopSpeechElevenLabs = () => { void loadElevenLabsService().then(service => service.stopSpeech()); };
@@ -602,6 +604,33 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
   const [askTeacherClassId, setAskTeacherClassId] = useState<string | null>(null);
   const [askTeacherText, setAskTeacherText] = useState('');
   const [askTeacherSending, setAskTeacherSending] = useState(false);
+
+  // Topic flashcards (inline in RESULT mode)
+  const [topicFlashcards, setTopicFlashcards] = useState<{ term: string; definition: string }[]>([]);
+  const [flashcardIndex, setFlashcardIndex] = useState(0);
+  const [flashcardFlipped, setFlashcardFlipped] = useState(false);
+  const [flashcardGot, setFlashcardGot] = useState<Set<number>>(new Set());
+  const [flashcardsLoading, setFlashcardsLoading] = useState(false);
+
+  // Revision timetable
+  const TIMETABLE_KEY = 'soma_revision_timetable';
+  const getTimetable = (): { examDate: string; days: { date: string; dayLabel: string; subject: string; topics: string; duration: string; done?: boolean }[] } | null => {
+    try { return JSON.parse(localStorage.getItem(TIMETABLE_KEY) || 'null'); } catch { return null; }
+  };
+  const [timetable, setTimetable] = useState(() => getTimetable());
+  const [showTimetableBuilder, setShowTimetableBuilder] = useState(false);
+  const [timetableExamDate, setTimetableExamDate] = useState('');
+  const [timetableSubjects, setTimetableSubjects] = useState('');
+  const [timetableLoading, setTimetableLoading] = useState(false);
+
+  // PWA install banner (shows after 2nd session if install prompt available)
+  const [pwaBannerDismissed, setPwaBannerDismissed] = useState(() => localStorage.getItem('soma_pwa_dismissed') === '1');
+  const [pwaVisitReady, setPwaVisitReady] = useState(false);
+  useEffect(() => {
+    const count = parseInt(localStorage.getItem('soma_visit_count') || '0', 10) + 1;
+    localStorage.setItem('soma_visit_count', String(count));
+    if (count >= 2) setPwaVisitReady(true);
+  }, []);
   const [qualityWarning, setQualityWarning] = useState<{ show: boolean, issues: string[], file: File | null } | null>(null);
   // Separate warning object to match usage if needed, or just simplify
   const [qualityCallback, setQualityCallback] = useState<(() => void) | null>(null); // For custom modal action maybe? Unused but keeping clean.
@@ -1026,17 +1055,38 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
   }, [reviewComplete]);
 
   const restoreMissingCreditWallet = React.useCallback(async () => {
-    if (!isRegistered || learningCredits > 0) return false;
-    const profileId = studentProfile?.id || userId;
+    if (learningCredits > 0) return false;
+
+    const resolveProfileId = async () => {
+      if (studentProfile?.id) return studentProfile.id;
+      if (userId) return userId;
+
+      const savedStudentCode = (localStorage.getItem('soma_active_student') || '').trim().toUpperCase();
+      if (!savedStudentCode) return null;
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('student_id', savedStudentCode)
+        .maybeSingle();
+
+      return profile?.id || null;
+    };
+
+    const profileId = await resolveProfileId();
     if (!profileId) return false;
 
     try {
-      const { data: txs, error } = await supabase
+      const lastReference = localStorage.getItem('soma_last_payment_reference') || '';
+      const query = supabase
         .from('transactions')
-        .select('reference_code, amount, status, description, created_at')
-        .eq('user_id', profileId)
+        .select('reference_code, user_id, amount, status, description, created_at')
         .order('created_at', { ascending: false })
         .limit(20);
+
+      const { data: txs, error } = lastReference
+        ? await query.or(`user_id.eq.${profileId},reference_code.eq.${lastReference}`)
+        : await query.eq('user_id', profileId);
 
       if (error || !txs?.length) return false;
 
@@ -1095,22 +1145,22 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
     }
 
     return false;
-  }, [isRegistered, learningCredits, studentProfile?.id, userId, grantLearningCredits]);
+  }, [learningCredits, studentProfile?.id, userId, grantLearningCredits]);
 
   useEffect(() => {
     restoreMissingCreditWallet();
   }, [restoreMissingCreditWallet]);
 
   useEffect(() => {
-    if (!isRegistered || isPro || subscriptionRepairAttemptedRef.current) return;
+    if (isPro || subscriptionRepairAttemptedRef.current) return;
     subscriptionRepairAttemptedRef.current = true;
     verifySubscription().catch((err) => {
       console.warn('Subscription self-heal check failed:', err);
     });
-  }, [isRegistered, isPro, verifySubscription]);
+  }, [isPro, verifySubscription]);
 
   useEffect(() => {
-    if (!isRegistered || learningCredits > 0) return;
+    if (learningCredits > 0) return;
     const reference = localStorage.getItem('soma_last_payment_reference') || '';
     if (!reference.startsWith('CREDIT_') || creditRecoveryAttemptedRef.current === reference) return;
     if (localStorage.getItem(`soma_credit_recovered_${reference}`) === '1') return;
@@ -1148,7 +1198,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
     };
 
     recoverCreditPayment();
-  }, [isRegistered, learningCredits, grantLearningCredits]);
+  }, [learningCredits, grantLearningCredits]);
 
   useEffect(() => {
     if (!showLimitModal || !isRegistered || isPro || paywallRecoveryAttemptedRef.current) return;
@@ -1395,8 +1445,8 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
       subject: r.subject,
       category: normalizeMaterialCategory(r.type),
       fileUrl: r.file_url,
-      rating: r.rating ?? 0,
-      downloadCount: r.download_count ?? 0,
+      rating: r.rating || 0,
+      downloadCount: r.download_count || 0,
       isInternal: true
     }));
 
@@ -2725,9 +2775,10 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
 
   const restoreMemberSessionForResume = async () => {
     const savedStudentCode = localStorage.getItem('soma_active_student');
-    if (!savedStudentCode) return false;
+    const savedPin = sessionStorage.getItem('soma_student_pin_session');
+    if (!savedStudentCode || !savedPin) return false;
 
-    const restored = await login(savedStudentCode);
+    const restored = await login(savedStudentCode, savedPin);
     if (restored) {
       await verifySubscription();
       setHasRecentPaymentUnlock(true);
@@ -3852,12 +3903,12 @@ ${explanation.explanation}
                   <div className="bg-emerald-50 border border-emerald-100 rounded-2xl rounded-bl-md px-4 py-3 max-w-[80%] shadow-sm">
                     <p className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest mb-1">Teacher&apos;s Response</p>
                     {chatReq.responseType === 'TEXT' && (
-                      <p className="text-slate-800 dark:text-slate-200 text-sm leading-relaxed whitespace-pre-wrap">{chatReq.response}</p>
+                      <p className="text-slate-800 dark:text-slate-200 text-sm leading-relaxed whitespace-pre-wrap">{typeof chatReq.response === 'string' ? chatReq.response : JSON.stringify(chatReq.response, null, 2)}</p>
                     )}
-                    {chatReq.responseType === 'VOICE' && chatReq.response && (
+                    {chatReq.responseType === 'VOICE' && typeof chatReq.response === 'string' && chatReq.response && (
                       <audio src={chatReq.response} controls className="w-full" />
                     )}
-                    {chatReq.responseType === 'VIDEO' && chatReq.response && (
+                    {chatReq.responseType === 'VIDEO' && typeof chatReq.response === 'string' && chatReq.response && (
                       <video src={chatReq.response} controls className="w-full rounded-xl" />
                     )}
                   </div>
@@ -4070,7 +4121,7 @@ ${explanation.explanation}
 
                       {req.responseType === 'TEXT' && (
                         <p className="text-slate-800 dark:text-slate-200 text-sm leading-relaxed whitespace-pre-wrap bg-slate-50 dark:bg-slate-800/80 p-4 rounded-xl border-2 border-slate-300 dark:border-slate-800">
-                          {req.response}
+                          {typeof req.response === 'string' ? req.response : JSON.stringify(req.response, null, 2)}
                         </p>
                       )}
 
@@ -4085,13 +4136,13 @@ ${explanation.explanation}
                               <p className="text-xs font-bold text-indigo-900">Listen to explanation</p>
                             </div>
                           </div>
-                          {req.response && <audio src={req.response} controls className="w-full mt-2" />}
+                          {typeof req.response === 'string' && req.response && <audio src={req.response} controls className="w-full mt-2" />}
                         </div>
                       )}
 
                       {req.responseType === 'VIDEO' && (
                         <div className="aspect-video bg-black rounded-xl relative overflow-hidden shadow-lg border-2 border-slate-300">
-                          {req.response ? (
+                          {typeof req.response === 'string' && req.response ? (
                             <video src={req.response} controls className="w-full h-full" />
                           ) : (
                             <div className="flex items-center justify-center h-full text-white">
@@ -4326,12 +4377,12 @@ ${explanation.explanation}
         {
           label: 'Explain Simply',
           body: 'Break it down for a stuck learner.',
-          buildPrompt: (question: string) => `Explain this in simple language for a Kenyan learner. Go straight to the idea, use a short example, then ask me one check question before giving a quiz.\n\nDo not define the learning tool itself.\n\nTopic or question: ${question || '[type what you do not understand here]'}`
+          buildPrompt: (question: string) => `Give a short, direct answer first in simple language for a Kenyan learner. Then add one short example and one check question. If I ask for more detail, expand after the answer. Do not define the learning tool itself.\n\nTopic or question: ${question || '[type what you do not understand here]'}`
         },
         {
           label: 'Swahili Support',
           body: 'Use simple English with Kiswahili help.',
-          buildPrompt: (question: string) => `Explain this using simple English, and add short Kiswahili support for hard words. Then ask me to explain it back in my own words.\n\nDo not add generic tutorial text.\n\nTopic or question: ${question || '[type your question here]'}`
+          buildPrompt: (question: string) => `Give a short, direct answer first using simple English, and add short Kiswahili support for hard words only if needed. Then ask me to explain it back in my own words. If I need more, expand after the answer.\n\nDo not add generic tutorial text.\n\nTopic or question: ${question || '[type your question here]'}`
         }
       ];
 
@@ -4418,38 +4469,26 @@ ${explanation.explanation}
                 className="mb-6 rounded-3xl bg-gradient-to-br from-emerald-600 via-teal-600 to-blue-700 p-5 sm:p-6 text-white shadow-lg shadow-emerald-500/20"
               >
                 <div className="flex items-start gap-4">
-                  <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center shrink-0 text-xl">🎓</div>
+                  <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center shrink-0 text-xl font-black">AK</div>
                   <div className="flex-1 min-w-0">
                     <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-200 mb-1">
                       Welcome, {profile?.name?.split(' ')[0] || 'Learner'}!
                     </p>
-                    <p className="font-bold text-base mb-3">Your learning dashboard is ready — here&apos;s how to start</p>
-                    <div className="space-y-2 mb-4">
-                      {[
-                        { icon: '❓', label: 'Type any question or topic below — Akili explains it step by step' },
-                        { icon: '📸', label: 'Scan or upload your textbook page to get instant notes' },
-                        { icon: '✅', label: 'Take a quick quiz to test yourself and track your progress' },
-                      ].map(({ icon, label }) => (
-                        <div key={label} className="flex items-start gap-2.5 text-sm font-medium text-white/90">
-                          <span className="text-base shrink-0 mt-0.5">{icon}</span>
-                          <span>{label}</span>
-                        </div>
-                      ))}
-                    </div>
-                    <div className="grid grid-cols-2 gap-2">
+                    <p className="font-bold text-base mb-4">Start with Ask Akili for help, or open the Library for notes and papers.</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                       <button
                         onClick={() => setMode('SCAN_EXPLAIN')}
                         className="rounded-xl bg-white text-emerald-700 hover:bg-emerald-50 px-3 py-2.5 text-left font-black text-sm transition-colors"
                       >
-                        Ask a Question
-                        <span className="block text-[10px] font-bold text-emerald-500 mt-0.5">Type or scan work</span>
+                        Ask Akili
+                        <span className="block text-[10px] font-bold text-emerald-500 mt-0.5">Type, scan, or talk</span>
                       </button>
                       <button
                         onClick={() => handleSidebarTabChange('RESOURCES')}
                         className="rounded-xl bg-white/15 hover:bg-white/25 border border-white/20 px-3 py-2.5 text-left font-black text-sm transition-colors"
                       >
                         Browse Library
-                        <span className="block text-[10px] font-bold text-emerald-100 mt-0.5">Notes &amp; past papers</span>
+                        <span className="block text-[10px] font-bold text-emerald-100 mt-0.5">Notes and past papers</span>
                       </button>
                     </div>
                   </div>
@@ -4528,221 +4567,67 @@ ${explanation.explanation}
               </motion.div>
             )}
 
-            {!isPro && !isRegistered && freeUsesLeft === 0 && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className={`mb-6 rounded-2xl border-2 p-4 ${
-                  freeUsesLeft === 0
-                    ? 'bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-800'
-                    : freeUsesLeft === 1
-                    ? 'bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800'
-                    : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800'
-                }`}
-              >
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1.5 mb-2">
-                      {[1, 2, 3].map((slot) => (
-                        <div
-                          key={slot}
-                          className={`h-2 flex-1 rounded-full transition-all duration-500 ${
-                            slot <= usageCount
-                              ? freeUsesLeft === 0
-                                ? 'bg-red-500'
-                                : 'bg-amber-400'
-                              : 'bg-slate-200 dark:bg-slate-700'
-                          }`}
-                        />
-                      ))}
-                    </div>
-                    <p className={`hidden text-xs font-black uppercase tracking-[0.14em] ${
-                      freeUsesLeft === 0
-                        ? 'text-red-700 dark:text-red-400'
-                        : freeUsesLeft === 1
-                        ? 'text-amber-700 dark:text-amber-400'
-                        : 'text-slate-500 dark:text-slate-400'
-                    }`}>
-                      {freeUsesLeft === 0
-                        ? 'Free limit reached — upgrade to keep going'
-                        : `${usageCount} of 3 free answers used${freeUsesLeft === 1 ? ' — 1 left!' : ''}`}
-                    </p>
-                    <p className={`text-xs font-black uppercase tracking-[0.14em] ${
-                      freeUsesLeft === 0
-                        ? 'text-red-700 dark:text-red-400'
-                        : freeUsesLeft === 1
-                        ? 'text-amber-700 dark:text-amber-400'
-                        : 'text-slate-500 dark:text-slate-400'
-                    }`}>
-                      {freeUsesLeft === 0
-                        ? 'Free trial complete'
-                        : `${freeUsesLeft} guided answer${freeUsesLeft === 1 ? '' : 's'} left today`}
-                    </p>
-                    <p className="mt-1 text-xs font-semibold text-slate-500 dark:text-slate-400 leading-relaxed">
-                      {freeUsesLeft === 0
-                        ? 'Create or log into a learner profile, then choose a plan to keep progress, quizzes, and notes together.'
-                        : 'Use the free answers to test Akili. Paid plans keep guided help, quizzes, notes, and parent progress proof together.'}
+            <div className="mb-8">
+              <div className="rounded-3xl border border-indigo-100/80 bg-white/90 p-4 shadow-sm shadow-indigo-50 dark:border-slate-800 dark:bg-slate-900/70">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="min-w-0">
+                    <p className="text-[10px] font-black uppercase tracking-[0.18em] text-indigo-500">Usage & Credits</p>
+                    <h2 className="text-base font-black text-slate-900 dark:text-white mt-0.5">
+                      {!isRegistered
+                        ? 'Log in to view your credits'
+                        : learningCredits > 0
+                          ? `${learningCredits} credits available`
+                          : freeUsesLeft > 0
+                            ? `${freeUsesLeft} free answers left today`
+                            : 'Trial complete - choose a plan or use credits'}
+                    </h2>
+                    <p className="mt-1 text-xs font-semibold text-slate-500 dark:text-slate-400">
+                      {!isRegistered
+                        ? 'Credits stay attached to your student profile after payment.'
+                        : 'Grounded answers, marking, deep analysis, and voice use your plan first, then credits.'}
                     </p>
                   </div>
-                  <button
-                    onClick={handlePricingNavigation}
-                    className={`hidden shrink-0 px-3 py-2 rounded-xl text-xs font-black transition-all ${
-                      freeUsesLeft === 0
-                        ? 'bg-red-600 text-white hover:bg-red-700'
-                        : 'bg-indigo-600 text-white hover:bg-indigo-700'
-                    }`}
-                  >
-                    {freeUsesLeft === 0 ? 'Upgrade Now' : 'From KES 20/day →'}
-                  </button>
-                  <div className="flex flex-col sm:flex-row gap-2 shrink-0">
+                  <div className="flex flex-wrap gap-2">
                     <button
                       onClick={handlePricingNavigation}
-                      className={`px-3 py-2 rounded-xl text-xs font-black transition-all ${
-                        freeUsesLeft === 0
-                          ? 'bg-red-600 text-white hover:bg-red-700'
-                          : 'bg-indigo-600 text-white hover:bg-indigo-700'
-                      }`}
+                      className="rounded-xl bg-indigo-600 px-3 py-2 text-[11px] font-black uppercase tracking-wider text-white hover:bg-indigo-700"
                     >
-                      {freeUsesLeft === 0 ? 'Continue With Plan' : 'Plans From KES 20 · M-PESA'}
+                      Manage Plans
                     </button>
-                    {freeUsesLeft === 0 && (
+                    {isRegistered && (
                       <button
-                        onClick={() => setShowLogin(true)}
-                        className="px-3 py-2 rounded-xl text-xs font-black bg-white dark:bg-slate-950 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 hover:border-indigo-300 dark:hover:border-indigo-500 transition-colors"
+                        onClick={async () => {
+                          setLoading(true);
+                          setLoadingText('Checking credit payments...');
+                          const restored = await restoreMissingCreditWallet();
+                          setLoading(false);
+                          if (!restored) {
+                            setError({
+                              title: 'No Credit Payment Found',
+                              message: 'We could not find a completed credit-pack payment for this learner yet. If you just paid, wait a moment and try again.'
+                            });
+                          }
+                        }}
+                        className="rounded-xl border border-indigo-100 dark:border-indigo-900 bg-white dark:bg-slate-950 px-3 py-2 text-[11px] font-black uppercase tracking-wider text-indigo-700 dark:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-950/50 transition-colors"
                       >
-                        Log In
+                        Restore Credits
                       </button>
                     )}
                   </div>
                 </div>
-              </motion.div>
-            )}
-
-            <div className="mb-8">
-              <div className="mb-4 flex flex-col gap-3 rounded-3xl border border-indigo-100/80 bg-white/90 p-4 shadow-sm shadow-indigo-50 dark:border-slate-800 dark:bg-slate-900/70">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div>
-                    <p className="text-[10px] font-black uppercase tracking-[0.18em] text-indigo-500">Credit Wallet</p>
-                    <h2 className="text-base font-black text-slate-900 dark:text-white mt-0.5">
-                      {!isRegistered
-                        ? 'Log in to view credits'
-                        : learningCredits > 0
-                          ? `${learningCredits} credits available`
-                          : 'No credits available'}
-                    </h2>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    <button
-                      onClick={async () => {
-                        if (!isRegistered) {
-                          setShowLogin(true);
-                          return;
-                        }
-                        setLoading(true);
-                        setLoadingText('Checking credit payments...');
-                        const restored = await restoreMissingCreditWallet();
-                        setLoading(false);
-                        if (!restored) {
-                          setError({
-                            title: 'No Credit Payment Found',
-                            message: 'We could not find a completed credit-pack payment for this learner yet. If you just paid, wait a moment and try again.'
-                          });
-                        }
-                      }}
-                      className="self-start sm:self-auto rounded-xl bg-white dark:bg-slate-950 px-3 py-2 text-[11px] font-black uppercase tracking-wider text-indigo-700 dark:text-indigo-300 border border-indigo-100 dark:border-indigo-900 hover:bg-indigo-50 dark:hover:bg-indigo-950/50 transition-colors"
-                    >
-                      {isRegistered ? 'Restore Credits' : 'Log In'}
-                    </button>
-                    <button
-                      onClick={() => {
-                        trackFunnelEvent('credit_pack_selected', {
-                          source: 'learner_plan_balance',
-                          credits: LEARNING_CREDIT_PACKS[0].credits,
-                          amount_kes: LEARNING_CREDIT_PACKS[0].price
-                        });
-                        setSelectedPlan(LEARNING_CREDIT_PACKS[0]);
-                        setMode('PAYMENT' as any);
-                      }}
-                      className="self-start sm:self-auto rounded-xl bg-slate-100 dark:bg-slate-800 px-3 py-2 text-[11px] font-black uppercase tracking-wider text-slate-600 dark:text-slate-300 hover:bg-indigo-50 hover:text-indigo-700 dark:hover:bg-indigo-950/50 dark:hover:text-indigo-300 transition-colors"
-                    >
-                      Buy Credits
-                    </button>
-                  </div>
-                </div>
-                <div className="h-2 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden">
+                <div className="mt-3 h-2 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden">
                   <div
                     className={`h-full rounded-full ${learningCredits <= 0 ? 'bg-slate-400' : learningCredits < 10 ? 'bg-amber-500' : 'bg-emerald-500'}`}
                     style={{ width: `${creditMeterPct}%` }}
                   />
                 </div>
-                <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
-                  {isRegistered
-                    ? 'Credits are used for metered actions like grounded answers, marking, deep document analysis, and voice.'
-                    : 'Credits are tied to your Soma student account. Log in with your Student ID after payment to see and use them.'}
-                </p>
-              </div>
-
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
-                <div>
-                  <p className="text-[10px] font-black uppercase tracking-[0.18em] text-indigo-500">Today&apos;s Plan Balance</p>
-                  <h2 className="text-base font-black text-slate-900 dark:text-white mt-0.5">
-                    {isPro ? `${subscriptionPlan.toLowerCase()} plan controls` : 'Free trial controls'}
-                  </h2>
+                <div className="mt-3 flex flex-wrap items-center gap-2 text-[11px] font-bold text-slate-500 dark:text-slate-400">
+                  <span className="rounded-full border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-2.5 py-1">Ask Akili</span>
+                  <span className="rounded-full border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-2.5 py-1">Exam Prep</span>
+                  <span className="rounded-full border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-2.5 py-1">Marking</span>
+                  <span className="rounded-full border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-2.5 py-1">Voice</span>
                 </div>
-                <button
-                  onClick={() => {
-                    trackFunnelEvent('credit_pack_selected', {
-                      source: 'learner_plan_balance',
-                      credits: LEARNING_CREDIT_PACKS[0].credits,
-                      amount_kes: LEARNING_CREDIT_PACKS[0].price
-                    });
-                    setSelectedPlan(LEARNING_CREDIT_PACKS[0]);
-                    setMode('PAYMENT' as any);
-                  }}
-                  className="self-start sm:self-auto rounded-xl bg-slate-100 dark:bg-slate-800 px-3 py-2 text-[11px] font-black uppercase tracking-wider text-slate-600 dark:text-slate-300 hover:bg-indigo-50 hover:text-indigo-700 dark:hover:bg-indigo-950/50 dark:hover:text-indigo-300 transition-colors"
-                >
-                  Buy Credits
-                </button>
               </div>
-              <div className="mb-4 flex items-center justify-between rounded-2xl bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-900 px-4 py-3">
-                <div>
-                  <p className="text-[10px] font-black uppercase tracking-[0.16em] text-indigo-500">Credit Wallet</p>
-                  <p className="text-xs font-bold text-slate-600 dark:text-slate-300 mt-0.5">Used only after your daily plan balance runs out.</p>
-                </div>
-                <p className="text-2xl font-black text-indigo-700 dark:text-indigo-300">{learningCredits}</p>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                {planMeters.map((meter) => (
-                  <div key={meter.feature} className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/50 p-3">
-                    <div className="flex items-center justify-between gap-2 mb-2">
-                      <div className="flex items-center gap-2 min-w-0">
-                        <div className="w-8 h-8 rounded-xl bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-300 flex items-center justify-center shadow-sm shrink-0">
-                          {meter.icon}
-                        </div>
-                        <p className="text-xs font-black text-slate-800 dark:text-slate-100 truncate">{meter.label}</p>
-                      </div>
-                      <p className={`text-[10px] font-black ${meter.remaining <= 0 ? 'text-rose-500' : meter.pct >= 75 ? 'text-amber-500' : 'text-emerald-600'}`}>
-                        {formatUsageRemaining(meter.remaining, meter.unit)}
-                      </p>
-                    </div>
-                    <div className="h-2 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden">
-                      <div
-                        className={`h-full rounded-full ${meter.remaining <= 0 ? 'bg-rose-500' : meter.pct >= 75 ? 'bg-amber-400' : 'bg-emerald-500'}`}
-                        style={{ width: `${meter.pct}%` }}
-                      />
-                    </div>
-                    <p className="mt-2 text-[10px] font-bold text-slate-400">
-                      {meter.unit === 'characters'
-                        ? `${meter.used.toLocaleString()} / ${meter.limit.toLocaleString()} chars today`
-                        : `${meter.used} / ${meter.limit} uses today`}
-                    </p>
-                  </div>
-                ))}
-              </div>
-              <p className="mt-3 text-[11px] font-semibold text-slate-500 dark:text-slate-400">
-                Limits reset daily and keep Soma affordable while protecting high-value tools like marking and voice lessons.
-              </p>
-            </div>
 
 
             {/* HEADER METRICS */}
@@ -4980,6 +4865,123 @@ ${explanation.explanation}
               );
             })()}
 
+            {/* REVISION TIMETABLE */}
+            {(() => {
+              const CBC_SUBJECTS_LIST = ['Mathematics', 'English', 'Kiswahili', 'Science', 'Social Studies', 'CRE', 'History', 'Geography', 'Physics', 'Chemistry', 'Biology', 'Business Studies', 'Agriculture', 'Computer Science', 'Creative Arts', 'Home Science'];
+              const handleBuildTimetable = async () => {
+                const subjectList = timetableSubjects.split(',').map(s => s.trim()).filter(Boolean);
+                if (!timetableExamDate || subjectList.length === 0) { triggerToast('Enter exam date and at least one subject.'); return; }
+                setTimetableLoading(true);
+                try {
+                  const days = await generateRevisionTimetable(timetableExamDate, subjectList);
+                  const newTimetable = { examDate: timetableExamDate, days };
+                  localStorage.setItem(TIMETABLE_KEY, JSON.stringify(newTimetable));
+                  setTimetable(newTimetable);
+                  setShowTimetableBuilder(false);
+                } catch { triggerToast('Could not generate timetable. Try again.'); }
+                finally { setTimetableLoading(false); }
+              };
+              const toggleDay = (idx: number) => {
+                if (!timetable) return;
+                const updated = { ...timetable, days: timetable.days.map((d, i) => i === idx ? { ...d, done: !d.done } : d) };
+                localStorage.setItem(TIMETABLE_KEY, JSON.stringify(updated));
+                setTimetable(updated);
+              };
+              const today = new Date().toISOString().split('T')[0];
+              const subjectColors: Record<string, string> = {
+                Mathematics: 'bg-blue-100 text-blue-800', English: 'bg-emerald-100 text-emerald-800',
+                Kiswahili: 'bg-amber-100 text-amber-800', Science: 'bg-violet-100 text-violet-800',
+                Physics: 'bg-indigo-100 text-indigo-800', Chemistry: 'bg-rose-100 text-rose-800',
+                Biology: 'bg-teal-100 text-teal-800', History: 'bg-orange-100 text-orange-800',
+              };
+              const getSubjectColor = (subject: string) => {
+                for (const [key, cls] of Object.entries(subjectColors)) {
+                  if (subject.toLowerCase().includes(key.toLowerCase())) return cls;
+                }
+                return 'bg-slate-100 text-slate-800';
+              };
+              return (
+                <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-sm border-2 border-slate-200 dark:border-slate-800 p-5">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                      <ClipboardList className="w-4 h-4 text-indigo-500" />
+                      <p className="text-xs font-black text-slate-700 dark:text-slate-300 uppercase tracking-widest">Revision Timetable</p>
+                    </div>
+                    <div className="flex gap-2">
+                      {timetable && (
+                        <button onClick={() => { localStorage.removeItem(TIMETABLE_KEY); setTimetable(null); }} className="text-[10px] font-bold text-slate-400 hover:text-rose-500">Clear</button>
+                      )}
+                      <button onClick={() => setShowTimetableBuilder(b => !b)} className="text-[10px] font-bold text-indigo-500 hover:text-indigo-700 underline">
+                        {timetable ? 'Rebuild' : 'Build Plan'}
+                      </button>
+                    </div>
+                  </div>
+
+                  {showTimetableBuilder && (
+                    <div className="mb-4 p-4 bg-indigo-50 dark:bg-indigo-950/30 rounded-2xl space-y-3 animate-in fade-in duration-200">
+                      <div>
+                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider block mb-1">Exam Date</label>
+                        <input type="date" value={timetableExamDate} min={today}
+                          onChange={e => setTimetableExamDate(e.target.value)}
+                          className="w-full border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 rounded-xl px-3 py-2 text-sm font-bold text-slate-800 dark:text-white focus:outline-none focus:border-indigo-400" />
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider block mb-1">Subjects (comma-separated)</label>
+                        <input type="text" value={timetableSubjects}
+                          onChange={e => setTimetableSubjects(e.target.value)}
+                          placeholder="e.g. Mathematics, English, Biology"
+                          className="w-full border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 rounded-xl px-3 py-2 text-sm font-bold text-slate-800 dark:text-white focus:outline-none focus:border-indigo-400" />
+                        <div className="flex flex-wrap gap-1 mt-2">
+                          {CBC_SUBJECTS_LIST.slice(0, 8).map(s => (
+                            <button key={s} onClick={() => setTimetableSubjects(prev => prev ? `${prev}, ${s}` : s)}
+                              className="text-[9px] font-bold bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 px-2 py-0.5 rounded-full text-slate-600 dark:text-slate-300 hover:border-indigo-400 hover:text-indigo-600 transition-colors">
+                              + {s}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      <button onClick={handleBuildTimetable} disabled={timetableLoading || !timetableExamDate || !timetableSubjects.trim()}
+                        className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-black py-3 rounded-xl text-sm transition-colors flex items-center justify-center gap-2">
+                        {timetableLoading ? <><Loader2 className="w-4 h-4 animate-spin" /> Generating…</> : <><Sparkles className="w-4 h-4" /> Generate My Plan</>}
+                      </button>
+                    </div>
+                  )}
+
+                  {timetable && !showTimetableBuilder && (
+                    <div className="space-y-2">
+                      {timetable.days.slice(0, 7).map((day, idx) => (
+                        <div key={idx} onClick={() => toggleDay(idx)}
+                          className={`flex items-center gap-3 p-3 rounded-2xl cursor-pointer transition-all ${day.done ? 'bg-emerald-50 dark:bg-emerald-900/20 opacity-70' : 'bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700'}`}>
+                          <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${day.done ? 'bg-emerald-500 border-emerald-500' : 'border-slate-300 dark:border-slate-600'}`}>
+                            {day.done && <CheckCircle className="w-3 h-3 text-white" />}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-0.5">
+                              <p className="text-[10px] font-bold text-slate-400">{day.dayLabel}</p>
+                              <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-full ${getSubjectColor(day.subject)}`}>{day.subject}</span>
+                            </div>
+                            <p className="text-xs font-bold text-slate-700 dark:text-slate-200 truncate">{day.topics}</p>
+                          </div>
+                          <span className="text-[9px] font-bold text-slate-400 flex-shrink-0">{day.duration}</span>
+                        </div>
+                      ))}
+                      {timetable.days.length > 7 && (
+                        <p className="text-[10px] font-bold text-slate-400 text-center">+ {timetable.days.length - 7} more days · Tap "Rebuild" to view all</p>
+                      )}
+                    </div>
+                  )}
+
+                  {!timetable && !showTimetableBuilder && (
+                    <div className="text-center py-6">
+                      <ClipboardList className="w-10 h-10 text-indigo-200 mx-auto mb-2" />
+                      <p className="text-sm font-bold text-slate-500">No plan yet.</p>
+                      <p className="text-xs text-slate-400 mt-1">Add your exam date and subjects to get an AI-generated study schedule.</p>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+
             <div className="hidden">
               {[
                 {
@@ -5045,45 +5047,21 @@ ${explanation.explanation}
                     </div>
                   )}
 
-                  {/* FIRST SESSION WELCOME — only for registered users with zero history */}
+                  {/* FIRST SESSION WELCOME - keep it compact */}
                   {isRegistered && !hasHistory && !hasProgress && (
                     <motion.div
                       initial={{ opacity: 0, y: -8 }}
                       animate={{ opacity: 1, y: 0 }}
-                      className="bg-gradient-to-br from-indigo-600 via-blue-600 to-purple-700 rounded-3xl p-6 text-white shadow-xl shadow-indigo-300/30 relative overflow-hidden"
+                      className="rounded-3xl border-2 border-indigo-200 dark:border-indigo-900/60 bg-indigo-50 dark:bg-indigo-950/30 p-4 sm:p-5"
                     >
-                      <div className="absolute top-0 right-0 w-40 h-40 bg-white/5 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
-                      <div className="relative z-10">
-                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-200 mb-1">Welcome, {profile?.name?.split(' ')[0] || 'Learner'}! 🎉</p>
-                        <h2 className="text-xl font-black tracking-tight mb-1">Your first question is one tap away.</h2>
-                        <p className="text-sm font-medium text-indigo-100 mb-5 leading-relaxed">
-                          Type anything — a topic, a past paper question, even a photo of your textbook. Akili will explain it step by step.
-                        </p>
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                          <button
-                            onClick={() => setMode('SCAN_EXPLAIN')}
-                            className="bg-white/15 hover:bg-white/25 border border-white/20 rounded-xl p-3 text-left transition-all group"
-                          >
-                            <span className="text-xl block mb-1">📸</span>
-                            <span className="text-xs font-black block">Scan a Question</span>
-                            <span className="text-[10px] text-indigo-200 font-medium">Photo from textbook</span>
-                          </button>
-                          <button
-                            onClick={() => setMode('SCAN_EXPLAIN')}
-                            className="bg-white/15 hover:bg-white/25 border border-white/20 rounded-xl p-3 text-left transition-all group"
-                          >
-                            <span className="text-xl block mb-1">✍️</span>
-                            <span className="text-xs font-black block">Type a Question</span>
-                            <span className="text-[10px] text-indigo-200 font-medium">Any subject, any level</span>
-                          </button>
-                          <button
-                            onClick={() => handleSidebarTabChange('SUBJECTS')}
-                            className="bg-white/15 hover:bg-white/25 border border-white/20 rounded-xl p-3 text-left transition-all group"
-                          >
-                            <span className="text-xl block mb-1">📚</span>
-                            <span className="text-xs font-black block">Browse by Subject</span>
-                            <span className="text-[10px] text-indigo-200 font-medium">Revision & past papers</span>
-                          </button>
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-600 dark:text-indigo-300 mb-1">Welcome, {profile?.name?.split(' ')[0] || 'Learner'}!</p>
+                          <p className="font-bold text-sm text-slate-800 dark:text-slate-100">Start with Ask Akili or open the Library.</p>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          <button onClick={() => setMode('SCAN_EXPLAIN')} className="rounded-xl bg-indigo-600 px-3 py-2 text-xs font-black text-white hover:bg-indigo-700">Ask Akili</button>
+                          <button onClick={() => handleSidebarTabChange('RESOURCES')} className="rounded-xl border border-indigo-200 dark:border-indigo-800 px-3 py-2 text-xs font-black text-indigo-700 dark:text-indigo-300 hover:border-indigo-400 dark:hover:border-indigo-600">Library</button>
                         </div>
                       </div>
                     </motion.div>
@@ -5093,85 +5071,49 @@ ${explanation.explanation}
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
                       <div>
                         <p className="text-[10px] font-black uppercase tracking-[0.18em] text-indigo-500">Start Learning</p>
-                        <h2 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">What do you need help with?</h2>
-                        <p className="mt-1 text-xs font-semibold text-slate-500 dark:text-slate-400">Basic help starts fast. Grounded library answers, marking, deep exam analysis, and voice use your plan or credits.</p>
+                        <h2 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">Pick one thing to do now</h2>
+                        <p className="mt-1 text-xs font-semibold text-slate-500 dark:text-slate-400">Open the quickest path, then keep going from there.</p>
                       </div>
                       <button
                         onClick={() => setSidebarOpen(true)}
                         className="self-start sm:self-auto rounded-xl border border-slate-200 dark:border-slate-700 px-3 py-2 text-[11px] font-black uppercase tracking-wider text-slate-500 dark:text-slate-300 hover:border-indigo-300 hover:text-indigo-600 dark:hover:border-indigo-600 dark:hover:text-indigo-300"
                       >
-                        More Tools
+                        All Tools
                       </button>
                     </div>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                      {[
-                        {
-                          title: 'Ask Akili',
-                          body: 'Basic help',
-                          icon: <Sparkles className="w-5 h-5" />,
-                          className: 'bg-blue-600 text-white border-blue-600',
-                          action: () => setMode('SCAN_EXPLAIN')
-                        },
-                        {
-                          title: 'Notebook',
-                          body: 'Save & revise',
-                          icon: <BookMarked className="w-5 h-5" />,
-                          className: 'bg-white dark:bg-slate-950 text-slate-900 dark:text-white border-slate-200 dark:border-slate-700',
-                          action: () => handleSidebarTabChange('NOTEBOOK')
-                        },
-                        {
-                          title: 'Library',
-                          body: isPro ? 'Grounded help' : 'Notes & papers',
-                          icon: <Library className="w-5 h-5" />,
-                          className: 'bg-white dark:bg-slate-950 text-slate-900 dark:text-white border-slate-200 dark:border-slate-700',
-                          action: () => handleSidebarTabChange('RESOURCES')
-                        },
-                        {
-                          title: 'Exam Prep',
-                          body: isPro ? 'Exam Coach' : 'Practice drills',
-                          icon: <ClipboardList className="w-5 h-5" />,
-                          className: 'bg-white dark:bg-slate-950 text-slate-900 dark:text-white border-slate-200 dark:border-slate-700',
-                          action: () => handleSidebarTabChange('SUBJECTS')
-                        },
-                        {
-                          title: 'Listen & Learn',
-                          body: learningCredits > 0 ? `${learningCredits} credits` : 'Audio lesson',
-                          icon: <Headphones className="w-5 h-5" />,
-                          className: 'bg-white dark:bg-slate-950 text-slate-900 dark:text-white border-slate-200 dark:border-slate-700',
-                          action: () => {
-                            setTutorInitialActiveMode('TALKBACK');
-                            setTutorInitialTutorMode('conversation');
-                            handleSidebarTabChange('TALKBACK', true);
-                          }
-                        },
-                        {
-                          title: 'Talk & Learn',
-                          body: 'Learn to Speak',
-                          icon: <Mic className="w-5 h-5 text-indigo-500" />,
-                          className: 'bg-white dark:bg-slate-950 text-slate-900 dark:text-white border-slate-200 dark:border-slate-700',
-                          action: () => {
-                            setTutorInitialActiveMode('LANGUAGE_TUTOR');
-                            setTutorInitialTutorMode('pronunciation');
-                            handleSidebarTabChange('TALKBACK', true);
-                          }
-                        },
-                        {
-                          title: dueFlashcardsCountForNext > 0 ? 'Review' : 'Progress',
-                          body: dueFlashcardsCountForNext > 0 ? `${dueFlashcardsCountForNext} due` : `${totalXP} points`,
-                          icon: dueFlashcardsCountForNext > 0 ? <Brain className="w-5 h-5" /> : <Trophy className="w-5 h-5" />,
-                          className: 'bg-white dark:bg-slate-950 text-slate-900 dark:text-white border-slate-200 dark:border-slate-700',
-                          action: () => {
-                            if (dueFlashcardsCountForNext > 0) {
-                              setPracticeMode('due');
-                              setCurrentCardIndex(0);
-                              setIsFlipped(false);
-                              setReviewComplete(false);
-                              setMode('FLASHCARDS');
-                            } else {
-                              setShowMasteryDashboard(true);
-                            }
-                          }
+                    <div className="grid grid-cols-2 md:grid-cols-2 xl:grid-cols-4 gap-3">
+                      {[{
+                        title: 'Ask Akili',
+                        body: 'Get help now',
+                        icon: <Sparkles className="w-5 h-5" />,
+                        className: 'bg-blue-600 text-white border-blue-600 md:col-span-2 xl:col-span-1',
+                        action: () => setMode('SCAN_EXPLAIN')
+                      },
+                      {
+                        title: 'Library',
+                        body: 'Notes & papers',
+                        icon: <Library className="w-5 h-5" />,
+                        className: 'bg-white dark:bg-slate-950 text-slate-900 dark:text-white border-slate-200 dark:border-slate-700',
+                        action: () => handleSidebarTabChange('RESOURCES')
+                      },
+                      {
+                        title: 'Exam Prep',
+                        body: 'Practice drills',
+                        icon: <ClipboardList className="w-5 h-5" />,
+                        className: 'bg-white dark:bg-slate-950 text-slate-900 dark:text-white border-slate-200 dark:border-slate-700',
+                        action: () => handleSidebarTabChange('SUBJECTS')
+                      },
+                      {
+                        title: 'Listen & Learn',
+                        body: learningCredits > 0 ? `${learningCredits} credits` : 'Audio lesson',
+                        icon: <Headphones className="w-5 h-5" />,
+                        className: 'bg-white dark:bg-slate-950 text-slate-900 dark:text-white border-slate-200 dark:border-slate-700',
+                        action: () => {
+                          setTutorInitialActiveMode('TALKBACK');
+                          setTutorInitialTutorMode('conversation');
+                          handleSidebarTabChange('TALKBACK', true);
                         }
+                      }
                       ].map((tool) => (
                         <button
                           key={tool.title}
@@ -5191,8 +5133,8 @@ ${explanation.explanation}
                     </div>
                     <div className="mt-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/50 p-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                       <div>
-                        <p className="text-xs font-black text-slate-900 dark:text-white">Advanced Mode</p>
-                        <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">Soma-grounded answers, deep document analysis, smart marking, and voice practice are premium/credit-powered so basic learning stays affordable.</p>
+                        <p className="text-xs font-black text-slate-900 dark:text-white">Credits & Plans</p>
+                        <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">Grounded answers, deep analysis, marking, and voice use credits or a plan when needed.</p>
                       </div>
                       <button
                         onClick={handlePricingNavigation}
@@ -5365,7 +5307,7 @@ ${explanation.explanation}
                             onKeyDown={(e) => {
                               if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handlePromptSubmit(); }
                             }}
-                            placeholder={educationLevel === 'JUNIOR' ? "Hey Akili, help me with..." : educationLevel === 'CAMPUS' ? "Ask Akili to research..." : "Ask Akili about your studies..."}
+                            placeholder={educationLevel === 'JUNIOR' ? "Hey Akili, help me with..." : educationLevel === 'CAMPUS' ? "Ask Akili to research..." : "Ask Akili a question..."}
                             rows={2}
                             className="w-full bg-transparent border-0 focus:ring-0 text-sm font-medium py-2 px-2 resize-none outline-none text-slate-800 dark:text-slate-100 placeholder:text-slate-400"
                           />
@@ -5915,17 +5857,16 @@ ${explanation.explanation}
                               </div>
                            </div>
                         ))}
-                     </div>
-                  </div>
-              </div>
+                       </div>
+                    </div>
+                </div>
 
+              </div>
             </div>
           </div>
         </div>
-      );
-    }
-
-
+        );
+      }
 
 
 
@@ -8078,7 +8019,7 @@ ${explanation.explanation}
                         <div className="flex-1 min-w-0">
                           <p className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.15em] leading-none mb-1">Somo Smart Audio</p>
                           <p className="text-white font-bold text-sm truncate leading-tight">
-                            {podcastScript?.title || (explanation?.topic ?? 'Generating episode...')}
+                            {podcastScript?.title || (explanation?.topic ? 'Generating episode...' : '')}
                           </p>
                         </div>
                         {podcastTotalSegments > 0 && (
@@ -8374,7 +8315,94 @@ ${explanation.explanation}
                   <Clock className="w-4 h-4" />
                   Take Quiz
                 </button>
+
+                <button
+                  onClick={async () => {
+                    if (topicFlashcards.length > 0) { setTopicFlashcards([]); return; }
+                    setFlashcardsLoading(true);
+                    setFlashcardIndex(0);
+                    setFlashcardFlipped(false);
+                    setFlashcardGot(new Set());
+                    try {
+                      const cards = await generateTopicFlashcards(explanation.explanation, explanation.topic);
+                      setTopicFlashcards(cards);
+                    } catch { triggerToast('Could not generate flashcards. Try again.'); }
+                    finally { setFlashcardsLoading(false); }
+                  }}
+                  disabled={flashcardsLoading}
+                  className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-violet-50 hover:bg-violet-100 text-violet-700 font-bold text-sm px-4 sm:px-5 py-3 rounded-xl transition-colors border border-violet-100 disabled:opacity-60"
+                >
+                  {flashcardsLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Layers className="w-4 h-4" />}
+                  {topicFlashcards.length > 0 ? 'Hide Cards' : 'Flashcards'}
+                </button>
               </div>
+
+              {/* INLINE FLIP CARDS */}
+              {topicFlashcards.length > 0 && (() => {
+                const card = topicFlashcards[flashcardIndex];
+                const total = topicFlashcards.length;
+                const gotCount = flashcardGot.size;
+                return (
+                  <div className="mt-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
+                    <div className="flex items-center justify-between mb-3">
+                      <p className="text-xs font-black text-slate-500 uppercase tracking-widest">Flashcards — {gotCount}/{total} Got It</p>
+                      <p className="text-xs font-bold text-slate-400">{flashcardIndex + 1} / {total}</p>
+                    </div>
+                    <div
+                      onClick={() => setFlashcardFlipped(f => !f)}
+                      className="cursor-pointer select-none"
+                      style={{ perspective: '1000px' }}
+                    >
+                      <div style={{
+                        position: 'relative', height: '160px', transition: 'transform 0.45s',
+                        transformStyle: 'preserve-3d',
+                        transform: flashcardFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)'
+                      }}>
+                        {/* Front */}
+                        <div style={{ backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden', position: 'absolute', inset: 0 }}
+                          className="bg-gradient-to-br from-violet-600 to-indigo-700 rounded-3xl flex flex-col items-center justify-center p-6 shadow-lg shadow-violet-200">
+                          <p className="text-[10px] font-black text-white/60 uppercase tracking-widest mb-3">Term</p>
+                          <p className="text-xl font-black text-white text-center">{card.term}</p>
+                          <p className="text-[10px] text-white/50 mt-3">Tap to reveal</p>
+                        </div>
+                        {/* Back */}
+                        <div style={{ backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden', position: 'absolute', inset: 0, transform: 'rotateY(180deg)' }}
+                          className="bg-white dark:bg-slate-800 border-2 border-violet-200 dark:border-violet-800 rounded-3xl flex flex-col items-center justify-center p-6 shadow-lg">
+                          <p className="text-[10px] font-black text-violet-500 uppercase tracking-widest mb-3">Definition</p>
+                          <p className="text-sm font-bold text-slate-700 dark:text-slate-200 text-center leading-relaxed">{card.definition}</p>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex gap-3 mt-4">
+                      <button
+                        onClick={() => {
+                          setFlashcardGot(prev => new Set([...prev, flashcardIndex]));
+                          setFlashcardFlipped(false);
+                          if (flashcardIndex < total - 1) setFlashcardIndex(i => i + 1);
+                        }}
+                        className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white font-black py-3 rounded-2xl text-sm transition-colors"
+                      >
+                        ✓ Got It
+                      </button>
+                      <button
+                        onClick={() => {
+                          setFlashcardFlipped(false);
+                          if (flashcardIndex < total - 1) setFlashcardIndex(i => i + 1);
+                        }}
+                        className="flex-1 bg-rose-100 hover:bg-rose-200 text-rose-700 font-black py-3 rounded-2xl text-sm transition-colors"
+                      >
+                        ✗ Still Learning
+                      </button>
+                    </div>
+                    {flashcardIndex === total - 1 && (
+                      <button onClick={() => { setFlashcardIndex(0); setFlashcardFlipped(false); setFlashcardGot(new Set()); }}
+                        className="w-full mt-3 text-xs font-black text-violet-600 hover:text-violet-800 underline">
+                        Restart deck
+                      </button>
+                    )}
+                  </div>
+                );
+              })()}
             </motion.article>
 
             {/* QUIZ NUDGE: convert explanation intent into quiz starts */}
@@ -10165,3 +10193,9 @@ ${explanation.explanation}
     </div>
   );
 };
+
+
+
+
+
+

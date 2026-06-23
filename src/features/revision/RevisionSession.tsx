@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+﻿import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useApp } from '../../context/AppContext';
 import {
     ArrowLeft, ArrowRight, Clock, CheckCircle, XCircle, Sparkles, Target,
@@ -463,7 +463,7 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
                         </div>
                         <h2 className="text-white font-black text-xl">Set Exam Time</h2>
                         <p className="text-slate-400 text-sm mt-1 font-medium">
-                            {analysis.subject} · {analysis.questions.length} questions · {totalMarks} marks
+                            {analysis.subject}  -  {analysis.questions.length} questions  -  {totalMarks} marks
                         </p>
                     </div>
 
@@ -522,10 +522,10 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
                         disabled={!finalMins || finalMins < 10}
                         className="w-full py-4 rounded-2xl bg-gradient-to-r from-indigo-600 to-blue-600 text-white font-black text-base flex items-center justify-center gap-3 shadow-lg disabled:opacity-50"
                     >
-                        <Timer className="w-5 h-5" /> Start Exam · {finalMins} min
+                        <Timer className="w-5 h-5" /> Start Exam  -  {finalMins} min
                     </motion.button>
                     <button onClick={() => setPhase('DASHBOARD')} className="w-full text-slate-500 text-sm font-bold hover:text-slate-300 transition-colors">
-                        ← Back to Paper
+                        â† Back to Paper
                     </button>
                 </div>
             </div>
@@ -551,8 +551,8 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
                             <ArrowLeft className="w-5 h-5 text-slate-600 dark:text-slate-400" />
                         </button>
                         <div>
-                            <h1 className="text-base font-black text-slate-900 dark:text-white">{analysis.subject} — {analysis.grade}</h1>
-                            <p className="text-[10px] text-slate-400 dark:text-slate-500">{analysis.questions.length} questions • {totalMarks} marks</p>
+                            <h1 className="text-base font-black text-slate-900 dark:text-white">{analysis.subject}  -  {analysis.grade}</h1>
+                            <p className="text-[10px] text-slate-400 dark:text-slate-500">{analysis.questions.length} questions â€¢ {totalMarks} marks</p>
                         </div>
                     </div>
                     {avgScore !== null && (
@@ -579,7 +579,7 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
                             >
                                 <Timer className="w-6 h-6 mb-3 opacity-80" />
                                 <p className="font-black text-sm mb-1">Timed Exam</p>
-                                <p className="text-blue-200 text-[10px]">{analysis.questions.length} Qs · Set your time</p>
+                                <p className="text-blue-200 text-[10px]">{analysis.questions.length} Qs  -  Set your time</p>
                             </motion.button>
 
                             <motion.button
@@ -590,7 +590,7 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
                             >
                                 <FileText className="w-6 h-6 mb-3 opacity-80" />
                                 <p className="font-black text-sm mb-1">Full Paper</p>
-                                <p className="text-emerald-200 text-[10px]">No time limit • AI marks each answer</p>
+                                <p className="text-emerald-200 text-[10px]">No time limit â€¢ AI marks each answer</p>
                             </motion.button>
                         </div>
 
@@ -731,8 +731,8 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
                                         {pastPerformance.slice(-10).reverse().map(p => (
                                             <div key={p.id} className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
                                                 <div>
-                                                    <p className="text-xs font-black text-slate-700 dark:text-slate-200">{p.subject} — {p.grade}</p>
-                                                    <p className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">{new Date(p.date).toLocaleDateString()} • {p.correctAnswers}/{p.totalQuestions} correct</p>
+                                                    <p className="text-xs font-black text-slate-700 dark:text-slate-200">{p.subject}  -  {p.grade}</p>
+                                                    <p className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">{new Date(p.date).toLocaleDateString()} â€¢ {p.correctAnswers}/{p.totalQuestions} correct</p>
                                                 </div>
                                                 <div className={`text-lg font-black ${p.score >= 70 ? 'text-emerald-600 dark:text-emerald-400' : p.score >= 50 ? 'text-amber-600 dark:text-amber-400' : 'text-red-500 dark:text-red-400'}`}>
                                                     {p.score}%
@@ -766,7 +766,7 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
                             Question {currentQuestionIdx + 1} of {quizQuestions.length}
                         </p>
                         <span className="bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 text-[10px] font-black px-2 py-1 rounded-full uppercase">
-                            📖 Explain First
+                            ?? Explain First
                         </span>
                     </div>
                     <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-1.5">
@@ -908,7 +908,7 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
                                     onClick={handleReadyToAnswer}
                                     className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-4 rounded-2xl font-black text-base flex items-center justify-center gap-3 shadow-lg"
                                 >
-                                    ✍️ I'm Ready — Answer This Question
+                                    ?? I'm Ready - Answer This Question
                                     <ArrowRight className="w-5 h-5" />
                                 </motion.button>
 
@@ -921,7 +921,7 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
                                     }}
                                     className="w-full text-center text-[10px] text-slate-400 dark:text-slate-500 font-bold hover:text-slate-600 dark:hover:text-slate-300 py-2 transition-colors"
                                 >
-                                    Skip explanations for remaining questions →
+                                    Skip explanations for remaining questions
                                 </button>
                             </motion.div>
                         )}
@@ -977,7 +977,7 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
                                     }`}
                                 title={explainFirst ? 'Explain first: ON' : 'Explain first: OFF'}
                             >
-                                📖 {explainFirst ? 'ON' : 'OFF'}
+                                ?? {explainFirst ? 'ON' : 'OFF'}
                             </button>
                         </div>
                     </div>
@@ -994,6 +994,19 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
                 {/* Question & Answer Area */}
                 <div className="flex-1 overflow-y-auto">
                     <div className="max-w-2xl mx-auto p-5 space-y-5">
+                        <div className="bg-slate-900 text-white rounded-2xl p-4 shadow-sm border border-slate-800">
+                            <div className="flex items-center justify-between gap-3">
+                                <div>
+                                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-300 mb-1">Paper Snapshot</p>
+                                    <p className="text-sm font-black">{analysis?.subject} / {analysis?.grade}</p>
+                                    <p className="text-[11px] text-slate-300 mt-1">Answer like an exam paper: short points, full working, and clear final lines.</p>
+                                </div>
+                                <div className="text-right">
+                                    <p className="text-[10px] uppercase tracking-[0.2em] text-slate-400 font-black">Question</p>
+                                    <p className="text-lg font-black text-white">{currentQuestionIdx + 1}/{quizQuestions.length}</p>
+                                </div>
+                            </div>
+                        </div>
                         {/* Question Card */}
                         <motion.div
                             key={currentQuestionIdx}
@@ -1022,7 +1035,7 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
                                         onKeyDown={(e) => {
                                             if (e.key === 'Enter' && e.ctrlKey) handleSubmitAnswer();
                                         }}
-                                        placeholder="Write your answer here... Be clear, structured, and show your working."
+                                        placeholder="Write your answer in exam style. Use points, working, and a clear final answer."
                                         className="w-full min-h-[150px] bg-white dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-800 rounded-2xl p-4 text-sm text-slate-800 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:border-indigo-500 dark:focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900/30 outline-none resize-none transition-all"
                                         disabled={isMarking}
                                     />
@@ -1030,13 +1043,14 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
                                         <div className="absolute inset-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm rounded-2xl flex items-center justify-center">
                                             <div className="text-center">
                                                 <Loader2 className="w-8 h-8 text-indigo-600 dark:text-indigo-400 animate-spin mx-auto mb-2" />
-                                                <p className="text-sm font-bold text-slate-700 dark:text-slate-300">KNEC Marker is checking...</p>
+                                                <p className="text-sm font-bold text-slate-700 dark:text-slate-300">Exam marker is checking...</p>
                                             </div>
                                         </div>
                                     )}
                                 </div>
-                                <div className="flex justify-between items-center">
+                                <div className="flex justify-between items-center gap-3">
                                     <p className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase transition-colors">Ctrl+Enter to submit</p>
+                                    <p className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold text-right">Answer in marks, not a long essay.</p>
                                     <button
                                         onClick={handleSubmitAnswer}
                                         disabled={!userAnswer.trim() || isMarking}
@@ -1078,6 +1092,10 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
                                         {currentMarking.isCorrect && <Star className="w-5 h-5 text-amber-400 fill-current" />}
                                     </div>
                                     <p className={`text-sm leading-relaxed font-medium ${currentMarking.isCorrect ? 'text-emerald-800 dark:text-emerald-400/90' : currentMarking.marksAwarded > 0 ? 'text-amber-800 dark:text-amber-400/90' : 'text-red-800 dark:text-red-400/90'}`}>{currentMarking.feedback}</p>
+                                </div>
+
+                                <div className="bg-slate-50 dark:bg-slate-950/40 border border-slate-200 dark:border-slate-800 rounded-2xl p-4">
+                                    <p className="text-xs font-bold text-slate-700 dark:text-slate-300">Before moving on, compare your answer to the marking scheme and fix the missing point.</p>
                                 </div>
 
                                 {/* Model Answer */}
@@ -1196,7 +1214,7 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
                                 <p className="text-6xl font-black mb-2 tracking-tighter">{percentage}%</p>
                                 <p className="text-2xl font-black opacity-90 mb-1">Grade {gradeLabel}</p>
                                 <p className="text-sm opacity-80 font-medium">
-                                    {marksObtained}/{totalMarks} marks • {correctCount}/{attempts.length} correct • {formatTime(timeSpent)}
+                                    {marksObtained}/{totalMarks} marks â€¢ {correctCount}/{attempts.length} correct â€¢ {formatTime(timeSpent)}
                                 </p>
                             </div>
                             <div className="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full blur-3xl -mr-20 -mt-20" />
@@ -1303,3 +1321,4 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
         </div>
     );
 };
+

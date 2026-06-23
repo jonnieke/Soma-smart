@@ -188,10 +188,25 @@ export const RevisionLanding: React.FC<Props> = ({ onStartSession, onNavigate, o
     const getRevisionItemType = (resource: any) => {
         const rawType = String(resource.type || resource.category || resource.resource_type || '').toUpperCase().replace(/[\s-]+/g, '_');
         const title = String(resource.title || '').toLowerCase();
-        if (rawType === 'SYLLABUS') return 'syllabus';
+        const searchable = [
+            resource.title,
+            resource.file_name,
+            resource.fileName,
+            resource.file_path,
+            resource.fileUrl,
+            resource.description
+        ].filter(Boolean).join(' ').toLowerCase();
+
+        if (rawType === 'SYLLABUS' || title.includes('scheme of work') || searchable.includes('scheme of work')) return 'syllabus';
         if (['PAST_PAPER', 'PAST_PAPERS', 'PASTPAPER', 'REVISION_PAPER', 'REVISIONPAPER', 'EXAM', 'EXAM_PAPER'].includes(rawType)) return 'paper';
-        if (title.includes('past paper') || title.includes('paper') || title.includes('kcse') || title.includes('kpsea') || title.includes('mock')) return 'paper';
-        return 'notes';
+        if (['NOTE', 'NOTES'].includes(rawType)) return 'notes';
+
+        const looksLikePaper = /\b(past paper|paper|kcse|kpsea|exam|mock|revision question|question paper)\b/i.test(searchable) || rawType === 'NONE' || rawType === 'NULL' || rawType === 'UNDEFINED' || rawType === 'GENERAL';
+        const looksLikeNotes = /\b(notes?|study note|lesson note|summary)\b/i.test(searchable);
+
+        if (looksLikePaper && !looksLikeNotes) return 'paper';
+        if (looksLikeNotes) return 'notes';
+        return 'paper';
     };
 
     // All resources merged
@@ -427,10 +442,10 @@ Use plain text. No markdown headings or symbols.`;
                 <section className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-4 sm:p-5 shadow-sm">
                     <div className="flex items-start justify-between gap-3 mb-4">
                         <div>
-                            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-500 mb-1">Candidate Command Centre</p>
-                            <h1 className="text-xl sm:text-2xl font-black text-slate-950 dark:text-white leading-tight">What paper are we training for today?</h1>
+                            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-500 mb-1">Past Paper Practice</p>
+                            <h1 className="text-xl sm:text-2xl font-black text-slate-950 dark:text-white leading-tight">Choose a paper, attempt it, then mark it.</h1>
                             <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1 font-medium">
-                                Set your exam goal once. Soma turns it into marking, drills, and paper drills.
+                                Set your exam goal once. Soma turns it into paper practice, marking, and revision drills.
                             </p>
                         </div>
                         <div className="hidden sm:flex w-12 h-12 rounded-2xl bg-indigo-600 text-white items-center justify-center shrink-0">
@@ -553,8 +568,8 @@ Use plain text. No markdown headings or symbols.`;
                         <div className="grid sm:grid-cols-3 gap-2 mt-4">
                             <button onClick={() => openGuru('practice')} className="bg-white/10 hover:bg-white/15 border border-white/10 rounded-2xl p-3 text-left transition-colors">
                                 <span className="text-[10px] font-black text-emerald-300 uppercase tracking-wider">Step 1</span>
-                                <p className="text-sm font-black mt-1">Attempt 3 questions</p>
-                                <p className="text-[11px] text-slate-400 mt-1">Generate a short paper-style drill before seeing answers.</p>
+                                <p className="text-sm font-black mt-1">Try 3 questions</p>
+                                <p className="text-[11px] text-slate-400 mt-1">Do a short exam-style drill before you see the marking.</p>
                             </button>
                             <button onClick={() => openGuru('mark')} className="bg-white/10 hover:bg-white/15 border border-white/10 rounded-2xl p-3 text-left transition-colors">
                                 <span className="text-[10px] font-black text-emerald-300 uppercase tracking-wider">Step 2</span>
@@ -570,7 +585,7 @@ Use plain text. No markdown headings or symbols.`;
                             >
                                 <span className="text-[10px] font-black text-emerald-300 uppercase tracking-wider">Step 3</span>
                                 <p className="text-sm font-black mt-1">Do paper drills</p>
-                                <p className="text-[11px] text-slate-400 mt-1">Use a real paper or the hot-topic list you just drilled.</p>
+                                <p className="text-[11px] text-slate-400 mt-1">Use this paper or drill the likely topics you just checked.</p>
                             </button>
                         </div>
 
@@ -602,7 +617,7 @@ Use plain text. No markdown headings or symbols.`;
                                     <Target className="w-4 h-4 text-rose-500" />
                                     <h2 className="font-black text-sm text-slate-800 dark:text-slate-200 uppercase tracking-wider">Your Weak Areas</h2>
                                 </div>
-                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Focus here first</span>
+                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Fix these first</span>
                             </div>
                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                                 {weakTopics.slice(0, 3).map((topic, i) => {
@@ -636,11 +651,11 @@ Use plain text. No markdown headings or symbols.`;
                                 <Sparkles className="w-5 h-5 text-white" />
                             </div>
                             <div>
-                                <h2 className="font-black text-slate-900 dark:text-white text-sm mb-1">Where do I start?</h2>
+                                <h2 className="font-black text-slate-900 dark:text-white text-sm mb-1">Start from one paper</h2>
                                 <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
                                     <strong className="text-indigo-600 dark:text-indigo-400">Scan</strong> a past paper question for instant AI help, 
-                                    <strong className="text-purple-600 dark:text-purple-400"> ask Exam Guru</strong> for exam strategy, 
-                                    or browse resources below and tap any to start studying.
+                                    <strong className="text-purple-600 dark:text-purple-400"> use Exam Guru</strong> for exam strategy, 
+                                    then practice and mark your answers.
                                 </p>
                             </div>
                         </div>
@@ -656,7 +671,7 @@ Use plain text. No markdown headings or symbols.`;
                             type="text"
                             value={searchQuery}
                             onChange={e => setSearchQuery(e.target.value)}
-                            placeholder="Search past papers..."
+                            placeholder="Search paper title, subject, or keyword..."
                             className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl pl-10 pr-10 py-3 text-sm font-medium placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-800 focus:border-indigo-300 dark:focus:border-indigo-700 outline-none transition-all"
                         />
                         {searchQuery && (
@@ -700,7 +715,7 @@ Use plain text. No markdown headings or symbols.`;
                             <div className="flex items-start gap-3 pt-1 border-t border-indigo-100 dark:border-indigo-900/40">
                                 <span className="text-rose-500 text-xs shrink-0 font-black mt-0.5">❌</span>
                                 <p className="text-xs text-rose-600 dark:text-rose-400 font-medium leading-relaxed">
-                                    <strong>Paper Trap:</strong> {SUBJECT_TIPS[activeSubject].trap}
+                                    <strong>Paper trap:</strong> {SUBJECT_TIPS[activeSubject].trap}
                                 </p>
                             </div>
                         </motion.div>
@@ -715,8 +730,8 @@ Use plain text. No markdown headings or symbols.`;
                     ) : filteredItems.length === 0 ? (
                         <div className="py-12 text-center bg-white dark:bg-slate-900/50 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800">
                             <FileText className="w-8 h-8 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
-                            <p className="font-bold text-slate-500 dark:text-slate-400 mb-1">No past papers found</p>
-                            <p className="text-xs text-slate-400 dark:text-slate-500">Try another subject or search term</p>
+                            <p className="font-bold text-slate-500 dark:text-slate-400 mb-1">No papers matched this filter</p>
+                            <p className="text-xs text-slate-400 dark:text-slate-500">Try a different subject or reset the filters</p>
                         </div>
                     ) : (
                         <div className="space-y-2">

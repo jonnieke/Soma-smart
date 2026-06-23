@@ -22,11 +22,38 @@ export const CreationHub: React.FC<CreationHubProps> = ({ onNavigateToTool }) =>
                             <Sparkles className="w-4 h-4 text-amber-300" />
                             Smart Engine
                         </div>
-                        <h2 className="text-3xl md:text-5xl font-black tracking-tight mb-3 text-white">Creation Hub</h2>
+                        <h2 className="text-3xl md:text-5xl font-black tracking-tight mb-3 text-white">Lesson Maker</h2>
                         <p className="text-emerald-100 font-medium max-w-xl text-lg opacity-90 leading-relaxed">
-                            Supercharge your teaching. Generate CBC notes, construct custom exams, and digitize syllabus documents instantly.
+                            Create notes, record a lesson, shape the plan, and teach with Darasa Mode from one place.
                         </p>
                     </div>
+                </div>
+            </div>
+
+            <div className="bg-white rounded-[2rem] border border-slate-200 p-5 shadow-sm">
+                <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 mb-4">
+                    <div>
+                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 mb-1">Fast Lane</p>
+                        <h3 className="text-lg font-black text-slate-900">Make the next lesson now</h3>
+                    </div>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
+                    <button onClick={() => onNavigateToTool('CONVERT')} className="min-h-[52px] rounded-2xl bg-emerald-600 hover:bg-emerald-700 px-4 text-left text-white shadow-sm">
+                        <p className="text-sm font-black">Quick Notes</p>
+                        <p className="text-[11px] font-semibold text-emerald-100 mt-1">Start from a topic, voice note, or quick prompt</p>
+                    </button>
+                    <button onClick={() => onNavigateToTool('LESSON_PLAN_GENERATOR')} className="min-h-[52px] rounded-2xl bg-slate-900 hover:bg-slate-800 px-4 text-left text-white shadow-sm">
+                        <p className="text-sm font-black">Lesson Plan</p>
+                        <p className="text-[11px] font-semibold text-slate-300 mt-1">Turn a topic into class flow</p>
+                    </button>
+                    <button onClick={() => onNavigateToTool('DARASA_MODE')} className="min-h-[52px] rounded-2xl bg-indigo-600 hover:bg-indigo-700 px-4 text-left text-white shadow-sm">
+                        <p className="text-sm font-black">Darasa Mode</p>
+                        <p className="text-[11px] font-semibold text-indigo-100 mt-1">Teach from a clean board</p>
+                    </button>
+                    <button onClick={() => onNavigateToTool('SCHEMES')} className="min-h-[52px] rounded-2xl bg-amber-500 hover:bg-amber-600 px-4 text-left text-white shadow-sm">
+                        <p className="text-sm font-black">Scheme of Work</p>
+                        <p className="text-[11px] font-semibold text-amber-50 mt-1">Map the term without starting over</p>
+                    </button>
                 </div>
             </div>
 
@@ -103,12 +130,12 @@ export const CreationHub: React.FC<CreationHubProps> = ({ onNavigateToTool }) =>
                     <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-700 text-white rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-blue-500/30 group-hover:scale-110 transition-transform">
                         <FileUp className="w-7 h-7" />
                     </div>
-                    <h3 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight mb-2">Smart Digitize</h3>
+                    <h3 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight mb-2">Import Lesson Material</h3>
                     <p className="text-slate-500 dark:text-slate-400 font-medium text-sm mb-6 leading-relaxed">
-                        Convert PDFs, syllabi, and old lesson docs into structured classroom notes.
+                        Turn PDFs, syllabi, and old lesson docs into structured classroom notes.
                     </p>
                     <div className="flex items-center text-sm font-black text-blue-600 dark:text-blue-400 tracking-wider uppercase mt-auto">
-                        Upload Document <ChevronRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
+                        Import Material <ChevronRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
                     </div>
                 </motion.div>
 
@@ -209,7 +236,7 @@ export const CreationHub: React.FC<CreationHubProps> = ({ onNavigateToTool }) =>
                     onClick={() => setShowMoreTools(prev => !prev)}
                     className="w-full md:w-auto px-5 py-3 rounded-xl border-2 border-slate-200 bg-white text-slate-700 font-black text-xs uppercase tracking-widest hover:border-emerald-300 hover:text-emerald-700 transition-all"
                 >
-                    {showMoreTools ? 'Hide More Tools' : 'More Tools'}
+                    {showMoreTools ? 'Hide More Teacher Tools' : 'More Teacher Tools'}
                 </button>
 
                 {showMoreTools && (
@@ -225,7 +252,7 @@ export const CreationHub: React.FC<CreationHubProps> = ({ onNavigateToTool }) =>
                             </div>
                             <h3 className="text-2xl font-black text-white tracking-tight mb-2">Smart Schemes</h3>
                             <p className="text-slate-400 font-medium text-sm mb-6 leading-relaxed">
-                                Generate comprehensive, KICD-compliant schemes for any term. Includes automated time-allocation and resource mapping.
+                                Generate comprehensive, KICD-compliant schemes for any term. Includes time allocation and resource mapping.
                             </p>
                             <div className="flex items-center text-sm font-black text-blue-400 tracking-wider uppercase mt-auto">
                                 Generate Now <ChevronRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
@@ -243,7 +270,7 @@ export const CreationHub: React.FC<CreationHubProps> = ({ onNavigateToTool }) =>
                             </div>
                             <h3 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight mb-2">Lesson Polisher</h3>
                             <p className="text-slate-500 dark:text-slate-400 font-medium text-sm mb-6 leading-relaxed">
-                                Paste your lesson plan. We will cross-reference it with your student's weak points to suggest remedial focus areas automatically.
+                                Paste your lesson plan. We will cross-reference it with learner weak points to suggest remedial focus areas automatically.
                             </p>
                             <div className="flex items-center text-sm font-black text-amber-600 dark:text-amber-500 tracking-wider uppercase mt-auto">
                                 Refine Plan <ChevronRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
@@ -255,3 +282,4 @@ export const CreationHub: React.FC<CreationHubProps> = ({ onNavigateToTool }) =>
         </div>
     );
 };
+

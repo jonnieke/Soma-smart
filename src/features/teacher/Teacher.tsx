@@ -1094,7 +1094,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                         onClick={() => setActiveTab('CREATION_HUB')}
                         className="mt-3 text-xs font-black uppercase tracking-wider text-slate-500 hover:text-emerald-600 transition-colors"
                     >
-                        Open full tool menu
+                        More teacher tools
                     </button>
                 </div>
             </div>
@@ -1327,16 +1327,19 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                         <div className="w-14 h-14 mx-auto rounded-2xl bg-slate-100 text-slate-600 flex items-center justify-center mb-4">
                             <MonitorPlay className="w-7 h-7" />
                         </div>
-                        <h3 className="text-xl font-black text-slate-900">Digital Blackboard is ready</h3>
+                        <h3 className="text-xl font-black text-slate-900">Open Create Content first</h3>
                         <p className="mt-2 text-sm font-semibold text-slate-500">
-                            Generate a note first, then launch projector mode.
+                            Build notes or a lesson plan, then return here to teach with the board.
                         </p>
                         <div className="mt-5 flex flex-col sm:flex-row gap-3 justify-center">
                             <Button onClick={() => setActiveTab('CONVERT')} className="rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black uppercase tracking-wider text-xs">
                                 Create Notes
                             </Button>
-                            <Button variant="outline" onClick={() => setActiveTab('LIBRARY')} className="rounded-xl border-2 font-black uppercase tracking-wider text-xs">
-                                Open Library
+                            <Button onClick={() => setActiveTab('LESSON_PLAN_GENERATOR')} className="rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-black uppercase tracking-wider text-xs">
+                                Lesson Plan
+                            </Button>
+                            <Button variant="outline" onClick={() => setActiveTab('CREATION_HUB')} className="rounded-xl border-2 font-black uppercase tracking-wider text-xs">
+                                Open Tools
                             </Button>
                         </div>
                     </motion.div>
@@ -1782,10 +1785,10 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                                     variant="outline"
                                     onClick={() => setActiveTab('BLACKBOARD')}
                                     disabled={!generatedNote}
-                                    title={generatedNote ? "Open projector mode for current note" : "Generate or open a note first"}
+                                    title={generatedNote ? "Open board view for the current note" : "Create notes or a lesson plan first"}
                                     className={`rounded-xl border-2 font-black uppercase tracking-widest text-xs bg-slate-900 text-white border-slate-900 hover:bg-slate-800 ${!generatedNote ? 'opacity-50 cursor-not-allowed' : ''}`}
                                 >
-                                    <MonitorPlay className="w-4 h-4 mr-2" /> Digital Blackboard
+                                    <MonitorPlay className="w-4 h-4 mr-2" /> Teach on Board
                                 </Button>
                                 <Button variant="outline" onClick={() => window.print()} className="rounded-xl border-2 font-black uppercase tracking-widest text-xs">
                                     <Download className="w-4 h-4 mr-2" /> {t.teacher.results.exportPdf}
@@ -2658,3 +2661,5 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
         </div>
     );
 };
+
+

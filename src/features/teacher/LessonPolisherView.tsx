@@ -188,7 +188,7 @@ export const LessonPolisherView: React.FC<LessonPolisherViewProps> = ({ onBack, 
                 onClick={onBack}
                 className="flex items-center gap-2 text-slate-500 font-bold hover:text-amber-600 transition-colors group"
             >
-                <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" /> Back to Creation Hub
+                <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" /> Back to Lesson Maker
             </button>
 
             {!analysisResult ? (
@@ -493,3 +493,4 @@ export const LessonPolisherView: React.FC<LessonPolisherViewProps> = ({ onBack, 
         </div>
     );
 };
+

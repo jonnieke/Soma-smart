@@ -3,6 +3,7 @@ import { speak as ttSpeak, stopSpeech as ttStop } from "./elevenLabsService";
 import { buildScaffoldingContext } from "./spacedRepetitionService";
 import { buildTargetedStrategiesInstruction } from "./strategyService";
 import { buildPersonaInstruction, recommendPersona } from "./adminAgentService";
+import { parseModelJson } from "./jsonResponse";
 
 // --- PROXY CONFIG ---
 // We no longer use VITE_GEMINI_API_KEY on the client.
@@ -56,7 +57,7 @@ export const callGeminiProxy = async (model: string, contents: any, generationCo
   const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/gemini-proxy`, {
     method: 'POST',
     headers,
-    body: JSON.stringify({ feature, contents, generationConfig, systemInstruction, stream: false })
+    body: JSON.stringify({ model, feature, contents, generationConfig, systemInstruction, stream: false })
   });
 
   if (!response.ok) {
@@ -217,7 +218,7 @@ const callGeminiProxyStream = async (_model: string, contents: any, generationCo
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${token}`
     },
-    body: JSON.stringify({ feature, contents, generationConfig, systemInstruction, stream: true })
+    body: JSON.stringify({ model: _model, feature, contents, generationConfig, systemInstruction, stream: true })
   });
 
   if (!response.ok) {
@@ -1261,6 +1262,8 @@ export const processVoiceNote = async (audioBase64: string, mimeType: string = "
   const model = genAI.getGenerativeModel({
     model: MODEL_NAME,
     generationConfig: {
+      temperature: 0.2,
+      maxOutputTokens: 1800,
       responseMimeType: "application/json",
       responseSchema: {
         type: SchemaType.OBJECT,
@@ -1280,27 +1283,28 @@ export const processVoiceNote = async (audioBase64: string, mimeType: string = "
     : "LANGUAGE RULE: You MUST respond exclusively in English. For all academic concepts, notes, and explanations, use clear, precise academic English. Do NOT respond in Swahili, even if the student language setting is Swahili.";
 
   const prompt = `
-        You are an expert Study Companion(like NotebookLM) for a Kenyan classroom.
+You are a senior Kenyan teacher turning a voice lesson into polished classroom notes.
 
-  TASK 1: LISTEN & VERIFY
-    - Listen to the audio.
-        - If the audio is silent, just background noise, or unintelligible:
-- Set topic to "Unclear Audio".
-          - Set simplifiedNotes to "I couldn't hear any clear speech. Please try recording again closer to the microphone."
-  - Set structuredNotes to "Audio was unclear."
-    - STOP there.
-
-      TASK 2: TRANSCRIBE & SIMPLIFY(Only if speech is clear)
-- Transcribe the teacher's lesson.
-  - CONTEXT: This lesson is about ${subject || 'a specific subject'} for students in ${className || 'a Kenyan classroom'}.
-- ${langInstruction}
-- Create a "NotebookLM Style" Study Guide targeted at ${className || 'the students level'}:
-1. ** Topic **: A fun, catchy title.
-          2. ** The Big Idea **: One simple sentence explaining what this is about.
-          3. ** Key Points **: 3 - 4 bullet points using simple words.
-4. ** Fun Fact / Example **: A relatable example.
-
-Format as JSON.
+RULES:
+1. If the audio is silent, background noise, or unclear, return:
+   - topic: "Unclear Audio"
+   - structuredNotes: "Audio was unclear."
+   - simplifiedNotes: "I couldn't hear any clear speech. Please try recording again closer to the microphone."
+2. If speech is clear, produce a complete teacher-quality lesson note, not a recap of the prompt.
+3. Use ${langInstruction}
+4. Treat this as final classroom material for ${className || 'this class'} in ${subject || 'the subject'}.
+5. structuredNotes must be rich Markdown with at least these sections:
+   - ### Topic
+   - ### Learning Goals
+   - ### Core Explanation
+   - ### Example
+   - ### Common Mistakes
+   - ### Quick Recap
+   - ### Check Your Understanding
+6. structuredNotes must be detailed, concrete, and at least 250 words.
+7. simplifiedNotes must be student-friendly and concise, with 5 to 8 bullets or short paragraphs.
+8. Do not write preambles like "Let's create", "Here is", or "I will explain".
+9. Output only valid JSON matching the schema.
     `;
 
   try {
@@ -1313,9 +1317,7 @@ Format as JSON.
     if (!text) throw new Error("No response from AI");
 
     try {
-      // Try to clean potential markdown fences ```json\n ?| ```/g
-      const cleanedText = text.replace(/```json\n ?| ```/g, '').trim();
-      const json = JSON.parse(cleanedText);
+      const json = parseModelJson<TeacherNote>(text);
       return {
         id: Date.now().toString(),
         date: new Date().toLocaleDateString(),
@@ -1323,13 +1325,12 @@ Format as JSON.
       };
     } catch (parseError) {
       console.warn("AI returned non-JSON text:", text);
-      // Fallback: If AI refused or gave plain text, wrap it safely
       return {
         id: Date.now().toString(),
         date: new Date().toLocaleDateString(),
         topic: "Audio Processing Note",
-        structuredNotes: "The AI could not strictly format the notes.",
-        simplifiedNotes: text || "We heard you, but couldn't generate the specific format. Please try again."
+        structuredNotes: text || "The AI could not strictly format the notes.",
+        simplifiedNotes: "I heard the lesson, but the note structure was incomplete. Try recording again in a quieter space."
       };
     }
 
@@ -1338,7 +1339,6 @@ Format as JSON.
     throw error;
   }
 };
-
 export const transcribeTeacherLesson = async (
   audioBase64: string,
   mimeType: string = "audio/webm",
@@ -1576,6 +1576,8 @@ export const repairNoteForClassroom = async (
   const model = genAI.getGenerativeModel({
     model: MODEL_NAME,
     generationConfig: {
+      temperature: 0.2,
+      maxOutputTokens: 2000,
       responseMimeType: "application/json",
       responseSchema: {
         type: SchemaType.OBJECT,
@@ -1607,22 +1609,23 @@ ${JSON.stringify(note)}
 TASK:
 1. Keep the same topic intent.
 2. Expand and polish content so it is classroom-ready and exam-aligned.
-3. structuredNotes: professional teacher-quality markdown with headings, key points, examples, and short assessment checks.
+3. structuredNotes: professional teacher-quality markdown with headings, key points, examples, common misconceptions, and short assessment checks.
 4. simplifiedNotes: student-friendly study note with plain language, bullet points, and quick recap.
 5. Return only valid JSON matching schema.
 `;
 
-  const result = await model.generateContent(prompt);
+  const result = await model.generateContent([
+    { role: "user", parts: [{ text: prompt }] }
+  ]);
   const text = result.response.text();
   if (!text) throw new Error("No response from AI");
-  const parsed = JSON.parse(text) as TeacherNote;
+  const parsed = parseModelJson<TeacherNote>(text);
   return {
     id: note.id || Date.now().toString(),
     date: note.date || new Date().toLocaleDateString(),
     ...parsed
   };
 };
-
 // --- ASK SOMA CHATBOT ---
 // --- ASK SOMO CHATBOT ---
 
