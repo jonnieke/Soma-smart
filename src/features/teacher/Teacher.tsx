@@ -360,6 +360,20 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
         if (teacherProfile && !selectedSubject) setSelectedSubject(teacherProfile.subjects[0]);
     }, [teacherProfile]);
 
+    // First-run teacher onboarding: fire once when teacher has no class/subject set
+    useEffect(() => {
+        if (!teacherProfile?.id) return;
+        if (localStorage.getItem(`soma_teacher_onboarded_${teacherProfile.id}`)) return;
+        const noClass = !teacherProfile.classes?.length || teacherProfile.classes[0] === '';
+        const noSubject = !teacherProfile.subjects?.length || teacherProfile.subjects[0] === '';
+        if (noClass || noSubject) {
+            const t = setTimeout(() => setShowOnboarding(true), 600);
+            return () => clearTimeout(t);
+        }
+        // Mark onboarded if they already have context set
+        localStorage.setItem(`soma_teacher_onboarded_${teacherProfile.id}`, '1');
+    }, [teacherProfile?.id]);
+
     // Check limits
     const checkLimit = () => {
         // If Pro is active, no limits!
@@ -2413,12 +2427,22 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                             isEditing={true}
                             onComplete={(updatedProfile) => {
                                 setShowOnboarding(false);
-                                // Force local update if needed, but context handles it
+                                if (teacherProfile?.id) {
+                                    localStorage.setItem(`soma_teacher_onboarded_${teacherProfile.id}`, '1');
+                                }
                                 if (updatedProfile.classes.length > 0) {
                                     setSelectedClass(updatedProfile.classes[0]);
                                 }
+                                if (updatedProfile.subjects.length > 0) {
+                                    setSelectedSubject(updatedProfile.subjects[0]);
+                                }
                             }}
-                            onClose={() => setShowOnboarding(false)}
+                            onClose={() => {
+                                setShowOnboarding(false);
+                                if (teacherProfile?.id) {
+                                    localStorage.setItem(`soma_teacher_onboarded_${teacherProfile.id}`, '1');
+                                }
+                            }}
                         />
                     )
                 }

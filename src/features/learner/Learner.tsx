@@ -4752,6 +4752,38 @@ ${explanation.explanation}
               </div>
             </div>
 
+            {/* STREAK NUDGE — only when learner has a streak but hasn't studied today */}
+            {(() => {
+              const today = new Date().toLocaleDateString();
+              const studiedToday = history.some((h: any) => h.date === today);
+              if (streak > 0 && !studiedToday) {
+                return (
+                  <div className="flex items-center justify-between gap-3 bg-amber-50 dark:bg-amber-900/20 border-2 border-amber-200 dark:border-amber-800 rounded-2xl px-4 py-3">
+                    <div className="flex items-center gap-3">
+                      <span className="text-2xl">🔥</span>
+                      <div>
+                        <p className="text-sm font-black text-amber-900 dark:text-amber-100">Keep your {streak}-day streak alive!</p>
+                        <p className="text-xs font-bold text-amber-700 dark:text-amber-300">You haven't studied yet today. One topic is all it takes.</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => {
+                        const nudgePrompt = weakTopics?.[0]
+                          ? `Quick 5-minute revision on ${weakTopics[0]}. Focus on the one key idea I need to remember.`
+                          : `Quick 5-minute revision on ${latestStudy?.topic || 'today\'s key topic'}. Focus on the one key idea.`;
+                        setPromptText(nudgePrompt);
+                        handlePromptSubmit(nudgePrompt);
+                      }}
+                      className="shrink-0 bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-xl text-xs font-black transition-colors whitespace-nowrap"
+                    >
+                      Study Now
+                    </button>
+                  </div>
+                );
+              }
+              return null;
+            })()}
+
             <div className="hidden">
               {[
                 {
@@ -5313,6 +5345,48 @@ ${explanation.explanation}
                       </button>
                     </div>
                   </div>
+
+                  {/* PERSONALISED RECOMMENDATION */}
+                  {isRegistered && (weakTopics?.length > 0 || studentProfile?.grade) && (
+                    <div className="bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/30 border-2 border-emerald-200 dark:border-emerald-800 rounded-3xl p-5">
+                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-600 dark:text-emerald-400 mb-3">Recommended for you</p>
+                      <div className="space-y-2">
+                        {weakTopics?.slice(0, 2).map((topic: string, i: number) => (
+                          <button
+                            key={i}
+                            onClick={() => {
+                              const p = `Explain ${topic} in simple terms for ${studentProfile?.grade || 'a secondary school'} student. Give one example, then ask me a quick question to test myself.`;
+                              setPromptText(p);
+                              handlePromptSubmit(p);
+                            }}
+                            className="w-full flex items-center justify-between gap-3 bg-white dark:bg-slate-900 border border-emerald-100 dark:border-emerald-900 rounded-2xl px-4 py-3 text-left hover:border-emerald-400 transition-all group"
+                          >
+                            <div>
+                              <p className="text-xs font-black text-slate-900 dark:text-white">{topic}</p>
+                              <p className="text-[10px] font-bold text-slate-400 mt-0.5">Weak area · tap to revise</p>
+                            </div>
+                            <span className="text-emerald-500 group-hover:translate-x-1 transition-transform">→</span>
+                          </button>
+                        ))}
+                        {(!weakTopics?.length) && studentProfile?.grade && (
+                          <button
+                            onClick={() => {
+                              const p = `I'm in ${studentProfile.grade}. Give me the 3 most important topics I should be revising right now for exams. Then pick one and explain it.`;
+                              setPromptText(p);
+                              handlePromptSubmit(p);
+                            }}
+                            className="w-full flex items-center justify-between gap-3 bg-white dark:bg-slate-900 border border-emerald-100 dark:border-emerald-900 rounded-2xl px-4 py-3 text-left hover:border-emerald-400 transition-all group"
+                          >
+                            <div>
+                              <p className="text-xs font-black text-slate-900 dark:text-white">Top revision topics for {studentProfile.grade}</p>
+                              <p className="text-[10px] font-bold text-slate-400 mt-0.5">Tap to explore</p>
+                            </div>
+                            <span className="text-emerald-500 group-hover:translate-x-1 transition-transform">→</span>
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  )}
 
                   {/* MY CLASSES */}
                   {(isRegistered || studentClasses.length > 0) && (
