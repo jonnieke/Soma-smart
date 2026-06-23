@@ -20,7 +20,7 @@ const isAllowedOrigin = (origin: string | null) => {
     return PREVIEW_ORIGINS.has(origin);
 };
 
-const corsHeadersFor(req)For = (req: Request) => {
+const corsHeadersFor = (req: Request) => {
     const origin = req.headers.get('Origin');
     return {
         ...BASE_CORS_HEADERS,
