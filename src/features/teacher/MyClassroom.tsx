@@ -343,6 +343,37 @@ View full dashboard: https://somaai.co.ke/parent/${student.id}`;
                 </div>
             )}
 
+            {!isLocalClass && currentClassId && (
+                <div className="bg-emerald-50 dark:bg-emerald-900/20 border-2 border-emerald-200 dark:border-emerald-800 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                    <div className="flex-1 min-w-0">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-emerald-600 dark:text-emerald-400">Class Join Code</p>
+                        <p className="text-3xl font-black tracking-[0.2em] text-emerald-900 dark:text-emerald-100 mt-0.5">
+                            {currentClassId.slice(0, 8).toUpperCase()}
+                        </p>
+                        <p className="text-xs font-bold text-emerald-700 dark:text-emerald-400 mt-1">Learners enter this code at somaai.co.ke/join to join your class</p>
+                    </div>
+                    <div className="flex gap-2">
+                        <button
+                            onClick={() => {
+                                navigator.clipboard?.writeText(currentClassId.slice(0, 8).toUpperCase());
+                                showClassroomNotice('success', 'Class code copied!');
+                            }}
+                            className="flex items-center gap-2 bg-white dark:bg-slate-800 border-2 border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-300 px-4 py-2 rounded-xl text-xs font-black hover:bg-emerald-50 transition-colors"
+                        >
+                            <Smartphone className="w-4 h-4" /> Copy Code
+                        </button>
+                        <a
+                            href={`https://wa.me/?text=${encodeURIComponent(`Join my ${selectedClass} class on Somo Smart!\n\nGo to: https://somaai.co.ke/join\nEnter code: ${currentClassId.slice(0, 8).toUpperCase()}\n\nOr click: ${classJoinUrl}`)}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-2 bg-[#25D366] hover:bg-[#128C7E] text-white px-4 py-2 rounded-xl text-xs font-black transition-colors"
+                        >
+                            <Share2 className="w-4 h-4" /> Invite
+                        </a>
+                    </div>
+                </div>
+            )}
+
             {/* Internal Navigation Tabs */}
             <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide border-b-2 border-slate-200">
                 <button

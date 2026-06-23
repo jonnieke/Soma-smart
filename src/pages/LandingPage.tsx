@@ -913,11 +913,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                             </div>
 
                             <h1 className="text-3xl sm:text-5xl lg:text-6xl font-bold text-slate-900 dark:text-white tracking-tight leading-[1.1] mb-5">
-                                Stuck on homework or revision?
-                                <span className="block text-indigo-600 dark:text-indigo-400 mt-2">Get unstuck in minutes.</span>
+                                AI study help for
+                                <span className="block text-indigo-600 dark:text-indigo-400 mt-2">CBC, KPSEA &amp; KCSE learners.</span>
                             </h1>
                             <p className="text-base sm:text-lg text-slate-600 dark:text-slate-400 font-medium leading-relaxed mb-6 sm:mb-8 max-w-lg">
-                                Somo Smart explains the method, builds practice drills, reads lessons aloud, and shows parents real progress proof — built around KCSE, KPSEA, and CBC learning.
+                                Ask any question, get step-by-step explanations, listen to notes aloud, and show parents real weekly progress — built for Kenyan learners.
                             </p>
 
                             {/* Solve It chat window */}

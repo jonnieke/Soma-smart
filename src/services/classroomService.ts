@@ -410,6 +410,26 @@ class ClassroomService {
         return data;
     }
 
+    async findClassByCode(code: string): Promise<ClassroomDetails | null> {
+        const normalized = code.trim().toLowerCase();
+        if (!normalized || normalized.length < 4) return null;
+
+        const { data, error } = await supabase
+            .from('classes')
+            .select('*, profiles:teacher_id (name, full_name)')
+            .ilike('id', `${normalized}%`)
+            .limit(1)
+            .maybeSingle();
+
+        if (error || !data) return null;
+
+        const profile = Array.isArray(data.profiles) ? data.profiles[0] : data.profiles;
+        return {
+            ...data,
+            profiles: profile ? { name: profile.name || profile.full_name } : undefined
+        };
+    }
+
     async getTeacherAssignments(teacherId: string): Promise<AssignmentPost[]> {
         const classes = await this.getClassesForTeacher(teacherId);
         if (!classes?.length) return [];

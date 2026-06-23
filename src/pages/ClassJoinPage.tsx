@@ -13,6 +13,8 @@ export const ClassJoinPage: React.FC = () => {
     const [classroom, setClassroom] = useState<ClassroomDetails | null>(null);
     const [status, setStatus] = useState<'loading' | 'ready' | 'joining' | 'joined' | 'missing' | 'error'>('loading');
     const [message, setMessage] = useState('');
+    const [codeInput, setCodeInput] = useState('');
+    const [codeSearching, setCodeSearching] = useState(false);
 
     const classNameFallback = searchParams.get('class') || 'your teacher class';
     const resolvedClassId = classId && classId !== 'undefined' && classId !== 'null' ? classId : null;
@@ -50,14 +52,16 @@ export const ClassJoinPage: React.FC = () => {
     }, [resolvedClassId]);
 
     const handleJoin = async () => {
-        if (!resolvedClassId) {
+        const targetClassId = resolvedClassId || classroom?.id || null;
+
+        if (!targetClassId) {
             localStorage.setItem('soma_pending_class_name', classNameFallback);
             navigate('/learner');
             return;
         }
 
         if (!studentProfile?.id || !isRegistered) {
-            localStorage.setItem('soma_pending_class_id', resolvedClassId);
+            localStorage.setItem('soma_pending_class_id', targetClassId);
             localStorage.setItem('soma_pending_class_name', title);
             navigate('/learner');
             return;
@@ -65,8 +69,8 @@ export const ClassJoinPage: React.FC = () => {
 
         setStatus('joining');
         const result = studentCode
-            ? await classroomService.joinClassWithStudentCode(resolvedClassId, studentCode)
-            : await classroomService.joinClass(resolvedClassId, studentProfile.id);
+            ? await classroomService.joinClassWithStudentCode(targetClassId, studentCode)
+            : await classroomService.joinClass(targetClassId, studentProfile.id);
         if (result.success) {
             setStatus('joined');
             return;
@@ -74,6 +78,20 @@ export const ClassJoinPage: React.FC = () => {
 
         setStatus('error');
         setMessage(result.message || 'Could not join this class. Please try again.');
+    };
+
+    const handleCodeSearch = async () => {
+        if (!codeInput.trim()) return;
+        setCodeSearching(true);
+        setMessage('');
+        const found = await classroomService.findClassByCode(codeInput.trim());
+        setCodeSearching(false);
+        if (!found) {
+            setMessage('No class found with that code. Check the code and try again.');
+            return;
+        }
+        setClassroom(found);
+        setStatus('ready');
     };
 
     const title = classroom?.name || classNameFallback;
@@ -120,7 +138,45 @@ export const ClassJoinPage: React.FC = () => {
                         </div>
                     )}
 
-                    {(status === 'ready' || status === 'missing' || status === 'error') && (
+                    {/* Code entry when no URL classId */}
+                    {status === 'ready' && !resolvedClassId && !classroom && (
+                        <div className="space-y-5">
+                            <div className="text-center">
+                                <p className="text-sm font-black text-slate-700 mb-1">Enter your class code</p>
+                                <p className="text-xs font-bold text-slate-400">Your teacher will share an 8-character code</p>
+                            </div>
+                            <div className="flex gap-2">
+                                <input
+                                    type="text"
+                                    value={codeInput}
+                                    onChange={e => setCodeInput(e.target.value.toUpperCase())}
+                                    onKeyDown={e => e.key === 'Enter' && handleCodeSearch()}
+                                    placeholder="e.g. 3F8C6E49"
+                                    maxLength={8}
+                                    className="flex-1 border-2 border-slate-200 rounded-xl px-4 py-3 text-center text-2xl font-black tracking-[0.2em] text-slate-800 uppercase focus:outline-none focus:border-[#25D366]"
+                                />
+                                <button
+                                    onClick={handleCodeSearch}
+                                    disabled={codeSearching || codeInput.length < 4}
+                                    className="bg-[#25D366] hover:bg-[#128C7E] disabled:opacity-50 text-white px-5 py-3 rounded-xl font-black flex items-center gap-2 transition-colors"
+                                >
+                                    {codeSearching ? <Loader2 className="w-5 h-5 animate-spin" /> : <ArrowRight className="w-5 h-5" />}
+                                </button>
+                            </div>
+                            {message && (
+                                <div className="bg-amber-50 border-2 border-amber-200 rounded-xl p-3 flex gap-2">
+                                    <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                                    <p className="text-xs font-bold text-amber-800">{message}</p>
+                                </div>
+                            )}
+                            <p className="text-center text-xs text-slate-400 font-bold">
+                                Don't have a code?{' '}
+                                <button onClick={() => navigate('/learner')} className="text-[#25D366] underline">Go to your dashboard</button>
+                            </p>
+                        </div>
+                    )}
+
+                    {(status === 'ready' || status === 'missing' || status === 'error') && (resolvedClassId || classroom) && (
                         <div className="space-y-6">
                             {status === 'error' && (
                                 <div className="bg-red-50 border-2 border-red-200 rounded-2xl p-4 flex gap-3">

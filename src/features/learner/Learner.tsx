@@ -5317,8 +5317,14 @@ ${explanation.explanation}
                       {studentClasses.length === 0 ? (
                         <div className="rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-800 p-5 text-center">
                           <Users className="w-8 h-8 text-slate-300 mx-auto mb-3" />
-                          <p className="text-sm font-bold text-slate-500 dark:text-slate-400">No class invites joined yet.</p>
-                          <p className="text-xs font-medium text-slate-400 mt-1">Open a teacher's WhatsApp invite link to join.</p>
+                          <p className="text-sm font-bold text-slate-500 dark:text-slate-400">No classes joined yet.</p>
+                          <p className="text-xs font-medium text-slate-400 mt-1 mb-4">Ask your teacher for the class join code.</p>
+                          <a
+                            href="/join"
+                            className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-xs font-black transition-colors"
+                          >
+                            + Join a Class
+                          </a>
                         </div>
                       ) : (
                         <div className="space-y-4">

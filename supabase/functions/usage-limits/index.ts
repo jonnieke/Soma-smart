@@ -1,9 +1,31 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-const corsHeaders = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type'
+const BASE_CORS_HEADERS = {
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
+    'Vary': 'Origin',
+};
+
+const PRODUCTION_ORIGINS = new Set(['https://somaai.co.ke', 'https://www.somaai.co.ke']);
+
+const PREVIEW_ORIGINS = new Set(
+    String(Deno.env.get('ALLOWED_PREVIEW_ORIGINS') || '').split(',').map(o => o.trim()).filter(Boolean)
+);
+
+const isAllowedOrigin = (origin: string | null) => {
+    if (!origin) return true;
+    if (PRODUCTION_ORIGINS.has(origin)) return true;
+    if (/^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) return true;
+    return PREVIEW_ORIGINS.has(origin);
+};
+
+const corsHeadersFor(req)For = (req: Request) => {
+    const origin = req.headers.get('Origin');
+    return {
+        ...BASE_CORS_HEADERS,
+        ...(origin && isAllowedOrigin(origin) ? { 'Access-Control-Allow-Origin': origin } : {}),
+    };
 };
 
 type UsageType = 'learner' | 'revision' | 'download' | 'teacher';
@@ -17,7 +39,7 @@ const usageColumns: Record<UsageType, string> = {
 
 serve(async (req) => {
     if (req.method === 'OPTIONS') {
-        return new Response('ok', { headers: corsHeaders });
+        return new Response('ok', { headers: corsHeadersFor(req) });
     }
 
     try {
@@ -25,7 +47,7 @@ serve(async (req) => {
         if (!url.pathname.toLowerCase().endsWith('/increment')) {
             return new Response(JSON.stringify({ error: 'Not found' }), {
                 status: 404,
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+                headers: { ...corsHeadersFor(req), 'Content-Type': 'application/json' }
             });
         }
 
@@ -34,7 +56,7 @@ serve(async (req) => {
         if (!token) {
             return new Response(JSON.stringify({ error: 'Authentication required' }), {
                 status: 401,
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+                headers: { ...corsHeadersFor(req), 'Content-Type': 'application/json' }
             });
         }
 
@@ -42,7 +64,7 @@ serve(async (req) => {
         if (!type || !usageColumns[type]) {
             return new Response(JSON.stringify({ error: 'Invalid usage type' }), {
                 status: 400,
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+                headers: { ...corsHeadersFor(req), 'Content-Type': 'application/json' }
             });
         }
 
@@ -55,7 +77,7 @@ serve(async (req) => {
         if (userError || !userData.user) {
             return new Response(JSON.stringify({ error: 'Invalid session' }), {
                 status: 401,
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+                headers: { ...corsHeadersFor(req), 'Content-Type': 'application/json' }
             });
         }
 
@@ -69,7 +91,7 @@ serve(async (req) => {
         if (profileError || !profile) {
             return new Response(JSON.stringify({ error: 'Profile not found' }), {
                 status: 404,
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+                headers: { ...corsHeadersFor(req), 'Content-Type': 'application/json' }
             });
         }
 
@@ -99,12 +121,12 @@ serve(async (req) => {
         }
 
         return new Response(JSON.stringify({ counts: updated }), {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            headers: { ...corsHeadersFor(req), 'Content-Type': 'application/json' }
         });
     } catch (error) {
         return new Response(JSON.stringify({ error: error.message }), {
             status: 500,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            headers: { ...corsHeadersFor(req), 'Content-Type': 'application/json' }
         });
     }
 });
