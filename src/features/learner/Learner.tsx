@@ -7173,25 +7173,43 @@ ${explanation.explanation}
                                 <MarkdownText content={msg.text} />
                               </div>
                               {msg.role === 'model' && (
-                                <button
-                                  onClick={() => {
-                                    saveStudyNote(notebookOwnerKey, {
-                                      title: currentDocument?.title || 'AI Answer',
-                                      topic: currentDocument?.title || 'Study Chat',
-                                      content: msg.text,
-                                      subject: currentDocument?.subject || 'General',
-                                      grade: studentProfile?.grade || '',
-                                      source: 'ai_answer',
-                                      masteryStatus: 'learning',
-                                      userId: userId || undefined,
-                                      studentCode: studentCode || undefined,
-                                    });
-                                    triggerToast('Saved to Notebook');
-                                  }}
-                                  className="self-start text-[10px] font-bold text-indigo-400 hover:text-indigo-600 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity px-1"
-                                >
-                                  <BookmarkPlus className="w-3 h-3" /> Save to Notebook
-                                </button>
+                                <div className="self-start flex gap-3 opacity-0 group-hover:opacity-100 transition-opacity px-1">
+                                  <button
+                                    onClick={() => {
+                                      saveStudyNote(notebookOwnerKey, {
+                                        title: currentDocument?.title || 'AI Answer',
+                                        topic: currentDocument?.title || 'Study Chat',
+                                        content: msg.text,
+                                        subject: currentDocument?.subject || 'General',
+                                        grade: studentProfile?.grade || '',
+                                        source: 'ai_answer',
+                                        masteryStatus: 'learning',
+                                        userId: userId || undefined,
+                                        studentCode: studentCode || undefined,
+                                      });
+                                      triggerToast('Saved to Notebook');
+                                    }}
+                                    className="text-[10px] font-bold text-indigo-400 hover:text-indigo-600 flex items-center gap-1"
+                                  >
+                                    <BookmarkPlus className="w-3 h-3" /> Save
+                                  </button>
+                                  <button
+                                    onClick={async () => {
+                                      if (!checkLimit({ type: 'STUDY_QUIZ' })) return;
+                                      setLoading(true);
+                                      setLoadingText('Akili is crafting a quick quiz...');
+                                      try {
+                                        const data = await generateQuiz(msg.text, currentDocument?.title || explanation?.topic || 'Topic', language);
+                                        setQuizData(data);
+                                        setMode('QUIZ');
+                                      } catch { setError({ title: 'Quiz Failed', message: 'Could not generate quiz.' }); }
+                                      finally { setLoading(false); }
+                                    }}
+                                    className="text-[10px] font-bold text-amber-500 hover:text-amber-700 flex items-center gap-1"
+                                  >
+                                    <Zap className="w-3 h-3" /> Quick Quiz
+                                  </button>
+                                </div>
                               )}
                             </div>
                           </motion.div>

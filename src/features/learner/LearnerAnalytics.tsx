@@ -113,37 +113,87 @@ export const LearnerAnalytics: React.FC<LearnerAnalyticsProps> = ({
                             <TrendingUp className="w-6 h-6 text-slate-400" />
                             <div>
                                 <h2 className="text-lg font-bold text-slate-800 dark:text-white">Subject Performance</h2>
-                                <p className="text-xs text-slate-500">Your average scores across different subjects</p>
+                                <p className="text-xs text-slate-500">CBC-aligned grid — colour shows mastery tier</p>
                             </div>
                         </div>
 
-                        <div className="flex-1 space-y-6 flex flex-col justify-center">
-                            {subjectPerformance.length > 0 ? subjectPerformance.map((subject, idx) => (
-                                <div key={idx} className="w-full">
-                                    <div className="flex justify-between text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">
-                                        <span className="flex items-center gap-2">
-                                            <BookOpen className="w-4 h-4 text-slate-400" />
-                                            {subject.subject}
-                                        </span>
-                                        <span>{subject.score}%</span>
-                                    </div>
-                                    <div className="h-3 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden w-full transition-all">
-                                        <motion.div
-                                            initial={{ width: 0 }}
-                                            animate={{ width: `${subject.score}%` }}
-                                            transition={{ duration: 1, ease: 'easeOut' }}
-                                            className={`h-full rounded-full ${subject.score >= 80 ? 'bg-emerald-500' : subject.score >= 50 ? 'bg-indigo-500' : 'bg-rose-500'}`}
-                                        />
-                                    </div>
-                                </div>
-                            )) : (
+                        {(() => {
+                            const CBC_SUBJECTS = [
+                                { name: 'Mathematics', emoji: '🔢' },
+                                { name: 'English', emoji: '📖' },
+                                { name: 'Kiswahili', emoji: '🗣️' },
+                                { name: 'Science', emoji: '🔬' },
+                                { name: 'Social Studies', emoji: '🌍' },
+                                { name: 'CRE', emoji: '✝️' },
+                                { name: 'Creative Arts', emoji: '🎨' },
+                                { name: 'Home Science', emoji: '🍳' },
+                                { name: 'Agriculture', emoji: '🌱' },
+                                { name: 'Business', emoji: '💼' },
+                                { name: 'Computer Science', emoji: '💻' },
+                                { name: 'History', emoji: '📜' },
+                            ];
+                            const perfMap: Record<string, number> = {};
+                            subjectPerformance.forEach(s => {
+                                const matched = CBC_SUBJECTS.find(c =>
+                                    s.subject.toLowerCase().includes(c.name.toLowerCase()) ||
+                                    c.name.toLowerCase().includes(s.subject.toLowerCase().split(' ')[0])
+                                );
+                                const key = matched?.name || s.subject;
+                                perfMap[key] = s.score;
+                            });
+                            const getCBC = (score: number) => {
+                                if (score >= 80) return { code: 'EE', cls: 'bg-emerald-500 text-white border-emerald-600' };
+                                if (score >= 60) return { code: 'ME', cls: 'bg-blue-500 text-white border-blue-600' };
+                                if (score >= 40) return { code: 'AE', cls: 'bg-amber-400 text-white border-amber-500' };
+                                return { code: 'BE', cls: 'bg-rose-500 text-white border-rose-600' };
+                            };
+                            const studied = CBC_SUBJECTS.filter(s => perfMap[s.name] !== undefined);
+                            const weakest = [...studied].sort((a, b) => (perfMap[a.name] || 0) - (perfMap[b.name] || 0))[0];
+                            if (studied.length === 0) return (
                                 <div className="text-center text-slate-400 py-10 flex flex-col items-center">
                                     <Target className="w-12 h-12 mb-3 opacity-20" />
-                                    <p className="font-medium">Not enough data to map performance yet.</p>
-                                    <p className="text-sm">Take some quizzes to generate your graph!</p>
+                                    <p className="font-medium">No subject data yet.</p>
+                                    <p className="text-sm">Take some quizzes to populate your grid!</p>
                                 </div>
-                            )}
-                        </div>
+                            );
+                            return (
+                                <>
+                                    <div className="grid grid-cols-3 sm:grid-cols-4 gap-2.5 mb-4">
+                                        {CBC_SUBJECTS.map(subj => {
+                                            const score = perfMap[subj.name];
+                                            const cbc = score !== undefined ? getCBC(score) : null;
+                                            return (
+                                                <motion.div
+                                                    key={subj.name}
+                                                    initial={{ opacity: 0, scale: 0.9 }}
+                                                    animate={{ opacity: 1, scale: 1 }}
+                                                    className={`rounded-2xl p-2.5 text-center border-2 ${cbc ? cbc.cls : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700'}`}
+                                                >
+                                                    <div className="text-lg mb-0.5">{subj.emoji}</div>
+                                                    <p className={`text-[9px] font-black leading-tight mb-1 ${cbc ? 'text-white/90' : 'text-slate-400'}`}>{subj.name}</p>
+                                                    {cbc ? (
+                                                        <div>
+                                                            <p className="text-sm font-black text-white leading-none">{score}%</p>
+                                                            <span className="text-[8px] font-black text-white/80 uppercase">{cbc.code}</span>
+                                                        </div>
+                                                    ) : (
+                                                        <p className="text-[8px] font-bold text-slate-300">—</p>
+                                                    )}
+                                                </motion.div>
+                                            );
+                                        })}
+                                    </div>
+                                    {weakest && (
+                                        <div className="flex items-center gap-3 bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800 rounded-2xl p-3 mt-2">
+                                            <Target className="w-4 h-4 text-rose-500 shrink-0" />
+                                            <p className="text-xs font-bold text-rose-800 dark:text-rose-300">
+                                                Weakest: <span className="font-black">{weakest.name}</span> ({perfMap[weakest.name]}%) — focus here next
+                                            </p>
+                                        </div>
+                                    )}
+                                </>
+                            );
+                        })()}
                     </Card>
 
                     {/* Weak Topics & Insights */}
