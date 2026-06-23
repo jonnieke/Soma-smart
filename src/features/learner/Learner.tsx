@@ -6337,6 +6337,75 @@ ${explanation.explanation}
               </Card>
             </section>
 
+            {/* Achievement Badges */}
+            {isRegistered && (
+              <section>
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="w-12 h-12 bg-gradient-to-br from-amber-400 to-orange-500 rounded-2xl flex items-center justify-center shadow-lg shadow-amber-100">
+                    <Trophy className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-black text-slate-900">Achievements</h2>
+                    <p className="text-xs text-slate-400 font-medium">Badges earned from your study journey</p>
+                  </div>
+                </div>
+                <Card className="p-5">
+                  {(() => {
+                    const quizCount = history.filter((h: any) => h.type === 'QUIZ').length;
+                    const inClass = studentClasses.length > 0;
+                    const BADGES = [
+                      { id: 'first_study', emoji: '🌱', name: 'First Step', desc: 'Completed your first study session', earned: history.length >= 1 },
+                      { id: 'first_quiz', emoji: '📝', name: 'Quiz Taker', desc: 'Took your first quiz', earned: quizCount >= 1 },
+                      { id: 'streak_3', emoji: '🔥', name: 'On Fire', desc: '3-day study streak', earned: streak >= 3 },
+                      { id: 'streak_7', emoji: '💫', name: 'Streak Keeper', desc: '7-day study streak', earned: streak >= 7 },
+                      { id: 'streak_30', emoji: '👑', name: 'Streak Legend', desc: '30-day streak', earned: streak >= 30 },
+                      { id: 'xp_100', emoji: '⭐', name: 'XP Explorer', desc: 'Earned 100 XP', earned: totalXP >= 100 },
+                      { id: 'xp_500', emoji: '🏅', name: 'XP Champion', desc: 'Earned 500 XP', earned: totalXP >= 500 },
+                      { id: 'quiz_5', emoji: '🎯', name: 'Quiz Master', desc: 'Completed 5 quizzes', earned: quizCount >= 5 },
+                      { id: 'quiz_20', emoji: '🏆', name: 'Quiz Legend', desc: 'Completed 20 quizzes', earned: quizCount >= 20 },
+                      { id: 'class_join', emoji: '🤝', name: 'Team Player', desc: 'Joined a class', earned: inClass },
+                      { id: 'kcse_warrior', emoji: '⚔️', name: 'KCSE Warrior', desc: 'Studied 30+ sessions before exam', earned: history.length >= 30 },
+                      { id: 'notebook', emoji: '📓', name: 'Note Taker', desc: 'Saved 5+ answers to Notebook', earned: (JSON.parse(localStorage.getItem(`somo_notebook_${notebookOwnerKey}`) || '[]') as any[]).length >= 5 },
+                    ];
+                    const earned = BADGES.filter(b => b.earned);
+                    const locked = BADGES.filter(b => !b.earned);
+                    return (
+                      <>
+                        {earned.length === 0 ? (
+                          <p className="text-xs font-bold text-slate-400 text-center py-4">No badges yet — start studying to earn your first!</p>
+                        ) : (
+                          <>
+                            <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest mb-3">{earned.length} badge{earned.length !== 1 ? 's' : ''} earned</p>
+                            <div className="grid grid-cols-3 sm:grid-cols-4 gap-3 mb-4">
+                              {earned.map(b => (
+                                <div key={b.id} className="flex flex-col items-center gap-1 bg-amber-50 border-2 border-amber-200 rounded-2xl p-3 text-center">
+                                  <span className="text-2xl">{b.emoji}</span>
+                                  <p className="text-[10px] font-black text-amber-900 leading-tight">{b.name}</p>
+                                </div>
+                              ))}
+                            </div>
+                          </>
+                        )}
+                        {locked.length > 0 && (
+                          <>
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">{locked.length} locked</p>
+                            <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                              {locked.slice(0, 4).map(b => (
+                                <div key={b.id} title={b.desc} className="flex flex-col items-center gap-1 bg-slate-50 border-2 border-dashed border-slate-200 rounded-2xl p-2.5 text-center opacity-50">
+                                  <span className="text-xl grayscale">{b.emoji}</span>
+                                  <p className="text-[9px] font-bold text-slate-400 leading-tight">{b.name}</p>
+                                </div>
+                              ))}
+                            </div>
+                          </>
+                        )}
+                      </>
+                    );
+                  })()}
+                </Card>
+              </section>
+            )}
+
             {/* Progress Report Card */}
             {isRegistered && (
               <section>

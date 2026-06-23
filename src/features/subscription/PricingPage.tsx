@@ -98,6 +98,20 @@ export const PricingPage: React.FC<Props> = ({ onSelectPlan, onClose, currentTie
 
             <main className="max-w-4xl mx-auto px-6 -mt-12 relative z-20">
 
+                {/* Kenya trust bar */}
+                <div className="bg-white rounded-2xl shadow-xl p-4 mb-6 flex flex-wrap items-center justify-center gap-4 text-xs font-bold text-slate-500">
+                    <span className="flex items-center gap-1.5"><span className="text-base">🇰🇪</span> Built for Kenya</span>
+                    <span className="w-px h-4 bg-slate-200 hidden sm:block" />
+                    <span className="flex items-center gap-1.5">
+                        <svg viewBox="0 0 24 24" className="w-4 h-4 fill-[#4CAF50]"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/></svg>
+                        Pay via M-Pesa
+                    </span>
+                    <span className="w-px h-4 bg-slate-200 hidden sm:block" />
+                    <span className="flex items-center gap-1.5"><ShieldCheck className="w-4 h-4 text-emerald-500" /> Secure & instant</span>
+                    <span className="w-px h-4 bg-slate-200 hidden sm:block" />
+                    <span className="flex items-center gap-1.5"><Star className="w-4 h-4 text-amber-400 fill-amber-400" /> Trusted by 5,000+ Kenyan learners</span>
+                </div>
+
                 {/* Tabs */}
                 <div className="bg-white rounded-2xl shadow-xl flex mb-8 overflow-hidden">
                     {renderTabButton('STUDENT', GraduationCap, 'Student')}
@@ -298,8 +312,8 @@ const PricingCard = ({ plan, onSelect, popular, isCurrent, disabled, currentTier
                     )}
                 </div>
                 {popular && !isCurrent && (
-                    <div className="bg-indigo-600 text-white px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest shadow-lg shadow-indigo-100">
-                        Best Value
+                    <div className="bg-indigo-600 text-white px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest shadow-lg shadow-indigo-100 flex items-center gap-1">
+                        ⭐ Most Popular
                     </div>
                 )}
                 {isCurrent && (
@@ -364,7 +378,7 @@ const PricingCard = ({ plan, onSelect, popular, isCurrent, disabled, currentTier
                     ? 'Your Active Plan'
                     : (disabled
                         ? 'Not Available'
-                        : (currentTier && currentTier !== 'FREE' ? 'Upgrade to Pro' : 'Unlock Access Now'))}
+                        : (currentTier && currentTier !== 'FREE' ? 'Upgrade to Pro' : 'Pay via M-Pesa'))}
                 {!isCurrent && !disabled && <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />}
             </button>
         </div>
