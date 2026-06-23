@@ -604,17 +604,29 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
         feature = 'grounded_library_help';
       } else if (message.includes('voice') || message.includes('audio') || message.includes('listen')) {
         feature = 'listen_and_learn_voice';
+      } else if (message.includes('exam') || message.includes('marking')) {
+        feature = 'exam_marking';
+      } else if (message.includes('quiz')) {
+        feature = 'quiz_generation';
       }
+      const featureLabelMap: Record<string, string> = {
+        ai_generation: 'AI Tutor',
+        grounded_library_help: 'Library Help',
+        listen_and_learn_voice: 'Voice Lessons',
+        exam_marking: 'Smart Marking',
+        quiz_generation: 'Quiz Generation',
+        exam_guru: 'Exam Guru',
+      };
       try {
         window.dispatchEvent(new CustomEvent('soma-show-upgrade-modal', {
           detail: {
             feature,
-            plan: profile?.subscriptionTier || 'FREE',
-            limit: getPlanLimit(feature, profile?.subscriptionTier || 'FREE')
+            featureLabel: featureLabelMap[feature] || 'AI Tutor',
+            plan: subscriptionPlan || 'FREE',
+            limit: getPlanLimit(feature, subscriptionPlan || 'FREE')
           }
         }));
       } catch (_) {}
-      triggerToast(message || "Daily limit reached. Upgrade to get more allowance!");
     } else {
       setShowLogin(true);
     }
