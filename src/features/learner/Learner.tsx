@@ -565,6 +565,43 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
   const [onboardStep, setOnboardStep] = useState<1 | 2>(1);
   const [onboardGrade, setOnboardGrade] = useState('');
   const [showQuizSharePrompt, setShowQuizSharePrompt] = useState<{ score: number; topic: string } | null>(null);
+
+  // Study timer
+  const [timerActive, setTimerActive] = useState(false);
+  const [timerSeconds, setTimerSeconds] = useState(25 * 60);
+  const [timerDone, setTimerDone] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  useEffect(() => {
+    if (timerActive) {
+      timerRef.current = setInterval(() => {
+        setTimerSeconds(s => {
+          if (s <= 1) { clearInterval(timerRef.current!); setTimerActive(false); setTimerDone(true); return 0; }
+          return s - 1;
+        });
+      }, 1000);
+    } else {
+      if (timerRef.current) clearInterval(timerRef.current);
+    }
+    return () => { if (timerRef.current) clearInterval(timerRef.current); };
+  }, [timerActive]);
+
+  // Offline saves
+  const OFFLINE_KEY = 'soma_offline_saves';
+  const getOfflineSaves = (): { id: string; topic: string; content: string; subject: string; savedAt: string }[] => {
+    try { return JSON.parse(localStorage.getItem(OFFLINE_KEY) || '[]'); } catch { return []; }
+  };
+  const saveForOffline = (topic: string, content: string, subject: string) => {
+    const saves = getOfflineSaves();
+    if (saves.find(s => s.topic === topic)) { triggerToast('Already saved for offline.'); return; }
+    saves.unshift({ id: Date.now().toString(), topic, content, subject, savedAt: new Date().toLocaleDateString() });
+    localStorage.setItem(OFFLINE_KEY, JSON.stringify(saves.slice(0, 20)));
+    triggerToast('Saved for offline reading ✓');
+  };
+
+  // Ask teacher state
+  const [askTeacherClassId, setAskTeacherClassId] = useState<string | null>(null);
+  const [askTeacherText, setAskTeacherText] = useState('');
+  const [askTeacherSending, setAskTeacherSending] = useState(false);
   const [qualityWarning, setQualityWarning] = useState<{ show: boolean, issues: string[], file: File | null } | null>(null);
   // Separate warning object to match usage if needed, or just simplify
   const [qualityCallback, setQualityCallback] = useState<(() => void) | null>(null); // For custom modal action maybe? Unused but keeping clean.
@@ -4872,6 +4909,77 @@ ${explanation.explanation}
               );
             })()}
 
+            {/* STUDY TIMER */}
+            {(() => {
+              const mins = Math.floor(timerSeconds / 60);
+              const secs = timerSeconds % 60;
+              const pct = Math.round(((25 * 60 - timerSeconds) / (25 * 60)) * 100);
+              if (timerDone) return (
+                <div className="flex items-center justify-between gap-3 bg-emerald-50 dark:bg-emerald-900/20 border-2 border-emerald-300 dark:border-emerald-700 rounded-2xl px-4 py-3">
+                  <div className="flex items-center gap-3">
+                    <span className="text-2xl">🎉</span>
+                    <div>
+                      <p className="text-sm font-black text-emerald-900 dark:text-emerald-100">25 minutes done! Great focus.</p>
+                      <p className="text-xs font-bold text-emerald-700 dark:text-emerald-300">Lock it in with a quick quiz.</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <button onClick={() => { setTimerSeconds(25 * 60); setTimerDone(false); }} className="text-xs font-bold text-emerald-600 hover:text-emerald-800 px-2 py-1 rounded-lg hover:bg-emerald-100 transition-colors">Reset</button>
+                    <button onClick={() => { const p = `Quick 5-question quiz on ${weakTopics?.[0] || latestStudy?.topic || 'my last topic'}.`; setPromptText(p); handlePromptSubmit(p); setTimerDone(false); }} className="shrink-0 bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 rounded-xl text-xs font-black transition-colors">Quiz me</button>
+                  </div>
+                </div>
+              );
+              return (
+                <div className="bg-slate-900 dark:bg-slate-800 rounded-2xl px-4 py-3 flex items-center gap-4">
+                  <div className="relative w-10 h-10 flex-shrink-0">
+                    <svg className="w-10 h-10 -rotate-90" viewBox="0 0 36 36">
+                      <circle cx="18" cy="18" r="15.9" fill="none" stroke="#334155" strokeWidth="3" />
+                      <circle cx="18" cy="18" r="15.9" fill="none" stroke="#6366f1" strokeWidth="3" strokeDasharray={`${pct} ${100 - pct}`} strokeDashoffset="0" strokeLinecap="round" />
+                    </svg>
+                    <span className="absolute inset-0 flex items-center justify-center text-[9px] font-black text-white">{pct}%</span>
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-xs font-black text-white">{timerActive ? 'Studying…' : timerSeconds === 25 * 60 ? 'Start a 25-min focus session' : 'Paused'}</p>
+                    <p className="text-lg font-black text-indigo-400 leading-none">{String(mins).padStart(2, '0')}:{String(secs).padStart(2, '0')}</p>
+                  </div>
+                  <div className="flex gap-2">
+                    <button onClick={() => setTimerActive(a => !a)} className={`px-4 py-2 rounded-xl text-xs font-black transition-colors ${timerActive ? 'bg-slate-700 text-slate-300 hover:bg-slate-600' : 'bg-indigo-600 hover:bg-indigo-500 text-white'}`}>
+                      {timerActive ? 'Pause' : 'Start'}
+                    </button>
+                    {timerSeconds < 25 * 60 && <button onClick={() => { setTimerSeconds(25 * 60); setTimerActive(false); }} className="text-[10px] font-bold text-slate-500 hover:text-slate-300 px-2 transition-colors">Reset</button>}
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* OFFLINE SAVES */}
+            {(() => {
+              const saves = getOfflineSaves();
+              if (!saves.length) return null;
+              return (
+                <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-sm border-2 border-slate-200 dark:border-slate-800 p-5">
+                  <div className="flex items-center justify-between mb-3">
+                    <p className="text-xs font-black text-slate-700 dark:text-slate-300 uppercase tracking-widest flex items-center gap-2">
+                      <Download className="w-3.5 h-3.5 text-slate-400" /> Saved for Offline ({saves.length})
+                    </p>
+                    <button onClick={() => { localStorage.removeItem(OFFLINE_KEY); triggerToast('Cleared.'); }} className="text-[10px] font-bold text-slate-400 hover:text-rose-500 transition-colors">Clear all</button>
+                  </div>
+                  <div className="space-y-2">
+                    {saves.slice(0, 3).map(s => (
+                      <button key={s.id} onClick={() => { setPromptText(`Explain ${s.topic} in detail.`); handlePromptSubmit(`Explain ${s.topic} in detail.`); }} className="w-full flex items-center gap-3 p-2.5 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-left">
+                        <div className="w-7 h-7 bg-slate-100 dark:bg-slate-800 rounded-lg flex items-center justify-center flex-shrink-0"><BookOpen className="w-3.5 h-3.5 text-slate-400" /></div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate">{s.topic}</p>
+                          <p className="text-[10px] font-medium text-slate-400">{s.subject} · {s.savedAt}</p>
+                        </div>
+                        <ChevronRight className="w-4 h-4 text-slate-300 flex-shrink-0" />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
+
             <div className="hidden">
               {[
                 {
@@ -5528,6 +5636,45 @@ ${explanation.explanation}
                                 ) : (
                                   <p className="text-xs font-bold text-slate-400">No teacher posts yet.</p>
                                 )}
+
+                                {/* Ask Teacher */}
+                                <div className="mt-3 pt-3 border-t border-slate-200 dark:border-slate-700">
+                                  {askTeacherClassId === item.class.id ? (
+                                    <div className="space-y-2">
+                                      <textarea
+                                        value={askTeacherText}
+                                        onChange={e => setAskTeacherText(e.target.value)}
+                                        placeholder={`Ask ${item.class.profiles?.name || 'your teacher'} a question…`}
+                                        rows={2}
+                                        className="w-full text-xs font-medium border-2 border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-200 focus:outline-none focus:border-indigo-400 resize-none"
+                                      />
+                                      <div className="flex gap-2">
+                                        <button
+                                          disabled={!askTeacherText.trim() || askTeacherSending}
+                                          onClick={async () => {
+                                            if (!askTeacherText.trim() || !userId) return;
+                                            setAskTeacherSending(true);
+                                            try {
+                                              await classroomService.createPost(item.class.id, userId, 'ANNOUNCEMENT', `[Student Question] ${askTeacherText.trim()}`);
+                                              setAskTeacherText('');
+                                              setAskTeacherClassId(null);
+                                              triggerToast('Question sent to teacher ✓');
+                                            } catch { triggerToast('Could not send. Try again.'); }
+                                            finally { setAskTeacherSending(false); }
+                                          }}
+                                          className="flex-1 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs font-black py-2 rounded-xl transition-colors"
+                                        >
+                                          {askTeacherSending ? 'Sending…' : 'Send Question'}
+                                        </button>
+                                        <button onClick={() => { setAskTeacherClassId(null); setAskTeacherText(''); }} className="text-xs font-bold text-slate-400 hover:text-slate-600 px-3 py-2 rounded-xl transition-colors">Cancel</button>
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    <button onClick={() => setAskTeacherClassId(item.class.id)} className="w-full flex items-center gap-2 text-xs font-bold text-indigo-500 hover:text-indigo-700 py-1 transition-colors">
+                                      <Hand className="w-3.5 h-3.5" /> Ask your teacher a question
+                                    </button>
+                                  )}
+                                </div>
 
                                 {/* Class Leaderboard */}
                                 {(classLeaderboards[item.class.id] || []).length > 0 && (
@@ -8134,6 +8281,13 @@ ${explanation.explanation}
                 >
                   <BookMarked className="w-4 h-4" />
                   Save to Notebook
+                </button>
+                <button
+                  onClick={() => saveForOffline(explanation.topic, explanation.explanation, currentDocument?.subject || 'General')}
+                  className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm px-4 sm:px-5 py-3 rounded-xl transition-colors"
+                >
+                  <Download className="w-4 h-4" />
+                  Save Offline
                 </button>
 
                 <button
