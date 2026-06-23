@@ -404,6 +404,13 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
     }
   }, [isRegistered, role, navigate, location]);
 
+  useEffect(() => {
+    if (isRegistered && !studentProfile?.grade && !localStorage.getItem('soma_onboarded')) {
+      const t = setTimeout(() => setShowOnboarding(true), 800);
+      return () => clearTimeout(t);
+    }
+  }, [isRegistered, studentProfile?.grade]);
+
   const [mode, setMode] = useState<'MENU' | 'SCAN' | 'RESULT' | 'QUIZ' | 'RECAP_RESULT' | 'PROFILE' | 'PRICING' | 'PAYMENT' | 'MARKETPLACE' | 'LIBRARY' | 'HISTORY' | 'SCAN_EXPLAIN' | 'STUDY' | 'REQUESTS' | 'COMMUNITY' | 'REVISION' | 'REVISION_SESSION' | 'ANALYTICS' | 'TALKBACK' | 'REFERRAL' | 'QUEST_MAP' | 'FLASHCARDS' | 'NOTEBOOK'>(initialMode as any);
 
   // --- LEARNER MEMORY (Cloud Sync + Personalized Greeting) ---
@@ -522,6 +529,10 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
   const [learnerTryText, setLearnerTryText] = useState('');
   const [learningBreakRewarded, setLearningBreakRewarded] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [onboardStep, setOnboardStep] = useState<1 | 2>(1);
+  const [onboardGrade, setOnboardGrade] = useState('');
+  const [showQuizSharePrompt, setShowQuizSharePrompt] = useState<{ score: number; topic: string } | null>(null);
   const [qualityWarning, setQualityWarning] = useState<{ show: boolean, issues: string[], file: File | null } | null>(null);
   // Separate warning object to match usage if needed, or just simplify
   const [qualityCallback, setQualityCallback] = useState<(() => void) | null>(null); // For custom modal action maybe? Unused but keeping clean.
@@ -7947,7 +7958,95 @@ ${explanation.explanation}
 
           </div>
 
+          {/* --- ONBOARDING MODAL --- */}
+          {showOnboarding && (
+            <div className="fixed inset-0 z-[200] bg-slate-900/80 backdrop-blur-md flex items-end sm:items-center justify-center p-4">
+              <div className="bg-white dark:bg-slate-900 rounded-[2rem] w-full max-w-sm shadow-2xl overflow-hidden">
+                <div className="bg-gradient-to-r from-indigo-600 to-purple-600 p-6 text-white text-center">
+                  <div className="text-3xl mb-2">🎓</div>
+                  <h2 className="text-xl font-black">Welcome to Somo Smart!</h2>
+                  <p className="text-indigo-100 text-sm mt-1">Let's personalise your learning</p>
+                  <div className="flex justify-center gap-2 mt-3">
+                    <div className={`w-6 h-1.5 rounded-full ${onboardStep >= 1 ? 'bg-white' : 'bg-white/30'}`} />
+                    <div className={`w-6 h-1.5 rounded-full ${onboardStep >= 2 ? 'bg-white' : 'bg-white/30'}`} />
+                  </div>
+                </div>
+                <div className="p-6">
+                  {onboardStep === 1 && (
+                    <>
+                      <p className="text-sm font-black text-slate-700 dark:text-slate-200 mb-4">What class are you in?</p>
+                      <div className="grid grid-cols-3 gap-2">
+                        {['Grade 4','Grade 5','Grade 6','Grade 7','Grade 8','Grade 9','Form 1','Form 2','Form 3','Form 4'].map(g => (
+                          <button
+                            key={g}
+                            onClick={() => setOnboardGrade(g)}
+                            className={`py-3 rounded-xl text-sm font-black transition-all border-2 ${onboardGrade === g ? 'bg-indigo-600 text-white border-indigo-600' : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-indigo-300'}`}
+                          >
+                            {g}
+                          </button>
+                        ))}
+                      </div>
+                      <button
+                        disabled={!onboardGrade}
+                        onClick={() => setOnboardStep(2)}
+                        className="mt-5 w-full bg-indigo-600 disabled:opacity-40 text-white py-3.5 rounded-xl font-black"
+                      >
+                        Next →
+                      </button>
+                    </>
+                  )}
+                  {onboardStep === 2 && (
+                    <>
+                      <p className="text-sm font-black text-slate-700 dark:text-slate-200 mb-2">Class set to <span className="text-indigo-600">{onboardGrade}</span> 👌</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mb-5">You're ready to explore. Scan a page, ask a question, or browse notes for your class.</p>
+                      <button
+                        onClick={async () => {
+                          await updateStudentProfile({ grade: onboardGrade });
+                          localStorage.setItem('soma_onboarded', '1');
+                          setShowOnboarding(false);
+                          trackFunnelEvent('learner_onboarding_completed', { grade: onboardGrade });
+                        }}
+                        className="w-full bg-indigo-600 text-white py-3.5 rounded-xl font-black"
+                      >
+                        Start Learning 🚀
+                      </button>
+                      <button onClick={() => setOnboardStep(1)} className="mt-2 w-full text-slate-400 text-xs font-bold py-2">← Back</button>
+                    </>
+                  )}
+                  <button
+                    onClick={() => { localStorage.setItem('soma_onboarded', '1'); setShowOnboarding(false); }}
+                    className="mt-1 w-full text-slate-300 dark:text-slate-600 text-xs py-1"
+                  >
+                    Skip
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
 
+          {/* --- QUIZ WHATSAPP SHARE PROMPT --- */}
+          {showQuizSharePrompt && (
+            <div className="fixed inset-0 z-[200] bg-slate-900/70 backdrop-blur-sm flex items-end sm:items-center justify-center p-4">
+              <div className="bg-white dark:bg-slate-900 rounded-[2rem] w-full max-w-sm shadow-2xl p-6 text-center">
+                <div className="text-4xl mb-3">🎉</div>
+                <h2 className="text-2xl font-black text-slate-900 dark:text-white">{showQuizSharePrompt.score}%!</h2>
+                <p className="text-sm font-bold text-slate-500 dark:text-slate-400 mt-1 mb-5">{showQuizSharePrompt.topic}</p>
+                <a
+                  href={`https://wa.me/?text=${encodeURIComponent(`I just scored ${showQuizSharePrompt.score}% on ${showQuizSharePrompt.topic} on Somo Smart! 🎉\n\nStudy smarter — try it free: https://somaai.co.ke`)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => { setShowQuizSharePrompt(null); trackFunnelEvent('quiz_whatsapp_share', { score: showQuizSharePrompt.score }); }}
+                  className="flex items-center justify-center gap-2 w-full bg-[#25D366] hover:bg-[#128C7E] text-white py-3.5 rounded-xl font-black mb-3 transition-colors"
+                >
+                  <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>
+                  Share on WhatsApp
+                </a>
+                <button onClick={() => setShowQuizSharePrompt(null)} className="w-full text-slate-400 text-sm font-bold py-2">
+                  Continue studying
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Global Bottom Nav */}
           <div className="fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 px-4 py-2.5 pb-safe flex justify-between items-center z-50 max-w-4xl mx-auto shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
@@ -8009,6 +8108,10 @@ ${explanation.explanation}
           score,
           source: 'quiz_runner'
         });
+
+        if (score >= 70) {
+          setShowQuizSharePrompt({ score, topic: quizData.topic });
+        }
 
         const action = pendingExitAction;
         setPendingExitAction(null);
