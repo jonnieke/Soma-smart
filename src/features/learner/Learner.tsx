@@ -8,7 +8,7 @@ import {
   CheckCircle, Play, Pause, ChevronRight, Star, BookOpen, Brain, Lightbulb, Lock, Volume2, CreditCard, Crown,
   ArrowRight, UserCircle, Download, ImageIcon, Trash2, AlertTriangle, LogOut, Users, DollarSign, FileText, ShoppingBag, Library, BookMarked, Layers,
   Calculator, FlaskConical, Globe, Languages, Loader2, Headphones, PenTool, Zap, ListChecks, Trophy, Hand, ClipboardList,
-  BookmarkPlus, Share2
+  BookmarkPlus, Share2, Bell
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { ExplanationResult, QuizData, ViewState, SubscriptionPlan, LearnerProfile, LearnerActivity, UserRole, PodcastScript, ChatMessage, RevisionMode, TeacherActivity, EducationLevel, StudyNote } from '../../types';
@@ -31,6 +31,7 @@ import { QuizReviewSummary, QuizRunner } from './QuizRunner';
 import { ThemeToggle } from '../../components/ThemeToggle';
 import { DashboardSidebar, SidebarTab } from '../../components/DashboardSidebar';
 import { classroomService, StudentClassroomSummary } from '../../services/classroomService';
+import { getBulkMasteryMemories } from '../../services/learnerMemoryService';
 import { getLearnerCtaVariant } from '../../utils/abExperiments';
 import { QuestRoadmap } from './QuestRoadmap';
 import { LearningPathView } from './LearningPathView';
@@ -332,6 +333,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
   const [joinedClassNotice, setJoinedClassNotice] = useState<string | null>(null);
   const [studentClasses, setStudentClasses] = useState<StudentClassroomSummary[]>([]);
   const [isLoadingStudentClasses, setIsLoadingStudentClasses] = useState(false);
+  const [classLeaderboards, setClassLeaderboards] = useState<Record<string, { name: string; xp: number; isMe: boolean }[]>>({});
   const prevStreakRef = useRef(streak);
 
   useEffect(() => {
@@ -365,6 +367,35 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
       mounted = false;
     };
   }, [studentProfile?.id, joinedClassNotice]);
+
+  useEffect(() => {
+    if (!studentClasses.length) return;
+    let mounted = true;
+    (async () => {
+      const boards: Record<string, { name: string; xp: number; isMe: boolean }[]> = {};
+      for (const item of studentClasses.slice(0, 2)) {
+        const classId = item.class.id;
+        if (classId.startsWith('local-class:')) continue;
+        try {
+          const roster = await classroomService.getClassRoster(classId);
+          if (!roster.length) continue;
+          const ids = roster.map(r => r.student_id);
+          const memories = await getBulkMasteryMemories(ids);
+          const rows = roster.map(r => {
+            const mem = memories.find(m => m.learner_id === r.student_id);
+            return {
+              name: r.profiles?.name || 'Learner',
+              xp: mem?.total_xp || 0,
+              isMe: r.student_id === (userId || studentProfile?.id),
+            };
+          }).sort((a, b) => b.xp - a.xp).slice(0, 5);
+          boards[classId] = rows;
+        } catch { /* silent */ }
+      }
+      if (mounted) setClassLeaderboards(boards);
+    })();
+    return () => { mounted = false; };
+  }, [studentClasses, userId, studentProfile?.id]);
 
   useEffect(() => {
     // Only show modal if streak increases DURING the session, and they already had a streak (or it's their first, but prev > 0 prevents firing on initial load if we somehow miscalculate)
@@ -4797,6 +4828,50 @@ ${explanation.explanation}
               return null;
             })()}
 
+            {/* EXAM COUNTDOWN */}
+            {(() => {
+              const grade = studentProfile?.grade || '';
+              const now = new Date();
+              const year = now.getFullYear();
+              // KCSE: last week of Oct / KPSEA: last week of Oct
+              const exams = [
+                { name: 'KCSE', date: new Date(year, 9, 27), grades: ['Form 4', 'Grade 12', 'S4', '12'] },
+                { name: 'KPSEA', date: new Date(year, 9, 20), grades: ['Grade 6', 'Standard 6', '6', 'P6'] },
+              ];
+              const relevant = exams.find(e =>
+                !grade || e.grades.some(g => grade.toLowerCase().includes(g.toLowerCase()))
+              ) || (grade ? null : exams[0]);
+              if (!relevant) return null;
+              const diffMs = relevant.date.getTime() - now.getTime();
+              const days = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+              if (days < 0 || days > 200) return null;
+              const urgency = days <= 14 ? 'bg-rose-50 border-rose-300 text-rose-900' : days <= 60 ? 'bg-amber-50 border-amber-200 text-amber-900' : 'bg-blue-50 border-blue-200 text-blue-900';
+              const emoji = days <= 14 ? '🚨' : days <= 60 ? '⏰' : '📅';
+              return (
+                <div className={`flex items-center justify-between gap-3 border-2 rounded-2xl px-4 py-3 ${urgency}`}>
+                  <div className="flex items-center gap-3">
+                    <span className="text-2xl">{emoji}</span>
+                    <div>
+                      <p className="text-sm font-black">{days} days to {relevant.name} {year}</p>
+                      <p className="text-xs font-bold opacity-70">
+                        {days <= 14 ? 'Final push — every session counts!' : days <= 60 ? 'Exam season is near. Stay consistent.' : 'Start building your revision habit now.'}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => {
+                      const prompt = `Give me a ${relevant.name} exam revision plan. I have ${days} days left. My weak topics are: ${(weakTopics as string[])?.slice(0, 3).join(', ') || 'general revision needed'}.`;
+                      setPromptText(prompt);
+                      handlePromptSubmit(prompt);
+                    }}
+                    className="shrink-0 bg-white/80 hover:bg-white border border-current/20 px-3 py-2 rounded-xl text-xs font-black transition-colors whitespace-nowrap"
+                  >
+                    Make Plan
+                  </button>
+                </div>
+              );
+            })()}
+
             <div className="hidden">
               {[
                 {
@@ -5452,6 +5527,29 @@ ${explanation.explanation}
                                   </div>
                                 ) : (
                                   <p className="text-xs font-bold text-slate-400">No teacher posts yet.</p>
+                                )}
+
+                                {/* Class Leaderboard */}
+                                {(classLeaderboards[item.class.id] || []).length > 0 && (
+                                  <div className="mt-3 pt-3 border-t border-slate-200 dark:border-slate-700">
+                                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-1">
+                                      <Trophy className="w-3 h-3 text-amber-500" /> Class Leaderboard
+                                    </p>
+                                    <div className="space-y-1.5">
+                                      {classLeaderboards[item.class.id].map((entry, idx) => (
+                                        <div key={idx} className={`flex items-center gap-2 px-2 py-1.5 rounded-lg ${entry.isMe ? 'bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800' : ''}`}>
+                                          <span className="text-xs font-black w-4 text-slate-400">{idx + 1}</span>
+                                          <div className="w-5 h-5 rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center text-white text-[9px] font-black flex-shrink-0">
+                                            {entry.name.charAt(0).toUpperCase()}
+                                          </div>
+                                          <span className={`flex-1 text-xs font-bold truncate ${entry.isMe ? 'text-emerald-700 dark:text-emerald-400' : 'text-slate-600 dark:text-slate-300'}`}>
+                                            {entry.isMe ? 'You' : entry.name}
+                                          </span>
+                                          <span className="text-[10px] font-black text-amber-600">{entry.xp} XP</span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
                                 )}
                               </div>
                             );
@@ -6190,6 +6288,60 @@ ${explanation.explanation}
                       Install Now
                     </Button>
                   </div>
+                </Card>
+              </section>
+            )}
+
+            {/* Study Reminders */}
+            {isRegistered && 'Notification' in window && (
+              <section>
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="w-12 h-12 bg-gradient-to-br from-violet-500 to-indigo-600 rounded-2xl flex items-center justify-center shadow-lg shadow-violet-100">
+                    <Bell className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-black text-slate-900">Study Reminders</h2>
+                    <p className="text-xs text-slate-400 font-medium">Daily nudge to keep your streak alive</p>
+                  </div>
+                </div>
+                <Card className="p-5">
+                  {(() => {
+                    const [notifStatus, setNotifStatus] = React.useState<'default' | 'granted' | 'denied'>(
+                      Notification.permission as 'default' | 'granted' | 'denied'
+                    );
+                    const enable = async () => {
+                      const result = await Notification.requestPermission();
+                      setNotifStatus(result as 'granted' | 'denied');
+                      if (result === 'granted') {
+                        new Notification('Somo Smart 🔥', {
+                          body: "Reminders enabled! We'll nudge you at 6pm if you haven't studied.",
+                          icon: '/icons/icon-192x192.png',
+                        });
+                        triggerToast('Daily reminders enabled!');
+                      }
+                    };
+                    return (
+                      <div className="flex items-center justify-between gap-4">
+                        <div>
+                          <p className="text-sm font-black text-slate-800">
+                            {notifStatus === 'granted' ? '🔔 Reminders are on' : notifStatus === 'denied' ? '🔕 Blocked in browser settings' : '🔔 Enable daily study reminders'}
+                          </p>
+                          <p className="text-xs font-bold text-slate-400 mt-0.5">
+                            {notifStatus === 'granted' ? "You'll get a nudge at 6pm if you haven't studied today." : notifStatus === 'denied' ? 'Allow notifications in your browser site settings.' : "Get a 6pm reminder if you haven't studied yet."}
+                          </p>
+                        </div>
+                        {notifStatus !== 'denied' && (
+                          <button
+                            onClick={enable}
+                            disabled={notifStatus === 'granted'}
+                            className={`shrink-0 px-4 py-2 rounded-xl text-xs font-black transition-colors ${notifStatus === 'granted' ? 'bg-emerald-100 text-emerald-700 cursor-default' : 'bg-violet-600 hover:bg-violet-700 text-white'}`}
+                          >
+                            {notifStatus === 'granted' ? 'Enabled ✓' : 'Enable'}
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })()}
                 </Card>
               </section>
             )}
