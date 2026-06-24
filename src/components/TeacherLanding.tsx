@@ -78,35 +78,36 @@ export const TeacherLanding: React.FC<TeacherLandingProps> = ({ onLogin, onRegis
                         >
                             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-500/30 border border-blue-400/30 backdrop-blur-sm text-blue-50 text-sm font-bold mb-8">
                                 <Star className="w-4 h-4 text-yellow-300 fill-yellow-300" />
-                                Built for Kenyan Teachers
+                                Your Teaching Desk
                             </div>
 
                             <h1 className="text-4xl sm:text-5xl lg:text-7xl font-extrabold text-white mb-6 leading-[1.1] tracking-tight">
-                                Teach Better In <br className="hidden lg:block" />
-                                <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-orange-300 to-yellow-300 animate-gradient-x">Less Time.</span>
+                                Run Your Class
+                                <br className="hidden lg:block" />
+                                <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-orange-300 to-yellow-300 animate-gradient-x">from one place.</span>
                             </h1>
 
                             <p className="text-lg sm:text-xl text-blue-100 mb-8 sm:mb-10 max-w-xl mx-auto lg:mx-0 leading-relaxed font-medium">
-                                Your co-teacher assistant for planning, marking, and classroom follow-up. You stay in control; Soma Smart handles the heavy lift.
+                                Plan, teach, mark, and follow up without bouncing between tools. Soma Smart keeps the workflow moving.
                             </p>
 
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-8 text-left max-w-xl mx-auto lg:mx-0">
                                 <div className="bg-white/10 border border-white/20 rounded-2xl px-4 py-3">
-                                    <p className="text-[10px] uppercase tracking-widest font-black text-blue-200">First 10 Minutes</p>
-                                    <p className="text-sm font-black text-white mt-1">Set class + subject context</p>
+                                    <p className="text-[10px] uppercase tracking-widest font-black text-blue-200">First Step</p>
+                                    <p className="text-sm font-black text-white mt-1">Choose your class and subject</p>
                                 </div>
                                 <div className="bg-white/10 border border-white/20 rounded-2xl px-4 py-3">
-                                    <p className="text-[10px] uppercase tracking-widest font-black text-blue-200">Then Do This</p>
-                                    <p className="text-sm font-black text-white mt-1">Generate, assign, and follow up</p>
+                                    <p className="text-[10px] uppercase tracking-widest font-black text-blue-200">Then Use</p>
+                                    <p className="text-sm font-black text-white mt-1">Lesson tools, marking, and learner support</p>
                                 </div>
                             </div>
 
                             <div className="mb-10 max-w-xl mx-auto lg:mx-0 bg-white/10 border border-white/20 rounded-2xl p-4">
-                                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-200 mb-2">Start With These Teacher Jobs</p>
+                                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-200 mb-2">What teachers open this for</p>
                                 <div className="space-y-1.5 text-sm font-bold text-white">
-                                    <p>1. Prepare weekly schemes of work</p>
-                                    <p>2. Mark assignments with consistent feedback</p>
-                                    <p>3. Share to stream + WhatsApp and track follow-up</p>
+                                    <p>1. Plan schemes and lesson flow</p>
+                                    <p>2. Mark work faster with structure</p>
+                                    <p>3. Share to stream and WhatsApp, then track follow-up</p>
                                 </div>
                             </div>
 
@@ -116,19 +117,19 @@ export const TeacherLanding: React.FC<TeacherLandingProps> = ({ onLogin, onRegis
                                     className="min-h-[50px] px-6 sm:px-8 py-3.5 sm:py-4 bg-white text-blue-700 font-black text-base sm:text-lg rounded-2xl shadow-xl shadow-blue-900/20 hover:bg-blue-50 hover:-translate-y-1 transition-all flex items-center justify-center gap-3"
                                 >
                                     <UserPlus className="w-5 h-5" />
-                                    Start Teaching Flow
+                                    Create Teacher Account
                                 </button>
                                 <button
                                     onClick={onLogin}
                                     className="min-h-[50px] px-6 sm:px-8 py-3.5 sm:py-4 bg-blue-500/20 text-white font-bold text-base sm:text-lg rounded-2xl border border-white/20 hover:bg-white/10 transition-all flex items-center justify-center gap-3 backdrop-blur-sm"
                                 >
                                     <LogIn className="w-5 h-5" />
-                                    Continue As Teacher
+                                    Sign In to Dashboard
                                 </button>
                             </div>
 
                             <p className="mt-8 text-blue-200/80 text-sm font-medium flex items-center justify-center lg:justify-start gap-2">
-                                <CheckCircle className="w-4 h-4 text-emerald-400" /> Start free. Upgrade only when your class workflow is running.
+                                <CheckCircle className="w-4 h-4 text-emerald-400" /> Start free. Upgrade only when you are using it regularly.
                             </p>
                         </motion.div>
 
@@ -164,7 +165,7 @@ export const TeacherLanding: React.FC<TeacherLandingProps> = ({ onLogin, onRegis
                                                 <div className="flex justify-between items-center mb-6">
                                                     <div>
                                                         <p className="text-blue-200 text-xs font-medium uppercase tracking-wider mb-1">Welcome back</p>
-                                                        <h3 className="text-2xl font-bold">Tr. Michael 👋</h3>
+                                                        <h3 className="text-2xl font-bold">Tr. Michael</h3>
                                                     </div>
                                                     <div className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center backdrop-blur-md">
                                                         <img src="https://i.pravatar.cc/100?img=11" alt="Profile" className="w-8 h-8 rounded-full" />
@@ -186,29 +187,29 @@ export const TeacherLanding: React.FC<TeacherLandingProps> = ({ onLogin, onRegis
                                             </div>
 
                                             <div className="bg-slate-50 flex-1 rounded-t-[2.5rem] p-6 space-y-4">
-                                                <p className="text-slate-400 text-xs font-black uppercase tracking-widest mb-4">Quick Actions</p>
+                                                <p className="text-slate-400 text-xs font-black uppercase tracking-widest mb-4">Teacher Tools Preview</p>
 
                                                 <div className="p-4 bg-white rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4 group cursor-pointer hover:border-orange-200 transition-colors">
                                                     <div className="w-12 h-12 rounded-xl bg-orange-50 text-orange-600 flex items-center justify-center group-hover:scale-110 transition-transform"><BookOpen className="w-6 h-6" /></div>
                                                     <div>
-                                                        <p className="font-bold text-slate-900">Lesson Plans</p>
-                                                        <p className="text-xs text-slate-500 font-medium">Generate instantly with AI</p>
+                                                        <p className="font-bold text-slate-900">Lesson Maker</p>
+                                                        <p className="text-xs text-slate-500 font-medium">Notes, plans, and quick guidance</p>
                                                     </div>
                                                 </div>
 
                                                 <div className="p-4 bg-white rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4 group cursor-pointer hover:border-emerald-200 transition-colors">
                                                     <div className="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center group-hover:scale-110 transition-transform"><CheckCircle className="w-6 h-6" /></div>
                                                     <div>
-                                                        <p className="font-bold text-slate-900">Auto-Marking</p>
-                                                        <p className="text-xs text-slate-500 font-medium">Scan papers to grade</p>
+                                                        <p className="font-bold text-slate-900">Marking</p>
+                                                        <p className="text-xs text-slate-500 font-medium">Guided scoring and feedback</p>
                                                     </div>
                                                 </div>
 
                                                 <div className="p-4 bg-white rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4 group cursor-pointer hover:border-purple-200 transition-colors">
                                                     <div className="w-12 h-12 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center group-hover:scale-110 transition-transform"><ChartBar className="w-6 h-6" /></div>
                                                     <div>
-                                                        <p className="font-bold text-slate-900">Reports</p>
-                                                        <p className="text-xs text-slate-500 font-medium">Share progress with parents</p>
+                                                        <p className="font-bold text-slate-900">Follow-up</p>
+                                                        <p className="text-xs text-slate-500 font-medium">Share progress with parents and class</p>
                                                     </div>
                                                 </div>
                                             </div>
@@ -283,3 +284,8 @@ export const TeacherLanding: React.FC<TeacherLandingProps> = ({ onLogin, onRegis
         </div>
     );
 };
+
+
+
+
+

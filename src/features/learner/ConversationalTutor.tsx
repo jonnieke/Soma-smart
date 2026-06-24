@@ -10,7 +10,7 @@ import {
 import {
     chatTalkback, chatLanguageTutor, transcribeAudioForChat,
     TalkbackMessage, LanguageTutorResponse,
-    chatTalkbackStream, processStream, getPhoneticCoaching, PhoneticCoachingResult
+    chatTalkbackStream, processStream, getPhoneticCoaching, PhoneticCoachingResult, SyllabusTutorContext
 } from '../../services/geminiService';
 import { useApp } from '../../context/AppContext';
 import {
@@ -33,6 +33,7 @@ interface ConversationalTutorProps {
     onBeforeMessage?: () => boolean;
     initialActiveMode?: ActiveMode;
     initialTutorMode?: TutorMode;
+    syllabusContext?: SyllabusTutorContext;
 }
 
 // ─── Constants ───────────────────────────────────────────────────
@@ -44,6 +45,68 @@ const GREETING: Record<ChatLang, string> = {
 const TUTOR_GREETING: Record<ChatLang, string> = {
     en: "Hi! I'm Mwalimu Akili 🎓 Tell me something — a sentence, a word, or a phrase — and I'll coach you from there!",
     sw: "Karibu! Mimi ni Mwalimu Akili 🎓 Niambie kitu — sentensi, neno, au msemo — nami nitakuongoza!"
+};
+
+const formatSyllabusContext = (context?: SyllabusTutorContext) => {
+    const parts: string[] = [];
+    if (context?.grade) parts.push(`Grade ${context.grade}`);
+    if (context?.subject) parts.push(context.subject);
+    if (context?.topic) parts.push(context.topic);
+    return parts.join(' / ');
+};
+
+const buildTutorGreeting = (
+    mode: ActiveMode,
+    lang: ChatLang,
+    tutorMode: TutorMode,
+    syllabusContext?: SyllabusTutorContext
+) => {
+    const contextLabel = formatSyllabusContext(syllabusContext);
+    if (mode === 'TALKBACK') {
+        if (contextLabel) {
+            return lang === 'sw'
+                ? `Karibu! Tuko kwenye ${contextLabel}. Niulize swali lako na nitakuelekeza hatua kwa hatua.`
+                : `Welcome! We are working on ${contextLabel}. Ask your question and I will keep us anchored to this topic.`;
+        }
+        return GREETING[lang];
+    }
+
+    if (contextLabel && tutorMode !== 'pronunciation') {
+        return lang === 'sw'
+            ? `${TUTOR_GREETING[lang]} Tutaweka mazoezi ndani ya ${contextLabel}.`
+            : `${TUTOR_GREETING[lang]} We will keep the practice tied to ${contextLabel}.`;
+    }
+
+    return TUTOR_GREETING[lang];
+};
+
+const buildSyllabusInstruction = (context?: SyllabusTutorContext) => {
+    const contextLabel = formatSyllabusContext(context);
+    if (!contextLabel) return '';
+    return `Syllabus focus: ${contextLabel}. Keep answers anchored to this topic, give one clear step at a time, and ask a short check-for-understanding question.`;
+};
+
+const getQuickStarters = (lang: ChatLang, syllabusContext?: SyllabusTutorContext) => {
+    const contextLabel = formatSyllabusContext(syllabusContext);
+    if (contextLabel) {
+        return lang === 'sw'
+            ? [
+                'Eleza mada hii kwa urahisi',
+                'Nipe mfano mmoja ulio wazi',
+                'Nipige swali la haraka',
+                'Fupisha hoja muhimu',
+                'Ni nini nikae nikikumbuke?'
+            ]
+            : [
+                'Explain this topic simply',
+                'Give me one clear example',
+                'Ask me a quick question',
+                'Summarize the key points',
+                'What should I remember?'
+            ];
+    }
+
+    return QUICK_STARTERS[lang];
 };
 
 const MODE_CONFIG: Record<TutorMode, { icon: React.ReactNode; en: string; sw: string; color: string }> = {
@@ -254,7 +317,8 @@ export const ConversationalTutor: React.FC<ConversationalTutorProps> = ({
     onBack, 
     onBeforeMessage,
     initialActiveMode = 'TALKBACK',
-    initialTutorMode = 'conversation'
+    initialTutorMode = 'conversation',
+    syllabusContext
 }) => {
     const { educationLevel } = useApp();
     const [activeMode, setActiveMode] = useState<ActiveMode>(initialActiveMode);
@@ -263,7 +327,7 @@ export const ConversationalTutor: React.FC<ConversationalTutorProps> = ({
 
     const [messages, setMessages] = useState<TalkbackMessage[]>(() => [{
         role: 'ai',
-        text: initialActiveMode === 'TALKBACK' ? GREETING['en'] : TUTOR_GREETING['en'],
+        text: buildTutorGreeting(initialActiveMode, 'en', initialTutorMode, syllabusContext),
         timestamp: Date.now()
     }]);
     const [tutorResponses, setTutorResponses] = useState<Map<number, LanguageTutorResponse>>(new Map());
@@ -373,12 +437,12 @@ export const ConversationalTutor: React.FC<ConversationalTutorProps> = ({
         setActiveMode(mode);
         setMessages([{
             role: 'ai',
-            text: mode === 'TALKBACK' ? GREETING[chatLang] : TUTOR_GREETING[chatLang],
+            text: buildTutorGreeting(mode, chatLang, tutorMode, syllabusContext),
             timestamp: Date.now()
         }]);
         setTutorResponses(new Map());
         setInputText('');
-    }, [chatLang]);
+    }, [chatLang, syllabusContext, tutorMode]);
 
     // Reset current chat
     const resetChat = useCallback(() => {
@@ -390,12 +454,12 @@ export const ConversationalTutor: React.FC<ConversationalTutorProps> = ({
         }
         setMessages([{
             role: 'ai',
-            text: isTutor ? TUTOR_GREETING[chatLang] : GREETING[chatLang],
+            text: buildTutorGreeting(activeMode, chatLang, tutorMode, syllabusContext),
             timestamp: Date.now()
         }]);
         setTutorResponses(new Map());
         setInputText('');
-    }, [isTutor, chatLang]);
+    }, [activeMode, chatLang, syllabusContext, tutorMode]);
 
     const toggleLiveCall = useCallback(async () => {
         const isPronMode = isTutor && tutorMode === 'pronunciation';
@@ -414,6 +478,7 @@ export const ConversationalTutor: React.FC<ConversationalTutorProps> = ({
             stopSpeech();
             clearSpeechQueue();
 
+            const syllabusInstruction = buildSyllabusInstruction(syllabusContext);
             const sysInstruction = isPronMode
                 ? `You are "Mwalimu Akili", an expert English pronunciation and speaking coach.
             The student's education grade/level is ${educationLevel || 'Secondary School'}.
@@ -428,10 +493,10 @@ export const ConversationalTutor: React.FC<ConversationalTutorProps> = ({
             6. Encourage them with words like "Excellent attempt!" or "Let's try that one more time together."`
                 : `You are "Akili", a warm, helpful Kenyan study companion. 
             The student's education grade/level is ${educationLevel || 'Secondary School'}.
+            ${syllabusInstruction}
             You must speak exclusively in ${chatLang === 'sw' ? 'Kiswahili Sanifu' : 'English'}.
             Keep your spoken sentences short (1-3 sentences max) so that it is easy and comfortable to listen to in real-time.
             Encourage the student and guide them like a tutor. Ask short follow-up questions to test their understanding.`;
-
             const session = new GeminiLiveSession(
                 sysInstruction,
                 (text) => {
@@ -493,7 +558,7 @@ export const ConversationalTutor: React.FC<ConversationalTutorProps> = ({
                 setIsSpeaking(true);
                 clearSpeechQueue();
 
-                const stream = await chatTalkbackStream(text, messages, chatLang, educationLevel);
+                const stream = await chatTalkbackStream(text, messages, chatLang, educationLevel, syllabusContext);
                 let fullText = "";
                 let spokenText = "";
 
@@ -923,6 +988,11 @@ export const ConversationalTutor: React.FC<ConversationalTutorProps> = ({
                                         ? (tutorMode === 'pronunciation' ? 'English Pronunciation Coach' : 'Language Coach') 
                                         : 'Akili'}
                                 </h2>
+                                {formatSyllabusContext(syllabusContext) && (
+                                    <p className="mt-1 text-[10px] font-black uppercase tracking-[0.14em] text-white/80">
+                                        {formatSyllabusContext(syllabusContext)}
+                                    </p>
+                                )}
                                 <div className="flex items-center gap-1.5">
                                     <div className={`w-1.5 h-1.5 rounded-full ${isLoading ? 'bg-amber-400 animate-bounce' : isRecording ? 'bg-red-400 animate-pulse' : 'bg-emerald-400 animate-pulse'}`} />
                                     <span className="text-[10px] text-white/70 font-bold uppercase tracking-widest">
@@ -938,7 +1008,7 @@ export const ConversationalTutor: React.FC<ConversationalTutorProps> = ({
                                 <button
                                     onClick={() => setChatLang(l => {
                                         const next = l === 'en' ? 'sw' : 'en';
-                                        setMessages([{ role: 'ai', text: isTutor ? TUTOR_GREETING[next] : GREETING[next], timestamp: Date.now() }]);
+                                        setMessages([{ role: 'ai', text: buildTutorGreeting(activeMode, next, tutorMode, syllabusContext), timestamp: Date.now() }]);
                                         return next;
                                     })}
                                     className="px-3 py-1.5 rounded-xl bg-white/10 border border-white/10 text-white text-[10px] font-black hover:bg-white/20 transition-all uppercase tracking-wide"
@@ -1040,7 +1110,7 @@ export const ConversationalTutor: React.FC<ConversationalTutorProps> = ({
                                     Quick Start
                                 </p>
                                 <div className="flex flex-wrap gap-2">
-                                    {QUICK_STARTERS[chatLang].map((starter, i) => (
+                                    {getQuickStarters(chatLang, syllabusContext).map((starter, i) => (
                                         <button
                                             key={i}
                                             onClick={() => handleSendMessage(starter)}

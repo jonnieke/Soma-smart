@@ -156,6 +156,21 @@ const selectGeminiModel = (feature: string, requestedModel: unknown) => {
     if (feature === 'deep_document_analysis' || feature === 'exam_marking') return HEAVY_GEMINI_MODEL;
     return DEFAULT_GEMINI_MODEL;
 };
+const getRequestToken = (req: Request) => {
+    const url = new URL(req.url);
+    const queryToken = url.searchParams.get('access_token') || url.searchParams.get('token') || '';
+    const authHeader = req.headers.get('Authorization') || '';
+    const rawToken = (authHeader.replace(/^Bearer\s+/i, '').trim()) || queryToken.trim();
+    return (rawToken && rawToken !== 'undefined' && rawToken !== 'null') ? rawToken : '';
+};
+
+const getRequestStudentCode = (req: Request) => {
+    const url = new URL(req.url);
+    const headerCode = req.headers.get('x-student-code')?.trim() || '';
+    const queryCode = url.searchParams.get('student_code')?.trim() || '';
+    return headerCode || queryCode;
+};
+
 const getClientIp = (req: Request) => {
     return (
         req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
@@ -259,11 +274,9 @@ const enforceUsageLimit = async (req: Request) => {
     }
 
     const supabase = createClient(supabaseUrl, serviceRoleKey);
-    const authHeader = req.headers.get('Authorization') || '';
-    const rawToken = authHeader.replace(/^Bearer\s+/i, '').trim();
+    const token = getRequestToken(req);
 
     // Reject tokens that are literally the string "undefined" or "null" (client bug)
-    const token = (rawToken && rawToken !== 'undefined' && rawToken !== 'null') ? rawToken : '';
 
     if (token) {
         const { data: userData, error: authError } = await supabase.auth.getUser(token);
@@ -311,7 +324,7 @@ const enforceUsageLimit = async (req: Request) => {
     }
 
     // No valid Supabase JWT — check for SOMA-XXXX learner code (custom session system)
-    const studentCode = req.headers.get('x-student-code')?.trim();
+    const studentCode = getRequestStudentCode(req);
     if (studentCode && studentCode.startsWith('SOMA-')) {
         const { data: profile } = await supabase
             .from('profiles')
@@ -375,9 +388,7 @@ const getSupabaseAdmin = () => {
 };
 
 const resolveRequester = async (req: Request, supabase: any) => {
-    const authHeader = req.headers.get('Authorization') || '';
-    const rawToken = authHeader.replace(/^Bearer\s+/i, '').trim();
-    const token = (rawToken && rawToken !== 'undefined' && rawToken !== 'null') ? rawToken : '';
+    const token = getRequestToken(req);
 
     if (token) {
         const { data: userData } = await supabase.auth.getUser(token);
@@ -397,7 +408,7 @@ const resolveRequester = async (req: Request, supabase: any) => {
         }
     }
 
-    const studentCode = req.headers.get('x-student-code')?.trim();
+    const studentCode = getRequestStudentCode(req);
     if (studentCode && studentCode.startsWith('SOMA-')) {
         const { data: profile } = await supabase
             .from('profiles')

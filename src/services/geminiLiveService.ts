@@ -80,7 +80,10 @@ export class GeminiLiveSession {
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
       const wsProtocol = supabaseUrl.startsWith('https') ? 'wss' : 'ws';
       const cleanUrl = supabaseUrl.replace(/^https?:\/\//, '');
-      const wsUrl = `${wsProtocol}://${cleanUrl}/functions/v1/gemini-proxy`;
+      const ws = new URL(wsProtocol + '://' + cleanUrl + '/functions/v1/gemini-proxy');
+      if (token) ws.searchParams.set('access_token', token);
+      if (studentCode) ws.searchParams.set('student_code', studentCode);
+      const wsUrl = ws.toString();
 
       console.log("Connecting to Gemini Live WebSocket:", wsUrl);
       this.ws = new WebSocket(wsUrl);
@@ -286,3 +289,4 @@ export class GeminiLiveSession {
     }
   }
 }
+

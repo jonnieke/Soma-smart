@@ -40,7 +40,29 @@ const SUBJECTS = [
 
 export type PanelMode = 'chat' | 'mark' | 'predict' | 'practice';
 
-export const ExamGuruPanel: React.FC<{ onClose: () => void; onLogin?: () => void; initialMode?: PanelMode; initialPrompt?: string }> = ({ onClose, onLogin, initialMode = 'chat', initialPrompt = '' }) => {
+interface SyllabusContext {
+    grade?: string;
+    subject?: string;
+    topic?: string;
+    sourceTitle?: string;
+}
+
+export const ExamGuruPanel: React.FC<{ onClose: () => void; onLogin?: () => void; initialMode?: PanelMode; initialPrompt?: string; syllabusContext?: SyllabusContext }> = ({ onClose, onLogin, initialMode = 'chat', initialPrompt = '', syllabusContext }) => {
+    const contextLabel = [syllabusContext?.grade, syllabusContext?.subject, syllabusContext?.topic || syllabusContext?.sourceTitle].filter(Boolean).join(' � ');
+    const openingMessage = contextLabel
+        ? `Quick check: what is the first thing you would say about ${focusTopic || contextLabel}? Choose a drill, paste a question, or answer in one line and I will keep us on this exact topic.`
+        : "Exam Guru online. Pick a drill, paste a question, or ask for a marking check. I will stay on the exact paper skill, show what earns marks, and keep the repair conversation on the missed point.";
+    const focusTopic = syllabusContext?.topic || syllabusContext?.sourceTitle || '';
+    const focusSubject = syllabusContext?.subject || '';
+    const contextualPromptChips = contextLabel
+        ? [
+            focusTopic ? `Give me a 5-question drill on ${focusTopic}` : 'Give me a 5-question drill on this topic',
+            focusTopic ? `Mark my answer on ${focusTopic}` : 'Mark my answer on this topic',
+            focusSubject ? `KCSE ${focusSubject} hot topics` : 'KCSE hot topics for this subject',
+            focusTopic ? `Explain ${focusTopic} step by step` : 'Explain this question step by step',
+            focusSubject ? `How do I score full marks in ${focusSubject}?` : 'How do I score full marks here?',
+        ]
+        : PROMPT_CHIPS;
     const [mode, setMode] = useState<PanelMode>(initialMode);
     const [rateLimited, setRateLimited] = useState(false);
     const [quotaExceeded, setQuotaExceeded] = useState(false);
@@ -50,7 +72,7 @@ export const ExamGuruPanel: React.FC<{ onClose: () => void; onLogin?: () => void
         {
             id: '1',
             role: 'guru',
-            content: "Exam Guru online. Pick a drill, paste a question, or ask for a marking check. I will stay on the exact paper skill, show what earns marks, and keep the repair conversation on the missed point.",
+            content: openingMessage,
         }
     ]);
     const [input, setInput] = useState('');
@@ -58,6 +80,7 @@ export const ExamGuruPanel: React.FC<{ onClose: () => void; onLogin?: () => void
     const scrollRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
     const autoSentInitialPromptRef = useRef('');
+    const practiceContextAutoRunRef = useRef('');
 
     // --- Drill Questions state ---
     const [practiceSubject, setPracticeSubject] = useState('');
@@ -68,23 +91,29 @@ export const ExamGuruPanel: React.FC<{ onClose: () => void; onLogin?: () => void
     const [generateError, setGenerateError] = useState('');
     const [expandedPQ, setExpandedPQ] = useState<number | null>(null);
 
-    const handleGenerate = async () => {
-        if (!practiceSubject) return;
+    const generatePracticeDrill = async (subject: string, topic: string, examType: 'KCSE' | 'KPSEA' | 'JSS') => {
+        if (!subject) return false;
         setIsGenerating(true);
         setPracticeQuestions([]);
         setGenerateError('');
         setExpandedPQ(null);
         try {
-            const questions = await generatePracticeQuestions(practiceSubject, practiceTopic, practiceExamType);
+            const questions = await generatePracticeQuestions(subject, topic, examType);
             if (questions.length === 0) setGenerateError('Could not generate questions. Try again.');
             else setPracticeQuestions(questions);
+            return questions.length > 0;
         } catch (err: any) {
             if (err instanceof RateLimitError) { setRateLimited(true); }
             else if (err instanceof SystemQuotaError) { setQuotaExceeded(true); }
             else { setGenerateError('Generation failed. Check your connection.'); }
+            return false;
         } finally {
             setIsGenerating(false);
         }
+    };
+
+    const handleGenerate = async () => {
+        await generatePracticeDrill(practiceSubject, practiceTopic, practiceExamType);
     };
 
     // --- Predicted Topics state ---
@@ -131,6 +160,29 @@ export const ExamGuruPanel: React.FC<{ onClose: () => void; onLogin?: () => void
     useEffect(() => {
         setMode(initialMode);
     }, [initialMode]);
+
+    useEffect(() => {
+        if (!syllabusContext) return;
+        if (syllabusContext.subject) {
+            setPracticeSubject(prev => prev || syllabusContext.subject || '');
+            setPredictSubject(prev => prev || syllabusContext.subject || '');
+            setMarkSubject(prev => prev || syllabusContext.subject || '');
+        }
+        if (syllabusContext.topic || syllabusContext.sourceTitle) {
+            setPracticeTopic(prev => prev || syllabusContext.topic || syllabusContext.sourceTitle || '');
+        }
+    }, [syllabusContext?.grade, syllabusContext?.subject, syllabusContext?.topic, syllabusContext?.sourceTitle]);
+
+    useEffect(() => {
+        if (mode !== 'practice' || !contextLabel || !focusSubject) return;
+        if (practiceQuestions.length > 0 || isGenerating) return;
+        const autoRunKey = `${contextLabel}::${focusTopic}`;
+        if (practiceContextAutoRunRef.current === autoRunKey) return;
+        practiceContextAutoRunRef.current = autoRunKey;
+        if (practiceSubject !== focusSubject) setPracticeSubject(focusSubject);
+        if (focusTopic && practiceTopic !== focusTopic) setPracticeTopic(focusTopic);
+        void generatePracticeDrill(focusSubject, focusTopic, practiceExamType);
+    }, [mode, contextLabel, focusSubject, focusTopic, practiceQuestions.length, isGenerating, practiceSubject, practiceTopic, practiceExamType]);
 
     const sendMessage = async (text: string) => {
         if (!text.trim() || isTyping) return;
@@ -279,6 +331,13 @@ Do not move to a new topic, new example, or new question until the candidate ans
                         <PenLine className="w-3 h-3" /> Drill Set
                     </button>
                 </div>
+                {contextLabel && (
+                    <div className="bg-emerald-500/10 border-b border-white/5 px-4 py-2.5">
+                        <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/5 px-3 py-2 text-[11px] font-bold text-emerald-200">
+                            Focused on {contextLabel}
+                        </div>
+                    </div>
+                )}
 
                 {/* ── RATE LIMIT GATE ── */}
                 <AnimatePresence>
@@ -354,7 +413,7 @@ Do not move to a new topic, new example, or new question until the candidate ans
                             <span className="shrink-0 text-[10px] font-black text-emerald-300 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1.5 rounded-xl whitespace-nowrap">
                                 Uses indexed past papers when available
                             </span>
-                            {PROMPT_CHIPS.map(chip => (
+                            {contextualPromptChips.map(chip => (
                                 <button
                                     key={chip}
                                     onClick={() => sendMessage(chip)}
@@ -431,6 +490,13 @@ Do not move to a new topic, new example, or new question until the candidate ans
                 {/* ── MARK MY ANSWER MODE ── */}
                 {mode === 'mark' && (
                     <div className="flex-1 overflow-y-auto">
+                        {contextLabel && (
+                            <div className="px-5 pt-5">
+                                <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-[11px] font-bold text-emerald-200 leading-relaxed">
+                                    Marking is already focused on {contextLabel}. Paste the question and your answer, and I will keep the marking on this topic.
+                                </div>
+                            </div>
+                        )}
                         {markResult ? (
                             /* Result view */
                             <div className="p-5 space-y-4">
@@ -548,6 +614,13 @@ Do not move to a new topic, new example, or new question until the candidate ans
                 {/* ── PREDICT MODE ── */}
                 {mode === 'predict' && (
                     <div className="flex-1 overflow-y-auto p-5 space-y-4">
+                        {contextLabel && (
+                            <div className="bg-amber-900/20 border border-amber-800/40 rounded-2xl p-4">
+                                <p className="text-amber-300 text-xs font-bold leading-relaxed">
+                                    {focusSubject ? `This prediction lane is already anchored to ${focusSubject}. Use it for likely questions on the current lesson.` : 'This prediction lane is already anchored to your current lesson.'}
+                                </p>
+                            </div>
+                        )}
                         <div className="bg-amber-900/20 border border-amber-800/40 rounded-2xl p-4">
                             <p className="text-amber-300 text-xs font-bold leading-relaxed">
                                 🔥 Based on KCSE/KPSEA past paper patterns 2015–2024, these topics are most likely to appear this year.
@@ -648,6 +721,13 @@ Do not move to a new topic, new example, or new question until the candidate ans
                 {/* ── PRACTICE MODE ── */}
                 {mode === 'practice' && (
                     <div className="flex-1 overflow-y-auto p-5 space-y-4">
+                        {contextLabel && (
+                            <div className="bg-rose-900/20 border border-rose-800/40 rounded-2xl p-4">
+                                <p className="text-rose-300 text-xs font-bold leading-relaxed">
+                                    {focusTopic ? `Practice is ready for ${focusTopic}. Generate the drill from the current topic and keep the style exam-like.` : 'Practice is already anchored to your current lesson. Generate an exam-style drill from this topic.'}
+                                </p>
+                            </div>
+                        )}
                         <div className="bg-rose-900/20 border border-rose-800/40 rounded-2xl p-4">
                             <p className="text-rose-300 text-xs font-bold leading-relaxed">
                                 ✍️ Generate real KCSE-style drill questions. Try to answer them before revealing the marking guide.

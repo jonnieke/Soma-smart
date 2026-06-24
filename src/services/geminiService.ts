@@ -180,31 +180,39 @@ Rules:
 - Questions must match ${examType} difficulty and style
 - Mix question types (definition, explain, calculate, describe, draw & label)
 - Vary the marks between 2 and 10
-- modelAnswerOutline should list 2-5 marking points, one per bullet`
+- modelAnswerOutline should list 2-5 marking points, one per bullet
+- Keep questions classroom-ready and directly usable as homework or exam practice`
     }]
   };
 
   const contents = [{
     role: 'user' as const,
-    parts: [{ text: `Generate ${count} ${examType} ${subject} practice questions ${topicClause}.` }]
+    parts: [{ text: `Generate ${count} ${examType} ${subject} practice questions ${topicClause}. Include strong marking guidance and realistic exam language.` }]
   }];
+
+  const fallback: PracticeQuestion[] = Array.from({ length: count }, (_, i) => ({
+    number: i + 1,
+    text: `${subject} question ${i + 1} on ${topic || 'core syllabus content'}.`,
+    topic: topic || subject,
+    marks: 4,
+    modelAnswerOutline: '- Identify the main idea\n- Give one correct explanation\n- Show the relevant example\n- State the final conclusion'
+  }));
 
   try {
     const result = await callGeminiProxy(
       MODEL_NAME,
       contents,
-      { maxOutputTokens: 800, temperature: 0.5 },
+      { maxOutputTokens: 1200, temperature: 0.35 },
       systemInstruction
     );
     const text = result.response.text();
     const cleaned = (text || '[]').replace(/```json|```/g, '').trim();
-    return JSON.parse(cleaned) as PracticeQuestion[];
+    return parseModelJson<PracticeQuestion[]>(cleaned).slice(0, count);
   } catch (error: any) {
     console.error('Generate practice questions error:', error);
-    return [];
+    return fallback;
   }
 };
-
 // --- STREAMING PROXY HELPER ---
 const callGeminiProxyStream = async (_model: string, contents: any, generationConfig: any = {}, systemInstruction: any = null) => {
   const feature = inferAiFeature(contents, systemInstruction);
@@ -957,6 +965,8 @@ export const generateRichLessonNotes = async (title: string, documentId: string,
   const model = genAI.getGenerativeModel({
     model: MODEL_NAME,
     generationConfig: {
+      temperature: 0.25,
+      maxOutputTokens: 4096,
       responseMimeType: "application/json",
       responseSchema: {
         type: SchemaType.OBJECT,
@@ -976,35 +986,34 @@ export const generateRichLessonNotes = async (title: string, documentId: string,
     Your task is to prepare Comprehensive Revision Notes for a ${grade || 'Kenyan'} student for the document: "${title}".
     Subject Context: "${subject || 'General studies'}".
 
-    SYSTEM CONTEXT: You are operating within the Kenyan Education System(CBC, KCPE, and KCSE). 
+    SYSTEM CONTEXT: You are operating within the Kenyan Education System(CBC, KCPE, and KCSE).
     ACRONYM RULES:
 - CRE = Christian Religious Education(CRITICAL: NEVER interpret as Commercial Real Estate).
     - IRE = Islamic Religious Education.
     - HRE = Hindu Religious Education.
-    
-    CRITICAL INSTRUCTION: DO NOT OVERSUMMARIZE.The student needs rich, detailed, and reliable material to study from and prepare for national exams.
-    
+
+    CRITICAL INSTRUCTION: DO NOT OVERSUMMARIZE. The student needs rich, detailed, and reliable material to study from and prepare for national exams.
+
     ** STRICT SOURCE GROUNDING RULE **:
-- The "Source Content Snippets" are your absolute authority. 
+- The "Source Content Snippets" are your absolute authority.
     - You MUST adhere to the domain of "${subject}" as defined in the Kenyan Curriculum.
-    - NEVER use "[PLACEHOLDER]" or template text. 
-    - Every section must contain substantive, factual information grounded in the source. 
-    - ** CURRICULUM EXPANSION **: If a section(like Examples or Definitions) is requested but not explicitly in the source, use your expert knowledge of the KENYAN CURRICULUM for "${subject}" at "${grade}" level.This expansion MUST be 100 % relevant to the subject and grade.
-    
+    - NEVER use "[PLACEHOLDER]" or template text.
+    - Every section must contain substantive, factual information grounded in the source.
+    - ** CURRICULUM EXPANSION **: If a section(like Examples or Definitions) is requested but not explicitly in the source, use your expert knowledge of the KENYAN CURRICULUM for "${subject}" at "${grade}" level. This expansion MUST be 100% relevant to the subject and grade.
+
     Source Content Snippets:
 "${ragContext.text.substring(0, 15000)}"
 
 GUIDELINES:
-1. ** Pedagogical Structure **: Start with an "Introduction/Overview", followed by "Core Concepts"(detailed), "Key Formulas/Definitions", "Practical Examples/Context", and "Advanced Insights for Higher Grades".
-    2. ** Visual and Interactive Elements **: 
-       - Inject relevant, context-specific, and fun educational emojis (e.g., 👋, 💡, 🧍, 🧼, 🚽, 🐶, 🦠, 🍎, 📐, 🧪) at the start of subtopic headings, key terms, definitions, and important list items to make the notes engaging, friendly, and visually alive for learners.
-       - Use blockquotes ('> 💡 **Key Definition**') to isolate and highlight vital concepts.
-    3. ** Exam Focus **: Explicitly mention areas that are frequently tested.Use phrases like "Exam Tip" or "Commonly assessed in national exams (KCSE/CBC)".
-    4. ** Tone **: Educational, encouraging, friendly, active, and professional (Teacher-to-Student). Keep explanations clear and relatable.
-    5. ** Richness **: Provide depth.If a concept is mentioned in the source, explain the 'why' and 'how', not just the 'what'.
-    6. ** Formatting **: Use Markdown with clear H2 and H3 headers, bold text for emphasis, bullet points, numbered lists, and visual spacing between sections.
-    7. ** Language **: Use ${isSwahiliSubject(subject, title) ? 'Swahili (Kiswahili Sanifu)' : 'English'}. All subjects other than Swahili/Kiswahili must be generated exclusively in English.
-    
+1. **Pedagogical Structure**: Start with an "Introduction/Overview", followed by "Core Concepts" (detailed), "Key Formulas/Definitions", "Practical Examples/Context", "Exam Tips", and "Common Mistakes".
+2. **Richness**: Explain the "why" and "how", not just the "what".
+3. **Exam Focus**: Explicitly mention areas that are frequently tested.
+4. **Tone**: Educational, encouraging, friendly, active, and professional.
+5. **Formatting**: Use Markdown with clear H2 and H3 headers, bold text for emphasis, bullet points, numbered lists, and visual spacing between sections.
+6. **Language**: Use ${isSwahiliSubject(subject, title) ? 'Swahili (Kiswahili Sanifu)' : 'English'}. All subjects other than Swahili/Kiswahili must be generated exclusively in English.
+7. **SummaryPoints**: Provide exactly 5 concise stickiness points.
+8. **RelatedTopics**: Provide exactly 5 related study topics.
+
     Output JSON.
   `;
 
@@ -1012,13 +1021,12 @@ GUIDELINES:
     const result = await model.generateContent(prompt);
     const text = result.response.text();
     if (!text) throw new Error("No response");
-    return { ...JSON.parse(text), grounding: { used: !!ragContext.text, sources: ragContext.sources } } as ExplanationResult;
+    return { ...parseModelJson<ExplanationResult>(text), grounding: { used: !!ragContext.text, sources: ragContext.sources } } as ExplanationResult;
   } catch (error) {
     console.error("Error generating rich notes:", error);
     throw error;
   }
 };
-
 export const continueResearch = async (
   currentTopic: string,
   currentExplanation: string,
@@ -1295,16 +1303,20 @@ RULES:
 4. Treat this as final classroom material for ${className || 'this class'} in ${subject || 'the subject'}.
 5. structuredNotes must be rich Markdown with at least these sections:
    - ### Topic
-   - ### Learning Goals
+   - ### Learning Outcomes
+   - ### Prior Knowledge / Link to Previous Lesson
    - ### Core Explanation
-   - ### Example
+   - ### Worked Example
+   - ### Class Activity
    - ### Common Mistakes
    - ### Quick Recap
    - ### Check Your Understanding
-6. structuredNotes must be detailed, concrete, and at least 250 words.
-7. simplifiedNotes must be student-friendly and concise, with 5 to 8 bullets or short paragraphs.
-8. Do not write preambles like "Let's create", "Here is", or "I will explain".
-9. Output only valid JSON matching the schema.
+6. structuredNotes must be detailed, concrete, and at least 350 words.
+7. Use Kenya classroom language and realistic examples from CBC/CBE/KCSE teaching.
+8. If the topic is scientific or mathematical, include the exact definition, procedure, formula, or rule where relevant.
+9. simplifiedNotes must be student-friendly and concise, with 5 to 8 bullets or short paragraphs that still add real value.
+10. Do not write preambles like "Let's create", "Here is", or "I will explain".
+11. Output only valid JSON matching the schema.
     `;
 
   try {
@@ -1369,9 +1381,11 @@ export const transcribeTeacherLesson = async (
     Listen to this audio recording of a teacher's lesson lecture or dictation.
     
     1. Transcribe the spoken text accurately.
-    2. Organize the transcribed text into high-quality draft lesson notes. Use clear headings, bullet points, and paragraphs.
-    3. The subject is ${subject || 'a school subject'} for ${grade || 'a Kenyan classroom'}.
-    4. ${langInstruction}
+    2. Organize the transcribed text into a real teacher lesson file, not a loose transcript.
+    3. Use these sections where relevant: Topic, Learning Outcomes, Introduction, Core Explanation, Examples, Class Work, Common Errors, Recap, and Check Your Understanding.
+    4. Add Kenyan classroom context and keep the wording strong enough for revision and lesson preparation.
+    5. The subject is ${subject || 'a school subject'} for ${grade || 'a Kenyan classroom'}.
+    6. ${langInstruction}
     
     Format the output as JSON matching the schema.
   `;
@@ -1608,10 +1622,11 @@ ${JSON.stringify(note)}
 
 TASK:
 1. Keep the same topic intent.
-2. Expand and polish content so it is classroom-ready and exam-aligned.
-3. structuredNotes: professional teacher-quality markdown with headings, key points, examples, common misconceptions, and short assessment checks.
-4. simplifiedNotes: student-friendly study note with plain language, bullet points, and quick recap.
-5. Return only valid JSON matching schema.
+2. Expand and polish content so it is classroom-ready, exam-aligned, and genuinely useful for revision.
+3. structuredNotes must feel like a real teacher lesson file with these sections where relevant: Topic, Learning Outcomes, Introduction, Core Explanation, Examples, Common Misconceptions, Class Work, Recap, and Quick Check.
+4. Include Kenyan classroom context and make the examples concrete, not generic.
+5. simplifiedNotes should be shorter but still helpful, with plain language and 5 to 8 clear bullets or short paragraphs.
+6. Return only valid JSON matching schema.
 `;
 
   const result = await model.generateContent([
@@ -2892,7 +2907,7 @@ export const generatePodcastScript = async (content: string, topic: string): Pro
     const result = await model.generateContent(prompt);
     const text = result.response.text();
     if (!text) throw new Error("No response from AI");
-    return JSON.parse(text);
+    return parseModelJson<any>(text);
   } catch (error) {
     console.error("Error generating podcast script:", error);
     throw error;
@@ -2984,7 +2999,7 @@ export const gradeStudentSubmission = async (
 
     const text = result.response.text();
     if (!text) throw new Error("No response from AI auto-grader");
-    return JSON.parse(text);
+    return parseModelJson<any>(text);
   } catch (error) {
     console.error("Error grading student submission:", error);
     throw error;
@@ -2997,6 +3012,8 @@ export const generateSchemeOfWork = async (subject: string, grade: string, term:
   const model = genAI.getGenerativeModel({
     model: MODEL_NAME,
     generationConfig: {
+      maxOutputTokens: 4096,
+      temperature: 0.35,
       responseMimeType: "application/json",
       responseSchema: {
         type: SchemaType.OBJECT,
@@ -3053,14 +3070,14 @@ export const generateSchemeOfWork = async (subject: string, grade: string, term:
 
     Language: ${isSwahiliSubject(subject) ? 'Swahili (Kiswahili Sanifu)' : 'English'}. All subjects other than Swahili/Kiswahili must be generated exclusively in English.
 
-    Output as structured JSON. DO NOT cut corners. Provide comprehensive educational value.
+    Output as structured JSON. DO NOT cut corners. Provide comprehensive educational value. Include enough detail for a real teacher to use directly without rewriting.
   `;
 
   try {
     const result = await model.generateContent(prompt);
     const text = result.response.text();
     if (!text) throw new Error("No response from AI");
-    return JSON.parse(text);
+    return parseModelJson<any>(text);
   } catch (error) {
     console.error("Error generating scheme of work:", error);
     throw error;
@@ -3131,7 +3148,7 @@ export const polishLessonPlan = async (
     const result = await model.generateContent(prompt);
     const text = result.response.text();
     if (!text) throw new Error("No response from AI");
-    return JSON.parse(text);
+    return parseModelJson<any>(text);
   } catch (error) {
     console.error("Error polishing lesson plan:", error);
     throw error;
@@ -3468,7 +3485,8 @@ export const chatTalkbackStream = async (
   userMessage: string,
   chatHistory: TalkbackMessage[],
   language: 'en' | 'sw' = 'en',
-  educationLevel?: string
+  educationLevel?: string,
+  syllabusContext?: SyllabusTutorContext
 ): Promise<ReadableStream<Uint8Array>> => {
   const history = chatHistory.slice(-10).map(m =>
     `${m.role === 'ai' ? 'Akili' : 'Learner'}: ${m.text}`
@@ -3486,7 +3504,7 @@ export const chatTalkbackStream = async (
     : educationLevel === 'JUNIOR'
     ? `- You are a warm, playful, patient tutor for a Grade 1-6 CBC learner.
     - Use VERY simple words, short sentences, and fun local analogies (e.g. matunda, ng'ombe, shamba, soko).
-    - Celebrate every question with excitement — "Swali zuri! 🌟" or "Great question! 🌟"
+    - Celebrate every question with excitement - "Swali zuri! ??" or "Great question! ??"
     - Break things into tiny, bite-sized steps a young child can follow.
     - Use real-life Kenyan examples (market, farm, school, home).
     - NO MARKDOWN: NEVER use bold (**text**) or italics (*text*) formatting.`
@@ -3496,14 +3514,29 @@ export const chatTalkbackStream = async (
     - Ask a probing analytical follow-up question.
     - NO MARKDOWN: NEVER use bold (**text**) or italics (*text*) formatting.`;
 
+  const syllabusLine = syllabusContext && (syllabusContext.grade || syllabusContext.subject || syllabusContext.topic || syllabusContext.sourceTitle)
+    ? `
+    SYLLABUS CONTEXT:
+    ${syllabusContext.grade ? `- Grade/level: ${syllabusContext.grade}` : ''}
+    ${syllabusContext.subject ? `- Subject: ${syllabusContext.subject}` : ''}
+    ${syllabusContext.topic ? `- Topic: ${syllabusContext.topic}` : ''}
+    ${syllabusContext.sourceTitle ? `- Source title: ${syllabusContext.sourceTitle}` : ''}
+    - Stay anchored to the syllabus context above.
+    - If the learner asks a related follow-up, keep the answer tied to the same topic before moving on.
+    - Use one idea at a time, then ask a short check-for-understanding question.
+  `
+    : '';
+
   const prompt = `
     You are "Akili", a Kenyan AI learning buddy. Built for Kenya, by Kenya.
     ${langInstruction}
 
     YOUR TEACHING PERSONA:
     ${levelPersona}
+    ${syllabusLine}
     - NEVER use inappropriate, violent, or scary content.
     - When asked an academic question, solve it completely from start to finish.
+    - Keep the answer practical, syllabus-aware, and easy to follow.
 
     CONVERSATION HISTORY:
     ${history}
@@ -3515,7 +3548,6 @@ export const chatTalkbackStream = async (
 
   return callGeminiProxyStream(MODEL_NAME, [{ role: 'user', parts: [{ text: prompt }] }], { maxOutputTokens: 1500 });
 };
-
 export const transcribeAudioForChat = async (
   base64Audio: string,
   mimeType: string,
@@ -3946,25 +3978,86 @@ export const generateLessonPlan = async (
 ): Promise<LessonPlanOutput> => {
   const systemInstruction = {
     parts: [{
-      text: `You are an expert Kenyan CBC curriculum designer. Generate a complete, detailed lesson plan.
-OUTPUT FORMAT � strict JSON only (no markdown fences):
+      text: `You are an expert Kenyan CBC curriculum designer. Generate a complete, detailed lesson plan that a teacher can use immediately.
+OUTPUT FORMAT - strict JSON only (no markdown fences):
 {"title":"...","grade":"${grade}","subject":"${subject}","duration":"${duration}","learningOutcomes":["..."],"resources":["..."],"activities":[{"phase":"Engage","duration":"X min","teacherActivity":"...","studentActivity":"...","cbcCompetency":"..."},{"phase":"Explore","duration":"X min","teacherActivity":"...","studentActivity":"...","cbcCompetency":"..."},{"phase":"Explain","duration":"X min","teacherActivity":"...","studentActivity":"...","cbcCompetency":"..."},{"phase":"Elaborate","duration":"X min","teacherActivity":"...","studentActivity":"...","cbcCompetency":"..."},{"phase":"Evaluate","duration":"X min","teacherActivity":"...","studentActivity":"...","cbcCompetency":"..."}],"assessment":"...","differentiation":{"struggling":"...","gifted":"..."},"cbcValues":["..."],"homework":"..."}
-RULES: Use Kenya CBC 5E model. Align to KICD for ${grade} ${subject}. Use Kenyan contexts. Output ONLY valid JSON.`
+RULES: Use the Kenya CBC 5E model. Align to KICD for ${grade} ${subject}. Include specific teacher moves, learner actions, resources, and assessment prompts. Make the plan practical, detailed, and classroom-ready. Use Kenyan examples or situations where they fit naturally. Avoid vague phrases like 'discuss briefly' or 'explain clearly' unless followed by an actual action. Output ONLY valid JSON.`
     }]
   };
   const contents = [{ role: 'user' as const, parts: [{ text: `Generate CBC lesson plan. Topic: ${topic}, Grade: ${grade}, Subject: ${subject}, Duration: ${duration}, Objectives: ${objectives || 'appropriate for grade'}` }] }];
-  const defaultPlan: LessonPlanOutput = { title: `${topic} � ${grade} ${subject}`, grade, subject, duration, learningOutcomes: [`Explain ${topic}`, `Apply ${topic} to real-world problems`, `Evaluate findings on ${topic}`], resources: ['Textbook', 'Exercise books', 'Locally available materials'], activities: [{ phase: 'Engage', duration: '10 min', teacherActivity: 'Pose a thought-provoking question', studentActivity: 'Discuss prior knowledge in pairs', cbcCompetency: 'Communication' }, { phase: 'Explore', duration: '15 min', teacherActivity: 'Guide discovery activity', studentActivity: 'Conduct activity and record observations', cbcCompetency: 'Critical Thinking' }, { phase: 'Explain', duration: '10 min', teacherActivity: 'Explain core concepts', studentActivity: 'Take notes and ask questions', cbcCompetency: 'Learning to Learn' }, { phase: 'Elaborate', duration: '10 min', teacherActivity: 'Give application task', studentActivity: 'Solve problems in groups', cbcCompetency: 'Collaboration' }, { phase: 'Evaluate', duration: '5 min', teacherActivity: 'Pose exit ticket', studentActivity: 'Answer 3 short questions', cbcCompetency: 'Self-efficacy' }], assessment: 'Observation during activities, exit ticket, group presentation', differentiation: { struggling: 'Provide visual aids and peer support', gifted: 'Extension investigative challenge' }, cbcValues: ['Integrity', 'Responsibility'], homework: `Research three real-life applications of ${topic}` };
+  const defaultPlan: LessonPlanOutput = {
+    title: `${topic} - ${grade} ${subject}`,
+    grade,
+    subject,
+    duration,
+    learningOutcomes: [
+      `Define and explain ${topic}`,
+      `Apply ${topic} in familiar Kenyan situations`,
+      `Work through guided and independent tasks on ${topic}`,
+      `Demonstrate understanding through oral or written responses`
+    ],
+    resources: [
+      'Textbook',
+      'Exercise books',
+      'Chart paper / board',
+      'Locally available materials',
+      'Markers or chalk'
+    ],
+    activities: [
+      {
+        phase: 'Engage',
+        duration: '5 min',
+        teacherActivity: `Hook learners with a short real-life question linked to ${topic}.`,
+        studentActivity: 'Respond from prior knowledge and share quick ideas in pairs.',
+        cbcCompetency: 'Communication'
+      },
+      {
+        phase: 'Explore',
+        duration: '10 min',
+        teacherActivity: `Guide a hands-on or guided discovery activity using familiar examples from ${subject}.`,
+        studentActivity: 'Observe, discuss, and record what they notice.',
+        cbcCompetency: 'Critical Thinking'
+      },
+      {
+        phase: 'Explain',
+        duration: '10 min',
+        teacherActivity: `Break down the key idea of ${topic} step by step, using board examples and questioning.`,
+        studentActivity: 'Take notes, answer oral questions, and ask for clarification where needed.',
+        cbcCompetency: 'Learning to Learn'
+      },
+      {
+        phase: 'Elaborate',
+        duration: '10 min',
+        teacherActivity: 'Give a short group task or application problem that deepens understanding.',
+        studentActivity: 'Solve, discuss, and present their reasoning.',
+        cbcCompetency: 'Collaboration'
+      },
+      {
+        phase: 'Evaluate',
+        duration: '5 min',
+        teacherActivity: 'Use an exit ticket, oral check, or short written item to confirm understanding.',
+        studentActivity: 'Answer 3 short questions and reflect on one thing learned.',
+        cbcCompetency: 'Self-efficacy'
+      }
+    ],
+    assessment: 'Observation during activities, guided questioning, short exit ticket, and a quick written check of understanding.',
+    differentiation: {
+      struggling: 'Use simpler language, visual cues, peer support, and one-on-one prompting.',
+      gifted: 'Add an extension task, challenge question, or a real-life application problem.'
+    },
+    cbcValues: ['Responsibility', 'Integrity', 'Cooperation'],
+    homework: `Write a short reflection and complete 5 practice items on ${topic}.`
+  };
   try {
-    const result = await callGeminiProxy(MODEL_NAME, contents, { maxOutputTokens: 2000, temperature: 0.4 }, systemInstruction);
+    const result = await callGeminiProxy(MODEL_NAME, contents, { maxOutputTokens: 2600, temperature: 0.35 }, systemInstruction);
     const text = result.response.text() || '';
     const cleaned = text.replace(/```json|```/g, '').trim();
-    return JSON.parse(cleaned) as LessonPlanOutput;
+    return parseModelJson<LessonPlanOutput>(cleaned);
   } catch (error) {
     console.error('Lesson plan generation error:', error);
     return defaultPlan;
   }
 };
-
 export const generateTermReportNarrative = async (stats: { className: string; subject: string; term: string; classAverage: number; passRate: number; topTopic: string; weakestTopic: string; totalStudents: number; }): Promise<string> => {
   const contents = [{ role: 'user' as const, parts: [{ text: `Write a professional 2-paragraph teacher term report narrative. Class: ${stats.className}, Subject: ${stats.subject}, Term: ${stats.term}, Average: ${stats.classAverage}%, Pass Rate: ${stats.passRate}%, Strongest Topic: ${stats.topTopic}, Weakest: ${stats.weakestTopic}, Students: ${stats.totalStudents}. Formal Kenyan education report style. Include forward-looking recommendation.` }] }];
   try {
@@ -4007,3 +4100,7 @@ export const generatePersonalisedPath = async (grade: string, subjects: string[]
     return defaultPath;
   }
 };
+
+
+
+

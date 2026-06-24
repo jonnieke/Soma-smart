@@ -10,6 +10,7 @@
 
 import { SchemaType } from "@google/generative-ai";
 import { callGeminiProxy } from "./geminiService";
+import { parseModelJson } from "./jsonResponse";
 import { TeachingStrategy, PedagogicalAnalytics, TopicAnalytics } from "../types";
 import { supabase } from '../lib/supabase';
 
@@ -229,7 +230,7 @@ export const generateTeachingStrategies = async (
         const text = result.response.text();
         if (!text) throw new Error("No response from Admin Agent");
 
-        const strategies: any[] = JSON.parse(text);
+        const strategies: any[] = parseModelJson(text);
 
         // Enrich with metadata
         return strategies.map((s, i) => ({

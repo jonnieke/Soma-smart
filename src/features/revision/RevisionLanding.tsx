@@ -90,6 +90,8 @@ interface Props {
     onStartSession: (data: File | TeacherActivity, mode: RevisionMode) => void;
     onNavigate: (view: ViewState) => void;
     onBack?: () => void;
+    initialSubject?: string;
+    initialSearchQuery?: string;
 }
 
 const normalizeGrade = (g: any) => {
@@ -136,15 +138,15 @@ const isGradeInStudentRange = (materialGrade: string, studentGrade: string): boo
     return mGrade === sGrade;
 };
 
-export const RevisionLanding: React.FC<Props> = ({ onStartSession, onNavigate, onBack }) => {
+export const RevisionLanding: React.FC<Props> = ({ onStartSession, onNavigate, onBack, initialSubject, initialSearchQuery }) => {
     const {
         logout, availableQuizzes, fetchAvailableQuizzes, isOnline,
         studentProfile, resources, fetchResources, weakTopics,
         masteryGraph, educationLevel, role, revisionUsageCount
     } = useApp();
 
-    const [searchQuery, setSearchQuery] = useState('');
-    const [activeSubject, setActiveSubject] = useState<string>('All');
+    const [searchQuery, setSearchQuery] = useState(() => initialSearchQuery || '');
+    const [activeSubject, setActiveSubject] = useState<string>(() => initialSubject || 'All');
     const [showLogoutModal, setShowLogoutModal] = useState(false);
     const [showCamera, setShowCamera] = useState(false);
     const [stream, setStream] = useState<MediaStream | null>(null);
@@ -163,10 +165,19 @@ export const RevisionLanding: React.FC<Props> = ({ onStartSession, onNavigate, o
         }
     });
 
+
     const videoRef = useRef<HTMLVideoElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
 
     // Fetch on mount
+    React.useEffect(() => {
+        if (initialSearchQuery) setSearchQuery(initialSearchQuery);
+        if (initialSubject) {
+            setActiveSubject(initialSubject);
+            setExamGoal(prev => ({ ...prev, subject: initialSubject }));
+        }
+    }, [initialSearchQuery, initialSubject]);
+
     React.useEffect(() => {
         if (isOnline) {
             setLoadingResources(true);
@@ -259,13 +270,26 @@ export const RevisionLanding: React.FC<Props> = ({ onStartSession, onNavigate, o
         return Math.max(diff, 0);
     }, [examGoal.examDate]);
 
-    const missionTopic = weakTopics[0] || (activeSubject !== 'All' ? activeSubject : examGoal.subject);
+    const focusSubject = initialSubject && initialSubject !== 'All' ? initialSubject : examGoal.subject;
+    const focusTopic = initialSearchQuery?.trim() || weakTopics[0] || focusSubject;
+    const missionTopic = weakTopics[0] || focusTopic;
     const missionTitle = weakTopics[0]
-        ? `${examGoal.subject}: fix ${missionTopic}`
-        : `${examGoal.subject}: start with a scored drill`;
+        ? `${focusSubject}: fix ${missionTopic}`
+        : `${focusSubject}: start with a scored drill`;
     const missionResource = filteredItems.find(item =>
-        item.subject === examGoal.subject
+        item.subject === focusSubject
+    ) || filteredItems.find(item =>
+        initialSearchQuery?.trim()
+            ? String(item.title || '').toLowerCase().includes(initialSearchQuery.trim().toLowerCase())
+            : false
     ) || filteredItems[0];
+    const recommendedStart = missionResource;
+    const guruSyllabusContext = {
+        grade: studentProfile?.grade || examGoal.examType,
+        subject: focusSubject,
+        topic: focusTopic,
+        sourceTitle: recommendedStart?.title || missionTitle,
+    };
 
     const openGuru = (mode: PanelMode = 'chat', prompt = '') => {
         setGuruMode(mode);
@@ -442,6 +466,13 @@ Use plain text. No markdown headings or symbols.`;
                 <section className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-4 sm:p-5 shadow-sm">
                     <div className="flex items-start justify-between gap-3 mb-4">
                         <div>
+                            {initialSubject && initialSubject !== "All" && (
+                                <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-indigo-200 dark:border-indigo-900/60 bg-indigo-50 dark:bg-indigo-950/30 px-3 py-1.5">
+                                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-600 dark:text-indigo-300">Focused revision</span>
+                                    <span className="text-[11px] font-bold text-slate-800 dark:text-slate-100">{initialSubject}</span>
+                                </div>
+                            )}
+
                             <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-500 mb-1">Past Paper Practice</p>
                             <h1 className="text-xl sm:text-2xl font-black text-slate-950 dark:text-white leading-tight">Choose a paper, attempt it, then mark it.</h1>
                             <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1 font-medium">
@@ -490,6 +521,14 @@ Use plain text. No markdown headings or symbols.`;
                         />
                     </div>
 
+                    {initialSubject && initialSubject !== 'All' && (
+                        <div className="mt-4 rounded-2xl border border-indigo-200 dark:border-indigo-900/60 bg-indigo-50 dark:bg-indigo-950/30 px-4 py-3">
+                            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-600 dark:text-indigo-300 mb-1">Focused revision</p>
+                            <p className="text-sm font-bold text-slate-900 dark:text-white">Starting with {initialSubject}</p>
+                            <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 mt-0.5">We&apos;ve preselected the subject from your current lesson so you can jump straight in.</p>
+                        </div>
+                    )}
+
                     <div className="grid grid-cols-3 gap-2 mt-4">
                         <button onClick={() => openGuru('mark')} className="rounded-2xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white px-3 py-3 transition-all text-left">
                             <ClipboardCheck className="w-5 h-5 mb-2" />
@@ -505,6 +544,28 @@ Use plain text. No markdown headings or symbols.`;
                         </button>
                     </div>
                 </section>
+
+                    {recommendedStart && (
+                        <div className="mt-4 rounded-2xl border border-indigo-200 dark:border-indigo-900/60 bg-indigo-50 dark:bg-indigo-950/30 px-4 py-4">
+                            <div className="flex items-start justify-between gap-3">
+                                <div className="min-w-0">
+                                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-600 dark:text-indigo-300 mb-1">Current focus</p>
+                                    <p className="text-sm font-bold text-slate-900 dark:text-white truncate">
+                                        {initialSearchQuery?.trim() ? initialSearchQuery.trim() : focusSubject}
+                                    </p>
+                                    <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 mt-0.5">
+                                        We have matched this to your current lesson and pulled the best paper to start with.
+                                    </p>
+                                </div>
+                                <button
+                                    onClick={() => onStartSession(recommendedStart, RevisionMode.EXAM)}
+                                    className="shrink-0 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 text-[11px] font-black transition-colors"
+                                >
+                                    Open paper
+                                </button>
+                            </div>
+                        </div>
+                    )}
 
                 <section className="hidden">
                     {/* Scan */}
@@ -930,6 +991,7 @@ Use plain text. No markdown headings or symbols.`;
                         onLogin={() => setShowLoginModal(true)}
                         initialMode={guruMode}
                         initialPrompt={guruPrompt}
+                        syllabusContext={guruSyllabusContext}
                     />
                 )}
             </AnimatePresence>

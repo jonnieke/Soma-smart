@@ -25,7 +25,15 @@ const trimToBalancedJson = (text: string): string => {
 const normalizeJsonSyntax = (text: string): string =>
   text
     .replace(/,\s*([}\]])/g, '$1')
-    .replace(/[\u0000-\u001F]+/g, (match) => match.replace(/[\r\n\t]/g, ' '));
+    .split('')
+    .map((char) => {
+      const code = char.charCodeAt(0);
+      if (code < 32) {
+        return char === '\r' || char === '\n' || char === '\t' ? ' ' : '';
+      }
+      return char;
+    })
+    .join('');
 
 export const parseModelJson = <T>(rawText: string): T => {
   const candidates = [

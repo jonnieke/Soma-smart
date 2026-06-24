@@ -3,10 +3,12 @@ import { motion } from 'framer-motion';
 import { Sparkles, FileText, Brain, Mic, ScanLine, FileUp, Zap, ChevronRight, GraduationCap, Monitor } from 'lucide-react';
 
 interface CreationHubProps {
+    selectedClass?: string;
+    selectedSubject?: string;
     onNavigateToTool: (tool: 'CONVERT' | 'QUIZ' | 'DARASA_MODE' | 'MARKING' | 'SCHEMES' | 'LESSON_POLISH' | 'HOMEWORK' | 'CPD_HUB' | 'CLASSROOM_SIMULATOR' | 'LESSON_PLAN_GENERATOR') => void;
 }
 
-export const CreationHub: React.FC<CreationHubProps> = ({ onNavigateToTool }) => {
+export const CreationHub: React.FC<CreationHubProps> = ({ selectedClass, selectedSubject, onNavigateToTool }) => {
     const [showMoreTools, setShowMoreTools] = React.useState(false);
     const cardClass = "cursor-pointer bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl p-8 rounded-[2.5rem] border border-white/50 dark:border-slate-800 relative overflow-hidden group shadow-xl shadow-slate-200/40 dark:shadow-none hover:-translate-y-2 hover:shadow-2xl hover:border-emerald-200 dark:hover:border-emerald-500/50 transition-all duration-300";
 
@@ -30,6 +32,24 @@ export const CreationHub: React.FC<CreationHubProps> = ({ onNavigateToTool }) =>
                 </div>
             </div>
 
+            { (selectedClass?.trim() || selectedSubject?.trim()) ? (
+                <div className="rounded-[2rem] border border-emerald-200 bg-emerald-50 p-5 shadow-sm">
+                    <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                        <div className="min-w-0">
+                            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-600 mb-1">Recommended next step</p>
+                            <h3 className="text-lg font-black text-slate-900">
+                                Start with Quick Notes for {selectedClass?.trim() || 'your class'}{selectedSubject?.trim() ? ` - ${selectedSubject.trim()}` : ''}
+                            </h3>
+                            <p className="text-sm font-semibold text-slate-600 mt-1">This keeps the lesson tied to the class you are already teaching.</p>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                            <button onClick={() => onNavigateToTool('CONVERT')} className="rounded-full bg-emerald-600 px-4 py-2 text-xs font-black uppercase tracking-wider text-white hover:bg-emerald-700 transition-colors">Quick Notes</button>
+                            <button onClick={() => onNavigateToTool('LESSON_PLAN_GENERATOR')} className="rounded-full border border-emerald-200 bg-white px-4 py-2 text-xs font-black uppercase tracking-wider text-emerald-700 hover:border-emerald-300 hover:bg-emerald-100 transition-colors">Lesson Plan</button>
+                        </div>
+                    </div>
+                </div>
+            ) : null }
+
             <div className="bg-white rounded-[2rem] border border-slate-200 p-5 shadow-sm">
                 <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 mb-4">
                     <div>
@@ -40,19 +60,19 @@ export const CreationHub: React.FC<CreationHubProps> = ({ onNavigateToTool }) =>
                 <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
                     <button onClick={() => onNavigateToTool('CONVERT')} className="min-h-[52px] rounded-2xl bg-emerald-600 hover:bg-emerald-700 px-4 text-left text-white shadow-sm">
                         <p className="text-sm font-black">Quick Notes</p>
-                        <p className="text-[11px] font-semibold text-emerald-100 mt-1">Start from a topic, voice note, or quick prompt</p>
+                        <p className="text-[11px] font-semibold text-emerald-100 mt-1">Start from the current class and subject</p>
                     </button>
                     <button onClick={() => onNavigateToTool('LESSON_PLAN_GENERATOR')} className="min-h-[52px] rounded-2xl bg-slate-900 hover:bg-slate-800 px-4 text-left text-white shadow-sm">
                         <p className="text-sm font-black">Lesson Plan</p>
-                        <p className="text-[11px] font-semibold text-slate-300 mt-1">Turn a topic into class flow</p>
+                        <p className="text-[11px] font-semibold text-slate-300 mt-1">Keep the lesson aligned to this class</p>
                     </button>
                     <button onClick={() => onNavigateToTool('DARASA_MODE')} className="min-h-[52px] rounded-2xl bg-indigo-600 hover:bg-indigo-700 px-4 text-left text-white shadow-sm">
                         <p className="text-sm font-black">Darasa Mode</p>
-                        <p className="text-[11px] font-semibold text-indigo-100 mt-1">Teach from a clean board</p>
+                        <p className="text-[11px] font-semibold text-indigo-100 mt-1">Teach the current lesson live</p>
                     </button>
                     <button onClick={() => onNavigateToTool('SCHEMES')} className="min-h-[52px] rounded-2xl bg-amber-500 hover:bg-amber-600 px-4 text-left text-white shadow-sm">
                         <p className="text-sm font-black">Scheme of Work</p>
-                        <p className="text-[11px] font-semibold text-amber-50 mt-1">Map the term without starting over</p>
+                        <p className="text-[11px] font-semibold text-amber-50 mt-1">Track the term for this subject</p>
                     </button>
                 </div>
             </div>

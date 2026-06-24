@@ -84,7 +84,7 @@ const formatUsageRemaining = (remaining: number, unit: 'calls' | 'characters') =
   return `${remaining} left`;
 };
 
-// ─── Branded lazy-load skeleton ───────────────────────────────────────────────
+// ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ Branded lazy-load skeleton ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬
 const DeferredViewLoader = () => (
   <div className="min-h-[60vh] flex flex-col items-center justify-center gap-5 text-slate-400">
     {/* Animated indigo bar */}
@@ -104,52 +104,52 @@ const EDUCATIONAL_GLOSSARY: Record<string, { definition: string; translation: st
   strand: {
     definition: "A broad field of study or major thematic area within a specific subject in the Competency Based Curriculum.",
     translation: "Mada (Eneo pana la kimasomo katika mtaala mpya).",
-    pronunciation: "/strænd/"
+    pronunciation: "/strÃƒÆ’Ã‚Â¦nd/"
   },
   "sub-strand": {
     definition: "A smaller sub-topic or specific learning unit under a broader Strand in the syllabus.",
     translation: "Mada Ndogo (Kijisehemu cha mada kuu katika mtaala).",
-    pronunciation: "/sʌb-strænd/"
+    pronunciation: "/sÃƒÅ Ã…â€™b-strÃƒÆ’Ã‚Â¦nd/"
   },
   competency: {
     definition: "The ability to apply knowledge, skills, values, and attitudes to successfully perform tasks in daily life.",
     translation: "Uwezo (Ujuzi na stadi za kutenda jambo na kutatua matatizo).",
-    pronunciation: "/ˈkɒmpɪtənsi/"
+    pronunciation: "/Ãƒâ€¹Ã‹â€ kÃƒâ€°Ã¢â‚¬â„¢mpÃƒâ€°Ã‚ÂªtÃƒâ€°Ã¢â€žÂ¢nsi/"
   },
   assessment: {
     definition: "The systematic process of gathering evidence of a learner's progress, understanding, and performance.",
     translation: "Tathmini (Utaratibu wa kukadiria kiwango cha uelewa wa mwanafunzi).",
-    pronunciation: "/əˈsɛsmənt/"
+    pronunciation: "/Ãƒâ€°Ã¢â€žÂ¢Ãƒâ€¹Ã‹â€ sÃƒâ€°Ã¢â‚¬ÂºsmÃƒâ€°Ã¢â€žÂ¢nt/"
   },
   kicd: {
     definition: "Kenya Institute of Curriculum Development - the official government body responsible for designing school curricula.",
     translation: "Taasisi ya Ukuzaji Mtaala ya Kenya (Inayohusika na kuandaa masomo).",
-    pronunciation: "/kē-ī-sē-dē/"
+    pronunciation: "/kÃƒâ€žÃ¢â‚¬Å“-Ãƒâ€žÃ‚Â«-sÃƒâ€žÃ¢â‚¬Å“-dÃƒâ€žÃ¢â‚¬Å“/"
   },
   knec: {
     definition: "Kenya National Examinations Council - the official national body responsible for setting, administering, and marking primary and secondary exams.",
     translation: "Baraza la Mitihani la Kitaifa la Kenya (Linaloandaa na kusimamia mitihani).",
-    pronunciation: "/kē-ɛn-ē-sē/"
+    pronunciation: "/kÃƒâ€žÃ¢â‚¬Å“-Ãƒâ€°Ã¢â‚¬Âºn-Ãƒâ€žÃ¢â‚¬Å“-sÃƒâ€žÃ¢â‚¬Å“/"
   },
   kpsea: {
     definition: "Kenya Primary School Education Assessment - the national evaluation done at the end of Grade 6 under the CBC system.",
     translation: "Tathmini ya Elimu ya Msingi ya Kenya (Mitihani ya mwisho wa Gredi ya 6).",
-    pronunciation: "/kē-pē-ɛs-ē-ā/"
+    pronunciation: "/kÃƒâ€žÃ¢â‚¬Å“-pÃƒâ€žÃ¢â‚¬Å“-Ãƒâ€°Ã¢â‚¬Âºs-Ãƒâ€žÃ¢â‚¬Å“-Ãƒâ€žÃ‚Â/"
   },
   kcse: {
     definition: "Kenya Certificate of Secondary Education - the national examination taken at the end of secondary school (Form 4).",
     translation: "Cheti cha Elimu ya Sekondari ya Kenya (Mtihani wa mwisho wa sekondari).",
-    pronunciation: "/kē-sē-ɛs-ē/"
+    pronunciation: "/kÃƒâ€žÃ¢â‚¬Å“-sÃƒâ€žÃ¢â‚¬Å“-Ãƒâ€°Ã¢â‚¬Âºs-Ãƒâ€žÃ¢â‚¬Å“/"
   },
   values: {
     definition: "Core principles such as love, respect, unity, and integrity integrated into lessons to shape character.",
     translation: "Maadili (Nguzo za tabia njema na utu zinazofunzwa shuleni).",
-    pronunciation: "/ˈvæljuːz/"
+    pronunciation: "/Ãƒâ€¹Ã‹â€ vÃƒÆ’Ã‚Â¦ljuÃƒâ€¹Ã‚Âz/"
   },
   uzalendo: {
     definition: "A core social value representing patriotism, love for country, and active citizenship in the Kenyan society.",
     translation: "Patriotism (Uzalendo na mapenzi ya dhati kwa nchi yako ya Kenya).",
-    pronunciation: "/oo-zah-lɛn-dɔ/"
+    pronunciation: "/oo-zah-lÃƒâ€°Ã¢â‚¬Âºn-dÃƒâ€°Ã¢â‚¬Â/"
   },
   katiba: {
     definition: "The Constitution of Kenya - the supreme law of the Republic of Kenya that guides governance and citizen rights.",
@@ -455,7 +455,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
   // Load mastery from cloud on mount (registered users only)
   useEffect(() => {
     const learnerId = studentCode || studentProfile?.id;
-    if (!learnerId) return; // Guest — localStorage only
+    if (!learnerId) return; // Guest ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â localStorage only
     loadMemoryService().then(({ loadMasteryFromCloud }) => {
       loadMasteryFromCloud(learnerId).then(({ cloudRow }) => {
         if (cloudRow) setCloudMemoryRow(cloudRow);
@@ -498,6 +498,8 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
   const [expandedRecaps, setExpandedRecaps] = useState<number[]>([]);
   const [tutorInitialActiveMode, setTutorInitialActiveMode] = useState<'TALKBACK' | 'LANGUAGE_TUTOR'>('TALKBACK');
   const [tutorInitialTutorMode, setTutorInitialTutorMode] = useState<'conversation' | 'pronunciation' | 'sentences' | 'story'>('conversation');
+  const [revisionInitialSubject, setRevisionInitialSubject] = useState<string>('All');
+  const [revisionInitialSearchQuery, setRevisionInitialSearchQuery] = useState<string>('');
   const [completedRecallChecks, setCompletedRecallChecks] = useState<number[]>([]);
   const [recallRewarded, setRecallRewarded] = useState(false);
   const [showExitRecallPrompt, setShowExitRecallPrompt] = useState(false);
@@ -597,7 +599,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
     if (saves.find(s => s.topic === topic)) { triggerToast('Already saved for offline.'); return; }
     saves.unshift({ id: Date.now().toString(), topic, content, subject, savedAt: new Date().toLocaleDateString() });
     localStorage.setItem(OFFLINE_KEY, JSON.stringify(saves.slice(0, 20)));
-    triggerToast('Saved for offline reading ✓');
+    triggerToast('Saved for offline reading ÃƒÂ¢Ã…â€œÃ¢â‚¬Å“');
   };
 
   // Ask teacher state
@@ -763,7 +765,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
     } else if (citationFormat === 'HARVARD') {
       citation = `Soma Smart, ${new Date().getFullYear()}. ${currentDocument.title}, Soma AI Library. Available at: Soma Smart. [Accessed ${formattedDate}]. Quote: "${cleanText}"`;
     } else {
-      citation = `"${cleanText}" — Soma AI Library: Grade ${currentDocument.grade || 'N/A'} ${currentDocument.subject || 'General'} (${currentDocument.title}). Reference ID: ${currentDocument.realId || currentDocument.id}`;
+      citation = `"${cleanText}" ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â Soma AI Library: Grade ${currentDocument.grade || 'N/A'} ${currentDocument.subject || 'General'} (${currentDocument.title}). Reference ID: ${currentDocument.realId || currentDocument.id}`;
     }
 
     navigator.clipboard.writeText(citation).then(() => {
@@ -879,7 +881,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
             className="underline decoration-dotted decoration-indigo-400 hover:decoration-solid hover:text-indigo-600 dark:hover:text-indigo-400 font-bold transition-all inline-flex items-center gap-0.5 cursor-help"
           >
             {match.value}
-            <span className="text-[10px] text-indigo-400">📖</span>
+            <span className="text-[10px] text-indigo-400">ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã¢â‚¬â€œ</span>
           </button>
         );
       }
@@ -1313,6 +1315,52 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
   const [selectedSource, setSelectedSource] = useState<'ALL' | 'SOMO' | 'TEACHERS'>('ALL'); // New Filter
   const [pendingMaterialId, setPendingMaterialId] = useState<string | null>(null);
   const [currentDocument, setCurrentDocument] = useState<any>(null);
+
+  const tutorSyllabusContext = React.useMemo(() => {
+    const grade = studentProfile?.grade || currentDocument?.grade || educationLevel || '';
+    const subject = currentDocument?.subject || '';
+    const topic = currentDocument?.title || '';
+    const sourceTitle = currentDocument?.title || currentDocument?.subject || '';
+    if (!grade && !subject && !topic && !sourceTitle) return undefined;
+    return { grade, subject, topic, sourceTitle };
+  }, [studentProfile?.grade, currentDocument?.grade, currentDocument?.subject, currentDocument?.title, educationLevel]);
+
+  const buildSyllabusPromptContext = React.useCallback((basePrompt: string) => {
+    const pieces: string[] = [];
+    const grade = studentProfile?.grade || currentDocument?.grade || educationLevel || '';
+    if (grade) pieces.push(`Grade: ${grade}`);
+    if (currentDocument?.subject) pieces.push(`Subject: ${currentDocument.subject}`);
+    if (currentDocument?.title) pieces.push(`Topic: ${currentDocument.title}`);
+    if (pieces.length === 0) return basePrompt;
+    return `${basePrompt}
+
+Syllabus context:
+${pieces.join('\n')}
+
+Stay anchored to this context unless I ask for something broader.`;
+  }, [studentProfile?.grade, currentDocument?.grade, currentDocument?.subject, currentDocument?.title, educationLevel]);
+
+  const buildFocusedStartupPrompt = React.useCallback((basePrompt: string) => {
+    const pieces: string[] = [];
+    const grade = studentProfile?.grade || currentDocument?.grade || educationLevel || '';
+    if (grade) pieces.push(`Grade: ${grade}`);
+    if (currentDocument?.subject) pieces.push(`Subject: ${currentDocument.subject}`);
+    if (currentDocument?.title) pieces.push(`Topic: ${currentDocument.title}`);
+    if (pieces.length === 0) return basePrompt;
+    return `${basePrompt}
+
+Startup rule:
+- Start with one short answer or one short check question, not a lecture.
+- Stay on the current lesson/topic until the learner asks to move on.
+- End with one useful follow-up question to keep the learner thinking.
+
+Syllabus context:
+${pieces.join('\n')}
+
+Stay anchored to this context unless I ask for something broader.`;
+  }, [studentProfile?.grade, currentDocument?.grade, currentDocument?.subject, currentDocument?.title, educationLevel]);
+
+
   const [studyChat, setStudyChat] = useState<{ role: 'user' | 'model', text: string }[]>([]);
   const [isSummarizing, setIsSummarizing] = useState(false);
 
@@ -2058,9 +2106,13 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
         }
       }
 
+      const startupPrompt = buildFocusedStartupPrompt(query || (pendingMedia?.type === 'AUDIO' ? "Voice Message" : "Image/File Analysis"));
       const finalQuery = activePageText
-        ? `Here is the context from the page of the study material the student is currently reading:\n"""\n${activePageText}\n"""\n\nQuestion: ${query || (pendingMedia?.type === 'AUDIO' ? "Voice Message" : "Image/File Analysis")}`
-        : (query || (pendingMedia?.type === 'AUDIO' ? "Voice Message" : "Image/File Analysis"));
+        ? `Here is the context from the page of the study material the student is currently reading:\n"""\n${activePageText}\n"""\n\nStartup rule: start with one short answer or one short check question, then ask one follow-up.\n\nQuestion: ${query || (pendingMedia?.type === 'AUDIO' ? "Voice Message" : "Image/File Analysis")}`
+        : startupPrompt;
+
+
+
 
       const result = await explainTopic(
         finalQuery,
@@ -2356,6 +2408,8 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
       setMode('LIBRARY');
     } else if (entryIntent === 'exam_prep_papers') {
       setSidebarTab('SUBJECTS');
+      setRevisionInitialSubject(currentDocument?.subject || 'All');
+      setRevisionInitialSearchQuery(currentDocument?.title || currentDocument?.subject || '');
       setMode('REVISION');
     } else if (entryIntent === 'listen_and_learn') {
       setSidebarTab('TALKBACK');
@@ -2518,7 +2572,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
   };
 
   const startRecording = async () => {
-    // ConversationalTutor (TALKBACK) manages its own recording — don't interfere.
+    // ConversationalTutor (TALKBACK) manages its own recording ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â don't interfere.
     if (mode === 'TALKBACK') return;
     try {
       setMicPermissionNotice(false);
@@ -2561,8 +2615,8 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
             console.log("Audio attached to Study Buddy");
           };
         } else if (mode === 'TALKBACK') {
-          // ConversationalTutor has its own recording system — do NOT navigate away.
-          console.log("Global recorder stopped in TALKBACK mode — ignoring.");
+          // ConversationalTutor has its own recording system ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â do NOT navigate away.
+          console.log("Global recorder stopped in TALKBACK mode ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â ignoring.");
         } else {
           await handleAudioExplanation(blob, mimeType);
         }
@@ -2815,8 +2869,10 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
         return;
       }
 
+      const startupPrompt = buildFocusedStartupPrompt(topic || (multimedia?.mimeType.includes('audio') ? "Voice Message" : "Image Analysis"));
+
       const result = await explainTopic(
-        topic || (multimedia?.mimeType.includes('audio') ? "Voice Message" : "Image Analysis"),
+        startupPrompt,
         level,
         language,
         undefined,
@@ -3036,7 +3092,7 @@ ${explanation.explanation}
     setLoading(true);
     setLoadingText("Generating high-quality voice...");
     try {
-      // Build a natural spoken script — avoid raw markdown being read aloud
+      // Build a natural spoken script ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â avoid raw markdown being read aloud
       const spokenIntro = `Today we're learning about ${explanation.topic}.`;
       const spokenSummary = explanation.summaryPoints.length > 0
         ? `Here are the key points. ${explanation.summaryPoints.join('. ')}.`
@@ -3255,7 +3311,7 @@ ${explanation.explanation}
             lastScore: 0,
             reviewCount: 0,
             question: "What are the raw materials and products of photosynthesis in plants?",
-            answer: "Raw Materials:\n- Carbon dioxide (absorbed through stomata)\n- Water (absorbed through roots)\n\nProducts:\n- Glucose (chemical energy stored as starch)\n- Oxygen gas (released as a byproduct through stomata)\n\nReaction Equation:\n6CO₂ + 6H₂O + light → C₆H₁₂O₆ + 6O₂"
+            answer: "Raw Materials:\n- Carbon dioxide (absorbed through stomata)\n- Water (absorbed through roots)\n\nProducts:\n- Glucose (chemical energy stored as starch)\n- Oxygen gas (released as a byproduct through stomata)\n\nReaction Equation:\n6COÃƒÂ¢Ã¢â‚¬Å¡Ã¢â‚¬Å¡ + 6HÃƒÂ¢Ã¢â‚¬Å¡Ã¢â‚¬Å¡O + light ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ CÃƒÂ¢Ã¢â‚¬Å¡Ã¢â‚¬Â HÃƒÂ¢Ã¢â‚¬Å¡Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã¢â‚¬Å¡OÃƒÂ¢Ã¢â‚¬Å¡Ã¢â‚¬Â  + 6OÃƒÂ¢Ã¢â‚¬Å¡Ã¢â‚¬Å¡"
           },
           {
             topic: "Quadratic Equations",
@@ -3267,7 +3323,7 @@ ${explanation.explanation}
             lastScore: 0,
             reviewCount: 0,
             question: "State the quadratic formula and explain what the discriminant determines about the roots.",
-            answer: "Quadratic Formula:\nx = [-b ± √(b² - 4ac)] / (2a)\n\nDiscriminant (D = b² - 4ac):\n1. D > 0: Two distinct real roots.\n2. D = 0: One repeated real root (equal roots).\n3. D < 0: Two complex/imaginary roots."
+            answer: "Quadratic Formula:\nx = [-b Ãƒâ€šÃ‚Â± ÃƒÂ¢Ã‹â€ Ã…Â¡(bÃƒâ€šÃ‚Â² - 4ac)] / (2a)\n\nDiscriminant (D = bÃƒâ€šÃ‚Â² - 4ac):\n1. D > 0: Two distinct real roots.\n2. D = 0: One repeated real root (equal roots).\n3. D < 0: Two complex/imaginary roots."
           },
           {
             topic: "Devolution in Kenya",
@@ -3299,7 +3355,7 @@ ${explanation.explanation}
               <div className="w-20 h-20 bg-indigo-500/20 border border-indigo-500/30 rounded-full flex items-center justify-center mx-auto mb-6">
                 <Trophy className="w-10 h-10 text-indigo-400" />
               </div>
-              <h1 className="text-3xl font-extrabold text-white mb-2 tracking-wide font-sans">Deck Mastered! 🎉</h1>
+              <h1 className="text-3xl font-extrabold text-white mb-2 tracking-wide font-sans">Deck Mastered! ÃƒÂ°Ã…Â¸Ã…Â½Ã¢â‚¬Â°</h1>
               <p className="text-slate-400 text-sm mb-8 leading-relaxed font-sans font-medium">
                 Fantastic job! You've successfully finished this spaced-repetition active recall session.
               </p>
@@ -3414,7 +3470,7 @@ ${explanation.explanation}
                 <div className="w-16 h-16 bg-slate-800 border border-slate-700 rounded-full flex items-center justify-center mx-auto mb-6">
                   <Sparkles className="w-8 h-8 text-indigo-400" />
                 </div>
-                <h2 className="text-xl font-bold text-white mb-2">Queue is Clear! ✨</h2>
+                <h2 className="text-xl font-bold text-white mb-2">Queue is Clear! ÃƒÂ¢Ã…â€œÃ‚Â¨</h2>
                 <p className="text-sm text-slate-400 mb-8 leading-relaxed font-medium">
                   {totalFlashcards > 0
                     ? "Fantastic work! You have no spaced repetition cards due right now. You can practice all decks at any time!"
@@ -3538,10 +3594,10 @@ ${explanation.explanation}
                 {isFlipped && (
                   <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-3 max-w-xl w-full mx-auto relative z-20 animate-fade-in">
                     {[
-                      { name: 'Again 🟥', score: 20, desc: 'Forgot completely', color: 'from-rose-500/10 to-rose-600/10 border-rose-500/20 text-rose-400 hover:from-rose-500 hover:to-rose-600' },
-                      { name: 'Hard 🟨', score: 50, desc: 'Struggled a lot', color: 'from-amber-500/10 to-amber-600/10 border-amber-500/20 text-amber-400 hover:from-amber-500 hover:to-amber-600' },
-                      { name: 'Good 🟩', score: 80, desc: 'Remembered well', color: 'from-emerald-500/10 to-emerald-600/10 border-emerald-500/20 text-emerald-400 hover:from-emerald-500 hover:to-emerald-600' },
-                      { name: 'Easy 🟦', score: 100, desc: 'Fluent / Perfect', color: 'from-indigo-500/10 to-indigo-600/10 border-indigo-500/20 text-indigo-400 hover:from-indigo-500 hover:to-indigo-600' }
+                      { name: 'Again ÃƒÂ°Ã…Â¸Ã…Â¸Ã‚Â¥', score: 20, desc: 'Forgot completely', color: 'from-rose-500/10 to-rose-600/10 border-rose-500/20 text-rose-400 hover:from-rose-500 hover:to-rose-600' },
+                      { name: 'Hard ÃƒÂ°Ã…Â¸Ã…Â¸Ã‚Â¨', score: 50, desc: 'Struggled a lot', color: 'from-amber-500/10 to-amber-600/10 border-amber-500/20 text-amber-400 hover:from-amber-500 hover:to-amber-600' },
+                      { name: 'Good ÃƒÂ°Ã…Â¸Ã…Â¸Ã‚Â©', score: 80, desc: 'Remembered well', color: 'from-emerald-500/10 to-emerald-600/10 border-emerald-500/20 text-emerald-400 hover:from-emerald-500 hover:to-emerald-600' },
+                      { name: 'Easy ÃƒÂ°Ã…Â¸Ã…Â¸Ã‚Â¦', score: 100, desc: 'Fluent / Perfect', color: 'from-indigo-500/10 to-indigo-600/10 border-indigo-500/20 text-indigo-400 hover:from-indigo-500 hover:to-indigo-600' }
                     ].map(btn => (
                       <button
                         key={btn.name}
@@ -3576,7 +3632,7 @@ ${explanation.explanation}
       const weakTopicsForPath: string[] = (cloudMemoryRow?.weak_topics || []).filter(Boolean).slice(0, 8);
       const strongTopicsForPath: string[] = (cloudMemoryRow?.strong_topics || []).filter(Boolean).slice(0, 5);
       const gradeLabel = studentProfile?.grade || (educationLevel === 'CAMPUS' ? 'University' : educationLevel === 'JUNIOR' ? 'Class 8' : 'Form 3');
-      const subjectsForPath = [...new Set(weakTopicsForPath.map(t => t.split(' – ')[0] || t.split(':')[0]).filter(Boolean))].slice(0, 4);
+      const subjectsForPath = [...new Set(weakTopicsForPath.map(t => t.split(' ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Å“ ')[0] || t.split(':')[0]).filter(Boolean))].slice(0, 4);
 
       return (
         <div className="pb-24">
@@ -3592,7 +3648,7 @@ ${explanation.explanation}
                     : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
                 }`}
               >
-                {tab === 'MAP' ? '🗺️ Quest Map' : '✨ My Path'}
+                {tab === 'MAP' ? 'ÃƒÂ°Ã…Â¸Ã¢â‚¬â€Ã‚ÂºÃƒÂ¯Ã‚Â¸Ã‚Â Quest Map' : 'ÃƒÂ¢Ã…â€œÃ‚Â¨ My Path'}
               </button>
             ))}
           </div>
@@ -3625,6 +3681,8 @@ ${explanation.explanation}
       return (
         <React.Suspense fallback={<DeferredViewLoader />}>
           <RevisionLanding
+            initialSubject={revisionInitialSubject}
+            initialSearchQuery={revisionInitialSearchQuery}
             onBack={() => setMode('MENU')}
             onNavigate={onNavigate}
             onStartSession={(data, sessionMode) => {
@@ -3658,6 +3716,7 @@ ${explanation.explanation}
           <ConversationalTutor
             onBeforeMessage={() => checkLimit({ type: 'TALKBACK_MESSAGE' })}
             initialActiveMode={tutorInitialActiveMode}
+            syllabusContext={tutorSyllabusContext}
             initialTutorMode={tutorInitialTutorMode}
             onBack={() => {
               setMode('MENU');
@@ -4357,32 +4416,54 @@ ${explanation.explanation}
         {
           label: 'Hint First',
           body: 'Get guidance without giving away the answer.',
-          buildPrompt: (question: string) => `Act like a tutor, not a lecturer. Give me one hint first, ask me to try, then reveal the next step only after I respond.\n\nDo not explain what a quiz, exam, or lesson is.\n\nMy question: ${question || '[type or paste your question here]'}`
+          buildPrompt: (question: string) => buildSyllabusPromptContext(`Act like a tutor, not a lecturer. Give me one hint first, ask me to try, then reveal the next step only after I respond.
+
+Do not explain what a quiz, exam, or lesson is.
+
+My question: ${question || '[type or paste your question here]'}`)
         },
         {
           label: 'Mark My Working',
           body: 'Paste your attempt and get corrections.',
-          buildPrompt: (question: string) => `Mark my working like a KNEC examiner. Identify the first mistake, explain why it is wrong, and give me one similar practice question.\n\nDo not give a lesson about what marking is. Go straight to the correction.\n\nMy working: ${question || '[paste your working here]'}`
+          buildPrompt: (question: string) => buildSyllabusPromptContext(`Mark my working like a KNEC examiner. Identify the first mistake, explain why it is wrong, and give me one similar practice question.
+
+Do not give a lesson about what marking is. Go straight to the correction.
+
+My working: ${question || '[paste your working here]'}`)
         },
         {
           label: 'Quiz Me',
           body: 'Turn this topic into a self-test.',
-          buildPrompt: (question: string) => `Create a 5-question quiz on this topic only. Do not explain what a quiz is, what a test is, or add an introduction.\n\nAsk one question at a time, wait for my answer, then mark it and explain the correction.\n\nTopic: ${question || '[type the topic here]'}`
+          buildPrompt: (question: string) => buildSyllabusPromptContext(`Create a 5-question quiz on this topic only. Do not explain what a quiz is, what a test is, or add an introduction.
+
+Ask one question at a time, wait for my answer, then mark it and explain the correction.
+
+Topic: ${question || currentDocument?.title || '[type the topic here]'}`)
         },
         {
           label: 'Past Paper Coach',
           body: 'Work through exam questions step by step.',
-          buildPrompt: (question: string) => `Help me solve this past paper question like an exam coach. First identify the topic and command word, then guide me through the method.\n\nDo not explain what a past paper is. Do not give the final answer until I try.\n\nQuestion: ${question || '[paste the past paper question here]'}`
+          buildPrompt: (question: string) => buildSyllabusPromptContext(`Help me solve this past paper question like an exam coach. First identify the topic and command word, then guide me through the method.
+
+Do not explain what a past paper is. Do not give the final answer until I try.
+
+Question: ${question || '[paste the past paper question here]'}`)
         },
         {
           label: 'Explain Simply',
           body: 'Break it down for a stuck learner.',
-          buildPrompt: (question: string) => `Give a short, direct answer first in simple language for a Kenyan learner. Then add one short example and one check question. If I ask for more detail, expand after the answer. Do not define the learning tool itself.\n\nTopic or question: ${question || '[type what you do not understand here]'}`
+          buildPrompt: (question: string) => buildSyllabusPromptContext(`Give a short, direct answer first in simple language for a Kenyan learner. Then add one short example and one check question. If I ask for more detail, expand after the answer. Do not define the learning tool itself.
+
+Topic or question: ${question || '[type what you do not understand here]'}`)
         },
         {
           label: 'Swahili Support',
           body: 'Use simple English with Kiswahili help.',
-          buildPrompt: (question: string) => `Give a short, direct answer first using simple English, and add short Kiswahili support for hard words only if needed. Then ask me to explain it back in my own words. If I need more, expand after the answer.\n\nDo not add generic tutorial text.\n\nTopic or question: ${question || '[type your question here]'}`
+          buildPrompt: (question: string) => buildSyllabusPromptContext(`Give a short, direct answer first using simple English, and add short Kiswahili support for hard words only if needed. Then ask me to explain it back in my own words. If I need more, expand after the answer.
+
+Do not add generic tutorial text.
+
+Topic or question: ${question || '[type your question here]'}`)
         }
       ];
 
@@ -4461,7 +4542,7 @@ ${explanation.explanation}
             </AnimatePresence>
 
 
-            {/* WELCOME CARD — newly registered users on first login (registered + zero history) */}
+            {/* WELCOME CARD ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â newly registered users on first login (registered + zero history) */}
             {isRegistered && !hasHistory && (
               <motion.div
                 initial={{ opacity: 0, y: -10 }}
@@ -4496,7 +4577,7 @@ ${explanation.explanation}
               </motion.div>
             )}
 
-            {/* START HERE — Onboarding card for brand-new users (zero history, not registered) */}
+            {/* START HERE ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â Onboarding card for brand-new users (zero history, not registered) */}
             {!isRegistered && !hasHistory && (
               <motion.div
                 initial={{ opacity: 0, y: -10 }}
@@ -4504,15 +4585,15 @@ ${explanation.explanation}
                 className="hidden"
               >
                 <div className="flex items-start gap-4">
-                  <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center shrink-0 text-xl">🚀</div>
+                  <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center shrink-0 text-xl">ÃƒÂ°Ã…Â¸Ã…Â¡Ã¢â€šÂ¬</div>
                   <div className="flex-1 min-w-0">
                     <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-200 mb-1">Welcome to Somo Smart!</p>
-                    <p className="font-bold text-base mb-3">Start with these 3 steps — no signup needed</p>
+                    <p className="font-bold text-base mb-3">Start with these 3 steps ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â no signup needed</p>
                     <div className="space-y-2">
                       {[
-                        { step: '1', label: 'Type a question below or scan your textbook', icon: '❓' },
-                        { step: '2', label: 'Get a step-by-step explanation instantly', icon: '⚡' },
-                        { step: '3', label: 'Test yourself with a quick quiz on the topic', icon: '✅' },
+                        { step: '1', label: 'Type a question below or scan your textbook', icon: 'ÃƒÂ¢Ã‚ÂÃ¢â‚¬Å“' },
+                        { step: '2', label: 'Get a step-by-step explanation instantly', icon: 'ÃƒÂ¢Ã…Â¡Ã‚Â¡' },
+                        { step: '3', label: 'Test yourself with a quick quiz on the topic', icon: 'ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦' },
                       ].map(({ step, label, icon }) => (
                         <div key={step} className="flex items-center gap-2.5 text-sm font-medium text-white/90">
                           <span className="text-base">{icon}</span>
@@ -4525,7 +4606,7 @@ ${explanation.explanation}
               </motion.div>
             )}
 
-            {/* FREE USAGE METER — visible for all non-pro, non-registered users */}
+            {/* FREE USAGE METER ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â visible for all non-pro, non-registered users */}
             {!isRegistered && !hasHistory && (
               <motion.div
                 initial={{ opacity: 0, y: -10 }}
@@ -4636,15 +4717,15 @@ ${explanation.explanation}
                 <div className="flex items-center gap-2 mb-1">
                   <h1 className="text-2xl md:text-3xl font-bold text-slate-900 dark:text-white tracking-tight">
                     {cloudMemoryRow?.total_sessions > 1 || history.length > 0
-                      ? `${getGreetingWord()}, ${profile?.name?.split(' ')[0] || 'Learner'}! 👋`
-                      : `Hey ${profile?.name?.split(' ')[0] || 'there'}! 👋`}
+                      ? `${getGreetingWord()}, ${profile?.name?.split(' ')[0] || 'Learner'}! ÃƒÂ°Ã…Â¸Ã¢â‚¬ËœÃ¢â‚¬Â¹`
+                      : `Hey ${profile?.name?.split(' ')[0] || 'there'}! ÃƒÂ°Ã…Â¸Ã¢â‚¬ËœÃ¢â‚¬Â¹`}
                   </h1>
                 </div>
                 <div className="flex items-center gap-2 mt-1 flex-wrap">
                   {cloudMemoryRow?.last_topic || history[0]?.topic ? (
                     <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
                       Last studied: <span className="font-bold text-indigo-600 dark:text-indigo-400">{cloudMemoryRow?.last_topic || history[0]?.topic}</span>
-                      {streak > 1 && <span className="ml-2">· 🔥 {streak}-day streak!</span>}
+                      {streak > 1 && <span className="ml-2">Ãƒâ€šÃ‚Â· ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â¥ {streak}-day streak!</span>}
                     </p>
                   ) : (
                     <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Let's keep learning and growing today.</p>
@@ -4657,7 +4738,7 @@ ${explanation.explanation}
                       'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
                     }`}
                   >
-                    <span>{educationLevel === 'JUNIOR' ? '📚' : educationLevel === 'CAMPUS' ? '🎓' : '🏫'}</span>
+                    <span>{educationLevel === 'JUNIOR' ? 'ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã…Â¡' : educationLevel === 'CAMPUS' ? 'ÃƒÂ°Ã…Â¸Ã…Â½Ã¢â‚¬Å“' : 'ÃƒÂ°Ã…Â¸Ã‚ÂÃ‚Â«'}</span>
                     {educationLevel === 'JUNIOR' ? 'Junior' : educationLevel === 'CAMPUS' ? 'Campus' : 'Senior'}
                   </button>
                 </div>
@@ -4681,7 +4762,7 @@ ${explanation.explanation}
                           transition={{ repeat: Infinity, duration: 2 }}
                           className="text-5xl"
                         >
-                          🔥
+                          ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â¥
                         </motion.span>
                       </div>
                       <h2 className="text-4xl font-black text-slate-800 dark:text-white mb-2 relative z-10 tracking-tight">{streak} Day Streak!</h2>
@@ -4701,7 +4782,7 @@ ${explanation.explanation}
               <div className="flex items-center gap-2 sm:gap-3 w-full md:w-auto">
                 {/* Day Streak */}
                 <div className="flex-1 md:flex-none flex items-center gap-2 sm:gap-3 bg-white dark:bg-slate-900 px-3 sm:px-4 py-2 sm:py-2.5 rounded-2xl shadow-sm border-2 border-slate-300 dark:border-slate-800">
-                  <div className="text-orange-500 text-lg sm:text-xl shrink-0">🔥</div>
+                  <div className="text-orange-500 text-lg sm:text-xl shrink-0">ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â¥</div>
                   <div>
                     <div className="text-xs sm:text-sm font-bold text-slate-800 dark:text-white leading-none">{streak}</div>
                     <div className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Streak</div>
@@ -4718,7 +4799,7 @@ ${explanation.explanation}
               </div>
             </div>
 
-            {/* STREAK NUDGE — only when learner has a streak but hasn't studied today */}
+            {/* STREAK NUDGE ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â only when learner has a streak but hasn't studied today */}
             {(() => {
               const today = new Date().toLocaleDateString();
               const studiedToday = history.some((h: any) => h.date === today);
@@ -4726,7 +4807,7 @@ ${explanation.explanation}
                 return (
                   <div className="flex items-center justify-between gap-3 bg-amber-50 dark:bg-amber-900/20 border-2 border-amber-200 dark:border-amber-800 rounded-2xl px-4 py-3">
                     <div className="flex items-center gap-3">
-                      <span className="text-2xl">🔥</span>
+                      <span className="text-2xl">ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â¥</span>
                       <div>
                         <p className="text-sm font-black text-amber-900 dark:text-amber-100">Keep your {streak}-day streak alive!</p>
                         <p className="text-xs font-bold text-amber-700 dark:text-amber-300">You haven't studied yet today. One topic is all it takes.</p>
@@ -4768,7 +4849,7 @@ ${explanation.explanation}
               const days = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
               if (days < 0 || days > 200) return null;
               const urgency = days <= 14 ? 'bg-rose-50 border-rose-300 text-rose-900' : days <= 60 ? 'bg-amber-50 border-amber-200 text-amber-900' : 'bg-blue-50 border-blue-200 text-blue-900';
-              const emoji = days <= 14 ? '🚨' : days <= 60 ? '⏰' : '📅';
+              const emoji = days <= 14 ? 'ÃƒÂ°Ã…Â¸Ã…Â¡Ã‚Â¨' : days <= 60 ? 'ÃƒÂ¢Ã‚ÂÃ‚Â°' : 'ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã¢â‚¬Â¦';
               return (
                 <div className={`flex items-center justify-between gap-3 border-2 rounded-2xl px-4 py-3 ${urgency}`}>
                   <div className="flex items-center gap-3">
@@ -4776,7 +4857,7 @@ ${explanation.explanation}
                     <div>
                       <p className="text-sm font-black">{days} days to {relevant.name} {year}</p>
                       <p className="text-xs font-bold opacity-70">
-                        {days <= 14 ? 'Final push — every session counts!' : days <= 60 ? 'Exam season is near. Stay consistent.' : 'Start building your revision habit now.'}
+                        {days <= 14 ? 'Final push ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â every session counts!' : days <= 60 ? 'Exam season is near. Stay consistent.' : 'Start building your revision habit now.'}
                       </p>
                     </div>
                   </div>
@@ -4802,7 +4883,7 @@ ${explanation.explanation}
               if (timerDone) return (
                 <div className="flex items-center justify-between gap-3 bg-emerald-50 dark:bg-emerald-900/20 border-2 border-emerald-300 dark:border-emerald-700 rounded-2xl px-4 py-3">
                   <div className="flex items-center gap-3">
-                    <span className="text-2xl">🎉</span>
+                    <span className="text-2xl">ÃƒÂ°Ã…Â¸Ã…Â½Ã¢â‚¬Â°</span>
                     <div>
                       <p className="text-sm font-black text-emerald-900 dark:text-emerald-100">25 minutes done! Great focus.</p>
                       <p className="text-xs font-bold text-emerald-700 dark:text-emerald-300">Lock it in with a quick quiz.</p>
@@ -4824,7 +4905,7 @@ ${explanation.explanation}
                     <span className="absolute inset-0 flex items-center justify-center text-[9px] font-black text-white">{pct}%</span>
                   </div>
                   <div className="flex-1">
-                    <p className="text-xs font-black text-white">{timerActive ? 'Studying…' : timerSeconds === 25 * 60 ? 'Start a 25-min focus session' : 'Paused'}</p>
+                    <p className="text-xs font-black text-white">{timerActive ? 'StudyingÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦' : timerSeconds === 25 * 60 ? 'Start a 25-min focus session' : 'Paused'}</p>
                     <p className="text-lg font-black text-indigo-400 leading-none">{String(mins).padStart(2, '0')}:{String(secs).padStart(2, '0')}</p>
                   </div>
                   <div className="flex gap-2">
@@ -4855,7 +4936,7 @@ ${explanation.explanation}
                         <div className="w-7 h-7 bg-slate-100 dark:bg-slate-800 rounded-lg flex items-center justify-center flex-shrink-0"><BookOpen className="w-3.5 h-3.5 text-slate-400" /></div>
                         <div className="flex-1 min-w-0">
                           <p className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate">{s.topic}</p>
-                          <p className="text-[10px] font-medium text-slate-400">{s.subject} · {s.savedAt}</p>
+                          <p className="text-[10px] font-medium text-slate-400">{s.subject} Ãƒâ€šÃ‚Â· {s.savedAt}</p>
                         </div>
                         <ChevronRight className="w-4 h-4 text-slate-300 flex-shrink-0" />
                       </button>
@@ -4942,7 +5023,7 @@ ${explanation.explanation}
                       </div>
                       <button onClick={handleBuildTimetable} disabled={timetableLoading || !timetableExamDate || !timetableSubjects.trim()}
                         className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-black py-3 rounded-xl text-sm transition-colors flex items-center justify-center gap-2">
-                        {timetableLoading ? <><Loader2 className="w-4 h-4 animate-spin" /> Generating…</> : <><Sparkles className="w-4 h-4" /> Generate My Plan</>}
+                        {timetableLoading ? <><Loader2 className="w-4 h-4 animate-spin" /> GeneratingÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦</> : <><Sparkles className="w-4 h-4" /> Generate My Plan</>}
                       </button>
                     </div>
                   )}
@@ -4966,7 +5047,7 @@ ${explanation.explanation}
                         </div>
                       ))}
                       {timetable.days.length > 7 && (
-                        <p className="text-[10px] font-bold text-slate-400 text-center">+ {timetable.days.length - 7} more days · Tap "Rebuild" to view all</p>
+                        <p className="text-[10px] font-bold text-slate-400 text-center">+ {timetable.days.length - 7} more days Ãƒâ€šÃ‚Â· Tap "Rebuild" to view all</p>
                       )}
                     </div>
                   )}
@@ -5101,11 +5182,15 @@ ${explanation.explanation}
                         body: 'Practice drills',
                         icon: <ClipboardList className="w-5 h-5" />,
                         className: 'bg-white dark:bg-slate-950 text-slate-900 dark:text-white border-slate-200 dark:border-slate-700',
-                        action: () => handleSidebarTabChange('SUBJECTS')
+                        action: () => {
+                          setRevisionInitialSubject(currentDocument?.subject || 'All');
+                          setRevisionInitialSearchQuery(currentDocument?.title || currentDocument?.subject || '');
+                          handleSidebarTabChange('SUBJECTS');
+                        }
                       },
                       {
-                        title: 'Listen & Learn',
-                        body: learningCredits > 0 ? `${learningCredits} credits` : 'Audio lesson',
+                        title: 'Syllabus Tutor',
+                        body: currentDocument?.title ? `Talk through ${currentDocument.title}` : 'Talk through your current topic',
                         icon: <Headphones className="w-5 h-5" />,
                         className: 'bg-white dark:bg-slate-950 text-slate-900 dark:text-white border-slate-200 dark:border-slate-700',
                         action: () => {
@@ -5145,7 +5230,7 @@ ${explanation.explanation}
                     </div>
                   </div>
 
-                  {/* START HERE: PRIMARY FIRST-SESSION PATH — for returning users or registered with history */}
+                  {/* START HERE: PRIMARY FIRST-SESSION PATH ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â for returning users or registered with history */}
                   {(!isRegistered || hasHistory || hasProgress) && (
                   <div className="hidden">
                     <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-100 mb-2">Start Here</p>
@@ -5345,12 +5430,16 @@ ${explanation.explanation}
                     </div>
                   </div>
 
-                  {/* SHORTCUTS — secondary actions */}
+                  {/* SHORTCUTS ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â secondary actions */}
                   <div className="hidden grid-cols-3 gap-2 sm:gap-4">
                      {(
                        educationLevel === 'JUNIOR' ? [
-                         { icon: <Library className="w-5 h-5 sm:w-6 sm:h-6" />, label: 'Library 📚', color: 'bg-blue-600', onClick: () => handleSidebarTabChange('RESOURCES') },
-                         { icon: <Brain className="w-5 h-5 sm:w-6 sm:h-6" />, label: 'Exam Prep', color: 'bg-orange-500', onClick: () => handleSidebarTabChange('SUBJECTS') },
+                         { icon: <Library className="w-5 h-5 sm:w-6 sm:h-6" />, label: 'Library ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã…Â¡', color: 'bg-blue-600', onClick: () => handleSidebarTabChange('RESOURCES') },
+                         { icon: <Brain className="w-5 h-5 sm:w-6 sm:h-6" />, label: 'Exam Prep', color: 'bg-orange-500', onClick: () => {
+                           setRevisionInitialSubject(currentDocument?.subject || 'All');
+                           setRevisionInitialSearchQuery(currentDocument?.title || currentDocument?.subject || '');
+                           handleSidebarTabChange('SUBJECTS');
+                         } },
                          { icon: <Mic className="w-5 h-5 sm:w-6 sm:h-6" />, label: 'Talk & Play', color: 'bg-pink-500', onClick: () => handleSidebarTabChange('TALKBACK') }
                        ] : educationLevel === 'CAMPUS' ? [
                          { icon: <Library className="w-5 h-5 sm:w-6 sm:h-6" />, label: 'Research', color: 'bg-purple-600', onClick: () => handleSidebarTabChange('RESOURCES') },
@@ -5501,9 +5590,9 @@ ${explanation.explanation}
                           >
                             <div>
                               <p className="text-xs font-black text-slate-900 dark:text-white">{topic}</p>
-                              <p className="text-[10px] font-bold text-slate-400 mt-0.5">Weak area · tap to revise</p>
+                              <p className="text-[10px] font-bold text-slate-400 mt-0.5">Weak area Ãƒâ€šÃ‚Â· tap to revise</p>
                             </div>
-                            <span className="text-emerald-500 group-hover:translate-x-1 transition-transform">→</span>
+                            <span className="text-emerald-500 group-hover:translate-x-1 transition-transform">ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢</span>
                           </button>
                         ))}
                         {(!weakTopics?.length) && studentProfile?.grade && (
@@ -5519,7 +5608,7 @@ ${explanation.explanation}
                               <p className="text-xs font-black text-slate-900 dark:text-white">Top revision topics for {studentProfile.grade}</p>
                               <p className="text-[10px] font-bold text-slate-400 mt-0.5">Tap to explore</p>
                             </div>
-                            <span className="text-emerald-500 group-hover:translate-x-1 transition-transform">→</span>
+                            <span className="text-emerald-500 group-hover:translate-x-1 transition-transform">ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢</span>
                           </button>
                         )}
                       </div>
@@ -5586,7 +5675,7 @@ ${explanation.explanation}
                                       <textarea
                                         value={askTeacherText}
                                         onChange={e => setAskTeacherText(e.target.value)}
-                                        placeholder={`Ask ${item.class.profiles?.name || 'your teacher'} a question…`}
+                                        placeholder={`Ask ${item.class.profiles?.name || 'your teacher'} a questionÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦`}
                                         rows={2}
                                         className="w-full text-xs font-medium border-2 border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-200 focus:outline-none focus:border-indigo-400 resize-none"
                                       />
@@ -5600,13 +5689,13 @@ ${explanation.explanation}
                                               await classroomService.createPost(item.class.id, userId, 'ANNOUNCEMENT', `[Student Question] ${askTeacherText.trim()}`);
                                               setAskTeacherText('');
                                               setAskTeacherClassId(null);
-                                              triggerToast('Question sent to teacher ✓');
+                                              triggerToast('Question sent to teacher ÃƒÂ¢Ã…â€œÃ¢â‚¬Å“');
                                             } catch { triggerToast('Could not send. Try again.'); }
                                             finally { setAskTeacherSending(false); }
                                           }}
                                           className="flex-1 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs font-black py-2 rounded-xl transition-colors"
                                         >
-                                          {askTeacherSending ? 'Sending…' : 'Send Question'}
+                                          {askTeacherSending ? 'SendingÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦' : 'Send Question'}
                                         </button>
                                         <button onClick={() => { setAskTeacherClassId(null); setAskTeacherText(''); }} className="text-xs font-bold text-slate-400 hover:text-slate-600 px-3 py-2 rounded-xl transition-colors">Cancel</button>
                                       </div>
@@ -5675,7 +5764,7 @@ ${explanation.explanation}
                             </span>
                           ) : (
                             <span className="text-[9px] font-black text-indigo-300 bg-indigo-500/15 border border-indigo-500/35 px-2.5 py-1 rounded-full uppercase tracking-widest">
-                              Clear ✨
+                              Clear ÃƒÂ¢Ã…â€œÃ‚Â¨
                             </span>
                           )}
                         </div>
@@ -5735,7 +5824,7 @@ ${explanation.explanation}
                                       lastScore: 0,
                                       reviewCount: 0,
                                       question: "What are the raw materials and products of photosynthesis in plants?",
-                                      answer: "Raw Materials:\n- Carbon dioxide (absorbed through stomata)\n- Water (absorbed through roots)\n\nProducts:\n- Glucose (chemical energy stored as starch)\n- Oxygen gas (released as a byproduct through stomata)\n\nReaction Equation:\n6CO₂ + 6H₂O + light → C₆H₁₂O₆ + 6O₂"
+                                      answer: "Raw Materials:\n- Carbon dioxide (absorbed through stomata)\n- Water (absorbed through roots)\n\nProducts:\n- Glucose (chemical energy stored as starch)\n- Oxygen gas (released as a byproduct through stomata)\n\nReaction Equation:\n6COÃƒÂ¢Ã¢â‚¬Å¡Ã¢â‚¬Å¡ + 6HÃƒÂ¢Ã¢â‚¬Å¡Ã¢â‚¬Å¡O + light ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ CÃƒÂ¢Ã¢â‚¬Å¡Ã¢â‚¬Â HÃƒÂ¢Ã¢â‚¬Å¡Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã¢â‚¬Å¡OÃƒÂ¢Ã¢â‚¬Å¡Ã¢â‚¬Â  + 6OÃƒÂ¢Ã¢â‚¬Å¡Ã¢â‚¬Å¡"
                                     },
                                     {
                                       topic: "Quadratic Equations",
@@ -5747,7 +5836,7 @@ ${explanation.explanation}
                                       lastScore: 0,
                                       reviewCount: 0,
                                       question: "State the quadratic formula and explain what the discriminant determines about the roots.",
-                                      answer: "Quadratic Formula:\nx = [-b ± √(b² - 4ac)] / (2a)\n\nDiscriminant (D = b² - 4ac):\n1. D > 0: Two distinct real roots.\n2. D = 0: One repeated real root (equal roots).\n3. D < 0: Two complex/imaginary roots."
+                                      answer: "Quadratic Formula:\nx = [-b Ãƒâ€šÃ‚Â± ÃƒÂ¢Ã‹â€ Ã…Â¡(bÃƒâ€šÃ‚Â² - 4ac)] / (2a)\n\nDiscriminant (D = bÃƒâ€šÃ‚Â² - 4ac):\n1. D > 0: Two distinct real roots.\n2. D = 0: One repeated real root (equal roots).\n3. D < 0: Two complex/imaginary roots."
                                     },
                                     {
                                       topic: "Devolution in Kenya",
@@ -5843,9 +5932,9 @@ ${explanation.explanation}
                      </div>
                      <div className="space-y-4">
                         {[
-                           { icon: '🚀', title: 'Quick Learner', desc: 'Completed 5 quizzes', color: 'bg-blue-50 dark:bg-blue-900/20' },
-                           { icon: '🧠', title: 'Math Whiz', desc: 'Aced Algebra test', color: 'bg-emerald-50 dark:bg-emerald-900/20' },
-                           { icon: '⭐', title: 'Consistent Star', desc: '7 day streak', color: 'bg-amber-50 dark:bg-amber-900/20' }
+                           { icon: 'ÃƒÂ°Ã…Â¸Ã…Â¡Ã¢â€šÂ¬', title: 'Quick Learner', desc: 'Completed 5 quizzes', color: 'bg-blue-50 dark:bg-blue-900/20' },
+                           { icon: 'ÃƒÂ°Ã…Â¸Ã‚Â§Ã‚Â ', title: 'Math Whiz', desc: 'Aced Algebra test', color: 'bg-emerald-50 dark:bg-emerald-900/20' },
+                           { icon: 'ÃƒÂ¢Ã‚Â­Ã‚Â', title: 'Consistent Star', desc: '7 day streak', color: 'bg-amber-50 dark:bg-amber-900/20' }
                         ].map((badge, i) => (
                            <div key={i} className="flex items-center gap-4">
                               <div className={`w-12 h-12 rounded-2xl ${badge.color} flex items-center justify-center text-xl shadow-inner shrink-0`}>
@@ -6060,9 +6149,9 @@ ${explanation.explanation}
                    <Sparkles className="w-4 h-4" /> Why create a profile?
                 </h4>
                 <ul className="text-xs font-medium text-amber-700/80 dark:text-amber-500/80 space-y-2 mt-3">
-                  <li className="flex gap-2"><span>•</span> Save your learning history and streaks</li>
-                  <li className="flex gap-2"><span>•</span> Unlock high daily AI study limits</li>
-                  <li className="flex gap-2"><span>•</span> Get a personalized study buddy profile</li>
+                  <li className="flex gap-2"><span>ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢</span> Save your learning history and streaks</li>
+                  <li className="flex gap-2"><span>ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢</span> Unlock high daily AI study limits</li>
+                  <li className="flex gap-2"><span>ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢</span> Get a personalized study buddy profile</li>
                 </ul>
               </div>
             </motion.div>
@@ -6295,25 +6384,25 @@ ${explanation.explanation}
                     const quizCount = history.filter((h: any) => h.type === 'QUIZ').length;
                     const inClass = studentClasses.length > 0;
                     const BADGES = [
-                      { id: 'first_study', emoji: '🌱', name: 'First Step', desc: 'Completed your first study session', earned: history.length >= 1 },
-                      { id: 'first_quiz', emoji: '📝', name: 'Quiz Taker', desc: 'Took your first quiz', earned: quizCount >= 1 },
-                      { id: 'streak_3', emoji: '🔥', name: 'On Fire', desc: '3-day study streak', earned: streak >= 3 },
-                      { id: 'streak_7', emoji: '💫', name: 'Streak Keeper', desc: '7-day study streak', earned: streak >= 7 },
-                      { id: 'streak_30', emoji: '👑', name: 'Streak Legend', desc: '30-day streak', earned: streak >= 30 },
-                      { id: 'xp_100', emoji: '⭐', name: 'XP Explorer', desc: 'Earned 100 XP', earned: totalXP >= 100 },
-                      { id: 'xp_500', emoji: '🏅', name: 'XP Champion', desc: 'Earned 500 XP', earned: totalXP >= 500 },
-                      { id: 'quiz_5', emoji: '🎯', name: 'Quiz Master', desc: 'Completed 5 quizzes', earned: quizCount >= 5 },
-                      { id: 'quiz_20', emoji: '🏆', name: 'Quiz Legend', desc: 'Completed 20 quizzes', earned: quizCount >= 20 },
-                      { id: 'class_join', emoji: '🤝', name: 'Team Player', desc: 'Joined a class', earned: inClass },
-                      { id: 'kcse_warrior', emoji: '⚔️', name: 'KCSE Warrior', desc: 'Studied 30+ sessions before exam', earned: history.length >= 30 },
-                      { id: 'notebook', emoji: '📓', name: 'Note Taker', desc: 'Saved 5+ answers to Notebook', earned: (JSON.parse(localStorage.getItem(`somo_notebook_${notebookOwnerKey}`) || '[]') as any[]).length >= 5 },
+                      { id: 'first_study', emoji: 'ÃƒÂ°Ã…Â¸Ã…â€™Ã‚Â±', name: 'First Step', desc: 'Completed your first study session', earned: history.length >= 1 },
+                      { id: 'first_quiz', emoji: 'ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‚Â', name: 'Quiz Taker', desc: 'Took your first quiz', earned: quizCount >= 1 },
+                      { id: 'streak_3', emoji: 'ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â¥', name: 'On Fire', desc: '3-day study streak', earned: streak >= 3 },
+                      { id: 'streak_7', emoji: 'ÃƒÂ°Ã…Â¸Ã¢â‚¬â„¢Ã‚Â«', name: 'Streak Keeper', desc: '7-day study streak', earned: streak >= 7 },
+                      { id: 'streak_30', emoji: 'ÃƒÂ°Ã…Â¸Ã¢â‚¬ËœÃ¢â‚¬Ëœ', name: 'Streak Legend', desc: '30-day streak', earned: streak >= 30 },
+                      { id: 'xp_100', emoji: 'ÃƒÂ¢Ã‚Â­Ã‚Â', name: 'XP Explorer', desc: 'Earned 100 XP', earned: totalXP >= 100 },
+                      { id: 'xp_500', emoji: 'ÃƒÂ°Ã…Â¸Ã‚ÂÃ¢â‚¬Â¦', name: 'XP Champion', desc: 'Earned 500 XP', earned: totalXP >= 500 },
+                      { id: 'quiz_5', emoji: 'ÃƒÂ°Ã…Â¸Ã…Â½Ã‚Â¯', name: 'Quiz Master', desc: 'Completed 5 quizzes', earned: quizCount >= 5 },
+                      { id: 'quiz_20', emoji: 'ÃƒÂ°Ã…Â¸Ã‚ÂÃ¢â‚¬Â ', name: 'Quiz Legend', desc: 'Completed 20 quizzes', earned: quizCount >= 20 },
+                      { id: 'class_join', emoji: 'ÃƒÂ°Ã…Â¸Ã‚Â¤Ã‚Â', name: 'Team Player', desc: 'Joined a class', earned: inClass },
+                      { id: 'kcse_warrior', emoji: 'ÃƒÂ¢Ã…Â¡Ã¢â‚¬ÂÃƒÂ¯Ã‚Â¸Ã‚Â', name: 'KCSE Warrior', desc: 'Studied 30+ sessions before exam', earned: history.length >= 30 },
+                      { id: 'notebook', emoji: 'ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã¢â‚¬Å“', name: 'Note Taker', desc: 'Saved 5+ answers to Notebook', earned: (JSON.parse(localStorage.getItem(`somo_notebook_${notebookOwnerKey}`) || '[]') as any[]).length >= 5 },
                     ];
                     const earned = BADGES.filter(b => b.earned);
                     const locked = BADGES.filter(b => !b.earned);
                     return (
                       <>
                         {earned.length === 0 ? (
-                          <p className="text-xs font-bold text-slate-400 text-center py-4">No badges yet — start studying to earn your first!</p>
+                          <p className="text-xs font-bold text-slate-400 text-center py-4">No badges yet ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â start studying to earn your first!</p>
                         ) : (
                           <>
                             <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest mb-3">{earned.length} badge{earned.length !== 1 ? 's' : ''} earned</p>
@@ -6366,18 +6455,18 @@ ${explanation.explanation}
                     const topSubjects = Object.entries(subjectPerformance as Record<string, { count: number; avgScore: number }>)
                       .sort((a, b) => (b[1].count || 0) - (a[1].count || 0)).slice(0, 3).map(([s]) => s);
                     const reportText = [
-                      `📊 *Somo Smart Progress Report*`,
-                      `👤 ${studentProfile?.name || 'Student'} | ${studentProfile?.grade ? `Grade ${studentProfile.grade}` : 'Learner'}`,
-                      `🆔 ID: ${studentCode || userId}`,
+                      `ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã…Â  *Somo Smart Progress Report*`,
+                      `ÃƒÂ°Ã…Â¸Ã¢â‚¬ËœÃ‚Â¤ ${studentProfile?.name || 'Student'} | ${studentProfile?.grade ? `Grade ${studentProfile.grade}` : 'Learner'}`,
+                      `ÃƒÂ°Ã…Â¸Ã¢â‚¬Â Ã¢â‚¬Â ID: ${studentCode || userId}`,
                       ``,
-                      `🔥 Study streak: ${streak} day${streak !== 1 ? 's' : ''}`,
-                      `⭐ Level ${levelInfo?.level || 1} — ${totalXP} XP`,
-                      `📝 Sessions this week: ${history.filter((h: any) => { const d = new Date(h.date); return (Date.now() - d.getTime()) < 7 * 864e5; }).length}`,
-                      quizHistory.length > 0 ? `🎯 Quiz average: ${quizAvg}%` : null,
-                      topSubjects.length > 0 ? `📚 Top subjects: ${topSubjects.join(', ')}` : null,
-                      weakTopics?.length > 0 ? `📈 Revising: ${(weakTopics as string[]).slice(0, 2).join(', ')}` : null,
+                      `ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â¥ Study streak: ${streak} day${streak !== 1 ? 's' : ''}`,
+                      `ÃƒÂ¢Ã‚Â­Ã‚Â Level ${levelInfo?.level || 1} ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â ${totalXP} XP`,
+                      `ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‚Â Sessions this week: ${history.filter((h: any) => { const d = new Date(h.date); return (Date.now() - d.getTime()) < 7 * 864e5; }).length}`,
+                      quizHistory.length > 0 ? `ÃƒÂ°Ã…Â¸Ã…Â½Ã‚Â¯ Quiz average: ${quizAvg}%` : null,
+                      topSubjects.length > 0 ? `ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã…Â¡ Top subjects: ${topSubjects.join(', ')}` : null,
+                      weakTopics?.length > 0 ? `ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‹â€  Revising: ${(weakTopics as string[]).slice(0, 2).join(', ')}` : null,
                       ``,
-                      `Track progress at somaai.co.ke 🚀`,
+                      `Track progress at somaai.co.ke ÃƒÂ°Ã…Â¸Ã…Â¡Ã¢â€šÂ¬`,
                     ].filter(Boolean).join('\n');
                     return (
                       <>
@@ -6391,7 +6480,7 @@ ${explanation.explanation}
                             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Level</p>
                           </div>
                           <div className="bg-white rounded-2xl p-3 border border-emerald-100">
-                            <p className="text-2xl font-black text-amber-600">{quizAvg > 0 ? `${quizAvg}%` : '—'}</p>
+                            <p className="text-2xl font-black text-amber-600">{quizAvg > 0 ? `${quizAvg}%` : 'ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â'}</p>
                             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Quiz Avg</p>
                           </div>
                         </div>
@@ -6470,7 +6559,7 @@ ${explanation.explanation}
                       const result = await Notification.requestPermission();
                       setNotifStatus(result as 'granted' | 'denied');
                       if (result === 'granted') {
-                        new Notification('Somo Smart 🔥', {
+                        new Notification('Somo Smart ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â¥', {
                           body: "Reminders enabled! We'll nudge you at 6pm if you haven't studied.",
                           icon: '/icons/icon-192x192.png',
                         });
@@ -6481,7 +6570,7 @@ ${explanation.explanation}
                       <div className="flex items-center justify-between gap-4">
                         <div>
                           <p className="text-sm font-black text-slate-800">
-                            {notifStatus === 'granted' ? '🔔 Reminders are on' : notifStatus === 'denied' ? '🔕 Blocked in browser settings' : '🔔 Enable daily study reminders'}
+                            {notifStatus === 'granted' ? 'ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ¢â‚¬Â Reminders are on' : notifStatus === 'denied' ? 'ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ¢â‚¬Â¢ Blocked in browser settings' : 'ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ¢â‚¬Â Enable daily study reminders'}
                           </p>
                           <p className="text-xs font-bold text-slate-400 mt-0.5">
                             {notifStatus === 'granted' ? "You'll get a nudge at 6pm if you haven't studied today." : notifStatus === 'denied' ? 'Allow notifications in your browser site settings.' : "Get a 6pm reminder if you haven't studied yet."}
@@ -6493,7 +6582,7 @@ ${explanation.explanation}
                             disabled={notifStatus === 'granted'}
                             className={`shrink-0 px-4 py-2 rounded-xl text-xs font-black transition-colors ${notifStatus === 'granted' ? 'bg-emerald-100 text-emerald-700 cursor-default' : 'bg-violet-600 hover:bg-violet-700 text-white'}`}
                           >
-                            {notifStatus === 'granted' ? 'Enabled ✓' : 'Enable'}
+                            {notifStatus === 'granted' ? 'Enabled ÃƒÂ¢Ã…â€œÃ¢â‚¬Å“' : 'Enable'}
                           </button>
                         )}
                       </div>
@@ -6785,13 +6874,13 @@ ${explanation.explanation}
                         onClick={() => setOriginalViewType('text')}
                         className={`px-2.5 py-1 rounded-md transition-all ${originalViewType === 'text' ? 'bg-white dark:bg-slate-700 text-indigo-750 dark:text-indigo-400 shadow-sm font-black' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
                       >
-                        📖 Text
+                        ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã¢â‚¬â€œ Text
                       </button>
                       <button
                         onClick={() => setOriginalViewType('pdf')}
                         className={`px-2.5 py-1 rounded-md transition-all ${originalViewType === 'pdf' ? 'bg-white dark:bg-slate-700 text-indigo-750 dark:text-indigo-400 shadow-sm font-black' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
                       >
-                        📄 PDF
+                        ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã¢â‚¬Å¾ PDF
                       </button>
                     </div>
                   )}
@@ -7073,7 +7162,7 @@ ${explanation.explanation}
                                 <ul className="space-y-1.5">
                                   {syllabus.outcomes.map((out, i) => (
                                     <li key={i} className="text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-start gap-2">
-                                      <span className="text-emerald-500 mt-0.5">✔</span>
+                                      <span className="text-emerald-500 mt-0.5">ÃƒÂ¢Ã…â€œÃ¢â‚¬Â</span>
                                       <span>{out}</span>
                                     </li>
                                   ))}
@@ -7212,7 +7301,7 @@ ${explanation.explanation}
                     }}
                     className="flex items-center gap-2 px-4 py-2 border border-slate-200 dark:border-slate-700 rounded-full text-xs font-black uppercase tracking-wider text-slate-650 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-50 disabled:hover:bg-transparent transition-all font-semibold"
                   >
-                    ← Previous
+                    ÃƒÂ¢Ã¢â‚¬Â Ã‚Â Previous
                   </button>
                   <div className="flex items-center gap-1 overflow-x-auto max-w-[200px] sm:max-w-none no-scrollbar">
                     {Array.from({ length: studyViewMode === 'guide' ? totalPages : extractedOriginalPages.length }).map((_, i) => {
@@ -7247,7 +7336,7 @@ ${explanation.explanation}
                     }}
                     className="flex items-center gap-2 px-4 py-2 border border-slate-200 dark:border-slate-700 rounded-full text-xs font-black uppercase tracking-wider text-slate-650 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-50 disabled:hover:bg-transparent transition-all font-semibold"
                   >
-                    Next →
+                    Next ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢
                   </button>
                 </div>
               )}
@@ -7287,7 +7376,7 @@ ${explanation.explanation}
                     {/* Mobile Back to Lesson Button */}
                     <div className="lg:hidden flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shrink-0">
                       <button onClick={() => setStudyTab('LESSON')} className="flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-indigo-600 dark:text-indigo-400 font-semibold">
-                        ← Back to Lesson
+                        ÃƒÂ¢Ã¢â‚¬Â Ã‚Â Back to Lesson
                       </button>
                       <span className="text-xs font-black text-slate-800 dark:text-white uppercase tracking-widest">Raise Hand</span>
                     </div>
@@ -7392,7 +7481,7 @@ ${explanation.explanation}
                       {pendingMedia && (
                         <div className="mb-2 inline-flex items-center gap-2 p-2 bg-white dark:bg-slate-850 border border-slate-250 dark:border-slate-700 rounded-xl shadow-md">
                           <span className="text-[10px] font-black uppercase text-indigo-600 font-semibold">Attached {pendingMedia.type}</span>
-                          <button onClick={() => setPendingMedia(null)} className="text-slate-400 hover:text-red-500">✕</button>
+                          <button onClick={() => setPendingMedia(null)} className="text-slate-400 hover:text-red-500">ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¢</button>
                         </div>
                       )}
                       <div className="flex items-center bg-white dark:bg-slate-900 border border-slate-350 dark:border-slate-700 rounded-2xl p-1 shadow-md focus-within:ring-2 focus-within:ring-indigo-500">
@@ -7429,7 +7518,7 @@ ${explanation.explanation}
                     {/* Mobile Back */}
                     <div className="lg:hidden flex items-center justify-between pb-4 border-b border-slate-200 dark:border-slate-800 shrink-0">
                       <button onClick={() => setStudyTab('LESSON')} className="flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-indigo-600 font-semibold">
-                        ← Back to Lesson
+                        ÃƒÂ¢Ã¢â‚¬Â Ã‚Â Back to Lesson
                       </button>
                       <span className="text-xs font-black text-slate-800 dark:text-white uppercase tracking-widest">Quick Recap</span>
                     </div>
@@ -7478,7 +7567,7 @@ ${explanation.explanation}
                     {/* Mobile Back */}
                     <div className="lg:hidden w-full flex items-center justify-between pb-4 border-b border-slate-200 dark:border-slate-800 shrink-0 mb-10">
                       <button onClick={() => setStudyTab('LESSON')} className="flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-indigo-600 font-semibold">
-                        ← Back to Lesson
+                        ÃƒÂ¢Ã¢â‚¬Â Ã‚Â Back to Lesson
                       </button>
                       <span className="text-xs font-black text-slate-850 dark:text-white uppercase tracking-widest font-semibold">Pop Quiz</span>
                     </div>
@@ -7507,7 +7596,7 @@ ${explanation.explanation}
                     {/* Mobile Back */}
                     <div className="lg:hidden flex items-center justify-between pb-4 border-b border-slate-200 dark:border-slate-850 shrink-0">
                       <button onClick={() => setStudyTab('LESSON')} className="flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-indigo-600 font-semibold">
-                        ← Back to Lesson
+                        ÃƒÂ¢Ã¢â‚¬Â Ã‚Â Back to Lesson
                       </button>
                       <span className="text-xs font-black text-slate-800 dark:text-white uppercase tracking-widest font-semibold">References</span>
                     </div>
@@ -7539,7 +7628,7 @@ ${explanation.explanation}
                             <ul className="space-y-1 pl-1">
                               {syllabus.outcomes.map((out, i) => (
                                 <li key={i} className="text-slate-650 dark:text-slate-350 flex items-start gap-1">
-                                  <span className="text-emerald-500">✔</span>
+                                  <span className="text-emerald-500">ÃƒÂ¢Ã…â€œÃ¢â‚¬Â</span>
                                   <span>{out}</span>
                                 </li>
                               ))}
@@ -7734,8 +7823,8 @@ ${explanation.explanation}
                 {imageData
                   ? (educationLevel === EducationLevel.JUNIOR ? "I see your picture! What should I help with?" : "Image attached! What would you like Akili to explain?")
                   : isHomework
-                    ? (educationLevel === EducationLevel.JUNIOR ? "Show me your task or tell me about it!" : "Upload your homework or record audio — Akili will break it down step by step.")
-                    : (educationLevel === EducationLevel.JUNIOR ? "Ask Akili anything, show a picture, or just talk!" : "Type a topic, upload an image, or record audio — Akili has you covered.")}
+                    ? (educationLevel === EducationLevel.JUNIOR ? "Show me your task or tell me about it!" : "Upload your homework or record audio ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â Akili will break it down step by step.")
+                    : (educationLevel === EducationLevel.JUNIOR ? "Ask Akili anything, show a picture, or just talk!" : "Type a topic, upload an image, or record audio ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â Akili has you covered.")}
               </p>
             </div>
 
@@ -7989,7 +8078,7 @@ ${explanation.explanation}
               </motion.div>
             )}
 
-            {/* Podcast Player Overlay — Premium Media Player */}
+            {/* Podcast Player Overlay ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â Premium Media Player */}
             <AnimatePresence>
               {(isPodcastPlaying || podcastLoading) && (isPodcastPlaying ? podcastScript : true) && (
                 <motion.div
@@ -8039,7 +8128,7 @@ ${explanation.explanation}
                                 ? 'bg-indigo-500/30 text-indigo-300'
                                 : 'bg-violet-500/30 text-violet-300'
                             }`}>
-                              {seg.speaker === 'Host' ? '🎙️ Host' : '🎓 Expert'}
+                              {seg.speaker === 'Host' ? 'ÃƒÂ°Ã…Â¸Ã…Â½Ã¢â€žÂ¢ÃƒÂ¯Ã‚Â¸Ã‚Â Host' : 'ÃƒÂ°Ã…Â¸Ã…Â½Ã¢â‚¬Å“ Expert'}
                             </span>
                             <p className="text-slate-200 text-sm leading-relaxed font-medium">{seg.text}</p>
                           </div>
@@ -8182,7 +8271,7 @@ ${explanation.explanation}
                     {isPodcastPlaying && podcastScript && currentSegmentIndex >= 0 ? (
                       <>
                         <p className="text-[11px] font-bold text-indigo-500 truncate max-w-[180px]">
-                          {podcastScript.script[currentSegmentIndex].speaker === 'Host' ? '🎙️ Host' : '🎓 Expert'}
+                          {podcastScript.script[currentSegmentIndex].speaker === 'Host' ? 'ÃƒÂ°Ã…Â¸Ã…Â½Ã¢â€žÂ¢ÃƒÂ¯Ã‚Â¸Ã‚Â Host' : 'ÃƒÂ°Ã…Â¸Ã…Â½Ã¢â‚¬Å“ Expert'}
                         </p>
                         {podcastTotalSegments > 0 && (
                           <div className="mt-1 h-1 w-28 bg-indigo-200 rounded-full overflow-hidden">
@@ -8345,7 +8434,7 @@ ${explanation.explanation}
                 return (
                   <div className="mt-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
                     <div className="flex items-center justify-between mb-3">
-                      <p className="text-xs font-black text-slate-500 uppercase tracking-widest">Flashcards — {gotCount}/{total} Got It</p>
+                      <p className="text-xs font-black text-slate-500 uppercase tracking-widest">Flashcards ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â {gotCount}/{total} Got It</p>
                       <p className="text-xs font-bold text-slate-400">{flashcardIndex + 1} / {total}</p>
                     </div>
                     <div
@@ -8382,7 +8471,7 @@ ${explanation.explanation}
                         }}
                         className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white font-black py-3 rounded-2xl text-sm transition-colors"
                       >
-                        ✓ Got It
+                        ÃƒÂ¢Ã…â€œÃ¢â‚¬Å“ Got It
                       </button>
                       <button
                         onClick={() => {
@@ -8391,7 +8480,7 @@ ${explanation.explanation}
                         }}
                         className="flex-1 bg-rose-100 hover:bg-rose-200 text-rose-700 font-black py-3 rounded-2xl text-sm transition-colors"
                       >
-                        ✗ Still Learning
+                        ÃƒÂ¢Ã…â€œÃ¢â‚¬â€ Still Learning
                       </button>
                     </div>
                     {flashcardIndex === total - 1 && (
@@ -8566,7 +8655,7 @@ ${explanation.explanation}
             <div className="fixed inset-0 z-[200] bg-slate-900/80 backdrop-blur-md flex items-end sm:items-center justify-center p-4">
               <div className="bg-white dark:bg-slate-900 rounded-[2rem] w-full max-w-sm shadow-2xl overflow-hidden">
                 <div className="bg-gradient-to-r from-indigo-600 to-purple-600 p-6 text-white text-center">
-                  <div className="text-3xl mb-2">🎓</div>
+                  <div className="text-3xl mb-2">ÃƒÂ°Ã…Â¸Ã…Â½Ã¢â‚¬Å“</div>
                   <h2 className="text-xl font-black">Welcome to Somo Smart!</h2>
                   <p className="text-indigo-100 text-sm mt-1">Let's personalise your learning</p>
                   <div className="flex justify-center gap-2 mt-3">
@@ -8594,13 +8683,13 @@ ${explanation.explanation}
                         onClick={() => setOnboardStep(2)}
                         className="mt-5 w-full bg-indigo-600 disabled:opacity-40 text-white py-3.5 rounded-xl font-black"
                       >
-                        Next →
+                        Next ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢
                       </button>
                     </>
                   )}
                   {onboardStep === 2 && (
                     <>
-                      <p className="text-sm font-black text-slate-700 dark:text-slate-200 mb-2">Class set to <span className="text-indigo-600">{onboardGrade}</span> 👌</p>
+                      <p className="text-sm font-black text-slate-700 dark:text-slate-200 mb-2">Class set to <span className="text-indigo-600">{onboardGrade}</span> ÃƒÂ°Ã…Â¸Ã¢â‚¬ËœÃ…â€™</p>
                       <p className="text-xs text-slate-500 dark:text-slate-400 mb-5">You're ready to explore. Scan a page, ask a question, or browse notes for your class.</p>
                       <button
                         onClick={async () => {
@@ -8611,9 +8700,9 @@ ${explanation.explanation}
                         }}
                         className="w-full bg-indigo-600 text-white py-3.5 rounded-xl font-black"
                       >
-                        Start Learning 🚀
+                        Start Learning ÃƒÂ°Ã…Â¸Ã…Â¡Ã¢â€šÂ¬
                       </button>
-                      <button onClick={() => setOnboardStep(1)} className="mt-2 w-full text-slate-400 text-xs font-bold py-2">← Back</button>
+                      <button onClick={() => setOnboardStep(1)} className="mt-2 w-full text-slate-400 text-xs font-bold py-2">ÃƒÂ¢Ã¢â‚¬Â Ã‚Â Back</button>
                     </>
                   )}
                   <button
@@ -8631,11 +8720,11 @@ ${explanation.explanation}
           {showQuizSharePrompt && (
             <div className="fixed inset-0 z-[200] bg-slate-900/70 backdrop-blur-sm flex items-end sm:items-center justify-center p-4">
               <div className="bg-white dark:bg-slate-900 rounded-[2rem] w-full max-w-sm shadow-2xl p-6 text-center">
-                <div className="text-4xl mb-3">🎉</div>
+                <div className="text-4xl mb-3">ÃƒÂ°Ã…Â¸Ã…Â½Ã¢â‚¬Â°</div>
                 <h2 className="text-2xl font-black text-slate-900 dark:text-white">{showQuizSharePrompt.score}%!</h2>
                 <p className="text-sm font-bold text-slate-500 dark:text-slate-400 mt-1 mb-5">{showQuizSharePrompt.topic}</p>
                 <a
-                  href={`https://wa.me/?text=${encodeURIComponent(`I just scored ${showQuizSharePrompt.score}% on ${showQuizSharePrompt.topic} on Somo Smart! 🎉\n\nStudy smarter — try it free: https://somaai.co.ke`)}`}
+                  href={`https://wa.me/?text=${encodeURIComponent(`I just scored ${showQuizSharePrompt.score}% on ${showQuizSharePrompt.topic} on Somo Smart! ÃƒÂ°Ã…Â¸Ã…Â½Ã¢â‚¬Â°\n\nStudy smarter ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â try it free: https://somaai.co.ke`)}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={() => { setShowQuizSharePrompt(null); trackFunnelEvent('quiz_whatsapp_share', { score: showQuizSharePrompt.score }); }}
@@ -9080,10 +9169,10 @@ ${explanation.explanation}
               {/* Content-Type Filter Tabs */}
               <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-hide -mx-2 px-2">
                 {([
-                  { id: 'ALL',        emoji: '📚', label: 'All',         activeClass: 'bg-indigo-600 text-white shadow-lg shadow-indigo-200' },
-                  { id: 'SYLLABUS',   emoji: '📖', label: 'Syllabus',    activeClass: 'bg-purple-600 text-white shadow-lg shadow-purple-200' },
-                  { id: 'NOTES',      emoji: '📝', label: 'Notes',       activeClass: 'bg-blue-600 text-white shadow-lg shadow-blue-200' },
-                  { id: 'PAST_PAPER', emoji: '📄', label: 'Past Papers', activeClass: 'bg-amber-500 text-white shadow-lg shadow-amber-200' },
+                  { id: 'ALL',        emoji: 'ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã…Â¡', label: 'All',         activeClass: 'bg-indigo-600 text-white shadow-lg shadow-indigo-200' },
+                  { id: 'SYLLABUS',   emoji: 'ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã¢â‚¬â€œ', label: 'Syllabus',    activeClass: 'bg-purple-600 text-white shadow-lg shadow-purple-200' },
+                  { id: 'NOTES',      emoji: 'ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‚Â', label: 'Notes',       activeClass: 'bg-blue-600 text-white shadow-lg shadow-blue-200' },
+                  { id: 'PAST_PAPER', emoji: 'ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã¢â‚¬Å¾', label: 'Past Papers', activeClass: 'bg-amber-500 text-white shadow-lg shadow-amber-200' },
                 ] as const).map(tab => (
                   <button
                     key={tab.id}
@@ -9165,7 +9254,7 @@ ${explanation.explanation}
                     }}
                     className="text-[9px] font-black text-indigo-500 hover:text-indigo-700 uppercase tracking-wider px-3 py-2 rounded-xl hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-all"
                   >
-                    Reset ✕
+                    Reset ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¢
                   </button>
                 )}
               </div>

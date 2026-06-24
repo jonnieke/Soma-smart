@@ -1,4 +1,4 @@
-import React, { Suspense, useState, useRef, useEffect } from 'react';
+﻿import React, { Suspense, useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ReactGA from 'react-ga4';
 import {
@@ -24,6 +24,7 @@ import { classroomService } from '../../services/classroomService';
 import { useNavigate, useLocation } from 'react-router-dom';
 import logoImg from '../../assets/images/main_logo.png';
 import { safeImport } from '../../utils/safeImport';
+import { TeacherDashboardTab } from './teacherNavigation';
 import { launchFeatures } from '../../config/launchFeatures';
 
 type TeacherGeminiService = typeof import('../../services/geminiService');
@@ -57,9 +58,11 @@ const processDarasaAudioFile: TeacherGeminiService['processDarasaRecording'] = a
     return processDarasaRecording(...args);
 };
 
+type TeacherActiveTab = 'DASHBOARD' | TeacherDashboardTab | 'EARNINGS' | 'HOME' | 'VOICE' | 'MARKETPLACE' | 'PROFILE' | 'REPORTS' | 'LESSON_POLISH' | 'BLACKBOARD' | 'CPD_HUB' | 'CLASSROOM_SIMULATOR';
+
 interface TeacherProps {
     onNavigate: (view: ViewState) => void;
-    initialTab?: 'DASHBOARD' | 'CREATION_HUB' | 'STUDENTS' | 'MARKING' | 'EARNINGS' | 'LIBRARY' | 'HOME' | 'CONVERT' | 'VOICE' | 'QUIZ' | 'MARKETPLACE' | 'PROFILE' | 'REPORTS' | 'DARASA_MODE' | 'HOMEWORK' | 'CPD_HUB' | 'CLASSROOM_SIMULATOR' | 'LESSON_PLAN_GENERATOR';
+    initialTab?: TeacherActiveTab;
 }
 
 export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTab }) => {
@@ -128,7 +131,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
         }
     });
     const [teacherNotice, setTeacherNotice] = useState<{ type: 'success' | 'error' | 'info'; text: string } | null>(null);
-    const [activeTab, setActiveTab] = useState<'DASHBOARD' | 'CREATION_HUB' | 'STUDENTS' | 'MARKING' | 'EARNINGS' | 'LIBRARY' | 'CONVERT' | 'VOICE' | 'QUIZ' | 'HOME' | 'MARKETPLACE' | 'PROFILE' | 'REPORTS' | 'DARASA_MODE' | 'SCHEMES' | 'LESSON_POLISH' | 'BLACKBOARD' | 'HOMEWORK' | 'CPD_HUB' | 'CLASSROOM_SIMULATOR' | 'LESSON_PLAN_GENERATOR'>(initialTab || 'DASHBOARD');
+    const [activeTab, setActiveTab] = useState<TeacherActiveTab>(initialTab || 'DASHBOARD');
     const [loading, setLoading] = useState(false);
     const [showWithdrawModal, setShowWithdrawModal] = useState(false);
     const [withdrawAmount, setWithdrawAmount] = useState('');
@@ -173,9 +176,9 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
 
                 // Let's use a new state 'showDirectPayment'
                 setSelectedPlan(plan);
-                // We need to trigger the payment flow. 
+                // We need to trigger the payment flow.
                 // Since PaymentFlow is usually internal to components, let's open a modal that immediately starts it?
-                // Actually, existing PaymentFlow component handles UI. 
+                // Actually, existing PaymentFlow component handles UI.
                 // We should show a modal with PaymentFlow.
 
                 // Re-using showPaywall logic might be tricky if it doesn't support direct payment start.
@@ -354,11 +357,35 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
         }
     }, [selectedClass, selectedSubject, workflowProgress.generatedAssessment, workflowProgress.publishedStream, teacherProfile?.id]);
 
-    // Update defaults when profile loads
+    const teacherContextStorageKey = teacherProfile?.id ? `soma_teacher_context_${teacherProfile.id}` : null;
+
+    // Restore the last working class and subject for this teacher
     useEffect(() => {
-        if (teacherProfile && !selectedClass) setSelectedClass(teacherProfile.classes[0]);
-        if (teacherProfile && !selectedSubject) setSelectedSubject(teacherProfile.subjects[0]);
-    }, [teacherProfile]);
+        if (!teacherProfile?.id) return;
+        try {
+            const raw = localStorage.getItem(teacherContextStorageKey || '');
+            if (raw) {
+                const parsed = JSON.parse(raw) as { class?: string; subject?: string };
+                if (parsed?.class && !selectedClass) setSelectedClass(parsed.class);
+                if (parsed?.subject && !selectedSubject) setSelectedSubject(parsed.subject);
+                return;
+            }
+        } catch {
+            // Fall back to profile defaults below.
+        }
+
+        if (!selectedClass && teacherProfile.classes?.[0]) setSelectedClass(teacherProfile.classes[0]);
+        if (!selectedSubject && teacherProfile.subjects?.[0]) setSelectedSubject(teacherProfile.subjects[0]);
+    }, [teacherContextStorageKey, teacherProfile, selectedClass, selectedSubject]);
+
+    useEffect(() => {
+        if (!teacherContextStorageKey || (!selectedClass && !selectedSubject)) return;
+        try {
+            localStorage.setItem(teacherContextStorageKey, JSON.stringify({ class: selectedClass, subject: selectedSubject }));
+        } catch {
+            // Best-effort persistence only.
+        }
+    }, [selectedClass, selectedSubject, teacherContextStorageKey]);
 
     // First-run teacher onboarding: fire once when teacher has no class/subject set
     useEffect(() => {
@@ -971,7 +998,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
             {/* --- MODERN HEADER --- */}
             <div className="bg-white sticky top-0 z-50 shadow-sm border-b border-slate-100">
                 <div className="max-w-[1440px] mx-auto px-4 md:px-8 h-[72px] flex items-center justify-between">
-                    {/* Left: Logo — clickable to go home */}
+                    {/* Left: Logo â€” clickable to go home */}
                     <div className="flex items-center gap-3 cursor-pointer group" onClick={() => navigate('/')}>
                         <img src={logoImg} alt="Somo Smart Logo" className="h-10 w-auto object-contain group-hover:scale-105 transition-transform" />
                     </div>
@@ -1065,22 +1092,22 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                                 : 'Open Dashboard and choose your class plus subject before you create notes or an assessment.'}
                         </p>
                     </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 lg:w-[28rem]">
+                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 lg:w-[28rem]">
                         <button
                             onClick={() => setActiveTab(hasContextForSetup ? 'CONVERT' : 'DASHBOARD')}
                             className="rounded-2xl bg-slate-900 text-white px-4 py-3 text-left font-black text-sm hover:bg-slate-800 transition-colors"
                         >
-                            {hasContextForSetup ? 'Create notes' : '1. Set class & subject'}
+                            {hasContextForSetup ? '1. Create notes' : '1. Set class & subject'}
                             <span className="block text-[10px] font-bold text-slate-300 mt-0.5">
                                 {hasContextForSetup ? 'Lesson file or voice' : 'Open Dashboard first'}
                             </span>
                         </button>
                         <button
-                            onClick={() => setActiveTab('CONVERT')}
+                            onClick={() => setActiveTab('LESSON_PLAN_GENERATOR')}
                             className="rounded-2xl bg-white border border-emerald-200 px-4 py-3 text-left font-black text-sm text-emerald-700 hover:bg-emerald-50 transition-colors"
                         >
-                            2. Create notes
-                            <span className="block text-[10px] font-bold text-emerald-500 mt-0.5">Lesson file or voice</span>
+                            2. Plan lesson
+                            <span className="block text-[10px] font-bold text-emerald-500 mt-0.5">Scheme, flow, and timing</span>
                         </button>
                         <button
                             onClick={() => setActiveTab('MARKING')}
@@ -1139,7 +1166,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
 
                 {activeTab === 'CREATION_HUB' && (
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                        <CreationHub onNavigateToTool={(tool) => setActiveTab(tool)} />
+                        <CreationHub selectedClass={selectedClass} selectedSubject={selectedSubject} onNavigateToTool={(tool) => setActiveTab(tool)} />
                     </motion.div>
                 )}
 
@@ -1210,6 +1237,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                 {activeTab === 'DASHBOARD' && (
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
                         <TeacherDashboardOverview
+                            teacherId={teacherProfile?.id}
                             teacherProfile={teacherProfile}
                             selectedSubject={selectedSubject}
                             selectedClass={selectedClass}
@@ -1507,7 +1535,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                                                             }}
                                                             className="mt-2 px-5 py-2 bg-gradient-to-r from-blue-600 to-emerald-600 text-white rounded-xl font-bold text-xs shadow-lg shadow-blue-200 hover:shadow-xl transition-all flex items-center gap-2"
                                                         >
-                                                            💬 Open Chat Thread
+                                                            ðŸ’¬ Open Chat Thread
                                                         </button>
                                                     </div>
                                                 ))}
@@ -1819,7 +1847,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                                                     <h3 className="text-lg font-black text-slate-800 leading-relaxed">
                                                         {q.question}
                                                     </h3>
-                                                    
+
                                                     {q.type === 'MCQ' && q.options && (
                                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">
                                                             {q.options.map((opt, oidx) => (
@@ -1847,7 +1875,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                                                         </div>
                                                         <p className="font-black text-slate-800 mb-2">Ans: {q.correctAnswer}</p>
                                                         <p className="text-sm text-slate-600 leading-relaxed italic">{q.explanation}</p>
-                                                        
+
                                                         {q.markingScheme && q.markingScheme.length > 0 && (
                                                             <div className="mt-4 pt-4 border-t border-emerald-100/50">
                                                                 <p className="text-[10px] font-black uppercase tracking-widest text-emerald-600 mb-3">KNEC Marking Scheme</p>
@@ -2538,7 +2566,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                                         <div className="flex-1 min-w-0">
                                             <h2 className="font-black text-base truncate">{chatReq?.topic || 'Chat'}</h2>
                                             <p className="text-emerald-100 text-[11px] font-bold truncate">
-                                                {chatReq?.studentName || 'Student'} · {chatReq?.rating ? `★ ${chatReq.rating}/5` : 'Ongoing'}
+                                                {chatReq?.studentName || 'Student'} Â· {chatReq?.rating ? `â˜… ${chatReq.rating}/5` : 'Ongoing'}
                                             </p>
                                         </div>
                                         <button
@@ -2661,5 +2689,9 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
         </div>
     );
 };
+
+
+
+
 
 
