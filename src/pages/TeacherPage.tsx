@@ -18,6 +18,7 @@ export const TeacherPage: React.FC = () => {
     if (location.pathname === '/teacher/homework') initialTab = 'HOME'; // Stay on Home (Studio) to see quiz tools
     if (location.pathname === '/teacher/marking') initialTab = 'MARKING';
     if (location.pathname === '/teacher/darasa') initialTab = 'DARASA_MODE';
+    if (location.pathname === '/teacher/syllabus') initialTab = 'SYLLABUS_TRACKER';
     if (state?.initialTab) initialTab = state.initialTab;
 
     const handleNavigate = (view: ViewState) => {
@@ -43,4 +44,5 @@ export const TeacherPage: React.FC = () => {
         </>
     );
 };
+
 

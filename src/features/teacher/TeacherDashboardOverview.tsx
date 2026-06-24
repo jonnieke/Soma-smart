@@ -53,6 +53,7 @@ export const TeacherDashboardOverview: React.FC<TeacherDashboardOverviewProps> =
     { title: 'I need a lesson fast', body: 'Turn a topic, file, or voice note into class notes.', tab: 'CONVERT', icon: <FileText className="w-5 h-5" /> },
     { title: 'I need a lesson plan', body: 'Create a structured lesson flow the class can follow.', tab: 'LESSON_PLAN_GENERATOR', icon: <BookOpen className="w-5 h-5" /> },
     { title: 'I need scheme of work', body: 'Map the term without starting from scratch.', tab: 'SCHEMES', icon: <ClipboardList className="w-5 h-5" /> },
+    { title: 'Track syllabus progress', body: 'Open the syllabus tracker and see what is covered, in progress, or behind.', tab: 'SYLLABUS_TRACKER', icon: <BookOpen className="w-5 h-5" /> },
     { title: 'I need live teaching mode', body: 'Teach from a clean, guided classroom board.', tab: 'DARASA_MODE', icon: <Sparkles className="w-5 h-5" /> },
     { title: 'I need to mark work', body: 'Open marking and intervention tools quickly.', tab: 'MARKING', icon: <CheckCircle2 className="w-5 h-5" /> },
     { title: 'I need homework', body: 'Create practice work that fits the lesson.', tab: 'HOMEWORK', icon: <Target className="w-5 h-5" /> },
@@ -148,5 +149,6 @@ export const TeacherDashboardOverview: React.FC<TeacherDashboardOverviewProps> =
     </div>
   </div>;
 };
+
 
 

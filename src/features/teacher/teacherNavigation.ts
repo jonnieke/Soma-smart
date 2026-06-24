@@ -1,4 +1,4 @@
-export type TeacherDashboardTab =
+﻿export type TeacherDashboardTab =
     | 'STUDENTS'
     | 'MARKING'
     | 'LIBRARY'
@@ -8,4 +8,6 @@ export type TeacherDashboardTab =
     | 'QUIZ'
     | 'SCHEMES'
     | 'LESSON_PLAN_GENERATOR'
-    | 'HOMEWORK';
+    | 'HOMEWORK'
+    | 'SYLLABUS_TRACKER';
+

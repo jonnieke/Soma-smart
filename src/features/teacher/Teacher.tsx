@@ -45,6 +45,7 @@ const PdfPageSelector = React.lazy(() => safeImport(() => import('../../componen
 const CPDHub = React.lazy(() => safeImport(() => import('./CPDHub').then(module => ({ default: module.CPDHub }))));
 const ClassroomSimulator = React.lazy(() => safeImport(() => import('./ClassroomSimulator').then(module => ({ default: module.ClassroomSimulator }))));
 const LessonPlanGenerator = React.lazy(() => safeImport(() => import('./LessonPlanGenerator').then(module => ({ default: module.LessonPlanGenerator }))));
+const SyllabusTracker = React.lazy(() => safeImport(() => import('./SyllabusTracker').then(module => ({ default: module.SyllabusTracker }))));
 
 const TeacherToolFallback = () => (
     <div className="min-h-[320px] rounded-[2rem] border-2 border-slate-100 bg-white flex flex-col items-center justify-center text-slate-400">
@@ -1234,6 +1235,18 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                 )}
 
                 {/* --- DASHBOARD VIEW --- */}
+                {activeTab === 'SYLLABUS_TRACKER' && (
+                    <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
+                        <Suspense fallback={<TeacherToolFallback />}>
+                            <SyllabusTracker
+                                teacherId={teacherProfile?.id}
+                                selectedClass={selectedClass}
+                                selectedSubject={selectedSubject}
+                                onNavigate={(tab) => setActiveTab(tab)}
+                            />
+                        </Suspense>
+                    </motion.div>
+                )}
                 {activeTab === 'DASHBOARD' && (
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
                         <TeacherDashboardOverview
@@ -2689,6 +2702,9 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
         </div>
     );
 };
+
+
+
 
 
 
