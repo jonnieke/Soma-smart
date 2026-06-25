@@ -1,4 +1,4 @@
-﻿-- Persist teacher syllabus tracking progress per class and subject.
+-- Persist teacher syllabus tracking progress per class and subject.
 
 CREATE TABLE IF NOT EXISTS public.teacher_syllabus_progress (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
