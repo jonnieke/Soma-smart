@@ -25,6 +25,13 @@ export interface DashboardStats {
     authBreakdown: { eventName: string; count: number }[];
     recentActivity: FeedItem[];
     recentAnalyticsEvents: { id: string; eventName: string; eventType: string; path: string; time: string }[];
+    recentTeacherWorkflowEvents: { id: string; eventName: string; path: string; time: string; createdAt: string; actorName: string; context: string }[];
+    teacherWorkflow7dTotal: number;
+    teacherWorkflow7dNotes: number;
+    teacherWorkflow7dSchemes: number;
+    teacherWorkflow7dHomework: number;
+    teacherWorkflow7dSteps: number;
+    teacherWorkflow7dResets: number;
     activityTrend: number[]; // Last 14 days activity count
 }
 
@@ -245,11 +252,29 @@ export const fetchDashboardStats = async (): Promise<DashboardStats> => {
             .order('created_at', { ascending: false })
             .limit(1000);
 
+        const { data: teacherWorkflowEventRows, error: teacherWorkflowEventsError } = await supabase
+            .from('analytics_events')
+            .select('id, event_name, path, created_at, user_id, metadata')
+            .eq('event_type', 'TEACHER_WORKFLOW')
+            .order('created_at', { ascending: false })
+            .limit(24);
+
+        const { data: teacherWorkflowRows, error: teacherWorkflowError } = await supabase
+            .from('teacher_workflow_metrics')
+            .select('total_events, scheme_generated, homework_generated, note_generated, step_completed, reset_count, last_event_name, last_event_at')
+            .gte('metric_date', sevenDaysAgo.toISOString().slice(0, 10));
+
         if (activityError) {
             console.warn("Activities fetch failed:", activityError.message);
         }
         if (analyticsError && import.meta.env.DEV) {
             console.warn("Analytics events fetch failed:", analyticsError.message);
+        }
+        if (teacherWorkflowEventsError && import.meta.env.DEV) {
+            console.warn("Teacher workflow event feed fetch failed:", teacherWorkflowEventsError.message);
+        }
+        if (teacherWorkflowError && import.meta.env.DEV) {
+            console.warn("Teacher workflow metrics fetch failed:", teacherWorkflowError.message);
         }
 
         const recentActivityIds = Array.from(
@@ -260,17 +285,66 @@ export const fetchDashboardStats = async (): Promise<DashboardStats> => {
             )
         );
 
-        const { data: recentProfiles } = recentActivityIds.length > 0
+        const teacherWorkflowActorIds = Array.from(
+            new Set(
+                (teacherWorkflowEventRows || [])
+                    .map((row: any) => row.user_id)
+                    .filter((id: any) => typeof id === 'string' && id.trim().length > 0)
+            )
+        );
+
+        const profileIds = Array.from(new Set([...recentActivityIds, ...teacherWorkflowActorIds]));
+
+        const { data: recentProfiles } = profileIds.length > 0
             ? await supabase
                 .from('profiles')
                 .select('id, full_name, student_id, role')
-                .in('id', recentActivityIds)
+                .in('id', profileIds)
             : { data: [] as any[] };
 
         const profileById = new Map<string, any>();
         (recentProfiles || []).forEach((profile: any) => {
             profileById.set(profile.id, profile);
         });
+
+        const buildWorkflowContext = (eventName: string, metadata: Record<string, any>) => {
+            const subject = String(metadata?.subject || '').trim();
+            const className = String(metadata?.class_name || metadata?.grade || '').trim();
+            const topic = String(metadata?.topic || '').trim();
+            const source = String(metadata?.source || '').trim();
+            const term = String(metadata?.term || '').trim();
+            const year = String(metadata?.year || '').trim();
+            const difficulty = String(metadata?.difficulty || '').trim();
+
+            const parts = [className, subject, topic].filter(Boolean);
+
+            if (eventName === 'scheme_generated') {
+                const schemeParts = [className, subject, term, year].filter(Boolean);
+                return schemeParts.length > 0 ? schemeParts.join(' | ') : 'Scheme planning';
+            }
+
+            if (eventName === 'homework_generated') {
+                const homeworkParts = [className, subject, topic, difficulty].filter(Boolean);
+                return homeworkParts.length > 0 ? homeworkParts.join(' | ') : 'Homework created';
+            }
+
+            if (eventName === 'note_generated') {
+                const noteParts = [...parts, source].filter(Boolean);
+                return noteParts.length > 0 ? noteParts.join(' | ') : 'Lesson note created';
+            }
+
+            if (eventName === 'teacher_workflow_step_completed') {
+                const step = String(metadata?.step || '').trim();
+                const stepParts = [step, ...parts].filter(Boolean);
+                return stepParts.length > 0 ? stepParts.join(' | ') : 'Workflow step completed';
+            }
+
+            if (eventName === 'teacher_workflow_reset') {
+                return parts.length > 0 ? parts.join(' | ') : 'Workflow reset';
+            }
+
+            return [...parts, source, difficulty].filter(Boolean).join(' | ') || 'Teacher workflow';
+        };
 
         const resolveActorLabel = (studentId: any) => {
             const raw = String(studentId || '').trim();
@@ -340,6 +414,24 @@ export const fetchDashboardStats = async (): Promise<DashboardStats> => {
             time: new Date(row.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
         }));
 
+        const recentTeacherWorkflowEvents = (teacherWorkflowEventRows || []).map((row: any) => ({
+            id: row.id,
+            eventName: row.event_name || 'unknown',
+            path: row.path || '/',
+            time: new Date(row.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            createdAt: row.created_at || new Date().toISOString(),
+            actorName: resolveActorLabel(row.user_id),
+            context: buildWorkflowContext(String(row.event_name || ''), (row.metadata && typeof row.metadata === 'object') ? row.metadata : {}),
+        }));
+
+        const teacherWorkflowRowsSafe = teacherWorkflowRows || [];
+        const teacherWorkflow7dTotal = teacherWorkflowRowsSafe.reduce((sum: number, row: any) => sum + (Number(row.total_events) || 0), 0);
+        const teacherWorkflow7dNotes = teacherWorkflowRowsSafe.reduce((sum: number, row: any) => sum + (Number(row.note_generated) || 0), 0);
+        const teacherWorkflow7dSchemes = teacherWorkflowRowsSafe.reduce((sum: number, row: any) => sum + (Number(row.scheme_generated) || 0), 0);
+        const teacherWorkflow7dHomework = teacherWorkflowRowsSafe.reduce((sum: number, row: any) => sum + (Number(row.homework_generated) || 0), 0);
+        const teacherWorkflow7dSteps = teacherWorkflowRowsSafe.reduce((sum: number, row: any) => sum + (Number(row.step_completed) || 0), 0);
+        const teacherWorkflow7dResets = teacherWorkflowRowsSafe.reduce((sum: number, row: any) => sum + (Number(row.reset_count) || 0), 0);
+
         // 3. Financials (Real from transactions)
         const { data: transactions } = await supabase.from('transactions').select('amount, status, type');
         const realRevenue = transactions
@@ -399,6 +491,13 @@ export const fetchDashboardStats = async (): Promise<DashboardStats> => {
             authBreakdown,
             recentActivity,
             recentAnalyticsEvents,
+            recentTeacherWorkflowEvents,
+            teacherWorkflow7dTotal,
+            teacherWorkflow7dNotes,
+            teacherWorkflow7dSchemes,
+            teacherWorkflow7dHomework,
+            teacherWorkflow7dSteps,
+            teacherWorkflow7dResets,
             activityTrend: trendMap
         };
 
@@ -428,6 +527,13 @@ export const fetchDashboardStats = async (): Promise<DashboardStats> => {
             authBreakdown: [],
             recentActivity: [],
             recentAnalyticsEvents: [],
+            recentTeacherWorkflowEvents: [],
+            teacherWorkflow7dTotal: 0,
+            teacherWorkflow7dNotes: 0,
+            teacherWorkflow7dSchemes: 0,
+            teacherWorkflow7dHomework: 0,
+            teacherWorkflow7dSteps: 0,
+            teacherWorkflow7dResets: 0,
             activityTrend: new Array(14).fill(0)
         };
     }
@@ -517,3 +623,4 @@ export const fetchSchoolWideMastery = async (): Promise<SchoolCognitiveHealth> =
         return { averageScore: 0, totalMasteredTopics: 0, topStrugglingTopics: [], activeLearners: 0 };
     }
 };
+

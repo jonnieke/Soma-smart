@@ -2,10 +2,16 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Search, Filter, MoreHorizontal, UserCheck2, School, Users, Sparkles, GraduationCap } from 'lucide-react';
 import { fetchAllUsers, AdminUser } from '../../../services/adminService';
 import { Button } from '../../../components/Shared';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 export const UsersView: React.FC = () => {
-    const [activeTab, setActiveTab] = useState<'LEARNER' | 'TEACHER' | 'PARENT'>('LEARNER');
-    const [search, setSearch] = useState('');
+    const location = useLocation();
+    const navigate = useNavigate();
+    const initialParams = new URLSearchParams(location.search);
+    const initialRole = initialParams.get('role');
+    const initialSearch = initialParams.get('q') || '';
+    const [activeTab, setActiveTab] = useState<'LEARNER' | 'TEACHER' | 'PARENT'>(initialRole === 'TEACHER' || initialRole === 'PARENT' || initialRole === 'LEARNER' ? initialRole : 'LEARNER');
+    const [search, setSearch] = useState(initialSearch);
     const [users, setUsers] = useState<AdminUser[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -15,6 +21,29 @@ export const UsersView: React.FC = () => {
             setLoading(false);
         });
     }, []);
+
+    useEffect(() => {
+        const params = new URLSearchParams(location.search);
+        const nextRole = params.get('role');
+        const nextSearch = params.get('q') || '';
+
+        if (nextRole === 'TEACHER' || nextRole === 'PARENT' || nextRole === 'LEARNER') {
+            setActiveTab(nextRole);
+        }
+        setSearch(nextSearch);
+    }, [location.search]);
+
+    const syncUserParams = (nextTab: 'LEARNER' | 'TEACHER' | 'PARENT', nextSearch: string) => {
+        const params = new URLSearchParams(location.search);
+        params.set('tab', 'USERS');
+        params.set('role', nextTab);
+        if (nextSearch.trim()) {
+            params.set('q', nextSearch.trim());
+        } else {
+            params.delete('q');
+        }
+        navigate({ pathname: location.pathname, search: params.toString() }, { replace: true });
+    };
 
     const counts = useMemo(() => ({
         LEARNER: users.filter(u => u.role === 'LEARNER').length,
@@ -70,7 +99,7 @@ export const UsersView: React.FC = () => {
                             {(['LEARNER', 'TEACHER', 'PARENT'] as const).map((tab) => (
                                 <button
                                     key={tab}
-                                    onClick={() => setActiveTab(tab)}
+                                    onClick={() => { setActiveTab(tab); syncUserParams(tab, search); }}
                                     className={`px-4 py-2 rounded-xl text-sm font-bold transition-colors ${activeTab === tab
                                         ? 'bg-slate-900 text-white shadow-sm'
                                         : 'bg-slate-50 text-slate-600 hover:bg-slate-100'
@@ -93,7 +122,11 @@ export const UsersView: React.FC = () => {
                                 placeholder="Search users..."
                                 className="pl-9 pr-4 py-2.5 border border-slate-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-500 w-full sm:w-72"
                                 value={search}
-                                onChange={(e) => setSearch(e.target.value)}
+                                onChange={(e) => {
+                                    const nextValue = e.target.value;
+                                    setSearch(nextValue);
+                                    syncUserParams(activeTab, nextValue);
+                                }}
                             />
                         </div>
                         <Button variant="outline" className="px-3"><Filter className="w-4 h-4" /></Button>

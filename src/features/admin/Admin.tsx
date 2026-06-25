@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { ViewState } from '../../types';
 import { AdminLayout } from './layout/AdminLayout';
 import { Overview } from './views/Overview';
@@ -13,6 +13,7 @@ import { Lock } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { Helmet } from 'react-helmet-async';
 import { JournalView } from './views/Journal';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 interface AdminProps {
     onNavigate: (view: ViewState) => void;
@@ -20,12 +21,27 @@ interface AdminProps {
 }
 
 export const AdminDashboard: React.FC<AdminProps> = ({ onNavigate, authStatus = 'idle' }) => {
-    const [activeTab, setActiveTab] = useState<string>('OVERVIEW');
+    const location = useLocation();
+    const navigate = useNavigate();
+    const [activeTab, setActiveTab] = useState<string>(() => new URLSearchParams(location.search).get('tab') || 'OVERVIEW');
+
+    useEffect(() => {
+        const params = new URLSearchParams(location.search);
+        const nextTab = params.get('tab') || 'OVERVIEW';
+        setActiveTab((current) => current === nextTab ? current : nextTab);
+    }, [location.search]);
+
+    const handleTabChange = (nextTab: string) => {
+        setActiveTab(nextTab);
+        const params = new URLSearchParams(location.search);
+        params.set('tab', nextTab);
+        navigate({ pathname: location.pathname, search: params.toString() }, { replace: true });
+    };
 
     return (
         <AdminLayout
             activeTab={activeTab}
-            onTabChange={setActiveTab}
+            onTabChange={handleTabChange}
             authStatus={authStatus}
             onLogout={async () => {
                 await supabase.auth.signOut();

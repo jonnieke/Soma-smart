@@ -1,6 +1,7 @@
 ﻿import React from 'react';
 import { AlertCircle, ArrowRight, BookOpen, Brain, CheckCircle2, ChevronRight, ClipboardList, FileText, Library, Sparkles, Target, Users } from 'lucide-react';
 import { TeacherProfile, TutoringRequest, TeacherActivity, TeacherWallet } from '../../types';
+import { fetchTeacherWorkflowAnalytics, type TeacherWorkflowAnalyticsSummary } from '../../services/analyticsEventService';
 import { SyllabusTracker } from './SyllabusTracker';
 import { TeacherDashboardTab } from './teacherNavigation';
 
@@ -31,6 +32,8 @@ const n = (v: string) => v.trim().toLowerCase();
 
 export const TeacherDashboardOverview: React.FC<TeacherDashboardOverviewProps> = ({ teacherProfile, teacherId, selectedSubject, selectedClass, availableClasses, availableSubjects, activeTutoringRequests, teacherHistory, teacherWallet, onNavigate, onClassChange, onSubjectChange, onRequestClick, onHistoryItemClick, onTrackEvent, workflowStepSignal, workflowProgress, onResetWorkflowProgress, showQuickStart, onDismissQuickStart }) => {
   const [shareState, setShareState] = React.useState<'idle' | 'copied' | 'shared'>('idle');
+  const [workflowAnalytics, setWorkflowAnalytics] = React.useState<TeacherWorkflowAnalyticsSummary | null>(null);
+  const [workflowAnalyticsLoading, setWorkflowAnalyticsLoading] = React.useState(false);
   const c = n(String(selectedClass || '')); const s = n(String(selectedSubject || ''));
   const isPlaceholder = ['selected department', 'department', 'classe'].includes(c) || ['selected department', 'department', 'subject'].includes(s);
   const hasContext = Boolean(selectedClass?.trim()) && Boolean(selectedSubject?.trim()) && !isPlaceholder;
@@ -47,6 +50,34 @@ export const TeacherDashboardOverview: React.FC<TeacherDashboardOverviewProps> =
   const walletBalance = typeof teacherWallet?.balance === 'number' ? teacherWallet.balance : null;
   const recent = contextHistory.slice(0, 3);
   const requests = activeTutoringRequests.slice(0, 3);
+
+  React.useEffect(() => {
+    let cancelled = false;
+
+    const loadAnalytics = async () => {
+      if (!teacherId) {
+        setWorkflowAnalytics(null);
+        return;
+      }
+
+      setWorkflowAnalyticsLoading(true);
+      try {
+        const summary = await fetchTeacherWorkflowAnalytics(teacherId);
+        if (!cancelled) {
+          setWorkflowAnalytics(summary);
+        }
+      } finally {
+        if (!cancelled) {
+          setWorkflowAnalyticsLoading(false);
+        }
+      }
+    };
+
+    void loadAnalytics();
+    return () => {
+      cancelled = true;
+    };
+  }, [teacherId]);
 
   const actions: Array<{ title: string; body: string; tab: TeacherDashboardTab; icon: React.ReactNode }> = [
     { title: 'Open Lesson Maker', body: 'Start where teachers actually work: notes, plans, quizzes, and live teaching.', tab: 'CREATION_HUB', icon: <Sparkles className="w-5 h-5" /> },
@@ -139,6 +170,48 @@ export const TeacherDashboardOverview: React.FC<TeacherDashboardOverviewProps> =
       </div>
       <div className="space-y-6">
         <section className="bg-white rounded-[1.75rem] border border-slate-200 shadow-sm p-5 space-y-4"><div className="flex items-start justify-between gap-3"><div><p className="text-[10px] font-black uppercase tracking-[0.18em] text-indigo-500">Intervention</p><h3 className="text-lg font-black text-slate-900">{intervention.title}</h3></div><button type="button" onClick={sharePlan} className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-slate-600 hover:border-emerald-200 hover:text-emerald-700 transition-colors">{shareState === 'shared' ? 'Shared' : shareState === 'copied' ? 'Copied' : 'Share'}</button></div><p className="text-sm font-semibold text-slate-600">{intervention.body}</p><div className="flex flex-wrap gap-2">{intervention.actions.map(action => <button key={action.label} type="button" onClick={() => nav(action.tab)} className="rounded-full border border-slate-200 bg-slate-50 px-3 py-2 text-[10px] font-black uppercase tracking-wider text-slate-700 hover:border-emerald-200 hover:text-emerald-700 transition-colors">{action.label}</button>)}</div><div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 space-y-2"><p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">Why this is next</p>{intervention.evidence.map(item => <p key={item} className="text-xs font-semibold text-slate-600 flex items-start gap-2"><ArrowRight className="w-3.5 h-3.5 text-emerald-500 mt-0.5 shrink-0" /><span>{item}</span></p>)}</div></section>
+        <section className="bg-white rounded-[1.75rem] border border-slate-200 shadow-sm p-5 space-y-4">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">Teacher analytics</p>
+              <h3 className="text-lg font-black text-slate-900">Last 7 days of teacher workflow</h3>
+            </div>
+            <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-black uppercase tracking-wider text-slate-600">
+              {workflowAnalyticsLoading ? 'Loading' : `${workflowAnalytics?.totalEvents || 0} events`}
+            </span>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
+              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">Schemes</p>
+              <p className="mt-1 text-lg font-black text-slate-900">{workflowAnalytics?.schemeGenerated || 0}</p>
+            </div>
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
+              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">Homework</p>
+              <p className="mt-1 text-lg font-black text-slate-900">{workflowAnalytics?.homeworkGenerated || 0}</p>
+            </div>
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
+              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">Notes</p>
+              <p className="mt-1 text-lg font-black text-slate-900">{workflowAnalytics?.noteGenerated || 0}</p>
+            </div>
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
+              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">Steps</p>
+              <p className="mt-1 text-lg font-black text-slate-900">{workflowAnalytics?.stepCompleted || 0}</p>
+            </div>
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
+              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">Resets</p>
+              <p className="mt-1 text-lg font-black text-slate-900">{workflowAnalytics?.resetCount || 0}</p>
+            </div>
+          </div>
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 space-y-2">
+            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">Recent events</p>
+            {workflowAnalytics?.recentEvents?.length ? workflowAnalytics.recentEvents.map(item => (
+              <div key={`${item.eventName}-${item.time}`} className="flex items-center justify-between gap-3 text-xs font-semibold text-slate-600">
+                <span className="truncate">{item.eventName.replace(/_/g, ' ')}</span>
+                <span className="shrink-0 text-slate-400">{item.time}</span>
+              </div>
+            )) : <p className="text-xs font-semibold text-slate-500">No teacher workflow events yet. Generate a scheme or homework to start the signal.</p>}
+          </div>
+        </section>
         <section className="bg-white rounded-[1.75rem] border border-slate-200 shadow-sm p-5 space-y-4"><div className="flex items-center justify-between gap-3"><div><p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">Classroom requests</p><h3 className="text-lg font-black text-slate-900">Active follow-up</h3></div><span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-black uppercase tracking-wider text-slate-600">{pendingResponses} open</span></div><div className="space-y-2">{requests.length === 0 ? <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-4 text-sm font-semibold text-slate-500">No active learner requests right now. Keep moving with the lesson loop.</div> : requests.map(request => <button key={request.id} type="button" onClick={() => onRequestClick(request)} className="w-full text-left rounded-2xl border border-slate-200 bg-slate-50 p-4 hover:border-emerald-200 hover:bg-emerald-50 transition-colors"><div className="flex items-start justify-between gap-3"><div className="min-w-0"><p className="text-sm font-black text-slate-900 truncate">{request.studentName || request.studentCode || 'Learner request'}</p><p className="mt-1 text-xs font-semibold text-slate-600 truncate">{request.subject || selectedSubject || 'Subject'} / {request.className || selectedClass || 'Class'}</p></div><span className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-slate-500">{request.status}</span></div></button>)}</div></section>
       </div>
     </div>

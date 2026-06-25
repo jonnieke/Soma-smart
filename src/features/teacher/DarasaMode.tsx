@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Mic, StopCircle, Play, Pause, FileText, CheckCircle, Loader2, Sparkles, BookOpen, AlertCircle, Trash2, Save } from 'lucide-react';
 import { TeacherNote, QuizData } from '../../types';
+import { trackAnalyticsEvent } from '../../services/analyticsEventService';
 
 interface DarasaModeProps {
     onSaveToLibrary: (type: 'NOTE' | 'QUIZ', title: string, content: any) => void;
@@ -152,6 +153,17 @@ export const DarasaMode: React.FC<DarasaModeProps> = ({
             const result = await processAudioFile(audioBlob, audioBlob.type, selectedSubject, selectedClass, language);
             setGeneratedNote(result.note);
             setGeneratedQuiz(result.quiz);
+            void trackAnalyticsEvent({
+                eventType: 'TEACHER_WORKFLOW',
+                eventName: 'note_generated',
+                role: 'TEACHER',
+                metadata: {
+                    source: 'darasa_mode',
+                    subject: selectedSubject,
+                    class_name: selectedClass,
+                    topic: result.note?.topic || 'Voice lesson note',
+                },
+            });
         } catch (err: any) {
             console.error(err);
             setError("Failed to process the class recording. Please try again.");

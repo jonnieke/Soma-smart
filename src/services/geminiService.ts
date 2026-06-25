@@ -514,86 +514,27 @@ export const explainAudio = async (base64Audio: string, mimeType: string, level:
 
 export const processDarasaRecording = async (audioBlob: Blob, mimeType: string, subject: string, grade: string, language: 'EN' | 'SW' = 'EN'): Promise<{ note: TeacherNote, quiz: QuizData }> => {
   const base64Audio = await fileToGenerativePart(new File([audioBlob], 'darasa.webm', { type: mimeType }));
-
-  const model = genAI.getGenerativeModel({
-    model: MODEL_NAME,
-    generationConfig: {
-      responseMimeType: "application/json",
-      responseSchema: {
-        type: SchemaType.OBJECT,
-        properties: {
-          note: {
-            type: SchemaType.OBJECT,
-            properties: {
-              topic: { type: SchemaType.STRING },
-              explanation: { type: SchemaType.STRING, description: "Markdown formatted student notes" },
-              summaryPoints: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
-              relatedTopics: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } }
-            },
-            required: ["topic", "explanation", "summaryPoints", "relatedTopics"]
-          },
-          quiz: {
-            type: SchemaType.OBJECT,
-            properties: {
-              topic: { type: SchemaType.STRING },
-              questions: {
-                type: SchemaType.ARRAY,
-                items: {
-                  type: SchemaType.OBJECT,
-                  properties: {
-                    number: { type: SchemaType.STRING },
-                    text: { type: SchemaType.STRING },
-                    options: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
-                    correctAnswer: { type: SchemaType.STRING },
-                    topic: { type: SchemaType.STRING },
-                    marks: { type: SchemaType.NUMBER }
-                  },
-                  required: ["number", "text", "options", "correctAnswer", "topic", "marks"]
-                }
-              }
-            },
-            required: ["topic", "questions"]
-          }
-        },
-        required: ["note", "quiz"]
-      }
-    }
-  });
-
-  const prompt = `
-    Listen to this audio recording of a live class lesson.
-    The subject is ${subject}, intended for ${grade} students in the Kenyan education system.
-    
-    TASK 1: Create Structured Student Notes
-    - Extract the core topic of the lesson.
-    - Write a detailed, beautifully formatted markdown note using H3 headers (###) and bullet points.
-    - Ensure the tone is educational and aligned with CBC standards.
-    - Provide 3 sticky summary points.
-    - Provide 3 related study topics.
-    
-    TASK 2: Generate a Revision Quiz
-    - Based EXACTLY on the material covered in the audio, generate a 10-question multiple-choice quiz.
-    - Give 4 plausible options per question, with exactly 1 correct answer.
-    - Assign realistic marks per question (usually 1 or 2).
-    
-    LANGUAGE RULE: Use ${isSwahiliSubject(subject) ? 'Swahili (Kiswahili Sanifu)' : 'English'}. All subjects other than Swahili/Kiswahili must be generated exclusively in English.
-    
-    Output JSON containing both "note" and "quiz" objects.
-  `;
-
+  const langInstruction = isSwahiliSubject(subject)
+    ? "LANGUAGE RULE: You MUST respond ENTIRELY in rich, grammatical Kiswahili Sanifu."
+    : "LANGUAGE RULE: You MUST respond exclusively in clear academic English.";
+  const prompt = `You are a senior Kenyan teacher processing a live classroom voice recording.
+Build one polished classroom lesson note for ${grade} ${subject} and one classroom quiz from the same audio.
+If the audio is unclear, return topic "Unclear Audio", structuredNotes "Audio was unclear.", and simplifiedNotes "I couldn't hear any clear speech. Please try recording again closer to the microphone.".
+If the speech is clear, return a complete note with sections for Topic, Learning Outcomes, Prior Knowledge, Core Explanation, Worked Example, Class Activity, Common Mistakes, Quick Recap, and Check Your Understanding.
+Create 5 to 8 quiz questions with type, question, correctAnswer, explanation, and markingScheme. Use MCQ where helpful, otherwise SHORT.
+${langInstruction}
+Return only JSON in this shape: { "note": { "topic": "...", "structuredNotes": "...", "simplifiedNotes": "..." }, "quiz": { "topic": "...", "questions": [] } }`;
   try {
-    const result = await model.generateContent([
-      prompt,
-      { inlineData: { data: base64Audio.split(',')[1] || base64Audio, mimeType: mimeType } }
-    ]);
-
+    const result = await callGeminiProxy(MODEL_NAME, [{ role: 'user', parts: [{ text: prompt }, { inlineData: { data: base64Audio.split(',')[1] || base64Audio, mimeType } }] }], { temperature: 0.2, maxOutputTokens: 2600, responseMimeType: 'application/json' });
     const text = result.response.text();
-    if (!text) throw new Error("No response from AI");
-
-    const json = JSON.parse(text);
-    return json as { note: TeacherNote, quiz: QuizData };
+    if (!text) throw new Error('No response from AI');
+    const parsed = parseModelJson<any>(text);
+    const note = normalizeTeacherNotePayload(parsed?.note ?? parsed, text);
+    const quiz = normalizeTeacherQuizPayload(parsed?.quiz, note.topic || subject || 'Lesson Quiz');
+    if (quiz.questions.length < 3) throw new Error('Quiz generation incomplete');
+    return { note, quiz };
   } catch (error) {
-    console.error("Error processing darasa recording:", error);
+    console.error('Error processing darasa recording:', error);
     throw error;
   }
 };
@@ -1266,88 +1207,86 @@ export const convertNotes = async (base64Data: string, mimeType: string, subject
   }
 };
 
-export const processVoiceNote = async (audioBase64: string, mimeType: string = "audio/mp3", subject?: string, className?: string, language: 'EN' | 'SW' = 'EN'): Promise<TeacherNote> => {
-  const model = genAI.getGenerativeModel({
-    model: MODEL_NAME,
-    generationConfig: {
-      temperature: 0.2,
-      maxOutputTokens: 1800,
-      responseMimeType: "application/json",
-      responseSchema: {
-        type: SchemaType.OBJECT,
-        properties: {
-          topic: { type: SchemaType.STRING },
-          structuredNotes: { type: SchemaType.STRING },
-          simplifiedNotes: { type: SchemaType.STRING }
-        },
-        required: ["topic", "structuredNotes", "simplifiedNotes"]
-      }
-    }
-  });
+const decodeJsonLikeString = (value: string): string =>
+  value
+    .replace(/\\r/g, '')
+    .replace(/\\n/g, '\n')
+    .replace(/\\t/g, '\t')
+    .replace(/\\"/g, '"')
+    .replace(/\\\\/g, '\\')
+    .trim();
 
-  const useSwahili = isSwahiliSubject(subject);
-  const langInstruction = useSwahili
+const extractJsonLikeStringField = (rawText: string, field: string): string => {
+  const match = rawText.match(new RegExp(`"${field}"\\s*:\\s*"((?:\\\\.|[^"\\\\])*)"`, 's'));
+  return match ? decodeJsonLikeString(match[1]) : '';
+};
+
+const cleanTeacherMarkdown = (text: string): string => stripCodeFences(String(text || '')).replace(/^json\s*/i, '').trim();
+
+const normalizeTeacherNotePayload = (payload: Partial<TeacherNote> | Record<string, any> | null | undefined, rawText = '', preferredId?: string, preferredDate?: string): TeacherNote => {
+  const source = payload ?? {};
+  const topic = String(source.topic || extractJsonLikeStringField(rawText, 'topic') || '').trim();
+  const structuredCandidate = cleanTeacherMarkdown(String(source.structuredNotes || source.explanation || extractJsonLikeStringField(rawText, 'structuredNotes') || extractJsonLikeStringField(rawText, 'explanation') || ''));
+  const simplifiedCandidate = cleanTeacherMarkdown(String(source.simplifiedNotes || extractJsonLikeStringField(rawText, 'simplifiedNotes') || ''));
+  const lower = `${topic}\n${structuredCandidate}\n${simplifiedCandidate}\n${rawText}`.toLowerCase();
+  if (topic.toLowerCase() === 'unclear audio' || lower.includes('audio was unclear') || lower.includes("couldn't hear any clear speech") || lower.includes('could not hear any clear speech')) {
+    return { id: preferredId || Date.now().toString(), date: preferredDate || new Date().toLocaleDateString(), topic: 'Unclear Audio', structuredNotes: 'Audio was unclear.', simplifiedNotes: "I couldn't hear any clear speech. Please try recording again closer to the microphone." };
+  }
+  return {
+    id: preferredId || Date.now().toString(),
+    date: preferredDate || new Date().toLocaleDateString(),
+    topic: topic || 'Audio Processing Note',
+    structuredNotes: structuredCandidate.length >= 40 ? structuredCandidate : 'Audio was captured, but the lesson note came back incomplete. Record again in a quieter space or use Fix Note With AI to rebuild the class note.',
+    simplifiedNotes: simplifiedCandidate.length >= 24 ? simplifiedCandidate : 'I heard part of the lesson, but the note structure needs another pass. Try recording again closer to the microphone in a quieter space.'
+  };
+};
+
+const normalizeTeacherQuizPayload = (payload: any, fallbackTopic: string): QuizData => {
+  const questions = Array.isArray(payload?.questions) ? payload.questions : [];
+  return {
+    topic: String(payload?.topic || fallbackTopic || 'Lesson Quiz').trim(),
+    questions: questions.map((question: any, index: number) => {
+      const options = Array.isArray(question?.options) ? question.options.map((option: unknown) => String(option).trim()).filter(Boolean) : undefined;
+      const rawMarkingScheme = Array.isArray(question?.markingScheme) ? question.markingScheme : String(question?.modelAnswerOutline || '').split(/\n|\u2022|-/).map((entry) => entry.trim()).filter(Boolean);
+      const type = question?.type === 'SHORT' || (!options || options.length === 0) ? 'SHORT' : 'MCQ';
+      return {
+        id: question?.id ?? index + 1,
+        type,
+        question: String(question?.question || question?.text || '').trim(),
+        options: type === 'MCQ' && options && options.length >= 2 ? options : undefined,
+        correctAnswer: typeof question?.correctAnswer === 'number' ? question.correctAnswer : String(question?.correctAnswer || '').trim(),
+        explanation: String(question?.explanation || question?.modelAnswerOutline || 'Use the lesson note and answer key to justify the response.').trim(),
+        cognitiveLevel: String(question?.cognitiveLevel || '').trim() || undefined,
+        markingScheme: rawMarkingScheme.length > 0 ? rawMarkingScheme : ['State the correct answer clearly.', 'Support it with the key teaching point from the lesson.']
+      };
+    }).filter((question: any) => question.question && String(question.correctAnswer).trim())
+  };
+};
+
+export const processVoiceNote = async (audioBase64: string, mimeType: string = "audio/mp3", subject?: string, className?: string, language: 'EN' | 'SW' = 'EN'): Promise<TeacherNote> => {
+  const langInstruction = isSwahiliSubject(subject)
     ? "LANGUAGE RULE: You MUST respond ENTIRELY in rich, immersive, grammatical Swahili (Kiswahili Sanifu). Use comprehensive educational vocabulary in Swahili."
     : "LANGUAGE RULE: You MUST respond exclusively in English. For all academic concepts, notes, and explanations, use clear, precise academic English. Do NOT respond in Swahili, even if the student language setting is Swahili.";
-
-  const prompt = `
-You are a senior Kenyan teacher turning a voice lesson into polished classroom notes.
-
-RULES:
-1. If the audio is silent, background noise, or unclear, return:
-   - topic: "Unclear Audio"
-   - structuredNotes: "Audio was unclear."
-   - simplifiedNotes: "I couldn't hear any clear speech. Please try recording again closer to the microphone."
-2. If speech is clear, produce a complete teacher-quality lesson note, not a recap of the prompt.
-3. Use ${langInstruction}
-4. Treat this as final classroom material for ${className || 'this class'} in ${subject || 'the subject'}.
-5. structuredNotes must be rich Markdown with at least these sections:
-   - ### Topic
-   - ### Learning Outcomes
-   - ### Prior Knowledge / Link to Previous Lesson
-   - ### Core Explanation
-   - ### Worked Example
-   - ### Class Activity
-   - ### Common Mistakes
-   - ### Quick Recap
-   - ### Check Your Understanding
-6. structuredNotes must be detailed, concrete, and at least 350 words.
-7. Use Kenya classroom language and realistic examples from CBC/CBE/KCSE teaching.
-8. If the topic is scientific or mathematical, include the exact definition, procedure, formula, or rule where relevant.
-9. simplifiedNotes must be student-friendly and concise, with 5 to 8 bullets or short paragraphs that still add real value.
-10. Do not write preambles like "Let's create", "Here is", or "I will explain".
-11. Output only valid JSON matching the schema.
-    `;
-
+  const prompt = `You are a senior Kenyan teacher turning a voice lesson into polished classroom notes.
+If the audio is silent, background noise, or unclear, return topic "Unclear Audio", structuredNotes "Audio was unclear.", and simplifiedNotes "I couldn't hear any clear speech. Please try recording again closer to the microphone.".
+If speech is clear, produce final classroom material for ${className || 'this class'} in ${subject || 'the subject'}.
+Use ${langInstruction}.
+structuredNotes must use sections for Topic, Learning Outcomes, Prior Knowledge / Link to Previous Lesson, Core Explanation, Worked Example, Class Activity, Common Mistakes, Quick Recap, and Check Your Understanding.
+simplifiedNotes must stay student-friendly and useful.
+Return only JSON.`;
   try {
-    const result = await model.generateContent([
-      prompt,
-      { inlineData: { data: audioBase64, mimeType: mimeType } }
-    ]);
-
+    const result = await callGeminiProxy(MODEL_NAME, [{ role: 'user', parts: [{ text: prompt }, { inlineData: { data: audioBase64, mimeType } }] }], { temperature: 0.2, maxOutputTokens: 1800, responseMimeType: 'application/json' });
     const text = result.response.text();
-    if (!text) throw new Error("No response from AI");
-
+    if (!text) throw new Error('No response from AI');
     try {
-      const json = parseModelJson<TeacherNote>(text);
-      return {
-        id: Date.now().toString(),
-        date: new Date().toLocaleDateString(),
-        ...json
-      };
-    } catch (parseError) {
-      console.warn("AI returned non-JSON text:", text);
-      return {
-        id: Date.now().toString(),
-        date: new Date().toLocaleDateString(),
-        topic: "Audio Processing Note",
-        structuredNotes: text || "The AI could not strictly format the notes.",
-        simplifiedNotes: "I heard the lesson, but the note structure was incomplete. Try recording again in a quieter space."
-      };
+      const json = parseModelJson<Partial<TeacherNote>>(text);
+      return normalizeTeacherNotePayload(json, text);
+    } catch {
+      console.warn('AI returned non-JSON text:', text);
+      return normalizeTeacherNotePayload({}, text);
     }
-
   } catch (error) {
-    console.error("Error processing voice note:", error);
+    console.error('Error processing voice note:', error);
     throw error;
   }
 };
@@ -1587,59 +1526,26 @@ export const repairNoteForClassroom = async (
   grade: string,
   language: 'EN' | 'SW' = 'EN'
 ): Promise<TeacherNote> => {
-  const model = genAI.getGenerativeModel({
-    model: MODEL_NAME,
-    generationConfig: {
-      temperature: 0.2,
-      maxOutputTokens: 2000,
-      responseMimeType: "application/json",
-      responseSchema: {
-        type: SchemaType.OBJECT,
-        properties: {
-          topic: { type: SchemaType.STRING },
-          structuredNotes: { type: SchemaType.STRING },
-          simplifiedNotes: { type: SchemaType.STRING }
-        },
-        required: ["topic", "structuredNotes", "simplifiedNotes"]
-      }
-    }
-  });
-
-  const useSwahili = isSwahiliSubject(subject);
-  const langInstruction = useSwahili
+  const langInstruction = isSwahiliSubject(subject)
     ? "LANGUAGE RULE: You MUST respond ENTIRELY in rich, immersive, grammatical Swahili (Kiswahili Sanifu). Use comprehensive educational vocabulary in Swahili."
     : "LANGUAGE RULE: You MUST respond exclusively in English. For all academic concepts, notes, and explanations, use clear, precise academic English. Do NOT respond in Swahili, even if the student language setting is Swahili.";
-
-  const prompt = `
-You are a senior Kenyan teacher improving a lesson note before classroom publishing.
+  const prompt = `You are a senior Kenyan teacher improving a lesson note before classroom publishing.
 ${langInstruction}
-
 Subject: ${subject}
 Grade/Class: ${grade}
-
 Current note JSON:
 ${JSON.stringify(note)}
-
-TASK:
-1. Keep the same topic intent.
-2. Expand and polish content so it is classroom-ready, exam-aligned, and genuinely useful for revision.
-3. structuredNotes must feel like a real teacher lesson file with these sections where relevant: Topic, Learning Outcomes, Introduction, Core Explanation, Examples, Common Misconceptions, Class Work, Recap, and Quick Check.
-4. Include Kenyan classroom context and make the examples concrete, not generic.
-5. simplifiedNotes should be shorter but still helpful, with plain language and 5 to 8 clear bullets or short paragraphs.
-6. Return only valid JSON matching schema.
-`;
-
-  const result = await model.generateContent([
-    { role: "user", parts: [{ text: prompt }] }
-  ]);
+Keep the same topic intent, expand it into a real classroom lesson file, include concrete Kenyan examples, and return only JSON with topic, structuredNotes, and simplifiedNotes.`;
+  const result = await callGeminiProxy(MODEL_NAME, [{ role: 'user', parts: [{ text: prompt }] }], { temperature: 0.2, maxOutputTokens: 2000, responseMimeType: 'application/json' });
   const text = result.response.text();
-  if (!text) throw new Error("No response from AI");
-  const parsed = parseModelJson<TeacherNote>(text);
-  return {
-    id: note.id || Date.now().toString(),
-    date: note.date || new Date().toLocaleDateString(),
-    ...parsed
-  };
+  if (!text) throw new Error('No response from AI');
+  try {
+    const parsed = parseModelJson<Partial<TeacherNote>>(text);
+    return normalizeTeacherNotePayload(parsed, text, note.id, note.date);
+  } catch {
+    console.warn('Note repair returned malformed JSON:', text);
+    return normalizeTeacherNotePayload({}, text, note.id, note.date);
+  }
 };
 // --- ASK SOMA CHATBOT ---
 // --- ASK SOMO CHATBOT ---
@@ -4100,6 +4006,8 @@ export const generatePersonalisedPath = async (grade: string, subjects: string[]
     return defaultPath;
   }
 };
+
+
 
 
 

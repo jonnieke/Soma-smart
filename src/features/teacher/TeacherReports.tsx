@@ -9,6 +9,7 @@ import { useApp } from '../../context/AppContext';
 import { classroomService } from '../../services/classroomService';
 import { getBulkMasteryMemories } from '../../services/learnerMemoryService';
 import { generateTermReportNarrative } from '../../services/geminiService';
+import { fetchTeacherWorkflowAnalytics, type TeacherWorkflowAnalyticsSummary } from '../../services/analyticsEventService';
 import jsPDF from 'jspdf';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -168,6 +169,8 @@ export const TeacherReports: React.FC = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [narrative, setNarrative] = useState('');
     const [isGeneratingNarrative, setIsGeneratingNarrative] = useState(false);
+    const [workflowAnalytics, setWorkflowAnalytics] = useState<TeacherWorkflowAnalyticsSummary | null>(null);
+    const [workflowAnalyticsLoading, setWorkflowAnalyticsLoading] = useState(false);
 
     const fetchData = useCallback(async () => {
         if (!teacherProfile) return;
@@ -270,6 +273,32 @@ export const TeacherReports: React.FC = () => {
     }, [teacherProfile]);
 
     useEffect(() => { fetchData(); }, [fetchData]);
+
+    useEffect(() => {
+        let cancelled = false;
+        const loadWorkflowAnalytics = async () => {
+            if (!teacherProfile?.id) {
+                setWorkflowAnalytics(null);
+                return;
+            }
+            setWorkflowAnalyticsLoading(true);
+            try {
+                const summary = await fetchTeacherWorkflowAnalytics(teacherProfile.id);
+                if (!cancelled) {
+                    setWorkflowAnalytics(summary);
+                }
+            } finally {
+                if (!cancelled) {
+                    setWorkflowAnalyticsLoading(false);
+                }
+            }
+        };
+
+        void loadWorkflowAnalytics();
+        return () => {
+            cancelled = true;
+        };
+    }, [teacherProfile?.id]);
 
     const handleGenerateNarrative = async () => {
         setIsGeneratingNarrative(true);
@@ -415,6 +444,41 @@ export const TeacherReports: React.FC = () => {
             {/* ── Tab: OVERVIEW ── */}
             {!isLoading && activeTab === 'OVERVIEW' && (
                 <div className="grid lg:grid-cols-3 gap-8">
+                    {/* Workflow pulse */}
+                    <div className="bg-white dark:bg-slate-900 rounded-[2rem] border-2 border-slate-100 dark:border-slate-800 p-6 shadow-sm">
+                        <div className="flex items-center justify-between gap-3 mb-4">
+                            <div>
+                                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Teacher Workflow</p>
+                                <h3 className="font-black text-lg text-slate-900 dark:text-white">Workflow pulse</h3>
+                            </div>
+                            <span className="text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
+                                {workflowAnalyticsLoading ? 'Loading' : `${workflowAnalytics?.totalEvents || 0} events`}
+                            </span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                            {[
+                                { label: 'Schemes', value: workflowAnalytics?.schemeGenerated || 0 },
+                                { label: 'Homework', value: workflowAnalytics?.homeworkGenerated || 0 },
+                                { label: 'Notes', value: workflowAnalytics?.noteGenerated || 0 },
+                                { label: 'Steps', value: workflowAnalytics?.stepCompleted || 0 },
+                            ].map(item => (
+                                <div key={item.label} className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 p-3">
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">{item.label}</p>
+                                    <p className="mt-1 text-2xl font-black text-slate-900 dark:text-white">{item.value}</p>
+                                </div>
+                            ))}
+                        </div>
+                        <div className="mt-4 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 p-4">
+                            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Recent workflow events</p>
+                            {workflowAnalytics?.recentEvents?.length ? workflowAnalytics.recentEvents.map(item => (
+                                <div key={`${item.eventName}-${item.time}`} className="flex items-center justify-between gap-3 text-xs font-semibold text-slate-600 dark:text-slate-300">
+                                    <span className="truncate">{item.eventName.replace(/_/g, " ")}</span>
+                                    <span className="shrink-0 text-slate-400">{item.time}</span>
+                                </div>
+                            )) : <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">No teacher workflow activity yet.</p>}
+                        </div>
+                    </div>
+
                     {/* Topic bars */}
                     <div className="lg:col-span-2 bg-white dark:bg-slate-900 rounded-[2rem] border-2 border-slate-100 dark:border-slate-800 p-8 shadow-sm">
                         <h3 className="font-black text-xl text-slate-900 dark:text-white flex items-center gap-2 mb-6">

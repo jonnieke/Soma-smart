@@ -22,6 +22,7 @@ import { TutoringRequest } from '../../types';
 import { classroomService } from '../../services/classroomService';
 
 import { useNavigate, useLocation } from 'react-router-dom';
+import { trackAnalyticsEvent } from '../../services/analyticsEventService';
 import logoImg from '../../assets/images/main_logo.png';
 import { safeImport } from '../../utils/safeImport';
 import { TeacherDashboardTab } from './teacherNavigation';
@@ -148,6 +149,21 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
             // Non-blocking analytics
         }
     };
+
+    const trackNoteGenerated = (note: TeacherNote, source: 'file_upload' | 'voice_recording' | 'lesson_repair' | 'manual') => {
+        void trackAnalyticsEvent({
+            eventType: 'TEACHER_WORKFLOW',
+            eventName: 'note_generated',
+            role: 'TEACHER',
+            metadata: {
+                source,
+                subject: selectedSubject,
+                class_name: selectedClass,
+                topic: note.topic,
+            },
+        });
+    };
+
 
 
 
@@ -604,6 +620,14 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
 
     const quizPublishState = generatedQuiz ? validateQuizForClassroom(generatedQuiz) : { ok: false, reason: "No quiz generated." };
     const notePublishState = generatedNote ? validateNoteForClassroom(generatedNote) : { ok: false, reason: "No note generated." };
+    const noteNeedsVoiceRetry = Boolean(
+        generatedNote && (
+            generatedNote.topic === 'Unclear Audio' ||
+            generatedNote.topic === 'Audio Processing Note' ||
+            /audio was unclear|couldn't hear any clear speech|could not hear any clear speech|try recording again|note structure was incomplete/i.test(`${generatedNote.simplifiedNotes} ${generatedNote.structuredNotes}`) ||
+            /^\s*\{/.test(String(generatedNote.structuredNotes || ''))
+        )
+    );
 
     const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -618,6 +642,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
             const result = await convertNotes(base64, file.type, selectedSubject, selectedClass, language);
             setGeneratedNote(result);
             handleSaveToHistory('NOTE', result.topic, result);
+            trackNoteGenerated(result, 'file_upload');
             setActiveTab('CONVERT');
         } catch (e) {
             showTeacherNotice('error', "Could not convert that file. Try a clearer file (PDF/image), then retry.");
@@ -683,13 +708,13 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
     const handleAudioProcessing = async (blob: Blob) => {
         setLoading(true);
         try {
-            // Preferred path: generate both a lesson note and a quiz from the same recording.
             try {
                 const { processDarasaRecording } = await loadTeacherGeminiService();
                 const combined = await processDarasaRecording(blob, blob.type, selectedSubject, selectedClass, language as 'EN' | 'SW');
                 if (combined?.note) {
                     setGeneratedNote(combined.note);
                     handleSaveToHistory('NOTE', combined.note.topic || 'Voice Lesson Note', combined.note);
+                    trackNoteGenerated(combined.note, 'voice_recording');
                 }
                 if (combined?.quiz) {
                     setGeneratedQuiz(combined.quiz);
@@ -701,28 +726,36 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                     );
                 }
                 setActiveTab('VOICE');
-                setLoading(false);
                 return;
             } catch (comboErr) {
                 console.warn("Voice note+quiz generation unavailable, falling back to note-only processing.", comboErr);
             }
 
-            // Fallback path: keep prior behavior (note-only) if combined generation fails.
-            const reader = new FileReader();
-            reader.readAsDataURL(blob);
-            reader.onloadend = async () => {
-                const { processVoiceNote } = await loadTeacherGeminiService();
-                const base64String = reader.result as string;
-                const base64Data = base64String.split(',')[1];
-                const result = await processVoiceNote(base64Data, blob.type, selectedSubject, selectedClass, language);
-                setGeneratedNote(result);
-                handleSaveToHistory('NOTE', result.topic, result);
-                setActiveTab('VOICE');
-                setLoading(false);
-            };
+            await new Promise<void>((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onerror = () => reject(reader.error || new Error('Could not read the recording.'));
+                reader.onloadend = async () => {
+                    try {
+                        const { processVoiceNote } = await loadTeacherGeminiService();
+                        const base64String = reader.result as string;
+                        const base64Data = base64String.split(',')[1];
+                        const result = await processVoiceNote(base64Data, blob.type, selectedSubject, selectedClass, language);
+                        setGeneratedNote(result);
+                        setGeneratedQuiz(null);
+                        handleSaveToHistory('NOTE', result.topic, result);
+                        trackNoteGenerated(result, 'voice_recording');
+                        setActiveTab('VOICE');
+                        resolve();
+                    } catch (error) {
+                        reject(error);
+                    }
+                };
+                reader.readAsDataURL(blob);
+            });
         } catch (e) {
             console.error("Processing Error:", e);
             showTeacherNotice('error', "Audio processing failed. Re-record for at least 5 seconds or switch to document upload.");
+        } finally {
             setLoading(false);
         }
     };
@@ -789,6 +822,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
             const fixed = await repairNoteForClassroom(generatedNote, selectedSubject, selectedClass, language);
             setGeneratedNote(fixed);
             handleSaveToHistory('NOTE', fixed.topic || generatedNote.topic, fixed);
+            trackNoteGenerated(fixed, 'lesson_repair');
             showTeacherNotice('success', "Lesson note repaired and expanded for classroom publishing.");
         } catch (error) {
             console.error("Note repair failed:", error);
@@ -796,6 +830,14 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
         } finally {
             setIsRepairingNote(false);
         }
+    };
+
+    const handleRetryVoiceRecording = async () => {
+        setGeneratedNote(null);
+        setGeneratedQuiz(null);
+        setActiveTab('VOICE');
+        showTeacherNotice('info', 'Ready to record again. Speak close to the microphone for at least 5 seconds.');
+        await startRecording();
     };
 
     const loadHistoryItem = (item: TeacherActivity) => {
@@ -1836,6 +1878,16 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                                     >
                                         <Share2 className="w-4 h-4 mr-2" /> Share To Class
                                     </Button>
+                                    {(noteNeedsVoiceRetry || activeTab === 'VOICE') && (
+                                        <Button
+                                            variant="outline"
+                                            disabled={isRecording || loading}
+                                            onClick={handleRetryVoiceRecording}
+                                            className={`rounded-xl border-2 font-black uppercase tracking-widest text-xs ${(isRecording || loading) ? 'opacity-60 cursor-wait' : ''}`}
+                                        >
+                                            <Mic className="w-4 h-4 mr-2" /> Record Again
+                                        </Button>
+                                    )}
                                     {!notePublishState.ok && (
                                         <Button
                                             variant="outline"
@@ -1848,8 +1900,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                                         </Button>
                                     )}
                                     </>
-                                )}
-                                <Button
+                                )}                                <Button
                                     variant="outline"
                                     onClick={() => setActiveTab('BLACKBOARD')}
                                     disabled={!generatedNote}
@@ -1954,6 +2005,23 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                                             </div>
                                         </div>
                                     </div>
+
+                                    {noteNeedsVoiceRetry && (
+                                        <div className="rounded-[1.75rem] border border-amber-200 bg-amber-50 px-5 py-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                                            <div>
+                                                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-700">Voice capture needs another pass</p>
+                                                <p className="text-sm text-amber-900 font-semibold">This note looks incomplete or the audio was unclear. Record again or use Fix Note With AI to rebuild it before sharing to class.</p>
+                                            </div>
+                                            <Button
+                                                variant="outline"
+                                                disabled={isRecording || loading}
+                                                onClick={handleRetryVoiceRecording}
+                                                className={`rounded-xl border-2 border-amber-300 bg-white text-amber-900 font-black uppercase tracking-widest text-xs ${(isRecording || loading) ? 'opacity-60 cursor-wait' : ''}`}
+                                            >
+                                                <Mic className="w-4 h-4 mr-2" /> Record Again
+                                            </Button>
+                                        </div>
+                                    )}
 
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
                                         <div className="space-y-4">
@@ -2729,6 +2797,14 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
         </div>
     );
 };
+
+
+
+
+
+
+
+
 
 
 
