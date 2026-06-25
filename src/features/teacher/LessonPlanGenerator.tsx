@@ -48,6 +48,10 @@ interface LessonPlanGeneratorProps {
     onPolish?: (plan: string) => void;
     subjects?: string[];
     classes?: string[];
+    initialTopic?: string;
+    initialGrade?: string;
+    initialSubject?: string;
+    initialObjectives?: string;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -109,13 +113,13 @@ const ActivityCard: React.FC<{ activity: LessonPlanOutput['activities'][0]; inde
 // Main Component
 // ─────────────────────────────────────────────────────────────────────────────
 export const LessonPlanGenerator: React.FC<LessonPlanGeneratorProps> = ({
-    onBack, onPolish, subjects = CBC_SUBJECTS, classes = CBC_GRADES
+    onBack, onPolish, subjects = CBC_SUBJECTS, classes = CBC_GRADES, initialTopic = '', initialGrade, initialSubject, initialObjectives = ''
 }) => {
-    const [topic, setTopic] = useState('');
-    const [grade, setGrade] = useState(classes[0] || 'Grade 8');
-    const [subject, setSubject] = useState(subjects[0] || 'Mathematics');
+    const [topic, setTopic] = useState(initialTopic);
+    const [grade, setGrade] = useState(initialGrade || classes[0] || 'Grade 8');
+    const [subject, setSubject] = useState(initialSubject || subjects[0] || 'Mathematics');
     const [duration, setDuration] = useState('40 minutes');
-    const [objectives, setObjectives] = useState('');
+    const [objectives, setObjectives] = useState(initialObjectives);
     const [isGenerating, setIsGenerating] = useState(false);
     const [plan, setPlan] = useState<LessonPlanOutput | null>(null);
     const [error, setError] = useState('');
@@ -527,3 +531,4 @@ export const LessonPlanGenerator: React.FC<LessonPlanGeneratorProps> = ({
         </div>
     );
 };
+

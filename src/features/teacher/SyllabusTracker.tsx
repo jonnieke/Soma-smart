@@ -29,6 +29,7 @@ interface SyllabusTrackerProps {
     selectedClass: string;
     selectedSubject: string;
     onNavigate: (tab: TeacherDashboardTab) => void;
+    onPlanNextLesson?: (draft: { topic: string; grade: string; subject: string; objectives?: string }) => void;
 }
 
 interface SyllabusTrackerSettings {
@@ -221,6 +222,12 @@ const readSavedSettings = (raw: string | null): SyllabusTrackerSettings | null =
     }
 };
 
+const buildLessonPlanDraft = (topic: SyllabusTopic | undefined, selectedClass: string, selectedSubject: string) => ({
+    topic: topic?.title || `Next lesson for ${selectedSubject || 'Subject'}`,
+    grade: selectedClass.trim() || 'Grade',
+    subject: selectedSubject.trim() || 'Subject',
+    objectives: topic ? `Cover ${topic.title}, build core understanding, and check for class readiness.` : 'Strengthen the next teaching step.',
+});
 const buildPersistPayload = (
     teacherId: string,
     selectedClass: string,
@@ -240,7 +247,7 @@ const buildPersistPayload = (
     updated_at: new Date().toISOString(),
 });
 
-export const SyllabusTracker: React.FC<SyllabusTrackerProps> = ({ teacherId, selectedClass, selectedSubject, onNavigate }) => {
+export const SyllabusTracker: React.FC<SyllabusTrackerProps> = ({ teacherId, selectedClass, selectedSubject, onNavigate, onPlanNextLesson }) => {
     const templateTopics = React.useMemo(() => catalogBySubject(selectedSubject, selectedClass), [selectedClass, selectedSubject]);
     const storageKey = React.useMemo(() => storageKeyFor(selectedClass, selectedSubject), [selectedClass, selectedSubject]);
 
@@ -564,7 +571,7 @@ export const SyllabusTracker: React.FC<SyllabusTrackerProps> = ({ teacherId, sel
                 <button type="button" onClick={() => onNavigate('SCHEMES')} className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 text-xs font-black uppercase tracking-wider text-emerald-700 hover:bg-emerald-100 transition-colors">
                     Generate Scheme <ChevronRight className="w-3.5 h-3.5" />
                 </button>
-                <button type="button" onClick={() => onNavigate('LESSON_PLAN_GENERATOR')} className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-black uppercase tracking-wider text-slate-700 hover:border-emerald-200 hover:text-emerald-700 transition-colors">
+                <button type="button" onClick={() => onPlanNextLesson ? onPlanNextLesson(buildLessonPlanDraft(activeTopic, selectedClass, selectedSubject)) : onNavigate('LESSON_PLAN_GENERATOR')} className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-black uppercase tracking-wider text-slate-700 hover:border-emerald-200 hover:text-emerald-700 transition-colors">
                     Plan Next Lesson <ChevronRight className="w-3.5 h-3.5" />
                 </button>
                 <button type="button" onClick={() => onNavigate('QUIZ')} className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-black uppercase tracking-wider text-slate-700 hover:border-emerald-200 hover:text-emerald-700 transition-colors">
@@ -598,3 +605,4 @@ export const SyllabusTracker: React.FC<SyllabusTrackerProps> = ({ teacherId, sel
         </section>
     );
 };
+

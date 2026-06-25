@@ -1,4 +1,4 @@
-﻿import React, { Suspense, useState, useRef, useEffect } from 'react';
+import React, { Suspense, useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ReactGA from 'react-ga4';
 import {
@@ -271,6 +271,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
     const [advTopic, setAdvTopic] = useState("");
     const [advCount, setAdvCount] = useState(5);
     const [advType, setAdvType] = useState<'MCQ' | 'OPEN'>('MCQ');
+    const [lessonPlanDraft, setLessonPlanDraft] = useState<{ topic: string; grade: string; subject: string; objectives?: string } | null>(null);
 
     // Request Modal State
     const [selectedRequest, setSelectedRequest] = useState<TutoringRequest | null>(null);
@@ -999,7 +1000,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
             {/* --- MODERN HEADER --- */}
             <div className="bg-white sticky top-0 z-50 shadow-sm border-b border-slate-100">
                 <div className="max-w-[1440px] mx-auto px-4 md:px-8 h-[72px] flex items-center justify-between">
-                    {/* Left: Logo â€” clickable to go home */}
+                    {/* Left: Logo — clickable to go home */}
                     <div className="flex items-center gap-3 cursor-pointer group" onClick={() => navigate('/')}>
                         <img src={logoImg} alt="Somo Smart Logo" className="h-10 w-auto object-contain group-hover:scale-105 transition-transform" />
                     </div>
@@ -1223,9 +1224,13 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                     <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
                         <Suspense fallback={<TeacherToolFallback />}>
                             <LessonPlanGenerator
-                                onBack={() => setActiveTab('CREATION_HUB')}
+                                onBack={() => { setLessonPlanDraft(null); setActiveTab('CREATION_HUB'); }}
                                 subjects={teacherProfile?.subjects || []}
                                 classes={teacherProfile?.classes || []}
+                                initialTopic={lessonPlanDraft?.topic}
+                                initialGrade={lessonPlanDraft?.grade}
+                                initialSubject={lessonPlanDraft?.subject}
+                                initialObjectives={lessonPlanDraft?.objectives}
                                 onPolish={(planText) => {
                                     setActiveTab('LESSON_POLISH');
                                 }}
@@ -1236,13 +1241,17 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
 
                 {/* --- DASHBOARD VIEW --- */}
                 {activeTab === 'SYLLABUS_TRACKER' && (
-                    <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
+                    <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, y: 0 }}>
                         <Suspense fallback={<TeacherToolFallback />}>
                             <SyllabusTracker
                                 teacherId={teacherProfile?.id}
                                 selectedClass={selectedClass}
                                 selectedSubject={selectedSubject}
                                 onNavigate={(tab) => setActiveTab(tab)}
+                                onPlanNextLesson={(draft) => {
+                                    setLessonPlanDraft(draft);
+                                    setActiveTab('LESSON_PLAN_GENERATOR');
+                                }}
                             />
                         </Suspense>
                     </motion.div>
@@ -1548,7 +1557,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                                                             }}
                                                             className="mt-2 px-5 py-2 bg-gradient-to-r from-blue-600 to-emerald-600 text-white rounded-xl font-bold text-xs shadow-lg shadow-blue-200 hover:shadow-xl transition-all flex items-center gap-2"
                                                         >
-                                                            ðŸ’¬ Open Chat Thread
+                                                            💬 Open Chat Thread
                                                         </button>
                                                     </div>
                                                 ))}
@@ -2579,7 +2588,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                                         <div className="flex-1 min-w-0">
                                             <h2 className="font-black text-base truncate">{chatReq?.topic || 'Chat'}</h2>
                                             <p className="text-emerald-100 text-[11px] font-bold truncate">
-                                                {chatReq?.studentName || 'Student'} Â· {chatReq?.rating ? `â˜… ${chatReq.rating}/5` : 'Ongoing'}
+                                                {chatReq?.studentName || 'Student'} · {chatReq?.rating ? `★ ${chatReq.rating}/5` : 'Ongoing'}
                                             </p>
                                         </div>
                                         <button
@@ -2702,6 +2711,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
         </div>
     );
 };
+
 
 
 
