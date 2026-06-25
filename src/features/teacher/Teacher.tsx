@@ -272,6 +272,8 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
     const [advCount, setAdvCount] = useState(5);
     const [advType, setAdvType] = useState<'MCQ' | 'OPEN'>('MCQ');
     const [lessonPlanDraft, setLessonPlanDraft] = useState<{ topic: string; grade: string; subject: string; objectives?: string } | null>(null);
+    const [schemeDraft, setSchemeDraft] = useState<{ grade: string; subject: string; term: string; year: string } | null>(null);
+    const [homeworkDraft, setHomeworkDraft] = useState<{ topic: string; grade: string; subject: string; difficulty: 'EASY' | 'MEDIUM' | 'HARD' } | null>(null);
 
     // Request Modal State
     const [selectedRequest, setSelectedRequest] = useState<TutoringRequest | null>(null);
@@ -1000,7 +1002,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
             {/* --- MODERN HEADER --- */}
             <div className="bg-white sticky top-0 z-50 shadow-sm border-b border-slate-100">
                 <div className="max-w-[1440px] mx-auto px-4 md:px-8 h-[72px] flex items-center justify-between">
-                    {/* Left: Logo — clickable to go home */}
+                    {/* Left: Logo ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â clickable to go home */}
                     <div className="flex items-center gap-3 cursor-pointer group" onClick={() => navigate('/')}>
                         <img src={logoImg} alt="Somo Smart Logo" className="h-10 w-auto object-contain group-hover:scale-105 transition-transform" />
                     </div>
@@ -1178,12 +1180,14 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                     </motion.div>
                 )}
 
-                {activeTab === 'SCHEMES' && (
+                                {activeTab === 'SCHEMES' && (
                     <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
                         <SchemesView
-                            onBack={() => setActiveTab('CREATION_HUB')}
-                            subject={selectedSubject}
-                            grade={selectedClass}
+                            onBack={() => { setSchemeDraft(null); setActiveTab('CREATION_HUB'); }}
+                            subject={schemeDraft?.subject || selectedSubject}
+                            grade={schemeDraft?.grade || selectedClass}
+                            initialTerm={schemeDraft?.term}
+                            initialYear={schemeDraft?.year}
                         />
                     </motion.div>
                 )}
@@ -1198,12 +1202,16 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                     </motion.div>
                 )}
 
-                {activeTab === 'HOMEWORK' && (
+                                {activeTab === 'HOMEWORK' && (
                     <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
                         <HomeworkCreator
-                            onBack={() => setActiveTab('CREATION_HUB')}
+                            onBack={() => { setHomeworkDraft(null); setActiveTab('CREATION_HUB'); }}
                             subjects={teacherProfile?.subjects || []}
                             classes={teacherProfile?.classes || []}
+                            initialTopic={homeworkDraft?.topic}
+                            initialGrade={homeworkDraft?.grade}
+                            initialSubject={homeworkDraft?.subject}
+                            initialDifficulty={homeworkDraft?.difficulty}
                         />
                     </motion.div>
                 )}
@@ -1240,7 +1248,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                 )}
 
                 {/* --- DASHBOARD VIEW --- */}
-                {activeTab === 'SYLLABUS_TRACKER' && (
+                                {activeTab === 'SYLLABUS_TRACKER' && (
                     <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, y: 0 }}>
                         <Suspense fallback={<TeacherToolFallback />}>
                             <SyllabusTracker
@@ -1251,6 +1259,14 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                                 onPlanNextLesson={(draft) => {
                                     setLessonPlanDraft(draft);
                                     setActiveTab('LESSON_PLAN_GENERATOR');
+                                }}
+                                onGenerateScheme={(draft) => {
+                                    setSchemeDraft(draft);
+                                    setActiveTab('SCHEMES');
+                                }}
+                                onCreateHomework={(draft) => {
+                                    setHomeworkDraft(draft);
+                                    setActiveTab('HOMEWORK');
                                 }}
                             />
                         </Suspense>
@@ -1557,7 +1573,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                                                             }}
                                                             className="mt-2 px-5 py-2 bg-gradient-to-r from-blue-600 to-emerald-600 text-white rounded-xl font-bold text-xs shadow-lg shadow-blue-200 hover:shadow-xl transition-all flex items-center gap-2"
                                                         >
-                                                            💬 Open Chat Thread
+                                                            ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â°ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¸ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ Open Chat Thread
                                                         </button>
                                                     </div>
                                                 ))}
@@ -2588,7 +2604,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                                         <div className="flex-1 min-w-0">
                                             <h2 className="font-black text-base truncate">{chatReq?.topic || 'Chat'}</h2>
                                             <p className="text-emerald-100 text-[11px] font-bold truncate">
-                                                {chatReq?.studentName || 'Student'} · {chatReq?.rating ? `★ ${chatReq.rating}/5` : 'Ongoing'}
+                                                {chatReq?.studentName || 'Student'} ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· {chatReq?.rating ? `ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã¢â‚¬Â¹Ãƒâ€¦Ã¢â‚¬Å“ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¦ ${chatReq.rating}/5` : 'Ongoing'}
                                             </p>
                                         </div>
                                         <button

@@ -7,11 +7,15 @@ export const HomeworkCreator: React.FC<{
     onBack: () => void;
     subjects: string[];
     classes: string[];
-}> = ({ onBack, subjects, classes }) => {
-    const [topic, setTopic] = useState('');
-    const [diff, setDiff] = useState<'EASY' | 'MEDIUM' | 'HARD'>('MEDIUM');
-    const [subject, setSubject] = useState(subjects[0] || 'Mathematics');
-    const [grade, setGrade] = useState(classes[0] || 'Grade 6');
+    initialTopic?: string;
+    initialGrade?: string;
+    initialSubject?: string;
+    initialDifficulty?: 'EASY' | 'MEDIUM' | 'HARD';
+}> = ({ onBack, subjects, classes, initialTopic, initialGrade, initialSubject, initialDifficulty }) => {
+    const [topic, setTopic] = useState(initialTopic || '');
+    const [diff, setDiff] = useState<'EASY' | 'MEDIUM' | 'HARD'>(initialDifficulty || 'MEDIUM');
+    const [subject, setSubject] = useState(initialSubject || subjects[0] || 'Mathematics');
+    const [grade, setGrade] = useState(initialGrade || classes[0] || 'Grade 6');
     const [generating, setGenerating] = useState(false);
     const [homework, setHomework] = useState<any>(null);
 

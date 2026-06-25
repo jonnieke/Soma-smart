@@ -19,14 +19,16 @@ interface SchemesViewProps {
     onBack: () => void;
     subject: string;
     grade: string;
+    initialTerm?: string;
+    initialYear?: string;
 }
 
-export const SchemesView: React.FC<SchemesViewProps> = ({ onBack, subject, grade }) => {
+export const SchemesView: React.FC<SchemesViewProps> = ({ onBack, subject, grade, initialTerm, initialYear }) => {
     const [isGenerating, setIsGenerating] = React.useState(false);
     const [generatedScheme, setGeneratedScheme] = React.useState<any | null>(null);
 
-    const [year, setYear] = React.useState('2026');
-    const [term, setTerm] = React.useState('Term 1');
+    const [year, setYear] = React.useState(initialYear || '2026');
+    const [term, setTerm] = React.useState(initialTerm || 'Term 1');
     const [error, setError] = React.useState<string | null>(null);
 
     const handleGenerate = async () => {
@@ -239,7 +241,7 @@ export const SchemesView: React.FC<SchemesViewProps> = ({ onBack, subject, grade
 
     const handleShare = () => {
         if (!generatedScheme) return;
-        const text = `Habari! I just generated a new KICD CBC compliant Scheme of Work for ${subject} (${grade}) - ${term}, ${year} using Soma Smart! 🚀 Check it out here: https://somaai.co.ke/teacher`;
+        const text = `Habari! I just generated a new KICD CBC compliant Scheme of Work for ${subject} (${grade}) - ${term}, ${year} using Soma Smart! ÃƒÂ°Ã…Â¸Ã…Â¡Ã¢â€šÂ¬ Check it out here: https://somaai.co.ke/teacher`;
         const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
         window.open(url, '_blank');
     };

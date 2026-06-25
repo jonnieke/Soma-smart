@@ -30,6 +30,8 @@ interface SyllabusTrackerProps {
     selectedSubject: string;
     onNavigate: (tab: TeacherDashboardTab) => void;
     onPlanNextLesson?: (draft: { topic: string; grade: string; subject: string; objectives?: string }) => void;
+    onGenerateScheme?: (draft: { grade: string; subject: string; term: string; year: string }) => void;
+    onCreateHomework?: (draft: { topic: string; grade: string; subject: string; difficulty: 'EASY' | 'MEDIUM' | 'HARD' }) => void;
 }
 
 interface SyllabusTrackerSettings {
@@ -228,6 +230,20 @@ const buildLessonPlanDraft = (topic: SyllabusTopic | undefined, selectedClass: s
     subject: selectedSubject.trim() || 'Subject',
     objectives: topic ? `Cover ${topic.title}, build core understanding, and check for class readiness.` : 'Strengthen the next teaching step.',
 });
+const buildSchemeDraft = (selectedClass: string, selectedSubject: string) => ({
+    grade: selectedClass.trim() || 'Grade',
+    subject: selectedSubject.trim() || 'Subject',
+    term: 'Term 1',
+    year: new Date().getFullYear().toString(),
+});
+
+const buildHomeworkDraft = (topic: SyllabusTopic | undefined, selectedClass: string, selectedSubject: string) => ({
+    topic: topic?.title || `Practice on ${selectedSubject || 'Subject'}` ,
+    grade: selectedClass.trim() || 'Grade',
+    subject: selectedSubject.trim() || 'Subject',
+    difficulty: 'MEDIUM' as const,
+});
+
 const buildPersistPayload = (
     teacherId: string,
     selectedClass: string,
@@ -247,7 +263,7 @@ const buildPersistPayload = (
     updated_at: new Date().toISOString(),
 });
 
-export const SyllabusTracker: React.FC<SyllabusTrackerProps> = ({ teacherId, selectedClass, selectedSubject, onNavigate, onPlanNextLesson }) => {
+export const SyllabusTracker: React.FC<SyllabusTrackerProps> = ({ teacherId, selectedClass, selectedSubject, onNavigate, onPlanNextLesson, onGenerateScheme, onCreateHomework }) => {
     const templateTopics = React.useMemo(() => catalogBySubject(selectedSubject, selectedClass), [selectedClass, selectedSubject]);
     const storageKey = React.useMemo(() => storageKeyFor(selectedClass, selectedSubject), [selectedClass, selectedSubject]);
 
@@ -535,50 +551,66 @@ export const SyllabusTracker: React.FC<SyllabusTrackerProps> = ({ teacherId, sel
                         </div>
                     </div>
                     <div className="sm:col-span-2 xl:col-span-2 flex flex-col gap-2">
-                        {topics.map(topic => (
-                            <div key={topic.id} className="rounded-2xl border border-slate-200 p-4 bg-white">
-                                <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-                                    <div className="min-w-0">
-                                        <div className="flex flex-wrap items-center gap-2">
-                                            <h4 className="text-sm font-black text-slate-900">{topic.title}</h4>
-                                            <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-slate-500">{topic.strand}</span>
+                        {topics.map(topic => {
+                            const isActive = activeTopic?.id === topic.id;
+                            return (
+                                <div key={topic.id} className={"rounded-2xl border p-4 transition-colors " + (isActive ? 'border-emerald-300 bg-emerald-50/70' : 'border-slate-200 bg-white')}>
+                                    <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                                        <div className="min-w-0">
+                                            <div className="flex flex-wrap items-center gap-2">
+                                                <h4 className="text-sm font-black text-slate-900">{topic.title}</h4>
+                                                <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-slate-500">{topic.strand}</span>
+                                            </div>
+                                            <p className="mt-1 text-[11px] font-semibold text-slate-500">Estimated time: {topic.estimatedWeeks} week{topic.estimatedWeeks === 1 ? '' : 's'}</p>
                                         </div>
-                                        <p className="mt-1 text-[11px] font-semibold text-slate-500">Estimated time: {topic.estimatedWeeks} week{topic.estimatedWeeks === 1 ? '' : 's'}</p>
-                                    </div>
-                                    <div className="flex flex-wrap gap-2">
-                                        {(Object.keys(STATUS_LABELS) as TopicStatus[]).map(status => {
-                                            const isActive = topic.status === status;
-                                            return (
-                                                <button
-                                                    key={status}
-                                                    type="button"
-                                                    onClick={() => updateTopicStatus(topic.id, status)}
-                                                    className={`rounded-full border px-3 py-1.5 text-[10px] font-black uppercase tracking-wider transition-colors ${isActive ? STATUS_STYLES[status] : 'border-slate-200 bg-slate-50 text-slate-500 hover:border-emerald-300 hover:text-emerald-700'}`}
-                                                >
-                                                    {STATUS_LABELS[status]}
-                                                </button>
-                                            );
-                                        })}
+                                        <div className="flex items-center gap-2">
+                                            <select
+                                                value={topic.status}
+                                                onChange={event => updateTopicStatus(topic.id, event.target.value as TopicStatus)}
+                                                className={"rounded-full border px-3 py-1.5 text-[10px] font-black uppercase tracking-wider outline-none " + STATUS_STYLES[topic.status]}
+                                            >
+                                                <option value="NOT_STARTED">{STATUS_LABELS.NOT_STARTED}</option>
+                                                <option value="IN_PROGRESS">{STATUS_LABELS.IN_PROGRESS}</option>
+                                                <option value="DONE">{STATUS_LABELS.DONE}</option>
+                                            </select>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        ))}
+                            );
+                        })}
+                        <div className="flex flex-wrap gap-2 pt-1">
+                            <button
+                                type="button"
+                                onClick={() => onGenerateScheme ? onGenerateScheme(buildSchemeDraft(selectedClass, selectedSubject)) : onNavigate('SCHEMES')}
+                                className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 text-xs font-black uppercase tracking-wider text-emerald-700 hover:bg-emerald-100 transition-colors"
+                            >
+                                Generate Scheme <ChevronRight className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => onPlanNextLesson ? onPlanNextLesson(buildLessonPlanDraft(activeTopic, selectedClass, selectedSubject)) : onNavigate('LESSON_PLAN_GENERATOR')}
+                                className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-black uppercase tracking-wider text-slate-700 hover:border-emerald-200 hover:text-emerald-700 transition-colors"
+                            >
+                                Plan Next Lesson <ChevronRight className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => onCreateHomework ? onCreateHomework(buildHomeworkDraft(activeTopic, selectedClass, selectedSubject)) : onNavigate('HOMEWORK')}
+                                className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-black uppercase tracking-wider text-slate-700 hover:border-emerald-200 hover:text-emerald-700 transition-colors"
+                            >
+                                Create Homework <CheckCircle2 className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => onNavigate('QUIZ')}
+                                className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-black uppercase tracking-wider text-slate-700 hover:border-emerald-200 hover:text-emerald-700 transition-colors"
+                            >
+                                Create Quiz <CheckCircle2 className="w-3.5 h-3.5" />
+                            </button>
+                        </div>
                     </div>
                 </div>
             ) : null}
-
-            <div className="flex flex-wrap gap-2">
-                <button type="button" onClick={() => onNavigate('SCHEMES')} className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 text-xs font-black uppercase tracking-wider text-emerald-700 hover:bg-emerald-100 transition-colors">
-                    Generate Scheme <ChevronRight className="w-3.5 h-3.5" />
-                </button>
-                <button type="button" onClick={() => onPlanNextLesson ? onPlanNextLesson(buildLessonPlanDraft(activeTopic, selectedClass, selectedSubject)) : onNavigate('LESSON_PLAN_GENERATOR')} className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-black uppercase tracking-wider text-slate-700 hover:border-emerald-200 hover:text-emerald-700 transition-colors">
-                    Plan Next Lesson <ChevronRight className="w-3.5 h-3.5" />
-                </button>
-                <button type="button" onClick={() => onNavigate('QUIZ')} className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-black uppercase tracking-wider text-slate-700 hover:border-emerald-200 hover:text-emerald-700 transition-colors">
-                    Create Quiz <CheckCircle2 className="w-3.5 h-3.5" />
-                </button>
-            </div>
-
             <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 space-y-3">
                 <div className="flex items-center justify-between gap-3">
                     <div>
