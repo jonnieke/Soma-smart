@@ -1,5 +1,5 @@
-﻿import React from 'react';
-import { ChevronRight, CheckCircle2, Clock3, Sparkles } from 'lucide-react';
+import React from 'react';
+import { CalendarDays, CheckCircle2, ChevronRight, Clock3, Sparkles } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { TeacherDashboardTab } from './teacherNavigation';
 
@@ -29,6 +29,10 @@ interface SyllabusTrackerProps {
     selectedClass: string;
     selectedSubject: string;
     onNavigate: (tab: TeacherDashboardTab) => void;
+}
+
+interface SyllabusTrackerSettings {
+    targetDate: string;
 }
 
 const STATUS_LABELS: Record<TopicStatus, string> = {
@@ -166,7 +170,22 @@ const catalogBySubject = (selectedSubject: string, selectedClass: string): Sylla
 };
 
 const storageKeyFor = (selectedClass: string, selectedSubject: string) =>
-    `soma_teacher_syllabus_${normalize(selectedClass)}_${normalize(selectedSubject)}`;
+    'soma_teacher_syllabus_' + normalize(selectedClass) + '_' + normalize(selectedSubject);
+const settingsKeyFor = (selectedClass: string, selectedSubject: string) =>
+    `${storageKeyFor(selectedClass, selectedSubject)}_settings`;
+
+const formatDateInputValue = (date: Date) => {
+    const year = date.getFullYear();
+    const month = `${date.getMonth() + 1}`.padStart(2, '0');
+    const day = `${date.getDate()}`.padStart(2, '0');
+    return `${year}-${month}-${day}`;
+};
+
+const addDays = (date: Date, days: number) => {
+    const next = new Date(date);
+    next.setDate(next.getDate() + days);
+    return next;
+};
 
 const riskTone = (progress: number) => {
     if (progress >= 75) return { label: 'On track', className: 'border-emerald-200 bg-emerald-50 text-emerald-700' };
@@ -188,6 +207,17 @@ const readSavedTopics = (raw: string | null): Partial<SyllabusTopic>[] => {
         return Array.isArray(parsed) ? parsed : [];
     } catch {
         return [];
+    }
+};
+
+const readSavedSettings = (raw: string | null): SyllabusTrackerSettings | null => {
+    if (!raw) return null;
+    try {
+        const parsed = JSON.parse(raw) as Partial<SyllabusTrackerSettings> | null;
+        if (!parsed?.targetDate || typeof parsed.targetDate !== 'string') return null;
+        return { targetDate: parsed.targetDate };
+    } catch {
+        return null;
     }
 };
 
@@ -213,10 +243,13 @@ const buildPersistPayload = (
 export const SyllabusTracker: React.FC<SyllabusTrackerProps> = ({ teacherId, selectedClass, selectedSubject, onNavigate }) => {
     const templateTopics = React.useMemo(() => catalogBySubject(selectedSubject, selectedClass), [selectedClass, selectedSubject]);
     const storageKey = React.useMemo(() => storageKeyFor(selectedClass, selectedSubject), [selectedClass, selectedSubject]);
+
+    const settingsKey = React.useMemo(() => settingsKeyFor(selectedClass, selectedSubject), [selectedClass, selectedSubject]);
     const [topics, setTopics] = React.useState<SyllabusTopic[]>(templateTopics);
     const [syllabusDocs, setSyllabusDocs] = React.useState<SyllabusDocument[]>([]);
     const [docsLoading, setDocsLoading] = React.useState(false);
     const [syncStatus, setSyncStatus] = React.useState<SyncStatus>(teacherId ? 'SYNCING' : 'LOCAL');
+    const [targetDate, setTargetDate] = React.useState(() => formatDateInputValue(addDays(new Date(), 84)));
     const skipNextPersistRef = React.useRef(false);
 
     const canTrack = Boolean(selectedClass.trim()) && Boolean(selectedSubject.trim());
@@ -224,6 +257,31 @@ export const SyllabusTracker: React.FC<SyllabusTrackerProps> = ({ teacherId, sel
     const progress = topics.length > 0 ? Math.round((completedCount / topics.length) * 100) : 0;
     const activeTopic = topics.find(topic => topic.status !== 'DONE') ?? topics[topics.length - 1];
     const risk = riskTone(progress);
+    const targetDateObject = React.useMemo(() => {
+        if (!targetDate) return null;
+        const parsed = new Date(`${targetDate}T00:00:00`);
+        return Number.isNaN(parsed.getTime()) ? null : parsed;
+    }, [targetDate]);
+    const daysRemaining = React.useMemo(() => {
+        if (!targetDateObject) return null;
+        const diff = targetDateObject.getTime() - new Date().getTime();
+        return Math.ceil(diff / (1000 * 60 * 60 * 24));
+    }, [targetDateObject]);
+    const deadlineTone = React.useMemo(() => {
+        if (daysRemaining === null) return { label: 'Set a syllabus deadline', className: 'border-slate-200 bg-slate-50 text-slate-600' };
+        if (daysRemaining < 0) return { label: 'Overdue', className: 'border-rose-200 bg-rose-50 text-rose-700' };
+        if (daysRemaining <= 21 && progress < 80) return { label: 'Urgent', className: 'border-rose-200 bg-rose-50 text-rose-700' };
+        if (daysRemaining <= 42 && progress < 60) return { label: 'Watch closely', className: 'border-amber-200 bg-amber-50 text-amber-700' };
+        return { label: 'Healthy runway', className: 'border-emerald-200 bg-emerald-50 text-emerald-700' };
+    }, [daysRemaining, progress]);
+    const nextBestMove = React.useMemo(() => {
+        if (!canTrack) return 'Pick a class and subject first, then the tracker will build your syllabus map.';
+        if (!activeTopic) return 'Everything is done. Use Generate Scheme to prepare the next cycle.';
+        if (progress < 40) return 'Focus on ' + activeTopic.title + ' this week and keep the lesson simple and direct.';
+        if (progress < 75) return 'Move ' + activeTopic.title + ' into in-progress, then plan the next lesson and a short check.';
+        return 'Close out ' + activeTopic.title + ' and use the next lesson to tighten exam practice.';
+    }, [activeTopic, canTrack, progress]);
+
 
     React.useEffect(() => {
         let cancelled = false;
@@ -239,6 +297,15 @@ export const SyllabusTracker: React.FC<SyllabusTrackerProps> = ({ teacherId, sel
             let nextTopics = templateTopics;
             let loadedFrom: SyncStatus = 'LOCAL';
             const localSaved = readSavedTopics(window.localStorage.getItem(storageKey));
+            try {
+                const savedSettings = readSavedSettings(window.localStorage.getItem(settingsKey));
+                if (savedSettings?.targetDate) {
+                    setTargetDate(savedSettings.targetDate);
+                }
+            } catch {
+                // Best-effort only.
+            }
+
 
             if (teacherId && navigator.onLine) {
                 try {
@@ -278,7 +345,7 @@ export const SyllabusTracker: React.FC<SyllabusTrackerProps> = ({ teacherId, sel
         return () => {
             cancelled = true;
         };
-    }, [canTrack, selectedClass, selectedSubject, storageKey, teacherId, templateTopics]);
+    }, [canTrack, selectedClass, selectedSubject, settingsKey, storageKey, teacherId, templateTopics]);
 
     React.useEffect(() => {
         if (!canTrack) return;
@@ -317,6 +384,15 @@ export const SyllabusTracker: React.FC<SyllabusTrackerProps> = ({ teacherId, sel
 
         void persist();
     }, [activeTopic, canTrack, progress, risk.label, selectedClass, selectedSubject, storageKey, teacherId, topics]);
+
+    React.useEffect(() => {
+        if (!canTrack) return;
+        try {
+            window.localStorage.setItem(settingsKey, JSON.stringify({ targetDate }));
+        } catch {
+            // Best-effort only.
+        }
+    }, [canTrack, settingsKey, targetDate]);
 
     React.useEffect(() => {
         let cancelled = false;
@@ -398,6 +474,38 @@ export const SyllabusTracker: React.FC<SyllabusTrackerProps> = ({ teacherId, sel
                     <div className="h-full rounded-full bg-emerald-500 transition-all" style={{ width: `${progress}%` }} />
                 </div>
                 <p className="text-[11px] font-semibold text-slate-500">{canTrack ? `${completedCount} of ${topics.length} topics marked done.` : 'Pick a class and subject to begin tracking.'}</p>
+                <div className="grid gap-2 sm:grid-cols-2">
+                    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
+                        <div className="flex items-center justify-between gap-3">
+                            <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-wider text-slate-500">
+                                <CalendarDays className="w-3.5 h-3.5" />
+                                Syllabus deadline
+                            </div>
+                            <span className={"rounded-full border px-2.5 py-1 text-[10px] font-black uppercase tracking-wider " + deadlineTone.className}>{deadlineTone.label}</span>
+                        </div>
+                        <label className="mt-2 block">
+                            <span className="mb-1 block text-[10px] font-black uppercase tracking-wider text-slate-400">Target date</span>
+                            <input
+                                type="date"
+                                value={targetDate}
+                                onChange={event => setTargetDate(event.target.value)}
+                                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-200"
+                            />
+                        </label>
+                        <p className="mt-2 text-[11px] font-semibold text-slate-500">
+                            {daysRemaining === null
+                                ? 'Set the expected completion date for this class.'
+                                : daysRemaining < 0
+                                    ? Math.abs(daysRemaining) + ' day' + (Math.abs(daysRemaining) === 1 ? '' : 's') + ' past target.'
+                                    : daysRemaining + ' day' + (daysRemaining === 1 ? '' : 's') + ' left until the target.'
+                            }
+                        </p>
+                    </div>
+                    <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-3">
+                        <p className="text-[10px] font-black uppercase tracking-wider text-emerald-700">Next best move</p>
+                        <p className="mt-2 text-sm font-semibold text-emerald-900">{nextBestMove}</p>
+                    </div>
+                </div>
                 {!canTrack ? (
                     <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-3 text-xs font-semibold text-emerald-800 space-y-3">
                         <p>Start by choosing a class and subject above. Once selected, the syllabus tracker will show real progress for that teaching pair.</p>
@@ -481,7 +589,7 @@ export const SyllabusTracker: React.FC<SyllabusTrackerProps> = ({ teacherId, sel
                         {syllabusDocs.map(doc => (
                             <a key={doc.id} href={doc.file_url} target="_blank" rel="noreferrer" className="rounded-2xl border border-slate-200 bg-white p-3 hover:border-emerald-300 hover:bg-emerald-50 transition-colors">
                                 <p className="text-sm font-black text-slate-900 line-clamp-2">{doc.title}</p>
-                                <p className="mt-1 text-[10px] font-black uppercase tracking-wider text-slate-400">{doc.grade} • {doc.subject}</p>
+                                <p className="mt-1 text-[10px] font-black uppercase tracking-wider text-slate-400">{doc.grade} - {doc.subject}</p>
                             </a>
                         ))}
                     </div>
