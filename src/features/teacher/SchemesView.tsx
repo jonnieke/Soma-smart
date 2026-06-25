@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { motion } from 'framer-motion';
 import {
     Zap,
@@ -14,6 +14,8 @@ import {
 } from 'lucide-react';
 import { Button } from '../../components/Shared';
 import { generateSchemeOfWork } from '../../services/geminiService';
+import { trackAnalyticsEvent } from '../../services/analyticsEventService';
+import { loadTeacherWorkflowDraft, saveTeacherWorkflowDraft } from '../../services/teacherWorkflowService';
 
 interface SchemesViewProps {
     onBack: () => void;
@@ -21,15 +23,62 @@ interface SchemesViewProps {
     grade: string;
     initialTerm?: string;
     initialYear?: string;
+    teacherId?: string;
 }
 
-export const SchemesView: React.FC<SchemesViewProps> = ({ onBack, subject, grade, initialTerm, initialYear }) => {
+export const SchemesView: React.FC<SchemesViewProps> = ({ onBack, subject, grade, initialTerm, initialYear, teacherId }) => {
     const [isGenerating, setIsGenerating] = React.useState(false);
     const [generatedScheme, setGeneratedScheme] = React.useState<any | null>(null);
 
     const [year, setYear] = React.useState(initialYear || '2026');
     const [term, setTerm] = React.useState(initialTerm || 'Term 1');
     const [error, setError] = React.useState<string | null>(null);
+    const draftLoadedRef = React.useRef(false);
+
+    React.useEffect(() => {
+        let cancelled = false;
+        draftLoadedRef.current = false;
+
+        const loadDraft = async () => {
+            if (!teacherId) {
+                draftLoadedRef.current = true;
+                return;
+            }
+
+            const draft = await loadTeacherWorkflowDraft(teacherId, 'SCHEME');
+            if (!cancelled && draft?.payload) {
+                const payload = draft.payload as Record<string, unknown>;
+                if (typeof payload.term === 'string') setTerm(payload.term);
+                if (typeof payload.year === 'string') setYear(payload.year);
+                if (payload.generatedScheme && typeof payload.generatedScheme === 'object') {
+                    setGeneratedScheme(payload.generatedScheme);
+                }
+            }
+
+            if (!cancelled) {
+                draftLoadedRef.current = true;
+            }
+        };
+
+        void loadDraft();
+        return () => {
+            cancelled = true;
+        };
+    }, [teacherId]);
+
+    React.useEffect(() => {
+        if (!teacherId || !draftLoadedRef.current) return;
+        const timer = window.setTimeout(() => {
+            void saveTeacherWorkflowDraft(
+                teacherId,
+                'SCHEME',
+                { grade, subject, term, year, generatedScheme },
+                { className: grade, subject },
+            );
+        }, 250);
+
+        return () => window.clearTimeout(timer);
+    }, [generatedScheme, grade, subject, teacherId, term, year]);
 
     const handleGenerate = async () => {
         setIsGenerating(true);
@@ -37,6 +86,20 @@ export const SchemesView: React.FC<SchemesViewProps> = ({ onBack, subject, grade
         try {
             const result = await generateSchemeOfWork(subject, grade, term, year);
             setGeneratedScheme(result);
+            void trackAnalyticsEvent({
+                eventType: 'TEACHER_WORKFLOW',
+                eventName: 'scheme_generated',
+                role: 'TEACHER',
+                metadata: { grade, subject, term, year, weeks: Array.isArray(result?.weeks) ? result.weeks.length : undefined },
+            });
+            if (teacherId) {
+                await saveTeacherWorkflowDraft(
+                    teacherId,
+                    'SCHEME',
+                    { grade, subject, term, year, generatedScheme: result },
+                    { className: grade, subject },
+                );
+            }
         } catch (err) {
             console.error(err);
             setError("Failed to generate scheme of work. Please try again.");
@@ -223,7 +286,7 @@ export const SchemesView: React.FC<SchemesViewProps> = ({ onBack, subject, grade
                                 <td class="res-col" style="font-size: 10px; font-weight: 600; color: #4f46e5;">${w.learningResources || w.resources}</td>
                                 <td class="assess-col" style="font-size: 10px; color: #334155;">${w.assessmentMethods || '-'}</td>
                             </tr>
-                        `).join('')}
+                        `).join('\n')}
                     </tbody>
                 </table>
                 <script>
@@ -241,7 +304,7 @@ export const SchemesView: React.FC<SchemesViewProps> = ({ onBack, subject, grade
 
     const handleShare = () => {
         if (!generatedScheme) return;
-        const text = `Habari! I just generated a new KICD CBC compliant Scheme of Work for ${subject} (${grade}) - ${term}, ${year} using Soma Smart! ÃƒÂ°Ã…Â¸Ã…Â¡Ã¢â€šÂ¬ Check it out here: https://somaai.co.ke/teacher`;
+        const text = `Habari! I just generated a new KICD CBC compliant Scheme of Work for ${subject} (${grade}) - ${term}, ${year} using Soma Smart! ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¾Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â°ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¦ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¸ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¦ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¦ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ Check it out here: https://somaai.co.ke/teacher`;
         const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
         window.open(url, '_blank');
     };

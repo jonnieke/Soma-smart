@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowLeft, BookOpen, Send, Users, Sparkles, CheckCircle } from 'lucide-react';
 import { generatePracticeQuestions, PracticeQuestion } from '../../services/geminiService';
+import { trackAnalyticsEvent } from '../../services/analyticsEventService';
+import { clearTeacherWorkflowDraft, loadTeacherWorkflowDraft, saveTeacherWorkflowDraft } from '../../services/teacherWorkflowService';
 
 export const HomeworkCreator: React.FC<{
     onBack: () => void;
@@ -11,13 +13,63 @@ export const HomeworkCreator: React.FC<{
     initialGrade?: string;
     initialSubject?: string;
     initialDifficulty?: 'EASY' | 'MEDIUM' | 'HARD';
-}> = ({ onBack, subjects, classes, initialTopic, initialGrade, initialSubject, initialDifficulty }) => {
+}> = ({ onBack, subjects, classes, initialTopic, initialGrade, initialSubject, initialDifficulty, teacherId }) => {
     const [topic, setTopic] = useState(initialTopic || '');
     const [diff, setDiff] = useState<'EASY' | 'MEDIUM' | 'HARD'>(initialDifficulty || 'MEDIUM');
     const [subject, setSubject] = useState(initialSubject || subjects[0] || 'Mathematics');
     const [grade, setGrade] = useState(initialGrade || classes[0] || 'Grade 6');
     const [generating, setGenerating] = useState(false);
     const [homework, setHomework] = useState<any>(null);
+    const draftLoadedRef = React.useRef(false);
+
+    React.useEffect(() => {
+        let cancelled = false;
+        draftLoadedRef.current = false;
+
+        const loadDraft = async () => {
+            if (!teacherId) {
+                draftLoadedRef.current = true;
+                return;
+            }
+
+            const draft = await loadTeacherWorkflowDraft(teacherId, 'HOMEWORK');
+            if (!cancelled && draft?.payload) {
+                const payload = draft.payload as Record<string, unknown>;
+                if (typeof payload.topic === 'string') setTopic(payload.topic);
+                if (typeof payload.grade === 'string') setGrade(payload.grade);
+                if (typeof payload.subject === 'string') setSubject(payload.subject);
+                if (payload.difficulty === 'EASY' || payload.difficulty === 'MEDIUM' || payload.difficulty === 'HARD') {
+                    setDiff(payload.difficulty);
+                }
+                if (payload.homework && typeof payload.homework === 'object') {
+                    setHomework(payload.homework);
+                }
+            }
+
+            if (!cancelled) {
+                draftLoadedRef.current = true;
+            }
+        };
+
+        void loadDraft();
+        return () => {
+            cancelled = true;
+        };
+    }, [teacherId]);
+
+    React.useEffect(() => {
+        if (!teacherId || !draftLoadedRef.current) return;
+        const timer = window.setTimeout(() => {
+            void saveTeacherWorkflowDraft(
+                teacherId,
+                'HOMEWORK',
+                { topic, grade, subject, difficulty: diff, homework },
+                { className: grade, subject },
+            );
+        }, 250);
+
+        return () => window.clearTimeout(timer);
+    }, [diff, grade, homework, subject, teacherId, topic]);
 
     const handleGenerate = async () => {
         setGenerating(true);
@@ -28,10 +80,25 @@ export const HomeworkCreator: React.FC<{
             const generated = await generatePracticeQuestions(subject, topic, examType, count);
             
             if (generated && generated.length > 0) {
-                setHomework({
+                const nextHomework = {
                     title: `${topic} Assignment`,
                     questions: generated
+                };
+                setHomework(nextHomework);
+                void trackAnalyticsEvent({
+                    eventType: 'TEACHER_WORKFLOW',
+                    eventName: 'homework_generated',
+                    role: 'TEACHER',
+                    metadata: { grade, subject, topic, difficulty: diff, questionCount: generated.length },
                 });
+                if (teacherId) {
+                    await saveTeacherWorkflowDraft(
+                        teacherId,
+                        'HOMEWORK',
+                        { topic, grade, subject, difficulty: diff, homework: nextHomework },
+                        { className: grade, subject },
+                    );
+                }
             } else {
                 throw new Error("No questions generated");
             }
@@ -43,7 +110,10 @@ export const HomeworkCreator: React.FC<{
         }
     };
 
-    const handleAssign = () => {
+    const handleAssign = async () => {
+        if (teacherId) {
+            await clearTeacherWorkflowDraft(teacherId, 'HOMEWORK');
+        }
         alert(`Homework assigned to all students in ${grade}! Check the Assignments tab to track submissions.`);
         onBack();
     };

@@ -1,6 +1,6 @@
 import { supabase } from '../lib/supabase';
 
-export type AnalyticsEventType = 'PAGE_VIEW' | 'ROUTE_CHANGE' | 'AUTH_EVENT';
+export type AnalyticsEventType = 'PAGE_VIEW' | 'ROUTE_CHANGE' | 'AUTH_EVENT' | 'TEACHER_WORKFLOW';
 
 export interface TrackAnalyticsEventInput {
     eventType: AnalyticsEventType;
