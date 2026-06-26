@@ -93,7 +93,7 @@ export const BulkBillingModal: React.FC<BulkBillingModalProps> = ({ isOpen, onCl
         setRoster(mockRoster);
     }, [isOpen, students, selectedTier, customAmount]);
 
-    if (!isOpen) return null;
+
 
     const handleSelectAll = (checked: boolean) => {
         setRoster(prev => prev.map(item => ({ ...item, selected: checked })));
@@ -168,6 +168,8 @@ export const BulkBillingModal: React.FC<BulkBillingModalProps> = ({ isOpen, onCl
                 const phone = sponsorPhone.replace(/^\+?254/, '').replace(/^0/, '');
 
                 const plan = {
+                    id: 'sponsor_bulk_payment',
+                    segment: 'SCHOOL' as const,
                     name: `Sponsor Bulk Payment`,
                     price: totalKES,
                     duration: 'TERMLY' as const
@@ -319,6 +321,8 @@ export const BulkBillingModal: React.FC<BulkBillingModalProps> = ({ isOpen, onCl
         link.click();
         document.body.removeChild(link);
     };
+
+    if (!isOpen) return null;
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md">

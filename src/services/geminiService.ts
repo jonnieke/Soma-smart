@@ -1221,10 +1221,16 @@ const extractJsonLikeStringField = (rawText: string, field: string): string => {
   return match ? decodeJsonLikeString(match[1]) : '';
 };
 
+const stripCodeFences = (text: string): string => {
+  const trimmed = text.replace(/^\uFEFF/, '').trim();
+  const fenced = trimmed.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i);
+  return (fenced?.[1] || trimmed).trim();
+};
+
 const cleanTeacherMarkdown = (text: string): string => stripCodeFences(String(text || '')).replace(/^json\s*/i, '').trim();
 
 const normalizeTeacherNotePayload = (payload: Partial<TeacherNote> | Record<string, any> | null | undefined, rawText = '', preferredId?: string, preferredDate?: string): TeacherNote => {
-  const source = payload ?? {};
+  const source = (payload ?? {}) as any;
   const topic = String(source.topic || extractJsonLikeStringField(rawText, 'topic') || '').trim();
   const structuredCandidate = cleanTeacherMarkdown(String(source.structuredNotes || source.explanation || extractJsonLikeStringField(rawText, 'structuredNotes') || extractJsonLikeStringField(rawText, 'explanation') || ''));
   const simplifiedCandidate = cleanTeacherMarkdown(String(source.simplifiedNotes || extractJsonLikeStringField(rawText, 'simplifiedNotes') || ''));
@@ -3386,6 +3392,13 @@ export const chatTalkback = async (
     return language === 'sw' ? "Samahani, kuna tatizo dogo. Hebu jaribu tena baada ya muda kidogo! 🌟" : "Hmm, I had a little hiccup. Let's try again in a moment! 🌟";
   }
 };
+
+export interface SyllabusTutorContext {
+  grade?: string;
+  subject?: string;
+  topic?: string;
+  sourceTitle?: string;
+}
 
 export const chatTalkbackStream = async (
   userMessage: string,

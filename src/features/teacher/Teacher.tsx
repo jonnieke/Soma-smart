@@ -861,6 +861,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                 return '';
             };
             const normalizedNote: TeacherNote = {
+                id: String(raw?.id || Math.random().toString().substring(2)),
                 topic: String(raw?.topic || item.title || 'Lesson Note'),
                 structuredNotes: toText(raw?.structuredNotes || raw?.notes || raw?.content),
                 simplifiedNotes: toText(raw?.simplifiedNotes || raw?.summary),

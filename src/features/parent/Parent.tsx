@@ -33,6 +33,7 @@ export const ParentDashboard: React.FC<ParentProps> = ({ onNavigate, activityLog
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [showLogoutModal, setShowLogoutModal] = useState(false);
+    const [showMasteryDashboard, setShowMasteryDashboard] = useState(false);
     const [proofShareStatus, setProofShareStatus] = useState<'idle' | 'copied' | 'shared'>('idle');
     const [parentActivityLog, setParentActivityLog] = useState<LearnerActivity[] | null>(null);
     const [activityLoading, setActivityLoading] = useState(false);
@@ -874,7 +875,7 @@ export const ParentDashboard: React.FC<ParentProps> = ({ onNavigate, activityLog
                     <div className="lg:col-span-1 bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl rounded-[2rem] p-6 shadow-xl shadow-slate-200/50 dark:shadow-none border border-white/50 dark:border-slate-800">
                         <h3 className="text-lg font-black text-slate-900 dark:text-white mb-4">Areas To Improve</h3>
                         <div className="space-y-2">
-                            {(stats.weakAreas.length > 0 ? stats.weakAreas.slice(0, 3) : ['No major weak topics right now']).map((area, i) => (
+                            {(stats.weakAreas.length > 0 ? stats.weakAreas.slice(0, 3) : ['No major weak topics right now']).map((area: any, i) => (
                                 <div key={i} className="px-3 py-2 rounded-xl bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 text-xs font-black uppercase tracking-wider border border-amber-100 dark:border-amber-800/40">
                                     {area}
                                 </div>
@@ -1054,11 +1055,32 @@ export const ParentDashboard: React.FC<ParentProps> = ({ onNavigate, activityLog
                             <Brain className="w-6 h-6 text-emerald-500" /> Cognitive Mastery Graph
                         </h3>
                         {cloudMemoryRow ? (
-                            <div className="h-64 sm:h-80 w-full relative -mt-4">
-                                <MasteryDashboard 
-                                    masteryGraph={cloudMemoryRow.mastery_graph || {}} 
-                                    weakTopics={[]} // Optional: or pass specific ones
-                                />
+                            <div className="space-y-4">
+                                <div className="space-y-3">
+                                    {Object.entries(cloudMemoryRow.mastery_graph || {})
+                                        .slice(0, 4)
+                                        .map(([topic, score]: [string, any]) => (
+                                            <div key={topic} className="space-y-1">
+                                                <div className="flex justify-between text-xs font-bold text-slate-700 dark:text-slate-300">
+                                                    <span className="truncate max-w-[200px]">{topic}</span>
+                                                    <span>{score}%</span>
+                                                </div>
+                                                <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-2">
+                                                    <div 
+                                                        className="bg-indigo-600 h-2 rounded-full transition-all duration-500" 
+                                                        style={{ width: `${score}%` }}
+                                                    />
+                                                </div>
+                                            </div>
+                                        ))
+                                    }
+                                </div>
+                                <button
+                                    onClick={() => setShowMasteryDashboard(true)}
+                                    className="w-full mt-4 py-2.5 rounded-xl border border-indigo-200 dark:border-indigo-800 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 text-xs font-black uppercase tracking-wider transition-colors"
+                                >
+                                    Open Detailed Mastery Map
+                                </button>
                             </div>
                         ) : (
                             <div className="h-64 flex items-center justify-center text-center p-6 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-[2rem]">
@@ -1086,7 +1108,7 @@ export const ParentDashboard: React.FC<ParentProps> = ({ onNavigate, activityLog
                                         Your child is doing well overall, but seems to be struggling slightly with these topics:
                                     </p>
                                     <div className="flex flex-wrap gap-2 mt-2">
-                                        {stats.weakAreas.slice(0, 3).map((area, idx) => (
+                                        {stats.weakAreas.slice(0, 3).map((area: any, idx) => (
                                             <span key={idx} className="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 text-[11px] uppercase tracking-widest font-black px-4 py-2 rounded-full border border-indigo-200 dark:border-indigo-800/50 shadow-sm">
                                                 {area}
                                             </span>
@@ -1108,12 +1130,12 @@ export const ParentDashboard: React.FC<ParentProps> = ({ onNavigate, activityLog
                 {/* 3.5 AI INSIGHT + HEATMAP */}
                 <ParentAIInsight
                     studentName={validStudentCode || 'Your child'}
-                    activityLog={visibleActivityLog.map(a => ({ created_at: a.date, subject: a.subject, score: a.score }))}
+                    activityLog={visibleActivityLog.map(a => ({ created_at: a.date, subject: (a as any).subject, score: a.score }))}
                     masteryMap={cloudMasteryGraph as Record<string, number>}
                     streak={cloudMemoryRow?.streak_days ?? 0}
                 />
                 <SubjectHeatmap
-                    activityLog={visibleActivityLog.map(a => ({ created_at: a.date, subject: a.subject, score: a.score }))}
+                    activityLog={visibleActivityLog.map(a => ({ created_at: a.date, subject: (a as any).subject, score: a.score }))}
                     masteryMap={cloudMasteryGraph as Record<string, number>}
                 />
 
@@ -1164,10 +1186,20 @@ export const ParentDashboard: React.FC<ParentProps> = ({ onNavigate, activityLog
                     </div>
                 </div>
 
-            </main>
-        </div>
-    );
-};
+                </main>
+                {showMasteryDashboard && cloudMemoryRow && (
+                    <MasteryDashboard
+                        masteryGraph={cloudMemoryRow.mastery_graph || {}}
+                        srItems={cloudMemoryRow.spaced_repetition || []}
+                        streak={cloudMemoryRow?.streak_days ?? 0}
+                        totalXP={cloudMemoryRow?.total_xp ?? 0}
+                        onClose={() => setShowMasteryDashboard(false)}
+                        onPractice={() => {}}
+                    />
+                )}
+            </div>
+        );
+    };
 
 // --- HELPER COMPONENTS ---
 

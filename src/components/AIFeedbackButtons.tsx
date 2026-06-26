@@ -61,7 +61,7 @@ export const AIFeedbackButtons: React.FC<AIFeedbackButtonsProps> = ({
         );
     }
 
-    if (status === 'correcting') {
+    if (status === 'correcting' || status === 'submitting') {
         return (
             <div className={`pt-3 mt-3 border-t border-slate-100 dark:border-slate-800 space-y-3 ${className}`}>
                 <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">What is the correct answer?</p>

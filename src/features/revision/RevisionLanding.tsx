@@ -165,6 +165,7 @@ export const RevisionLanding: React.FC<Props> = ({ onStartSession, onNavigate, o
         }
     });
 
+    const [now] = useState(() => Date.now());
 
     const videoRef = useRef<HTMLVideoElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -266,9 +267,9 @@ export const RevisionLanding: React.FC<Props> = ({ onStartSession, onNavigate, o
         if (!examGoal.examDate) return null;
         const target = new Date(`${examGoal.examDate}T00:00:00`);
         if (Number.isNaN(target.getTime())) return null;
-        const diff = Math.ceil((target.getTime() - Date.now()) / 86400000);
+        const diff = Math.ceil((target.getTime() - now) / 86400000);
         return Math.max(diff, 0);
-    }, [examGoal.examDate]);
+    }, [examGoal.examDate, now]);
 
     const focusSubject = initialSubject && initialSubject !== 'All' ? initialSubject : examGoal.subject;
     const focusTopic = initialSearchQuery?.trim() || weakTopics[0] || focusSubject;

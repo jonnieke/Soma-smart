@@ -179,7 +179,7 @@ export const TeacherOnboarding: React.FC<TeacherOnboardingProps> = ({ onComplete
                                         }}
                                         className="w-full pl-12 pr-10 py-4 bg-slate-50 border-2 border-slate-200 rounded-2xl focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none text-sm font-bold appearance-none cursor-pointer transition-all hover:bg-white"
                                     >
-                                        <option value="" disabled>{language === 'FR' ? 'Sélectionner une classe' : 'Select a class...'}</option>
+                                        <option value="" disabled>{(language as string) === 'FR' ? 'Sélectionner une classe' : 'Select a class...'}</option>
                                         <optgroup label="Pre-Primary (CBC)">
                                             <option value="PP1">PP1</option>
                                             <option value="PP2">PP2</option>
@@ -267,7 +267,7 @@ export const TeacherOnboarding: React.FC<TeacherOnboardingProps> = ({ onComplete
                                         }}
                                         className="w-full pl-12 pr-10 py-4 bg-slate-50 border-2 border-slate-200 rounded-2xl focus:border-purple-500 focus:ring-4 focus:ring-purple-500/10 outline-none text-sm font-bold appearance-none cursor-pointer transition-all hover:bg-white"
                                     >
-                                        <option value="" disabled>{language === 'FR' ? 'Sélectionner une matière' : 'Select a subject...'}</option>
+                                        <option value="" disabled>{(language as string) === 'FR' ? 'Sélectionner une matière' : 'Select a subject...'}</option>
                                         <optgroup label="Languages">
                                             <option value="English">English</option>
                                             <option value="Kiswahili">Kiswahili</option>

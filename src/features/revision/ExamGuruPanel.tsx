@@ -48,11 +48,11 @@ interface SyllabusContext {
 }
 
 export const ExamGuruPanel: React.FC<{ onClose: () => void; onLogin?: () => void; initialMode?: PanelMode; initialPrompt?: string; syllabusContext?: SyllabusContext }> = ({ onClose, onLogin, initialMode = 'chat', initialPrompt = '', syllabusContext }) => {
-    const contextLabel = [syllabusContext?.grade, syllabusContext?.subject, syllabusContext?.topic || syllabusContext?.sourceTitle].filter(Boolean).join(' · ');
+    const focusTopic = syllabusContext?.topic || syllabusContext?.sourceTitle || '';
+    const contextLabel = [syllabusContext?.grade, syllabusContext?.subject, syllabusContext?.topic || syllabusContext?.sourceTitle].filter(Boolean).join(' - ');
     const openingMessage = contextLabel
         ? `Quick check: what is the first thing you would say about ${focusTopic || contextLabel}? Choose a drill, paste a question, or answer in one line and I will keep us on this exact topic.`
         : "Exam Guru online. Pick a drill, paste a question, or ask for a marking check. I will stay on the exact paper skill, show what earns marks, and keep the repair conversation on the missed point.";
-    const focusTopic = syllabusContext?.topic || syllabusContext?.sourceTitle || '';
     const focusSubject = syllabusContext?.subject || '';
     const contextualPromptChips = contextLabel
         ? [

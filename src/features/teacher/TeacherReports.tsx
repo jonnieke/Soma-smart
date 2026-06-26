@@ -204,7 +204,7 @@ export const TeacherReports: React.FC = () => {
                     : 0;
                 return {
                     id: allStudentIds[idx] || `student_${idx}`,
-                    name: mem?.student_name || `Student ${idx + 1}`,
+                    name: (mem as any)?.student_name || `Student ${idx + 1}`,
                     avgMastery: avg,
                     topicCount: topics.length,
                     status: getMasteryStatus(avg),

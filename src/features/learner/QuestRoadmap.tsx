@@ -164,7 +164,7 @@ export const QuestRoadmap: React.FC<QuestRoadmapProps> = ({
     if (resolvedStudentId !== 'guest') {
       const totalXP = calculateTotalXP(history || []);
       const streak = calculateStreak(history || []);
-      syncMasteryToCloud(resolvedStudentId, masteryGraph, totalXP, streak, selectedSubject, node.title);
+      syncMasteryToCloud(resolvedStudentId, node.title, selectedSubject, streak, totalXP, recentStudyCount + recentQuizCount);
     }
   };
 
@@ -357,7 +357,7 @@ export const QuestRoadmap: React.FC<QuestRoadmapProps> = ({
                   if (resolvedStudentId !== 'guest') {
                     const totalXP = calculateTotalXP(history || []);
                     const streak = calculateStreak(history || []);
-                    syncMasteryToCloud(resolvedStudentId, masteryGraph, totalXP, streak, sub, '');
+                    syncMasteryToCloud(resolvedStudentId, '', sub, streak, totalXP, recentStudyCount + recentQuizCount);
                   }
                 }}
                 className={`

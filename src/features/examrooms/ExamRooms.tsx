@@ -26,10 +26,6 @@ export const ExamRooms: React.FC = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [activeFilter, setActiveFilter] = useState<ExamRoomType | 'ALL'>('ALL');
 
-    useEffect(() => {
-        loadRooms();
-    }, [educationLevel]);
-
     const loadRooms = async () => {
         setLoading(true);
         const levelToFetch = educationLevel || EducationLevel.SENIOR;
@@ -69,6 +65,10 @@ export const ExamRooms: React.FC = () => {
         }
         setLoading(false);
     };
+
+    useEffect(() => {
+        loadRooms();
+    }, [educationLevel]);
 
     const handleJoinRoom = async (roomId: string) => {
         if (!studentProfile) {

@@ -269,6 +269,43 @@ const salvageAudioExplanationResult = (rawText: string, level: 'Simple' | 'Exam'
   } as ExplanationResult;
 };
 
+const normalizeLearnerText = (value: string | undefined | null): string => {
+  if (!value) return '';
+  return value
+    .replace(/\\n/g, '\n')
+    .replace(/\\t/g, ' ')
+    .replace(/^[^A-Za-z]*(?=Curriculum Alignment:)/, '')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+};
+
+const sanitizeExplanationResult = (result: ExplanationResult): ExplanationResult => ({
+  ...result,
+  topic: normalizeLearnerText(result.topic),
+  explanation: normalizeLearnerText(result.explanation),
+  transcript: result.transcript ? normalizeLearnerText(result.transcript) : undefined,
+  summaryPoints: (result.summaryPoints || []).map((point) => normalizeLearnerText(point)).filter(Boolean),
+  relatedTopics: (result.relatedTopics || []).map((topic) => normalizeLearnerText(topic)).filter(Boolean),
+  subtopics: result.subtopics?.map((subtopic) => ({
+    ...subtopic,
+    title: normalizeLearnerText(subtopic.title),
+    blocks: subtopic.blocks?.map((block) => ({
+      ...block,
+      text: block.text ? normalizeLearnerText(block.text) : block.text,
+      items: block.items?.map((item) => normalizeLearnerText(item)).filter(Boolean)
+    })) || []
+  })),
+  recapNodes: result.recapNodes?.map((node) => ({
+    ...node,
+    point: normalizeLearnerText(node.point),
+    details: normalizeLearnerText(node.details)
+  })),
+  flashcard: result.flashcard ? {
+    question: normalizeLearnerText(result.flashcard.question),
+    answer: normalizeLearnerText(result.flashcard.answer)
+  } : result.flashcard
+});
+
 // --- SUPER TEACHER INSTRUCTIONS ---
 const SYLLABUS_GROUNDING_INSTRUCTION = `
 CRITICAL: MANDATORY SYLLABUS CITATION
@@ -473,7 +510,7 @@ export const explainImage = async (
     if (!text) throw new Error("No response from AI");
 
     const json = parseModelJson<ExplanationResult>(text);
-    return { ...json, level } as ExplanationResult;
+    return sanitizeExplanationResult({ ...json, level } as ExplanationResult);
   } catch (error) {
     console.error("Error explaining image:", error);
     throw error;
@@ -535,12 +572,12 @@ export const explainAudio = async (base64Audio: string, mimeType: string, level:
 
     try {
       const json = parseModelJson<ExplanationResult>(text);
-      return { ...json, level } as ExplanationResult;
+      return sanitizeExplanationResult({ ...json, level } as ExplanationResult);
     } catch (parseError) {
       const salvaged = salvageAudioExplanationResult(text, level);
       if (salvaged) {
         console.warn("Audio explanation JSON was malformed; using salvaged response.", parseError);
-        return salvaged;
+        return sanitizeExplanationResult(salvaged);
       }
       throw parseError;
     }
@@ -659,7 +696,7 @@ const retrieveContext = async (
   try {
     const { data: { session } } = await supabase.auth.getSession();
     const token = session?.access_token;
-    const studentCode = localStorage.getItem("soma_student_code") || localStorage.getItem("somaStudentCode") || "";
+    const studentCode = localStorage.getItem("soma_active_student") || localStorage.getItem("soma_student_code") || localStorage.getItem("somaStudentCode") || "";
 
     const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/search-knowledge`, {
       method: 'POST',
@@ -679,7 +716,12 @@ const retrieveContext = async (
       })
     });
 
-    if (!response.ok) return { text: "", sources: [] };
+    if (!response.ok) {
+      if (response.status !== 401 && response.status !== 403) {
+        console.warn("RAG retrieval returned non-OK status:", response.status);
+      }
+      return { text: "", sources: [] };
+    }
 
     const { context, chunks, sources } = await response.json();
     if ((!context || !String(context).trim()) && (!chunks || chunks.length === 0)) return { text: "", sources: [] };
@@ -878,9 +920,8 @@ export const explainTopic = async (
     const text = result.response.text();
     if (!text) throw new Error("No response from AI");
 
-    const cleanedText = text.replace(/```json\n?|```/g, '').trim();
-    const json = JSON.parse(cleanedText);
-    return { ...json, level, grounding: { used: !!ragContext.text, sources: ragContext.sources } } as ExplanationResult;
+    const json = parseModelJson<ExplanationResult>(text);
+    return sanitizeExplanationResult({ ...json, level, grounding: { used: !!ragContext.text, sources: ragContext.sources } } as ExplanationResult);
   } catch (error) {
     console.error("Error explaining topic:", error);
     throw error;
@@ -1007,8 +1048,8 @@ export const summarizeDocument = async (title: string, documentId: string, langu
     const result = await model.generateContent(prompt);
     const text = result.response.text();
     if (!text) throw new Error("No response");
-    const cleanedText = text.replace(/```json\n?|```/g, '').trim();
-    return { ...JSON.parse(cleanedText), grounding: { used: !!ragContext.text, sources: ragContext.sources } } as ExplanationResult;
+    const json = parseModelJson<ExplanationResult>(text);
+    return sanitizeExplanationResult({ ...json, grounding: { used: !!ragContext.text, sources: ragContext.sources } } as ExplanationResult);
   } catch (error) {
     console.error("Error summarizing document:", error);
     throw error;
@@ -1076,8 +1117,8 @@ GUIDELINES:
     const result = await model.generateContent(prompt);
     const text = result.response.text();
     if (!text) throw new Error("No response");
-    const cleanedText = text.replace(/```json\n?|```/g, '').trim();
-    return { ...JSON.parse(cleanedText), grounding: { used: !!ragContext.text, sources: ragContext.sources } } as ExplanationResult;
+    const json = parseModelJson<ExplanationResult>(text);
+    return sanitizeExplanationResult({ ...json, grounding: { used: !!ragContext.text, sources: ragContext.sources } } as ExplanationResult);
   } catch (error) {
     console.error("Error generating rich notes:", error);
     throw error;
@@ -1134,7 +1175,7 @@ TASK:
     const text = result.response.text();
     if (!text) throw new Error("No response from AI");
     const json = parseModelJson<ExplanationResult>(text);
-    return { ...json, level } as ExplanationResult;
+    return sanitizeExplanationResult({ ...json, level } as ExplanationResult);
   } catch (error) {
     console.error("Error continuing research:", error);
     throw error;

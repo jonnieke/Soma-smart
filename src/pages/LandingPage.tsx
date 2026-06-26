@@ -56,6 +56,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
     const navigate = useNavigate();
     const location = useLocation();
     const { setRole, role, logout, isRegistered, isPro, language, toggleLanguage, startGuestSession, teacherUsageCount, lowDataMode, toggleLowDataMode, studentCode, studentProfile, teacherProfile } = useApp();
+    const showLegacySections = false;
     const [authError, setAuthError] = useState<{ code: string, description: string } | null>(initialAuthError || null);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [showRegistration, setShowRegistration] = useState(false);
@@ -120,7 +121,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
         } catch (_) {
             window.setTimeout(() => setShowNavigationGuide(true), 3500);
         }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
     }, []);
 
     const closeNavigationGuide = () => {
@@ -301,7 +302,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
         } catch (_) {
             // Network Information API not supported — safe to ignore
         }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
     }, []);
 
     // Handle incoming plan selection from PricingPage
@@ -1430,7 +1431,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                     <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-[0.3em]">Built to Kenyan Curriculum Standards</span>
                 </div>
             </div>
-            {false && (
+            {showLegacySections && (
             <>
             {/* --- EXAM ASSISTANT CTA --- */}
             <section className="py-12 relative overflow-hidden bg-white dark:bg-slate-950 transition-colors">
@@ -1595,7 +1596,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                 </div>
             </section>
 
-            {false && (
+            {showLegacySections && (
             <>
             {/* --- CORE FEATURES BENTO BOX --- */}
             <section className="py-16 bg-white dark:bg-slate-950 transition-colors border-t border-slate-200 dark:border-slate-800">
@@ -1895,7 +1896,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                     </motion.div>
                 </div>
             </section>
-            {false && (
+            {showLegacySections && (
             <>
             {/* --- FOOTER CTA --- */}
             <section className="bg-blue-900 py-6 text-center relative overflow-hidden">
@@ -1939,7 +1940,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
             </>
             )}
 
-            {false && (
+            {showLegacySections && (
             <>
             {/* --- JOURNAL PREVIEW --- */}
             <section className="py-24 bg-white dark:bg-slate-950 transition-colors border-t border-slate-100 dark:border-slate-900">

@@ -13,6 +13,7 @@ export const HomeworkCreator: React.FC<{
     initialGrade?: string;
     initialSubject?: string;
     initialDifficulty?: 'EASY' | 'MEDIUM' | 'HARD';
+    teacherId?: string;
 }> = ({ onBack, subjects, classes, initialTopic, initialGrade, initialSubject, initialDifficulty, teacherId }) => {
     const [topic, setTopic] = useState(initialTopic || '');
     const [diff, setDiff] = useState<'EASY' | 'MEDIUM' | 'HARD'>(initialDifficulty || 'MEDIUM');

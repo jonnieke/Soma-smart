@@ -2,7 +2,7 @@ import React from 'react';
 import { motion, HTMLMotionProps } from 'framer-motion';
 
 export interface MaybeMotionProps extends HTMLMotionProps<any> {
-  as?: keyof typeof motion | keyof JSX.IntrinsicElements;
+  as?: any;
   lowDataMode?: boolean;
 }
 
@@ -15,7 +15,7 @@ export const MaybeMotion = React.forwardRef<any, MaybeMotionProps>(
   ({ as = 'div', lowDataMode, children, ...props }, ref) => {
     if (lowDataMode) {
       // Use the raw HTML tag name (e.g., 'div' instead of 'motion.div' or 'div' string)
-      const Component = as as keyof JSX.IntrinsicElements;
+      const Component = as as any;
       
       // Strip out all Framer Motion specific properties to avoid React warnings
       const {

@@ -208,7 +208,7 @@ export const ClassJoinPage: React.FC = () => {
 
                             <button
                                 onClick={handleJoin}
-                                disabled={status === 'joining'}
+                                disabled={status as string === 'joining'}
                                 className="w-full bg-[#25D366] hover:bg-[#128C7E] text-white py-4 rounded-xl font-black flex items-center justify-center gap-2 disabled:opacity-60"
                             >
                                 {studentProfile?.id && isRegistered ? 'Join Class' : 'Continue as Learner'}

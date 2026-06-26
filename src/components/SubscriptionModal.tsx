@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle, Star, Shield, Zap, X, CreditCard, Sparkles, Loader2 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import confetti from 'canvas-confetti';
+import { STUDENT_PLANS } from '../data/pricing';
 
 interface SubscriptionModalProps {
     isOpen: boolean;
@@ -19,7 +20,8 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({ isOpen, on
     const handleSubscribe = async () => {
         setLoading(true);
         // Simulate M-Pesa STK Push
-        await upgradeAccount(selectedPlan);
+        const plan = STUDENT_PLANS.find(p => p.duration === selectedPlan) || STUDENT_PLANS[2];
+        await upgradeAccount(plan);
 
         setLoading(false);
         confetti({

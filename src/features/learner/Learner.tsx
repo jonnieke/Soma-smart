@@ -104,42 +104,42 @@ const EDUCATIONAL_GLOSSARY: Record<string, { definition: string; translation: st
   strand: {
     definition: "A broad field of study or major thematic area within a specific subject in the Competency Based Curriculum.",
     translation: "Mada (Eneo pana la kimasomo katika mtaala mpya).",
-    pronunciation: "/strÃƒÆ’Ã‚Â¦nd/"
+    pronunciation: "/strænd/"
   },
   "sub-strand": {
     definition: "A smaller sub-topic or specific learning unit under a broader Strand in the syllabus.",
     translation: "Mada Ndogo (Kijisehemu cha mada kuu katika mtaala).",
-    pronunciation: "/sÃƒÅ Ã…â€™b-strÃƒÆ’Ã‚Â¦nd/"
+    pronunciation: "/sÃƒÅ Ã…â€™b-strænd/"
   },
   competency: {
     definition: "The ability to apply knowledge, skills, values, and attitudes to successfully perform tasks in daily life.",
     translation: "Uwezo (Ujuzi na stadi za kutenda jambo na kutatua matatizo).",
-    pronunciation: "/Ãƒâ€¹Ã‹â€ kÃƒâ€°Ã¢â‚¬â„¢mpÃƒâ€°Ã‚ÂªtÃƒâ€°Ã¢â€žÂ¢nsi/"
+    pronunciation: "/ˈkɒmpɪtənsi/"
   },
   assessment: {
     definition: "The systematic process of gathering evidence of a learner's progress, understanding, and performance.",
     translation: "Tathmini (Utaratibu wa kukadiria kiwango cha uelewa wa mwanafunzi).",
-    pronunciation: "/Ãƒâ€°Ã¢â€žÂ¢Ãƒâ€¹Ã‹â€ sÃƒâ€°Ã¢â‚¬ÂºsmÃƒâ€°Ã¢â€žÂ¢nt/"
+    pronunciation: "/əˈsɛsmənt/"
   },
   kicd: {
     definition: "Kenya Institute of Curriculum Development - the official government body responsible for designing school curricula.",
     translation: "Taasisi ya Ukuzaji Mtaala ya Kenya (Inayohusika na kuandaa masomo).",
-    pronunciation: "/kÃƒâ€žÃ¢â‚¬Å“-Ãƒâ€žÃ‚Â«-sÃƒâ€žÃ¢â‚¬Å“-dÃƒâ€žÃ¢â‚¬Å“/"
+    pronunciation: "/keɪ-aɪ-si-di/"
   },
   knec: {
     definition: "Kenya National Examinations Council - the official national body responsible for setting, administering, and marking primary and secondary exams.",
     translation: "Baraza la Mitihani la Kitaifa la Kenya (Linaloandaa na kusimamia mitihani).",
-    pronunciation: "/kÃƒâ€žÃ¢â‚¬Å“-Ãƒâ€°Ã¢â‚¬Âºn-Ãƒâ€žÃ¢â‚¬Å“-sÃƒâ€žÃ¢â‚¬Å“/"
+    pronunciation: "/keɪ-nɛk/"
   },
   kpsea: {
     definition: "Kenya Primary School Education Assessment - the national evaluation done at the end of Grade 6 under the CBC system.",
     translation: "Tathmini ya Elimu ya Msingi ya Kenya (Mitihani ya mwisho wa Gredi ya 6).",
-    pronunciation: "/kÃƒâ€žÃ¢â‚¬Å“-pÃƒâ€žÃ¢â‚¬Å“-Ãƒâ€°Ã¢â‚¬Âºs-Ãƒâ€žÃ¢â‚¬Å“-Ãƒâ€žÃ‚Â/"
+    pronunciation: "/keɪ-pi-ɛs-i-eɪ/"
   },
   kcse: {
     definition: "Kenya Certificate of Secondary Education - the national examination taken at the end of secondary school (Form 4).",
     translation: "Cheti cha Elimu ya Sekondari ya Kenya (Mtihani wa mwisho wa sekondari).",
-    pronunciation: "/kÃƒâ€žÃ¢â‚¬Å“-sÃƒâ€žÃ¢â‚¬Å“-Ãƒâ€°Ã¢â‚¬Âºs-Ãƒâ€žÃ¢â‚¬Å“/"
+    pronunciation: "/keɪ-si-ɛs-i/"
   },
   values: {
     definition: "Core principles such as love, respect, unity, and integrity integrated into lessons to shape character.",
@@ -149,7 +149,7 @@ const EDUCATIONAL_GLOSSARY: Record<string, { definition: string; translation: st
   uzalendo: {
     definition: "A core social value representing patriotism, love for country, and active citizenship in the Kenyan society.",
     translation: "Patriotism (Uzalendo na mapenzi ya dhati kwa nchi yako ya Kenya).",
-    pronunciation: "/oo-zah-lÃƒâ€°Ã¢â‚¬Âºn-dÃƒâ€°Ã¢â‚¬Â/"
+    pronunciation: "/oo-zah-len-do/"
   },
   katiba: {
     definition: "The Constitution of Kenya - the supreme law of the Republic of Kenya that guides governance and citizen rights.",
@@ -332,6 +332,9 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
   }, [totalXP]);
 
   const [showStreakModal, setShowStreakModal] = useState(false);
+  const [notifStatus, setNotifStatus] = useState<'default' | 'granted' | 'denied'>(
+    () => typeof Notification !== 'undefined' ? Notification.permission as 'default' | 'granted' | 'denied' : 'default'
+  );
   const [joinedClassNotice, setJoinedClassNotice] = useState<string | null>(null);
   const [studentClasses, setStudentClasses] = useState<StudentClassroomSummary[]>([]);
   const [isLoadingStudentClasses, setIsLoadingStudentClasses] = useState(false);
@@ -445,7 +448,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
     }
   }, [isRegistered, studentProfile?.grade]);
 
-  const [mode, setMode] = useState<'MENU' | 'SCAN' | 'RESULT' | 'QUIZ' | 'RECAP_RESULT' | 'PROFILE' | 'PRICING' | 'PAYMENT' | 'MARKETPLACE' | 'LIBRARY' | 'HISTORY' | 'SCAN_EXPLAIN' | 'STUDY' | 'REQUESTS' | 'COMMUNITY' | 'REVISION' | 'REVISION_SESSION' | 'ANALYTICS' | 'TALKBACK' | 'REFERRAL' | 'QUEST_MAP' | 'FLASHCARDS' | 'NOTEBOOK'>(initialMode as any);
+  const [mode, setMode] = useState<'MENU' | 'SCAN' | 'RESULT' | 'QUIZ' | 'RECAP_RESULT' | 'PROFILE' | 'PRICING' | 'PAYMENT' | 'MARKETPLACE' | 'LIBRARY' | 'HISTORY' | 'SCAN_EXPLAIN' | 'STUDY' | 'REQUESTS' | 'COMMUNITY' | 'REVISION' | 'REVISION_SESSION' | 'ANALYTICS' | 'TALKBACK' | 'REFERRAL' | 'QUEST_MAP' | 'FLASHCARDS' | 'NOTEBOOK' | 'RESOURCES'>(initialMode as any);
 
   // --- LEARNER MEMORY (Cloud Sync + Personalized Greeting) ---
   const [showMasteryDashboard, setShowMasteryDashboard] = useState(false);
@@ -506,7 +509,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
   const [pendingExitAction, setPendingExitAction] = useState<(() => void) | null>(null);
   const [studyMissionChecks, setStudyMissionChecks] = useState<number[]>([]);
   const [studyMissionRewarded, setStudyMissionRewarded] = useState(false);
-  const [activeRevisionSession, setActiveRevisionSession] = useState<{ data: any, mode: 'LEARN' | 'EXAM' } | null>(null);
+  const [activeRevisionSession, setActiveRevisionSession] = useState<{ data: any, mode: RevisionMode } | null>(null);
   const [recapData, setRecapData] = useState<any>(null); // Store LessonRecap
 
   const [loading, setLoading] = useState(false);
@@ -881,7 +884,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
             className="underline decoration-dotted decoration-indigo-400 hover:decoration-solid hover:text-indigo-600 dark:hover:text-indigo-400 font-bold transition-all inline-flex items-center gap-0.5 cursor-help"
           >
             {match.value}
-            <span className="text-[10px] text-indigo-400">ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã¢â‚¬â€œ</span>
+            <span className="text-[10px] text-indigo-400">📖</span>
           </button>
         );
       }
@@ -1571,7 +1574,7 @@ Stay anchored to this context unless I ask for something broader.`;
     const materialCluster = getAcademicCluster(materialGrade);
     const studentCluster = getAcademicCluster(studentGrade);
     
-    if (materialCluster === 'UNKNOWN' || materialCluster === 'all') return true;
+    if (materialCluster === 'UNKNOWN' || (materialCluster as string) === 'all') return true;
     if (studentCluster === 'UNKNOWN') return true;
 
     return materialCluster === studentCluster;
@@ -1774,7 +1777,7 @@ Stay anchored to this context unless I ask for something broader.`;
       });
 
       setCurrentDocument(material);
-      setActiveRevisionSession({ data: material, mode: 'EXAM' });
+      setActiveRevisionSession({ data: material, mode: RevisionMode.EXAM });
       setMode('REVISION_SESSION');
       return;
     }
@@ -2614,7 +2617,7 @@ Stay anchored to this context unless I ask for something broader.`;
             setPendingMedia({ data: base64, mimeType, type: 'AUDIO' });
             console.log("Audio attached to Study Buddy");
           };
-        } else if (mode === 'TALKBACK') {
+        } else if ((mode as string) === 'TALKBACK') {
           // ConversationalTutor has its own recording system ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â do NOT navigate away.
           console.log("Global recorder stopped in TALKBACK mode ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â ignoring.");
         } else {
@@ -2832,7 +2835,7 @@ Stay anchored to this context unless I ask for something broader.`;
     const savedPin = sessionStorage.getItem('soma_student_pin_session');
     if (!savedStudentCode || !savedPin) return false;
 
-    const restored = await login(savedStudentCode, savedPin);
+    const restored = await login(savedStudentCode);
     if (restored) {
       await verifySubscription();
       setHasRecentPaymentUnlock(true);
@@ -3022,7 +3025,6 @@ ${explanation.explanation}
         setPodcastScript(null); // Clear podcast script
         setIsPodcastPlaying(false); // Stop podcast
         setMode('RESULT');
-                      {item.type === 'QUIZ' ? <FileText className="w-5 h-5 text-indigo-500" /> : <Lightbulb className="w-5 h-5 text-amber-500" />}
         setQuizData(details);
         setMode('QUIZ');
       } else if (item.type === 'STUDY') {
@@ -3286,10 +3288,6 @@ ${explanation.explanation}
     handleTopicClick(topic);
   };
 
-  // Remove unused playBuffer helper
-  // eslint-disable-next-line @typescript-eslint/no-empty-function
-  const playBuffer = () => { /* No-op */ };
-
   // --- VIEWS ---
   const renderMode = () => {
     if (mode === 'FLASHCARDS') {
@@ -3311,7 +3309,7 @@ ${explanation.explanation}
             lastScore: 0,
             reviewCount: 0,
             question: "What are the raw materials and products of photosynthesis in plants?",
-            answer: "Raw Materials:\n- Carbon dioxide (absorbed through stomata)\n- Water (absorbed through roots)\n\nProducts:\n- Glucose (chemical energy stored as starch)\n- Oxygen gas (released as a byproduct through stomata)\n\nReaction Equation:\n6COÃƒÂ¢Ã¢â‚¬Å¡Ã¢â‚¬Å¡ + 6HÃƒÂ¢Ã¢â‚¬Å¡Ã¢â‚¬Å¡O + light ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ CÃƒÂ¢Ã¢â‚¬Å¡Ã¢â‚¬Â HÃƒÂ¢Ã¢â‚¬Å¡Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã¢â‚¬Å¡OÃƒÂ¢Ã¢â‚¬Å¡Ã¢â‚¬Â  + 6OÃƒÂ¢Ã¢â‚¬Å¡Ã¢â‚¬Å¡"
+            answer: "Raw Materials:\n- Carbon dioxide (absorbed through stomata)\n- Water (absorbed through roots)\n\nProducts:\n- Glucose (chemical energy stored as starch)\n- Oxygen gas (released as a byproduct through stomata)\n\nReaction Equation:\n6CO₂ + 6H₂O + light → C₆H₁₂₂O₆ + 6O₂"
           },
           {
             topic: "Quadratic Equations",
@@ -3323,7 +3321,7 @@ ${explanation.explanation}
             lastScore: 0,
             reviewCount: 0,
             question: "State the quadratic formula and explain what the discriminant determines about the roots.",
-            answer: "Quadratic Formula:\nx = [-b Ãƒâ€šÃ‚Â± ÃƒÂ¢Ã‹â€ Ã…Â¡(bÃƒâ€šÃ‚Â² - 4ac)] / (2a)\n\nDiscriminant (D = bÃƒâ€šÃ‚Â² - 4ac):\n1. D > 0: Two distinct real roots.\n2. D = 0: One repeated real root (equal roots).\n3. D < 0: Two complex/imaginary roots."
+            answer: "Quadratic Formula:\nx = [-b ± √(b² - 4ac)] / (2a)\n\nDiscriminant (D = b² - 4ac):\n1. D > 0: Two distinct real roots.\n2. D = 0: One repeated real root (equal roots).\n3. D < 0: Two complex/imaginary roots."
           },
           {
             topic: "Devolution in Kenya",
@@ -3355,7 +3353,7 @@ ${explanation.explanation}
               <div className="w-20 h-20 bg-indigo-500/20 border border-indigo-500/30 rounded-full flex items-center justify-center mx-auto mb-6">
                 <Trophy className="w-10 h-10 text-indigo-400" />
               </div>
-              <h1 className="text-3xl font-extrabold text-white mb-2 tracking-wide font-sans">Deck Mastered! ÃƒÂ°Ã…Â¸Ã…Â½Ã¢â‚¬Â°</h1>
+              <h1 className="text-3xl font-extrabold text-white mb-2 tracking-wide font-sans">Deck Mastered! 🎉</h1>
               <p className="text-slate-400 text-sm mb-8 leading-relaxed font-sans font-medium">
                 Fantastic job! You've successfully finished this spaced-repetition active recall session.
               </p>
@@ -3470,7 +3468,7 @@ ${explanation.explanation}
                 <div className="w-16 h-16 bg-slate-800 border border-slate-700 rounded-full flex items-center justify-center mx-auto mb-6">
                   <Sparkles className="w-8 h-8 text-indigo-400" />
                 </div>
-                <h2 className="text-xl font-bold text-white mb-2">Queue is Clear! ÃƒÂ¢Ã…â€œÃ‚Â¨</h2>
+                <h2 className="text-xl font-bold text-white mb-2">Queue is Clear! ✨</h2>
                 <p className="text-sm text-slate-400 mb-8 leading-relaxed font-medium">
                   {totalFlashcards > 0
                     ? "Fantastic work! You have no spaced repetition cards due right now. You can practice all decks at any time!"
@@ -3594,10 +3592,10 @@ ${explanation.explanation}
                 {isFlipped && (
                   <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-3 max-w-xl w-full mx-auto relative z-20 animate-fade-in">
                     {[
-                      { name: 'Again ÃƒÂ°Ã…Â¸Ã…Â¸Ã‚Â¥', score: 20, desc: 'Forgot completely', color: 'from-rose-500/10 to-rose-600/10 border-rose-500/20 text-rose-400 hover:from-rose-500 hover:to-rose-600' },
-                      { name: 'Hard ÃƒÂ°Ã…Â¸Ã…Â¸Ã‚Â¨', score: 50, desc: 'Struggled a lot', color: 'from-amber-500/10 to-amber-600/10 border-amber-500/20 text-amber-400 hover:from-amber-500 hover:to-amber-600' },
-                      { name: 'Good ÃƒÂ°Ã…Â¸Ã…Â¸Ã‚Â©', score: 80, desc: 'Remembered well', color: 'from-emerald-500/10 to-emerald-600/10 border-emerald-500/20 text-emerald-400 hover:from-emerald-500 hover:to-emerald-600' },
-                      { name: 'Easy ÃƒÂ°Ã…Â¸Ã…Â¸Ã‚Â¦', score: 100, desc: 'Fluent / Perfect', color: 'from-indigo-500/10 to-indigo-600/10 border-indigo-500/20 text-indigo-400 hover:from-indigo-500 hover:to-indigo-600' }
+                      { name: 'Again 🔴', score: 20, desc: 'Forgot completely', color: 'from-rose-500/10 to-rose-600/10 border-rose-500/20 text-rose-400 hover:from-rose-500 hover:to-rose-600' },
+                      { name: 'Hard 🟡', score: 50, desc: 'Struggled a lot', color: 'from-amber-500/10 to-amber-600/10 border-amber-500/20 text-amber-400 hover:from-amber-500 hover:to-amber-600' },
+                      { name: 'Good 🟢', score: 80, desc: 'Remembered well', color: 'from-emerald-500/10 to-emerald-600/10 border-emerald-500/20 text-emerald-400 hover:from-emerald-500 hover:to-emerald-600' },
+                      { name: 'Easy 🔵', score: 100, desc: 'Fluent / Perfect', color: 'from-indigo-500/10 to-indigo-600/10 border-indigo-500/20 text-indigo-400 hover:from-indigo-500 hover:to-indigo-600' }
                     ].map(btn => (
                       <button
                         key={btn.name}
@@ -3632,7 +3630,7 @@ ${explanation.explanation}
       const weakTopicsForPath: string[] = (cloudMemoryRow?.weak_topics || []).filter(Boolean).slice(0, 8);
       const strongTopicsForPath: string[] = (cloudMemoryRow?.strong_topics || []).filter(Boolean).slice(0, 5);
       const gradeLabel = studentProfile?.grade || (educationLevel === 'CAMPUS' ? 'University' : educationLevel === 'JUNIOR' ? 'Class 8' : 'Form 3');
-      const subjectsForPath = [...new Set(weakTopicsForPath.map(t => t.split(' ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Å“ ')[0] || t.split(':')[0]).filter(Boolean))].slice(0, 4);
+      const subjectsForPath = [...new Set(weakTopicsForPath.map(t => t.split(' – ')[0] || t.split(':')[0]).filter(Boolean))].slice(0, 4);
 
       return (
         <div className="pb-24">
@@ -3648,7 +3646,7 @@ ${explanation.explanation}
                     : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
                 }`}
               >
-                {tab === 'MAP' ? 'ÃƒÂ°Ã…Â¸Ã¢â‚¬â€Ã‚ÂºÃƒÂ¯Ã‚Â¸Ã‚Â Quest Map' : 'ÃƒÂ¢Ã…â€œÃ‚Â¨ My Path'}
+                {tab === 'MAP' ? 'ÃƒÂ°Ã…Â¸Ã¢â‚¬â€Ã‚ÂºÃƒÂ¯Ã‚Â¸Ã‚Â Quest Map' : '✨ My Path'}
               </button>
             ))}
           </div>
@@ -4585,7 +4583,7 @@ Topic or question: ${question || '[type your question here]'}`)
                 className="hidden"
               >
                 <div className="flex items-start gap-4">
-                  <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center shrink-0 text-xl">ÃƒÂ°Ã…Â¸Ã…Â¡Ã¢â€šÂ¬</div>
+                  <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center shrink-0 text-xl">🚀</div>
                   <div className="flex-1 min-w-0">
                     <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-200 mb-1">Welcome to Somo Smart!</p>
                     <p className="font-bold text-base mb-3">Start with these 3 steps ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â no signup needed</p>
@@ -4593,7 +4591,7 @@ Topic or question: ${question || '[type your question here]'}`)
                       {[
                         { step: '1', label: 'Type a question below or scan your textbook', icon: 'ÃƒÂ¢Ã‚ÂÃ¢â‚¬Å“' },
                         { step: '2', label: 'Get a step-by-step explanation instantly', icon: 'ÃƒÂ¢Ã…Â¡Ã‚Â¡' },
-                        { step: '3', label: 'Test yourself with a quick quiz on the topic', icon: 'ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦' },
+                        { step: '3', label: 'Test yourself with a quick quiz on the topic', icon: '✓' },
                       ].map(({ step, label, icon }) => (
                         <div key={step} className="flex items-center gap-2.5 text-sm font-medium text-white/90">
                           <span className="text-base">{icon}</span>
@@ -4849,7 +4847,7 @@ Topic or question: ${question || '[type your question here]'}`)
               const days = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
               if (days < 0 || days > 200) return null;
               const urgency = days <= 14 ? 'bg-rose-50 border-rose-300 text-rose-900' : days <= 60 ? 'bg-amber-50 border-amber-200 text-amber-900' : 'bg-blue-50 border-blue-200 text-blue-900';
-              const emoji = days <= 14 ? 'ÃƒÂ°Ã…Â¸Ã…Â¡Ã‚Â¨' : days <= 60 ? 'ÃƒÂ¢Ã‚ÂÃ‚Â°' : 'ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã¢â‚¬Â¦';
+              const emoji = days <= 14 ? '🚨' : days <= 60 ? 'ÃƒÂ¢Ã‚ÂÃ‚Â°' : '📅';
               return (
                 <div className={`flex items-center justify-between gap-3 border-2 rounded-2xl px-4 py-3 ${urgency}`}>
                   <div className="flex items-center gap-3">
@@ -4883,7 +4881,7 @@ Topic or question: ${question || '[type your question here]'}`)
               if (timerDone) return (
                 <div className="flex items-center justify-between gap-3 bg-emerald-50 dark:bg-emerald-900/20 border-2 border-emerald-300 dark:border-emerald-700 rounded-2xl px-4 py-3">
                   <div className="flex items-center gap-3">
-                    <span className="text-2xl">ÃƒÂ°Ã…Â¸Ã…Â½Ã¢â‚¬Â°</span>
+                    <span className="text-2xl">🎉</span>
                     <div>
                       <p className="text-sm font-black text-emerald-900 dark:text-emerald-100">25 minutes done! Great focus.</p>
                       <p className="text-xs font-bold text-emerald-700 dark:text-emerald-300">Lock it in with a quick quiz.</p>
@@ -4905,7 +4903,7 @@ Topic or question: ${question || '[type your question here]'}`)
                     <span className="absolute inset-0 flex items-center justify-center text-[9px] font-black text-white">{pct}%</span>
                   </div>
                   <div className="flex-1">
-                    <p className="text-xs font-black text-white">{timerActive ? 'StudyingÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦' : timerSeconds === 25 * 60 ? 'Start a 25-min focus session' : 'Paused'}</p>
+                    <p className="text-xs font-black text-white">{timerActive ? 'Studying...' : timerSeconds === 25 * 60 ? 'Start a 25-min focus session' : 'Paused'}</p>
                     <p className="text-lg font-black text-indigo-400 leading-none">{String(mins).padStart(2, '0')}:{String(secs).padStart(2, '0')}</p>
                   </div>
                   <div className="flex gap-2">
@@ -4936,7 +4934,7 @@ Topic or question: ${question || '[type your question here]'}`)
                         <div className="w-7 h-7 bg-slate-100 dark:bg-slate-800 rounded-lg flex items-center justify-center flex-shrink-0"><BookOpen className="w-3.5 h-3.5 text-slate-400" /></div>
                         <div className="flex-1 min-w-0">
                           <p className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate">{s.topic}</p>
-                          <p className="text-[10px] font-medium text-slate-400">{s.subject} Ãƒâ€šÃ‚Â· {s.savedAt}</p>
+                          <p className="text-[10px] font-medium text-slate-400">{s.subject} · {s.savedAt}</p>
                         </div>
                         <ChevronRight className="w-4 h-4 text-slate-300 flex-shrink-0" />
                       </button>
@@ -5023,7 +5021,7 @@ Topic or question: ${question || '[type your question here]'}`)
                       </div>
                       <button onClick={handleBuildTimetable} disabled={timetableLoading || !timetableExamDate || !timetableSubjects.trim()}
                         className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-black py-3 rounded-xl text-sm transition-colors flex items-center justify-center gap-2">
-                        {timetableLoading ? <><Loader2 className="w-4 h-4 animate-spin" /> GeneratingÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦</> : <><Sparkles className="w-4 h-4" /> Generate My Plan</>}
+                        {timetableLoading ? <><Loader2 className="w-4 h-4 animate-spin" /> Generating...</> : <><Sparkles className="w-4 h-4" /> Generate My Plan</>}
                       </button>
                     </div>
                   )}
@@ -5047,7 +5045,7 @@ Topic or question: ${question || '[type your question here]'}`)
                         </div>
                       ))}
                       {timetable.days.length > 7 && (
-                        <p className="text-[10px] font-bold text-slate-400 text-center">+ {timetable.days.length - 7} more days Ãƒâ€šÃ‚Â· Tap "Rebuild" to view all</p>
+                        <p className="text-[10px] font-bold text-slate-400 text-center">+ {timetable.days.length - 7} more days · Tap "Rebuild" to view all</p>
                       )}
                     </div>
                   )}
@@ -5590,9 +5588,9 @@ Topic or question: ${question || '[type your question here]'}`)
                           >
                             <div>
                               <p className="text-xs font-black text-slate-900 dark:text-white">{topic}</p>
-                              <p className="text-[10px] font-bold text-slate-400 mt-0.5">Weak area Ãƒâ€šÃ‚Â· tap to revise</p>
+                              <p className="text-[10px] font-bold text-slate-400 mt-0.5">Weak area · tap to revise</p>
                             </div>
-                            <span className="text-emerald-500 group-hover:translate-x-1 transition-transform">ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢</span>
+                            <span className="text-emerald-500 group-hover:translate-x-1 transition-transform">→</span>
                           </button>
                         ))}
                         {(!weakTopics?.length) && studentProfile?.grade && (
@@ -5608,7 +5606,7 @@ Topic or question: ${question || '[type your question here]'}`)
                               <p className="text-xs font-black text-slate-900 dark:text-white">Top revision topics for {studentProfile.grade}</p>
                               <p className="text-[10px] font-bold text-slate-400 mt-0.5">Tap to explore</p>
                             </div>
-                            <span className="text-emerald-500 group-hover:translate-x-1 transition-transform">ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢</span>
+                            <span className="text-emerald-500 group-hover:translate-x-1 transition-transform">→</span>
                           </button>
                         )}
                       </div>
@@ -5675,7 +5673,7 @@ Topic or question: ${question || '[type your question here]'}`)
                                       <textarea
                                         value={askTeacherText}
                                         onChange={e => setAskTeacherText(e.target.value)}
-                                        placeholder={`Ask ${item.class.profiles?.name || 'your teacher'} a questionÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦`}
+                                        placeholder={`Ask ${item.class.profiles?.name || 'your teacher'} a question...`}
                                         rows={2}
                                         className="w-full text-xs font-medium border-2 border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-200 focus:outline-none focus:border-indigo-400 resize-none"
                                       />
@@ -5695,7 +5693,7 @@ Topic or question: ${question || '[type your question here]'}`)
                                           }}
                                           className="flex-1 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs font-black py-2 rounded-xl transition-colors"
                                         >
-                                          {askTeacherSending ? 'SendingÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦' : 'Send Question'}
+                                          {askTeacherSending ? 'Sending...' : 'Send Question'}
                                         </button>
                                         <button onClick={() => { setAskTeacherClassId(null); setAskTeacherText(''); }} className="text-xs font-bold text-slate-400 hover:text-slate-600 px-3 py-2 rounded-xl transition-colors">Cancel</button>
                                       </div>
@@ -5764,7 +5762,7 @@ Topic or question: ${question || '[type your question here]'}`)
                             </span>
                           ) : (
                             <span className="text-[9px] font-black text-indigo-300 bg-indigo-500/15 border border-indigo-500/35 px-2.5 py-1 rounded-full uppercase tracking-widest">
-                              Clear ÃƒÂ¢Ã…â€œÃ‚Â¨
+                              Clear ✨
                             </span>
                           )}
                         </div>
@@ -5824,7 +5822,7 @@ Topic or question: ${question || '[type your question here]'}`)
                                       lastScore: 0,
                                       reviewCount: 0,
                                       question: "What are the raw materials and products of photosynthesis in plants?",
-                                      answer: "Raw Materials:\n- Carbon dioxide (absorbed through stomata)\n- Water (absorbed through roots)\n\nProducts:\n- Glucose (chemical energy stored as starch)\n- Oxygen gas (released as a byproduct through stomata)\n\nReaction Equation:\n6COÃƒÂ¢Ã¢â‚¬Å¡Ã¢â‚¬Å¡ + 6HÃƒÂ¢Ã¢â‚¬Å¡Ã¢â‚¬Å¡O + light ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ CÃƒÂ¢Ã¢â‚¬Å¡Ã¢â‚¬Â HÃƒÂ¢Ã¢â‚¬Å¡Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã¢â‚¬Å¡OÃƒÂ¢Ã¢â‚¬Å¡Ã¢â‚¬Â  + 6OÃƒÂ¢Ã¢â‚¬Å¡Ã¢â‚¬Å¡"
+                                      answer: "Raw Materials:\n- Carbon dioxide (absorbed through stomata)\n- Water (absorbed through roots)\n\nProducts:\n- Glucose (chemical energy stored as starch)\n- Oxygen gas (released as a byproduct through stomata)\n\nReaction Equation:\n6CO₂ + 6H₂O + light → C₆H₁₂₂O₆ + 6O₂"
                                     },
                                     {
                                       topic: "Quadratic Equations",
@@ -5836,7 +5834,7 @@ Topic or question: ${question || '[type your question here]'}`)
                                       lastScore: 0,
                                       reviewCount: 0,
                                       question: "State the quadratic formula and explain what the discriminant determines about the roots.",
-                                      answer: "Quadratic Formula:\nx = [-b Ãƒâ€šÃ‚Â± ÃƒÂ¢Ã‹â€ Ã…Â¡(bÃƒâ€šÃ‚Â² - 4ac)] / (2a)\n\nDiscriminant (D = bÃƒâ€šÃ‚Â² - 4ac):\n1. D > 0: Two distinct real roots.\n2. D = 0: One repeated real root (equal roots).\n3. D < 0: Two complex/imaginary roots."
+                                      answer: "Quadratic Formula:\nx = [-b ± √(b² - 4ac)] / (2a)\n\nDiscriminant (D = b² - 4ac):\n1. D > 0: Two distinct real roots.\n2. D = 0: One repeated real root (equal roots).\n3. D < 0: Two complex/imaginary roots."
                                     },
                                     {
                                       topic: "Devolution in Kenya",
@@ -6452,8 +6450,11 @@ Topic or question: ${question || '[type your question here]'}`)
                   {(() => {
                     const quizHistory = history.filter((h: any) => h.type === 'QUIZ' || (h.score && h.score > 0));
                     const quizAvg = quizHistory.length > 0 ? Math.round(quizHistory.reduce((a: number, h: any) => a + (h.score || 0), 0) / quizHistory.length) : 0;
-                    const topSubjects = Object.entries(subjectPerformance as Record<string, { count: number; avgScore: number }>)
-                      .sort((a, b) => (b[1].count || 0) - (a[1].count || 0)).slice(0, 3).map(([s]) => s);
+                    const topSubjects = (subjectPerformance as any)
+                      ?.filter((s: any) => s.hasData)
+                      ?.sort((a: any, b: any) => b.score - a.score)
+                      ?.slice(0, 3)
+                      ?.map((s: any) => s.subject) || [];
                     const reportText = [
                       `📘 *Somo Smart Progress Report*`,
                       `👤 ${studentProfile?.name || 'Student'} | ${studentProfile?.grade ? `Grade ${studentProfile.grade}` : 'Learner'}`,
@@ -6552,9 +6553,7 @@ Topic or question: ${question || '[type your question here]'}`)
                 </div>
                 <Card className="p-5">
                   {(() => {
-                    const [notifStatus, setNotifStatus] = React.useState<'default' | 'granted' | 'denied'>(
-                      Notification.permission as 'default' | 'granted' | 'denied'
-                    );
+                    
                     const enable = async () => {
                       const result = await Notification.requestPermission();
                       setNotifStatus(result as 'granted' | 'denied');
@@ -6874,7 +6873,7 @@ Topic or question: ${question || '[type your question here]'}`)
                         onClick={() => setOriginalViewType('text')}
                         className={`px-2.5 py-1 rounded-md transition-all ${originalViewType === 'text' ? 'bg-white dark:bg-slate-700 text-indigo-750 dark:text-indigo-400 shadow-sm font-black' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
                       >
-                        ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã¢â‚¬â€œ Text
+                        📖 Text
                       </button>
                       <button
                         onClick={() => setOriginalViewType('pdf')}
@@ -7336,7 +7335,7 @@ Topic or question: ${question || '[type your question here]'}`)
                     }}
                     className="flex items-center gap-2 px-4 py-2 border border-slate-200 dark:border-slate-700 rounded-full text-xs font-black uppercase tracking-wider text-slate-650 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-50 disabled:hover:bg-transparent transition-all font-semibold"
                   >
-                    Next ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢
+                    Next →
                   </button>
                 </div>
               )}
@@ -8683,7 +8682,7 @@ Topic or question: ${question || '[type your question here]'}`)
                         onClick={() => setOnboardStep(2)}
                         className="mt-5 w-full bg-indigo-600 disabled:opacity-40 text-white py-3.5 rounded-xl font-black"
                       >
-                        Next ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢
+                        Next →
                       </button>
                     </>
                   )}
@@ -8700,7 +8699,7 @@ Topic or question: ${question || '[type your question here]'}`)
                         }}
                         className="w-full bg-indigo-600 text-white py-3.5 rounded-xl font-black"
                       >
-                        Start Learning ÃƒÂ°Ã…Â¸Ã…Â¡Ã¢â€šÂ¬
+                        Start Learning 🚀
                       </button>
                       <button onClick={() => setOnboardStep(1)} className="mt-2 w-full text-slate-400 text-xs font-bold py-2">ÃƒÂ¢Ã¢â‚¬Â Ã‚Â Back</button>
                     </>
@@ -8720,11 +8719,11 @@ Topic or question: ${question || '[type your question here]'}`)
           {showQuizSharePrompt && (
             <div className="fixed inset-0 z-[200] bg-slate-900/70 backdrop-blur-sm flex items-end sm:items-center justify-center p-4">
               <div className="bg-white dark:bg-slate-900 rounded-[2rem] w-full max-w-sm shadow-2xl p-6 text-center">
-                <div className="text-4xl mb-3">ÃƒÂ°Ã…Â¸Ã…Â½Ã¢â‚¬Â°</div>
+                <div className="text-4xl mb-3">🎉</div>
                 <h2 className="text-2xl font-black text-slate-900 dark:text-white">{showQuizSharePrompt.score}%!</h2>
                 <p className="text-sm font-bold text-slate-500 dark:text-slate-400 mt-1 mb-5">{showQuizSharePrompt.topic}</p>
                 <a
-                  href={`https://wa.me/?text=${encodeURIComponent(`I just scored ${showQuizSharePrompt.score}% on ${showQuizSharePrompt.topic} on Somo Smart! ÃƒÂ°Ã…Â¸Ã…Â½Ã¢â‚¬Â°\n\nStudy smarter ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â try it free: https://somaai.co.ke`)}`}
+                  href={`https://wa.me/?text=${encodeURIComponent(`I just scored ${showQuizSharePrompt.score}% on ${showQuizSharePrompt.topic} on Somo Smart! 🎉\n\nStudy smarter ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â try it free: https://somaai.co.ke`)}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={() => { setShowQuizSharePrompt(null); trackFunnelEvent('quiz_whatsapp_share', { score: showQuizSharePrompt.score }); }}
@@ -9170,7 +9169,7 @@ Topic or question: ${question || '[type your question here]'}`)
               <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-hide -mx-2 px-2">
                 {([
                   { id: 'ALL',        emoji: 'ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã…Â¡', label: 'All',         activeClass: 'bg-indigo-600 text-white shadow-lg shadow-indigo-200' },
-                  { id: 'SYLLABUS',   emoji: 'ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã¢â‚¬â€œ', label: 'Syllabus',    activeClass: 'bg-purple-600 text-white shadow-lg shadow-purple-200' },
+                  { id: 'SYLLABUS',   emoji: '📖', label: 'Syllabus',    activeClass: 'bg-purple-600 text-white shadow-lg shadow-purple-200' },
                   { id: 'NOTES',      emoji: 'ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‚Â', label: 'Notes',       activeClass: 'bg-blue-600 text-white shadow-lg shadow-blue-200' },
                   { id: 'PAST_PAPER', emoji: 'ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã¢â‚¬Å¾', label: 'Past Papers', activeClass: 'bg-amber-500 text-white shadow-lg shadow-amber-200' },
                 ] as const).map(tab => (

@@ -63,6 +63,20 @@ interface AppContextType {
   purchasedMaterialIds: string[];
   listMaterial: (listing: Omit<MaterialListing, 'id' | 'downloadCount' | 'rating' | 'createdAt'>) => Promise<{ success: boolean; message: string }>;
   purchaseMaterial: (materialId: string) => Promise<{ success: boolean; message: string }>;
+  submitPeerReview: (
+    materialId: string,
+    reviewerName: string,
+    rating: number,
+    accuracy: number,
+    readability: number,
+    engagement: number,
+    comment: string
+  ) => Promise<{ success: boolean; message: string }>;
+  updateMaterialApproval: (
+    materialId: string,
+    status: 'APPROVED' | 'REJECTED',
+    reviewerName: string
+  ) => Promise<{ success: boolean; message: string }>;
   // Revision
   revisionUsageCount: number;
   incrementRevisionUsage: () => void;
@@ -3028,7 +3042,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           return itemLevel === educationLevel;
         });
 
-        const mappedList = filtered.map((m: any) => ({
+        const mappedList: MaterialListing[] = filtered.map((m: any) => ({
           id: m.id,
           teacherId: m.teacher_id,
           teacherName: m.teacher_name,

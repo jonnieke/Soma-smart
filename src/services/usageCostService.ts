@@ -50,13 +50,14 @@ export const estimateElevenLabsCostKes = (characters = 0) => {
 };
 
 export const inferAiFeature = (contents: unknown, systemInstruction: unknown) => {
-  const haystack = `${JSON.stringify(systemInstruction || {})} ${JSON.stringify(contents || {})}`.toLowerCase();
+  const haystack = `${JSON.stringify(systemInstruction || {})} ${JSON.stringify(contents || {})}`.toLowerCase().replace(/\s+/g, ' ');
   if (haystack.includes('mark the candidate') || haystack.includes('knec chief examiner')) return 'exam_marking';
   if (haystack.includes('exam guru')) return 'exam_guru';
-  if (haystack.includes('practice questions') || haystack.includes('generate 3 questions')) return 'practice_generation';
-  if (haystack.includes('quiz')) return 'quiz_generation';
+  if (haystack.includes('practice questions') || haystack.includes('generate 3 questions') || haystack.includes('5-question drill')) return 'practice_generation';
+  const explicitQuizRequest = /(generate|create|make|build)\s+(a\s+)?quiz/.test(haystack) || /quiz\s+(questions|generator)/.test(haystack) || haystack.includes('multiple choice questions') || haystack.includes('mcq quiz');
+  if (explicitQuizRequest) return 'quiz_generation';
   if (haystack.includes('study notes') || haystack.includes('detailed study notes')) return 'notes_generation';
-  if (haystack.includes('talk') || haystack.includes('audio')) return 'audio_learning';
+  if (haystack.includes('talk') || haystack.includes('audio') || haystack.includes('transcribe the audio')) return 'audio_learning';
   if (haystack.includes('teacher') || haystack.includes('lesson plan') || haystack.includes('scheme of work')) return 'teacher_ai';
   return 'ai_generation';
 };
