@@ -385,7 +385,7 @@ export const explainImage = async (
     const text = result.response.text();
     if (!text) throw new Error("No response from AI");
 
-    const json = JSON.parse(text);
+    const json = parseModelJson<ExplanationResult>(text);
     return { ...json, level } as ExplanationResult;
   } catch (error) {
     console.error("Error explaining image:", error);
@@ -446,7 +446,7 @@ export const explainAudio = async (base64Audio: string, mimeType: string, level:
     const text = result.response.text();
     if (!text) throw new Error("No response from AI");
 
-    const json = JSON.parse(text);
+    const json = parseModelJson<ExplanationResult>(text);
     return { ...json, level } as ExplanationResult;
   } catch (error) {
     console.error("Error explaining audio:", error);
@@ -1037,7 +1037,7 @@ TASK:
     const result = await model.generateContent(prompt);
     const text = result.response.text();
     if (!text) throw new Error("No response from AI");
-    const json = JSON.parse(text);
+    const json = parseModelJson<ExplanationResult>(text);
     return { ...json, level } as ExplanationResult;
   } catch (error) {
     console.error("Error continuing research:", error);
@@ -1420,4 +1420,5 @@ Return a JSON array of {date, dayLabel, subject, topics, duration}.`;
 };
 
 // --- AUTOMATED EVALUATION FEATURE ---
+
 
