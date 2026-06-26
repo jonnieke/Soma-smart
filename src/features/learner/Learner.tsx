@@ -8,7 +8,7 @@ import {
   CheckCircle, Play, Pause, ChevronRight, Star, BookOpen, Brain, Lightbulb, Lock, Volume2, CreditCard, Crown,
   ArrowRight, UserCircle, Download, ImageIcon, Trash2, AlertTriangle, LogOut, Users, DollarSign, FileText, ShoppingBag, Library, BookMarked, Layers,
   Calculator, FlaskConical, Globe, Languages, Loader2, Headphones, PenTool, Zap, ListChecks, Trophy, Hand, ClipboardList,
-  BookmarkPlus, Share2, Bell
+  BookmarkPlus, Share2, Bell, Flame, GraduationCap, School
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { ExplanationResult, QuizData, ViewState, SubscriptionPlan, LearnerProfile, LearnerActivity, UserRole, PodcastScript, ChatMessage, RevisionMode, TeacherActivity, EducationLevel, StudyNote } from '../../types';
@@ -4717,15 +4717,15 @@ Topic or question: ${question || '[type your question here]'}`)
                 <div className="flex items-center gap-2 mb-1">
                   <h1 className="text-2xl md:text-3xl font-bold text-slate-900 dark:text-white tracking-tight">
                     {cloudMemoryRow?.total_sessions > 1 || history.length > 0
-                      ? `${getGreetingWord()}, ${profile?.name?.split(' ')[0] || 'Learner'}! ÃƒÂ°Ã…Â¸Ã¢â‚¬ËœÃ¢â‚¬Â¹`
-                      : `Hey ${profile?.name?.split(' ')[0] || 'there'}! ÃƒÂ°Ã…Â¸Ã¢â‚¬ËœÃ¢â‚¬Â¹`}
+                      ? `${getGreetingWord()}, ${profile?.name?.split(' ')[0] || 'Learner'}!`
+                      : `Hey ${profile?.name?.split(' ')[0] || 'there'}!`}
                   </h1>
                 </div>
                 <div className="flex items-center gap-2 mt-1 flex-wrap">
                   {cloudMemoryRow?.last_topic || history[0]?.topic ? (
                     <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
                       Last studied: <span className="font-bold text-indigo-600 dark:text-indigo-400">{cloudMemoryRow?.last_topic || history[0]?.topic}</span>
-                      {streak > 1 && <span className="ml-2">Ãƒâ€šÃ‚Â· ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â¥ {streak}-day streak!</span>}
+                      {streak > 1 && <span className="ml-2 inline-flex items-center gap-1.5"><span className="text-slate-400">|</span><Flame className="w-3.5 h-3.5 text-orange-500" /> <span>{streak}-day streak!</span></span>}
                     </p>
                   ) : (
                     <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Let's keep learning and growing today.</p>
@@ -4738,7 +4738,7 @@ Topic or question: ${question || '[type your question here]'}`)
                       'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
                     }`}
                   >
-                    <span>{educationLevel === 'JUNIOR' ? 'ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã…Â¡' : educationLevel === 'CAMPUS' ? 'ÃƒÂ°Ã…Â¸Ã…Â½Ã¢â‚¬Å“' : 'ÃƒÂ°Ã…Â¸Ã‚ÂÃ‚Â«'}</span>
+                    <span>{educationLevel === 'JUNIOR' ? <BookOpen className="w-3.5 h-3.5" /> : educationLevel === 'CAMPUS' ? <GraduationCap className="w-3.5 h-3.5" /> : <School className="w-3.5 h-3.5" />}</span>
                     {educationLevel === 'JUNIOR' ? 'Junior' : educationLevel === 'CAMPUS' ? 'Campus' : 'Senior'}
                   </button>
                 </div>
@@ -4757,13 +4757,13 @@ Topic or question: ${question || '[type your question here]'}`)
                       <div className="absolute bottom-0 left-0 w-32 h-32 bg-red-400/20 rounded-full blur-3xl -ml-10 -mb-10 pointer-events-none"></div>
                       
                       <div className="w-24 h-24 bg-gradient-to-br from-orange-100 to-red-100 dark:from-orange-900/50 dark:to-red-900/50 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner relative z-10 border-4 border-white dark:border-slate-800">
-                        <motion.span 
+                        <motion.div 
                           animate={{ scale: [1, 1.2, 1], rotate: [-5, 5, -5] }} 
                           transition={{ repeat: Infinity, duration: 2 }}
-                          className="text-5xl"
+                          className="text-5xl text-orange-500"
                         >
-                          ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â¥
-                        </motion.span>
+                          <Flame className="w-12 h-12 fill-orange-500 stroke-orange-500" />
+                        </motion.div>
                       </div>
                       <h2 className="text-4xl font-black text-slate-800 dark:text-white mb-2 relative z-10 tracking-tight">{streak} Day Streak!</h2>
                       <p className="text-slate-500 dark:text-slate-400 font-bold mb-8 relative z-10 leading-relaxed">You're on fire! You completed a lesson today. Keep coming back daily to build your streak.</p>
@@ -4782,7 +4782,7 @@ Topic or question: ${question || '[type your question here]'}`)
               <div className="flex items-center gap-2 sm:gap-3 w-full md:w-auto">
                 {/* Day Streak */}
                 <div className="flex-1 md:flex-none flex items-center gap-2 sm:gap-3 bg-white dark:bg-slate-900 px-3 sm:px-4 py-2 sm:py-2.5 rounded-2xl shadow-sm border-2 border-slate-300 dark:border-slate-800">
-                  <div className="text-orange-500 text-lg sm:text-xl shrink-0">ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â¥</div>
+                  <div className="text-orange-500 shrink-0"><Flame className="w-4 h-4 sm:w-5 sm:h-5 fill-orange-500 stroke-orange-500" /></div>
                   <div>
                     <div className="text-xs sm:text-sm font-bold text-slate-800 dark:text-white leading-none">{streak}</div>
                     <div className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Streak</div>
@@ -5932,9 +5932,9 @@ Topic or question: ${question || '[type your question here]'}`)
                      </div>
                      <div className="space-y-4">
                         {[
-                           { icon: 'ÃƒÂ°Ã…Â¸Ã…Â¡Ã¢â€šÂ¬', title: 'Quick Learner', desc: 'Completed 5 quizzes', color: 'bg-blue-50 dark:bg-blue-900/20' },
-                           { icon: 'ÃƒÂ°Ã…Â¸Ã‚Â§Ã‚Â ', title: 'Math Whiz', desc: 'Aced Algebra test', color: 'bg-emerald-50 dark:bg-emerald-900/20' },
-                           { icon: 'ÃƒÂ¢Ã‚Â­Ã‚Â', title: 'Consistent Star', desc: '7 day streak', color: 'bg-amber-50 dark:bg-amber-900/20' }
+                           { icon: <Zap className="w-5 h-5 text-blue-600" />, title: 'Quick Learner', desc: 'Completed 5 quizzes', color: 'bg-blue-50 dark:bg-blue-900/20' },
+                           { icon: <Brain className="w-5 h-5 text-emerald-600" />, title: 'Math Whiz', desc: 'Aced Algebra test', color: 'bg-emerald-50 dark:bg-emerald-900/20' },
+                           { icon: <Star className="w-5 h-5 text-amber-500 fill-amber-500" />, title: 'Consistent Star', desc: '7 day streak', color: 'bg-amber-50 dark:bg-amber-900/20' }
                         ].map((badge, i) => (
                            <div key={i} className="flex items-center gap-4">
                               <div className={`w-12 h-12 rounded-2xl ${badge.color} flex items-center justify-center text-xl shadow-inner shrink-0`}>
@@ -6455,18 +6455,18 @@ Topic or question: ${question || '[type your question here]'}`)
                     const topSubjects = Object.entries(subjectPerformance as Record<string, { count: number; avgScore: number }>)
                       .sort((a, b) => (b[1].count || 0) - (a[1].count || 0)).slice(0, 3).map(([s]) => s);
                     const reportText = [
-                      `ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã…Â  *Somo Smart Progress Report*`,
-                      `ÃƒÂ°Ã…Â¸Ã¢â‚¬ËœÃ‚Â¤ ${studentProfile?.name || 'Student'} | ${studentProfile?.grade ? `Grade ${studentProfile.grade}` : 'Learner'}`,
-                      `ÃƒÂ°Ã…Â¸Ã¢â‚¬Â Ã¢â‚¬Â ID: ${studentCode || userId}`,
+                      `📘 *Somo Smart Progress Report*`,
+                      `👤 ${studentProfile?.name || 'Student'} | ${studentProfile?.grade ? `Grade ${studentProfile.grade}` : 'Learner'}`,
+                      `🆔 ID: ${studentCode || userId}`,
                       ``,
-                      `ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â¥ Study streak: ${streak} day${streak !== 1 ? 's' : ''}`,
-                      `ÃƒÂ¢Ã‚Â­Ã‚Â Level ${levelInfo?.level || 1} ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â ${totalXP} XP`,
-                      `ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‚Â Sessions this week: ${history.filter((h: any) => { const d = new Date(h.date); return (Date.now() - d.getTime()) < 7 * 864e5; }).length}`,
-                      quizHistory.length > 0 ? `ÃƒÂ°Ã…Â¸Ã…Â½Ã‚Â¯ Quiz average: ${quizAvg}%` : null,
-                      topSubjects.length > 0 ? `ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã…Â¡ Top subjects: ${topSubjects.join(', ')}` : null,
-                      weakTopics?.length > 0 ? `ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‹â€  Revising: ${(weakTopics as string[]).slice(0, 2).join(', ')}` : null,
+                      `🔥 Study streak: ${streak} day${streak !== 1 ? 's' : ''}`,
+                      `⭐ Level ${levelInfo?.level || 1} • ${totalXP} XP`,
+                      `📍 Sessions this week: ${history.filter((h: any) => { const d = new Date(h.date); return (Date.now() - d.getTime()) < 7 * 864e5; }).length}`,
+                      quizHistory.length > 0 ? `📝 Quiz average: ${quizAvg}%` : null,
+                      topSubjects.length > 0 ? `📚 Top subjects: ${topSubjects.join(', ')}` : null,
+                      weakTopics?.length > 0 ? `🔎 Revising: ${(weakTopics as string[]).slice(0, 2).join(', ')}` : null,
                       ``,
-                      `Track progress at somaai.co.ke ÃƒÂ°Ã…Â¸Ã…Â¡Ã¢â€šÂ¬`,
+                      `Track progress at somaai.co.ke 🚀`,
                     ].filter(Boolean).join('\n');
                     return (
                       <>

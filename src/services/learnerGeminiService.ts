@@ -182,6 +182,93 @@ const genAI = {
 const MODEL_NAME = "gemini-3.1-flash-lite"; // High-speed, low-cost default for chat
 const HEAVY_MODEL_NAME = "gemini-3.5-flash"; // Upgraded to Gemini 3.5 Flash for complex reasoning and schema compliance
 
+const decodeLooseJsonString = (value: string): string =>
+  value
+    .replace(/\r/g, '')
+    .replace(/\n/g, '\n')
+    .replace(/\t/g, ' ')
+    .replace(/\\"/g, '"')
+    .replace(/\\\\/g, '\\')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+const extractJsonStringField = (raw: string, key: string, nextKeys: string[] = []): string | null => {
+  const keyIndex = raw.indexOf(`"${key}"`);
+  if (keyIndex < 0) return null;
+  const colonIndex = raw.indexOf(':', keyIndex);
+  if (colonIndex < 0) return null;
+  const startQuote = raw.indexOf('"', colonIndex + 1);
+  if (startQuote < 0) return null;
+
+  let escaped = false;
+  for (let i = startQuote + 1; i < raw.length; i += 1) {
+    const char = raw[i];
+    if (char === '"' && !escaped) return decodeLooseJsonString(raw.slice(startQuote + 1, i));
+    escaped = char === '\\' ? !escaped : false;
+  }
+
+  let fallbackEnd = raw.length;
+  for (const nextKey of nextKeys) {
+    const nextIndex = raw.indexOf(`"${nextKey}"`, startQuote + 1);
+    if (nextIndex >= 0) fallbackEnd = Math.min(fallbackEnd, nextIndex);
+  }
+
+  return decodeLooseJsonString(
+    raw
+      .slice(startQuote + 1, fallbackEnd)
+      .replace(/"\s*,?\s*$/, '')
+      .replace(/,\s*$/, '')
+      .replace(/[}\]]\s*$/, '')
+  );
+};
+
+const extractJsonStringArrayField = (raw: string, key: string): string[] => {
+  const keyIndex = raw.indexOf(`"${key}"`);
+  if (keyIndex < 0) return [];
+  const bracketStart = raw.indexOf('[', keyIndex);
+  if (bracketStart < 0) return [];
+  const bracketEnd = raw.indexOf(']', bracketStart + 1);
+  const nextKeyIndex = raw.indexOf('\n  "', bracketStart + 1);
+  const sliceEnd = bracketEnd >= 0 ? bracketEnd : nextKeyIndex >= 0 ? nextKeyIndex : raw.length;
+  const arrayText = raw.slice(bracketStart + 1, sliceEnd);
+  return Array.from(arrayText.matchAll(/"((?:\\.|[^"\\])*)"/g))
+    .map((match) => decodeLooseJsonString(match[1]))
+    .filter(Boolean);
+};
+
+const buildFallbackSummaryPoints = (topic: string, explanation: string): string[] => {
+  const lines = explanation
+    .split(/\n+/)
+    .map((line) => line.replace(/^[-*#\d.\s]+/, '').trim())
+    .filter((line) => line.length > 0)
+    .slice(0, 3);
+
+  if (lines.length > 0) return lines;
+  if (topic) return [topic, 'Review the key idea again.', 'Ask one follow-up question.'];
+  return ['Retry the audio question.', 'Ask a smaller follow-up question.', 'Check the key idea before moving on.'];
+};
+
+const salvageAudioExplanationResult = (rawText: string, level: 'Simple' | 'Exam'): ExplanationResult | null => {
+  const transcript = extractJsonStringField(rawText, 'transcript', ['topic', 'explanation', 'summaryPoints', 'relatedTopics']) || '';
+  const topic = extractJsonStringField(rawText, 'topic', ['explanation', 'summaryPoints', 'relatedTopics']) || transcript || 'Audio question';
+  const explanation = extractJsonStringField(rawText, 'explanation', ['summaryPoints', 'relatedTopics']) || '';
+  const summaryPoints = extractJsonStringArrayField(rawText, 'summaryPoints');
+  const relatedTopics = extractJsonStringArrayField(rawText, 'relatedTopics');
+
+  if (!topic && !explanation && !transcript) return null;
+
+  const safeExplanation = explanation || 'I heard your question, but the full explanation was cut short. Please try again for the complete answer.';
+
+  return {
+    transcript,
+    topic,
+    explanation: safeExplanation,
+    summaryPoints: summaryPoints.length > 0 ? summaryPoints : buildFallbackSummaryPoints(topic, safeExplanation),
+    relatedTopics,
+    level
+  } as ExplanationResult;
+};
+
 // --- SUPER TEACHER INSTRUCTIONS ---
 const SYLLABUS_GROUNDING_INSTRUCTION = `
 CRITICAL: MANDATORY SYLLABUS CITATION
@@ -446,8 +533,17 @@ export const explainAudio = async (base64Audio: string, mimeType: string, level:
     const text = result.response.text();
     if (!text) throw new Error("No response from AI");
 
-    const json = parseModelJson<ExplanationResult>(text);
-    return { ...json, level } as ExplanationResult;
+    try {
+      const json = parseModelJson<ExplanationResult>(text);
+      return { ...json, level } as ExplanationResult;
+    } catch (parseError) {
+      const salvaged = salvageAudioExplanationResult(text, level);
+      if (salvaged) {
+        console.warn("Audio explanation JSON was malformed; using salvaged response.", parseError);
+        return salvaged;
+      }
+      throw parseError;
+    }
   } catch (error) {
     console.error("Error explaining audio:", error);
     throw error;
