@@ -10,6 +10,7 @@ type BillableFeature =
   | 'grounded_library_help'
   | 'deep_document_analysis'
   | 'teacher_ai'
+  | 'listen_and_learn'
   | 'listen_and_learn_voice'
   | 'listen_and_learn_podcast'
   | 'conversational_voice';
@@ -31,6 +32,7 @@ export const PLAN_LIMITS: PlanLimitMap = {
     grounded_library_help: 1,
     deep_document_analysis: 0,
     teacher_ai: 3,
+    listen_and_learn: 3,
     listen_and_learn_voice: 30000,
     listen_and_learn_podcast: 8000,
     conversational_voice: 12000,
@@ -45,6 +47,7 @@ export const PLAN_LIMITS: PlanLimitMap = {
     grounded_library_help: 12,
     deep_document_analysis: 3,
     teacher_ai: 10,
+    listen_and_learn: 10,
     listen_and_learn_voice: 80000,
     listen_and_learn_podcast: 30000,
     conversational_voice: 30000,
@@ -59,6 +62,7 @@ export const PLAN_LIMITS: PlanLimitMap = {
     grounded_library_help: 70,
     deep_document_analysis: 18,
     teacher_ai: 60,
+    listen_and_learn: 50,
     listen_and_learn_voice: 350000,
     listen_and_learn_podcast: 140000,
     conversational_voice: 140000,
@@ -73,6 +77,7 @@ export const PLAN_LIMITS: PlanLimitMap = {
     grounded_library_help: 300,
     deep_document_analysis: 80,
     teacher_ai: 220,
+    listen_and_learn: 150,
     listen_and_learn_voice: 1200000,
     listen_and_learn_podcast: 500000,
     conversational_voice: 500000,
@@ -87,6 +92,7 @@ export const PLAN_LIMITS: PlanLimitMap = {
     grounded_library_help: 850,
     deep_document_analysis: 240,
     teacher_ai: 650,
+    listen_and_learn: 500,
     listen_and_learn_voice: 3500000,
     listen_and_learn_podcast: 1500000,
     conversational_voice: 1500000,
@@ -101,6 +107,7 @@ export const PLAN_LIMITS: PlanLimitMap = {
     grounded_library_help: 3000,
     deep_document_analysis: 900,
     teacher_ai: 2000,
+    listen_and_learn: 1800,
     listen_and_learn_voice: 15000000,
     listen_and_learn_podcast: 6500000,
     conversational_voice: 6500000,
@@ -115,6 +122,7 @@ export const PLAN_LIMITS: PlanLimitMap = {
     grounded_library_help: 300,
     deep_document_analysis: 80,
     teacher_ai: 220,
+    listen_and_learn: 150,
     listen_and_learn_voice: 1200000,
     listen_and_learn_podcast: 500000,
     conversational_voice: 500000,
@@ -131,6 +139,7 @@ const FEATURE_LABELS: Record<string, string> = {
   grounded_library_help: 'grounded library help',
   deep_document_analysis: 'deep document analysis',
   teacher_ai: 'teacher AI tools',
+  listen_and_learn: 'Listen & Learn',
   listen_and_learn_voice: 'Listen & Learn voice',
   listen_and_learn_podcast: 'audio podcast lessons',
   conversational_voice: 'voice tutor',
@@ -159,7 +168,7 @@ const getStoredPlan = (): SubscriptionTier => {
 };
 
 const normalizeFeature = (feature: string): BillableFeature => {
-  if (feature === 'audio_learning') return 'listen_and_learn_voice';
+  if (feature === 'audio_learning') return 'listen_and_learn';
   return (feature in FEATURE_LABELS ? feature : 'ai_generation') as BillableFeature;
 };
 

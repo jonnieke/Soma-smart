@@ -705,6 +705,8 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
       let feature = 'ai_generation';
       if (message.includes('grounded') || message.includes('library')) {
         feature = 'grounded_library_help';
+      } else if (message.includes('listen and learn') || message.includes('listen_and_learn')) {
+        feature = 'listen_and_learn';
       } else if (message.includes('voice') || message.includes('audio') || message.includes('listen')) {
         feature = 'listen_and_learn_voice';
       } else if (message.includes('exam') || message.includes('marking')) {
@@ -715,6 +717,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
       const featureLabelMap: Record<string, string> = {
         ai_generation: 'AI Tutor',
         grounded_library_help: 'Library Help',
+        listen_and_learn: 'Listen & Learn',
         listen_and_learn_voice: 'Voice Lessons',
         exam_marking: 'Smart Marking',
         quiz_generation: 'Quiz Generation',
@@ -4336,6 +4339,7 @@ ${explanation.explanation}
         { feature: 'ai_generation', label: 'Ask Akili', icon: <Sparkles className="w-4 h-4" />, unit: 'calls' as const },
         { feature: 'exam_guru', label: 'Exam Guru', icon: <ClipboardList className="w-4 h-4" />, unit: 'calls' as const },
         { feature: 'exam_marking', label: 'Smart Marking', icon: <PenTool className="w-4 h-4" />, unit: 'calls' as const },
+        { feature: 'listen_and_learn', label: 'Listen & Learn', icon: <Mic className="w-4 h-4" />, unit: 'calls' as const },
         { feature: 'listen_and_learn_voice', label: 'Voice Lessons', icon: <Headphones className="w-4 h-4" />, unit: 'characters' as const },
       ].map(item => {
         const limit = getPlanLimit(item.feature, effectivePlan);
