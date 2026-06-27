@@ -127,3 +127,17 @@ body {
     transform: translateY(0);
   }
 }
+
+/* Audio waveform bar animations for recording UI */
+@keyframes waveBar0 {
+  from { height: 15%; } to { height: 85%; }
+}
+@keyframes waveBar1 {
+  from { height: 30%; } to { height: 70%; }
+}
+@keyframes waveBar2 {
+  from { height: 20%; } to { height: 95%; }
+}
+@keyframes waveBar3 {
+  from { height: 40%; } to { height: 60%; }
+}

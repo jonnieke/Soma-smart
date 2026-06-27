@@ -7867,6 +7867,47 @@ Topic or question: ${question || '[type your question here]'}`)
             )}
 
             <div className="w-full relative z-10">
+              {/* Recording-in-progress overlay replaces the input card */}
+              {isRecording ? (
+                <div className="bg-red-950/95 rounded-[2rem] p-4 border-2 border-red-700/60 shadow-xl shadow-red-900/30 flex flex-col gap-3 animate-in fade-in duration-200">
+                  {/* Top row: label + timer */}
+                  <div className="flex items-center justify-between px-1">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2.5 h-2.5 rounded-full bg-red-400 animate-pulse shadow-lg shadow-red-500/60" />
+                      <span className="text-red-200 text-xs font-black uppercase tracking-[0.18em]">Recording</span>
+                    </div>
+                    <span className="text-red-300 text-sm font-mono font-bold tabular-nums">
+                      {String(Math.floor(recordingTime / 60)).padStart(2, '0')}:{String(recordingTime % 60).padStart(2, '0')}
+                    </span>
+                  </div>
+
+                  {/* Animated waveform bars */}
+                  <div className="flex items-center justify-center gap-[3px] h-10 px-2">
+                    {Array.from({ length: 28 }).map((_, i) => (
+                      <div
+                        key={i}
+                        className="w-[3px] rounded-full bg-red-400 opacity-90"
+                        style={{
+                          height: `${20 + Math.sin((i / 3) + (recordingTime * 2)) * 14 + Math.cos((i / 2.5)) * 8}%`,
+                          minHeight: '15%',
+                          maxHeight: '100%',
+                          animation: `waveBar${i % 4} 0.${6 + (i % 5)}s ease-in-out infinite alternate`,
+                          animationDelay: `${(i * 40) % 300}ms`,
+                        }}
+                      />
+                    ))}
+                  </div>
+
+                  {/* Stop button — big and obvious */}
+                  <button
+                    onClick={stopRecording}
+                    className="w-full flex items-center justify-center gap-3 py-3.5 bg-red-500 hover:bg-red-400 active:scale-95 text-white font-black text-sm uppercase tracking-wider rounded-2xl transition-all shadow-lg shadow-red-900/50"
+                  >
+                    <div className="w-5 h-5 bg-white rounded-sm shrink-0" />
+                    Stop Recording
+                  </button>
+                </div>
+              ) : (
               <div className="bg-slate-50 dark:bg-slate-800/80 rounded-[2rem] p-2 flex flex-col md:flex-row items-stretch md:items-center gap-2 border-2 border-slate-200 dark:border-slate-700 focus-within:border-indigo-500 focus-within:ring-4 focus-within:ring-indigo-100 dark:focus-within:ring-indigo-900/30 transition-all shadow-inner">
                 <textarea
                   value={promptText}
@@ -7967,6 +8008,7 @@ Topic or question: ${question || '[type your question here]'}`)
                   </button>
                 </div>
               </div>
+              )}
             </div>
 
             <button
