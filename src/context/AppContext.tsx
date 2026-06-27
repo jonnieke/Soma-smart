@@ -748,6 +748,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
     // Clear Persisted Data
     localStorage.removeItem('soma_active_student');
+    localStorage.removeItem('soma_active_student_pin');
     offlineService.clearLearnerHistory();
     offlineService.clearTeacherHistory();
 
@@ -959,6 +960,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             currentUserId = profile.id;
             setUserId(profile.id);
             setStudentCode(profile.student_id);
+            if (profile.recovery_pin) {
+              localStorage.setItem('soma_active_student_pin', profile.recovery_pin);
+            }
             setStudentProfile({
               id: profile.id,
               name: profile.full_name,
@@ -1122,6 +1126,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       setEducationLevel(regEducationLevel || EducationLevel.SENIOR);
 
       localStorage.setItem('soma_active_student', newCode);
+      if (pin) {
+        localStorage.setItem('soma_active_student_pin', pin);
+      }
 
       try {
         const history = JSON.parse(localStorage.getItem('soma_recent_login') || '[]');
@@ -2237,6 +2244,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
       // Success! Set student context (Parent session mimics student view)
       setStudentCode(profile.student_id);
+      if (profile.recovery_pin) {
+        localStorage.setItem('soma_active_student_pin', profile.recovery_pin);
+      }
       setStudentProfile({
         id: profile.id,
         name: profile.full_name,
@@ -2319,6 +2329,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
       // PERSIST LOGIN
       localStorage.setItem('soma_active_student', profile.student_id);
+      if (profile.recovery_pin) {
+        localStorage.setItem('soma_active_student_pin', profile.recovery_pin);
+      }
       await syncLearningCredits(profile.id, profile.student_id);
 
       // Update Session ID for Single Device Login

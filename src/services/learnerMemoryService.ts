@@ -114,20 +114,23 @@ export const loadMasteryFromCloud = async (learnerId: string): Promise<{
 }> => {
   const localMastery = loadMasteryFromLocal();
   const localSR = loadSRFromLocal();
+  const pin = localStorage.getItem('soma_active_student_pin') || '';
 
   try {
-    const { data, error } = await supabase
-      .from('learner_memory')
-      .select('*')
-      .eq('learner_id', learnerId)
-      .maybeSingle();
+    const { data: rpcData, error } = await supabase
+      .rpc('get_learner_memory_secure', {
+        p_learner_id: learnerId,
+        p_pin: pin || null
+      });
 
-    if (error || !data) {
+    const cloudData = Array.isArray(rpcData) ? rpcData[0] : rpcData;
+
+    if (error || !cloudData) {
       // No cloud record yet — local is the truth
       return { masteryGraph: localMastery, srItems: localSR, cloudRow: null };
     }
 
-    const cloudRow = data as CloudMemoryRow;
+    const cloudRow = cloudData as CloudMemoryRow;
     const mergedMastery = mergeMasteryGraphs(localMastery, cloudRow.mastery_graph ?? {});
     const mergedSR = mergeSRQueues(localSR, cloudRow.spaced_repetition ?? []);
 
@@ -165,10 +168,22 @@ export const flushMasterySyncQueue = async () => {
     const queue = JSON.parse(localStorage.getItem(SYNC_QUEUE_KEY) || '[]');
     if (queue.length === 0) return;
 
+    const pin = localStorage.getItem('soma_active_student_pin') || '';
+
     for (const row of queue) {
-      const { error } = await supabase
-        .from('learner_memory')
-        .upsert(row, { onConflict: 'learner_id' });
+      const { error } = await supabase.rpc('upsert_learner_memory_secure', {
+        p_learner_id: row.learner_id,
+        p_mastery_graph: row.mastery_graph,
+        p_spaced_repetition: row.spaced_repetition,
+        p_weak_topics: row.weak_topics,
+        p_strong_topics: row.strong_topics,
+        p_last_topic: row.last_topic,
+        p_last_subject: row.last_subject,
+        p_total_sessions: row.total_sessions,
+        p_total_xp: row.total_xp,
+        p_streak_days: row.streak_days,
+        p_pin: pin || null
+      });
       
       if (error) throw error;
     }
@@ -229,16 +244,28 @@ export const syncMasteryToCloud = async (
     return;
   }
 
+  const pin = localStorage.getItem('soma_active_student_pin') || '';
+
   try {
-    const { error } = await supabase
-      .from('learner_memory')
-      .upsert(row, { onConflict: 'learner_id' });
+    const { error } = await supabase.rpc('upsert_learner_memory_secure', {
+      p_learner_id: row.learner_id,
+      p_mastery_graph: row.mastery_graph,
+      p_spaced_repetition: row.spaced_repetition,
+      p_weak_topics: row.weak_topics,
+      p_strong_topics: row.strong_topics,
+      p_last_topic: row.last_topic,
+      p_last_subject: row.last_subject,
+      p_total_sessions: row.total_sessions,
+      p_total_xp: row.total_xp,
+      p_streak_days: row.streak_days,
+      p_pin: pin || null
+    });
 
     if (error) {
       console.warn('[LearnerMemory] Cloud sync failed:', error.message);
       queueMasterySync(row);
     }
-  } catch (err) {
+  } catch (err: any) {
     console.warn('[LearnerMemory] Cloud sync error (offline?):', err);
     queueMasterySync(row);
   }
