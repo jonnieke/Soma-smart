@@ -8118,7 +8118,7 @@ Topic or question: ${question || '[type your question here]'}`)
                   transition={{ type: 'spring', stiffness: 300, damping: 30 }}
                   className="fixed bottom-20 left-3 right-3 md:left-1/2 md:-translate-x-1/2 md:w-[92%] md:max-w-xl z-[100]"
                 >
-                  <div className="bg-slate-900/98 backdrop-blur-2xl rounded-3xl shadow-2xl border border-white/10 ring-1 ring-black/30 overflow-hidden">
+                  <div className="bg-[#0f1117] backdrop-blur-2xl rounded-3xl shadow-2xl border border-white/10 ring-1 ring-black/50 overflow-hidden">
                     {/* Progress Bar Track */}
                     {podcastTotalSegments > 0 && (
                       <div className="h-1 bg-white/10 w-full">
@@ -8152,23 +8152,23 @@ Topic or question: ${question || '[type your question here]'}`)
                       {isPodcastPlaying && podcastScript && currentSegmentIndex >= 0 && (() => {
                         const seg = podcastScript.script[currentSegmentIndex];
                         return (
-                          <div className="bg-white/5 rounded-2xl px-4 py-3 mb-4">
+                          <div className="bg-white/8 rounded-2xl px-4 py-3 mb-4 border border-white/10">
                             <span className={`inline-block text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full mb-2 ${
                               seg.speaker === 'Host'
-                                ? 'bg-indigo-500/30 text-indigo-300'
-                                : 'bg-violet-500/30 text-violet-300'
+                                ? 'bg-indigo-500/40 text-indigo-200'
+                                : 'bg-violet-500/40 text-violet-200'
                             }`}>
                               {seg.speaker === 'Host' ? '🎙️ Host' : '🎓 Expert'}
                             </span>
-                            <p className="text-slate-200 text-sm leading-relaxed font-medium">{seg.text}</p>
+                            <p className="text-white text-sm leading-relaxed font-medium">{seg.text}</p>
                           </div>
                         );
                       })()}
 
                       {podcastLoading && (
-                        <div className="bg-white/5 rounded-2xl px-4 py-3 mb-4 flex items-center gap-3">
+                        <div className="bg-white/8 rounded-2xl px-4 py-3 mb-4 flex items-center gap-3 border border-white/10">
                           <Loader2 className="w-4 h-4 text-indigo-400 animate-spin shrink-0" />
-                          <p className="text-slate-400 text-sm font-medium">Scripting your audio episode with AI...</p>
+                          <p className="text-slate-300 text-sm font-medium">Scripting your audio episode with AI...</p>
                         </div>
                       )}
 
@@ -8177,7 +8177,7 @@ Topic or question: ${question || '[type your question here]'}`)
                         {/* Re-generate */}
                         <button
                           onClick={handlePodcastRegenerate}
-                          className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-white/8 hover:bg-white/12 text-slate-400 hover:text-slate-200 transition-all text-xs font-bold"
+                          className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-white/10 hover:bg-white/15 text-slate-200 hover:text-white transition-all text-xs font-bold border border-white/10"
                         >
                           <Sparkles className="w-3.5 h-3.5" />
                           Re-generate
@@ -8187,7 +8187,7 @@ Topic or question: ${question || '[type your question here]'}`)
                         <button
                           onClick={handlePodcastSkip}
                           disabled={!podcastScript || currentSegmentIndex >= podcastScript.script.length - 1}
-                          className="flex items-center justify-center w-10 h-10 rounded-xl bg-white/8 hover:bg-white/12 text-slate-400 hover:text-slate-200 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                          className="flex items-center justify-center w-10 h-10 rounded-xl bg-white/10 hover:bg-white/15 text-slate-200 hover:text-white transition-all disabled:opacity-30 disabled:cursor-not-allowed border border-white/10"
                           title="Skip segment"
                         >
                           <ChevronRight className="w-5 h-5" />
@@ -8208,7 +8208,7 @@ Topic or question: ${question || '[type your question here]'}`)
                         {/* Stop & Close */}
                         <button
                           onClick={() => { cancelPodcast(); setIsPodcastPlaying(false); setCurrentSegmentIndex(-1); }}
-                          className="flex items-center justify-center w-10 h-10 rounded-xl bg-white/8 hover:bg-red-500/20 text-slate-400 hover:text-red-400 transition-all"
+                          className="flex items-center justify-center w-10 h-10 rounded-xl bg-white/10 hover:bg-red-500/25 text-slate-200 hover:text-red-300 transition-all border border-white/10"
                           title="Stop playback"
                         >
                           <X className="w-5 h-5" />
