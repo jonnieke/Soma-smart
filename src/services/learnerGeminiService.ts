@@ -950,8 +950,29 @@ export const explainTopic = async (
     const text = result.response.text();
     if (!text) throw new Error("No response from AI");
 
-    const json = parseModelJson<ExplanationResult>(text);
-    return sanitizeExplanationResult({ ...json, level, grounding: { used: !!ragContext.text, sources: ragContext.sources } } as ExplanationResult);
+    try {
+      const json = parseModelJson<ExplanationResult>(text);
+      return sanitizeExplanationResult({ ...json, level, grounding: { used: !!ragContext.text, sources: ragContext.sources } } as ExplanationResult);
+    } catch (parseError) {
+      // Salvage partial response - extract whatever fields we can from the truncated JSON
+      console.warn("explainTopic JSON was malformed; attempting salvage.", parseError);
+      const salvaged: Partial<ExplanationResult> = {};
+      const topicVal = extractJsonStringField(text, 'topic', ['explanation', 'subtopics']);
+      const explanationVal = extractJsonStringField(text, 'explanation', ['subtopics', 'recapNodes', 'summaryPoints']);
+      const summaryPoints = extractJsonStringArrayField(text, 'summaryPoints');
+      const relatedTopics = extractJsonStringArrayField(text, 'relatedTopics');
+
+      salvaged.topic = topicVal || topic;
+      salvaged.explanation = explanationVal || `Here is an explanation of ${topic}.`;
+      salvaged.summaryPoints = summaryPoints.length > 0 ? summaryPoints : buildFallbackSummaryPoints(salvaged.topic!, salvaged.explanation!);
+      salvaged.relatedTopics = relatedTopics;
+      salvaged.level = level;
+
+      if (!salvaged.topic && !salvaged.explanation) {
+        throw parseError; // Nothing was salvageable, re-throw original
+      }
+      return sanitizeExplanationResult({ ...salvaged, grounding: { used: !!ragContext.text, sources: ragContext.sources } } as ExplanationResult);
+    }
   } catch (error) {
     console.error("Error explaining topic:", error);
     throw error;
