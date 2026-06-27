@@ -4674,63 +4674,88 @@ Topic or question: ${question || '[type your question here]'}`)
 
             <div className="mb-8">
               <div className="rounded-3xl border border-indigo-100/80 bg-white/90 p-4 shadow-sm shadow-indigo-50 dark:border-slate-800 dark:bg-slate-900/70">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                  <div className="min-w-0">
-                    <p className="text-[10px] font-black uppercase tracking-[0.18em] text-indigo-500">Usage & Credits</p>
-                    <h2 className="text-base font-black text-slate-900 dark:text-white mt-0.5">
-                      {!isRegistered
-                        ? 'Log in to view your credits'
-                        : learningCredits > 0
-                          ? `${learningCredits} credits available`
-                          : freeUsesLeft > 0
-                            ? `${freeUsesLeft} free answers left today`
-                            : 'Trial complete - choose a plan or use credits'}
-                    </h2>
-                    <p className="mt-1 text-xs font-semibold text-slate-500 dark:text-slate-400">
-                      {!isRegistered
-                        ? 'Credits stay attached to your student profile after payment.'
-                        : 'Grounded answers, marking, deep analysis, and voice use your plan first, then credits.'}
-                    </p>
+                <p className="text-[10px] font-black uppercase tracking-[0.18em] text-indigo-500 mb-3">Usage & Credits</p>
+
+                {/* Credit balance display */}
+                {isRegistered && learningCredits > 0 ? (
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-10 h-10 rounded-2xl bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center shrink-0">
+                      <span className="text-lg">🪙</span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xl font-black text-slate-900 dark:text-white leading-none">{learningCredits} <span className="text-sm font-bold text-slate-500">credits</span></p>
+                      <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400 mt-0.5">Each credit = one AI-powered answer or action</p>
+                    </div>
                   </div>
-                  <div className="flex flex-wrap gap-2">
-                    <button
-                      onClick={handlePricingNavigation}
-                      className="rounded-xl bg-indigo-600 px-3 py-2 text-[11px] font-black uppercase tracking-wider text-white hover:bg-indigo-700"
-                    >
-                      Manage Plans
-                    </button>
-                    {isRegistered && (
-                      <button
-                        onClick={async () => {
-                          setLoading(true);
-                          setLoadingText('Checking credit payments...');
-                          const restored = await restoreMissingCreditWallet();
-                          setLoading(false);
-                          if (!restored) {
-                            setError({
-                              title: 'No Credit Payment Found',
-                              message: 'We could not find a completed credit-pack payment for this learner yet. If you just paid, wait a moment and try again.'
-                            });
-                          }
-                        }}
-                        className="rounded-xl border border-indigo-100 dark:border-indigo-900 bg-white dark:bg-slate-950 px-3 py-2 text-[11px] font-black uppercase tracking-wider text-indigo-700 dark:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-950/50 transition-colors"
-                      >
-                        Restore Credits
-                      </button>
-                    )}
+                ) : (
+                  <h2 className="text-base font-black text-slate-900 dark:text-white mb-1">
+                    {!isRegistered
+                      ? 'Log in to view your credits'
+                      : freeUsesLeft > 0
+                        ? `${freeUsesLeft} free answers left today`
+                        : 'Trial complete — choose a plan or top up credits'}
+                  </h2>
+                )}
+
+                {/* Where credits come from */}
+                <div className="bg-slate-50 dark:bg-slate-800/60 rounded-2xl p-3 mb-3 border border-slate-100 dark:border-slate-700/50">
+                  <p className="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-2">Where credits come from</p>
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-2 text-xs font-semibold text-slate-600 dark:text-slate-300">
+                      <span className="w-5 h-5 rounded-full bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center text-[10px]">📅</span>
+                      <span>Monthly plan — auto-topped up each billing cycle</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs font-semibold text-slate-600 dark:text-slate-300">
+                      <span className="w-5 h-5 rounded-full bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center text-[10px]">🛒</span>
+                      <span>Credit packs — buy any time (KES 20 / 50 / 100)</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs font-semibold text-slate-600 dark:text-slate-300">
+                      <span className="w-5 h-5 rounded-full bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center text-[10px]">🎁</span>
+                      <span>Bonus credits — granted by your school or Soma team</span>
+                    </div>
                   </div>
                 </div>
-                <div className="mt-3 h-2 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden">
+
+                {/* Usage note */}
+                <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 mb-3">
+                  Credits are used when your daily plan limit is reached. Grounded answers, marking, deep analysis, and voice each cost 1 credit.
+                </p>
+
+                {/* Progress bar */}
+                <div className="h-2 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden mb-3">
                   <div
-                    className={`h-full rounded-full ${learningCredits <= 0 ? 'bg-slate-400' : learningCredits < 10 ? 'bg-amber-500' : 'bg-emerald-500'}`}
+                    className={`h-full rounded-full transition-all ${learningCredits <= 0 ? 'bg-slate-400' : learningCredits < 10 ? 'bg-amber-500' : 'bg-emerald-500'}`}
                     style={{ width: `${creditMeterPct}%` }}
                   />
                 </div>
-                <div className="mt-3 flex flex-wrap items-center gap-2 text-[11px] font-bold text-slate-500 dark:text-slate-400">
-                  <span className="rounded-full border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-2.5 py-1">Ask Akili</span>
-                  <span className="rounded-full border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-2.5 py-1">Exam Prep</span>
-                  <span className="rounded-full border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-2.5 py-1">Marking</span>
-                  <span className="rounded-full border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-2.5 py-1">Voice</span>
+
+                {/* Actions */}
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    onClick={handlePricingNavigation}
+                    className="rounded-xl bg-indigo-600 px-3 py-2 text-[11px] font-black uppercase tracking-wider text-white hover:bg-indigo-700"
+                  >
+                    Manage Plans
+                  </button>
+                  {isRegistered && (
+                    <button
+                      onClick={async () => {
+                        setLoading(true);
+                        setLoadingText('Checking credit payments...');
+                        const restored = await restoreMissingCreditWallet();
+                        setLoading(false);
+                        if (!restored) {
+                          setError({
+                            title: 'No Credit Payment Found',
+                            message: 'We could not find a completed credit-pack payment for this learner yet. If you just paid, wait a moment and try again.'
+                          });
+                        }
+                      }}
+                      className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2 text-[11px] font-bold text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                    >
+                      Paid but credits missing?
+                    </button>
+                  )}
                 </div>
               </div>
 
