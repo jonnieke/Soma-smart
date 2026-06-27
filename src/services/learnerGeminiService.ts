@@ -538,8 +538,27 @@ export const explainImage = async (
     const text = result.response.text();
     if (!text) throw new Error("No response from AI");
 
-    const json = parseModelJson<ExplanationResult>(text);
-    return sanitizeExplanationResult({ ...json, level } as ExplanationResult);
+    try {
+      const json = parseModelJson<ExplanationResult>(text);
+      return sanitizeExplanationResult({ ...json, level } as ExplanationResult);
+    } catch (parseError) {
+      // Salvage partial response — extract what we can from truncated JSON
+      console.warn("explainImage JSON was malformed; attempting salvage.", parseError);
+      const topicVal = extractJsonStringField(text, 'topic', ['explanation', 'summaryPoints']);
+      const explanationVal = extractJsonStringField(text, 'explanation', ['summaryPoints', 'relatedTopics']);
+      const summaryPoints = extractJsonStringArrayField(text, 'summaryPoints');
+      const relatedTopics = extractJsonStringArrayField(text, 'relatedTopics');
+
+      if (!topicVal && !explanationVal) throw parseError;
+
+      return sanitizeExplanationResult({
+        topic: topicVal || 'Image Analysis',
+        explanation: explanationVal || 'The image was analyzed but the response was cut short. Please try again.',
+        summaryPoints: summaryPoints.length > 0 ? summaryPoints : buildFallbackSummaryPoints(topicVal || '', explanationVal || ''),
+        relatedTopics,
+        level,
+      } as ExplanationResult);
+    }
   } catch (error) {
     console.error("Error explaining image:", error);
     throw error;

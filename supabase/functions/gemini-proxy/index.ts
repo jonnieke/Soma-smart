@@ -666,7 +666,12 @@ serve(async (req) => {
         const requestedOutputTokens = Number(generationConfig?.maxOutputTokens || outputTokenCap);
         const cappedGenerationConfig = {
             ...(generationConfig || {}),
-            maxOutputTokens: Math.min(Number.isFinite(requestedOutputTokens) ? requestedOutputTokens : outputTokenCap, outputTokenCap),
+            // Always use at least outputTokenCap (the plan floor) regardless of what the client requests.
+            // This prevents low client-side maxOutputTokens values (e.g. 2048) from truncating responses.
+            maxOutputTokens: Math.max(
+                outputTokenCap,
+                Number.isFinite(requestedOutputTokens) ? Math.min(requestedOutputTokens, MAX_OUTPUT_TOKENS_PAID) : outputTokenCap
+            ),
         };
 
         if (!contents) {
