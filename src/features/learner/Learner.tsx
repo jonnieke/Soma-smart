@@ -354,6 +354,14 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
   const [isLoadingStudentClasses, setIsLoadingStudentClasses] = useState(false);
   const [classLeaderboards, setClassLeaderboards] = useState<Record<string, { name: string; xp: number; isMe: boolean }[]>>({});
   const prevStreakRef = useRef(streak);
+  const isInitialLoadRef = useRef(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      isInitialLoadRef.current = false;
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     const notice = localStorage.getItem('soma_joined_class_notice');
@@ -420,7 +428,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
     // Only show modal if streak increases DURING the session, and they already had a streak (or it's their first, but prev > 0 prevents firing on initial load if we somehow miscalculate)
     // Actually, prevStreakRef.current is initialized to the streak ON MOUNT. 
     // So if it goes up, they just earned it now.
-    if (streak > prevStreakRef.current && streak > 1) {
+    if (!isInitialLoadRef.current && streak > prevStreakRef.current && streak > 1) {
       setShowStreakModal(true);
       import('canvas-confetti').then(({ default: confetti }) => {
         confetti({
