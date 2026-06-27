@@ -962,6 +962,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             setStudentCode(profile.student_id);
             if (profile.recovery_pin) {
               localStorage.setItem('soma_active_student_pin', profile.recovery_pin);
+            } else {
+              const defaultPin = profile.parent_pin || "1234";
+              localStorage.setItem('soma_active_student_pin', defaultPin);
+              supabase.from('profiles').update({ recovery_pin: defaultPin }).eq('id', profile.id).then(({ error }) => {
+                if (error) console.error("Failed to auto-set recovery_pin:", error);
+                else console.log("Auto-healed recovery_pin to:", defaultPin);
+              });
             }
             setStudentProfile({
               id: profile.id,
@@ -2246,6 +2253,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       setStudentCode(profile.student_id);
       if (profile.recovery_pin) {
         localStorage.setItem('soma_active_student_pin', profile.recovery_pin);
+      } else {
+        const defaultPin = profile.parent_pin || "1234";
+        localStorage.setItem('soma_active_student_pin', defaultPin);
+        supabase.from('profiles').update({ recovery_pin: defaultPin }).eq('id', profile.id).then(({ error }) => {
+          if (error) console.error("Failed to auto-set recovery_pin on parent login:", error);
+        });
       }
       setStudentProfile({
         id: profile.id,
@@ -2331,6 +2344,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       localStorage.setItem('soma_active_student', profile.student_id);
       if (profile.recovery_pin) {
         localStorage.setItem('soma_active_student_pin', profile.recovery_pin);
+      } else {
+        const defaultPin = profile.parent_pin || "1234";
+        localStorage.setItem('soma_active_student_pin', defaultPin);
+        supabase.from('profiles').update({ recovery_pin: defaultPin }).eq('id', profile.id).then(({ error }) => {
+          if (error) console.error("Failed to auto-set recovery_pin on login:", error);
+        });
       }
       await syncLearningCredits(profile.id, profile.student_id);
 
