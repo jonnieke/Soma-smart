@@ -1987,6 +1987,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       });
 
       if (!rpcError && typeof rpcCredits === 'number') {
+        if (localCredits > rpcCredits) {
+          const diff = localCredits - rpcCredits;
+          await supabase.rpc('grant_learning_credits', {
+            p_profile_id: profileId,
+            p_credits: diff
+          });
+        }
         const syncedCredits = Math.max(localCredits, rpcCredits);
         localStorage.setItem('soma_learning_credits', String(syncedCredits));
         setLearningCredits(syncedCredits);
@@ -2002,8 +2009,16 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       .eq('profile_id', profileId)
       .maybeSingle();
 
-    if (!creditError && typeof creditRow?.credits === 'number') {
-      const syncedCredits = Math.max(localCredits, creditRow.credits);
+    if (!creditError) {
+      const dbCredits = creditRow?.credits || 0;
+      if (localCredits > dbCredits) {
+        const diff = localCredits - dbCredits;
+        await supabase.rpc('grant_learning_credits', {
+          p_profile_id: profileId,
+          p_credits: diff
+        });
+      }
+      const syncedCredits = Math.max(localCredits, dbCredits);
       localStorage.setItem('soma_learning_credits', String(syncedCredits));
       setLearningCredits(syncedCredits);
     } else if (creditError) {
