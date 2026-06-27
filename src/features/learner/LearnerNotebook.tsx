@@ -230,12 +230,28 @@ export const LearnerNotebook: React.FC<LearnerNotebookProps> = ({
         </section>
 
         {filteredNotes.length === 0 ? (
-          <section className="py-16 text-center">
-            <BookOpen className="mx-auto h-10 w-10 text-indigo-400" />
-            <h2 className="mt-4 text-lg font-black">Your Notebook is ready</h2>
-            <p className="mx-auto mt-2 max-w-sm text-sm font-semibold text-slate-500 dark:text-slate-400">
-              Save an Ask Akili explanation or write one short note. Then listen or test yourself.
+          <section className="py-14 text-center px-4">
+            <div className="w-16 h-16 rounded-2xl bg-indigo-50 dark:bg-indigo-950/40 flex items-center justify-center mx-auto mb-4">
+              <BookOpen className="h-8 w-8 text-indigo-500" />
+            </div>
+            <h2 className="text-lg font-black">My Notebook</h2>
+            <p className="mx-auto mt-2 max-w-sm text-sm font-semibold text-slate-500 dark:text-slate-400 leading-relaxed">
+              Your personal study notebook. Save AI explanations from Ask Akili, or write your own notes — then listen back or quiz yourself on any note.
             </p>
+            <div className="mx-auto mt-5 max-w-xs space-y-2 text-left">
+              <div className="flex items-start gap-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 px-3 py-2.5 text-xs font-semibold text-slate-600 dark:text-slate-300">
+                <span className="text-base shrink-0">💬</span>
+                <span>Ask Akili a question → tap <strong>Save to Notebook</strong> on any answer</span>
+              </div>
+              <div className="flex items-start gap-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 px-3 py-2.5 text-xs font-semibold text-slate-600 dark:text-slate-300">
+                <span className="text-base shrink-0">✏️</span>
+                <span>Or tap <strong>+ New Note</strong> above to write your own revision note</span>
+              </div>
+              <div className="flex items-start gap-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 px-3 py-2.5 text-xs font-semibold text-slate-600 dark:text-slate-300">
+                <span className="text-base shrink-0">🎧</span>
+                <span>Each note can be <strong>listened to</strong> or turned into a <strong>quick quiz</strong></span>
+              </div>
+            </div>
           </section>
         ) : (
           <section className="grid gap-3 md:grid-cols-2">
