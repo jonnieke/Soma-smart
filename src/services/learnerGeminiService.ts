@@ -189,7 +189,7 @@ const decodeLooseJsonString = (value: string): string =>
     .replace(/\t/g, ' ')
     .replace(/\\"/g, '"')
     .replace(/\\\\/g, '\\')
-    .replace(/\s+/g, ' ')
+    .replace(/[^\S\r\n]+/g, ' ')
     .trim();
 
 const extractJsonStringField = (raw: string, key: string, nextKeys: string[] = []): string | null => {
@@ -200,26 +200,46 @@ const extractJsonStringField = (raw: string, key: string, nextKeys: string[] = [
   const startQuote = raw.indexOf('"', colonIndex + 1);
   if (startQuote < 0) return null;
 
-  let escaped = false;
-  for (let i = startQuote + 1; i < raw.length; i += 1) {
-    const char = raw[i];
-    if (char === '"' && !escaped) return decodeLooseJsonString(raw.slice(startQuote + 1, i));
-    escaped = char === '\\' ? !escaped : false;
-  }
-
+  // 1. Try to find the boundary of the next key to limit the search space.
   let fallbackEnd = raw.length;
   for (const nextKey of nextKeys) {
     const nextIndex = raw.indexOf(`"${nextKey}"`, startQuote + 1);
-    if (nextIndex >= 0) fallbackEnd = Math.min(fallbackEnd, nextIndex);
+    if (nextIndex >= 0) {
+      fallbackEnd = Math.min(fallbackEnd, nextIndex);
+    }
   }
 
-  return decodeLooseJsonString(
-    raw
-      .slice(startQuote + 1, fallbackEnd)
-      .replace(/"\s*,?\s*$/, '')
-      .replace(/,\s*$/, '')
-      .replace(/[}\]]\s*$/, '')
-  );
+  // If we found a next key, we slice up to it and clean the value
+  if (fallbackEnd < raw.length) {
+    const rawValue = raw.slice(startQuote + 1, fallbackEnd);
+    const cleaned = rawValue
+      .replace(/\s*,\s*$/, '')
+      .replace(/"\s*$/, '')
+      .trim();
+    return decodeLooseJsonString(cleaned);
+  }
+
+  // 2. If no next key is found (e.g. truncated JSON), try to find a matching closing quote
+  // but be smart: look for a quote that is followed by typical JSON separators like comma or closing brace
+  let escaped = false;
+  for (let i = startQuote + 1; i < raw.length; i += 1) {
+    const char = raw[i];
+    if (char === '"' && !escaped) {
+      const remaining = raw.slice(i + 1).trim();
+      if (remaining.startsWith(',') || remaining.startsWith('}') || remaining.length === 0) {
+        return decodeLooseJsonString(raw.slice(startQuote + 1, i));
+      }
+    }
+    escaped = char === '\\' ? !escaped : false;
+  }
+
+  // 3. Fallback: slice to the end of raw string and clean it up
+  const cleaned = raw.slice(startQuote + 1)
+    .replace(/"\s*,?\s*$/, '')
+    .replace(/,\s*$/, '')
+    .replace(/[}\]]\s*$/, '')
+    .trim();
+  return decodeLooseJsonString(cleaned);
 };
 
 const extractJsonStringArrayField = (raw: string, key: string): string[] => {
@@ -460,6 +480,7 @@ export const explainImage = async (
     model: HEAVY_MODEL_NAME,
     generationConfig: {
       responseMimeType: "application/json",
+      maxOutputTokens: 2048,
       responseSchema: {
         type: SchemaType.OBJECT,
         properties: {
@@ -522,6 +543,7 @@ export const explainAudio = async (base64Audio: string, mimeType: string, level:
     model: HEAVY_MODEL_NAME,
     generationConfig: {
       responseMimeType: "application/json",
+      maxOutputTokens: 2048,
       responseSchema: {
         type: SchemaType.OBJECT,
         properties: {
