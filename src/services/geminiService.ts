@@ -177,8 +177,10 @@ Format:
   }
 ]
 Rules:
-- Questions must match ${examType} difficulty and style
-- Mix question types (definition, explain, calculate, describe, draw & label)
+- Questions must match ${examType} difficulty, style, and high rigor standards.
+- Mix question types (definition, explain, calculate, describe, analyze, compare).
+- NO PHYSICAL DRAWING/SKETCHING: All questions must be answerable via text input. Do NOT ask the student to physically draw, sketch, paint, shade, or color. Instead, ask them to "describe the steps to draw", "explain the principles of", or "compare".
+- EXAM-LEVEL RIGOR: Do not generate simple, shallow, or trivial questions (e.g. "What is a line?" or "Draw a wavy line"). Ensure questions test deep understanding suitable for ${examType}.
 - Vary the marks between 2 and 10
 - modelAnswerOutline should list 2-5 marking points, one per bullet
 - Keep questions classroom-ready and directly usable as homework or exam practice`
@@ -1704,6 +1706,8 @@ export const analyzeExamPaper = async (base64Image: string, mimeType: string): P
     1. Identify the Subject and Grade Level.
     2. Extract all visible questions.
     3. For each question, identify the Topic, Sub - Strand(CBC), and Competency being tested.
+    4. ADAPT PHYSICAL DRAWING QUESTIONS: If a question in the source document asks the student to draw, sketch, paint, shade, or color, you MUST adapt and reformulate it into a text-answerable question. For example, instead of "Draw a diagonal line", use "Describe the visual characteristics and functional roles of diagonal lines in art" or "Explain how to draw a diagonal line and describe the effect it creates". All questions must be answerable via text input.
+    5. HIGH EXAM RIGOR: Questions must be rigorous and meet Kenyan national exam standards (KCSE / KPSEA / JSS). Do not return trivial or shallow questions.
     
     Output JSON structure:
 {
@@ -1776,6 +1780,8 @@ export const analyzeExamPaperUrl = async (fileUrl: string, mimeType: string): Pr
     1. Identify the Subject and Grade Level.
     2. Extract all visible questions.
     3. For each question, identify the Topic, Sub-Strand(CBC), and Competency being tested.
+    4. ADAPT PHYSICAL DRAWING QUESTIONS: If a question in the source document asks the student to draw, sketch, paint, shade, or color, you MUST adapt and reformulate it into a text-answerable question. For example, instead of "Draw a diagonal line", use "Describe the visual characteristics and functional roles of diagonal lines in art" or "Explain how to draw a diagonal line and describe the effect it creates". All questions must be answerable via text input.
+    5. HIGH EXAM RIGOR: Questions must be rigorous and meet Kenyan national exam standards (KCSE / KPSEA / JSS). Do not return trivial or shallow questions.
     
     Output JSON structure:
     {
@@ -1854,6 +1860,7 @@ export const reconstructPaperQuestions = async (
     : "Respond exclusively in English.";
 
   const prompt = `
+    You are a Master KNEC Exam Setter for Kenyan national examinations (KPSEA, KCSE, JSS).
     You are rebuilding a student-facing exam practice set from a past paper title when the source PDF is too messy to extract cleanly.
 
     Paper title: ${paperTitle}
@@ -1862,11 +1869,13 @@ export const reconstructPaperQuestions = async (
     ${langInstruction}
 
     Task:
-    1. Create a structured exam-style question set that matches the likely format of this paper.
-    2. Preserve realistic KNEC/CBC exam ordering: start with simpler recall or short-answer items, then move to application and higher-order items.
-    3. Keep the questions in a usable exam flow so the learner can fill them in and be marked one by one.
-    4. Return 5 to 8 questions.
-    5. Use plain exam wording, not explanations about the paper.
+    1. Create a highly structured, rigorous, and standard exam-style question set that matches the format and expected depth of this paper.
+    2. NO PHYSICAL DRAWING/SKETCHING: All questions must be answerable via text input. Do NOT ask the student to "draw", "sketch", "paint", "color", or "shade" anything. Instead, ask them to "describe the steps", "explain the principles", "compare different styles", or "analyze the functions" (e.g., instead of "Draw a diagonal line", ask "Describe the visual effect created by a diagonal line in art, and state three contexts where it is commonly applied").
+    3. EXAM-LEVEL RIGOR: Questions must not be shallow, simple, or trivial (e.g. "What is a line?"). Use formal exam verbs: "Explain", "Analyze", "Distinguish between", "Discuss", "Compare and contrast", "Evaluate".
+    4. Preserve realistic KNEC/CBC exam ordering: start with structured/short-answer items (e.g. 2-3 marks), then move to application, design, and essay-type higher-order items (5+ marks).
+    5. Keep the questions in a usable exam flow so the learner can fill them in and be marked one by one.
+    6. Return 5 to 8 questions.
+    7. Use plain exam wording, not explanations about the paper.
 
     Output JSON only.
   `;
@@ -2154,7 +2163,7 @@ export const generateExamQuestions = async (
     : "LANGUAGE RULE: You MUST generate exclusively in English. All questions, marking schemes, and competencies must be strictly in English, even if the student language setting is Swahili.";
 
   const prompt = `
-    You are a Master KNEC Exam Setter for Kenyan national examinations (KPSEA, KCSE).
+    You are a Master KNEC Exam Setter for Kenyan national examinations (KPSEA, KCSE, JSS).
     
     Using the attached revision notes / document as source material, generate ${count} strictly formatted exam-quality questions.
 
@@ -2163,11 +2172,13 @@ export const generateExamQuestions = async (
     ${langInstruction}
 
     STRICT RULES:
-    1. Questions MUST precisely emulate KNEC papers. Use official action verbs: "State", "Identify", "Explain", "Calculate", "Describe with the aid of a diagram".
-    2. Mix cognitive levels (Bloom's Taxonomy): Knowledge (2 marks), Application (3-4 marks), and Analysis/Synthesis (5+ marks).
-    3. Each question must target a specific CBC / 8-4-4 competency.
-    4. Provide the exact marks allocated.
-    5. CRITICAL: You MUST provide a highly detailed, step-by-step 'markingScheme' array for each question. Show exactly where each mark is awarded (e.g., ["1 mark for stating X", "1 mark for linking X to Y"]).
+    1. Questions MUST precisely emulate KNEC papers. Use official action verbs: "State", "Identify", "Explain", "Calculate", "Describe", "Distinguish between".
+    2. NO PHYSICAL DRAWING/SKETCHING: All questions must be answerable via text input. Do NOT ask the student to physically draw, sketch, paint, shade, or color. Instead, ask them to "describe the steps", "explain the principles", or "compare".
+    3. EXAM-LEVEL RIGOR: Questions must be rigorous and suitable for ${grade} national exam standard. Do not generate shallow or trivial questions (e.g. "Name three lines" or "What color is a leaf").
+    4. Mix cognitive levels (Bloom's Taxonomy): Knowledge (2 marks), Application (3-4 marks), and Analysis/Synthesis (5+ marks).
+    5. Each question must target a specific CBC / 8-4-4 competency.
+    6. Provide the exact marks allocated.
+    7. CRITICAL: You MUST provide a highly detailed, step-by-step 'markingScheme' array for each question. Show exactly where each mark is awarded (e.g., ["1 mark for stating X", "1 mark for linking X to Y"]).
     
     Output as JSON matching the requested schema.
   `;
@@ -2431,9 +2442,11 @@ export const generateTopicQuiz = async (
 
     STRICT RULES:
     1. Questions MUST test understanding of THIS specific topic only.
-    2. Mix cognitive levels: Knowledge (2 easy, 2 marks), Application (2 medium, 3-4 marks), Analysis (1 hard, 5 marks).
-    3. Use official KPSEA / KCSE exam format: "State...", "Explain...", "Describe...", "Calculate..."
-    4. CRITICAL: You MUST provide a highly detailed, step-by-step 'markingScheme' array for each question. Show exactly where each mark is awarded (e.g., ["1 mark for stating X", "1 mark for linking X to Y"]).
+    2. NO PHYSICAL DRAWING/SKETCHING: All questions must be answerable via text input. Do NOT ask the student to physically draw, sketch, paint, shade, or color. Instead, ask them to "describe the steps", "explain the principles", or "compare".
+    3. EXAM-LEVEL RIGOR: Questions must be rigorous and suitable for national exam standard for ${grade}. Do not generate shallow or trivial questions.
+    4. Mix cognitive levels: Knowledge (2 easy, 2 marks), Application (2 medium, 3-4 marks), Analysis (1 hard, 5 marks).
+    5. Use official KPSEA / KCSE exam format: "State...", "Explain...", "Describe...", "Calculate..."
+    6. CRITICAL: You MUST provide a highly detailed, step-by-step 'markingScheme' array for each question. Show exactly where each mark is awarded (e.g., ["1 mark for stating X", "1 mark for linking X to Y"]).
     
     Output as JSON matching the requested schema.
   `;
