@@ -398,12 +398,18 @@ const resolveRequester = async (req: Request, supabase: any) => {
                 .select('id, role, subscription_tier, subscription_status, subscription_expiry, expiry, student_id')
                 .eq('id', userData.user.id)
                 .maybeSingle();
+            const { data: creditBal } = await supabase
+                .from('learning_credit_balances')
+                .select('credits')
+                .eq('profile_id', userData.user.id)
+                .maybeSingle();
             return {
                 userId: userData.user.id,
                 studentCode: profile?.student_id || null,
                 plan: profile ? effectivePlanForProfile(profile) : 'FREE',
                 identifier: `user:${userData.user.id}`,
                 profile,
+                hasCredits: (creditBal?.credits || 0) > 0,
             };
         }
     }
@@ -416,12 +422,18 @@ const resolveRequester = async (req: Request, supabase: any) => {
             .eq('student_id', studentCode)
             .maybeSingle();
         if (profile) {
+            const { data: creditBal } = await supabase
+                .from('learning_credit_balances')
+                .select('credits')
+                .eq('profile_id', profile.id)
+                .maybeSingle();
             return {
                 userId: profile.id,
                 studentCode,
                 plan: effectivePlanForProfile(profile),
                 identifier: `student:${studentCode}`,
                 profile,
+                hasCredits: (creditBal?.credits || 0) > 0,
             };
         }
     }
@@ -649,7 +661,7 @@ serve(async (req) => {
         const normalizedModel = selectGeminiModel(feature, model);
         const supabase = getSupabaseAdmin();
         const requester = await resolveRequester(req, supabase);
-        const paidPlan = !['GUEST', 'FREE'].includes(String(requester.plan || 'FREE'));
+        const paidPlan = !['GUEST', 'FREE'].includes(String(requester.plan || 'FREE')) || !!requester.hasCredits;
         const outputTokenCap = paidPlan ? MAX_OUTPUT_TOKENS_PAID : MAX_OUTPUT_TOKENS_FREE;
         const requestedOutputTokens = Number(generationConfig?.maxOutputTokens || outputTokenCap);
         const cappedGenerationConfig = {
