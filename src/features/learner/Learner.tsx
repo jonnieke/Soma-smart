@@ -4920,24 +4920,50 @@ Topic or question: ${question || '[type your question here]'}`)
                 </div>
               );
               return (
-                <div className="bg-slate-900 dark:bg-slate-800 rounded-2xl px-4 py-3 flex items-center gap-4">
-                  <div className="relative w-10 h-10 flex-shrink-0">
-                    <svg className="w-10 h-10 -rotate-90" viewBox="0 0 36 36">
-                      <circle cx="18" cy="18" r="15.9" fill="none" stroke="#334155" strokeWidth="3" />
-                      <circle cx="18" cy="18" r="15.9" fill="none" stroke="#6366f1" strokeWidth="3" strokeDasharray={`${pct} ${100 - pct}`} strokeDashoffset="0" strokeLinecap="round" />
-                    </svg>
-                    <span className="absolute inset-0 flex items-center justify-center text-[9px] font-black text-white">{pct}%</span>
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-xs font-black text-white">{timerActive ? 'Studying...' : timerSeconds === 25 * 60 ? 'Start a 25-min focus session' : 'Paused'}</p>
-                    <p className="text-lg font-black text-indigo-400 leading-none">{String(mins).padStart(2, '0')}:{String(secs).padStart(2, '0')}</p>
-                  </div>
-                  <div className="flex gap-2">
-                    <button onClick={() => setTimerActive(a => !a)} className={`px-4 py-2 rounded-xl text-xs font-black transition-colors ${timerActive ? 'bg-slate-700 text-slate-300 hover:bg-slate-600' : 'bg-indigo-600 hover:bg-indigo-500 text-white'}`}>
-                      {timerActive ? 'Pause' : 'Start'}
-                    </button>
-                    {timerSeconds < 25 * 60 && <button onClick={() => { setTimerSeconds(25 * 60); setTimerActive(false); }} className="text-[10px] font-bold text-slate-500 hover:text-slate-300 px-2 transition-colors">Reset</button>}
-                  </div>
+                <div className="bg-slate-900 dark:bg-slate-800 rounded-2xl overflow-hidden">
+                  {/* Idle state — explain what this is */}
+                  {!timerActive && timerSeconds === 25 * 60 ? (
+                    <div className="px-4 py-4 flex items-center gap-4">
+                      <div className="relative w-12 h-12 flex-shrink-0">
+                        <svg className="w-12 h-12 -rotate-90" viewBox="0 0 36 36">
+                          <circle cx="18" cy="18" r="15.9" fill="none" stroke="#334155" strokeWidth="3" />
+                          <circle cx="18" cy="18" r="15.9" fill="none" stroke="#6366f1" strokeWidth="3" strokeDasharray="0 100" strokeLinecap="round" />
+                        </svg>
+                        <span className="absolute inset-0 flex items-center justify-center text-xl">🍅</span>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-black text-white leading-tight">Focus Timer</p>
+                        <p className="text-[11px] font-medium text-slate-400 leading-snug mt-0.5">25-min study session — no distractions, then take a break.</p>
+                      </div>
+                      <button
+                        onClick={() => setTimerActive(a => !a)}
+                        className="shrink-0 bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2.5 rounded-xl text-xs font-black transition-colors shadow-lg shadow-indigo-900/40"
+                      >
+                        Start
+                      </button>
+                    </div>
+                  ) : (
+                    /* Active / paused / counting state */
+                    <div className="px-4 py-3 flex items-center gap-4">
+                      <div className="relative w-10 h-10 flex-shrink-0">
+                        <svg className="w-10 h-10 -rotate-90" viewBox="0 0 36 36">
+                          <circle cx="18" cy="18" r="15.9" fill="none" stroke="#334155" strokeWidth="3" />
+                          <circle cx="18" cy="18" r="15.9" fill="none" stroke="#6366f1" strokeWidth="3" strokeDasharray={`${pct} ${100 - pct}`} strokeDashoffset="0" strokeLinecap="round" />
+                        </svg>
+                        <span className="absolute inset-0 flex items-center justify-center text-[9px] font-black text-white">{pct}%</span>
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">{timerActive ? 'Focus Session · in progress' : 'Focus Session · paused'}</p>
+                        <p className="text-lg font-black text-indigo-400 leading-none">{String(mins).padStart(2, '0')}:{String(secs).padStart(2, '0')}</p>
+                      </div>
+                      <div className="flex gap-2">
+                        <button onClick={() => setTimerActive(a => !a)} className={`px-4 py-2 rounded-xl text-xs font-black transition-colors ${timerActive ? 'bg-slate-700 text-slate-300 hover:bg-slate-600' : 'bg-indigo-600 hover:bg-indigo-500 text-white'}`}>
+                          {timerActive ? 'Pause' : 'Resume'}
+                        </button>
+                        <button onClick={() => { setTimerSeconds(25 * 60); setTimerActive(false); }} className="text-[10px] font-bold text-slate-500 hover:text-slate-300 px-2 transition-colors">Reset</button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               );
             })()}
