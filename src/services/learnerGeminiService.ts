@@ -292,12 +292,19 @@ const salvageAudioExplanationResult = (rawText: string, level: 'Simple' | 'Exam'
 
 const normalizeLearnerText = (value: string | undefined | null): string => {
   if (!value) return '';
-  return value
+  let text = value
     .replace(/\\n/g, '\n')
     .replace(/\\t/g, ' ')
-    .replace(/^[^A-Za-z]*(?=Curriculum Alignment:)/, '')
     .replace(/\n{3,}/g, '\n\n')
     .trim();
+
+  // Strip Curriculum Alignment line (usually the very first line)
+  text = text.replace(/^Curriculum Alignment:[^\n]*\n*/im, '');
+
+  // Strip Exam Insight section (usually at the end)
+  text = text.replace(/(\n|^)(#*\s*\*\*?)?Exam Insight(s)?:?[\s\S]*$/gi, '');
+
+  return text.trim();
 };
 
 const sanitizeExplanationResult = (result: ExplanationResult): ExplanationResult => ({
