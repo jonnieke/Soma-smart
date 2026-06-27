@@ -1265,6 +1265,8 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
   const [tutoringTopic, setTutoringTopic] = useState("");
   const [materialCategory, setMaterialCategory] = useState<'ALL' | 'NOTES' | 'PAST_PAPER' | 'SYLLABUS'>('ALL');
   const [libraryView, setLibraryView] = useState<'UNLOCKED' | 'PURCHASED' | 'PRO_VAULT'>('UNLOCKED');
+  const [libraryItemPreview, setLibraryItemPreview] = useState<any>(null);
+  const [activeLibrarySubject, setActiveLibrarySubject] = useState<string>('ALL');
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const learnerCtaVariant = React.useMemo(() => getLearnerCtaVariant(), []);
   const creditMeterPct = Math.min(100, Math.round((learningCredits / 30) * 100));
@@ -9506,8 +9508,6 @@ Topic or question: ${question || '[type your question here]'}`)
           </div>
         </div>
       );
-    }
-
     if (mode === 'LIBRARY') {
       const purchasedResources = unifiedMaterials.filter(m => getMaterialAccessStatus(m) === 'OWNED');
       const freeStarterResources = unifiedMaterials.filter(m => getMaterialAccessStatus(m) === 'FREE');
@@ -9515,73 +9515,133 @@ Topic or question: ${question || '[type your question here]'}`)
       const unlockedResources = unifiedMaterials.filter(m => {
         const status = getMaterialAccessStatus(m);
         const normalizedCategory = normalizeMaterialCategory(m.category);
-        // Always include starter library content in unlocked view.
         if (isStarterCategory(normalizedCategory)) return true;
         return status === 'OWNED' || status === 'FREE' || status === 'PRO_INCLUDED';
       });
 
-      const visibleLibraryMaterials =
+      const activeList =
         libraryView === 'PURCHASED'
           ? purchasedResources
           : libraryView === 'PRO_VAULT'
             ? (isPro ? proVaultResources : [])
             : unlockedResources;
 
+      // Extract unique subjects from current view for filtering
+      const subjectsList = ['ALL', ...Array.from(new Set(activeList.map(m => m.subject).filter(Boolean))).sort()];
+
+      // Filter by active subject and category
+      const visibleLibraryMaterials = activeList.filter(m => {
+        const matchesSubject = activeLibrarySubject === 'ALL' || m.subject === activeLibrarySubject;
+        return matchesSubject;
+      });
+
+      // Group filtered books by category
+      const syllabuses = visibleLibraryMaterials.filter(m => normalizeMaterialCategory(m.category) === 'SYLLABUS');
+      const pastPapers = visibleLibraryMaterials.filter(m => normalizeMaterialCategory(m.category) === 'PAST_PAPER');
+      const studyNotes = visibleLibraryMaterials.filter(m => normalizeMaterialCategory(m.category) === 'NOTES');
+
+      // Helper to generate a gradient background class based on the subject name
+      const getSubjectGradient = (subj: string) => {
+        const s = String(subj || '').toLowerCase();
+        if (s.includes('math') || s.includes('calc')) return 'from-blue-600 to-indigo-800 text-blue-100';
+        if (s.includes('bio') || s.includes('scie') || s.includes('agri')) return 'from-emerald-600 to-teal-800 text-emerald-100';
+        if (s.includes('chem') || s.includes('phys')) return 'from-cyan-600 to-blue-800 text-cyan-100';
+        if (s.includes('kisw') || s.includes('swah')) return 'from-amber-500 to-orange-700 text-amber-100';
+        if (s.includes('cre') || s.includes('ire') || s.includes('hist') || s.includes('geog') || s.includes('social')) return 'from-purple-600 to-fuchsia-800 text-purple-100';
+        return 'from-slate-700 to-slate-900 text-slate-100';
+      };
+
+      // Helper to get cover illustration emoji
+      const getSubjectEmoji = (subj: string) => {
+        const s = String(subj || '').toLowerCase();
+        if (s.includes('math') || s.includes('calc')) return '📐';
+        if (s.includes('bio')) return '🌿';
+        if (s.includes('agri')) return '🌱';
+        if (s.includes('scie')) return '🔬';
+        if (s.includes('chem')) return '🧪';
+        if (s.includes('phys')) return '⚡';
+        if (s.includes('kisw') || s.includes('swah')) return '🇰🇪';
+        if (s.includes('cre') || s.includes('ire')) return '📖';
+        if (s.includes('hist') || s.includes('social')) return '🌍';
+        return '📚';
+      };
+
       return (
         <div className="bg-slate-50 dark:bg-slate-950 min-h-screen pb-32 max-w-4xl mx-auto shadow-2xl border-x border-slate-100 dark:border-slate-800 flex flex-col">
+          {/* Header */}
           <div className="sticky top-0 z-40 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 px-6 py-4 flex items-center justify-between">
             <div>
               <h1 className="text-xl font-black text-slate-900 dark:text-white tracking-tight leading-none">My Library</h1>
-              <p className="text-[10px] font-black text-indigo-500 uppercase tracking-[0.15em] mt-1.5">Saved Learning Resources</p>
+              <p className="text-[10px] font-black text-indigo-500 uppercase tracking-[0.15em] mt-1.5">Soma Bookshelf & PDF Reader</p>
             </div>
             <button onClick={() => setMode('MENU')} className="p-2 hover:bg-slate-100 rounded-full transition-colors"><X className="w-5 h-5" /></button>
           </div>
 
           <div className="p-6 flex-1 overflow-y-auto no-scrollbar">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+            {/* Library Category Tabs */}
+            <div className="grid grid-cols-3 gap-3 mb-6 bg-slate-100 dark:bg-slate-900 p-1 rounded-2xl">
               <button
                 onClick={() => {
                   setLibraryView('UNLOCKED');
+                  setActiveLibrarySubject('ALL');
                   trackFunnelEvent('library_view_changed', { view: 'UNLOCKED' });
                 }}
-                className={`rounded-xl px-3 py-2 border text-left transition-all ${libraryView === 'UNLOCKED'
-                    ? 'border-indigo-200 bg-indigo-50 text-indigo-700'
-                    : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
-                  }`}
+                className={`rounded-xl px-3 py-2 text-center transition-all font-black text-xs ${libraryView === 'UNLOCKED'
+                  ? 'bg-white dark:bg-slate-800 text-indigo-600 shadow-sm border border-slate-200/50 dark:border-slate-700/50'
+                  : 'text-slate-500 hover:text-slate-750 dark:hover:text-slate-300'
+                }`}
               >
-                <p className="text-[9px] font-black uppercase tracking-widest">Unlocked</p>
-                <p className="text-lg font-black">{unlockedResources.length}</p>
+                Unlocked ({unlockedResources.length})
               </button>
               <button
                 onClick={() => {
                   setLibraryView('PURCHASED');
+                  setActiveLibrarySubject('ALL');
                   trackFunnelEvent('library_view_changed', { view: 'PURCHASED' });
                 }}
-                className={`rounded-xl px-3 py-2 border text-left transition-all ${libraryView === 'PURCHASED'
-                    ? 'border-indigo-200 bg-indigo-50 text-indigo-700'
-                    : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
-                  }`}
+                className={`rounded-xl px-3 py-2 text-center transition-all font-black text-xs ${libraryView === 'PURCHASED'
+                  ? 'bg-white dark:bg-slate-800 text-indigo-600 shadow-sm border border-slate-200/50 dark:border-slate-700/50'
+                  : 'text-slate-500 hover:text-slate-750 dark:hover:text-slate-300'
+                }`}
               >
-                <p className="text-[9px] font-black uppercase tracking-widest">Purchased</p>
-                <p className="text-lg font-black">{purchasedResources.length}</p>
+                Purchased ({purchasedResources.length})
               </button>
               <button
                 onClick={() => {
                   setLibraryView('PRO_VAULT');
+                  setActiveLibrarySubject('ALL');
                   trackFunnelEvent('library_view_changed', { view: 'PRO_VAULT' });
                 }}
-                className={`rounded-xl px-3 py-2 border text-left transition-all ${libraryView === 'PRO_VAULT'
-                    ? 'border-amber-200 bg-amber-50 text-amber-700'
-                    : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
-                  }`}
+                className={`rounded-xl px-3 py-2 text-center transition-all font-black text-xs ${libraryView === 'PRO_VAULT'
+                  ? 'bg-white dark:bg-slate-800 text-amber-600 shadow-sm border border-slate-200/50 dark:border-slate-700/50'
+                  : 'text-slate-500 hover:text-slate-750 dark:hover:text-slate-300'
+                }`}
               >
-                <p className="text-[9px] font-black uppercase tracking-widest">Pro Vault</p>
-                <p className="text-lg font-black">{proVaultResources.length}</p>
+                Pro Vault ({proVaultResources.length})
               </button>
             </div>
 
+            {/* Subject Filters Row */}
+            {subjectsList.length > 2 && (
+              <div className="flex gap-2 overflow-x-auto pb-4 mb-6 scrollbar-none no-scrollbar shrink-0">
+                {subjectsList.map(subj => (
+                  <button
+                    key={subj}
+                    onClick={() => setActiveLibrarySubject(subj)}
+                    className={`px-4 py-2 rounded-full text-xs font-black shrink-0 transition-all ${activeLibrarySubject === subj
+                      ? 'bg-indigo-600 text-white shadow-md'
+                      : 'bg-white dark:bg-slate-900 text-slate-650 dark:text-slate-400 border border-slate-200 dark:border-slate-800 hover:border-slate-300'
+                    }`}
+                  >
+                    {subj === 'ALL' ? '📚 All Subjects' : `${getSubjectEmoji(subj)} ${subj}`}
+                  </button>
+                ))}
+              </div>
+            )}
+
             {libraryView === 'PRO_VAULT' && !isPro ? (
-              <div className="py-12 md:py-24 text-center bg-white dark:bg-slate-900 border-2 border-dashed border-amber-200 dark:border-amber-900/40 rounded-[3rem] mb-6">
+              /* Premium Paywall Page */
+              <div className="py-16 md:py-24 text-center bg-white dark:bg-slate-900 border-2 border-dashed border-amber-200 dark:border-amber-900/40 rounded-[3rem] mb-6">
                 <div className="w-24 h-24 bg-amber-50 dark:bg-amber-900/20 rounded-[2.5rem] flex items-center justify-center mx-auto mb-6 border-2 border-amber-200 dark:border-amber-800/30">
                   <Lock className="w-10 h-10 text-amber-500 dark:text-amber-400" />
                 </div>
@@ -9592,7 +9652,8 @@ Topic or question: ${question || '[type your question here]'}`)
                 </Button>
               </div>
             ) : visibleLibraryMaterials.length === 0 ? (
-              <div className="py-12 md:py-32 text-center bg-white dark:bg-slate-900 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-[3rem]">
+              /* Empty Library State */
+              <div className="py-16 md:py-28 text-center bg-white dark:bg-slate-900 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-[3rem]">
                 <div className="w-24 h-24 bg-slate-50 dark:bg-slate-800 rounded-[2.5rem] flex items-center justify-center mx-auto mb-6 border-2 border-slate-300 dark:border-slate-700">
                   <Library className="w-10 h-10 text-slate-300 dark:text-slate-600" />
                 </div>
@@ -9607,51 +9668,228 @@ Topic or question: ${question || '[type your question here]'}`)
                 </Button>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-20">
-                {visibleLibraryMaterials.map(item => (
-                  <motion.div
-                    key={item.id}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={() => {
-                      trackFunnelEvent('library_item_opened', {
-                        material_id: item.id,
-                        material_category: item.category,
-                        subject: item.subject,
-                        grade: item.grade,
-                        source: libraryView
-                      });
-                      const normalizedCategory = normalizeMaterialCategory(item.category);
-                      if (normalizedCategory === 'SYLLABUS') {
-                        startStudySession(item);
-                        return;
-                      }
-                      if (normalizedCategory === 'PAST_PAPER') {
-                        startStudySession(item);
-                        return;
-                      }
-                      startStudySession(item);
-                    }}
-                    className="bg-white dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-800 rounded-[2.5rem] p-6 shadow-sm flex items-center gap-6 group hover:border-indigo-100 dark:hover:border-indigo-800 hover:shadow-xl hover:shadow-indigo-50/30 dark:hover:shadow-black/30 transition-all cursor-pointer relative overflow-hidden"
-                  >
-                    <div className={`w-16 h-16 rounded-2xl flex items-center justify-center shrink-0 border-2 border-slate-300 dark:border-slate-700 shadow-sm ${item.isVerified ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400' : 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'}`}>
-                      {item.category === 'NOTES' ? <FileText className="w-8 h-8" /> : item.category === 'SYLLABUS' ? <Library className="w-8 h-8" /> : <Layers className="w-8 h-8" />}
+              /* Redesigned Bookshelf UI */
+              <div className="space-y-10 pb-24">
+                {/* 1. Syllabuses & Curriculum Guides */}
+                {syllabuses.length > 0 && (
+                  <div>
+                    <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+                      <span className="p-1 rounded bg-purple-100 dark:bg-purple-900/40 text-purple-600">📖</span>
+                      Syllabuses & Strands ({syllabuses.length})
+                    </h3>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-6">
+                      {syllabuses.map(item => (
+                        <motion.div
+                          key={item.id}
+                          whileHover={{ y: -6 }}
+                          onClick={() => setLibraryItemPreview(item)}
+                          className="flex flex-col cursor-pointer group"
+                        >
+                          {/* Visual Book Cover */}
+                          <div className={`w-full aspect-[3/4] bg-gradient-to-br ${getSubjectGradient(item.subject)} rounded-2xl shadow-lg relative p-4 flex flex-col justify-between overflow-hidden border border-white/10 group-hover:shadow-2xl transition-all`}>
+                            {/* Book spine simulation */}
+                            <div className="absolute top-0 bottom-0 left-0 w-3 bg-black/10 dark:bg-white/5 border-r border-black/5" />
+                            
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 bg-black/20 rounded-full">{item.grade}</span>
+                              <span className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 bg-purple-500/30 text-purple-100 rounded-full border border-purple-400/20">Syllabus</span>
+                            </div>
+                            
+                            <div className="my-auto text-center">
+                              <span className="text-4xl block mb-2 filter drop-shadow-md">{getSubjectEmoji(item.subject)}</span>
+                              <h4 className="font-black text-sm tracking-tight text-white leading-tight line-clamp-3 px-1">{item.title}</h4>
+                            </div>
+
+                            <div className="flex items-end justify-between border-t border-white/10 pt-2 text-[9px] font-bold opacity-80">
+                              <span>Somo AI Verified</span>
+                            </div>
+                          </div>
+                          <span className="mt-2 text-xs font-black text-slate-800 dark:text-slate-200 line-clamp-2 text-center group-hover:text-indigo-600 transition-colors">{item.title}</span>
+                        </motion.div>
+                      ))}
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-[8px] font-black text-indigo-500 uppercase tracking-widest">{item.subject}</span>
-                        {item.isVerified && <span className="bg-indigo-50 p-1 rounded-full"><Sparkles className="w-2 h-2 text-indigo-600" /></span>}
-                      </div>
-                      <h4 className="font-black text-slate-900 dark:text-white text-lg truncate group-hover:text-indigo-600 transition-colors tracking-tight">{item.title}</h4>
-                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{item.category.replace('_', ' ')} / {item.grade}</p>
+                  </div>
+                )}
+
+                {/* 2. Past Examination Papers */}
+                {pastPapers.length > 0 && (
+                  <div>
+                    <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+                      <span className="p-1 rounded bg-amber-100 dark:bg-amber-900/40 text-amber-600">📄</span>
+                      Past Revision Papers ({pastPapers.length})
+                    </h3>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-6">
+                      {pastPapers.map(item => (
+                        <motion.div
+                          key={item.id}
+                          whileHover={{ y: -6 }}
+                          onClick={() => setLibraryItemPreview(item)}
+                          className="flex flex-col cursor-pointer group"
+                        >
+                          {/* Visual Book Cover */}
+                          <div className={`w-full aspect-[3/4] bg-gradient-to-br ${getSubjectGradient(item.subject)} rounded-2xl shadow-lg relative p-4 flex flex-col justify-between overflow-hidden border border-white/10 group-hover:shadow-2xl transition-all`}>
+                            {/* Book spine simulation */}
+                            <div className="absolute top-0 bottom-0 left-0 w-3 bg-black/10 dark:bg-white/5 border-r border-black/5" />
+                            
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 bg-black/20 rounded-full">{item.grade}</span>
+                              <span className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 bg-amber-500/30 text-amber-100 rounded-full border border-amber-400/20">Exam Paper</span>
+                            </div>
+                            
+                            <div className="my-auto text-center">
+                              <span className="text-4xl block mb-2 filter drop-shadow-md">{getSubjectEmoji(item.subject)}</span>
+                              <h4 className="font-black text-sm tracking-tight text-white leading-tight line-clamp-3 px-1">{item.title}</h4>
+                            </div>
+
+                            <div className="flex items-end justify-between border-t border-white/10 pt-2 text-[9px] font-bold opacity-80">
+                              <span>Somo AI Verified</span>
+                            </div>
+                          </div>
+                          <span className="mt-2 text-xs font-black text-slate-800 dark:text-slate-200 line-clamp-2 text-center group-hover:text-indigo-600 transition-colors">{item.title}</span>
+                        </motion.div>
+                      ))}
                     </div>
-                    <div className="w-12 h-12 bg-slate-50 rounded-xl flex items-center justify-center text-slate-300 group-hover:bg-indigo-600 group-hover:text-white transition-all shadow-sm">
-                      <Download className="w-5 h-5" />
+                  </div>
+                )}
+
+                {/* 3. Study Notes & Guides */}
+                {studyNotes.length > 0 && (
+                  <div>
+                    <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+                      <span className="p-1 rounded bg-blue-100 dark:bg-blue-900/40 text-blue-600">📝</span>
+                      Subject Notes & Guides ({studyNotes.length})
+                    </h3>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-6">
+                      {studyNotes.map(item => (
+                        <motion.div
+                          key={item.id}
+                          whileHover={{ y: -6 }}
+                          onClick={() => setLibraryItemPreview(item)}
+                          className="flex flex-col cursor-pointer group"
+                        >
+                          {/* Visual Book Cover */}
+                          <div className={`w-full aspect-[3/4] bg-gradient-to-br ${getSubjectGradient(item.subject)} rounded-2xl shadow-lg relative p-4 flex flex-col justify-between overflow-hidden border border-white/10 group-hover:shadow-2xl transition-all`}>
+                            {/* Book spine simulation */}
+                            <div className="absolute top-0 bottom-0 left-0 w-3 bg-black/10 dark:bg-white/5 border-r border-black/5" />
+                            
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 bg-black/20 rounded-full">{item.grade}</span>
+                              <span className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 bg-blue-500/30 text-blue-100 rounded-full border border-blue-400/20">Study Note</span>
+                            </div>
+                            
+                            <div className="my-auto text-center">
+                              <span className="text-4xl block mb-2 filter drop-shadow-md">{getSubjectEmoji(item.subject)}</span>
+                              <h4 className="font-black text-sm tracking-tight text-white leading-tight line-clamp-3 px-1">{item.title}</h4>
+                            </div>
+
+                            <div className="flex items-end justify-between border-t border-white/10 pt-2 text-[9px] font-bold opacity-80">
+                              <span className="truncate max-w-[100px]">{item.isInternal ? 'Somo Smart' : item.teacherName || 'Verified Teacher'}</span>
+                            </div>
+                          </div>
+                          <span className="mt-2 text-xs font-black text-slate-800 dark:text-slate-200 line-clamp-2 text-center group-hover:text-indigo-600 transition-colors">{item.title}</span>
+                        </motion.div>
+                      ))}
                     </div>
-                  </motion.div>
-                ))}
+                  </div>
+                )}
               </div>
             )}
           </div>
+
+          {/* Premium Setup/Rewrite Modal */}
+          <AnimatePresence>
+            {libraryItemPreview && (
+              <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-4">
+                <motion.div
+                  initial={{ scale: 0.95, opacity: 0, y: 15 }}
+                  animate={{ scale: 1, opacity: 1, y: 0 }}
+                  exit={{ scale: 0.95, opacity: 0, y: 15 }}
+                  className="bg-white dark:bg-slate-900 rounded-[2.5rem] p-6 max-w-md w-full shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden"
+                >
+                  <div className="flex items-start justify-between mb-4">
+                    <div>
+                      <span className="text-[9px] font-black text-indigo-650 dark:text-indigo-400 uppercase tracking-widest">Soma Study Setup</span>
+                      <h3 className="text-lg font-black text-slate-900 dark:text-white leading-tight mt-0.5">Read & Rewrite Material</h3>
+                    </div>
+                    <button
+                      onClick={() => setLibraryItemPreview(null)}
+                      className="p-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 rounded-full text-slate-500 transition-colors"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  {/* Book Preview Detail */}
+                  <div className="flex gap-4 mb-6 bg-slate-50 dark:bg-slate-950 p-4 rounded-3xl border border-slate-100 dark:border-slate-850">
+                    <div className={`w-20 aspect-[3/4] rounded-xl shrink-0 bg-gradient-to-br ${getSubjectGradient(libraryItemPreview.subject)} p-2 flex flex-col justify-between overflow-hidden shadow-md relative border border-white/5`}>
+                      <div className="absolute top-0 bottom-0 left-0 w-2 bg-black/10" />
+                      <span className="text-[7px] font-black bg-black/25 text-white px-1 py-0.5 rounded w-fit leading-none">{libraryItemPreview.grade}</span>
+                      <span className="text-xl block text-center my-auto filter drop-shadow">{getSubjectEmoji(libraryItemPreview.subject)}</span>
+                      <span className="text-[7px] font-black uppercase text-center text-white/90 leading-none truncate">{libraryItemPreview.subject}</span>
+                    </div>
+                    <div className="flex-1 min-w-0 flex flex-col justify-center">
+                      <span className="text-[9px] font-black text-indigo-500 uppercase tracking-widest">{libraryItemPreview.subject} · {libraryItemPreview.grade}</span>
+                      <h4 className="font-black text-base text-slate-950 dark:text-white truncate mt-1 leading-tight">{libraryItemPreview.title}</h4>
+                      <p className="text-[11px] font-medium text-slate-550 dark:text-slate-400 leading-snug mt-1.5 line-clamp-2">{libraryItemPreview.description || 'Verified curriculum source notes and resources.'}</p>
+                    </div>
+                  </div>
+
+                  {/* Feature Breakdown */}
+                  <div className="space-y-4 mb-6">
+                    <div className="flex items-start gap-3">
+                      <div className="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0 border border-indigo-100/50 dark:border-slate-850">
+                        <BookOpen className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <h5 className="text-xs font-black text-slate-900 dark:text-white">📖 AI Study Guide</h5>
+                        <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400 mt-0.5">Soma reads the PDF and rewrites it into clean, bite-sized lessons with visual emojis, bold highlights, and curriculum-aligned outlines.</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start gap-3">
+                      <div className="w-8 h-8 rounded-xl bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0 border border-purple-100/50 dark:border-slate-850">
+                        <Headphones className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <h5 className="text-xs font-black text-slate-900 dark:text-white">🎧 Audio Lectures</h5>
+                        <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400 mt-0.5">Generate a narrated audio pod. Sit back and listen to Akili explain the material hands-free.</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start gap-3">
+                      <div className="w-8 h-8 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-100/50 dark:border-slate-850">
+                        <CheckCircle className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <h5 className="text-xs font-black text-slate-900 dark:text-white">🎯 Pop Quizzes & Flashcards</h5>
+                        <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400 mt-0.5">Turn the material into interactive practice drills instantly to test your memory and lock in grades.</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => setLibraryItemPreview(null)}
+                      className="flex-1 py-3 rounded-2xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-750 text-slate-700 dark:text-slate-300 font-bold transition-all text-xs"
+                    >
+                      Go Back
+                    </button>
+                    <button
+                      onClick={() => {
+                        const target = libraryItemPreview;
+                        setLibraryItemPreview(null);
+                        startStudySession(target);
+                      }}
+                      className="flex-1 py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-black transition-all text-xs shadow-lg shadow-indigo-200 dark:shadow-none"
+                    >
+                      ✨ Read & Rewrite
+                    </button>
+                  </div>
+                </motion.div>
+              </div>
+            )}
+          </AnimatePresence>
 
           {/* Global Bottom Nav */}
           <div className="fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 px-4 py-2.5 pb-safe flex justify-between items-center z-50 max-w-4xl mx-auto shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
@@ -9679,6 +9917,7 @@ Topic or question: ${question || '[type your question here]'}`)
           </div>
         </div>
       );
+    }
     }
 
 
