@@ -76,6 +76,20 @@ const stopSpeechElevenLabs = () => { void loadElevenLabsService().then(service =
 const playPodcast = async (...args: any[]) => ((await loadElevenLabsService()).playPodcast as any)(...args);
 const cancelPodcast = () => { void loadElevenLabsService().then(service => service.cancelPodcast()); };
 
+const getBriefDefinition = (explanationText: string, topicName: string): string => {
+  if (!explanationText) return '';
+  const lines = explanationText.split('\n');
+  for (const rawLine of lines) {
+    const line = rawLine.trim();
+    if (!line) continue;
+    if (line.toLowerCase().startsWith('curriculum alignment:')) continue;
+    if (line.startsWith('#')) continue;
+    if (line.startsWith('-') || line.startsWith('*') || /^\d+\./.test(line)) continue;
+    return line;
+  }
+  return `${topicName} is a key concept in the curriculum. Here are the main takeaways to remember.`;
+};
+
 const formatUsageRemaining = (remaining: number, unit: 'calls' | 'characters') => {
   if (unit === 'characters') {
     if (remaining >= 1000) return `${Math.floor(remaining / 1000)}k chars`;
@@ -8070,6 +8084,11 @@ Topic or question: ${question || '[type your question here]'}`)
                   </div>
                   Key Takeaways
                 </h3>
+                {explanation.explanation && (
+                  <div className="text-slate-600 dark:text-slate-300 text-sm md:text-base leading-relaxed mb-6 font-medium bg-amber-50/20 dark:bg-slate-800/20 p-4 rounded-2xl border border-amber-100/50 dark:border-slate-800/50 prose prose-sm dark:prose-invert max-w-none">
+                    <MarkdownText content={getBriefDefinition(explanation.explanation, explanation.topic)} />
+                  </div>
+                )}
                 <ul className="space-y-4">
                   {explanation.summaryPoints.map((point, i) => (
                     <li key={i} className="flex gap-4 text-slate-600 dark:text-slate-300 leading-relaxed font-medium">
