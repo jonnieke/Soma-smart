@@ -3341,7 +3341,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           if (!duration) duration = 'MONTHLY';
 
           const now = new Date();
-          let expiryDate = new Date(now);
+          const expiryDate = new Date(now);
           switch (duration) {
             case 'DAILY': expiryDate.setDate(now.getDate() + 1); break;
             case 'WEEKLY': expiryDate.setDate(now.getDate() + 7); break;
@@ -3365,7 +3365,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       // 1. If customReferenceCode is explicitly provided, verify it
       if (customReferenceCode) {
         const input = customReferenceCode.trim();
-        let targetUserIds: string[] = [];
+        const targetUserIds: string[] = [];
 
         // Check if input is a Student Code (e.g., SOM-1234 or SOM1234)
         if (/^SOM-?\d+/i.test(input) || /^[A-Z]{3}-\d+$/i.test(input)) {

@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useApp } from '../../context/AppContext';
 import {
     ArrowLeft, ArrowRight, Clock, CheckCircle, XCircle, Sparkles, Target,
@@ -908,7 +908,7 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
                                     onClick={handleReadyToAnswer}
                                     className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-4 rounded-2xl font-black text-base flex items-center justify-center gap-3 shadow-lg"
                                 >
-                                    ?? I'm Ready - Answer This Question
+                                    ?? I&apos;m Ready - Answer This Question
                                     <ArrowRight className="w-5 h-5" />
                                 </motion.button>
 

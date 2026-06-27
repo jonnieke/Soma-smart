@@ -351,7 +351,7 @@ export const Overview: React.FC = () => {
                             <Zap className="w-5 h-5 text-indigo-300" />
                         </div>
                         <div>
-                            <h3 className="font-black text-lg">Today's Pilot — {new Date().toLocaleDateString('en-KE', { weekday: 'short', month: 'short', day: 'numeric' })}</h3>
+                            <h3 className="font-black text-lg">Today&apos;s Pilot — {new Date().toLocaleDateString('en-KE', { weekday: 'short', month: 'short', day: 'numeric' })}</h3>
                             <p className="text-slate-400 text-xs font-medium">Live usage since midnight — refresh to update</p>
                         </div>
                     </div>

@@ -68,7 +68,7 @@ export const ParentPage: React.FC = () => {
     return (
         <>
             <Helmet>
-                <title>Parent Portal | Somo Smart — Monitor Your Child's Learning</title>
+                <title>Parent Portal | Somo Smart — Monitor Your Child&apos;s Learning</title>
                 <meta name="description" content="Track your child's study progress, quiz scores, and learning activity on Somo Smart. Secure parent access with PIN verification." />
                 <link rel="canonical" href="https://somaai.co.ke/parent" />
             </Helmet>
@@ -85,7 +85,7 @@ export const ParentPage: React.FC = () => {
                         </div>
                         <div className="p-6 space-y-5">
                             <div>
-                                <p className="text-sm font-black text-slate-700 mb-1">Enter your child's student code</p>
+                                <p className="text-sm font-black text-slate-700 mb-1">Enter your child&apos;s student code</p>
                                 <p className="text-xs font-bold text-slate-400 mb-4">
                                     Your child can find their code in the Somo Smart app under <span className="text-indigo-600">Me → Profile</span>.
                                 </p>
@@ -115,7 +115,7 @@ export const ParentPage: React.FC = () => {
                             </div>
                             <div className="border-t border-slate-100 pt-4">
                                 <p className="text-xs font-bold text-slate-400 text-center">
-                                    Don't have an account?{' '}
+                                    Don&apos;t have an account?{' '}
                                     <button onClick={() => navigate('/')} className="text-indigo-600 underline">Go to Somo Smart</button>
                                 </p>
                             </div>

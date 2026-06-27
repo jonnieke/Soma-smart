@@ -134,7 +134,7 @@ export const HomeworkCreator: React.FC<{
                     <div>
                         <h2 className="text-3xl font-black text-slate-900 dark:text-white mb-2">Homework Generator</h2>
                         <p className="text-slate-500 dark:text-slate-400">
-                            Instantly create engaging, CBC-aligned homework assignments based on today's lesson.
+                            Instantly create engaging, CBC-aligned homework assignments based on today&apos;s lesson.
                         </p>
                     </div>
                 </div>

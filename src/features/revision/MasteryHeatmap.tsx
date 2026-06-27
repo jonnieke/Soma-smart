@@ -127,7 +127,7 @@ export const MasteryHeatmap: React.FC<{ data?: TopicMastery[] }> = ({ data }) =>
                     <div className="flex-1 text-center md:text-left">
                         <h4 className="text-white dark:text-slate-900 font-black text-lg mb-1 tracking-tight">Strategic Priority Identified</h4>
                         <p className="text-white/60 dark:text-slate-500 text-sm font-medium">
-                            <span className="text-rose-400 font-bold">"{criticalTopics[0].topic}"</span> has a 98% chance of appearing in the upcoming exams. You currently have {criticalTopics[0].mastery}% mastery. We recommend a deep-dive revision session today.
+                            <span className="text-rose-400 font-bold">&quot;{criticalTopics[0].topic}&quot;</span> has a 98% chance of appearing in the upcoming exams. You currently have {criticalTopics[0].mastery}% mastery. We recommend a deep-dive revision session today.
                         </p>
                     </div>
                     <button className="bg-indigo-600 dark:bg-indigo-600 text-white px-8 py-3 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-indigo-700 transition-all shrink-0 shadow-lg shadow-indigo-500/20">

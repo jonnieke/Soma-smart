@@ -158,7 +158,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
             } else if (studentCode) {
                 extraHeaders['x-student-code'] = studentCode;
             }
-        } catch {}
+        } catch { /* ignore */ }
         const headers: Record<string, string> = {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${authToken}`,
@@ -171,7 +171,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
             });
             if (response.status === 429) {
                 let code = 'RATE_LIMIT';
-                try { const body = await response.json(); code = body?.code ?? code; } catch {}
+                try { const body = await response.json(); code = body?.code ?? code; } catch { /* ignore */ }
                 // Quota limits (per-user/IP daily limit) — don't retry, surface the code
                 if (code === 'GUEST_LIMIT_REACHED' || code === 'PLAN_LIMIT_REACHED' || code === 'FEATURE_LIMIT_REACHED') {
                     throw new Error(code);
@@ -241,13 +241,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
 
         // Unregistered visitors: show the teaser modal with login gate
         let count = 0;
-        try { count = parseInt(localStorage.getItem('soma_hero_detailed_uses') || '0', 10); } catch {}
+        try { count = parseInt(localStorage.getItem('soma_hero_detailed_uses') || '0', 10); } catch { /* ignore */ }
         setShowDetailedView(true);
         if (count >= 3) return;
         try {
             localStorage.setItem('soma_hero_detailed_uses', String(count + 1));
             setDetailedUsesLeft(Math.max(0, 3 - (count + 1)));
-        } catch {}
+        } catch { /* ignore */ }
         if (detailedAnswer || isGeneratingDetailed) return;
         setIsGeneratingDetailed(true);
         try {
@@ -256,7 +256,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
             );
             const cleaned = (text || '')
                 .replace(/\*\*(.*?)\*\*/g, '$1')    // **bold** → plain (no s: don't cross lines)
-                .replace(/^[*\-]\s/gm, '• ')         // line-start * / - bullets → • (before italic strip)
+                .replace(/^[*-]\s/gm, '• ')         // line-start * / - bullets → • (before italic strip)
                 .replace(/^#{1,6}\s*/gm, '')          // ## headers → plain
                 .replace(/\*(.*?)\*/g, '$1')          // *italic* → plain (no s: don't cross lines)
                 .replace(/\*/g, '');                  // any remaining *
@@ -671,7 +671,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                 <meta name="twitter:description" content="Step-by-step answers, exam prep, official notes, past papers, audio learning and progress tracking." />
 
                 <link rel="canonical" href="https://somaai.co.ke/" />
-                <link rel="preload" as="image" href={heroScienceLabWebp} type="image/webp" />
+                <link rel="preload" as="image" href={heroScienceLabAvif} type="image/avif" />
 
                 {/* Structured Data / AIO */}
                 <script type="application/ld+json">
@@ -963,7 +963,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                                     ) : heroLimitReached ? (
                                                         /* Conversion card — shown instead of error when guest daily quota is used up */
                                                         <div>
-                                                            <p className="text-sm font-black text-slate-900 dark:text-white leading-snug">You've used today's 3 free answers.</p>
+                                                            <p className="text-sm font-black text-slate-900 dark:text-white leading-snug">You&apos;ve used today&apos;s 3 free answers.</p>
                                                             <p className="mt-1 text-xs font-medium text-slate-500 dark:text-slate-400">Create a free account to get 10 answers per day — no card needed.</p>
                                                             <div className="mt-3 flex flex-col sm:flex-row gap-2">
                                                                 <button
@@ -1525,7 +1525,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                     {[1,2,3,4,5].map(s => <Star key={s} className="w-4 h-4 fill-amber-400 text-amber-400" />)}
                                 </div>
                                 <p className="text-slate-700 dark:text-slate-300 text-sm font-medium leading-relaxed flex-1">
-                                    "{quote}"
+                                    &quot;{quote}&quot;
                                 </p>
                                 <div className="flex items-center gap-3 pt-2 border-t border-slate-200 dark:border-slate-800">
                                     <div className={`w-9 h-9 rounded-full flex items-center justify-center text-lg ${
@@ -1693,7 +1693,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                 <TrendingUp className="w-6 h-6" />
                             </div>
                             <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-3">Predictive Mean Score</h3>
-                            <p className="text-slate-600 dark:text-slate-400 leading-relaxed font-medium max-w-xl">Aggregating live data from Smart Marking and student quizzes to project your school's KCSE/KPSEA Mean Score in real-time.</p>
+                            <p className="text-slate-600 dark:text-slate-400 leading-relaxed font-medium max-w-xl">Aggregating live data from Smart Marking and student quizzes to project your school&apos;s KCSE/KPSEA Mean Score in real-time.</p>
                         </div>
 
                         {/* 2. Vertical Feature: Global Syllabus Tracking */}
@@ -1712,7 +1712,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                     <FileText className="w-6 h-6" />
                                 </div>
                                 <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-3">Automated Exam Production</h3>
-                                <p className="text-slate-600 dark:text-slate-400 font-medium leading-relaxed">Stop spending thousands on external examiners. Generate bespoke, KNEC-standard exams localized exactly to your school's current syllabus coverage in one click.</p>
+                                <p className="text-slate-600 dark:text-slate-400 font-medium leading-relaxed">Stop spending thousands on external examiners. Generate bespoke, KNEC-standard exams localized exactly to your school&apos;s current syllabus coverage in one click.</p>
                             </div>
                         </div>
                     </div>
@@ -1777,7 +1777,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                 </div>
                             </div>
                             <p className="text-slate-600 dark:text-slate-400 italic leading-relaxed relative z-10 font-medium">
-                                "Somo Smart explained Chemistry concepts that I struggled with for months. I moved from a C+ to an A- in my latest mocks. The Smart breakdown is just like having a personal tutor."
+                                &quot;Somo Smart explained Chemistry concepts that I struggled with for months. I moved from a C+ to an A- in my latest mocks. The Smart breakdown is just like having a personal tutor.&quot;
                             </p>
                             <div className="mt-6 pt-6 border-t border-slate-200 dark:border-slate-800 flex items-center gap-2 text-xs font-bold text-blue-600 dark:text-blue-400">
                                 <GraduationCap className="w-4 h-4" /> Form 4 Candidate
@@ -1801,7 +1801,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                 </div>
                             </div>
                             <p className="text-slate-600 dark:text-slate-400 italic leading-relaxed relative z-10 font-medium">
-                                "The defining feature for me is the Smart Marking. I used to spend my entire weekend marking 80 Mathematics papers. Now, Somo does the heavy lifting according to KNEC rubrics, saving me 15+ hours weekly."
+                                &quot;The defining feature for me is the Smart Marking. I used to spend my entire weekend marking 80 Mathematics papers. Now, Somo does the heavy lifting according to KNEC rubrics, saving me 15+ hours weekly.&quot;
                             </p>
                             <div className="mt-6 pt-6 border-t border-slate-200 dark:border-slate-800 flex items-center gap-2 text-xs font-bold text-emerald-600 dark:text-emerald-400">
                                 <School className="w-4 h-4" /> Mathematics HOD
@@ -1825,7 +1825,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                 </div>
                             </div>
                             <p className="text-slate-600 dark:text-slate-400 italic leading-relaxed relative z-10 font-medium">
-                                "Since subscribing to Somo Smart, I can finally track exactly where my daughter is struggling. The predictive analytics told me she needed help in Algebra weeks before her midterm exams."
+                                &quot;Since subscribing to Somo Smart, I can finally track exactly where my daughter is struggling. The predictive analytics told me she needed help in Algebra weeks before her midterm exams.&quot;
                             </p>
                             <div className="mt-6 pt-6 border-t border-slate-200 dark:border-slate-800 flex items-center gap-2 text-xs font-bold text-orange-600 dark:text-orange-400">
                                 <Users className="w-4 h-4" /> Parent of JSS Student
@@ -2008,7 +2008,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                             <div className="p-6">
                                 <div className="text-xs font-bold text-slate-400 mb-2">CURRICULUM • MARCH 2024</div>
                                 <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-3 transition-colors">Navigating the CBC: What Parents Need to Know</h3>
-                                <p className="text-sm text-slate-600 dark:text-slate-400 line-clamp-2 font-medium">Understanding the Competency-Based Curriculum can be a challenge. We break down the key pillars and how you can support your child's success.</p>
+                                <p className="text-sm text-slate-600 dark:text-slate-400 line-clamp-2 font-medium">Understanding the Competency-Based Curriculum can be a challenge. We break down the key pillars and how you can support your child&apos;s success.</p>
                             </div>
                         </motion.div>
                     </div>
@@ -2074,7 +2074,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                 <img src={logoImg} alt="Somo Smart Logo" className="h-12 w-auto object-contain grayscale opacity-80 hover:grayscale-0 hover:opacity-100 transition-all dark:invert dark:opacity-60 dark:hover:invert-0 dark:hover:opacity-100" />
                             </div>
                             <p className="text-slate-500 dark:text-slate-400 text-sm mb-6 max-w-full sm:max-w-sm leading-relaxed">
-                                Kenya's leading Smart learning platform. Empowering students, teachers, and parents with strictly aligned CBC and KCSE educational tools.
+                                Kenya&apos;s leading Smart learning platform. Empowering students, teachers, and parents with strictly aligned CBC and KCSE educational tools.
                             </p>
                             
                             {/* Google Business Profile Action */}
@@ -2173,7 +2173,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                     {isRegistered ? (
                                         <div>
                                             <p className="text-xs font-black uppercase tracking-widest text-slate-400 mb-2">Daily limit reached</p>
-                                            <h3 className="text-xl font-black text-slate-900 dark:text-white">You've used today's free AI calls</h3>
+                                            <h3 className="text-xl font-black text-slate-900 dark:text-white">You&apos;ve used today&apos;s free AI calls</h3>
                                             <p className="mt-2 text-sm text-slate-600 dark:text-slate-300 leading-relaxed max-w-xs mx-auto">
                                                 Upgrade to a plan for unlimited step-by-step notes, exam prep, and audio lessons.
                                             </p>

@@ -283,7 +283,7 @@ export const RevisionPortal: React.FC = () => {
                                     <div className="flex gap-1 text-amber-400 mb-4">
                                         {[...Array(5)].map((_, j) => <Star key={j} className="w-4 h-4 fill-current" />)}
                                     </div>
-                                    <p className="text-slate-300 italic mb-6 text-sm">"{user.quote}"</p>
+                                    <p className="text-slate-300 italic mb-6 text-sm">&quot;{user.quote}&quot;</p>
                                     <div className="flex items-center gap-3">
                                         <div className="w-10 h-10 bg-indigo-500 rounded-full flex items-center justify-center font-black text-sm">{user.name[0]}</div>
                                         <div>
@@ -300,7 +300,7 @@ export const RevisionPortal: React.FC = () => {
                 {/* 6. FINAL CTA BANNER */}
                 <section className="text-center md:pb-16">
                     <h2 className="text-3xl md:text-5xl font-black text-slate-900 dark:text-white mb-6">Your next exam is coming up.</h2>
-                    <p className="text-slate-600 dark:text-slate-400 mb-8 max-w-lg mx-auto font-medium">Don't wait until the last minute. Join thousands of students already using Somo Smart to secure top grades.</p>
+                    <p className="text-slate-600 dark:text-slate-400 mb-8 max-w-lg mx-auto font-medium">Don&apos;t wait until the last minute. Join thousands of students already using Somo Smart to secure top grades.</p>
                     <button
                         onClick={isRegistered ? handleStartRevision : () => setShowRegister(true)}
                         className="bg-indigo-600 hover:bg-indigo-700 text-white px-10 py-5 rounded-2xl font-black text-lg transition-all shadow-xl shadow-indigo-500/20 hover:-translate-y-1"

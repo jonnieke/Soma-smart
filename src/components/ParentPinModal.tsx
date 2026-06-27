@@ -197,7 +197,7 @@ export const ParentPinModal: React.FC<ParentPinModalProps> = ({
                                     <div>
                                         <p className="text-sm font-bold text-blue-900">Parents: Set a 4-digit PIN</p>
                                         <p className="text-xs text-blue-700 mt-1 leading-relaxed">
-                                            This PIN protects your child's ability to chat with teachers. Your child will need to ask you for this PIN before they can start any conversation.
+                                            This PIN protects your child&apos;s ability to chat with teachers. Your child will need to ask you for this PIN before they can start any conversation.
                                         </p>
                                     </div>
                                 </div>

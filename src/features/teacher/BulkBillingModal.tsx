@@ -430,7 +430,7 @@ export const BulkBillingModal: React.FC<BulkBillingModalProps> = ({ isOpen, onCl
 
                                     <div className="p-3.5 bg-blue-50/60 rounded-2xl border border-blue-100 flex items-start gap-2.5 text-xs text-blue-800 font-bold leading-relaxed">
                                         <Info className="w-4 h-4 shrink-0 text-blue-600 mt-0.5" />
-                                        <span>Funds are sent directly to the school treasury. M-Pesa prompts appear on parents' phones instantly.</span>
+                                        <span>Funds are sent directly to the school treasury. M-Pesa prompts appear on parents&apos; phones instantly.</span>
                                     </div>
                                 </div>
 

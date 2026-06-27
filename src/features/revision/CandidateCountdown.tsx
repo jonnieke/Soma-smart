@@ -121,7 +121,7 @@ export const CandidateCountdown: React.FC = () => {
                             {activeExam.description}
                         </h4>
                         <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed mb-6 italic">
-                            "{activeExam.strategy}"
+                            &quot;{activeExam.strategy}&quot;
                         </p>
 
                         <div className="space-y-3">

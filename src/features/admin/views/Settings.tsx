@@ -112,7 +112,7 @@ export const SettingsView: React.FC = () => {
 
                 {!pesapalResult && (
                     <p className="text-sm text-slate-400 font-medium">
-                        Click "Test Connection" to verify your Pesapal keys and check whether you are in sandbox or live mode.
+                        Click &quot;Test Connection&quot; to verify your Pesapal keys and check whether you are in sandbox or live mode.
                     </p>
                 )}
             </div>

@@ -178,7 +178,7 @@ export const TeacherReports: React.FC = () => {
         try {
             const classes = await classroomService.getClassesForTeacher(teacherProfile.id);
             let allStudentIds: string[] = [];
-            let allGradebook: Array<{ score: number; max_score: number; title: string; created_at: string }> = [];
+            const allGradebook: Array<{ score: number; max_score: number; title: string; created_at: string }> = [];
 
             for (const c of classes) {
                 const roster = await classroomService.getClassRoster(c.id);

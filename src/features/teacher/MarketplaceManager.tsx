@@ -648,7 +648,7 @@ export const MarketplaceManager: React.FC<MarketplaceManagerProps> = ({
                                                                 <Star className="w-3.5 h-3.5 fill-amber-500 text-amber-500" /> {rev.rating}
                                                             </div>
                                                         </div>
-                                                        <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed font-semibold">"{rev.comment}"</p>
+                                                        <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed font-semibold">&quot;{rev.comment}&quot;</p>
                                                         <span className="text-[9px] text-slate-400 font-bold block mt-1">{new Date(rev.createdAt).toLocaleDateString()}</span>
                                                     </div>
                                                 ))}

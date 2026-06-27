@@ -255,7 +255,7 @@ export const TeacherRequestModal: React.FC<TeacherRequestModalProps> = ({ isOpen
                                     <Star className="w-5 h-5" />
                                 </div>
                                 <div>
-                                    <p className={`font-bold text-sm ${pricingType === 'RATE_ME' ? 'text-emerald-800' : 'text-slate-700'}`}>"Just Helping"</p>
+                                    <p className={`font-bold text-sm ${pricingType === 'RATE_ME' ? 'text-emerald-800' : 'text-slate-700'}`}>&quot;Just Helping&quot;</p>
                                     <p className={`text-xs ${pricingType === 'RATE_ME' ? 'text-emerald-600' : 'text-slate-400'}`}>Ask student to rate you (Boosts Profile)</p>
                                 </div>
                             </button>

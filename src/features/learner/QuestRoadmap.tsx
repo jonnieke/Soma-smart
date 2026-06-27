@@ -391,7 +391,7 @@ export const QuestRoadmap: React.FC<QuestRoadmapProps> = ({
         <div className="rounded-3xl border border-emerald-500/20 bg-emerald-500/10 p-4 mb-5">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
-              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-emerald-300 mb-1">Today's 15-Minute Exam Drill</p>
+              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-emerald-300 mb-1">Today&apos;s 15-Minute Exam Drill</p>
               <p className="text-sm font-bold text-emerald-50">{nextMission}</p>
             </div>
             <div className="flex flex-col sm:flex-row gap-2">
@@ -536,7 +536,7 @@ export const QuestRoadmap: React.FC<QuestRoadmapProps> = ({
                       <span className="text-[9px] font-black text-amber-500 tracking-wider uppercase">Mastered</span>
                     )}
                     {node.state === 'ACTIVE' && (
-                      <span className="text-[9px] font-black text-blue-400 tracking-widest uppercase animate-pulse">Today's Focus</span>
+                      <span className="text-[9px] font-black text-blue-400 tracking-widest uppercase animate-pulse">Today&apos;s Focus</span>
                     )}
                   </div>
                 </div>

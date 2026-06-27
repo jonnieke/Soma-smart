@@ -519,7 +519,7 @@ export const SyllabusViewer: React.FC<Props> = ({ data, onExit }) => {
                                 <h2 className="text-2xl font-black mb-2">{title}</h2>
                                 <p className="text-emerald-100 text-sm leading-relaxed max-w-lg font-medium">
                                     This syllabus outlines what learners should study, achieve, and master in {subject} at {grade} level.
-                                    It's your roadmap — what to learn, not how to be examined.
+                                    It&apos;s your roadmap — what to learn, not how to be examined.
                                 </p>
                             </div>
                             <div className="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full blur-3xl -mr-20 -mt-20" />

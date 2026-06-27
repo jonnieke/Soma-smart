@@ -197,7 +197,7 @@ export const BlogPost: React.FC = () => {
                 <div className="mt-20 pt-10 border-t border-slate-200 dark:border-slate-800 text-center">
                     <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-4">Did you find this helpful?</h3>
                     <p className="text-slate-600 dark:text-slate-400 mb-8 max-w-lg mx-auto">
-                        Put these strategies into practice immediately with Somo Smart's AI Revision Assistant.
+                        Put these strategies into practice immediately with Somo Smart&apos;s AI Revision Assistant.
                     </p>
                     <button onClick={() => navigate('/learner')} className="px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold transition-all shadow-lg hover:shadow-blue-600/30 hover:-translate-y-1">
                         Start Learning Free

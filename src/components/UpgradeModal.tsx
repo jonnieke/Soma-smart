@@ -126,7 +126,7 @@ export const UpgradeModal: React.FC<UpgradeModalProps> = ({ onUpgrade }) => {
                                         <Zap className="w-3 h-3" /> Daily Limit Reached
                                     </div>
                                     <h2 className="text-2xl font-black text-white leading-tight">
-                                        You've used your {detail?.featureLabel || 'feature'} allowance
+                                        You&apos;ve used your {detail?.featureLabel || 'feature'} allowance
                                     </h2>
                                     <p className="text-slate-400 text-sm font-medium mt-1 leading-relaxed">
                                         Your <span className="text-white font-bold">{detail?.plan || 'Free'} plan</span> allows {detail?.limit || 0} uses per day. Upgrade to unlock more learning power.

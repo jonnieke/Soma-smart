@@ -205,7 +205,7 @@ export const LessonPolisherView: React.FC<LessonPolisherViewProps> = ({ onBack, 
                         </div>
 
                         <p className="text-slate-500 font-medium mb-6 text-sm leading-relaxed italic">
-                            "Paste your existing lesson plan or draft notes below. We'll cross-reference it with your student's recorded weak points and suggest data-driven refinements."
+                            &quot;Paste your existing lesson plan or draft notes below. We&apos;ll cross-reference it with your student&apos;s recorded weak points and suggest data-driven refinements.&quot;
                         </p>
 
                         {/* Option D: Voice-to-Text Lesson Notes Section */}
@@ -370,11 +370,11 @@ export const LessonPolisherView: React.FC<LessonPolisherViewProps> = ({ onBack, 
                                 </div>
                                 <div className="flex gap-4">
                                     <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center shrink-0 border border-white/10">2</div>
-                                    <p className="text-slate-300 text-sm font-medium">We analyze last week's quiz results to find "Struggling Topics".</p>
+                                    <p className="text-slate-300 text-sm font-medium">We analyze last week&apos;s quiz results to find &quot;Struggling Topics&quot;.</p>
                                 </div>
                                 <div className="flex gap-4">
                                     <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center shrink-0 border border-white/10">3</div>
-                                    <p className="text-slate-300 text-sm font-medium">We inject remedial "Mastery Moments" directly into your plan.</p>
+                                    <p className="text-slate-300 text-sm font-medium">We inject remedial &quot;Mastery Moments&quot; directly into your plan.</p>
                                 </div>
                             </div>
                         </div>
@@ -416,7 +416,7 @@ export const LessonPolisherView: React.FC<LessonPolisherViewProps> = ({ onBack, 
                                                     <span className="font-black text-slate-800 text-sm">{match.topic}</span>
                                                     <span className="text-[9px] font-black bg-red-500 text-white px-2 py-0.5 rounded-full uppercase tracking-widest">{match.impact} Priority</span>
                                                 </div>
-                                                <p className="text-slate-600 text-sm font-medium leading-relaxed italic">"{match.recommendation}"</p>
+                                                <p className="text-slate-600 text-sm font-medium leading-relaxed italic">&quot;{match.recommendation}&quot;</p>
                                             </div>
                                         ))}
                                     </div>

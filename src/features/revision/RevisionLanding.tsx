@@ -613,7 +613,7 @@ Use plain text. No markdown headings or symbols.`;
                     <div className="relative">
                         <div className="flex items-start justify-between gap-3">
                             <div>
-                            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-300 mb-1">Today's Exam Mission</p>
+                            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-300 mb-1">Today&apos;s Exam Mission</p>
                             <h2 className="text-lg sm:text-xl font-black leading-tight">
                                 {missionTitle}
                             </h2>

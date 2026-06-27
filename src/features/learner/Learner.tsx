@@ -84,7 +84,7 @@ const formatUsageRemaining = (remaining: number, unit: 'calls' | 'characters') =
   return `${remaining} left`;
 };
 
-// ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ Branded lazy-load skeleton ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬
+// ------ Branded lazy-load skeleton ------
 const DeferredViewLoader = () => (
   <div className="min-h-[60vh] flex flex-col items-center justify-center gap-5 text-slate-400">
     {/* Animated indigo bar */}
@@ -299,7 +299,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
   const activePlanDetails = React.useMemo(() => {
     if (!isPro) return null;
     const plans = role === UserRole.TEACHER ? TEACHER_PLANS : STUDENT_PLANS;
-    // @ts-ignore - Handle 'PRO' legacy tier or fuzzy matching
+    // Handle 'PRO' legacy tier or fuzzy matching
     return plans.find(p => p.duration === subscriptionPlan) || (subscriptionPlan === 'PRO' ? plans.find(p => p.duration === 'MONTHLY') : null);
   }, [isPro, role, subscriptionPlan]);
 
@@ -406,7 +406,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
     // Only show modal if streak increases DURING the session, and they already had a streak (or it's their first, but prev > 0 prevents firing on initial load if we somehow miscalculate)
     // Actually, prevStreakRef.current is initialized to the streak ON MOUNT. 
     // So if it goes up, they just earned it now.
-    if (streak > prevStreakRef.current) {
+    if (streak > prevStreakRef.current && streak > 1) {
       setShowStreakModal(true);
       import('canvas-confetti').then(({ default: confetti }) => {
         confetti({
@@ -458,7 +458,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
   // Load mastery from cloud on mount (registered users only)
   useEffect(() => {
     const learnerId = studentCode || studentProfile?.id;
-    if (!learnerId) return; // Guest ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â localStorage only
+    if (!learnerId) return; // Guest — localStorage only
     loadMemoryService().then(({ loadMasteryFromCloud }) => {
       loadMasteryFromCloud(learnerId).then(({ cloudRow }) => {
         if (cloudRow) setCloudMemoryRow(cloudRow);
@@ -602,7 +602,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
     if (saves.find(s => s.topic === topic)) { triggerToast('Already saved for offline.'); return; }
     saves.unshift({ id: Date.now().toString(), topic, content, subject, savedAt: new Date().toLocaleDateString() });
     localStorage.setItem(OFFLINE_KEY, JSON.stringify(saves.slice(0, 20)));
-    triggerToast('Saved for offline reading ÃƒÂ¢Ã…â€œÃ¢â‚¬Å“');
+    triggerToast('Saved for offline reading ✓');
   };
 
   // Ask teacher state
@@ -732,7 +732,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
             limit: getPlanLimit(feature, subscriptionPlan || 'FREE')
           }
         }));
-      } catch (_) {}
+      } catch (_) { /* ignore */ }
     } else {
       setShowLogin(true);
     }
@@ -771,7 +771,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
     } else if (citationFormat === 'HARVARD') {
       citation = `Soma Smart, ${new Date().getFullYear()}. ${currentDocument.title}, Soma AI Library. Available at: Soma Smart. [Accessed ${formattedDate}]. Quote: "${cleanText}"`;
     } else {
-      citation = `"${cleanText}" ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â Soma AI Library: Grade ${currentDocument.grade || 'N/A'} ${currentDocument.subject || 'General'} (${currentDocument.title}). Reference ID: ${currentDocument.realId || currentDocument.id}`;
+    citation = `"${cleanText}" — Soma AI Library: Grade ${currentDocument.grade || 'N/A'} ${currentDocument.subject || 'General'} (${currentDocument.title}). Reference ID: ${currentDocument.realId || currentDocument.id}`;
     }
 
     navigator.clipboard.writeText(citation).then(() => {
@@ -818,7 +818,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
 
     // 1. Search term match
     if (search && search.trim().length > 1) {
-      const escapedSearch = search.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+      const escapedSearch = search.replace(/[-/\\^$*+?.()|[\]{}]/g, "\\$&");
       const searchRegex = new RegExp(escapedSearch, 'gi');
       let m;
       while ((m = searchRegex.exec(text)) !== null) {
@@ -833,7 +833,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
 
     // 2. Glossary matches
     Object.keys(EDUCATIONAL_GLOSSARY).forEach(term => {
-      const escapedTerm = term.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+      const escapedTerm = term.replace(/[-/\\^$*+?.()|[\]{}]/g, "\\$&");
       const termRegex = new RegExp(`\\b${escapedTerm}\\b`, 'gi');
       let m;
       while ((m = termRegex.exec(text)) !== null) {
@@ -2578,7 +2578,7 @@ Stay anchored to this context unless I ask for something broader.`;
   };
 
   const startRecording = async () => {
-    // ConversationalTutor (TALKBACK) manages its own recording ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â don't interfere.
+    // ConversationalTutor (TALKBACK) manages its own recording — don't interfere.
     if (mode === 'TALKBACK') return;
     try {
       setMicPermissionNotice(false);
@@ -2621,8 +2621,8 @@ Stay anchored to this context unless I ask for something broader.`;
             console.log("Audio attached to Study Buddy");
           };
         } else if ((mode as string) === 'TALKBACK') {
-          // ConversationalTutor has its own recording system ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â do NOT navigate away.
-          console.log("Global recorder stopped in TALKBACK mode ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â ignoring.");
+          // ConversationalTutor has its own recording system — do NOT navigate away.
+          console.log("Global recorder stopped in TALKBACK mode — ignoring.");
         } else {
           await handleAudioExplanation(blob, mimeType);
         }
@@ -3097,7 +3097,7 @@ ${explanation.explanation}
     setLoading(true);
     setLoadingText("Generating high-quality voice...");
     try {
-      // Build a natural spoken script ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â avoid raw markdown being read aloud
+      // Build a natural spoken script — avoid raw markdown being read aloud
       const spokenIntro = `Today we're learning about ${explanation.topic}.`;
       const spokenSummary = explanation.summaryPoints.length > 0
         ? `Here are the key points. ${explanation.summaryPoints.join('. ')}.`
@@ -3312,7 +3312,7 @@ ${explanation.explanation}
             lastScore: 0,
             reviewCount: 0,
             question: "What are the raw materials and products of photosynthesis in plants?",
-            answer: "Raw Materials:\n- Carbon dioxide (absorbed through stomata)\n- Water (absorbed through roots)\n\nProducts:\n- Glucose (chemical energy stored as starch)\n- Oxygen gas (released as a byproduct through stomata)\n\nReaction Equation:\n6CO₂ + 6H₂O + light → C₆H₁₂₂O₆ + 6O₂"
+      answer: "Raw Materials:\n- Carbon dioxide (absorbed through stomata)\n- Water (absorbed through roots)\n\nProducts:\n- Glucose (chemical energy stored as starch)\n- Oxygen gas (released as a byproduct through stomata)\n\nReaction Equation:\n6CO₂ + 6H₂O + light → C₆H₁₂O₆ + 6O₂",
           },
           {
             topic: "Quadratic Equations",
@@ -3358,7 +3358,7 @@ ${explanation.explanation}
               </div>
               <h1 className="text-3xl font-extrabold text-white mb-2 tracking-wide font-sans">Deck Mastered! 🎉</h1>
               <p className="text-slate-400 text-sm mb-8 leading-relaxed font-sans font-medium">
-                Fantastic job! You've successfully finished this spaced-repetition active recall session.
+                {"Fantastic job! You've successfully finished this spaced-repetition active recall session."}
               </p>
 
               <div className="grid grid-cols-2 gap-4 mb-8">
@@ -3649,7 +3649,7 @@ ${explanation.explanation}
                     : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
                 }`}
               >
-                {tab === 'MAP' ? 'ÃƒÂ°Ã…Â¸Ã¢â‚¬â€Ã‚ÂºÃƒÂ¯Ã‚Â¸Ã‚Â Quest Map' : '✨ My Path'}
+            {tab === 'MAP' ? '🗺️ Quest Map' : '✨ My Path'}
               </button>
             ))}
           </div>
@@ -4544,7 +4544,7 @@ Topic or question: ${question || '[type your question here]'}`)
             </AnimatePresence>
 
 
-            {/* WELCOME CARD ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â newly registered users on first login (registered + zero history) */}
+            {/* WELCOME CARD — newly registered users on first login (registered + zero history) */}
             {isRegistered && !hasHistory && (
               <motion.div
                 initial={{ opacity: 0, y: -10 }}
@@ -4579,7 +4579,7 @@ Topic or question: ${question || '[type your question here]'}`)
               </motion.div>
             )}
 
-            {/* START HERE ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â Onboarding card for brand-new users (zero history, not registered) */}
+            {/* START HERE — Onboarding card for brand-new users (zero history, not registered) */}
             {!isRegistered && !hasHistory && (
               <motion.div
                 initial={{ opacity: 0, y: -10 }}
@@ -4590,11 +4590,11 @@ Topic or question: ${question || '[type your question here]'}`)
                   <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center shrink-0 text-xl">🚀</div>
                   <div className="flex-1 min-w-0">
                     <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-200 mb-1">Welcome to Somo Smart!</p>
-                    <p className="font-bold text-base mb-3">Start with these 3 steps ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â no signup needed</p>
+                  <p className="font-bold text-base mb-3">Start with these 3 steps — no signup needed</p>
                     <div className="space-y-2">
                       {[
-                        { step: '1', label: 'Type a question below or scan your textbook', icon: 'ÃƒÂ¢Ã‚ÂÃ¢â‚¬Å“' },
-                        { step: '2', label: 'Get a step-by-step explanation instantly', icon: 'ÃƒÂ¢Ã…Â¡Ã‚Â¡' },
+                      { step: '1', label: 'Type a question below or scan your textbook', icon: '📝' },
+                      { step: '2', label: 'Get a step-by-step explanation instantly', icon: '⚡' },
                         { step: '3', label: 'Test yourself with a quick quiz on the topic', icon: '✓' },
                       ].map(({ step, label, icon }) => (
                         <div key={step} className="flex items-center gap-2.5 text-sm font-medium text-white/90">
@@ -4608,7 +4608,7 @@ Topic or question: ${question || '[type your question here]'}`)
               </motion.div>
             )}
 
-            {/* FREE USAGE METER ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â visible for all non-pro, non-registered users */}
+            {/* FREE USAGE METER — visible for all non-pro, non-registered users */}
             {!isRegistered && !hasHistory && (
               <motion.div
                 initial={{ opacity: 0, y: -10 }}
@@ -4730,7 +4730,7 @@ Topic or question: ${question || '[type your question here]'}`)
                       {streak > 1 && <span className="ml-2 inline-flex items-center gap-1.5"><span className="text-slate-400">|</span><Flame className="w-3.5 h-3.5 text-orange-500" /> <span>{streak}-day streak!</span></span>}
                     </p>
                   ) : (
-                    <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Let's keep learning and growing today.</p>
+                    <p className="text-sm font-medium text-slate-500 dark:text-slate-400">{"Let's keep learning and growing today."}</p>
                   )}
                   <button
                     onClick={() => { /* open level picker in sidebar */ setSidebarOpen(true); }}
@@ -4768,7 +4768,7 @@ Topic or question: ${question || '[type your question here]'}`)
                         </motion.div>
                       </div>
                       <h2 className="text-4xl font-black text-slate-800 dark:text-white mb-2 relative z-10 tracking-tight">{streak} Day Streak!</h2>
-                      <p className="text-slate-500 dark:text-slate-400 font-bold mb-8 relative z-10 leading-relaxed">You're on fire! You completed a lesson today. Keep coming back daily to build your streak.</p>
+                      <p className="text-slate-500 dark:text-slate-400 font-bold mb-8 relative z-10 leading-relaxed">{"You're on fire! You completed a lesson today. Keep coming back daily to build your streak."}</p>
                       
                       <button
                         onClick={() => setShowStreakModal(false)}
@@ -4801,7 +4801,7 @@ Topic or question: ${question || '[type your question here]'}`)
               </div>
             </div>
 
-            {/* STREAK NUDGE ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â only when learner has a streak but hasn't studied today */}
+            {/* STREAK NUDGE — only when learner has a streak but hasn't studied today */}
             {(() => {
               const today = new Date().toLocaleDateString();
               const studiedToday = history.some((h: any) => h.date === today);
@@ -4809,10 +4809,10 @@ Topic or question: ${question || '[type your question here]'}`)
                 return (
                   <div className="flex items-center justify-between gap-3 bg-amber-50 dark:bg-amber-900/20 border-2 border-amber-200 dark:border-amber-800 rounded-2xl px-4 py-3">
                     <div className="flex items-center gap-3">
-                      <span className="text-2xl">ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â¥</span>
+                      <span className="text-2xl">🔥</span>
                       <div>
                         <p className="text-sm font-black text-amber-900 dark:text-amber-100">Keep your {streak}-day streak alive!</p>
-                        <p className="text-xs font-bold text-amber-700 dark:text-amber-300">You haven't studied yet today. One topic is all it takes.</p>
+                        <p className="text-xs font-bold text-amber-700 dark:text-amber-300">{"You haven't studied yet today. One topic is all it takes."}</p>
                       </div>
                     </div>
                     <button
@@ -4851,7 +4851,7 @@ Topic or question: ${question || '[type your question here]'}`)
               const days = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
               if (days < 0 || days > 200) return null;
               const urgency = days <= 14 ? 'bg-rose-50 border-rose-300 text-rose-900' : days <= 60 ? 'bg-amber-50 border-amber-200 text-amber-900' : 'bg-blue-50 border-blue-200 text-blue-900';
-              const emoji = days <= 14 ? '🚨' : days <= 60 ? 'ÃƒÂ¢Ã‚ÂÃ‚Â°' : '📅';
+              const emoji = days <= 14 ? '🚨' : days <= 60 ? '⏳' : '📅';
               return (
                 <div className={`flex items-center justify-between gap-3 border-2 rounded-2xl px-4 py-3 ${urgency}`}>
                   <div className="flex items-center gap-3">
@@ -4859,7 +4859,7 @@ Topic or question: ${question || '[type your question here]'}`)
                     <div>
                       <p className="text-sm font-black">{days} days to {relevant.name} {year}</p>
                       <p className="text-xs font-bold opacity-70">
-                        {days <= 14 ? 'Final push ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â every session counts!' : days <= 60 ? 'Exam season is near. Stay consistent.' : 'Start building your revision habit now.'}
+              {days <= 14 ? 'Final push — every session counts!' : days <= 60 ? 'Exam season is near. Stay consistent.' : 'Start building your revision habit now.'}
                       </p>
                     </div>
                   </div>
@@ -5049,7 +5049,7 @@ Topic or question: ${question || '[type your question here]'}`)
                         </div>
                       ))}
                       {timetable.days.length > 7 && (
-                        <p className="text-[10px] font-bold text-slate-400 text-center">+ {timetable.days.length - 7} more days · Tap "Rebuild" to view all</p>
+                        <p className="text-[10px] font-bold text-slate-400 text-center">+ {timetable.days.length - 7} more days · Tap {"\"Rebuild\""} to view all</p>
                       )}
                     </div>
                   )}
@@ -5232,7 +5232,7 @@ Topic or question: ${question || '[type your question here]'}`)
                     </div>
                   </div>
 
-                  {/* START HERE: PRIMARY FIRST-SESSION PATH ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â for returning users or registered with history */}
+                  {/* START HERE: PRIMARY FIRST-SESSION PATH — for returning users or registered with history */}
                   {(!isRegistered || hasHistory || hasProgress) && (
                   <div className="hidden">
                     <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-100 mb-2">Start Here</p>
@@ -5432,11 +5432,11 @@ Topic or question: ${question || '[type your question here]'}`)
                     </div>
                   </div>
 
-                  {/* SHORTCUTS ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â secondary actions */}
+                  {/* SHORTCUTS — secondary actions */}
                   <div className="hidden grid-cols-3 gap-2 sm:gap-4">
                      {(
                        educationLevel === 'JUNIOR' ? [
-                         { icon: <Library className="w-5 h-5 sm:w-6 sm:h-6" />, label: 'Library ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã…Â¡', color: 'bg-blue-600', onClick: () => handleSidebarTabChange('RESOURCES') },
+                          { icon: <Library className="w-5 h-5 sm:w-6 sm:h-6" />, label: 'Library 📚', color: 'bg-blue-600', onClick: () => handleSidebarTabChange('RESOURCES') },
                          { icon: <Brain className="w-5 h-5 sm:w-6 sm:h-6" />, label: 'Exam Prep', color: 'bg-orange-500', onClick: () => {
                            setRevisionInitialSubject(currentDocument?.subject || 'All');
                            setRevisionInitialSearchQuery(currentDocument?.title || currentDocument?.subject || '');
@@ -5448,7 +5448,7 @@ Topic or question: ${question || '[type your question here]'}`)
                          { icon: <Brain className="w-5 h-5 sm:w-6 sm:h-6" />, label: 'Courses', color: 'bg-indigo-500', onClick: () => handleSidebarTabChange('SUBJECTS') },
                          { icon: <Users className="w-5 h-5 sm:w-6 sm:h-6" />, label: 'Study Group', color: 'bg-emerald-500', onClick: () => handleSidebarTabChange('EXAM_ROOMS') }
                        ] : [
-                         { icon: <Library className="w-5 h-5 sm:w-6 sm:h-6" />, label: 'Library', color: 'bg-blue-600', onClick: () => handleSidebarTabChange('RESOURCES') },
+                          { icon: <Library className="w-5 h-5 sm:w-6 sm:h-6" />, label: 'Library 📚', color: 'bg-blue-600', onClick: () => handleSidebarTabChange('RESOURCES') },
                          { icon: <Brain className="w-5 h-5 sm:w-6 sm:h-6" />, label: 'Exam Hall', color: 'bg-orange-500', onClick: () => handleSidebarTabChange('SUBJECTS') },
                          { icon: <Trophy className="w-5 h-5 sm:w-6 sm:h-6" />, label: 'My Progress', color: 'bg-indigo-600', onClick: () => setShowMasteryDashboard(true) }
                        ]
@@ -5540,7 +5540,7 @@ Topic or question: ${question || '[type your question here]'}`)
                     <div className="relative z-10">
                       <div className="flex items-start justify-between gap-3 mb-4">
                         <div>
-                          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-600 dark:text-indigo-300 mb-1">Today's 10-minute plan</p>
+                          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-600 dark:text-indigo-300 mb-1">{"Today's 10-minute plan"}</p>
                           <h3 className="font-black text-slate-900 dark:text-white text-lg leading-tight">{nextStep.title}</h3>
                         </div>
                         <div className="w-10 h-10 rounded-2xl bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-300 flex items-center justify-center shrink-0">
@@ -5592,7 +5592,7 @@ Topic or question: ${question || '[type your question here]'}`)
                           >
                             <div>
                               <p className="text-xs font-black text-slate-900 dark:text-white">{topic}</p>
-                              <p className="text-[10px] font-bold text-slate-400 mt-0.5">Weak area · tap to revise</p>
+                            <p className="text-[10px] font-bold text-slate-400 mt-0.5">Weak area · tap to revise</p>
                             </div>
                             <span className="text-emerald-500 group-hover:translate-x-1 transition-transform">→</span>
                           </button>
@@ -5691,7 +5691,7 @@ Topic or question: ${question || '[type your question here]'}`)
                                               await classroomService.createPost(item.class.id, userId, 'ANNOUNCEMENT', `[Student Question] ${askTeacherText.trim()}`);
                                               setAskTeacherText('');
                                               setAskTeacherClassId(null);
-                                              triggerToast('Question sent to teacher ÃƒÂ¢Ã…â€œÃ¢â‚¬Å“');
+                                triggerToast('Question sent to teacher ✓');
                                             } catch { triggerToast('Could not send. Try again.'); }
                                             finally { setAskTeacherSending(false); }
                                           }}
@@ -5826,7 +5826,7 @@ Topic or question: ${question || '[type your question here]'}`)
                                       lastScore: 0,
                                       reviewCount: 0,
                                       question: "What are the raw materials and products of photosynthesis in plants?",
-                                      answer: "Raw Materials:\n- Carbon dioxide (absorbed through stomata)\n- Water (absorbed through roots)\n\nProducts:\n- Glucose (chemical energy stored as starch)\n- Oxygen gas (released as a byproduct through stomata)\n\nReaction Equation:\n6CO₂ + 6H₂O + light → C₆H₁₂₂O₆ + 6O₂"
+      answer: "Raw Materials:\n- Carbon dioxide (absorbed through stomata)\n- Water (absorbed through roots)\n\nProducts:\n- Glucose (chemical energy stored as starch)\n- Oxygen gas (released as a byproduct through stomata)\n\nReaction Equation:\n6CO₂ + 6H₂O + light → C₆H₁₂O₆ + 6O₂",
                                     },
                                     {
                                       topic: "Quadratic Equations",
@@ -6151,9 +6151,9 @@ Topic or question: ${question || '[type your question here]'}`)
                    <Sparkles className="w-4 h-4" /> Why create a profile?
                 </h4>
                 <ul className="text-xs font-medium text-amber-700/80 dark:text-amber-500/80 space-y-2 mt-3">
-                  <li className="flex gap-2"><span>ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢</span> Save your learning history and streaks</li>
-                  <li className="flex gap-2"><span>ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢</span> Unlock high daily AI study limits</li>
-                  <li className="flex gap-2"><span>ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢</span> Get a personalized study buddy profile</li>
+                      <li className="flex gap-2"><span>•</span> Save your learning history and streaks</li>
+                      <li className="flex gap-2"><span>•</span> Unlock high daily AI study limits</li>
+                      <li className="flex gap-2"><span>•</span> Get a personalized study buddy profile</li>
                 </ul>
               </div>
             </motion.div>
@@ -6386,25 +6386,25 @@ Topic or question: ${question || '[type your question here]'}`)
                     const quizCount = history.filter((h: any) => h.type === 'QUIZ').length;
                     const inClass = studentClasses.length > 0;
                     const BADGES = [
-                      { id: 'first_study', emoji: 'ÃƒÂ°Ã…Â¸Ã…â€™Ã‚Â±', name: 'First Step', desc: 'Completed your first study session', earned: history.length >= 1 },
-                      { id: 'first_quiz', emoji: 'ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‚Â', name: 'Quiz Taker', desc: 'Took your first quiz', earned: quizCount >= 1 },
-                      { id: 'streak_3', emoji: 'ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â¥', name: 'On Fire', desc: '3-day study streak', earned: streak >= 3 },
-                      { id: 'streak_7', emoji: 'ÃƒÂ°Ã…Â¸Ã¢â‚¬â„¢Ã‚Â«', name: 'Streak Keeper', desc: '7-day study streak', earned: streak >= 7 },
-                      { id: 'streak_30', emoji: 'ÃƒÂ°Ã…Â¸Ã¢â‚¬ËœÃ¢â‚¬Ëœ', name: 'Streak Legend', desc: '30-day streak', earned: streak >= 30 },
-                      { id: 'xp_100', emoji: 'ÃƒÂ¢Ã‚Â­Ã‚Â', name: 'XP Explorer', desc: 'Earned 100 XP', earned: totalXP >= 100 },
-                      { id: 'xp_500', emoji: 'ÃƒÂ°Ã…Â¸Ã‚ÂÃ¢â‚¬Â¦', name: 'XP Champion', desc: 'Earned 500 XP', earned: totalXP >= 500 },
-                      { id: 'quiz_5', emoji: 'ÃƒÂ°Ã…Â¸Ã…Â½Ã‚Â¯', name: 'Quiz Master', desc: 'Completed 5 quizzes', earned: quizCount >= 5 },
-                      { id: 'quiz_20', emoji: 'ÃƒÂ°Ã…Â¸Ã‚ÂÃ¢â‚¬Â ', name: 'Quiz Legend', desc: 'Completed 20 quizzes', earned: quizCount >= 20 },
-                      { id: 'class_join', emoji: 'ÃƒÂ°Ã…Â¸Ã‚Â¤Ã‚Â', name: 'Team Player', desc: 'Joined a class', earned: inClass },
-                      { id: 'kcse_warrior', emoji: 'ÃƒÂ¢Ã…Â¡Ã¢â‚¬ÂÃƒÂ¯Ã‚Â¸Ã‚Â', name: 'KCSE Warrior', desc: 'Studied 30+ sessions before exam', earned: history.length >= 30 },
-                      { id: 'notebook', emoji: 'ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã¢â‚¬Å“', name: 'Note Taker', desc: 'Saved 5+ answers to Notebook', earned: (JSON.parse(localStorage.getItem(`somo_notebook_${notebookOwnerKey}`) || '[]') as any[]).length >= 5 },
+        { id: 'first_study', emoji: '🌱', name: 'First Step', desc: 'Completed your first study session', earned: history.length >= 1 },
+        { id: 'first_quiz', emoji: '📝', name: 'Quiz Taker', desc: 'Took your first quiz', earned: quizCount >= 1 },
+                      { id: 'streak_3', emoji: '🔥', name: 'On Fire', desc: '3-day study streak', earned: streak >= 3 },
+                      { id: 'streak_7', emoji: '💫', name: 'Streak Keeper', desc: '7-day study streak', earned: streak >= 7 },
+                      { id: 'streak_30', emoji: '👀', name: 'Streak Legend', desc: '30-day streak', earned: streak >= 30 },
+                      { id: 'xp_100', emoji: '⭐', name: 'XP Explorer', desc: 'Earned 100 XP', earned: totalXP >= 100 },
+                      { id: 'xp_500', emoji: '🏆', name: 'XP Champion', desc: 'Earned 500 XP', earned: totalXP >= 500 },
+                      { id: 'quiz_5', emoji: '🎯', name: 'Quiz Master', desc: 'Completed 5 quizzes', earned: quizCount >= 5 },
+                      { id: 'quiz_20', emoji: '🏅', name: 'Quiz Legend', desc: 'Completed 20 quizzes', earned: quizCount >= 20 },
+                      { id: 'class_join', emoji: '🤝', name: 'Team Player', desc: 'Joined a class', earned: inClass },
+                      { id: 'kcse_warrior', emoji: '⚔️', name: 'KCSE Warrior', desc: 'Studied 30+ sessions before exam', earned: history.length >= 30 },
+                      { id: 'notebook', emoji: '📓', name: 'Note Taker', desc: 'Saved 5+ answers to Notebook', earned: (JSON.parse(localStorage.getItem(`somo_notebook_${notebookOwnerKey}`) || '[]') as any[]).length >= 5 },
                     ];
                     const earned = BADGES.filter(b => b.earned);
                     const locked = BADGES.filter(b => !b.earned);
                     return (
                       <>
                         {earned.length === 0 ? (
-                          <p className="text-xs font-bold text-slate-400 text-center py-4">No badges yet ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â start studying to earn your first!</p>
+                          <p className="text-xs font-bold text-slate-400 text-center py-4">No badges yet — start studying to earn your first!</p>
                         ) : (
                           <>
                             <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest mb-3">{earned.length} badge{earned.length !== 1 ? 's' : ''} earned</p>
@@ -6485,7 +6485,7 @@ Topic or question: ${question || '[type your question here]'}`)
                             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Level</p>
                           </div>
                           <div className="bg-white rounded-2xl p-3 border border-emerald-100">
-                            <p className="text-2xl font-black text-amber-600">{quizAvg > 0 ? `${quizAvg}%` : 'ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â'}</p>
+                            <p className="text-2xl font-black text-amber-600">{quizAvg > 0 ? `${quizAvg}%` : '—'}</p>
                             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Quiz Avg</p>
                           </div>
                         </div>
@@ -6562,7 +6562,7 @@ Topic or question: ${question || '[type your question here]'}`)
                       const result = await Notification.requestPermission();
                       setNotifStatus(result as 'granted' | 'denied');
                       if (result === 'granted') {
-                        new Notification('Somo Smart ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â¥', {
+                        new Notification('Somo Smart 🔥', {
                           body: "Reminders enabled! We'll nudge you at 6pm if you haven't studied.",
                           icon: '/icons/icon-192x192.png',
                         });
@@ -6573,7 +6573,7 @@ Topic or question: ${question || '[type your question here]'}`)
                       <div className="flex items-center justify-between gap-4">
                         <div>
                           <p className="text-sm font-black text-slate-800">
-                            {notifStatus === 'granted' ? 'ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ¢â‚¬Â Reminders are on' : notifStatus === 'denied' ? 'ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ¢â‚¬Â¢ Blocked in browser settings' : 'ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ¢â‚¬Â Enable daily study reminders'}
+                            {notifStatus === 'granted' ? '🔔 Reminders are on' : notifStatus === 'denied' ? '🔕 Blocked in browser settings' : '🔔 Enable daily study reminders'}
                           </p>
                           <p className="text-xs font-bold text-slate-400 mt-0.5">
                             {notifStatus === 'granted' ? "You'll get a nudge at 6pm if you haven't studied today." : notifStatus === 'denied' ? 'Allow notifications in your browser site settings.' : "Get a 6pm reminder if you haven't studied yet."}
@@ -6585,7 +6585,7 @@ Topic or question: ${question || '[type your question here]'}`)
                             disabled={notifStatus === 'granted'}
                             className={`shrink-0 px-4 py-2 rounded-xl text-xs font-black transition-colors ${notifStatus === 'granted' ? 'bg-emerald-100 text-emerald-700 cursor-default' : 'bg-violet-600 hover:bg-violet-700 text-white'}`}
                           >
-                            {notifStatus === 'granted' ? 'Enabled ÃƒÂ¢Ã…â€œÃ¢â‚¬Å“' : 'Enable'}
+                            {notifStatus === 'granted' ? 'Enabled ✓' : 'Enable'}
                           </button>
                         )}
                       </div>
@@ -6883,7 +6883,7 @@ Topic or question: ${question || '[type your question here]'}`)
                         onClick={() => setOriginalViewType('pdf')}
                         className={`px-2.5 py-1 rounded-md transition-all ${originalViewType === 'pdf' ? 'bg-white dark:bg-slate-700 text-indigo-750 dark:text-indigo-400 shadow-sm font-black' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
                       >
-                        ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã¢â‚¬Å¾ PDF
+                        📄 PDF
                       </button>
                     </div>
                   )}
@@ -7165,7 +7165,7 @@ Topic or question: ${question || '[type your question here]'}`)
                                 <ul className="space-y-1.5">
                                   {syllabus.outcomes.map((out, i) => (
                                     <li key={i} className="text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-start gap-2">
-                                      <span className="text-emerald-500 mt-0.5">ÃƒÂ¢Ã…â€œÃ¢â‚¬Â</span>
+                                      <span className="text-emerald-500 mt-0.5">✓</span>
                                       <span>{out}</span>
                                     </li>
                                   ))}
@@ -7304,7 +7304,7 @@ Topic or question: ${question || '[type your question here]'}`)
                     }}
                     className="flex items-center gap-2 px-4 py-2 border border-slate-200 dark:border-slate-700 rounded-full text-xs font-black uppercase tracking-wider text-slate-650 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-50 disabled:hover:bg-transparent transition-all font-semibold"
                   >
-                    ÃƒÂ¢Ã¢â‚¬Â Ã‚Â Previous
+                    ← Previous
                   </button>
                   <div className="flex items-center gap-1 overflow-x-auto max-w-[200px] sm:max-w-none no-scrollbar">
                     {Array.from({ length: studyViewMode === 'guide' ? totalPages : extractedOriginalPages.length }).map((_, i) => {
@@ -7379,7 +7379,7 @@ Topic or question: ${question || '[type your question here]'}`)
                     {/* Mobile Back to Lesson Button */}
                     <div className="lg:hidden flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shrink-0">
                       <button onClick={() => setStudyTab('LESSON')} className="flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-indigo-600 dark:text-indigo-400 font-semibold">
-                        ÃƒÂ¢Ã¢â‚¬Â Ã‚Â Back to Lesson
+                        ← Back to Lesson
                       </button>
                       <span className="text-xs font-black text-slate-800 dark:text-white uppercase tracking-widest">Raise Hand</span>
                     </div>
@@ -7484,7 +7484,7 @@ Topic or question: ${question || '[type your question here]'}`)
                       {pendingMedia && (
                         <div className="mb-2 inline-flex items-center gap-2 p-2 bg-white dark:bg-slate-850 border border-slate-250 dark:border-slate-700 rounded-xl shadow-md">
                           <span className="text-[10px] font-black uppercase text-indigo-600 font-semibold">Attached {pendingMedia.type}</span>
-                          <button onClick={() => setPendingMedia(null)} className="text-slate-400 hover:text-red-500">ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¢</button>
+                          <button onClick={() => setPendingMedia(null)} className="text-slate-400 hover:text-red-500">✕</button>
                         </div>
                       )}
                       <div className="flex items-center bg-white dark:bg-slate-900 border border-slate-350 dark:border-slate-700 rounded-2xl p-1 shadow-md focus-within:ring-2 focus-within:ring-indigo-500">
@@ -7521,7 +7521,7 @@ Topic or question: ${question || '[type your question here]'}`)
                     {/* Mobile Back */}
                     <div className="lg:hidden flex items-center justify-between pb-4 border-b border-slate-200 dark:border-slate-800 shrink-0">
                       <button onClick={() => setStudyTab('LESSON')} className="flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-indigo-600 font-semibold">
-                        ÃƒÂ¢Ã¢â‚¬Â Ã‚Â Back to Lesson
+                        ← Back to Lesson
                       </button>
                       <span className="text-xs font-black text-slate-800 dark:text-white uppercase tracking-widest">Quick Recap</span>
                     </div>
@@ -7570,7 +7570,7 @@ Topic or question: ${question || '[type your question here]'}`)
                     {/* Mobile Back */}
                     <div className="lg:hidden w-full flex items-center justify-between pb-4 border-b border-slate-200 dark:border-slate-800 shrink-0 mb-10">
                       <button onClick={() => setStudyTab('LESSON')} className="flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-indigo-600 font-semibold">
-                        ÃƒÂ¢Ã¢â‚¬Â Ã‚Â Back to Lesson
+                        ← Back to Lesson
                       </button>
                       <span className="text-xs font-black text-slate-850 dark:text-white uppercase tracking-widest font-semibold">Pop Quiz</span>
                     </div>
@@ -7599,7 +7599,7 @@ Topic or question: ${question || '[type your question here]'}`)
                     {/* Mobile Back */}
                     <div className="lg:hidden flex items-center justify-between pb-4 border-b border-slate-200 dark:border-slate-850 shrink-0">
                       <button onClick={() => setStudyTab('LESSON')} className="flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-indigo-600 font-semibold">
-                        ÃƒÂ¢Ã¢â‚¬Â Ã‚Â Back to Lesson
+                        ← Back to Lesson
                       </button>
                       <span className="text-xs font-black text-slate-800 dark:text-white uppercase tracking-widest font-semibold">References</span>
                     </div>
@@ -7631,7 +7631,7 @@ Topic or question: ${question || '[type your question here]'}`)
                             <ul className="space-y-1 pl-1">
                               {syllabus.outcomes.map((out, i) => (
                                 <li key={i} className="text-slate-650 dark:text-slate-350 flex items-start gap-1">
-                                  <span className="text-emerald-500">ÃƒÂ¢Ã…â€œÃ¢â‚¬Â</span>
+                                  <span className="text-emerald-500">✓</span>
                                   <span>{out}</span>
                                 </li>
                               ))}
@@ -7826,8 +7826,8 @@ Topic or question: ${question || '[type your question here]'}`)
                 {imageData
                   ? (educationLevel === EducationLevel.JUNIOR ? "I see your picture! What should I help with?" : "Image attached! What would you like Akili to explain?")
                   : isHomework
-                    ? (educationLevel === EducationLevel.JUNIOR ? "Show me your task or tell me about it!" : "Upload your homework or record audio ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â Akili will break it down step by step.")
-                    : (educationLevel === EducationLevel.JUNIOR ? "Ask Akili anything, show a picture, or just talk!" : "Type a topic, upload an image, or record audio ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â Akili has you covered.")}
+                    ? (educationLevel === EducationLevel.JUNIOR ? "Show me your task or tell me about it!" : "Upload your homework or record audio — Akili will break it down step by step.")
+                    : (educationLevel === EducationLevel.JUNIOR ? "Ask Akili anything, show a picture, or just talk!" : "Type a topic, upload an image, or record audio — Akili has you covered.")}
               </p>
             </div>
 
@@ -8081,7 +8081,7 @@ Topic or question: ${question || '[type your question here]'}`)
               </motion.div>
             )}
 
-            {/* Podcast Player Overlay ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â Premium Media Player */}
+            {/* Podcast Player Overlay — Premium Media Player */}
             <AnimatePresence>
               {(isPodcastPlaying || podcastLoading) && (isPodcastPlaying ? podcastScript : true) && (
                 <motion.div
@@ -8131,7 +8131,7 @@ Topic or question: ${question || '[type your question here]'}`)
                                 ? 'bg-indigo-500/30 text-indigo-300'
                                 : 'bg-violet-500/30 text-violet-300'
                             }`}>
-                              {seg.speaker === 'Host' ? 'ÃƒÂ°Ã…Â¸Ã…Â½Ã¢â€žÂ¢ÃƒÂ¯Ã‚Â¸Ã‚Â Host' : 'ÃƒÂ°Ã…Â¸Ã…Â½Ã¢â‚¬Å“ Expert'}
+                              {seg.speaker === 'Host' ? '🎙️ Host' : '🎓 Expert'}
                             </span>
                             <p className="text-slate-200 text-sm leading-relaxed font-medium">{seg.text}</p>
                           </div>
@@ -8274,7 +8274,7 @@ Topic or question: ${question || '[type your question here]'}`)
                     {isPodcastPlaying && podcastScript && currentSegmentIndex >= 0 ? (
                       <>
                         <p className="text-[11px] font-bold text-indigo-500 truncate max-w-[180px]">
-                          {podcastScript.script[currentSegmentIndex].speaker === 'Host' ? 'ÃƒÂ°Ã…Â¸Ã…Â½Ã¢â€žÂ¢ÃƒÂ¯Ã‚Â¸Ã‚Â Host' : 'ÃƒÂ°Ã…Â¸Ã…Â½Ã¢â‚¬Å“ Expert'}
+                          {podcastScript.script[currentSegmentIndex].speaker === 'Host' ? '🎙️ Host' : '🎓 Expert'}
                         </p>
                         {podcastTotalSegments > 0 && (
                           <div className="mt-1 h-1 w-28 bg-indigo-200 rounded-full overflow-hidden">
@@ -8437,7 +8437,7 @@ Topic or question: ${question || '[type your question here]'}`)
                 return (
                   <div className="mt-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
                     <div className="flex items-center justify-between mb-3">
-                      <p className="text-xs font-black text-slate-500 uppercase tracking-widest">Flashcards ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â {gotCount}/{total} Got It</p>
+                      <p className="text-xs font-black text-slate-500 uppercase tracking-widest">Flashcards — {gotCount}/{total} Got It</p>
                       <p className="text-xs font-bold text-slate-400">{flashcardIndex + 1} / {total}</p>
                     </div>
                     <div
@@ -8474,7 +8474,7 @@ Topic or question: ${question || '[type your question here]'}`)
                         }}
                         className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white font-black py-3 rounded-2xl text-sm transition-colors"
                       >
-                        ÃƒÂ¢Ã…â€œÃ¢â‚¬Å“ Got It
+                        ✓ Got It
                       </button>
                       <button
                         onClick={() => {
@@ -8483,7 +8483,7 @@ Topic or question: ${question || '[type your question here]'}`)
                         }}
                         className="flex-1 bg-rose-100 hover:bg-rose-200 text-rose-700 font-black py-3 rounded-2xl text-sm transition-colors"
                       >
-                        ÃƒÂ¢Ã…â€œÃ¢â‚¬â€ Still Learning
+                        ✗ Still Learning
                       </button>
                     </div>
                     {flashcardIndex === total - 1 && (
@@ -8658,9 +8658,9 @@ Topic or question: ${question || '[type your question here]'}`)
             <div className="fixed inset-0 z-[200] bg-slate-900/80 backdrop-blur-md flex items-end sm:items-center justify-center p-4">
               <div className="bg-white dark:bg-slate-900 rounded-[2rem] w-full max-w-sm shadow-2xl overflow-hidden">
                 <div className="bg-gradient-to-r from-indigo-600 to-purple-600 p-6 text-white text-center">
-                  <div className="text-3xl mb-2">ÃƒÂ°Ã…Â¸Ã…Â½Ã¢â‚¬Å“</div>
+                  <div className="text-3xl mb-2">🎓</div>
                   <h2 className="text-xl font-black">Welcome to Somo Smart!</h2>
-                  <p className="text-indigo-100 text-sm mt-1">Let's personalise your learning</p>
+                  <p className="text-indigo-100 text-sm mt-1">{"Let's personalise your learning"}</p>
                   <div className="flex justify-center gap-2 mt-3">
                     <div className={`w-6 h-1.5 rounded-full ${onboardStep >= 1 ? 'bg-white' : 'bg-white/30'}`} />
                     <div className={`w-6 h-1.5 rounded-full ${onboardStep >= 2 ? 'bg-white' : 'bg-white/30'}`} />
@@ -8692,8 +8692,8 @@ Topic or question: ${question || '[type your question here]'}`)
                   )}
                   {onboardStep === 2 && (
                     <>
-                      <p className="text-sm font-black text-slate-700 dark:text-slate-200 mb-2">Class set to <span className="text-indigo-600">{onboardGrade}</span> ÃƒÂ°Ã…Â¸Ã¢â‚¬ËœÃ…â€™</p>
-                      <p className="text-xs text-slate-500 dark:text-slate-400 mb-5">You're ready to explore. Scan a page, ask a question, or browse notes for your class.</p>
+                      <p className="text-sm font-black text-slate-700 dark:text-slate-200 mb-2">Class set to <span className="text-indigo-600">{onboardGrade}</span> 👌</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mb-5">{"You're ready to explore. Scan a page, ask a question, or browse notes for your class."}</p>
                       <button
                         onClick={async () => {
                           await updateStudentProfile({ grade: onboardGrade });
@@ -8705,7 +8705,7 @@ Topic or question: ${question || '[type your question here]'}`)
                       >
                         Start Learning 🚀
                       </button>
-                      <button onClick={() => setOnboardStep(1)} className="mt-2 w-full text-slate-400 text-xs font-bold py-2">ÃƒÂ¢Ã¢â‚¬Â Ã‚Â Back</button>
+                      <button onClick={() => setOnboardStep(1)} className="mt-2 w-full text-slate-400 text-xs font-bold py-2">← Back</button>
                     </>
                   )}
                   <button
@@ -8727,7 +8727,7 @@ Topic or question: ${question || '[type your question here]'}`)
                 <h2 className="text-2xl font-black text-slate-900 dark:text-white">{showQuizSharePrompt.score}%!</h2>
                 <p className="text-sm font-bold text-slate-500 dark:text-slate-400 mt-1 mb-5">{showQuizSharePrompt.topic}</p>
                 <a
-                  href={`https://wa.me/?text=${encodeURIComponent(`I just scored ${showQuizSharePrompt.score}% on ${showQuizSharePrompt.topic} on Somo Smart! 🎉\n\nStudy smarter ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â try it free: https://somaai.co.ke`)}`}
+                  href={`https://wa.me/?text=${encodeURIComponent(`I just scored ${showQuizSharePrompt.score}% on ${showQuizSharePrompt.topic} on Somo Smart! 🎉\n\nStudy smarter — try it free: https://somaai.co.ke`)}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={() => { setShowQuizSharePrompt(null); trackFunnelEvent('quiz_whatsapp_share', { score: showQuizSharePrompt.score }); }}
@@ -9031,7 +9031,7 @@ Topic or question: ${question || '[type your question here]'}`)
                           seenIds.add(mId);
                           recentSessions.push({ ...details, id: mId, title: session.topic });
                         }
-                      } catch (e) { }
+                      } catch (e) { /* ignore */ }
                       if (recentSessions.length >= 5) break;
                     }
 
@@ -9174,8 +9174,8 @@ Topic or question: ${question || '[type your question here]'}`)
                 {([
                   { id: 'ALL',        emoji: 'ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã…Â¡', label: 'All',         activeClass: 'bg-indigo-600 text-white shadow-lg shadow-indigo-200' },
                   { id: 'SYLLABUS',   emoji: '📖', label: 'Syllabus',    activeClass: 'bg-purple-600 text-white shadow-lg shadow-purple-200' },
-                  { id: 'NOTES',      emoji: 'ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‚Â', label: 'Notes',       activeClass: 'bg-blue-600 text-white shadow-lg shadow-blue-200' },
-                  { id: 'PAST_PAPER', emoji: 'ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã¢â‚¬Å¾', label: 'Past Papers', activeClass: 'bg-amber-500 text-white shadow-lg shadow-amber-200' },
+  { id: 'NOTES',      emoji: '📝', label: 'Notes',       activeClass: 'bg-blue-600 text-white shadow-lg shadow-blue-200' },
+  { id: 'PAST_PAPER', emoji: '📄', label: 'Past Papers', activeClass: 'bg-amber-500 text-white shadow-lg shadow-amber-200' },
                 ] as const).map(tab => (
                   <button
                     key={tab.id}
@@ -9257,7 +9257,7 @@ Topic or question: ${question || '[type your question here]'}`)
                     }}
                     className="text-[9px] font-black text-indigo-500 hover:text-indigo-700 uppercase tracking-wider px-3 py-2 rounded-xl hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-all"
                   >
-                    Reset ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¢
+                    Reset ✕
                   </button>
                 )}
               </div>
@@ -9849,7 +9849,7 @@ Topic or question: ${question || '[type your question here]'}`)
                   </div>
                   <div>
                     <h2 className="text-xl font-bold font-display text-slate-800 dark:text-slate-100">Full Step-by-Step Logic</h2>
-                    <p className="text-sm font-medium text-slate-500 line-clamp-1">"{fadedSolutionData.query}"</p>
+                    <p className="text-sm font-medium text-slate-500 line-clamp-1">&quot;{fadedSolutionData.query}&quot;</p>
                   </div>
                 </div>
                 <button

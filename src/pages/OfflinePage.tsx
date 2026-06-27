@@ -15,9 +15,9 @@ export const OfflinePage: React.FC = () => {
                 </div>
 
                 <div className="space-y-3">
-                    <h1 className="text-3xl font-black text-slate-900 tracking-tight">You're Offline</h1>
+                    <h1 className="text-3xl font-black text-slate-900 tracking-tight">You&apos;re Offline</h1>
                     <p className="text-slate-500 font-medium leading-relaxed">
-                        It looks like your internet connection is taking a break. Don't worry, your progress is safe!
+                        It looks like your internet connection is taking a break. Don&apos;t worry, your progress is safe!
                     </p>
                 </div>
 

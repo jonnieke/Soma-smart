@@ -554,7 +554,7 @@ export const AnalyticsTab = ({ stats, teachers }: { stats: SchoolStats, teachers
                                         </p>
                                         <p className="text-slate-900 font-medium text-sm leading-snug">
                                             Grade 8 Mathematics average has drifted below <span className="font-black text-red-600">65%</span>. 
-                                            Action: Deploy <strong>Visual Master mode</strong> for 'Geometry' sub-strand immediately.
+                                            Action: Deploy <strong>Visual Master mode</strong> for &apos;Geometry&apos; sub-strand immediately.
                                         </p>
                                     </div>
                                 </div>

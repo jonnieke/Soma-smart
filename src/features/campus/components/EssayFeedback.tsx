@@ -17,7 +17,7 @@ export const EssayFeedback: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                     </div>
                     <h2 className="text-3xl font-black text-slate-900 dark:text-white mb-4">Essay Feedback</h2>
                     <p className="text-slate-500 dark:text-slate-400 mb-8">
-                        Submit your essay for comprehensive AI analysis. We'll check for clarity, flow, argumentation, and grammar before you hand it in.
+                        Submit your essay for comprehensive AI analysis. We&apos;ll check for clarity, flow, argumentation, and grammar before you hand it in.
                     </p>
 
                     <textarea

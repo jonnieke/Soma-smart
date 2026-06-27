@@ -151,7 +151,7 @@ export const MarkingManager: React.FC = () => {
                     </button>
                     <div>
                         <h2 className="text-2xl font-black text-slate-900 tracking-tight">Auto-Grader Canvas</h2>
-                        <p className="text-slate-500 font-medium text-sm">Upload a student's handwritten paper to grade it instantly.</p>
+                        <p className="text-slate-500 font-medium text-sm">Upload a student&apos;s handwritten paper to grade it instantly.</p>
                     </div>
                 </div>
 
@@ -290,7 +290,7 @@ export const MarkingManager: React.FC = () => {
                                             <Sparkles className="w-6 h-6 text-emerald-500 shrink-0" />
                                             <div>
                                                 <h4 className="font-black text-emerald-900 text-sm">Learner Memory Updated</h4>
-                                                <p className="text-xs font-medium text-emerald-700">The student's mastery of <strong>{result.identifiedTopic}</strong> was synced to the cloud.</p>
+                                                <p className="text-xs font-medium text-emerald-700">The student&apos;s mastery of <strong>{result.identifiedTopic}</strong> was synced to the cloud.</p>
                                             </div>
                                         </div>
                                     )}
@@ -300,7 +300,7 @@ export const MarkingManager: React.FC = () => {
                                         <h4 className="font-black text-slate-700 uppercase tracking-wider text-[10px] mb-2 flex items-center gap-1">
                                             <FileText className="w-3 h-3" /> Transcribed Output
                                         </h4>
-                                        <p className="text-sm font-medium text-slate-800 leading-relaxed italic border-l-4 border-indigo-200 pl-3">"{result.extractedText}"</p>
+                                        <p className="text-sm font-medium text-slate-800 leading-relaxed italic border-l-4 border-indigo-200 pl-3">&quot;{result.extractedText}&quot;</p>
                                     </div>
 
                                     {/* CBC Competencies */}

@@ -217,7 +217,7 @@ class ClassroomService {
         }
 
         // Find existing
-        let { data, error } = await supabase
+        const result = await supabase
             .from('classes')
             .select('*')
             .eq('teacher_id', teacherId)
@@ -225,6 +225,9 @@ class ClassroomService {
             .order('created_at', { ascending: true })
             .limit(1)
             .maybeSingle();
+
+        const error = result.error;
+        let data = result.data;
 
         if (error) {
             warnIfDev('Class lookup failed; using local classroom fallback:', error);

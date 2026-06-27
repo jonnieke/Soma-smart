@@ -355,7 +355,7 @@ Do not move to a new topic, new example, or new question until the candidate ans
                             <div>
                                 <h3 className="text-white font-black text-base">Daily AI Limit Reached</h3>
                                 <p className="text-slate-400 text-xs mt-2 leading-relaxed font-medium">
-                                    You've used your free AI quota for today. Sign in or create a free account to get more Exam Guru sessions every day.
+                                    You&apos;ve used your free AI quota for today. Sign in or create a free account to get more Exam Guru sessions every day.
                                 </p>
                             </div>
                             <button

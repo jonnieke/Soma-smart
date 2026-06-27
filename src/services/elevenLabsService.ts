@@ -247,7 +247,7 @@ export const playPodcast = async (
     podcastController = new AbortController();
     const signal = podcastController.signal;
 
-    let useElevenLabs = true; // We will attempt to use proxy by default
+    const useElevenLabs = true; // We will attempt to use proxy by default
     const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 
     if (isLocal && (!LOCAL_API_KEY || LOCAL_API_KEY.length < 5)) {

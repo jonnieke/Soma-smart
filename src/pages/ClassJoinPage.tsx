@@ -170,7 +170,7 @@ export const ClassJoinPage: React.FC = () => {
                                 </div>
                             )}
                             <p className="text-center text-xs text-slate-400 font-bold">
-                                Don't have a code?{' '}
+                                Don&apos;t have a code?{' '}
                                 <button onClick={() => navigate('/learner')} className="text-[#25D366] underline">Go to your dashboard</button>
                             </p>
                         </div>

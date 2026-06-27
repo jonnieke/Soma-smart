@@ -755,8 +755,8 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
                                     </>
                                 ) : (
                                     <>
-                                        <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-1">You're in! 🎉</h2>
-                                        <p className="text-slate-500 dark:text-slate-400 mb-4 text-sm">Your unique Student ID is ready. Save it — you'll need it to log in.</p>
+                                        <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-1">You&apos;re in! 🎉</h2>
+                                        <p className="text-slate-500 dark:text-slate-400 mb-4 text-sm">Your unique Student ID is ready. Save it — you&apos;ll need it to log in.</p>
 
                                         {/* Student ID display */}
                                         <div className="bg-white dark:bg-slate-800 border-2 border-dashed border-blue-300 dark:border-blue-600 rounded-2xl p-5 mb-4 shadow-sm">

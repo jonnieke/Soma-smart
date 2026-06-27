@@ -198,7 +198,7 @@ export const GuestQuiz: React.FC = () => {
                             <CheckCircle2 className="w-20 h-20 text-[#25D366] mx-auto" />
                             <div>
                                 <h2 className="text-3xl font-black text-slate-800 mb-2">Great Job!</h2>
-                                <p className="text-slate-500 font-medium">Your assignment was sent directly to Teacher {teacher?.name?.split(' ')[0] || ''}'s gradebook.</p>
+                                <p className="text-slate-500 font-medium">Your assignment was sent directly to Teacher {teacher?.name?.split(' ')[0] || ''}&apos;s gradebook.</p>
                             </div>
                             
                             <div className="bg-emerald-50 border-2 border-emerald-200 rounded-2xl p-6 inline-block w-full">
