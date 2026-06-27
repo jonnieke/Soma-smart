@@ -257,11 +257,12 @@ const extractJsonStringArrayField = (raw: string, key: string): string[] => {
 };
 
 const buildFallbackSummaryPoints = (topic: string, explanation: string): string[] => {
-  const lines = explanation
+  const cleanExplanation = explanation.replace(/\\n/g, '\n');
+  const lines = cleanExplanation
     .split(/\n+/)
     .map((line) => line.replace(/^[-*#\d.\s]+/, '').trim())
-    .filter((line) => line.length > 0)
-    .slice(0, 3);
+    .filter((line) => line.length > 0 && !line.includes('Curriculum Alignment:') && !line.includes('Exam Insight:'))
+    .slice(0, 4);
 
   if (lines.length > 0) return lines;
   if (topic) return [topic, 'Review the key idea again.', 'Ask one follow-up question.'];
@@ -304,7 +305,7 @@ const sanitizeExplanationResult = (result: ExplanationResult): ExplanationResult
   topic: normalizeLearnerText(result.topic),
   explanation: normalizeLearnerText(result.explanation),
   transcript: result.transcript ? normalizeLearnerText(result.transcript) : undefined,
-  summaryPoints: (result.summaryPoints || []).map((point) => normalizeLearnerText(point)).filter(Boolean),
+  summaryPoints: (result.summaryPoints || []).map((point) => normalizeLearnerText(point).replace(/\*\*/g, '')).filter(Boolean),
   relatedTopics: (result.relatedTopics || []).map((topic) => normalizeLearnerText(topic)).filter(Boolean),
   subtopics: result.subtopics?.map((subtopic) => ({
     ...subtopic,
