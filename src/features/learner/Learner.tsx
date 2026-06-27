@@ -345,7 +345,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
     prevXPRef.current = totalXP;
   }, [totalXP]);
 
-  const [showStreakModal, setShowStreakModal] = useState(false);
+
   const [notifStatus, setNotifStatus] = useState<'default' | 'granted' | 'denied'>(
     () => typeof Notification !== 'undefined' ? Notification.permission as 'default' | 'granted' | 'denied' : 'default'
   );
@@ -425,20 +425,6 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
   }, [studentClasses, userId, studentProfile?.id]);
 
   useEffect(() => {
-    // Only show modal if streak increases DURING the session, and they already had a streak (or it's their first, but prev > 0 prevents firing on initial load if we somehow miscalculate)
-    // Actually, prevStreakRef.current is initialized to the streak ON MOUNT. 
-    // So if it goes up, they just earned it now.
-    if (!isInitialLoadRef.current && streak > prevStreakRef.current && streak > 1) {
-      setShowStreakModal(true);
-      import('canvas-confetti').then(({ default: confetti }) => {
-        confetti({
-          particleCount: 150,
-          spread: 90,
-          origin: { y: 0.5 },
-          colors: ['#ff4500', '#ffa500', '#ffd700']
-        });
-      });
-    }
     prevStreakRef.current = streak;
   }, [streak]);
 
@@ -4794,38 +4780,6 @@ Topic or question: ${question || '[type your question here]'}`)
               </div>
               
               <AnimatePresence>
-                {showStreakModal && (
-                  <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-50 flex items-center justify-center p-4">
-                    <motion.div
-                      initial={{ scale: 0.8, opacity: 0, y: 20 }}
-                      animate={{ scale: 1, opacity: 1, y: 0 }}
-                      exit={{ scale: 0.8, opacity: 0, y: -20 }}
-                      className="bg-white dark:bg-slate-900 rounded-[2.5rem] p-8 max-w-sm w-full text-center shadow-2xl border-4 border-orange-100 dark:border-orange-900 relative overflow-hidden"
-                    >
-                      <div className="absolute top-0 right-0 w-32 h-32 bg-orange-400/20 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none"></div>
-                      <div className="absolute bottom-0 left-0 w-32 h-32 bg-red-400/20 rounded-full blur-3xl -ml-10 -mb-10 pointer-events-none"></div>
-                      
-                      <div className="w-24 h-24 bg-gradient-to-br from-orange-100 to-red-100 dark:from-orange-900/50 dark:to-red-900/50 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner relative z-10 border-4 border-white dark:border-slate-800">
-                        <motion.div 
-                          animate={{ scale: [1, 1.2, 1], rotate: [-5, 5, -5] }} 
-                          transition={{ repeat: Infinity, duration: 2 }}
-                          className="text-5xl text-orange-500"
-                        >
-                          <Flame className="w-12 h-12 fill-orange-500 stroke-orange-500" />
-                        </motion.div>
-                      </div>
-                      <h2 className="text-4xl font-black text-slate-800 dark:text-white mb-2 relative z-10 tracking-tight">{streak} Day Streak!</h2>
-                      <p className="text-slate-500 dark:text-slate-400 font-bold mb-8 relative z-10 leading-relaxed">{"You're on fire! You completed a lesson today. Keep coming back daily to build your streak."}</p>
-                      
-                      <button
-                        onClick={() => setShowStreakModal(false)}
-                        className="w-full py-4 rounded-2xl bg-gradient-to-r from-orange-500 to-red-500 text-white font-black hover:from-orange-600 hover:to-red-600 transition-all shadow-lg shadow-orange-500/30 relative z-10 transform hover:scale-[1.02] active:scale-95"
-                      >
-                        Keep Going!
-                      </button>
-                    </motion.div>
-                  </div>
-                )}
               </AnimatePresence>
 
               <div className="flex items-center gap-2 sm:gap-3 w-full md:w-auto">
