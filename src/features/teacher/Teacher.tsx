@@ -1863,7 +1863,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                                             className={`rounded-xl border-2 font-black uppercase tracking-widest text-xs ${isRepairingQuiz ? 'opacity-60 cursor-wait' : ''}`}
                                         >
                                             {isRepairingQuiz ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Sparkles className="w-4 h-4 mr-2" />}
-                                            Fix With AI
+                                            Fix With Smart Helper
                                         </Button>
                                     )}
                                     </>
@@ -1897,7 +1897,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                                             className={`rounded-xl border-2 font-black uppercase tracking-widest text-xs ${isRepairingNote ? 'opacity-60 cursor-wait' : ''}`}
                                         >
                                             {isRepairingNote ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Sparkles className="w-4 h-4 mr-2" />}
-                                            Fix Note With AI
+                                            Fix Note With Smart Helper
                                         </Button>
                                     )}
                                     </>
@@ -2011,7 +2011,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                                         <div className="rounded-[1.75rem] border border-amber-200 bg-amber-50 px-5 py-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                                             <div>
                                                 <p className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-700">Voice capture needs another pass</p>
-                                                <p className="text-sm text-amber-900 font-semibold">This note looks incomplete or the audio was unclear. Record again or use Fix Note With AI to rebuild it before sharing to class.</p>
+                                                <p className="text-sm text-amber-900 font-semibold">This note looks incomplete or the audio was unclear. Record again or use Fix Note With Smart Helper to rebuild it before sharing to class.</p>
                                             </div>
                                             <Button
                                                 variant="outline"

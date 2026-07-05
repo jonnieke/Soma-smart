@@ -109,7 +109,7 @@ export const PricingPage: React.FC<Props> = ({ onSelectPlan, onClose, currentTie
                     <span className="w-px h-4 bg-slate-200 hidden sm:block" />
                     <span className="flex items-center gap-1.5"><ShieldCheck className="w-4 h-4 text-emerald-500" /> Secure & instant</span>
                     <span className="w-px h-4 bg-slate-200 hidden sm:block" />
-                    <span className="flex items-center gap-1.5"><Star className="w-4 h-4 text-amber-400 fill-amber-400" /> Trusted by 5,000+ Kenyan learners</span>
+                    <span className="flex items-center gap-1.5"><Star className="w-4 h-4 text-amber-400 fill-amber-400" /> Built for Kenyan learners</span>
                 </div>
 
                 {/* Tabs */}

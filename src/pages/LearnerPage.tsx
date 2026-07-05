@@ -20,10 +20,10 @@ export const LearnerPage: React.FC = () => {
             <Helmet>
                 <title>Study Dashboard | Somo Smart — AI Learning for Kenyan Students</title>
                 <meta name="description" content="Your personalized AI study dashboard. Scan textbooks, get simple explanations, practice quizzes, and master CBC & KCSE topics with Somo Smart." />
-                <link rel="canonical" href="https://somaai.co.ke/learner" />
+                <link rel="canonical" href="https://www.somaai.co.ke/learner" />
                 <meta property="og:title" content="Study Dashboard | Somo Smart" />
                 <meta property="og:description" content="Your personalized AI study dashboard for CBC & KCSE topics." />
-                <meta property="og:url" content="https://somaai.co.ke/learner" />
+                <meta property="og:url" content="https://www.somaai.co.ke/learner" />
             </Helmet>
             <LearnerDashboard
                 onNavigate={handleNavigate}

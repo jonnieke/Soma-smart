@@ -196,7 +196,7 @@ export const CreationHub: React.FC<CreationHubProps> = ({ selectedClass, selecte
                     </div>
                     <h3 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight mb-2">CPD & Training Hub</h3>
                     <p className="text-slate-500 dark:text-slate-400 font-medium text-sm mb-6 leading-relaxed">
-                        Access interactive CBC pedagogical courses, query the AI Pedagogy Coach, and download KICD-compliant templates.
+                        Access interactive CBC pedagogical courses, query the Smart Pedagogy Coach, and download KICD-compliant templates.
                     </p>
                     <div className="flex items-center text-sm font-black text-violet-600 dark:text-violet-400 tracking-wider uppercase mt-auto">
                         Enter CPD Hub <ChevronRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
@@ -219,14 +219,14 @@ export const CreationHub: React.FC<CreationHubProps> = ({ selectedClass, selecte
                     </div>
                     <h3 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight mb-2">Classroom Simulator</h3>
                     <p className="text-slate-500 dark:text-slate-400 font-medium text-sm mb-6 leading-relaxed">
-                        Rehearse your lesson with AI-powered Kenyan students and get a CBC scorecard before the real class.
+                        Rehearse your lesson with smart-powered Kenyan students and get a CBC scorecard before the real class.
                     </p>
                     <div className="flex items-center text-sm font-black text-indigo-600 dark:text-indigo-400 tracking-wider uppercase mt-auto">
                         Start Simulation <ChevronRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
                     </div>
                 </motion.div>
 
-                {/* AI Lesson Plan Generator */}
+                {/* Smart Lesson Plan Generator */}
                 <motion.div
                     variants={{
                         hidden: { opacity: 0, y: 20 },
@@ -240,7 +240,7 @@ export const CreationHub: React.FC<CreationHubProps> = ({ selectedClass, selecte
                         <FileText className="w-7 h-7" />
                         <span className="absolute -top-2 -right-2 bg-blue-500 text-white text-[8px] font-black px-1.5 py-0.5 rounded uppercase tracking-widest border-2 border-white shadow-sm">New</span>
                     </div>
-                    <h3 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight mb-2">AI Lesson Planner</h3>
+                    <h3 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight mb-2">Smart Lesson Planner</h3>
                     <p className="text-slate-500 dark:text-slate-400 font-medium text-sm mb-6 leading-relaxed">
                         Generate a complete CBC 5E lesson plan in seconds. Topic in → structured plan out. PDF export included.
                     </p>

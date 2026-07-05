@@ -682,3 +682,21 @@ export interface SimulationScorecard {
   understandingCurve: number[]; // per-turn score 0-100
   xpEarned: number;
 }
+
+export interface LearningResource {
+  id: string;
+  title: string;
+  description?: string;
+  subject: string;
+  grade: string;
+  curriculum: "CBC" | "KPSEA" | "KCSE" | "CAMPUS" | "GENERAL";
+  type: "note" | "past_paper" | "syllabus" | "teacher_note" | "revision_guide";
+  source: "official" | "teacher" | "soma" | "uploaded";
+  contentUrl?: string;
+  contentText?: string;
+  fileUrl?: string;
+  thumbnailUrl?: string;
+  estimatedReadingMinutes?: number;
+  createdAt: string;
+  updatedAt: string;
+}

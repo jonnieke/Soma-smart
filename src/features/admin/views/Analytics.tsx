@@ -345,11 +345,15 @@ export const AnalyticsView: React.FC = () => {
                 return 'bg-emerald-50 text-emerald-700 border-emerald-100';
         }
     };
+    const funnelCount = (eventName: string) =>
+        stats.funnelBreakdown.find((item) => item.eventName === eventName)?.count || 0;
     const conversionSignals = [
-        { label: 'Registered users', value: stats.totalUsers },
-        { label: 'New users 7d', value: stats.newUsers7d },
-        { label: 'Active today', value: stats.activeToday },
-        { label: 'Pro / verified', value: stats.verifiedUsers },
+        { label: 'Homepage views', value: stats.topPages.find((item) => item.path === '/')?.count || 0 },
+        { label: 'Useful answer generated', value: funnelCount('learner_answer_generated') },
+        { label: 'Detailed help opened', value: funnelCount('detailed_view_opened') },
+        { label: 'Pricing opened', value: funnelCount('pricing_opened') },
+        { label: 'Payment started', value: funnelCount('payment_started') },
+        { label: 'Payment completed', value: funnelCount('payment_success') },
     ];
 
     return (
@@ -402,10 +406,11 @@ export const AnalyticsView: React.FC = () => {
                 <StatBlock title="Revenue health" value={`KES ${finance.totalRevenueKes.toLocaleString()}`} description="30-day revenue" icon={<Brain className="w-5 h-5" />} tone={{ bg: 'bg-emerald-50', text: 'text-emerald-600' }} />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
                 <StatBlock title="Page views captured" value={`${stats.pageViews7d}`} description="Last 7 days" icon={<BarChart3 className="w-5 h-5" />} tone={{ bg: 'bg-indigo-50', text: 'text-indigo-600' }} />
                 <StatBlock title="Route changes captured" value={`${stats.routeChanges7d}`} description="Last 7 days" icon={<MousePointer2 className="w-5 h-5" />} tone={{ bg: 'bg-sky-50', text: 'text-sky-600' }} />
                 <StatBlock title="Auth events captured" value={`${stats.authEvents7d}`} description="Last 7 days" icon={<Sparkles className="w-5 h-5" />} tone={{ bg: 'bg-emerald-50', text: 'text-emerald-600' }} />
+                <StatBlock title="Conversion actions" value={stats.funnelEvents7d} description="Last 7 days" icon={<ListChecks className="w-5 h-5" />} tone={{ bg: 'bg-amber-50', text: 'text-amber-600' }} />
             </div>
 
             <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
@@ -754,7 +759,7 @@ export const AnalyticsView: React.FC = () => {
                                 <div className="h-2 rounded-full bg-slate-100 overflow-hidden">
                                     <div
                                         className="h-full rounded-full bg-indigo-500"
-                                        style={{ width: `${Math.max(10, (item.value / Math.max(stats.totalUsers, 1)) * 100)}%` }}
+                                        style={{ width: `${Math.max(10, (item.value / Math.max(conversionSignals[0]?.value || 1, 1)) * 100)}%` }}
                                     />
                                 </div>
                             </div>

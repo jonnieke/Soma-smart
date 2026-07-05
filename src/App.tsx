@@ -162,6 +162,7 @@ const App: React.FC = () => {
                             <Route path="/teacher/notes" element={<TeacherPage />} />
                             <Route path="/teacher/homework" element={<TeacherPage />} />
                             <Route path="/teacher/marking" element={<TeacherPage />} />
+                            <Route path="/teacher/syllabus" element={<TeacherPage />} />
                             <Route path="/parent" element={<ParentPage />} />
                             <Route path="/admin" element={<AdminGuard onNavigateBack={() => navigate('/')}><AdminDashboard onNavigate={() => navigate('/')} /></AdminGuard>} />
                             <Route path="/admin/knowledge" element={<AdminGuard onNavigateBack={() => navigate('/')}><AdminKnowledgeBase /></AdminGuard>} />

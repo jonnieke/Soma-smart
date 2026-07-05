@@ -4,13 +4,13 @@
 
 ## Core Product Areas
 
-- Learner dashboard: https://somaai.co.ke/learner
-- Teacher workspace: https://somaai.co.ke/teacher
-- Parent portal: https://somaai.co.ke/parent
-- School dashboard: https://somaai.co.ke/school
-- Revision portal: https://somaai.co.ke/revision
-- Pricing: https://somaai.co.ke/pricing
-- Blog: https://somaai.co.ke/blog
+- Learner dashboard: https://www.somaai.co.ke/learner
+- Teacher workspace: https://www.somaai.co.ke/teacher
+- Parent portal: https://www.somaai.co.ke/parent
+- School dashboard: https://www.somaai.co.ke/school
+- Revision portal: https://www.somaai.co.ke/revision
+- Pricing: https://www.somaai.co.ke/pricing
+- Blog: https://www.somaai.co.ke/blog
 
 ## What Learners Get
 
@@ -39,5 +39,14 @@
 
 ## Contact
 
-- Website: https://somaai.co.ke/
+- Website: https://www.somaai.co.ke/
 - Location: Nairobi, Kenya
+
+## Search Guides
+
+- Kenyan AI tutor: https://www.somaai.co.ke/ai-tutor-kenya
+- KCSE past-paper practice: https://www.somaai.co.ke/kcse-past-papers
+- KPSEA past-paper practice: https://www.somaai.co.ke/kpsea-past-papers
+- CBC notes library: https://www.somaai.co.ke/cbc-notes-kenya
+- Lesson planning for teachers: https://www.somaai.co.ke/lesson-plan-generator-kenya
+- Schemes and syllabus tracking: https://www.somaai.co.ke/schemes-of-work-generator-kenya

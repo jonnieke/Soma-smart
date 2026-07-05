@@ -65,7 +65,7 @@ export const RevisionPortal: React.FC = () => {
         <div className="bg-slate-50 min-h-screen font-sans selection:bg-indigo-100 selection:text-indigo-900 pb-20 md:pb-0 dark:text-white relative overflow-hidden transition-colors duration-300">
             <Helmet>
                 <title>Somo Smart Revision Portal | Free KCSE & KPSEA Past Papers</title>
-                <meta name="description" content="Access thousands of CBC/8-4-4 past papers with instant AI feedback. Sign up free to scan, solve, and improve your grades instantly." />
+                <meta name="description" content="Access thousands of CBC/8-4-4 past papers with instant instant feedback. Sign up free to scan, solve, and improve your grades instantly." />
             </Helmet>
 
             {/* Premium Background Elements */}
@@ -181,7 +181,7 @@ export const RevisionPortal: React.FC = () => {
                                 <Sparkles className="w-10 h-10" />
                             </div>
                             <h4 className="text-xl font-black text-slate-900 dark:text-white mb-2">2. AI Breaks It Down</h4>
-                            <p className="text-slate-600 dark:text-slate-400">Our Super Teacher AI gives you step-by-step guidance, not just the final answer.</p>
+                            <p className="text-slate-600 dark:text-slate-400">Our Super Smart Teacher gives you step-by-step guidance, not just the final answer.</p>
                         </div>
 
                         <div className="relative z-10 flex flex-col items-center text-center">
@@ -275,7 +275,7 @@ export const RevisionPortal: React.FC = () => {
                         <h3 className="text-3xl md:text-4xl font-black mb-12">Built for serious exam candidates</h3>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                             {[
-                                { name: "Sarah W.", grade: "Form 4, Mean Grade A-", quote: "The AI explanations for Chemistry broke down concepts my teacher rushed through. I finally understand Mole Concept!" },
+                                { name: "Sarah W.", grade: "Form 4, Mean Grade A-", quote: "The smart explanations for Chemistry broke down concepts my teacher rushed through. I finally understand Mole Concept!" },
                                 { name: "David M.", grade: "Form 4, Mean Grade B+", quote: "Being able to snap a photo of a math problem and get instant step-by-step help at 11 PM saved my revision." },
                                 { name: "Grace K.", grade: "Grade 6, KPSEA Candidate", quote: "The past papers are so organized. The smart revision mode helped me find my weak areas before the real exam." }
                             ].map((user, i) => (

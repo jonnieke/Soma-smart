@@ -49,7 +49,7 @@ export const ExamRooms: React.FC = () => {
                 {
                     id: 'mock-2',
                     name: 'Biology Paper 3 Practicals',
-                    description: 'Mastering biology practicals with AI explanations.',
+                    description: 'Mastering biology practicals with smart explanations.',
                     room_type: 'SUBJECT_STUDY',
                     education_level: EducationLevel.SENIOR,
                     subject: 'Biology',
@@ -110,7 +110,7 @@ export const ExamRooms: React.FC = () => {
                             Exam Rooms
                         </h1>
                         <p className="text-slate-600 dark:text-slate-400 max-w-2xl">
-                            Collaborative AI-powered study sessions. Ask questions, share notes, and solve problems together with peers and Somo AI.
+                            Collaborative smart-powered study sessions. Ask questions, share notes, and solve problems together with peers and Somo AI.
                         </p>
                     </div>
                     <button

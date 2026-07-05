@@ -356,7 +356,7 @@ export const TeacherReports: React.FC = () => {
         doc.setFillColor(99, 102, 241); doc.roundedRect(lm - 2, y - 5, lw + 4, 9, 2, 2, 'F');
         addLine('CLASS SUMMARY', 10, true, [255, 255, 255]); y += 1;
         addLine(`Class Average: ${summary.classAverage}%  |  Pass Rate: ${summary.passRate}%  |  At Risk: ${summary.atRisk}  |  Total Students: ${summary.totalStudents}`);
-        if (narrative) { y += 2; addLine('AI NARRATIVE', 10, true, [99, 102, 241]); addLine(narrative); }
+        if (narrative) { y += 2; addLine('smart narrative', 10, true, [99, 102, 241]); addLine(narrative); }
         // Topics
         y += 4; doc.setFillColor(99, 102, 241); doc.roundedRect(lm - 2, y - 5, lw + 4, 9, 2, 2, 'F');
         addLine('TOPIC PERFORMANCE', 10, true, [255, 255, 255]); y += 1;
@@ -625,7 +625,7 @@ export const TeacherReports: React.FC = () => {
             {/* ── Tab: REPORTS ── */}
             {!isLoading && activeTab === 'REPORTS' && (
                 <div className="space-y-8">
-                    {/* AI Narrative */}
+                    {/* smart narrative */}
                     <div className="bg-gradient-to-br from-indigo-600 to-purple-700 rounded-[2rem] p-8 text-white shadow-xl shadow-indigo-500/20">
                         <div className="flex items-start justify-between gap-4">
                             <div className="flex-1">
@@ -640,7 +640,7 @@ export const TeacherReports: React.FC = () => {
                                         {narrative}
                                     </p>
                                 ) : (
-                                    <p className="text-white/50 text-sm italic">Click Generate to create your AI narrative…</p>
+                                    <p className="text-white/50 text-sm italic">Click Generate to create your smart narrative…</p>
                                 )}
                             </div>
                             <button
@@ -660,7 +660,7 @@ export const TeacherReports: React.FC = () => {
                             <FileText className="w-10 h-10 text-indigo-500" />
                             <div>
                                 <h3 className="font-black text-slate-900 dark:text-white text-xl mb-1">Term Report PDF</h3>
-                                <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">Full class report with AI narrative, topic breakdown, and student overview. Print-ready A4 format.</p>
+                                <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">Full class report with smart narrative, topic breakdown, and student overview. Print-ready A4 format.</p>
                             </div>
                             <button onClick={handleExportPDF}
                                 className="flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white font-black text-sm py-3 rounded-2xl transition-all shadow-lg shadow-indigo-500/20">

@@ -1,8 +1,32 @@
 {
-    "rewrites": [
-        {
-            "source": "/(.*)",
-            "destination": "/index.html"
-        }
-    ]
+    "rewrites":  [
+                     {
+                         "source":  "/ai-tutor-kenya",
+                         "destination":  "/ai-tutor-kenya/index.html"
+                     },
+                     {
+                         "source":  "/kcse-past-papers",
+                         "destination":  "/kcse-past-papers/index.html"
+                     },
+                     {
+                         "source":  "/kpsea-past-papers",
+                         "destination":  "/kpsea-past-papers/index.html"
+                     },
+                     {
+                         "source":  "/cbc-notes-kenya",
+                         "destination":  "/cbc-notes-kenya/index.html"
+                     },
+                     {
+                         "source":  "/lesson-plan-generator-kenya",
+                         "destination":  "/lesson-plan-generator-kenya/index.html"
+                     },
+                     {
+                         "source":  "/schemes-of-work-generator-kenya",
+                         "destination":  "/schemes-of-work-generator-kenya/index.html"
+                     },
+                     {
+                         "source":  "/(.*)",
+                         "destination":  "/index.html"
+                     }
+                 ]
 }

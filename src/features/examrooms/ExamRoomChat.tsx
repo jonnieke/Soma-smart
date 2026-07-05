@@ -156,7 +156,7 @@ export const ExamRoomChat: React.FC = () => {
 
     const handleAskAI = async (messageContent: string, parentId: string) => {
         if (!id || !isPro) {
-            alert("AI explanations in study rooms are a premium feature.");
+            alert("smart explanations in study rooms are a premium feature.");
             return;
         }
 
@@ -413,7 +413,7 @@ export const ExamRoomChat: React.FC = () => {
                     </form>
                     <div className="text-center mt-3">
                         <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
-                            Please be respectful and helpful. AI explanations are monitored.
+                            Please be respectful and helpful. smart explanations are monitored.
                         </p>
                     </div>
                 </div>

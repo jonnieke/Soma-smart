@@ -148,7 +148,7 @@ export const CPDHub: React.FC = () => {
         }
     };
 
-    // Ask AI Coach
+    // Ask Smart Coach
     const handleAskCoach = async (textToSend?: string) => {
         const query = (textToSend || inputText).trim();
         if (!query || isAsking) return;
@@ -166,7 +166,7 @@ export const CPDHub: React.FC = () => {
             const replyMsg: Message = { role: 'model', text: coachReply, timestamp: Date.now() };
             setMessages(prev => [...prev, replyMsg]);
         } catch (error) {
-            console.error("AI Coach query failed:", error);
+            console.error("Smart Coach query failed:", error);
             setMessages(prev => [
                 ...prev,
                 { role: 'model', text: "Oops, my session is a bit busy right now. Let's try again in a moment! 📝", timestamp: Date.now() }
@@ -223,7 +223,7 @@ export const CPDHub: React.FC = () => {
                         </div>
                         <h2 className="text-3xl md:text-5xl font-black tracking-tight mb-3 text-white">CPD & Training Hub</h2>
                         <p className="text-indigo-100 font-medium max-w-xl text-lg opacity-90 leading-relaxed">
-                            Master CBC pedagogical standards. Learn step-by-step methodologies, query the AI Pedagogy Coach, and earn professional points.
+                            Master CBC pedagogical standards. Learn step-by-step methodologies, query the Smart Pedagogy Coach, and earn professional points.
                         </p>
                     </div>
                 </div>
@@ -349,7 +349,7 @@ export const CPDHub: React.FC = () => {
                     </div>
                 </div>
 
-                {/* Right: AI Pedagogy Coach Chat */}
+                {/* Right: Smart Pedagogy Coach Chat */}
                 <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-[2.5rem] p-6 shadow-xl flex flex-col h-[600px] justify-between relative overflow-hidden">
                     <div className="absolute top-0 right-0 w-32 h-32 bg-violet-500/5 rounded-bl-[100px] pointer-events-none"></div>
 

@@ -36,7 +36,7 @@ export const ReferralView: React.FC = () => {
     };
 
     const rewardTiers = [
-        { friends: 1, reward: '3 extra AI answers', icon: '✨' },
+        { friends: 1, reward: '3 extra smart answers', icon: '✨' },
         { friends: 3, reward: '1 week Pro free', icon: '🎁' },
         { friends: 5, reward: 'VIP Status + 1 month Pro', icon: '👑' },
     ];

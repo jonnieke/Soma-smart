@@ -38,7 +38,7 @@ export const TeacherPaywall: React.FC<TeacherPaywallProps> = ({ isOpen, onClose 
                         <div className="w-8 h-8 bg-indigo-100 rounded-xl flex items-center justify-center text-indigo-600">
                             <TrendingUp className="w-4 h-4" />
                         </div>
-                        <span className="text-sm font-bold text-slate-700">Unlimited AI Lesson Plans</span>
+                        <span className="text-sm font-bold text-slate-700">Unlimited smart lesson plans</span>
                     </div>
                     <div className="flex items-center gap-4 bg-slate-50 p-4 rounded-2xl border border-slate-100">
                         <div className="w-8 h-8 bg-amber-100 rounded-xl flex items-center justify-center text-amber-600">

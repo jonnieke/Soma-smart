@@ -7,7 +7,7 @@ export const CampusPage: React.FC = () => {
         <>
             <Helmet>
                 <title>Campus Dashboard | Somo Smart</title>
-                <meta name="description" content="AI tools for university and college students: PDF summarizing, research assistance, and more." />
+                <meta name="description" content="smart tools for university and college students: PDF summarizing, research assistance, and more." />
             </Helmet>
             <CampusDashboard />
         </>

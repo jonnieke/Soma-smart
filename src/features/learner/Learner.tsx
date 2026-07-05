@@ -39,6 +39,7 @@ import { safeImport } from '../../utils/safeImport';
 import { PlanLimitError, getPlanLimit, getPlanUsage } from '../../services/planLimitService';
 import { pesapalService } from '../../services/pesapalService';
 import { supabase } from '../../lib/supabase';
+import { trackAnalyticsEvent } from '../../services/analyticsEventService';
 import { extractTextFromURL } from '../../services/contextService';
 import { LearnerNotebook } from './LearnerNotebook';
 import { getNotebookOwnerKey, migrateGuestNotebook, saveStudyNote } from '../../services/notebookService';
@@ -287,19 +288,33 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
       if (import.meta.env.VITE_GA_MEASUREMENT_ID !== 'G-CHECK_GA_DASHBOARD') {
         ReactGA.event(eventName, params);
       }
+      void trackAnalyticsEvent({
+        eventType: 'FUNNEL',
+        eventName,
+        path: `${window.location.pathname}${window.location.search}`,
+        metadata: params,
+      });
     } catch (_) {
       // Non-blocking analytics
     }
   }, []);
 
-  // Read target tab from navigation state if coming from another route (like /exam-rooms)
-  const initialTab = (location.state as any)?.targetTab as SidebarTab || 'HOME';
-  const initialTargetIntent = (location.state as any)?.targetIntent as
+  // Preserve intent from in-app navigation and public search landing pages.
+  const publicStart = new URLSearchParams(location.search).get('start');
+  const publicStartMap: Record<string, { tab: SidebarTab; intent: 'ask_akili' | 'official_library' | 'exam_prep_papers' | 'listen_and_learn' }> = {
+    'ask-akili': { tab: 'SMART_TUTOR', intent: 'ask_akili' },
+    library: { tab: 'RESOURCES', intent: 'official_library' },
+    'exam-prep': { tab: 'SUBJECTS', intent: 'exam_prep_papers' },
+    listen: { tab: 'TALKBACK', intent: 'listen_and_learn' },
+  };
+  const publicDestination = publicStart ? publicStartMap[publicStart] : undefined;
+  const initialTab = ((location.state as any)?.targetTab as SidebarTab | undefined) || publicDestination?.tab || 'HOME';
+  const initialTargetIntent = ((location.state as any)?.targetIntent as
     | 'ask_akili'
     | 'official_library'
     | 'exam_prep_papers'
     | 'listen_and_learn'
-    | undefined;
+    | undefined) || publicDestination?.intent;
   const initialMode = initialTab === 'SMART_TUTOR' || initialTab === 'HOMEWORK' ? 'SCAN_EXPLAIN' :
     initialTab === 'NOTEBOOK' ? 'NOTEBOOK' :
     initialTab === 'RESOURCES' ? 'MARKETPLACE' :

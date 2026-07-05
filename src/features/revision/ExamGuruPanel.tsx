@@ -304,7 +304,7 @@ Do not move to a new topic, new example, or new question until the candidate ans
                             <Sparkles className="w-5 h-5 text-white" />
                         </div>
                         <div>
-                            <h3 className="text-white font-black text-sm">Exam Guru AI</h3>
+                            <h3 className="text-white font-black text-sm">Exam Guru Smart</h3>
                             <div className="flex items-center gap-1.5 mt-0.5">
                                 <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
                                 <span className="text-[10px] text-indigo-200 font-bold uppercase tracking-widest">KNEC Drill Desk · Soma Library grounded</span>
@@ -353,9 +353,9 @@ Do not move to a new topic, new example, or new question until the candidate ans
                                 <ShieldAlert className="w-7 h-7 text-indigo-400" />
                             </div>
                             <div>
-                                <h3 className="text-white font-black text-base">Daily AI Limit Reached</h3>
+                                <h3 className="text-white font-black text-base">Daily daily limit Reached</h3>
                                 <p className="text-slate-400 text-xs mt-2 leading-relaxed font-medium">
-                                    You&apos;ve used your free AI quota for today. Sign in or create a free account to get more Exam Guru sessions every day.
+                                    You&apos;ve used your free smart quota for today. Sign in or create a free account to get more Exam Guru sessions every day.
                                 </p>
                             </div>
                             <button
@@ -391,7 +391,7 @@ Do not move to a new topic, new example, or new question until the candidate ans
                             <div>
                                 <h3 className="text-white font-black text-base">Platform at Capacity</h3>
                                 <p className="text-slate-400 text-xs mt-2 leading-relaxed font-medium">
-                                    Our AI systems are currently handling maximum traffic. The engineers have been notified. Please try again in a few minutes.
+                                    Our smart systems are currently handling maximum traffic. The engineers have been notified. Please try again in a few minutes.
                                 </p>
                             </div>
                             <button

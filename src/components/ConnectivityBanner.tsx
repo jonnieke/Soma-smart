@@ -21,7 +21,7 @@ export const ConnectivityBanner: React.FC = () => {
                         </div>
                         <div className="flex-1">
                             <p className="text-sm font-bold">You&apos;re Offline</p>
-                            <p className="text-[10px] text-slate-400 font-medium">Browsing saved lessons. AI features require internet.</p>
+                            <p className="text-[10px] text-slate-400 font-medium">Browsing saved lessons. smart features require internet.</p>
                         </div>
                         <div className="flex flex-col items-center">
                             <AlertCircle className="w-4 h-4 text-amber-500 animate-pulse" />

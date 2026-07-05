@@ -363,11 +363,11 @@ export const ClassroomSimulator: React.FC<ClassroomSimulatorProps> = ({ onBack, 
                         </div>
                         <div>
                             <div className="inline-flex items-center gap-2 bg-black/20 backdrop-blur-md px-3 py-1 rounded-full text-purple-100 text-xs font-black tracking-widest uppercase mb-3 border border-white/10">
-                                <Sparkles className="w-3.5 h-3.5 text-amber-300" /> AI Role-play Simulator
+                                <Sparkles className="w-3.5 h-3.5 text-amber-300" /> Smart Role-play Simulator
                             </div>
                             <h1 className="text-3xl md:text-5xl font-black tracking-tight mb-2">Interactive Classroom</h1>
                             <p className="text-purple-100 font-medium max-w-xl text-lg opacity-90 leading-relaxed">
-                                Test your lesson delivery with AI-powered Kenyan students before stepping into the real classroom.
+                                Test your lesson delivery with smart-powered Kenyan students before stepping into the real classroom.
                             </p>
                         </div>
                     </div>

@@ -115,7 +115,7 @@ export const PricingPage: React.FC = () => {
             <Helmet>
                 <title>Somo Smart Pricing | Affordable AI Education in Kenya</title>
                 <meta name="description" content="Explore Somo Smart's affordable pricing plans for Kenyan students, parents, and teachers. Get unlimited access to CBC and KCSE past papers and our AI study tutor starting at just KES 20." />
-                <meta name="keywords" content="somo smart pricing, learning app subscription kenya, kcse revision cost, affordable cbc learning, ai tutor subscription" />
+                <meta name="keywords" content="somo smart pricing, learning app subscription kenya, kcse revision cost, affordable cbc learning, smart tutor subscription" />
 
                 {/* AIO */}
                 <meta name="ai-search-index" content="index" />
@@ -125,9 +125,9 @@ export const PricingPage: React.FC = () => {
                 {/* Open Graph */}
                 <meta property="og:title" content="Somo Smart Pricing | Affordable AI Education in Kenya" />
                 <meta property="og:description" content="Explore affordable plans for unlimited CBC and KCSE AI-assisted learning. Unlock your potential today." />
-                <meta property="og:url" content="https://somaai.co.ke/pricing" />
+                <meta property="og:url" content="https://www.somaai.co.ke/pricing" />
 
-                <link rel="canonical" href="https://somaai.co.ke/pricing" />
+                <link rel="canonical" href="https://www.somaai.co.ke/pricing" />
             </Helmet>
 
             {/* Status Overlays */}

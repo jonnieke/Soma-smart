@@ -73,7 +73,7 @@ export const ExamGuruChat: React.FC<{ onClose: () => void }> = ({ onClose }) => 
                         <Brain className="w-6 h-6 text-white" />
                     </div>
                     <div>
-                        <h3 className="text-white font-black text-sm tracking-tight">Exam Guru AI</h3>
+                        <h3 className="text-white font-black text-sm tracking-tight">Exam Guru Smart</h3>
                         <div className="flex items-center gap-1.5">
                             <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
                             <span className="text-[10px] text-indigo-100 font-bold uppercase tracking-widest">Online Strategy Mode</span>

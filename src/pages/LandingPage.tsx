@@ -40,6 +40,7 @@ import { LogoutModal } from '../components/LogoutModal';
 import { translations } from '../data/translations';
 import { ThemeToggle } from '../components/ThemeToggle';
 import { safeImport } from '../utils/safeImport';
+import { trackAnalyticsEvent } from '../services/analyticsEventService';
 
 const SchoolCalendar = React.lazy(() =>
     safeImport(() => import('../components/SchoolCalendar').then(module => ({ default: module.SchoolCalendar })))
@@ -98,6 +99,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
             if (import.meta.env.VITE_GA_MEASUREMENT_ID !== 'G-CHECK_GA_DASHBOARD') {
                 ReactGA.event(eventName, params);
             }
+            void trackAnalyticsEvent({
+                eventType: 'FUNNEL',
+                eventName,
+                path: `${window.location.pathname}${window.location.search}`,
+                metadata: params,
+            });
         } catch (_) {
             // Non-blocking analytics
         }
@@ -111,18 +118,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
             setShowRegistration(false);
         }
     }, [isRegistered]);
-
-    React.useEffect(() => {
-        if (isRegistered) return; // Registered users go to their dashboard — no guide needed
-        try {
-            if (localStorage.getItem('soma_seen_navigation_guide') !== 'true') {
-                window.setTimeout(() => setShowNavigationGuide(true), 3500);
-            }
-        } catch (_) {
-            window.setTimeout(() => setShowNavigationGuide(true), 3500);
-        }
-     
-    }, []);
 
     const closeNavigationGuide = () => {
         try {
@@ -660,9 +655,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                 <meta property="og:site_name" content="Somo Smart" />
                 <meta property="og:title" content="Somo Smart | KCSE, KPSEA and CBC Study Support for Kenya" />
                 <meta property="og:description" content="Step-by-step answers, exam prep, official notes, past papers, audio learning and progress tracking for Kenyan learners, parents and teachers." />
-                <meta property="og:image" content="https://somaai.co.ke/og-image.png" />
+                <meta property="og:image" content="https://www.somaai.co.ke/hero_option_a.png" />
                 <meta property="og:type" content="website" />
-                <meta property="og:url" content="https://somaai.co.ke/" />
+                <meta property="og:url" content="https://www.somaai.co.ke/" />
 
                 {/* Twitter Meta */}
                 <meta name="twitter:card" content="summary_large_image" />
@@ -670,7 +665,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                 <meta name="twitter:title" content="Somo Smart | KCSE, KPSEA and CBC Study Support for Kenya" />
                 <meta name="twitter:description" content="Step-by-step answers, exam prep, official notes, past papers, audio learning and progress tracking." />
 
-                <link rel="canonical" href="https://somaai.co.ke/" />
+                <link rel="canonical" href="https://www.somaai.co.ke/" />
                 <link rel="preload" as="image" href={heroScienceLabAvif} type="image/avif" />
 
                 {/* Structured Data / AIO */}
@@ -679,8 +674,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                         "@context": "https://schema.org",
                         "@type": "EducationalOrganization",
                         "name": "Somo Smart",
-                        "url": "https://somaai.co.ke",
-                        "logo": "https://somaai.co.ke/main_logo.png",
+                        "url": "https://www.somaai.co.ke",
+                        "logo": "https://www.somaai.co.ke/favicon.png",
                         "description": "Study support for Kenyan learners, teachers and parents across KCSE, KPSEA and CBC.",
                         "sameAs": [
                             "https://twitter.com/somasmart",
@@ -701,19 +696,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                             "priceCurrency": "KES"
                         },
                         "description": "Step-by-step answers, exam prep, official notes, past papers, audio learning and progress tracking."
-                    })}
-                </script>
-                <script type="application/ld+json">
-                    {JSON.stringify({
-                        "@context": "https://schema.org",
-                        "@type": "WebSite",
-                        "name": "Somo Smart",
-                        "url": "https://somaai.co.ke",
-                        "potentialAction": {
-                            "@type": "SearchAction",
-                            "target": "https://somaai.co.ke/?q={search_term_string}",
-                            "query-input": "required name=search_term_string"
-                        }
                     })}
                 </script>
                 <script type="application/ld+json">
@@ -910,11 +892,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                             className="flex-1 max-w-2xl"
                         >
                             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-indigo-100 dark:bg-indigo-900/50 border border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 text-xs font-bold uppercase tracking-widest mb-6">
-                                <Star className="w-3 h-3 fill-current" /> Loved by 10,000+ Kenyan Learners &amp; Teachers
+                                <Star className="w-3 h-3 fill-current" /> Built for Kenyan Learners, Parents &amp; Teachers
                             </div>
 
                             <h1 className="text-3xl sm:text-5xl lg:text-6xl font-bold text-slate-900 dark:text-white tracking-tight leading-[1.1] mb-5">
-                                AI study help for
+                                smart study help for
                                 <span className="block text-indigo-600 dark:text-indigo-400 mt-2">CBC, KPSEA &amp; KCSE learners.</span>
                             </h1>
                             <p className="text-base sm:text-lg text-slate-600 dark:text-slate-400 font-medium leading-relaxed mb-6 sm:mb-8 max-w-lg">
@@ -1753,7 +1735,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="text-center mb-16">
                         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 font-bold text-xs mb-6 uppercase tracking-wider border border-blue-200 dark:border-blue-800 shadow-sm">
-                            <Star className="w-4 h-4" /> Rated 4.9/5 by 10,000+ Users
+                            <Star className="w-4 h-4" /> Learning support built for Kenyan classrooms
                         </div>
                         <h2 className="text-3xl md:text-5xl font-bold text-slate-900 dark:text-white mb-6 tracking-tight">What learners, teachers, <span className="text-blue-600 dark:text-blue-400">and parents say</span></h2>
                         <p className="text-lg text-slate-600 dark:text-slate-400 max-w-2xl mx-auto font-medium">Real results from Kenyan classrooms — better grades, less marking time, and clear progress proof for families.</p>
@@ -1911,7 +1893,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                         transition={{ duration: 0.6 }}
                     >
                         <h2 className="text-4xl md:text-5xl font-extrabold text-white mb-6 leading-tight">Ready to Transform Your Learning Environment?</h2>
-                        <p className="text-blue-100/80 mb-12 text-xl max-w-2xl mx-auto">Join thousands of learners, teachers, and schools building the future of education with Somo Smart.</p>
+                        <p className="text-blue-100/80 mb-12 text-xl max-w-2xl mx-auto">Start with one real learning or teaching task today.</p>
 
                         <div className="flex flex-col md:flex-row items-center justify-center gap-4">
                             <button
@@ -1991,7 +1973,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                             <div className="p-6">
                                 <div className="text-xs font-bold text-slate-400 mb-2">ANNOUNCEMENT • APRIL 2024</div>
                                 <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-3 transition-colors">Introducing the AI Personal Tutor: A New Era of Learning</h3>
-                                <p className="text-sm text-slate-600 dark:text-slate-400 line-clamp-2 font-medium">We are excited to unveil our new AI-powered personal tutor, designed to provide instant explanations and personalized feedback to every student.</p>
+                                <p className="text-sm text-slate-600 dark:text-slate-400 line-clamp-2 font-medium">We are excited to unveil our new smart-powered personal tutor, designed to provide instant explanations and personalized feedback to every student.</p>
                             </div>
                         </motion.div>
 
@@ -2173,7 +2155,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                     {isRegistered ? (
                                         <div>
                                             <p className="text-xs font-black uppercase tracking-widest text-slate-400 mb-2">Daily limit reached</p>
-                                            <h3 className="text-xl font-black text-slate-900 dark:text-white">You&apos;ve used today&apos;s free AI calls</h3>
+                                            <h3 className="text-xl font-black text-slate-900 dark:text-white">You&apos;ve used today&apos;s free daily study limits</h3>
                                             <p className="mt-2 text-sm text-slate-600 dark:text-slate-300 leading-relaxed max-w-xs mx-auto">
                                                 Upgrade to a plan for unlimited step-by-step notes, exam prep, and audio lessons.
                                             </p>
@@ -2416,7 +2398,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                             <h3 className="text-lg font-bold text-slate-900 mb-2">3. Data Safety & AI</h3>
                             <p>We use Google&apos;s Gemini Models to process text and images. </p>
                             <ul className="list-disc pl-5 space-y-1 mt-2">
-                                <li>We do <strong>not</strong> use your personal data to train public AI models.</li>
+                                <li>We do <strong>not</strong> use your personal data to train public learning models.</li>
                                 <li>Your data is processed ephemerally for the purpose of the immediate query.</li>
                             </ul>
                         </section>
@@ -2480,7 +2462,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                         className="md:hidden fixed bottom-6 left-4 right-4 p-2.5 bg-slate-900/95 dark:bg-slate-800/95 backdrop-blur-xl border border-slate-700/50 shadow-2xl z-50 rounded-2xl flex items-center gap-2 pointer-events-auto"
                     >
                         <div className="flex flex-col pl-2 min-w-0 flex-1">
-                            <span className="text-white text-xs font-black tracking-tight leading-none mb-1">Join 10,000+ learners</span>
+                            <span className="text-white text-xs font-black tracking-tight leading-none mb-1">Start learning free</span>
                             <span className="text-blue-300 text-[9px] font-bold uppercase tracking-widest">KCSE · CBC · Free to start</span>
                         </div>
                         <a

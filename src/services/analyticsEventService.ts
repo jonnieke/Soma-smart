@@ -1,6 +1,6 @@
 import { supabase } from '../lib/supabase';
 
-export type AnalyticsEventType = 'PAGE_VIEW' | 'ROUTE_CHANGE' | 'AUTH_EVENT' | 'TEACHER_WORKFLOW';
+export type AnalyticsEventType = 'PAGE_VIEW' | 'ROUTE_CHANGE' | 'AUTH_EVENT' | 'FUNNEL' | 'TEACHER_WORKFLOW';
 
 export interface TeacherWorkflowAnalyticsSummary {
     totalEvents: number;

@@ -133,7 +133,7 @@ export const AskSomo: React.FC = () => {
                             </div>
                             <div>
                                 <h3 className="text-white font-bold text-lg">{(language as string) === 'FR' ? 'Demander à Somo' : 'Ask Somo'}</h3>
-                                <p className="text-blue-100 text-xs">{(language as string) === 'FR' ? "Votre compagnon d'étude IA" : 'Your AI Learning Buddy'}</p>
+                                <p className="text-blue-100 text-xs">{(language as string) === 'FR' ? "Votre compagnon d'étude IA" : 'Your smart learning buddy'}</p>
                             </div>
                         </div>
 

@@ -6,6 +6,7 @@ import { useApp } from '../../context/AppContext';
 import { pesapalService } from '../../services/pesapalService';
 import { UserRole } from '../../types';
 import { supabase } from '../../lib/supabase';
+import { trackAnalyticsEvent } from '../../services/analyticsEventService';
 import { verifyAndFixSubscription } from '../../services/subscriptionService';
 
 interface Props {
@@ -89,6 +90,12 @@ export const PaymentFlow: React.FC<Props> = ({ plan, materialId, onSuccess, onCa
             if (import.meta.env.VITE_GA_MEASUREMENT_ID !== 'G-CHECK_GA_DASHBOARD') {
                 ReactGA.event(eventName, params);
             }
+            void trackAnalyticsEvent({
+                eventType: 'FUNNEL',
+                eventName,
+                path: `${window.location.pathname}${window.location.search}`,
+                metadata: params,
+            });
         } catch (_) {
             // Non-blocking analytics
         }

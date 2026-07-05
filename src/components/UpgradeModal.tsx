@@ -27,17 +27,17 @@ const PLAN_PRICES: { id: string; label: string; price: string; period: string; h
     {
         id: 'DAILY', label: 'Daily Pass', price: 'KSh 20', period: 'per day',
         highlight: false, color: 'border-slate-200 dark:border-slate-700',
-        limits: ['120 AI generations/day', '70 quiz questions/day', '25 exam markings/day', 'Voice tutor: 30,000 chars']
+        limits: ['120 smart generations/day', '70 quiz questions/day', '25 exam markings/day', 'Voice tutor: 30,000 chars']
     },
     {
         id: 'WEEKLY', label: 'Weekly Plan', price: 'KSh 100', period: 'per week',
         highlight: true, color: 'border-indigo-500',
-        limits: ['600 AI generations/week', '350 quiz questions/week', '140 exam markings/week', 'Voice tutor: 350,000 chars', 'Classroom Simulator unlimited']
+        limits: ['600 smart generations/week', '350 quiz questions/week', '140 exam markings/week', 'Voice tutor: 350,000 chars', 'Classroom Simulator unlimited']
     },
     {
         id: 'MONTHLY', label: 'Monthly Plan', price: 'KSh 350', period: 'per month',
         highlight: false, color: 'border-slate-200 dark:border-slate-700',
-        limits: ['2,500 AI generations/month', '1,500 quiz questions/month', '600 exam markings/month', 'Voice tutor: 1.2M chars', 'Priority AI response']
+        limits: ['2,500 smart generations/month', '1,500 quiz questions/month', '600 exam markings/month', 'Voice tutor: 1.2M chars', 'Priority smart response']
     },
 ];
 
@@ -177,7 +177,7 @@ export const UpgradeModal: React.FC<UpgradeModalProps> = ({ onUpgrade }) => {
                                     <Shield className="w-3.5 h-3.5 text-indigo-400" /> All Plans Include
                                 </p>
                                 <div className="grid grid-cols-2 gap-x-6 gap-y-1.5">
-                                    {['Instant AI tutor access', 'CBC-aligned content', 'All subjects covered', 'Works offline (cached)', 'No ads ever', 'Mama Soma parental view'].map((item, i) => (
+                                    {['Instant smart tutor access', 'CBC-aligned content', 'All subjects covered', 'Works offline (cached)', 'No ads ever', 'Mama Soma parental view'].map((item, i) => (
                                         <div key={i} className="flex items-center gap-2 text-xs text-slate-300 font-medium">
                                             <CheckCircle className="w-3.5 h-3.5 text-emerald-400 shrink-0" /> {item}
                                         </div>

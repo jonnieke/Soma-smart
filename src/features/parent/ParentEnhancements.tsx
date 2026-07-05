@@ -150,7 +150,7 @@ export const ParentAIInsight: React.FC<ParentAIInsightProps> = ({
             <div className="flex items-start justify-between gap-4">
                 <div className="flex-1">
                     <h3 className="font-black flex items-center gap-2 mb-2">
-                        <Sparkles className="w-4 h-4 text-amber-300" /> AI Parent Insight
+                        <Sparkles className="w-4 h-4 text-amber-300" /> Smart Parent Insight
                     </h3>
                     {generated ? (
                         <p className="text-white/90 text-sm leading-relaxed font-medium">{insight}</p>

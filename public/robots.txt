@@ -10,7 +10,7 @@ Disallow: /admin
 Disallow: /revision/dashboard
 Disallow: /api/
 
-Sitemap: https://somaai.co.ke/sitemap.xml
+Sitemap: https://www.somaai.co.ke/sitemap.xml
 
 # AI Crawlers
 User-agent: GPTBot

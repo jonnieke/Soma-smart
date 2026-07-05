@@ -20,6 +20,8 @@ export interface DashboardStats {
     pageViews7d: number;
     routeChanges7d: number;
     authEvents7d: number;
+    funnelEvents7d: number;
+    funnelBreakdown: { eventName: string; count: number }[];
     topSubjects: { subject: string; count: number }[];
     topPages: { path: string; count: number }[];
     authBreakdown: { eventName: string; count: number }[];
@@ -386,14 +388,25 @@ export const fetchDashboardStats = async (): Promise<DashboardStats> => {
         const pageViews7d = analyticsRowsSafe.filter((row: any) => row.event_type === 'PAGE_VIEW').length;
         const routeChanges7d = analyticsRowsSafe.filter((row: any) => row.event_type === 'ROUTE_CHANGE').length;
         const authEvents7d = analyticsRowsSafe.filter((row: any) => row.event_type === 'AUTH_EVENT').length;
+        const funnelRows = analyticsRowsSafe.filter((row: any) => row.event_type === 'FUNNEL');
+        const funnelEvents7d = funnelRows.length;
 
         const pageCounts = new Map<string, number>();
         const authCounts = new Map<string, number>();
+        const funnelCounts = new Map<string, number>();
         analyticsRowsSafe.forEach((row: any) => {
-            const path = String(row.path || '/').split('?')[0] || '/';
-            pageCounts.set(path, (pageCounts.get(path) || 0) + 1);
-            const authName = String(row.event_name || 'unknown');
-            authCounts.set(authName, (authCounts.get(authName) || 0) + 1);
+            if (row.event_type === 'PAGE_VIEW') {
+                const path = String(row.path || '/').split('?')[0] || '/';
+                pageCounts.set(path, (pageCounts.get(path) || 0) + 1);
+            }
+            if (row.event_type === 'AUTH_EVENT') {
+                const authName = String(row.event_name || 'unknown');
+                authCounts.set(authName, (authCounts.get(authName) || 0) + 1);
+            }
+            if (row.event_type === 'FUNNEL') {
+                const funnelName = String(row.event_name || 'unknown');
+                funnelCounts.set(funnelName, (funnelCounts.get(funnelName) || 0) + 1);
+            }
         });
 
         const topPages = Array.from(pageCounts.entries())
@@ -404,6 +417,10 @@ export const fetchDashboardStats = async (): Promise<DashboardStats> => {
         const authBreakdown = Array.from(authCounts.entries())
             .sort((a, b) => b[1] - a[1])
             .slice(0, 6)
+            .map(([eventName, count]) => ({ eventName, count }));
+
+        const funnelBreakdown = Array.from(funnelCounts.entries())
+            .sort((a, b) => b[1] - a[1])
             .map(([eventName, count]) => ({ eventName, count }));
 
         const recentAnalyticsEvents = analyticsRowsSafe.slice(0, 8).map((row: any) => ({
@@ -486,6 +503,8 @@ export const fetchDashboardStats = async (): Promise<DashboardStats> => {
             pageViews7d,
             routeChanges7d,
             authEvents7d,
+            funnelEvents7d,
+            funnelBreakdown,
             topSubjects,
             topPages,
             authBreakdown,
@@ -522,6 +541,8 @@ export const fetchDashboardStats = async (): Promise<DashboardStats> => {
             pageViews7d: 0,
             routeChanges7d: 0,
             authEvents7d: 0,
+            funnelEvents7d: 0,
+            funnelBreakdown: [],
             topSubjects: [],
             topPages: [],
             authBreakdown: [],

@@ -181,7 +181,7 @@ export const LearningPathView: React.FC<LearningPathViewProps> = ({
                 <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none" />
                 <div className="relative z-10">
                     <p className="text-[10px] font-black uppercase tracking-[0.3em] text-indigo-200 mb-2 flex items-center gap-1.5">
-                        <Sparkles className="w-3.5 h-3.5 text-amber-300" /> Akili AI · Personalised
+                        <Sparkles className="w-3.5 h-3.5 text-amber-300" /> Akili Smart · Personalised
                     </p>
                     <h2 className="text-3xl font-black tracking-tight mb-2">My Learning Path</h2>
                     <p className="text-indigo-200 font-medium max-w-sm text-sm leading-relaxed mb-5">
@@ -305,7 +305,7 @@ export const LearningPathView: React.FC<LearningPathViewProps> = ({
                     </div>
                     <h3 className="font-black text-slate-900 dark:text-white text-xl mb-2">Ready to build your path?</h3>
                     <p className="text-slate-400 font-medium text-sm max-w-xs mx-auto leading-relaxed mb-5">
-                        Akili AI will analyse your mastery data and create a personalised 8-topic study roadmap, tackling your weakest areas first.
+                        Akili Smart will analyse your mastery data and create a personalised 8-topic study roadmap, tackling your weakest areas first.
                     </p>
                     <button
                         onClick={handleGenerate}

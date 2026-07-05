@@ -70,7 +70,7 @@ export const ParentPage: React.FC = () => {
             <Helmet>
                 <title>Parent Portal | Somo Smart — Monitor Your Child&apos;s Learning</title>
                 <meta name="description" content="Track your child's study progress, quiz scores, and learning activity on Somo Smart. Secure parent access with PIN verification." />
-                <link rel="canonical" href="https://somaai.co.ke/parent" />
+                <link rel="canonical" href="https://www.somaai.co.ke/parent" />
             </Helmet>
 
             {showLinkScreen ? (

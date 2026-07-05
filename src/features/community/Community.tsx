@@ -396,7 +396,7 @@ export const Community: React.FC = () => {
 
             {/* Disclaimer */}
             <p className="text-center text-xs text-slate-400 mt-8">
-                Remember to be respectful and follow the Soma AI community guidelines.
+                Remember to be respectful and follow the Somo Smart community guidelines.
             </p>
         </div>
     );
