@@ -13,6 +13,7 @@ type Props = {
     isRegistered: boolean;
     userName?: string;
     onStartLearning: () => void;
+    onAskQuestion: (question: string) => void;
     onTeacher: () => void;
     onParent: () => void;
     onLibrary: () => void;
@@ -107,12 +108,23 @@ export const LandingHome: React.FC<Props> = (props) => {
     );
 };
 
-const AskAkiliDemo: React.FC<Props> = (props) => <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl shadow-slate-300/60">
+const AskAkiliDemo: React.FC<Props> = (props) => {
+    const [question, setQuestion] = React.useState('');
+    const openQuestion = () => {
+        const cleaned = question.trim();
+        if (!cleaned) return;
+        props.onTrack('ask_akili_home_question_submitted', { source: 'landing_hero', question_length: cleaned.length });
+        props.onAskQuestion(cleaned);
+        setQuestion('');
+    };
+
+    return (<div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl shadow-slate-300/60">
     <div className="flex items-center justify-between bg-[#051b50] px-4 py-3 text-white"><div className="flex items-center gap-3"><img src={mascotImg} alt="Ask Akili assistant" width={42} height={42} className="h-10 w-10 rounded-full border-2 border-white/30 bg-white object-cover" /><h2 className="text-lg font-black">Ask Akili</h2></div><span className="text-sm font-bold text-blue-100">Study helper</span></div>
-    <div className="space-y-3 p-4"><div className="flex items-center gap-2 rounded-lg border px-3 py-2.5 text-sm text-slate-400"><Search className="h-4 w-4" /> Ask a homework question...</div><div className="rounded-lg border border-blue-200 bg-blue-50/50 px-3 py-2.5 text-sm font-bold">What is photosynthesis?</div><div className="rounded-lg border border-emerald-200 bg-emerald-50/60 p-3"><p className="text-sm font-semibold leading-6 text-[#15214d]">Photosynthesis is the process used by green plants to make their own food. They use sunlight, water, and carbon dioxide to produce glucose (food) and oxygen.</p></div>
-        <div className="grid grid-cols-2 gap-2"><button onClick={props.onStartLearning} className="flex min-h-11 items-center justify-center gap-2 rounded-lg border border-slate-200 px-2 text-xs font-bold text-slate-800 hover:bg-slate-50"><ListChecks className="h-4 w-4 text-blue-600" /> Explain step by step</button><button onClick={() => { props.onTrack('listen_demo_clicked', { source: 'ask_akili_demo' }); props.onStartLearning(); }} className="flex min-h-11 items-center justify-center gap-2 rounded-lg border border-slate-200 px-2 text-xs font-bold text-slate-800 hover:bg-slate-50"><Volume2 className="h-4 w-4 text-emerald-600" /> Listen</button><button onClick={props.onStartLearning} className="flex min-h-11 items-center justify-center gap-2 rounded-lg border border-slate-200 px-2 text-xs font-bold text-slate-800 hover:bg-slate-50"><CircleHelp className="h-4 w-4 text-violet-600" /> Test me</button><button onClick={() => { props.onTrack('save_to_notebook_demo_clicked', { source: 'ask_akili_demo' }); props.onStartLearning(); }} className="flex min-h-11 items-center justify-center gap-2 rounded-lg border border-slate-200 px-2 text-xs font-bold text-slate-800 hover:bg-slate-50"><Notebook className="h-4 w-4 text-blue-600" /> Save to Notebook</button></div>
+    <div className="space-y-3 p-4"><div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-400 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100"><Search className="h-4 w-4 shrink-0" /><input type="text" value={question} onChange={(e) => setQuestion(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); openQuestion(); } }} placeholder="Ask a homework question..." className="w-full bg-transparent outline-none text-sm text-slate-800 placeholder:text-slate-400" aria-label="Ask a homework question" /></div><div className="rounded-lg border border-blue-200 bg-blue-50/50 px-3 py-2.5 text-sm font-bold text-slate-800">What is photosynthesis?</div><div className="rounded-lg border border-emerald-200 bg-emerald-50/60 p-3"><p className="text-sm font-semibold leading-6 text-[#15214d]">Photosynthesis is the process used by green plants to make their own food. They use sunlight, water, and carbon dioxide to produce glucose (food) and oxygen.</p></div>
+        <div className="grid grid-cols-2 gap-2"><button onClick={() => { if (question.trim()) { openQuestion(); } else { props.onStartLearning(); } }} className="flex min-h-11 items-center justify-center gap-2 rounded-lg border border-slate-200 px-2 text-xs font-bold text-slate-800 hover:bg-slate-50"><ListChecks className="h-4 w-4 text-blue-600" /> Explain step by step</button><button onClick={() => { props.onTrack('listen_demo_clicked', { source: 'ask_akili_demo' }); props.onStartLearning(); }} className="flex min-h-11 items-center justify-center gap-2 rounded-lg border border-slate-200 px-2 text-xs font-bold text-slate-800 hover:bg-slate-50"><Volume2 className="h-4 w-4 text-emerald-600" /> Listen</button><button onClick={props.onStartLearning} className="flex min-h-11 items-center justify-center gap-2 rounded-lg border border-slate-200 px-2 text-xs font-bold text-slate-800 hover:bg-slate-50"><CircleHelp className="h-4 w-4 text-violet-600" /> Test me</button><button onClick={() => { props.onTrack('save_to_notebook_demo_clicked', { source: 'ask_akili_demo' }); props.onStartLearning(); }} className="flex min-h-11 items-center justify-center gap-2 rounded-lg border border-slate-200 px-2 text-xs font-bold text-slate-800 hover:bg-slate-50"><Notebook className="h-4 w-4 text-blue-600" /> Save to Notebook</button></div>
     </div>
-</div>;
+</div>);
+};
 
 const ToolsSection: React.FC<{ onStart: () => void; onTeacher: () => void; onLibrary: () => void }> = ({ onStart, onTeacher, onLibrary }) => <section className="py-8">
     <div className="mx-auto grid max-w-[1440px] gap-4 px-4 sm:px-6 lg:grid-cols-[1.1fr_0.9fr] lg:px-10">

@@ -409,13 +409,17 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
         setShowRegistration(true);
     };
 
-    const handleLearnerQuickStart = (targetTab?: string, targetIntent?: string) => {
+    const handleLearnerQuickStart = (targetTab?: string, targetIntent?: string, pendingHeroQuestion?: string) => {
         if (!isRegistered && role === UserRole.NONE) {
             startGuestSession();
         }
 
         setRole(UserRole.LEARNER);
-        navigate('/learner', targetTab ? { state: { targetTab, targetIntent } } : undefined);
+        const nextState: Record<string, unknown> = {};
+        if (targetTab) nextState.targetTab = targetTab;
+        if (targetIntent) nextState.targetIntent = targetIntent;
+        if (pendingHeroQuestion) nextState.pendingHeroQuestion = pendingHeroQuestion;
+        navigate('/learner', Object.keys(nextState).length ? { state: nextState } : undefined);
     };
 
     const scrollToFeatureLauncher = () => {
@@ -738,6 +742,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                 isRegistered={isRegistered}
                 userName={studentProfile?.name || teacherProfile?.name}
                 onStartLearning={() => handleRoleSelect(UserRole.LEARNER)}
+                onAskQuestion={(question) => handleLearnerQuickStart('SMART_TUTOR', 'ask_akili', question)}
                 onTeacher={() => handleRoleSelect(UserRole.TEACHER)}
                 onParent={() => handleRoleSelect(UserRole.PARENT)}
                 onLibrary={handleLibraryAccess}
