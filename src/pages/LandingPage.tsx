@@ -13,6 +13,7 @@ import ReactGA from 'react-ga4';
 import { UserRole } from '../types';
 import { useApp } from '../context/AppContext';
 import { supabase } from '../lib/supabase';
+import { GA_MEASUREMENT_ID } from '../config/analytics';
 
 // Import Assets
 import learnerImg from '../assets/images/learner.png';
@@ -39,6 +40,7 @@ import { LoginModal } from '../components/LoginModal';
 import { LogoutModal } from '../components/LogoutModal';
 import { translations } from '../data/translations';
 import { ThemeToggle } from '../components/ThemeToggle';
+import { LandingHome } from '../components/LandingHome';
 import { safeImport } from '../utils/safeImport';
 import { trackAnalyticsEvent } from '../services/analyticsEventService';
 
@@ -96,7 +98,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
 
     const trackFunnelEvent = (eventName: string, params: Record<string, unknown> = {}) => {
         try {
-            if (import.meta.env.VITE_GA_MEASUREMENT_ID !== 'G-CHECK_GA_DASHBOARD') {
+            if (GA_MEASUREMENT_ID !== 'G-CHECK_GA_DASHBOARD') {
                 ReactGA.event(eventName, params);
             }
             void trackAnalyticsEvent({
@@ -732,6 +734,20 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                 </script>
             </Helmet>
 
+            <LandingHome
+                isRegistered={isRegistered}
+                userName={studentProfile?.name || teacherProfile?.name}
+                onStartLearning={() => handleRoleSelect(UserRole.LEARNER)}
+                onTeacher={() => handleRoleSelect(UserRole.TEACHER)}
+                onParent={() => handleRoleSelect(UserRole.PARENT)}
+                onLibrary={handleLibraryAccess}
+                onPricing={() => navigate('/pricing')}
+                onSignIn={() => { setLoginTab('STUDENT'); setShowLogin(true); }}
+                onDashboard={() => navigate(role === UserRole.TEACHER ? '/teacher' : role === UserRole.SCHOOL ? '/school' : role === UserRole.PARENT ? '/parent' : '/learner')}
+                onTrack={trackFunnelEvent}
+            />
+
+            {showLegacySections && (<>
             {/* --- HEADER --- */}
             <motion.header
                 initial={{ y: -20, opacity: 0 }}
@@ -742,7 +758,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                     <div className="flex justify-between items-center py-3">
                         {/* Logo */}
                         <div className="flex items-center gap-3 cursor-pointer" onClick={() => window.scrollTo(0, 0)}>
-                            <img src={logoImg} alt="Somo Smart Logo" className="h-14 sm:h-16 w-auto object-contain" />
+                            <img src={logoImg} alt="Somo Smart Logo" width={100} height={100} className="h-14 sm:h-16 w-auto object-contain" />
                         </div>
 
                         {/* Desktop Nav */}
@@ -2053,7 +2069,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                         {/* Column 1: Brand & Local SEO */}
                         <div className="md:col-span-2">
                             <div className="flex items-center gap-2 cursor-pointer mb-4" onClick={() => window.scrollTo(0, 0)}>
-                                <img src={logoImg} alt="Somo Smart Logo" className="h-12 w-auto object-contain grayscale opacity-80 hover:grayscale-0 hover:opacity-100 transition-all dark:invert dark:opacity-60 dark:hover:invert-0 dark:hover:opacity-100" />
+                                <img src={logoImg} alt="Somo Smart Logo" width={96} height={96} className="h-12 w-auto object-contain grayscale opacity-80 hover:grayscale-0 hover:opacity-100 transition-all dark:invert dark:opacity-60 dark:hover:invert-0 dark:hover:opacity-100" />
                             </div>
                             <p className="text-slate-500 dark:text-slate-400 text-sm mb-6 max-w-full sm:max-w-sm leading-relaxed">
                                 Kenya&apos;s leading Smart learning platform. Empowering students, teachers, and parents with strictly aligned CBC and KCSE educational tools.
@@ -2320,6 +2336,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                 )}
             </AnimatePresence>
 
+            </>)}
+
             <RegistrationModal
                 isOpen={showRegistration}
                 initialRole={registrationRole}
@@ -2454,7 +2472,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
 
             {/* --- MOBILE STICKY CTA (guests only) --- */}
             <AnimatePresence>
-                {showMobileStickyCta && !isRegistered && (
+                {showLegacySections && showMobileStickyCta && !isRegistered && (
                     <motion.div
                         initial={{ opacity: 0, y: 24 }}
                         animate={{ opacity: 1, y: 0 }}
@@ -2489,7 +2507,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                 href="https://wa.me/254722763760"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="hidden md:flex fixed bottom-8 left-8 z-[60] items-center justify-center bg-[#25D366] text-white p-3.5 rounded-full shadow-2xl hover:bg-[#20bd5a] hover:scale-110 active:scale-95 transition-all border-4 border-white/50 backdrop-blur-sm"
+                className="hidden"
                 title="Chat with us on WhatsApp"
                 aria-label="Chat with us on WhatsApp"
             >

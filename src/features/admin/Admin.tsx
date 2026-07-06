@@ -14,6 +14,7 @@ import { supabase } from '../../lib/supabase';
 import { Helmet } from 'react-helmet-async';
 import { JournalView } from './views/Journal';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { GA_MEASUREMENT_ID } from '../../config/analytics';
 
 interface AdminProps {
     onNavigate: (view: ViewState) => void;
@@ -23,6 +24,7 @@ interface AdminProps {
 export const AdminDashboard: React.FC<AdminProps> = ({ onNavigate, authStatus = 'idle' }) => {
     const location = useLocation();
     const navigate = useNavigate();
+    const gaId = GA_MEASUREMENT_ID;
     const [activeTab, setActiveTab] = useState<string>(() => new URLSearchParams(location.search).get('tab') || 'OVERVIEW');
 
     useEffect(() => {
@@ -48,18 +50,20 @@ export const AdminDashboard: React.FC<AdminProps> = ({ onNavigate, authStatus = 
                 window.location.reload();
             }}
         >
-            <Helmet>
-                <script async src="https://www.googletagmanager.com/gtag/js?id=G-B49HNQCQTY"></script>
-                <script>
-                    {`
-                      window.dataLayer = window.dataLayer || [];
-                      function gtag(){dataLayer.push(arguments);}
-                      gtag('js', new Date());
+            {gaId && gaId !== 'G-CHECK_GA_DASHBOARD' ? (
+                <Helmet>
+                    <script async src={`https://www.googletagmanager.com/gtag/js?id=${gaId}`}></script>
+                    <script>
+                        {`
+                          window.dataLayer = window.dataLayer || [];
+                          function gtag(){dataLayer.push(arguments);}
+                          gtag('js', new Date());
 
-                      gtag('config', 'G-B49HNQCQTY');
-                    `}
-                </script>
-            </Helmet>
+                          gtag('config', '${gaId}');
+                        `}
+                    </script>
+                </Helmet>
+            ) : null}
             {activeTab === 'OVERVIEW' && <Overview />}
             {activeTab === 'USERS' && <UsersView />}
             {activeTab === 'FINANCE' && <FinancialsView />}

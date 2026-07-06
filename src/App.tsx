@@ -14,6 +14,7 @@ import { flushMasterySyncQueue } from './services/learnerMemoryService';
 import { safeImport } from './utils/safeImport';
 import { trackAnalyticsEvent } from './services/analyticsEventService';
 import { launchFeatures } from './config/launchFeatures';
+import { GA_MEASUREMENT_ID } from './config/analytics';
 
 // Lazy Load Pages for Performance
 const LandingPage = React.lazy(() => safeImport(() => import('./pages/LandingPage').then(module => ({ default: module.LandingPage }))));
@@ -61,7 +62,7 @@ const App: React.FC = () => {
 
     // Initialize Google Analytics
     React.useEffect(() => {
-        const gaId = import.meta.env.VITE_GA_MEASUREMENT_ID;
+        const gaId = GA_MEASUREMENT_ID;
         if (gaId && gaId !== 'G-CHECK_GA_DASHBOARD') {
             ReactGA.initialize(gaId);
         }
@@ -69,7 +70,7 @@ const App: React.FC = () => {
 
     // Track page views on route change
     React.useEffect(() => {
-        if (import.meta.env.VITE_GA_MEASUREMENT_ID !== 'G-CHECK_GA_DASHBOARD') {
+        if (GA_MEASUREMENT_ID !== 'G-CHECK_GA_DASHBOARD') {
             ReactGA.send({ hitType: "pageview", page: location.pathname + location.search });
         }
     }, [location]);

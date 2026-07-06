@@ -18,6 +18,7 @@ import { ViewState, TeacherNote, QuizData, TeacherActivity, SubscriptionPlan, Ch
 import { PaymentFlow } from '../subscription/PaymentFlow';
 import { translations } from '../../data/translations';
 import { TeacherRequestModal } from '../../components/TeacherRequestModal';
+import { GA_MEASUREMENT_ID } from '../../config/analytics';
 import { TutoringRequest } from '../../types';
 import { classroomService } from '../../services/classroomService';
 
@@ -142,7 +143,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
 
     const trackFunnelEvent = (eventName: string, params: Record<string, unknown> = {}) => {
         try {
-            if (import.meta.env.VITE_GA_MEASUREMENT_ID !== 'G-CHECK_GA_DASHBOARD') {
+            if (GA_MEASUREMENT_ID !== 'G-CHECK_GA_DASHBOARD') {
                 ReactGA.event(eventName, params);
             }
         } catch (_) {

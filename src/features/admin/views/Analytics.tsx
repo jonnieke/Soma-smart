@@ -22,6 +22,7 @@ import {
     X
 } from 'lucide-react';
 import { fetchDashboardStats, fetchFinanceSummary, DashboardStats, FinanceSummary } from '../../../services/adminService';
+import { GA_MEASUREMENT_ID } from '../../../config/analytics';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 const StatBlock = ({ title, value, description, icon, tone }: any) => (
@@ -38,7 +39,7 @@ const StatBlock = ({ title, value, description, icon, tone }: any) => (
 type TeacherWorkflowEvent = DashboardStats['recentTeacherWorkflowEvents'][number];
 
 export const AnalyticsView: React.FC = () => {
-    const gaId = import.meta.env.VITE_GA_MEASUREMENT_ID;
+    const gaId = GA_MEASUREMENT_ID;
     const navigate = useNavigate();
     const location = useLocation();
     const isConfigured = gaId && gaId !== 'G-CHECK_GA_DASHBOARD';

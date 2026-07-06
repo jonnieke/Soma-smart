@@ -16,6 +16,7 @@ import { PricingPage } from '../subscription/PricingPage';
 import { PaymentFlow } from '../subscription/PaymentFlow';
 import { LEARNING_CREDIT_PACKS, STUDENT_PLANS, TEACHER_PLANS, DOWNLOAD_PASS } from '../../data/pricing';
 import { RegistrationModal } from '../../components/RegistrationModal'; // Assuming path
+import { GA_MEASUREMENT_ID } from '../../config/analytics';
 import { LoginModal } from '../../components/LoginModal'; // Assuming path
 import { AIFeedbackButtons } from '../../components/AIFeedbackButtons';
 import { LogoutModal } from '../../components/LogoutModal';
@@ -285,7 +286,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
 
   const trackFunnelEvent = React.useCallback((eventName: string, params: Record<string, unknown> = {}) => {
     try {
-      if (import.meta.env.VITE_GA_MEASUREMENT_ID !== 'G-CHECK_GA_DASHBOARD') {
+      if (GA_MEASUREMENT_ID !== 'G-CHECK_GA_DASHBOARD') {
         ReactGA.event(eventName, params);
       }
       void trackAnalyticsEvent({
@@ -4501,7 +4502,7 @@ Topic or question: ${question || '[type your question here]'}`)
           <div className="sticky top-0 z-50 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-b border-slate-200/70 dark:border-slate-800/70">
             <div className="max-w-3xl mx-auto px-4 h-14 flex items-center justify-between">
               <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/')}>
-                <img src={logoImg} alt="Somo Smart" className="h-8 w-auto object-contain" />
+                <img src={logoImg} alt="Somo Smart" width={64} height={64} className="h-8 w-auto object-contain" />
               </div>
               <div className="flex items-center gap-2">
                 <ThemeToggle />

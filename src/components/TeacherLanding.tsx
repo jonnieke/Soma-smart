@@ -57,7 +57,7 @@ export const TeacherLanding: React.FC<TeacherLandingProps> = ({ onLogin, onRegis
                             className="flex items-center gap-3 cursor-pointer group"
                             onClick={() => navigate('/')}
                         >
-                            <img src={logoImg} alt="Somo Smart Teacher" className="h-10 w-auto object-contain brightness-0 invert group-hover:scale-105 transition-transform" />
+                            <img src={logoImg} alt="Somo Smart Teacher" width={80} height={80} className="h-10 w-auto object-contain brightness-0 invert group-hover:scale-105 transition-transform" />
                             <span className="opacity-80 font-normal text-white">Teacher</span>
                         </div>
                         <button

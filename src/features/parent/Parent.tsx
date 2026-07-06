@@ -11,6 +11,7 @@ import { loadMasteryFromCloud } from '../../services/learnerMemoryService';
 import { MasteryDashboard } from '../../components/MasteryDashboard';
 import { SubjectHeatmap, ParentAIInsight } from './ParentEnhancements';
 import { supabase } from '../../lib/supabase';
+import { GA_MEASUREMENT_ID } from '../../config/analytics';
 
 const PARENT_REMEMBER_LOGIN_KEY = 'soma_parent_remembered_login';
 const parentSnapshotKey = (studentCode: string) => `soma_parent_snapshot_${studentCode.trim().toUpperCase()}`;
@@ -45,7 +46,7 @@ export const ParentDashboard: React.FC<ParentProps> = ({ onNavigate, activityLog
 
     const trackFunnelEvent = (eventName: string, params: Record<string, unknown> = {}) => {
         try {
-            if (import.meta.env.VITE_GA_MEASUREMENT_ID !== 'G-CHECK_GA_DASHBOARD') {
+            if (GA_MEASUREMENT_ID !== 'G-CHECK_GA_DASHBOARD') {
                 ReactGA.event(eventName, params);
             }
         } catch (_) {
