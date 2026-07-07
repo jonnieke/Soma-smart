@@ -31,7 +31,7 @@ export const LEARNING_CREDIT_PACKS: SubscriptionPlan[] = [
         duration: 'DAILY',
         credits: 30,
         isCreditPack: true,
-        features: ['30 extra AI actions', 'Can extend grounded answers, marking, or voice', 'Does not replace your active plan']
+        features: ['30 extra AI actions', 'Can extend grounded answers, marking, or voice', 'Expires after 1 day']
     },
     {
         id: 'credit_100',
@@ -42,7 +42,7 @@ export const LEARNING_CREDIT_PACKS: SubscriptionPlan[] = [
         credits: 100,
         isCreditPack: true,
         savings: 'Best top-up',
-        features: ['100 extra AI actions', 'Useful for Exam Coach, marking, and voice revision', 'Credits remain available after today']
+        features: ['100 extra AI actions', 'Useful for Exam Coach, marking, and voice revision', 'Expires after 7 days']
     },
     {
         id: 'credit_250',
@@ -53,7 +53,7 @@ export const LEARNING_CREDIT_PACKS: SubscriptionPlan[] = [
         credits: 250,
         isCreditPack: true,
         savings: 'Most value',
-        features: ['250 extra AI actions', 'Best for deep Exam Prep and document analysis weeks', 'Credits remain available after today']
+        features: ['250 extra AI actions', 'Best for deep Exam Prep and document analysis weeks', 'Expires after 30 days']
     },
 ];
 
@@ -62,3 +62,4 @@ export const SCHOOL_PLANS: SubscriptionPlan[] = [
     { id: 'sch_medium', segment: 'SCHOOL', name: 'Medium School', price: 20000, duration: 'TERMLY', teacherLimit: 10, studentLimit: 100 },
     { id: 'sch_large', segment: 'SCHOOL', name: 'Large School', price: 36000, duration: 'TERMLY', teacherLimit: 50, studentLimit: 500 },
 ];
+

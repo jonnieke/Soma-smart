@@ -108,10 +108,18 @@ serve(async (req) => {
                             else if (tx.amount === 50) credits = 100
                             else if (tx.amount === 100) credits = 250
                         }
+                        const expiry = tx.amount === 20
+                            ? new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+                            : tx.amount === 50
+                              ? new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+                              : tx.amount === 100
+                                ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+                                : null
                         if (credits > 0) {
                             const { data: walletCredits } = await supabase.rpc('grant_learning_credits', {
                                 p_profile_id: tx.user_id,
-                                p_credits: credits
+                                p_credits: credits,
+                                p_expires_at: expiry
                             })
                             return {
                                 ...statusData,

@@ -4,6 +4,7 @@ import ReactGA from 'react-ga4';
 import { Smartphone, Loader2, CheckCircle2, XCircle, ArrowLeft, ShieldCheck, CreditCard, ExternalLink, ArrowRight, Sparkles } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { pesapalService } from '../../services/pesapalService';
+import { getCreditPackExpiry } from '../../services/planLimitService';
 import { UserRole } from '../../types';
 import { supabase } from '../../lib/supabase';
 import { trackAnalyticsEvent } from '../../services/analyticsEventService';
@@ -194,21 +195,23 @@ export const PaymentFlow: React.FC<Props> = ({ plan, materialId, onSuccess, onCa
                         };
 
                         const creditProfileId = studentProfile?.id || teacherProfile?.id || paymentUserId || existingStudentProfileId || userId;
+                        const creditExpiry = getCreditPackExpiry(plan?.duration);
                         if (isCreditPackCheckout && plan?.credits) {
                             try {
                                 if (creditProfileId) {
                                     const { error: creditErr } = await supabase.rpc('grant_learning_credits', {
                                         p_profile_id: creditProfileId,
-                                        p_credits: plan.credits
+                                        p_credits: plan.credits,
+                                        p_expires_at: creditExpiry
                                     });
                                     if (creditErr) throw creditErr;
-                                    grantLearningCredits(plan.credits);
+                                    grantLearningCredits(plan.credits, creditExpiry);
                                 } else {
-                                    grantLearningCredits(plan.credits);
+                                    grantLearningCredits(plan.credits, creditExpiry);
                                 }
                             } catch (creditErr) {
                                 console.warn('Could not persist learning credits, falling back to local wallet:', creditErr);
-                                grantLearningCredits(plan.credits);
+                                grantLearningCredits(plan.credits, creditExpiry);
                             }
                         }
 
@@ -700,7 +703,7 @@ export const PaymentFlow: React.FC<Props> = ({ plan, materialId, onSuccess, onCa
                             </h2>
                             <p className="text-slate-500 font-medium mb-6">
                                 {isCreditPackCheckout
-                                    ? `${plan?.credits || 0} learning credits are being added to your wallet.`
+                                    ? `${plan?.credits || 0} learning credits are being added for the active term.`
                                     : 'Payment received. Your account is being upgraded right now.'}
                             </p>
                             

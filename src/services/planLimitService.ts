@@ -174,11 +174,19 @@ const normalizeFeature = (feature: string): BillableFeature => {
 
 const usageKey = (plan: string, feature: string) => `soma_plan_usage_${DAILY_KEY()}_${plan}_${feature}`;
 const CREDIT_KEY = 'soma_learning_credits';
+const CREDIT_EXPIRY_KEY = 'soma_learning_credits_expires_at';
 const CREDIT_EVENT = 'soma-learning-credits-changed';
+export const MAX_LEARNING_CREDITS = 9999;
 
 const notifyCreditChange = (credits: number) => {
   if (typeof window === 'undefined') return;
   window.dispatchEvent(new CustomEvent(CREDIT_EVENT, { detail: { credits } }));
+};
+
+export const sanitizeLearningCredits = (value: unknown) => {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed <= 0) return 0;
+  return Math.min(MAX_LEARNING_CREDITS, Math.floor(parsed));
 };
 
 const creditUnitsForFeature = (feature: string, units: number) => {
@@ -189,20 +197,112 @@ const creditUnitsForFeature = (feature: string, units: number) => {
     : Math.max(1, units);
 };
 
-export const getLearningCredits = () => Number(localStorage.getItem(CREDIT_KEY) || 0);
 
-export const grantLearningCredits = (credits: number) => {
-  const next = Math.max(0, getLearningCredits() + credits);
+const normalizeCreditExpiry = (value?: string | Date | null) => {
+  if (!value) return null;
+  const date = typeof value === 'string' ? new Date(value) : value;
+  return Number.isFinite(date.getTime()) ? date.toISOString() : null;
+};
+
+const clearLearningCreditStorage = () => {
+  try {
+    localStorage.removeItem(CREDIT_KEY);
+    localStorage.removeItem(CREDIT_EXPIRY_KEY);
+  } catch {
+    // Ignore storage failures.
+  }
+};
+
+export const getLearningCreditsExpiry = () => {
+  const raw = localStorage.getItem(CREDIT_EXPIRY_KEY);
+  if (!raw) return null;
+  const expiry = new Date(raw);
+  if (!Number.isFinite(expiry.getTime())) {
+    clearLearningCreditStorage();
+    return null;
+  }
+  if (expiry.getTime() <= Date.now()) {
+    clearLearningCreditStorage();
+    notifyCreditChange(0);
+    return null;
+  }
+  return expiry.toISOString();
+};
+
+export const getCreditPackExpiry = (duration?: string | null) => {
+  const plan = String(duration || '').toUpperCase();
+  const now = new Date();
+  const expiry = new Date(now);
+  switch (plan) {
+    case 'DAILY':
+      expiry.setDate(now.getDate() + 1);
+      break;
+    case 'WEEKLY':
+      expiry.setDate(now.getDate() + 7);
+      break;
+    case 'MONTHLY':
+      expiry.setDate(now.getDate() + 30);
+      break;
+    case 'TERMLY':
+      expiry.setDate(now.getDate() + 90);
+      break;
+    case 'ANNUAL':
+      expiry.setFullYear(now.getFullYear() + 1);
+      break;
+    default:
+      return null;
+  }
+  return expiry.toISOString();
+};
+
+export const getLearningCredits = () => {
+  const expiry = getLearningCreditsExpiry();
+  if (!expiry && localStorage.getItem(CREDIT_EXPIRY_KEY)) {
+    return 0;
+  }
+
+  const raw = localStorage.getItem(CREDIT_KEY);
+  const sanitized = sanitizeLearningCredits(raw);
+
+  if (raw !== null && String(sanitized) !== raw) {
+    try {
+      localStorage.setItem(CREDIT_KEY, String(sanitized));
+      notifyCreditChange(sanitized);
+    } catch {
+      // Ignore storage write failures.
+    }
+  }
+
+  return sanitized;
+};
+
+export const grantLearningCredits = (credits: number, expiresAt?: string | Date | null) => {
+  const next = sanitizeLearningCredits(getLearningCredits() + sanitizeLearningCredits(credits));
+  const expiry = normalizeCreditExpiry(expiresAt);
   localStorage.setItem(CREDIT_KEY, String(next));
+  if (expiry) {
+    localStorage.setItem(CREDIT_EXPIRY_KEY, expiry);
+  }
   notifyCreditChange(next);
   return next;
 };
 
+export const formatLearningCredits = (credits: number) => {
+  const safe = sanitizeLearningCredits(credits);
+  if (safe >= MAX_LEARNING_CREDITS) return '9,999+';
+  return safe.toLocaleString('en-US');
+};
+
 export const spendLearningCredits = (credits: number) => {
   const current = getLearningCredits();
-  if (current < credits) return false;
-  const next = current - credits;
-  localStorage.setItem(CREDIT_KEY, String(next));
+  const spend = sanitizeLearningCredits(credits);
+  if (current < spend) return false;
+  const next = sanitizeLearningCredits(current - spend);
+  if (next <= 0) {
+    clearLearningCreditStorage();
+  } else {
+    localStorage.setItem(CREDIT_KEY, String(next));
+  }
   notifyCreditChange(next);
   return true;
 };

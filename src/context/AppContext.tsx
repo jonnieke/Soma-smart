@@ -4,7 +4,7 @@ import { processQuizResult, getDueTopics, getWeakTopics, loadSRFromLocal, loadMa
 import { loadStrategiesFromLocal, approveStrategy as approveStrategyFn, rejectStrategy as rejectStrategyFn, addStrategies, getActiveStrategies, getPendingStrategies } from '../services/strategyService';
 import { classroomService } from '../services/classroomService';
 import { warnIfDev } from '../utils/logger';
-import { getLearningCredits, grantLearningCredits as grantLocalLearningCredits } from '../services/planLimitService';
+import { getLearningCredits, grantLearningCredits as grantLocalLearningCredits, sanitizeLearningCredits } from '../services/planLimitService';
 
 // Update interface
 interface AppContextType {
@@ -142,7 +142,7 @@ interface AppContextType {
   extraDownloads: number;
   grantExtraDownloads: (amount: number) => void;
   learningCredits: number;
-  grantLearningCredits: (amount: number) => void;
+  grantLearningCredits: (amount: number, expiresAt?: string | Date | null) => void;
   // Theme
   theme: 'light' | 'dark';
   toggleTheme: () => void;
@@ -258,20 +258,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const [studentCode, setStudentCode] = useState<string>("");
   const [usageCount, setUsageCount] = useState<number>(() => {
-    // For NON-registered users (guests), use the persistent guest key — NOT the daily key.
-    // The daily key resets at midnight and would let users bypass the 3-session limit each day.
-    // The guest key is LIFETIME (within the browser) and is only cleared on registration/login.
-    const guestUsage = localStorage.getItem('somo_guest_usage_general');
-    if (guestUsage !== null) {
-      return parseInt(guestUsage);
-    }
-    // Fallback: read the daily key if guest key doesn't exist yet
     const saved = localStorage.getItem('somo_daily_usage');
     const lastDate = localStorage.getItem('somo_daily_date');
     const today = new Date().toLocaleDateString();
     if (lastDate !== today) {
       localStorage.setItem('somo_daily_date', today);
       localStorage.setItem('somo_daily_usage', '0');
+      localStorage.removeItem('somo_guest_usage_general');
       return 0;
     }
     return saved ? parseInt(saved) : 0;
@@ -1858,12 +1851,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       return;
     }
 
-    // Non-registered / Guest: persist to the permanent guest key.
-    // This key is NEVER daily-reset — it accumulates until the user registers.
+    // Non-registered / Guest: persist to the daily key and reset it at midnight.
     setUsageCount(prev => {
       const newCount = prev + 1;
-      localStorage.setItem('somo_guest_usage_general', newCount.toString());
-      // Also write to daily key for any legacy reads
+      localStorage.removeItem('somo_guest_usage_general');
       const today = new Date().toLocaleDateString();
       localStorage.setItem('somo_daily_usage', newCount.toString());
       localStorage.setItem('somo_daily_date', today);
@@ -1984,33 +1975,31 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     localStorage.setItem('soma_extra_downloads', newValue.toString());
   };
 
-  const grantLearningCredits = (amount: number) => {
-    const next = grantLocalLearningCredits(amount);
+  const grantLearningCredits = (amount: number, expiresAt?: string | Date | null) => {
+    const next = grantLocalLearningCredits(amount, expiresAt);
     setLearningCredits(next);
   };
 
   const syncLearningCredits = async (profileId: string, studentId?: string | null) => {
     if (!profileId) return;
 
-    const localCredits = Number(localStorage.getItem('soma_learning_credits') || 0);
-
     try {
-      const { data: rpcCredits, error: rpcError } = await supabase.rpc('get_learning_credits', {
+      const { data: rpcCredits, error: rpcError } = await supabase.rpc('get_learning_credit_status', {
         p_profile_id: profileId,
         p_student_id: studentId || null
       });
 
-      if (!rpcError && typeof rpcCredits === 'number') {
-        if (localCredits > rpcCredits) {
-          const diff = localCredits - rpcCredits;
-          await supabase.rpc('grant_learning_credits', {
-            p_profile_id: profileId,
-            p_credits: diff
-          });
+      const rpcRow = Array.isArray(rpcCredits) ? rpcCredits[0] : rpcCredits;
+      if (!rpcError && rpcRow) {
+        const sanitizedRpcCredits = sanitizeLearningCredits((rpcRow as any).credits || 0);
+        const rpcExpiry = (rpcRow as any).credit_expires_at ? String((rpcRow as any).credit_expires_at) : null;
+        localStorage.setItem('soma_learning_credits', String(sanitizedRpcCredits));
+        if (rpcExpiry) {
+          localStorage.setItem('soma_learning_credits_expires_at', rpcExpiry);
+        } else {
+          localStorage.removeItem('soma_learning_credits_expires_at');
         }
-        const syncedCredits = Math.max(localCredits, rpcCredits);
-        localStorage.setItem('soma_learning_credits', String(syncedCredits));
-        setLearningCredits(syncedCredits);
+        setLearningCredits(sanitizedRpcCredits);
         return;
       }
     } catch (err) {
@@ -2019,22 +2008,20 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
     const { data: creditRow, error: creditError } = await supabase
       .from('learning_credit_balances')
-      .select('credits')
+      .select('credits, credit_expires_at')
       .eq('profile_id', profileId)
       .maybeSingle();
 
-    if (!creditError) {
-      const dbCredits = creditRow?.credits || 0;
-      if (localCredits > dbCredits) {
-        const diff = localCredits - dbCredits;
-        await supabase.rpc('grant_learning_credits', {
-          p_profile_id: profileId,
-          p_credits: diff
-        });
+    if (!creditError && creditRow) {
+      const dbCredits = sanitizeLearningCredits((creditRow as any).credits || 0);
+      const dbExpiry = (creditRow as any).credit_expires_at ? String((creditRow as any).credit_expires_at) : null;
+      localStorage.setItem('soma_learning_credits', String(dbCredits));
+      if (dbExpiry) {
+        localStorage.setItem('soma_learning_credits_expires_at', dbExpiry);
+      } else {
+        localStorage.removeItem('soma_learning_credits_expires_at');
       }
-      const syncedCredits = Math.max(localCredits, dbCredits);
-      localStorage.setItem('soma_learning_credits', String(syncedCredits));
-      setLearningCredits(syncedCredits);
+      setLearningCredits(dbCredits);
     } else if (creditError) {
       warnIfDev('Learning credits unavailable:', creditError);
     }

@@ -172,7 +172,7 @@ export const PricingPage: React.FC<Props> = ({ onSelectPlan, onClose, currentTie
                                     <div className="mb-4">
                                         <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-500">Need to continue today?</p>
                                         <h2 className="text-xl font-black text-slate-900 mt-1">Buy learning credits</h2>
-                                        <p className="text-sm font-semibold text-slate-600 mt-1">Credits extend capped tools without replacing your active plan. Basic Ask Akili stays plan-based; credits are for heavier work like grounded answers, marking, deep documents, and voice.</p>
+                                        <p className="text-sm font-semibold text-slate-600 mt-1">Credits extend capped tools without replacing your active plan. Basic Ask Akili stays plan-based; credits are for heavier work like grounded answers, marking, deep documents, and voice. Extra packs expire with the active term.</p>
                                     </div>
                                     <div className="mb-4 grid grid-cols-1 md:grid-cols-3 gap-3">
                                         {[

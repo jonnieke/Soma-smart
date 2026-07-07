@@ -307,7 +307,7 @@ export const RevisionPortal: React.FC = () => {
                     >
                         {isRegistered ? 'Go to Dashboard' : 'Create Free Account Now'}
                     </button>
-                    <p className="mt-4 text-xs font-bold text-slate-400">No credit card required for your first 3 scans.</p>
+                    <p className="mt-4 text-xs font-bold text-slate-400">No credit card required for your first 5 scans.</p>
                 </section>
             </main>
 
@@ -316,7 +316,7 @@ export const RevisionPortal: React.FC = () => {
                 <div className="md:hidden fixed bottom-0 left-0 right-0 p-4 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border-t border-slate-200 dark:border-slate-800 z-50 flex items-center justify-between pb-safe">
                     <div>
                         <p className="font-black text-sm text-slate-900 dark:text-white">Start your revision</p>
-                        <p className="text-[10px] font-bold text-orange-600">3 free uses included</p>
+                        <p className="text-[10px] font-bold text-orange-600">5 free uses included</p>
                     </div>
                     <button
                         onClick={() => setShowRegister(true)}

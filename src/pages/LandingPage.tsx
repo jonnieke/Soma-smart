@@ -240,10 +240,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
         let count = 0;
         try { count = parseInt(localStorage.getItem('soma_hero_detailed_uses') || '0', 10); } catch { /* ignore */ }
         setShowDetailedView(true);
-        if (count >= 3) return;
+        if (count >= 5) return;
         try {
             localStorage.setItem('soma_hero_detailed_uses', String(count + 1));
-            setDetailedUsesLeft(Math.max(0, 3 - (count + 1)));
+            setDetailedUsesLeft(Math.max(0, 5 - (count + 1)));
         } catch { /* ignore */ }
         if (detailedAnswer || isGeneratingDetailed) return;
         setIsGeneratingDetailed(true);
@@ -966,7 +966,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                                     ) : heroLimitReached ? (
                                                         /* Conversion card — shown instead of error when guest daily quota is used up */
                                                         <div>
-                                                            <p className="text-sm font-black text-slate-900 dark:text-white leading-snug">You&apos;ve used today&apos;s 3 free answers.</p>
+                                                            <p className="text-sm font-black text-slate-900 dark:text-white leading-snug">You&apos;ve used today&apos;s 5 free answers.</p>
                                                             <p className="mt-1 text-xs font-medium text-slate-500 dark:text-slate-400">Create a free account to get 10 answers per day — no card needed.</p>
                                                             <div className="mt-3 flex flex-col sm:flex-row gap-2">
                                                                 <button
@@ -2183,7 +2183,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                         </div>
                                     ) : (
                                         <div>
-                                            <p className="text-xs font-black uppercase tracking-widest text-slate-400 mb-2">3 free previews used</p>
+                                            <p className="text-xs font-black uppercase tracking-widest text-slate-400 mb-2">5 free previews used</p>
                                             <h3 className="text-xl font-black text-slate-900 dark:text-white">Create a free account to keep going</h3>
                                             <p className="mt-2 text-sm text-slate-600 dark:text-slate-300 leading-relaxed max-w-xs mx-auto">
                                                 Unlock full step-by-step notes for any question, practice drills, and progress tracking — free to start.

@@ -57,7 +57,7 @@ export const RevisionDashboard: React.FC = () => {
 
                     <h2 className="text-3xl font-black text-slate-900 dark:text-white mb-3 tracking-tight">Success Limit Reached</h2>
                     <p className="text-slate-500 dark:text-slate-400 font-medium mb-8 leading-relaxed">
-                        You&apos;ve completed your 3 free paper analysis sessions. Your journey to being a <span className="text-indigo-600 dark:text-indigo-400 font-bold">Top Candidate</span> represents an investment in your future.
+                        You&apos;ve completed your 5 free paper analysis sessions. Your journey to being a <span className="text-indigo-600 dark:text-indigo-400 font-bold">Top Candidate</span> represents an investment in your future.
                     </p>
 
                     <div className="space-y-4 mb-8">
