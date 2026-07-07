@@ -438,7 +438,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
             description: 'Ask Akili, open notes, revise with past papers, take drills, and listen to lessons.',
             icon: GraduationCap,
             cta: 'Open Learner',
-            action: () => handleRoleSelect(UserRole.LEARNER),
+            action: () => handleLearnerQuickStart('SMART_TUTOR', 'ask_akili'),
             tone: 'bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-950/40 dark:text-indigo-200 dark:border-indigo-800'
         },
         {
@@ -832,7 +832,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                 Teacher
                             </button>
                             <button
-                                onClick={() => handleRoleSelect(UserRole.LEARNER)}
+                                onClick={() => handleLearnerQuickStart('SMART_TUTOR', 'ask_akili')}
                                 className="bg-[#5b61de] text-white px-4 py-2 rounded-lg font-bold text-xs shadow-md"
                             >
                                 Learner
@@ -1057,7 +1057,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                             </div>
                             <div className="mt-6 flex flex-col sm:flex-row gap-3">
                                 <button
-                                    onClick={() => handleRoleSelect(UserRole.LEARNER)}
+                                    onClick={() => handleLearnerQuickStart('SMART_TUTOR', 'ask_akili')}
                                     className="w-full sm:w-auto min-h-[46px] rounded-xl bg-indigo-600 hover:bg-indigo-700 px-5 text-sm font-black text-white flex items-center justify-center gap-2"
                                 >
                                     Try Free — No Sign-up Needed <ChevronRight className="w-4 h-4" />
@@ -1195,7 +1195,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                     <div className="font-bold text-slate-900 dark:text-white">Learner</div>
                                     <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Step-by-step answers & quizzes</div>
                                 </div>
-                                <button onClick={() => handleRoleSelect(UserRole.LEARNER)} className="shrink-0 p-2 rounded-lg bg-slate-100 dark:bg-slate-700 hover:bg-indigo-600 hover:text-white dark:hover:bg-indigo-500 text-slate-600 dark:text-slate-300 transition-colors">
+                                <button onClick={() => handleLearnerQuickStart('SMART_TUTOR', 'ask_akili')} className="shrink-0 p-2 rounded-lg bg-slate-100 dark:bg-slate-700 hover:bg-indigo-600 hover:text-white dark:hover:bg-indigo-500 text-slate-600 dark:text-slate-300 transition-colors">
                                     <ArrowRight className="w-4 h-4" />
                                 </button>
                             </div>
@@ -1918,7 +1918,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
 
                         <div className="flex flex-col md:flex-row items-center justify-center gap-4">
                             <button
-                                onClick={() => handleRoleSelect(UserRole.LEARNER)}
+                                onClick={() => handleLearnerQuickStart('SMART_TUTOR', 'ask_akili')}
                                 className="px-8 py-4 bg-green-500 text-white rounded-2xl font-bold text-lg shadow-2xl shadow-green-900/40 hover:bg-green-400 hover:-translate-y-1 transition-all w-full md:w-auto flex items-center justify-center gap-2"
                             >
                                 Try Learner Free <ChevronRight className="w-5 h-5" />
@@ -2498,7 +2498,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                             Chat
                         </a>
                         <button
-                            onClick={() => handleRoleSelect(UserRole.LEARNER)}
+                            onClick={() => handleLearnerQuickStart('SMART_TUTOR', 'ask_akili')}
                             className="shrink-0 bg-blue-600 hover:bg-blue-500 text-white py-2.5 px-4 rounded-xl font-bold text-sm shadow-md shadow-blue-500/20 active:scale-95 transition-all flex items-center gap-1"
                         >
                             Start Free <ChevronRight className="w-4 h-4 text-blue-200" />
@@ -2523,4 +2523,5 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
         </div>
     );
 };
+
 
