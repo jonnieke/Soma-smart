@@ -936,10 +936,10 @@ export const explainTopic = async (
     ${personaInstruction}
 
     STRICT TASK:
-    1. Identify the subject of the topic "${topic}".
+    1. Answer the learning problem directly. Do NOT spend time explaining the question setup, grade level, or subject classification unless it changes the answer.
     2. ${langInstruction}
     3. If an image or audio recording is provided, analyze it (transcribe audio if present) and answer the student's question in the context of the source document snippets provided.
-    4. Provide a general overview in the 'explanation' field.
+    4. Provide a direct, learner-friendly explanation in the 'explanation' field. Start with the actual answer or method, then expand into the learning steps.
     5. DEEP LEARNING (subtopics): Break the topic down into EXACTLY 3 distinct, logical subtopics using the FORMATTING RULES above. For EACH subtopic, provide highly readable, bite-sized paragraph notes in plain text. Do NOT use ** (bold markers) or ## (headers) in the content. Use numbered lists and bullet points frequently to break down processes or features.
        - CRITICAL LIMIT: Do not generate excessively long notes. You MUST ensure the full JSON output is completed and valid without truncating. Keep it concise.
        - Length constraints: For EACH subtopic block, limit paragraphs to a maximum of 3 sentences (under 60 words) and lists to a maximum of 4 items. Keep 'explanation' under 200 words. Keep 'recapNodes' details under 80 words. Strictly avoid verbose output so the JSON does not get truncated.
@@ -1627,5 +1627,6 @@ Return a JSON array of {date, dayLabel, subject, topics, duration}.`;
 };
 
 // --- AUTOMATED EVALUATION FEATURE ---
+
 
 

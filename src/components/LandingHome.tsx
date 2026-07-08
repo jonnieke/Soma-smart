@@ -14,6 +14,7 @@ type Props = {
     userName?: string;
     onStartLearning: () => void;
     onAskQuestion: (question: string) => void;
+    onLearnerShortcut: (targetTab: 'SMART_TUTOR' | 'RESOURCES' | 'SUBJECTS' | 'TALKBACK' | 'NOTEBOOK', targetIntent?: string) => void;
     onTeacher: () => void;
     onParent: () => void;
     onLibrary: () => void;
@@ -24,18 +25,42 @@ type Props = {
 };
 
 const helps = [
-    ['Understand homework', 'Get step-by-step explanations for any school question.', BookOpen, 'bg-blue-50 text-blue-600'],
-    ['Listen & Learn', 'Too tired to read? Listen instead.', Headphones, 'bg-emerald-50 text-emerald-600'],
-    ['Practise weak topics', 'Quizzes and targeted revision help you improve.', CircleHelp, 'bg-violet-50 text-violet-600'],
-    ['Notebook', 'Save what you learn and revise it later.', Notebook, 'bg-amber-50 text-amber-600'],
+    {
+        title: 'Understand homework',
+        text: 'Get step-by-step explanations for any school question.',
+        Icon: BookOpen,
+        tone: 'bg-blue-50 text-blue-600',
+        action: { tab: 'SMART_TUTOR' as const, intent: 'ask_akili' },
+    },
+    {
+        title: 'Listen & Learn',
+        text: 'Too tired to read? Listen instead.',
+        Icon: Headphones,
+        tone: 'bg-emerald-50 text-emerald-600',
+        action: { tab: 'TALKBACK' as const, intent: 'listen_and_learn' },
+    },
+    {
+        title: 'Practise weak topics',
+        text: 'Quizzes and targeted revision help you improve.',
+        Icon: CircleHelp,
+        tone: 'bg-violet-50 text-violet-600',
+        action: { tab: 'SUBJECTS' as const, intent: 'exam_prep_papers' },
+    },
+    {
+        title: 'Notebook',
+        text: 'Save what you learn and revise it later.',
+        Icon: Notebook,
+        tone: 'bg-amber-50 text-amber-600',
+        action: { tab: 'NOTEBOOK' as const },
+    },
 ] as const;
 
 const learnerTools = [
-    ['Ask Akili', 'Ask any homework question and get clear answers instantly.', Bot, 'bg-blue-50 text-blue-600'],
-    ['Listen & Learn', 'Listen to notes and explanations anytime, anywhere.', Headphones, 'bg-emerald-50 text-emerald-600'],
-    ['Talk & Learn', 'Speak or type to get help in your own words.', Mic, 'bg-orange-50 text-orange-600'],
-    ['Notebook', 'Save answers, notes and files. Revise anytime, anywhere.', Notebook, 'bg-violet-50 text-violet-600'],
-    ['Library', 'Access trusted notes, past papers, and syllabus guides.', BookOpen, 'bg-sky-50 text-sky-600'],
+    ['Ask Akili', 'Ask any homework question and get clear answers instantly.', Bot, 'bg-blue-50 text-blue-600', { tab: 'SMART_TUTOR' as const, intent: 'ask_akili' }],
+    ['Listen & Learn', 'Listen to notes and explanations anytime, anywhere.', Headphones, 'bg-emerald-50 text-emerald-600', { tab: 'TALKBACK' as const, intent: 'listen_and_learn' }],
+    ['Talk & Learn', 'Speak or type to get help in your own words.', Mic, 'bg-orange-50 text-orange-600', { tab: 'TALKBACK' as const, intent: 'listen_and_learn' }],
+    ['Notebook', 'Save answers, notes and files. Revise anytime, anywhere.', Notebook, 'bg-violet-50 text-violet-600', { tab: 'NOTEBOOK' as const }],
+    ['Library', 'Access trusted notes, past papers, and syllabus guides.', BookOpen, 'bg-sky-50 text-sky-600', { tab: 'RESOURCES' as const, intent: 'official_library' }],
 ] as const;
 
 const teacherTools = [
@@ -98,10 +123,10 @@ export const LandingHome: React.FC<Props> = (props) => {
             </section>
 
             <section aria-labelledby="helps-heading" className="border-b border-slate-200 bg-[#f8fbff] py-8">
-                <div className="mx-auto max-w-[1440px] px-4 sm:px-6 lg:px-10"><h2 id="helps-heading" className="text-center text-2xl font-black text-[#07133f]">What SomaAI helps with</h2><div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">{helps.map(([title, text, Icon, tone]) => <article key={title} className="flex items-center gap-4 rounded-lg border border-slate-200 bg-white p-4 shadow-sm"><div className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-lg ${tone}`}><Icon className="h-7 w-7" /></div><div><h3 className="font-black text-[#111943]">{title}</h3><p className="mt-1 text-sm leading-5 text-slate-600">{text}</p></div></article>)}</div></div>
+                <div className="mx-auto max-w-[1440px] px-4 sm:px-6 lg:px-10"><h2 id="helps-heading" className="text-center text-2xl font-black text-[#07133f]">What SomaAI helps with</h2><div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">{helps.map(({ title, text, Icon, tone, action }) => <button type="button" key={title} onClick={() => props.onLearnerShortcut(action.tab, action.intent)} className="flex items-center gap-4 rounded-lg border border-slate-200 bg-white p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-blue-300 hover:shadow-md focus-visible:ring-2 focus-visible:ring-blue-500"><div className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-lg ${tone}`}><Icon className="h-7 w-7" /></div><div><h3 className="font-black text-[#111943]">{title}</h3><p className="mt-1 text-sm leading-5 text-slate-600">{text}</p><p className="mt-2 text-xs font-bold text-blue-600">Open tool</p></div></button>)}</div></div>
             </section>
 
-            <ToolsSection onStart={props.onStartLearning} onTeacher={props.onTeacher} onLibrary={props.onLibrary} />
+            <ToolsSection onStart={props.onStartLearning} onTeacher={props.onTeacher} onLibrary={props.onLibrary} onLearnerShortcut={props.onLearnerShortcut} />
             <ParentPricing onParent={props.onParent} onPricing={props.onPricing} />
             <TrustStrip />
         </main>
@@ -121,14 +146,14 @@ const AskAkiliDemo: React.FC<Props> = (props) => {
     return (<div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl shadow-slate-300/60">
     <div className="flex items-center justify-between bg-[#051b50] px-4 py-3 text-white"><div className="flex items-center gap-3"><img src={mascotImg} alt="Ask Akili assistant" width={42} height={42} className="h-10 w-10 rounded-full border-2 border-white/30 bg-white object-cover" /><h2 className="text-lg font-black">Ask Akili</h2></div><span className="text-sm font-bold text-blue-100">Study helper</span></div>
     <div className="space-y-3 p-4"><div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-400 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100"><Search className="h-4 w-4 shrink-0" /><input type="text" value={question} onChange={(e) => setQuestion(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); openQuestion(); } }} placeholder="Ask a homework question..." className="w-full bg-transparent outline-none text-sm text-slate-800 placeholder:text-slate-400" aria-label="Ask a homework question" /><button type="button" onClick={openQuestion} disabled={!question.trim()} className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-blue-600 text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400" aria-label="Send question"><ArrowRight className="h-4 w-4" /></button></div><div className="rounded-lg border border-blue-200 bg-blue-50/50 px-3 py-2.5 text-sm font-bold text-slate-800">What is photosynthesis?</div><div className="rounded-lg border border-emerald-200 bg-emerald-50/60 p-3"><p className="text-sm font-semibold leading-6 text-[#15214d]">Photosynthesis is the process used by green plants to make their own food. They use sunlight, water, and carbon dioxide to produce glucose (food) and oxygen.</p></div>
-        <div className="grid grid-cols-2 gap-2"><button onClick={() => { if (question.trim()) { openQuestion(); } else { props.onStartLearning(); } }} className="flex min-h-11 items-center justify-center gap-2 rounded-lg border border-slate-200 px-2 text-xs font-bold text-slate-800 hover:bg-slate-50"><ListChecks className="h-4 w-4 text-blue-600" /> Explain step by step</button><button onClick={() => { props.onTrack('listen_demo_clicked', { source: 'ask_akili_demo' }); props.onStartLearning(); }} className="flex min-h-11 items-center justify-center gap-2 rounded-lg border border-slate-200 px-2 text-xs font-bold text-slate-800 hover:bg-slate-50"><Volume2 className="h-4 w-4 text-emerald-600" /> Listen</button><button onClick={props.onStartLearning} className="flex min-h-11 items-center justify-center gap-2 rounded-lg border border-slate-200 px-2 text-xs font-bold text-slate-800 hover:bg-slate-50"><CircleHelp className="h-4 w-4 text-violet-600" /> Test me</button><button onClick={() => { props.onTrack('save_to_notebook_demo_clicked', { source: 'ask_akili_demo' }); props.onStartLearning(); }} className="flex min-h-11 items-center justify-center gap-2 rounded-lg border border-slate-200 px-2 text-xs font-bold text-slate-800 hover:bg-slate-50"><Notebook className="h-4 w-4 text-blue-600" /> Save to Notebook</button></div>
+        <div className="grid grid-cols-2 gap-2"><button onClick={() => { if (question.trim()) { openQuestion(); } else { props.onLearnerShortcut('SMART_TUTOR', 'ask_akili'); } }} className="flex min-h-11 items-center justify-center gap-2 rounded-lg border border-slate-200 px-2 text-xs font-bold text-slate-800 hover:bg-slate-50"><ListChecks className="h-4 w-4 text-blue-600" /> Explain step by step</button><button onClick={() => { props.onTrack('listen_demo_clicked', { source: 'ask_akili_demo' }); props.onLearnerShortcut('TALKBACK', 'listen_and_learn'); }} className="flex min-h-11 items-center justify-center gap-2 rounded-lg border border-slate-200 px-2 text-xs font-bold text-slate-800 hover:bg-slate-50"><Volume2 className="h-4 w-4 text-emerald-600" /> Listen</button><button onClick={() => props.onLearnerShortcut('SUBJECTS', 'exam_prep_papers')} className="flex min-h-11 items-center justify-center gap-2 rounded-lg border border-slate-200 px-2 text-xs font-bold text-slate-800 hover:bg-slate-50"><CircleHelp className="h-4 w-4 text-violet-600" /> Test me</button><button onClick={() => { props.onTrack('save_to_notebook_demo_clicked', { source: 'ask_akili_demo' }); props.onLearnerShortcut('NOTEBOOK'); }} className="flex min-h-11 items-center justify-center gap-2 rounded-lg border border-slate-200 px-2 text-xs font-bold text-slate-800 hover:bg-slate-50"><Notebook className="h-4 w-4 text-blue-600" /> Save to Notebook</button></div>
     </div>
 </div>);
 };
 
-const ToolsSection: React.FC<{ onStart: () => void; onTeacher: () => void; onLibrary: () => void }> = ({ onStart, onTeacher, onLibrary }) => <section className="py-8">
+const ToolsSection: React.FC<{ onTeacher: () => void; onLibrary: () => void; onLearnerShortcut: (targetTab: 'SMART_TUTOR' | 'RESOURCES' | 'SUBJECTS' | 'TALKBACK' | 'NOTEBOOK', targetIntent?: string) => void }> = ({ onTeacher, onLibrary, onLearnerShortcut }) => <section className="py-8">
     <div className="mx-auto grid max-w-[1440px] gap-4 px-4 sm:px-6 lg:grid-cols-[1.1fr_0.9fr] lg:px-10">
-        <div className="rounded-2xl border border-blue-100 bg-blue-50/30 p-4"><h2 className="text-center text-xl font-black text-[#07133f]">Powerful tools for every learner</h2><div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">{learnerTools.map(([title, text, Icon, tone]) => <button key={title} onClick={title === 'Library' ? onLibrary : onStart} className="rounded-lg border border-slate-200 bg-white p-4 text-center shadow-sm transition hover:-translate-y-0.5 hover:border-blue-300 hover:shadow-md"><div className={`mx-auto flex h-12 w-12 items-center justify-center rounded-full ${tone}`}><Icon className="h-6 w-6" /></div><h3 className="mt-3 text-sm font-black text-[#111943]">{title}</h3><p className="mt-1 text-xs leading-5 text-slate-600">{text}</p></button>)}</div></div>
+        <div className="rounded-2xl border border-blue-100 bg-blue-50/30 p-4"><h2 className="text-center text-xl font-black text-[#07133f]">Powerful tools for every learner</h2><div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">{learnerTools.map(([title, text, Icon, tone, action]) => <button key={title} onClick={() => { if (title === 'Library') { onLibrary(); return; } onLearnerShortcut(action.tab, action.intent); }} className="rounded-lg border border-slate-200 bg-white p-4 text-center shadow-sm transition hover:-translate-y-0.5 hover:border-blue-300 hover:shadow-md"><div className={`mx-auto flex h-12 w-12 items-center justify-center rounded-full ${tone}`}><Icon className="h-6 w-6" /></div><h3 className="mt-3 text-sm font-black text-[#111943]">{title}</h3><p className="mt-1 text-xs leading-5 text-slate-600">{text}</p></button>)}</div></div>
         <div className="rounded-2xl border border-emerald-100 bg-emerald-50/60 p-4"><button onClick={onTeacher} className="mx-auto flex items-center gap-2 text-xl font-black text-emerald-800"><Users className="h-6 w-6" /> For Teachers</button><div className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4">{teacherTools.map(([title, text, Icon]) => <button key={title} onClick={onTeacher} className="rounded-lg border border-emerald-100 bg-white p-4 text-center shadow-sm transition hover:border-emerald-300 hover:shadow-md"><Icon className="mx-auto h-7 w-7 text-emerald-600" /><h3 className="mt-2 text-sm font-black text-[#173a2a]">{title}</h3><p className="mt-1 text-xs leading-5 text-slate-600">{text}</p></button>)}</div></div>
     </div>
 </section>;
