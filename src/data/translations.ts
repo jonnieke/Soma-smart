@@ -95,8 +95,8 @@ export const translations = {
         },
         language: {
             frenchBadge: "New!",
-            frenchInvite: "Apprendre en FranÃ§ais? Mode ActivÃ© âœ…",
-            frenchClick: "Cliquez ici ðŸ‡«ðŸ‡·",
+            frenchInvite: "Apprendre en Français? Mode Activé ",
+            frenchClick: "Cliquez ici FR",
             invitePrefix: "Learning in French? "
         },
         howItWorks: {
@@ -246,7 +246,7 @@ export const translations = {
                 recentLessons: "Recent Lessons",
                 copiedToClipboard: "Copied to clipboard",
                 lessonSaved: "Lesson Saved Successfully to your Teacher Account!",
-                shareText: "ðŸ“š *Lesson: {topic}*\n\n{summary}\n\nStart learning on Somo Smart!",
+                shareText: "Books *Lesson: {topic}*\n\n{summary}\n\nStart learning on Somo Smart!",
                 copyLinkManual: "Link copied to clipboard! (Share menu closed)",
                 lessonDetailsCopied: "Lesson details copied to clipboard!",
                 limitReachedTitle: "Free Sessions Exhausted",
@@ -282,275 +282,275 @@ export const translations = {
             pillStudents: "Built for Kenyan Students & Teachers",
             pillTeachers: "Teachers: Save planning time",
             headline: "Somo Smart - A study coach for CBC learners ",
-            gradient: "& des outils gain de temps pour les enseignants kÃ©nyans.",
-            subheadline: "Les apprenants scannent leurs devoirs et obtiennent des explications Ã©tape par Ã©tape. Les enseignants gÃ©nÃ¨rent automatiquement examens, notes et corrigent en minutes — pas en heures.",
+            gradient: "& des outils gain de temps pour les enseignants kényans.",
+            subheadline: "Les apprenants scannent leurs devoirs et obtiennent des explications étape par étape. Les enseignants génèrent automatiquement examens, notes et corrigent en minutes — pas en heures.",
             ctaLearner: "Essayer Apprenant Gratuitement",
             ctaTeachers: "Pour les Enseignants",
-            ctaPilot: "RÃ©server un Pilote Ã‰cole"
+            ctaPilot: "Réserver un Pilote École"
         },
         efficiency: {
             title: "Dominez avec ",
-            gradient: "EfficacitÃ©.",
-            subtitle: "Au-delÃ  du contenu, nous nous concentrons sur votre temps. Des outils puissants pour la productivitÃ© des enseignants et des rÃ©sultats d'Ã©lite pour les Ã©lÃ¨ves.",
+            gradient: "Efficacité.",
+            subtitle: "Au-delà du contenu, nous nous concentrons sur votre temps. Des outils puissants pour la productivité des enseignants et des résultats d'élite pour les élèves.",
             darasa: {
                 title: "Mode Darasa",
-                desc: "Enregistrez simplement. Nous transcrirons et crÃ©erons des rÃ©sumÃ©s de cours pour votre classe."
+                desc: "Enregistrez simplement. Nous transcrirons et créerons des résumés de cours pour votre classe."
             },
             notes: {
                 title: "Notes Intelligentes",
-                desc: "Enseignez Ã  votre classe. Nous nous occupons automatiquement des notes et des quiz."
+                desc: "Enseignez à votre classe. Nous nous occupons automatiquement des notes et des quiz."
             },
             exam: {
-                title: "GÃ©nÃ©rateur d'Examens",
-                desc: "Examens PDF professionnels et barÃ¨mes de notation en un clic."
+                title: "Générateur d'Examens",
+                desc: "Examens PDF professionnels et barèmes de notation en un clic."
             },
             marking: {
                 title: "Correction Intelligente",
-                desc: "Corrigez une classe entiÃ¨re en quelques minutes. RÃ©cupÃ©rez vos soirÃ©es."
+                desc: "Corrigez une classe entière en quelques minutes. Récupérez vos soirées."
             },
             homework: {
                 title: "Devoirs Somo Smart",
-                desc: "Devoirs personnalisÃ©s pour KCSE & CBC en quelques secondes."
+                desc: "Devoirs personnalisés pour KCSE & CBC en quelques secondes."
             }
         },
         powerSuite: {
-            badge: "L'arme secrÃ¨te de l'enseignant",
+            badge: "L'arme secrète de l'enseignant",
             title: "Un assistant d'enseignement professionnel ",
             gradient: "dans votre poche.",
-            desc: "Somo Smart n'est pas seulement une question de technologie ; c'est un levier professionnel. Nous vous rendons vos soirÃ©es en automatisant les parties les plus chronophages de votre travail.",
+            desc: "Somo Smart n'est pas seulement une question de technologie ; c'est un levier professionnel. Nous vous rendons vos soirées en automatisant les parties les plus chronophages de votre travail.",
             printables: {
                 title: "Supports imprimables en quelques secondes",
-                desc: "GÃ©nÃ©rez des examens KCSE/CBC professionnels, des plans de travail et des cours au format PDF prÃªts pour l'impression."
+                desc: "Générez des examens KCSE/CBC professionnels, des plans de travail et des cours au format PDF prêts pour l'impression."
             },
             creator: {
                 title: "Creator Studio : Enseignez et Gagnez",
-                desc: "BientÃ´t disponible : MonÃ©tisez votre expertise en partageant vos meilleurs supports de cours avec notre communautÃ© mondiale."
+                desc: "Bientôt disponible : Monétisez votre expertise en partageant vos meilleurs supports de cours avec notre communauté mondiale."
             },
             marking: {
-                title: "Notation automatisÃ©e",
-                desc: "Scannez simplement une pile de devoirs. Somo Smart les note instantanÃ©ment selon vos critÃ¨res spÃ©cifiques."
+                title: "Notation automatisée",
+                desc: "Scannez simplement une pile de devoirs. Somo Smart les note instantanément selon vos critères spécifiques."
             },
             saveTime: {
                 hours: "10+ Heures",
-                label: "GagnÃ©es chaque semaine",
-                cta: "Commencez Ã  gagner du temps"
+                label: "Gagnées chaque semaine",
+                cta: "Commencez à gagner du temps"
             }
         },
         roles: {
-            title: "LibÃ©rez votre ",
+            title: "Libérez votre ",
             gradient: "Potentiel.",
-            subtitle: "Que vous soyez un Ã©tudiant visant l'excellence ou un enseignant souhaitant gagner du temps, Somo Smart est fait pour vous.",
+            subtitle: "Que vous soyez un étudiant visant l'excellence ou un enseignant souhaitant gagner du temps, Somo Smart est fait pour vous.",
             student: {
                 title: "Pour les Apprenants",
-                desc: "RÃ©ussissez vos examens avec votre compagnon d'Ã©tude intelligent.",
+                desc: "Réussissez vos examens avec votre compagnon d'étude intelligent.",
                 points: [
-                    "Scannez et apprenez instantanÃ©ment",
+                    "Scannez et apprenez instantanément",
                     "Explications simples Somo Smart",
-                    "Quiz de rÃ©vision CBC & KCSE illimitÃ©s"
+                    "Quiz de révision CBC & KCSE illimités"
                 ],
-                cta: "Commencer Ã  apprendre"
+                cta: "Commencer à apprendre"
             },
             teacher: {
                 title: "Pour les Enseignants",
-                desc: "Enseignez mieux, travaillez moins. Laissez Somo Smart gÃ©rer la prÃ©paration.",
+                desc: "Enseignez mieux, travaillez moins. Laissez Somo Smart gérer la préparation.",
                 points: [
                     "Correction automatique en quelques secondes",
                     "Examens et plans imprimables",
-                    "MonÃ©tisez votre magie d'enseignement"
+                    "Monétisez votre magie d'enseignement"
                 ],
                 cta: "Obtenir vos outils"
             },
             parent: {
                 title: "Pour les Parents",
-                desc: "Suivez les progrÃ¨s et soutenez leur rÃ©ussite.",
+                desc: "Suivez les progrès et soutenez leur réussite.",
                 points: [
-                    "Rapports de progrÃ¨s quotidiens",
+                    "Rapports de progrès quotidiens",
                     "Identifiez les lacunes d'apprentissage",
-                    "Assistant sÃ©curisÃ© et adaptÃ© aux enfants"
+                    "Assistant sécurisé et adapté aux enfants"
                 ],
-                cta: "Suivre la rÃ©ussite"
+                cta: "Suivre la réussite"
             }
         },
         language: {
             frenchBadge: "Nouveau !",
-            frenchInvite: "Apprendre en FranÃ§ais ? Mode ActivÃ© âœ…",
-            frenchClick: "Cliquez ici ðŸ‡«ðŸ‡·",
-            invitePrefix: "Apprendre en FranÃ§ais ? "
+            frenchInvite: "Apprendre en Français ? Mode Activé ",
+            frenchClick: "Cliquez ici FR",
+            invitePrefix: "Apprendre en Français ? "
         },
         howItWorks: {
-            title: "L'apprentissage simplifiÃ©",
-            subtitle: "Passez d'un Ã©tudiant confus Ã  un maÃ®tre du sujet en 4 Ã©tapes simples.",
+            title: "L'apprentissage simplifié",
+            subtitle: "Passez d'un étudiant confus à un maître du sujet en 4 étapes simples.",
             steps: [
-                { title: "Scanner ou TÃ©lÃ©charger", desc: "Prenez une photo de votre manuel, de vos notes ou de vos devoirs." },
-                { title: "Obtenir des explications", desc: "Somo Smart dÃ©compose le contenu en termes simples que vous comprenez." },
-                { title: "Quiz intelligents", desc: "Testez vos connaissances avec les questions d'entraÃ®nement de votre compagnon d'Ã©tude." },
-                { title: "Ã‰couter et rÃ©viser", desc: "Ã‰coutez des leÃ§ons simplifiÃ©es lors de vos dÃ©placements pour mieux mÃ©moriser." }
+                { title: "Scanner ou Télécharger", desc: "Prenez une photo de votre manuel, de vos notes ou de vos devoirs." },
+                { title: "Obtenir des explications", desc: "Somo Smart décompose le contenu en termes simples que vous comprenez." },
+                { title: "Quiz intelligents", desc: "Testez vos connaissances avec les questions d'entraînement de votre compagnon d'étude." },
+                { title: "Écouter et réviser", desc: "Écoutez des leçons simplifiées lors de vos déplacements pour mieux mémoriser." }
             ]
         },
         testimonials: {
-            title: "Ce que dit la communautÃ©",
+            title: "Ce que dit la communauté",
             teacher: {
-                quote: "Somo m'a fait gagner tellement de temps en classe ! Les plans de cours automatisÃ©s et les fonctions d'enregistrement en mode Darasa changent la donne pour mon flux de travail pÃ©dagogique.",
+                quote: "Somo m'a fait gagner tellement de temps en classe ! Les plans de cours automatisés et les fonctions d'enregistrement en mode Darasa changent la donne pour mon flux de travail pédagogique.",
                 name: "M. Kamau"
             }
         },
         learner: {
             greeting: "Qu'allons-nous apprendre aujourd'hui ?",
-            tagline: "votre compagnon d'Ã©tude intelligent",
+            tagline: "votre compagnon d'étude intelligent",
             stats: {
                 xp: "XP Total",
                 level: "Niveau",
-                rank: "Performeur d'Ã©lite"
+                rank: "Performeur d'élite"
             },
             actions: {
                 scan: "Scanner Devoirs",
-                audio: "Ã‰couter LeÃ§on",
-                topic: "Demander Ã  Somo Smart",
-                library: "Ma BibliothÃ¨que",
-                pastPapers: "RÃ©vision CBC & KCSE",
-                lessonRecap: "RÃ©sumÃ© du Cours",
+                audio: "Écouter Leçon",
+                topic: "Demander à Somo Smart",
+                library: "Ma Bibliothèque",
+                pastPapers: "Révision CBC & KCSE",
+                lessonRecap: "Résumé du Cours",
                 voice: "Demander par Voix",
-                upload: "TÃ©lÃ©charger Fichier"
+                upload: "Télécharger Fichier"
             }
         },
         teacher: {
             sidebar: {
                 home: "Accueil",
                 studio: "Salle de Classe Magique",
-                library: "BibliothÃ¨que",
+                library: "Bibliothèque",
                 marking: "Correction",
                 shop: "Boutique Enseignant"
             },
             tools: {
-                darasa: { title: "Mode Darasa", desc: "Lancez une prÃ©sentation interactive en classe. AccÃ©dez Ã  l'historique et aux leÃ§ons sauvegardÃ©es." },
-                converter: { title: "Manuel en LeÃ§on", desc: "TÃ©lÃ©chargez une photo. Obtenez un plan de cours structurÃ©." },
-                voice: { title: "LeÃ§on Vocale", desc: "Dictez vos pensÃ©es. Nous les mettrons en forme." },
+                darasa: { title: "Mode Darasa", desc: "Lancez une présentation interactive en classe. Accédez à l'historique et aux leçons sauvegardées." },
+                converter: { title: "Manuel en Leçon", desc: "Téléchargez une photo. Obtenez un plan de cours structuré." },
+                voice: { title: "Leçon Vocale", desc: "Dictez vos pensées. Nous les mettrons en forme." },
                 exam: {
-                    title: "GÃ©nÃ©rateur d'Examens (CBE)",
+                    title: "Générateur d'Examens (CBE)",
                     desc: "Standard Kenyan",
                     topicLabel: "Sujet du Quiz",
                     questionsLabel: "Questions",
                     typeLabel: "Type",
-                    sourceLabel: "MatÃ©riel Source (Scans)",
-                    uploadSelected: "{count} fichiers sÃ©lectionnÃ©s",
-                    uploadPrompt: "TÃ©lÃ©charger Manuels/Notes",
+                    sourceLabel: "Matériel Source (Scans)",
+                    uploadSelected: "{count} fichiers sélectionnés",
+                    uploadPrompt: "Télécharger Manuels/Notes",
                     uploadChange: "Cliquer pour modifier",
                     uploadTypes: "Images ou PDF (Livres)",
-                    generateBtn: "GÃ©nÃ©rer l'Examen"
+                    generateBtn: "Générer l'Examen"
                 },
                 marking: {
                     badge: "Nouveau",
                     title: "Correction Automatique",
-                    desc: "Scannez les copies des Ã©lÃ¨ves et obtenez des rÃ©sultats instantanÃ©s. Parfait pour les Ã©valuations CBE.",
-                    almostHere: "La correction intelligente arrive bientÃ´t !",
-                    markingDesc: "Nous entraÃ®nons actuellement notre systÃ¨me Ã  reconnaÃ®tre et Ã  noter l'Ã©criture manuscrite des Ã©lÃ¨ves kÃ©nyans pour {subject}.",
+                    desc: "Scannez les copies des élèves et obtenez des résultats instantanés. Parfait pour les évaluations CBE.",
+                    almostHere: "La correction intelligente arrive bientôt !",
+                    markingDesc: "Nous entraînons actuellement notre système à reconnaître et à noter l'écriture manuscrite des élèves kényans pour {subject}.",
                     ocrTitle: "Traitement OCR",
-                    ocrDesc: "Conversion de l'Ã©criture manuscrite en texte.",
+                    ocrDesc: "Conversion de l'écriture manuscrite en texte.",
                     cbeTitle: "Alignement CBE",
-                    cbeDesc: "Notation basÃ©e sur les rubriques CBC.",
+                    cbeDesc: "Notation basée sur les rubriques CBC.",
                     waitlistBtn: "Rejoindre la liste d'attente pour {class}",
-                    earlyAccess: "AccÃ¨s anticipÃ© pour les Ã©coles Pro en mars"
+                    earlyAccess: "Accès anticipé pour les écoles Pro en mars"
                 }
             },
             stats: {
                 free: "utilisations gratuites restantes",
-                unlimited: "AccÃ¨s IllimitÃ©",
+                unlimited: "Accès Illimité",
                 endsIn: "Se termine dans"
             },
             library: {
-                title: "BibliothÃ¨que de Classe",
-                noItems: "Aucun Ã©lÃ©ment trouvÃ© pour cette classe et cette matiÃ¨re.",
-                deleteLesson: "Supprimer la LeÃ§on",
-                deleteConfirm: "ÃŠtes-vous sÃ»r de vouloir supprimer cette leÃ§on ?"
+                title: "Bibliothèque de Classe",
+                noItems: "Aucun élément trouvé pour cette classe et cette matière.",
+                deleteLesson: "Supprimer la Leçon",
+                deleteConfirm: "Êtes-vous sûr de vouloir supprimer cette leçon ?"
             },
             results: {
-                backToStudio: "Retour Ã  la Salle de Classe Magique",
+                backToStudio: "Retour à la Salle de Classe Magique",
                 exportPdf: "Exporter en PDF",
-                classroomAssessment: "Ã‰valuation en Classe",
-                answerKey: "CorrigÃ© et Explications",
-                summary: "RÃ©sumÃ©",
+                classroomAssessment: "Évaluation en Classe",
+                answerKey: "Corrigé et Explications",
+                summary: "Résumé",
                 teacherNotes: "Notes de l'Enseignant"
             },
             logoutModal: {
                 title: "Terminer la session enseignant ?",
-                message: "ÃŠtes-vous sÃ»r de vouloir vous dÃ©connecter ? Vos notes ou corrections non sauvegardÃ©es seront conservÃ©es pour la prochaine fois.",
-                cancelText: "Continuer Ã  travailler",
-                confirmText: "Se dÃ©connecter en toute sÃ©curitÃ©"
+                message: "Êtes-vous sûr de vouloir vous déconnecter ? Vos notes ou corrections non sauvegardées seront conservées pour la prochaine fois.",
+                cancelText: "Continuer à travailler",
+                confirmText: "Se déconnecter en toute sécurité"
             },
             common: {
-                backToHome: "Retour Ã  l'Accueil",
+                backToHome: "Retour à l'Accueil",
                 pricingPlans: "Tarifs",
-                logout: "DÃ©connexion",
+                logout: "Déconnexion",
                 internetReq: "Internet Requis",
-                connectPrompt: "Connectez-vous Ã  Internet pour utiliser Somo Smart",
-                topicPrompt: "Entrez un sujet et tÃ©lÃ©chargez des fichiers pour commencer."
+                connectPrompt: "Connectez-vous à Internet pour utiliser Somo Smart",
+                topicPrompt: "Entrez un sujet et téléchargez des fichiers pour commencer."
             },
             onboarding: {
                 welcomeTitle: "Bienvenue, Enseignant !",
-                welcomeSubtitle: "Configurons votre classe numÃ©rique.",
+                welcomeSubtitle: "Configurons votre classe numérique.",
                 fullName: "Nom complet",
                 emailAddress: "Adresse e-mail",
-                createPassword: "CrÃ©er un mot de passe",
-                passwordLengthError: "Le mot de passe doit comporter au moins 6 caractÃ¨res.",
-                alreadyHaveAccount: "Vous avez dÃ©jÃ  un compte ?",
+                createPassword: "Créer un mot de passe",
+                passwordLengthError: "Le mot de passe doit comporter au moins 6 caractères.",
+                alreadyHaveAccount: "Vous avez déjà un compte ?",
                 loginHere: "Connectez-vous ici",
                 classesTitle: "Quelles classes enseignez-vous ?",
-                subjectsTitle: "Quelles matiÃ¨res enseignez-vous ?",
+                subjectsTitle: "Quelles matières enseignez-vous ?",
                 addClassPrompt: "Ajoutez au moins une classe active.",
-                addSubjectPrompt: "Ajoutez au moins une matiÃ¨re.",
+                addSubjectPrompt: "Ajoutez au moins une matière.",
                 next: "Suivant",
                 back: "Retour",
                 completeSetup: "Terminer la configuration",
-                creatingAccount: "CrÃ©ation du compte...",
-                errorNoProfile: "Erreur : Aucun profil actif Ã  mettre Ã  jour.",
-                accountExists: "Le compte existe dÃ©jÃ  ! Veuillez vous connecter Ã  la place.",
+                creatingAccount: "Création du compte...",
+                errorNoProfile: "Erreur : Aucun profil actif à mettre à jour.",
+                accountExists: "Le compte existe déjà ! Veuillez vous connecter à la place.",
                 registrationError: "Erreur d'inscription : "
             },
             darasaMode: {
                 backToDashboard: "Retour au tableau de bord",
                 title: "Mode Darasa",
                 recordTitle: "Enregistrez votre cours",
-                recordDesc: "Capturez la leÃ§on en temps rÃ©el. Somo gÃ©nÃ©rera automatiquement des notes complÃ¨tes, des rÃ©sumÃ©s et des quiz.",
-                generatingTitle: "GÃ©nÃ©ration de la leÃ§on...",
-                generatingDesc: "Somo Smart analyse l'audio, crÃ©e des notes, souligne les termes clÃ©s et gÃ©nÃ©re des questions de quiz.",
-                reviewTitle: "RÃ©viser l'enregistrement",
-                reviewDesc: "Ã‰coutez pour vÃ©rifier la clartÃ© avant l'analyse.",
+                recordDesc: "Capturez la leçon en temps réel. Somo générera automatiquement des notes complètes, des résumés et des quiz.",
+                generatingTitle: "Génération de la leçon...",
+                generatingDesc: "Somo Smart analyse l'audio, crée des notes, souligne les termes clés et génére des questions de quiz.",
+                reviewTitle: "Réviser l'enregistrement",
+                reviewDesc: "Écoutez pour vérifier la clarté avant l'analyse.",
                 retake: "Recommencer",
-                analyze: "Analyser la leÃ§on",
-                studentPreview: "AperÃ§u vue Ã©lÃ¨ve",
-                backToEditor: "Retour Ã  l'Ã©diteur",
-                lessonTopic: "Sujet de la leÃ§on",
+                analyze: "Analyser la leçon",
+                studentPreview: "Aperçu vue élève",
+                backToEditor: "Retour à l'éditeur",
+                lessonTopic: "Sujet de la leçon",
                 takeQuiz: "Faire le quiz ({count} questions)",
-                recentLessons: "LeÃ§ons rÃ©centes",
-                copiedToClipboard: "CopiÃ© dans le presse-papiers",
-                lessonSaved: "LeÃ§on enregistrÃ©e avec succÃ¨s dans votre compte enseignant !",
-                shareText: "ðŸ“š *LeÃ§on : {topic}*\n\n{summary}\n\nCommencez Ã  apprendre sur Somo Smart !",
-                copyLinkManual: "Lien copiÃ© dans le presse-papiers ! (Menu de partage fermÃ©)",
-                lessonDetailsCopied: "DÃ©tails de la leÃ§on copiÃ©s dans le presse-papiers !",
-                limitReachedTitle: "Sessions Gratuites Ã‰puisÃ©es",
-                limitReachedDesc: "Vous avez gÃ©nÃ©rÃ© avec succÃ¨s 3 leÃ§ons en mode Darasa ! Passez Ã  Somo Pro pour les Enseignants pour continuer Ã  enregistrer des leÃ§ons illimitÃ©es.",
-                upgradeNow: "Passer Ã  Somo Pro",
-                freeUses: "LeÃ§ons Gratuites Restantes",
-                limitToast: "Il vous reste {count} leÃ§ons gratuites."
+                recentLessons: "Leçons récentes",
+                copiedToClipboard: "Copié dans le presse-papiers",
+                lessonSaved: "Leçon enregistrée avec succès dans votre compte enseignant !",
+                shareText: "Books *Leçon : {topic}*\n\n{summary}\n\nCommencez à apprendre sur Somo Smart !",
+                copyLinkManual: "Lien copié dans le presse-papiers ! (Menu de partage fermé)",
+                lessonDetailsCopied: "Détails de la leçon copiés dans le presse-papiers !",
+                limitReachedTitle: "Sessions Gratuites Épuisées",
+                limitReachedDesc: "Vous avez généré avec succès 3 leçons en mode Darasa ! Passez à Somo Pro pour les Enseignants pour continuer à enregistrer des leçons illimitées.",
+                upgradeNow: "Passer à Somo Pro",
+                freeUses: "Leçons Gratuites Restantes",
+                limitToast: "Il vous reste {count} leçons gratuites."
             },
             audioRecorder: {
-                recordingTitle: "Enregistrement de la leÃ§on",
-                recordingDesc: "Parlez clairement. Nous capturerons les points clÃ©s.",
-                readyToRecord: "PrÃªt Ã  enregistrer",
+                recordingTitle: "Enregistrement de la leçon",
+                recordingDesc: "Parlez clairement. Nous capturerons les points clés.",
+                readyToRecord: "Prêt à enregistrer",
                 cancel: "Annuler",
                 resume: "Reprendre",
                 pause: "Pause"
             },
             lessonReview: {
-                title: "Ã‰diteur de leÃ§on",
-                subtitle: "Votre leÃ§on est prÃªte. RÃ©visez-la et peaufinez-la avant de la partager avec les Ã©lÃ¨ves.",
+                title: "Éditeur de leçon",
+                subtitle: "Votre leçon est prête. Révisez-la et peaufinez-la avant de la partager avec les élèves.",
                 saveCloud: "Enregistrer sur le cloud",
                 exportPdf: "Exporter en PDF",
-                shareLesson: "Partager la leÃ§on",
-                studentView: "Vue Ã©lÃ¨ve",
-                summary: "RÃ©sumÃ©",
+                shareLesson: "Partager la leçon",
+                studentView: "Vue élève",
+                summary: "Résumé",
                 notesTitle: "Notes de cours",
-                quizTitle: "Quiz d'entraÃ®nement",
+                quizTitle: "Quiz d'entraînement",
                 questions: "{count} questions"
             }
         }

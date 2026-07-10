@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import logoImg from '../../assets/images/main_logo.png';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -120,52 +120,52 @@ const EDUCATIONAL_GLOSSARY: Record<string, { definition: string; translation: st
   strand: {
     definition: "A broad field of study or major thematic area within a specific subject in the Competency Based Curriculum.",
     translation: "Mada (Eneo pana la kimasomo katika mtaala mpya).",
-    pronunciation: "/strÃ¦nd/"
+    pronunciation: "/strand/"
   },
   "sub-strand": {
     definition: "A smaller sub-topic or specific learning unit under a broader Strand in the syllabus.",
     translation: "Mada Ndogo (Kijisehemu cha mada kuu katika mtaala).",
-    pronunciation: "/sÃƒÆ’Ã…Â Ãƒâ€¦Ã¢â‚¬â„¢b-strÃ¦nd/"
+    pronunciation: "/sub-strand/"
   },
   competency: {
     definition: "The ability to apply knowledge, skills, values, and attitudes to successfully perform tasks in daily life.",
     translation: "Uwezo (Ujuzi na stadi za kutenda jambo na kutatua matatizo).",
-    pronunciation: "/ËˆkÉ’mpÉªtÉ™nsi/"
+    pronunciation: "/competency/"
   },
   assessment: {
     definition: "The systematic process of gathering evidence of a learner's progress, understanding, and performance.",
     translation: "Tathmini (Utaratibu wa kukadiria kiwango cha uelewa wa mwanafunzi).",
-    pronunciation: "/É™ËˆsÉ›smÉ™nt/"
+    pronunciation: "/assessment/"
   },
   kicd: {
     definition: "Kenya Institute of Curriculum Development - the official government body responsible for designing school curricula.",
     translation: "Taasisi ya Ukuzaji Mtaala ya Kenya (Inayohusika na kuandaa masomo).",
-    pronunciation: "/keÉª-aÉª-si-di/"
+    pronunciation: "/kcid/"
   },
   knec: {
     definition: "Kenya National Examinations Council - the official national body responsible for setting, administering, and marking primary and secondary exams.",
     translation: "Baraza la Mitihani la Kitaifa la Kenya (Linaloandaa na kusimamia mitihani).",
-    pronunciation: "/keÉª-nÉ›k/"
+    pronunciation: "/kinek/"
   },
   kpsea: {
     definition: "Kenya Primary School Education Assessment - the national evaluation done at the end of Grade 6 under the CBC system.",
     translation: "Tathmini ya Elimu ya Msingi ya Kenya (Mitihani ya mwisho wa Gredi ya 6).",
-    pronunciation: "/keÉª-pi-É›s-i-eÉªÂ/"
+    pronunciation: "/kay-pi-es-i-ay/"
   },
   kcse: {
     definition: "Kenya Certificate of Secondary Education - the national examination taken at the end of secondary school (Form 4).",
     translation: "Cheti cha Elimu ya Sekondari ya Kenya (Mtihani wa mwisho wa sekondari).",
-    pronunciation: "/keÉª-si-É›s-i/"
+    pronunciation: "/kcse-s-i/"
   },
   values: {
     definition: "Core principles such as love, respect, unity, and integrity integrated into lessons to shape character.",
     translation: "Maadili (Nguzo za tabia njema na utu zinazofunzwa shuleni).",
-    pronunciation: "/ÃƒÆ’Ã¢â‚¬Â¹Ãƒâ€¹Ã¢â‚¬Â vÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¦ljuÃƒÆ’Ã¢â‚¬Â¹Ãƒâ€šÃ‚Âz/"
+    pronunciation: "/values/"
   },
   uzalendo: {
     definition: "A core social value representing patriotism, love for country, and active citizenship in the Kenyan society.",
     translation: "Patriotism (Uzalendo na mapenzi ya dhati kwa nchi yako ya Kenya).",
-    pronunciation: "/oo-zah-len-doÂ/"
+    pronunciation: "/oo-zah-len-doh/"
   },
   katiba: {
     definition: "The Constitution of Kenya - the supreme law of the Republic of Kenya that guides governance and citizen rights.",
@@ -482,7 +482,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
   // Load mastery from cloud on mount (registered users only)
   useEffect(() => {
     const learnerId = studentCode || studentProfile?.id;
-    if (!learnerId) return; // Guest â€” localStorage only
+    if (!learnerId) return; // Guest - localStorage only
     loadMemoryService().then(({ loadMasteryFromCloud }) => {
       loadMasteryFromCloud(learnerId).then(({ cloudRow }) => {
         if (cloudRow) setCloudMemoryRow(cloudRow);
@@ -626,7 +626,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
     if (saves.find(s => s.topic === topic)) { triggerToast('Already saved for offline.'); return; }
     saves.unshift({ id: Date.now().toString(), topic, content, subject, savedAt: new Date().toLocaleDateString() });
     localStorage.setItem(OFFLINE_KEY, JSON.stringify(saves.slice(0, 20)));
-    triggerToast('Saved for offline reading âœ“');
+    triggerToast('Saved for offline reading');
   };
 
   // Ask teacher state
@@ -795,7 +795,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
     } else if (citationFormat === 'HARVARD') {
       citation = `Soma Smart, ${new Date().getFullYear()}. ${currentDocument.title}, Soma AI Library. Available at: Soma Smart. [Accessed ${formattedDate}]. Quote: "${cleanText}"`;
     } else {
-    citation = `"${cleanText}" â€” Soma AI Library: Grade ${currentDocument.grade || 'N/A'} ${currentDocument.subject || 'General'} (${currentDocument.title}). Reference ID: ${currentDocument.realId || currentDocument.id}`;
+    citation = `"${cleanText}" - Soma AI Library: Grade ${currentDocument.grade || 'N/A'} ${currentDocument.subject || 'General'} (${currentDocument.title}). Reference ID: ${currentDocument.realId || currentDocument.id}`;
     }
 
     navigator.clipboard.writeText(citation).then(() => {
@@ -911,7 +911,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
             className="underline decoration-dotted decoration-indigo-400 hover:decoration-solid hover:text-indigo-600 dark:hover:text-indigo-400 font-bold transition-all inline-flex items-center gap-0.5 cursor-help"
           >
             {match.value}
-            <span className="text-[10px] text-indigo-400">ðŸ“–</span>
+            <span className="text-[10px] text-indigo-400">Guide</span>
           </button>
         );
       }
@@ -2606,7 +2606,7 @@ Stay anchored to this context unless I ask for something broader.`;
   };
 
   const startRecording = async () => {
-    // ConversationalTutor (TALKBACK) manages its own recording â€” don't interfere.
+    // ConversationalTutor (TALKBACK) manages its own recording - don't interfere.
     if (mode === 'TALKBACK') return;
     try {
       setMicPermissionNotice(false);
@@ -2649,8 +2649,8 @@ Stay anchored to this context unless I ask for something broader.`;
             console.log("Audio attached to Study Buddy");
           };
         } else if ((mode as string) === 'TALKBACK') {
-          // ConversationalTutor has its own recording system â€” do NOT navigate away.
-          console.log("Global recorder stopped in TALKBACK mode â€” ignoring.");
+          // ConversationalTutor has its own recording system - do NOT navigate away.
+          console.log("Global recorder stopped in TALKBACK mode - ignoring.");
         } else {
           await handleAudioExplanation(blob, mimeType);
         }
@@ -3125,7 +3125,7 @@ ${explanation.explanation}
     setLoading(true);
     setLoadingText("Generating high-quality voice...");
     try {
-      // Build a natural spoken script â€” avoid raw markdown being read aloud
+      // Build a natural spoken script - avoid raw markdown being read aloud
       const spokenIntro = `Today we're learning about ${explanation.topic}.`;
       const spokenSummary = explanation.summaryPoints.length > 0
         ? `Here are the key points. ${explanation.summaryPoints.join('. ')}.`
@@ -3340,7 +3340,7 @@ ${explanation.explanation}
             lastScore: 0,
             reviewCount: 0,
             question: "What are the raw materials and products of photosynthesis in plants?",
-      answer: "Raw Materials:\n- Carbon dioxide (absorbed through stomata)\n- Water (absorbed through roots)\n\nProducts:\n- Glucose (chemical energy stored as starch)\n- Oxygen gas (released as a byproduct through stomata)\n\nReaction Equation:\n6COâ‚‚ + 6Hâ‚‚O + light â†’ Câ‚†Hâ‚â‚‚Oâ‚† + 6Oâ‚‚",
+      answer: "Raw Materials:\n- Carbon dioxide (absorbed through stomata)\n- Water (absorbed through roots)\n\nProducts:\n- Glucose (chemical energy stored as starch)\n- Oxygen gas (released as a byproduct through stomata)\n\nReaction Equation:\n6CO2 + 6H2O + light -> C6H12O6 + 6O2",
           },
           {
             topic: "Quadratic Equations",
@@ -3352,7 +3352,7 @@ ${explanation.explanation}
             lastScore: 0,
             reviewCount: 0,
             question: "State the quadratic formula and explain what the discriminant determines about the roots.",
-            answer: "Quadratic Formula:\nx = [-b Â± âˆš(bÂ² - 4ac)] / (2a)\n\nDiscriminant (D = bÂ² - 4ac):\n1. D > 0: Two distinct real roots.\n2. D = 0: One repeated real root (equal roots).\n3. D < 0: Two complex/imaginary roots."
+            answer: "Quadratic Formula:\nx = [-b +/- sqrt(b2 - 4ac)] / (2a)\n\nDiscriminant (D = b2 - 4ac):\n1. D > 0: Two distinct real roots.\n2. D = 0: One repeated real root (equal roots).\n3. D < 0: Two complex/imaginary roots."
           },
           {
             topic: "Devolution in Kenya",
@@ -3384,7 +3384,7 @@ ${explanation.explanation}
               <div className="w-20 h-20 bg-indigo-500/20 border border-indigo-500/30 rounded-full flex items-center justify-center mx-auto mb-6">
                 <Trophy className="w-10 h-10 text-indigo-400" />
               </div>
-              <h1 className="text-3xl font-extrabold text-white mb-2 tracking-wide font-sans">Deck Mastered! ðŸŽ‰</h1>
+              <h1 className="text-3xl font-extrabold text-white mb-2 tracking-wide font-sans">Deck Mastered!</h1>
               <p className="text-slate-400 text-sm mb-8 leading-relaxed font-sans font-medium">
                 {"Fantastic job! You've successfully finished this spaced-repetition active recall session."}
               </p>
@@ -3499,7 +3499,7 @@ ${explanation.explanation}
                 <div className="w-16 h-16 bg-slate-800 border border-slate-700 rounded-full flex items-center justify-center mx-auto mb-6">
                   <Sparkles className="w-8 h-8 text-indigo-400" />
                 </div>
-                <h2 className="text-xl font-bold text-white mb-2">Queue is Clear! âœ¨</h2>
+                <h2 className="text-xl font-bold text-white mb-2">Queue is Clear!</h2>
                 <p className="text-sm text-slate-400 mb-8 leading-relaxed font-medium">
                   {totalFlashcards > 0
                     ? "Fantastic work! You have no spaced repetition cards due right now. You can practice all decks at any time!"
@@ -3623,10 +3623,10 @@ ${explanation.explanation}
                 {isFlipped && (
                   <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-3 max-w-xl w-full mx-auto relative z-20 animate-fade-in">
                     {[
-                      { name: 'Again ðŸ”´', score: 20, desc: 'Forgot completely', color: 'from-rose-500/10 to-rose-600/10 border-rose-500/20 text-rose-400 hover:from-rose-500 hover:to-rose-600' },
-                      { name: 'Hard ðŸŸ¡', score: 50, desc: 'Struggled a lot', color: 'from-amber-500/10 to-amber-600/10 border-amber-500/20 text-amber-400 hover:from-amber-500 hover:to-amber-600' },
-                      { name: 'Good ðŸŸ¢', score: 80, desc: 'Remembered well', color: 'from-emerald-500/10 to-emerald-600/10 border-emerald-500/20 text-emerald-400 hover:from-emerald-500 hover:to-emerald-600' },
-                      { name: 'Easy ðŸ”µ', score: 100, desc: 'Fluent / Perfect', color: 'from-indigo-500/10 to-indigo-600/10 border-indigo-500/20 text-indigo-400 hover:from-indigo-500 hover:to-indigo-600' }
+                      { name: 'Again', score: 20, desc: 'Forgot completely', color: 'from-rose-500/10 to-rose-600/10 border-rose-500/20 text-rose-400 hover:from-rose-500 hover:to-rose-600' },
+                      { name: 'Hard', score: 50, desc: 'Struggled a lot', color: 'from-amber-500/10 to-amber-600/10 border-amber-500/20 text-amber-400 hover:from-amber-500 hover:to-amber-600' },
+                      { name: 'Good', score: 80, desc: 'Remembered well', color: 'from-emerald-500/10 to-emerald-600/10 border-emerald-500/20 text-emerald-400 hover:from-emerald-500 hover:to-emerald-600' },
+                      { name: 'Easy', score: 100, desc: 'Fluent / Perfect', color: 'from-indigo-500/10 to-indigo-600/10 border-indigo-500/20 text-indigo-400 hover:from-indigo-500 hover:to-indigo-600' }
                     ].map(btn => (
                       <button
                         key={btn.name}
@@ -3661,7 +3661,7 @@ ${explanation.explanation}
       const weakTopicsForPath: string[] = (cloudMemoryRow?.weak_topics || []).filter(Boolean).slice(0, 8);
       const strongTopicsForPath: string[] = (cloudMemoryRow?.strong_topics || []).filter(Boolean).slice(0, 5);
       const gradeLabel = studentProfile?.grade || (educationLevel === 'CAMPUS' ? 'University' : educationLevel === 'JUNIOR' ? 'Class 8' : 'Form 3');
-      const subjectsForPath = [...new Set(weakTopicsForPath.map(t => t.split(' â€“ ')[0] || t.split(':')[0]).filter(Boolean))].slice(0, 4);
+      const subjectsForPath = [...new Set(weakTopicsForPath.map(t => t.split(' - ')[0] || t.split(':')[0]).filter(Boolean))].slice(0, 4);
 
       return (
         <div className="pb-24">
@@ -3677,7 +3677,7 @@ ${explanation.explanation}
                     : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
                 }`}
               >
-            {tab === 'MAP' ? 'ðŸ—ºï¸ Quest Map' : 'âœ¨ My Path'}
+            {tab === 'MAP' ? 'Quest Map' : 'My Path'}
               </button>
             ))}
           </div>
@@ -3696,8 +3696,8 @@ ${explanation.explanation}
                 masteryMap={masteryMapForPath}
                 completedTopics={strongTopicsForPath}
                 weakTopics={weakTopicsForPath}
-                streak={cloudMemoryRow?.streak_days ?? 0}
-                avgScore={cloudMemoryRow?.avg_score ?? 0}
+                streak={cloudMemoryRow?.streak_days - 0}
+                avgScore={cloudMemoryRow?.avg_score - 0}
                 onStartTopic={handleQuestStudyTopic}
               />
             </div>
@@ -4572,7 +4572,7 @@ Topic or question: ${question || '[type your question here]'}`)
             </AnimatePresence>
 
 
-            {/* WELCOME CARD â€” newly registered users on first login (registered + zero history) */}
+            {/* WELCOME CARD - newly registered users on first login (registered + zero history) */}
             {isRegistered && !hasHistory && (
               <motion.div
                 initial={{ opacity: 0, y: -10 }}
@@ -4607,7 +4607,7 @@ Topic or question: ${question || '[type your question here]'}`)
               </motion.div>
             )}
 
-            {/* START HERE â€” Onboarding card for brand-new users (zero history, not registered) */}
+            {/* START HERE - Onboarding card for brand-new users (zero history, not registered) */}
             {!isRegistered && !hasHistory && (
               <motion.div
                 initial={{ opacity: 0, y: -10 }}
@@ -4615,15 +4615,15 @@ Topic or question: ${question || '[type your question here]'}`)
                 className="hidden"
               >
                 <div className="flex items-start gap-4">
-                  <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center shrink-0 text-xl">ðŸš€</div>
+                  <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center shrink-0 text-xl">Start</div>
                   <div className="flex-1 min-w-0">
                     <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-200 mb-1">Welcome to Somo Smart!</p>
-                  <p className="font-bold text-base mb-3">Start with these 3 steps â€” no signup needed</p>
+                  <p className="font-bold text-base mb-3">Start with these 3 steps - no signup needed</p>
                     <div className="space-y-2">
                       {[
-                      { step: '1', label: 'Type a question below or scan your textbook', icon: 'ðŸ“' },
-                      { step: '2', label: 'Get a step-by-step explanation instantly', icon: 'âš¡' },
-                        { step: '3', label: 'Test yourself with a quick quiz on the topic', icon: 'âœ“' },
+                      { step: "1", label: "Type a question below or scan your textbook", icon: "Note" },
+                      { step: "2", label: "Get a step-by-step explanation instantly", icon: "Fast" },
+                        { step: "3", label: "Test yourself with a quick quiz on the topic", icon: "Check" },
                       ].map(({ step, label, icon }) => (
                         <div key={step} className="flex items-center gap-2.5 text-sm font-medium text-white/90">
                           <span className="text-base">{icon}</span>
@@ -4636,7 +4636,7 @@ Topic or question: ${question || '[type your question here]'}`)
               </motion.div>
             )}
 
-            {/* FREE USAGE METER â€” visible for all non-pro, non-registered users */}
+            {/* FREE USAGE METER - visible for all non-pro, non-registered users */}
             {!isRegistered && !hasHistory && (
               <motion.div
                 initial={{ opacity: 0, y: -10 }}
@@ -4686,7 +4686,7 @@ Topic or question: ${question || '[type your question here]'}`)
                 {isRegistered && learningCredits > 0 ? (
                   <div className="flex items-center gap-3 mb-3">
                     <div className="w-10 h-10 rounded-2xl bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center shrink-0">
-                      <span className="text-lg">ðŸª™</span>
+                      <span className="text-lg">Credits</span>
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-xl font-black text-slate-900 dark:text-white leading-none">{formatLearningCredits(learningCredits)} <span className="text-sm font-bold text-slate-500">credits</span></p>
@@ -4699,7 +4699,7 @@ Topic or question: ${question || '[type your question here]'}`)
                       ? 'Log in to view your credits'
                       : freeUsesLeft > 0
                         ? `${freeUsesLeft} free answers left today`
-                        : 'Trial complete â€” choose a plan or top up credits'}
+                        : 'Trial complete - choose a plan or top up credits'}
                   </h2>
                 )}
 
@@ -4708,16 +4708,16 @@ Topic or question: ${question || '[type your question here]'}`)
                   <p className="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-2">How the wallet works</p>
                   <div className="space-y-1.5">
                     <div className="flex items-center gap-2 text-xs font-semibold text-slate-600 dark:text-slate-300">
-                      <span className="w-5 h-5 rounded-full bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center text-[10px]">ðŸ“…</span>
-                      <span>Monthly plan â€” auto-topped up each billing cycle</span>
+                      <span className="w-5 h-5 rounded-full bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center text-[10px]">Monthly</span>
+                      <span>Monthly plan - auto-topped up each billing cycle</span>
                     </div>
                     <div className="flex items-center gap-2 text-xs font-semibold text-slate-600 dark:text-slate-300">
-                      <span className="w-5 h-5 rounded-full bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center text-[10px]">ðŸ›’</span>
-                      <span>Credit packs â€” buy any time (KES 20 / 50 / 100)</span>
+                      <span className="w-5 h-5 rounded-full bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center text-[10px]">Pack</span>
+                      <span>Credit packs - buy any time (KES 20 / 50 / 100)</span>
                     </div>
                     <div className="flex items-center gap-2 text-xs font-semibold text-slate-600 dark:text-slate-300">
-                      <span className="w-5 h-5 rounded-full bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center text-[10px]">ðŸŽ</span>
-                      <span>Bonus credits â€” granted by your school or Soma team</span>
+                      <span className="w-5 h-5 rounded-full bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center text-[10px]">Bonus</span>
+                      <span>Bonus credits - granted by your school or Soma team</span>
                     </div>
                   </div>
                 </div>
@@ -4822,7 +4822,7 @@ Topic or question: ${question || '[type your question here]'}`)
               </div>
             </div>
 
-            {/* STREAK NUDGE â€” only when learner has a streak but hasn't studied today */}
+            {/* STREAK NUDGE - only when learner has a streak but hasn't studied today */}
             {(() => {
               const today = new Date().toLocaleDateString();
               const studiedToday = history.some((h: any) => h.date === today);
@@ -4830,7 +4830,7 @@ Topic or question: ${question || '[type your question here]'}`)
                 return (
                   <div className="flex items-center justify-between gap-3 bg-amber-50 dark:bg-amber-900/20 border-2 border-amber-200 dark:border-amber-800 rounded-2xl px-4 py-3">
                     <div className="flex items-center gap-3">
-                      <span className="text-2xl">ðŸ”¥</span>
+                      <span className="text-2xl">Hot</span>
                       <div>
                         <p className="text-sm font-black text-amber-900 dark:text-amber-100">Keep your {streak}-day streak alive!</p>
                         <p className="text-xs font-bold text-amber-700 dark:text-amber-300">{"You haven't studied yet today. One topic is all it takes."}</p>
@@ -4872,7 +4872,7 @@ Topic or question: ${question || '[type your question here]'}`)
               const days = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
               if (days < 0 || days > 200) return null;
               const urgency = days <= 14 ? 'bg-rose-50 border-rose-300 text-rose-900' : days <= 60 ? 'bg-amber-50 border-amber-200 text-amber-900' : 'bg-blue-50 border-blue-200 text-blue-900';
-              const emoji = days <= 14 ? 'ðŸš¨' : days <= 60 ? 'â³' : 'ðŸ“…';
+              const emoji = days <= 14 ? 'Alert' : days <= 60 ? 'Soon' : 'Date';
               return (
                 <div className={`flex items-center justify-between gap-3 border-2 rounded-2xl px-4 py-3 ${urgency}`}>
                   <div className="flex items-center gap-3">
@@ -4880,7 +4880,7 @@ Topic or question: ${question || '[type your question here]'}`)
                     <div>
                       <p className="text-sm font-black">{days} days to {relevant.name} {year}</p>
                       <p className="text-xs font-bold opacity-70">
-              {days <= 14 ? 'Final push â€” every session counts!' : days <= 60 ? 'Exam season is near. Stay consistent.' : 'Start building your revision habit now.'}
+              {days <= 14 ? 'Final push - every session counts!' : days <= 60 ? 'Exam season is near. Stay consistent.' : 'Start building your revision habit now.'}
                       </p>
                     </div>
                   </div>
@@ -4906,7 +4906,7 @@ Topic or question: ${question || '[type your question here]'}`)
               if (timerDone) return (
                 <div className="flex items-center justify-between gap-3 bg-emerald-50 dark:bg-emerald-900/20 border-2 border-emerald-300 dark:border-emerald-700 rounded-2xl px-4 py-3">
                   <div className="flex items-center gap-3">
-                    <span className="text-2xl">ðŸŽ‰</span>
+                    <span className="text-2xl">Done</span>
                     <div>
                       <p className="text-sm font-black text-emerald-900 dark:text-emerald-100">25 minutes done! Great focus.</p>
                       <p className="text-xs font-bold text-emerald-700 dark:text-emerald-300">Lock it in with a quick quiz.</p>
@@ -4920,7 +4920,7 @@ Topic or question: ${question || '[type your question here]'}`)
               );
               return (
                 <div className="bg-slate-900 dark:bg-slate-800 rounded-2xl overflow-hidden">
-                  {/* Idle state â€” explain what this is */}
+                  {/* Idle state - explain what this is */}
                   {!timerActive && timerSeconds === 25 * 60 ? (
                     <div className="px-4 py-4 flex items-center gap-4">
                       <div className="relative w-12 h-12 flex-shrink-0">
@@ -4928,11 +4928,11 @@ Topic or question: ${question || '[type your question here]'}`)
                           <circle cx="18" cy="18" r="15.9" fill="none" stroke="#334155" strokeWidth="3" />
                           <circle cx="18" cy="18" r="15.9" fill="none" stroke="#6366f1" strokeWidth="3" strokeDasharray="0 100" strokeLinecap="round" />
                         </svg>
-                        <span className="absolute inset-0 flex items-center justify-center text-xl">ðŸ…</span>
+                        <span className="absolute inset-0 flex items-center justify-center text-xl">Tomato</span>
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-black text-white leading-tight">Focus Timer</p>
-                        <p className="text-[11px] font-medium text-slate-400 leading-snug mt-0.5">25-min study session â€” no distractions, then take a break.</p>
+                        <p className="text-[11px] font-medium text-slate-400 leading-snug mt-0.5">25-min study session - no distractions, then take a break.</p>
                       </div>
                       <button
                         onClick={() => setTimerActive(a => !a)}
@@ -4952,7 +4952,7 @@ Topic or question: ${question || '[type your question here]'}`)
                         <span className="absolute inset-0 flex items-center justify-center text-[9px] font-black text-white">{pct}%</span>
                       </div>
                       <div className="flex-1">
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">{timerActive ? 'Focus Session Â· in progress' : 'Focus Session Â· paused'}</p>
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">{timerActive ? 'Focus Session - in progress' : 'Focus Session - paused'}</p>
                         <p className="text-lg font-black text-indigo-400 leading-none">{String(mins).padStart(2, '0')}:{String(secs).padStart(2, '0')}</p>
                       </div>
                       <div className="flex gap-2">
@@ -4985,7 +4985,7 @@ Topic or question: ${question || '[type your question here]'}`)
                         <div className="w-7 h-7 bg-slate-100 dark:bg-slate-800 rounded-lg flex items-center justify-center flex-shrink-0"><BookOpen className="w-3.5 h-3.5 text-slate-400" /></div>
                         <div className="flex-1 min-w-0">
                           <p className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate">{s.topic}</p>
-                          <p className="text-[10px] font-medium text-slate-400">{s.subject} Â· {s.savedAt}</p>
+                          <p className="text-[10px] font-medium text-slate-400">{s.subject} - {s.savedAt}</p>
                         </div>
                         <ChevronRight className="w-4 h-4 text-slate-300 flex-shrink-0" />
                       </button>
@@ -5096,7 +5096,7 @@ Topic or question: ${question || '[type your question here]'}`)
                         </div>
                       ))}
                       {timetable.days.length > 7 && (
-                        <p className="text-[10px] font-bold text-slate-400 text-center">+ {timetable.days.length - 7} more days Â· Tap {"\"Rebuild\""} to view all</p>
+                        <p className="text-[10px] font-bold text-slate-400 text-center">+ {timetable.days.length - 7} more days - Tap {"\"Rebuild\""} to view all</p>
                       )}
                     </div>
                   )}
@@ -5279,7 +5279,7 @@ Topic or question: ${question || '[type your question here]'}`)
                     </div>
                   </div>
 
-                  {/* START HERE: PRIMARY FIRST-SESSION PATH â€” for returning users or registered with history */}
+                  {/* START HERE: PRIMARY FIRST-SESSION PATH - for returning users or registered with history */}
                   {(!isRegistered || hasHistory || hasProgress) && (
                   <div className="hidden">
                     <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-100 mb-2">Start Here</p>
@@ -5479,11 +5479,11 @@ Topic or question: ${question || '[type your question here]'}`)
                     </div>
                   </div>
 
-                  {/* SHORTCUTS â€” secondary actions */}
+                  {/* SHORTCUTS - secondary actions */}
                   <div className="hidden grid-cols-3 gap-2 sm:gap-4">
                      {(
                        educationLevel === 'JUNIOR' ? [
-                          { icon: <Library className="w-5 h-5 sm:w-6 sm:h-6" />, label: 'Library ðŸ“š', color: 'bg-blue-600', onClick: () => handleSidebarTabChange('RESOURCES') },
+                          { icon: <Library className="w-5 h-5 sm:w-6 sm:h-6" />, label: 'Library', color: 'bg-blue-600', onClick: () => handleSidebarTabChange('RESOURCES') },
                          { icon: <Brain className="w-5 h-5 sm:w-6 sm:h-6" />, label: 'Exam Prep', color: 'bg-orange-500', onClick: () => {
                            setRevisionInitialSubject(currentDocument?.subject || 'All');
                            setRevisionInitialSearchQuery(currentDocument?.title || currentDocument?.subject || '');
@@ -5495,7 +5495,7 @@ Topic or question: ${question || '[type your question here]'}`)
                          { icon: <Brain className="w-5 h-5 sm:w-6 sm:h-6" />, label: 'Courses', color: 'bg-indigo-500', onClick: () => handleSidebarTabChange('SUBJECTS') },
                          { icon: <Users className="w-5 h-5 sm:w-6 sm:h-6" />, label: 'Study Group', color: 'bg-emerald-500', onClick: () => handleSidebarTabChange('EXAM_ROOMS') }
                        ] : [
-                          { icon: <Library className="w-5 h-5 sm:w-6 sm:h-6" />, label: 'Library ðŸ“š', color: 'bg-blue-600', onClick: () => handleSidebarTabChange('RESOURCES') },
+                          { icon: <Library className="w-5 h-5 sm:w-6 sm:h-6" />, label: 'Library', color: 'bg-blue-600', onClick: () => handleSidebarTabChange('RESOURCES') },
                          { icon: <Brain className="w-5 h-5 sm:w-6 sm:h-6" />, label: 'Exam Hall', color: 'bg-orange-500', onClick: () => handleSidebarTabChange('SUBJECTS') },
                          { icon: <Trophy className="w-5 h-5 sm:w-6 sm:h-6" />, label: 'My Progress', color: 'bg-indigo-600', onClick: () => setShowMasteryDashboard(true) }
                        ]
@@ -5639,9 +5639,9 @@ Topic or question: ${question || '[type your question here]'}`)
                           >
                             <div>
                               <p className="text-xs font-black text-slate-900 dark:text-white">{topic}</p>
-                            <p className="text-[10px] font-bold text-slate-400 mt-0.5">Weak area Â· tap to revise</p>
+                            <p className="text-[10px] font-bold text-slate-400 mt-0.5">Weak area - tap to revise</p>
                             </div>
-                            <span className="text-emerald-500 group-hover:translate-x-1 transition-transform">â†’</span>
+                              <span className="text-emerald-500 group-hover:translate-x-1 transition-transform">Open</span>
                           </button>
                         ))}
                         {(!weakTopics?.length) && studentProfile?.grade && (
@@ -5657,7 +5657,7 @@ Topic or question: ${question || '[type your question here]'}`)
                               <p className="text-xs font-black text-slate-900 dark:text-white">Top revision topics for {studentProfile.grade}</p>
                               <p className="text-[10px] font-bold text-slate-400 mt-0.5">Tap to explore</p>
                             </div>
-                            <span className="text-emerald-500 group-hover:translate-x-1 transition-transform">â†’</span>
+                              <span className="text-emerald-500 group-hover:translate-x-1 transition-transform">Open</span>
                           </button>
                         )}
                       </div>
@@ -5738,7 +5738,7 @@ Topic or question: ${question || '[type your question here]'}`)
                                               await classroomService.createPost(item.class.id, userId, 'ANNOUNCEMENT', `[Student Question] ${askTeacherText.trim()}`);
                                               setAskTeacherText('');
                                               setAskTeacherClassId(null);
-                                triggerToast('Question sent to teacher âœ“');
+                                triggerToast('Question sent to teacher');
                                             } catch { triggerToast('Could not send. Try again.'); }
                                             finally { setAskTeacherSending(false); }
                                           }}
@@ -5813,7 +5813,7 @@ Topic or question: ${question || '[type your question here]'}`)
                             </span>
                           ) : (
                             <span className="text-[9px] font-black text-indigo-300 bg-indigo-500/15 border border-indigo-500/35 px-2.5 py-1 rounded-full uppercase tracking-widest">
-                              Clear âœ¨
+                              Clear
                             </span>
                           )}
                         </div>
@@ -5873,7 +5873,7 @@ Topic or question: ${question || '[type your question here]'}`)
                                       lastScore: 0,
                                       reviewCount: 0,
                                       question: "What are the raw materials and products of photosynthesis in plants?",
-      answer: "Raw Materials:\n- Carbon dioxide (absorbed through stomata)\n- Water (absorbed through roots)\n\nProducts:\n- Glucose (chemical energy stored as starch)\n- Oxygen gas (released as a byproduct through stomata)\n\nReaction Equation:\n6COâ‚‚ + 6Hâ‚‚O + light â†’ Câ‚†Hâ‚â‚‚Oâ‚† + 6Oâ‚‚",
+      answer: "Raw Materials:\n- Carbon dioxide (absorbed through stomata)\n- Water (absorbed through roots)\n\nProducts:\n- Glucose (chemical energy stored as starch)\n- Oxygen gas (released as a byproduct through stomata)\n\nReaction Equation:\n6CO2 + 6H2O + light -> C6H12O6 + 6O2",
                                     },
                                     {
                                       topic: "Quadratic Equations",
@@ -5885,7 +5885,7 @@ Topic or question: ${question || '[type your question here]'}`)
                                       lastScore: 0,
                                       reviewCount: 0,
                                       question: "State the quadratic formula and explain what the discriminant determines about the roots.",
-                                      answer: "Quadratic Formula:\nx = [-b Â± âˆš(bÂ² - 4ac)] / (2a)\n\nDiscriminant (D = bÂ² - 4ac):\n1. D > 0: Two distinct real roots.\n2. D = 0: One repeated real root (equal roots).\n3. D < 0: Two complex/imaginary roots."
+                                      answer: "Quadratic Formula:\nx = [-b +/- sqrt(b2 - 4ac)] / (2a)\n\nDiscriminant (D = b2 - 4ac):\n1. D > 0: Two distinct real roots.\n2. D = 0: One repeated real root (equal roots).\n3. D < 0: Two complex/imaginary roots."
                                     },
                                     {
                                       topic: "Devolution in Kenya",
@@ -6198,9 +6198,9 @@ Topic or question: ${question || '[type your question here]'}`)
                    <Sparkles className="w-4 h-4" /> Why create a profile?
                 </h4>
                 <ul className="text-xs font-medium text-amber-700/80 dark:text-amber-500/80 space-y-2 mt-3">
-                      <li className="flex gap-2"><span>â€¢</span> Save your learning history and streaks</li>
-                      <li className="flex gap-2"><span>â€¢</span> Unlock high daily AI study limits</li>
-                      <li className="flex gap-2"><span>â€¢</span> Get a personalized study buddy profile</li>
+                      <li className="flex gap-2"><span>-</span> Save your learning history and streaks</li>
+                      <li className="flex gap-2"><span>-</span> Unlock high daily AI study limits</li>
+                      <li className="flex gap-2"><span>-</span> Get a personalized study buddy profile</li>
                 </ul>
               </div>
             </motion.div>
@@ -6433,25 +6433,25 @@ Topic or question: ${question || '[type your question here]'}`)
                     const quizCount = history.filter((h: any) => h.type === 'QUIZ').length;
                     const inClass = studentClasses.length > 0;
                     const BADGES = [
-        { id: 'first_study', emoji: 'ðŸŒ±', name: 'First Step', desc: 'Completed your first study session', earned: history.length >= 1 },
-        { id: 'first_quiz', emoji: 'ðŸ“', name: 'Quiz Taker', desc: 'Took your first quiz', earned: quizCount >= 1 },
-                      { id: 'streak_3', emoji: 'ðŸ”¥', name: 'On Fire', desc: '3-day study streak', earned: streak >= 3 },
-                      { id: 'streak_7', emoji: 'ðŸ’«', name: 'Streak Keeper', desc: '7-day study streak', earned: streak >= 7 },
-                      { id: 'streak_30', emoji: 'ðŸ‘€', name: 'Streak Legend', desc: '30-day streak', earned: streak >= 30 },
-                      { id: 'xp_100', emoji: 'â­', name: 'XP Explorer', desc: 'Earned 100 XP', earned: totalXP >= 100 },
-                      { id: 'xp_500', emoji: 'ðŸ†', name: 'XP Champion', desc: 'Earned 500 XP', earned: totalXP >= 500 },
-                      { id: 'quiz_5', emoji: 'ðŸŽ¯', name: 'Quiz Master', desc: 'Completed 5 quizzes', earned: quizCount >= 5 },
-                      { id: 'quiz_20', emoji: 'ðŸ…', name: 'Quiz Legend', desc: 'Completed 20 quizzes', earned: quizCount >= 20 },
-                      { id: 'class_join', emoji: 'ðŸ¤', name: 'Team Player', desc: 'Joined a class', earned: inClass },
-                      { id: 'kcse_warrior', emoji: 'âš”ï¸', name: 'KCSE Warrior', desc: 'Studied 30+ sessions before exam', earned: history.length >= 30 },
-                      { id: 'notebook', emoji: 'ðŸ““', name: 'Note Taker', desc: 'Saved 5+ answers to Notebook', earned: (JSON.parse(localStorage.getItem(`somo_notebook_${notebookOwnerKey}`) || '[]') as any[]).length >= 5 },
+        { id: 'first_study', emoji: 'Seed', name: 'First Step', desc: 'Completed your first study session', earned: history.length >= 1 },
+        { id: 'first_quiz', emoji: 'Note', name: 'Quiz Taker', desc: 'Took your first quiz', earned: quizCount >= 1 },
+                      { id: 'streak_3', emoji: 'Hot', name: 'On Fire', desc: '3-day study streak', earned: streak >= 3 },
+                      { id: 'streak_7', emoji: 'Spark', name: 'Streak Keeper', desc: '7-day study streak', earned: streak >= 7 },
+                      { id: 'streak_30', emoji: 'Watch', name: 'Streak Legend', desc: '30-day streak', earned: streak >= 30 },
+                      { id: 'xp_100', emoji: 'Star', name: 'XP Explorer', desc: 'Earned 100 XP', earned: totalXP >= 100 },
+                      { id: 'xp_500', emoji: 'Trophy', name: 'XP Champion', desc: 'Earned 500 XP', earned: totalXP >= 500 },
+                      { id: 'quiz_5', emoji: 'Target', name: 'Quiz Master', desc: 'Completed 5 quizzes', earned: quizCount >= 5 },
+                      { id: 'quiz_20', emoji: 'Medal', name: 'Quiz Legend', desc: 'Completed 20 quizzes', earned: quizCount >= 20 },
+                      { id: 'class_join', emoji: 'Team', name: 'Team Player', desc: 'Joined a class', earned: inClass },
+                      { id: 'kcse_warrior', emoji: 'Alert', name: 'KCSE Warrior', desc: 'Studied 30+ sessions before exam', earned: history.length >= 30 },
+                      { id: 'notebook', emoji: 'Notebook', name: 'Note Taker', desc: 'Saved 5+ answers to Notebook', earned: (JSON.parse(localStorage.getItem(`somo_notebook_${notebookOwnerKey}`) || '[]') as any[]).length >= 5 },
                     ];
                     const earned = BADGES.filter(b => b.earned);
                     const locked = BADGES.filter(b => !b.earned);
                     return (
                       <>
                         {earned.length === 0 ? (
-                          <p className="text-xs font-bold text-slate-400 text-center py-4">No badges yet â€” start studying to earn your first!</p>
+                           <p className="text-xs font-bold text-slate-400 text-center py-4">No badges yet - start studying to earn your first!</p>
                         ) : (
                           <>
                             <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest mb-3">{earned.length} badge{earned.length !== 1 ? 's' : ''} earned</p>
@@ -6507,18 +6507,18 @@ Topic or question: ${question || '[type your question here]'}`)
                       ?.slice(0, 3)
                       ?.map((s: any) => s.subject) || [];
                     const reportText = [
-                      `ðŸ“˜ *Somo Smart Progress Report*`,
-                      `ðŸ‘¤ ${studentProfile?.name || 'Student'} | ${studentProfile?.grade ? `Grade ${studentProfile.grade}` : 'Learner'}`,
-                      `ðŸ†” ID: ${studentCode || userId}`,
+                      `Somo Smart Progress Report`,
+                      `${studentProfile?.name || 'Student'} | ${studentProfile?.grade ? `Grade ${studentProfile.grade}` : 'Learner'}`,
+                      `ID: ${studentCode || userId}`,
                       ``,
-                      `ðŸ”¥ Study streak: ${streak} day${streak !== 1 ? 's' : ''}`,
-                      `â­ Level ${levelInfo?.level || 1} â€¢ ${totalXP} XP`,
-                      `ðŸ“ Sessions this week: ${history.filter((h: any) => { const d = new Date(h.date); return (Date.now() - d.getTime()) < 7 * 864e5; }).length}`,
-                      quizHistory.length > 0 ? `ðŸ“ Quiz average: ${quizAvg}%` : null,
-                      topSubjects.length > 0 ? `ðŸ“š Top subjects: ${topSubjects.join(', ')}` : null,
-                      weakTopics?.length > 0 ? `ðŸ”Ž Revising: ${(weakTopics as string[]).slice(0, 2).join(', ')}` : null,
+                      `Study streak: ${streak} day${streak !== 1 ? 's' : ''}`,
+                      `Level ${levelInfo?.level || 1} - ${totalXP} XP`,
+                      `Sessions this week: ${history.filter((h: any) => { const d = new Date(h.date); return (Date.now() - d.getTime()) < 7 * 864e5; }).length}`,
+                      quizHistory.length > 0 ? `Quiz average: ${quizAvg}%` : null,
+                      topSubjects.length > 0 ? `Top subjects: ${topSubjects.join(', ')}` : null,
+                      weakTopics?.length > 0 ? `Revising: ${(weakTopics as string[]).slice(0, 2).join(', ')}` : null,
                       ``,
-                      `Track progress at somaai.co.ke ðŸš€`,
+                      `Track progress at somaai.co.ke`,
                     ].filter(Boolean).join('\n');
                     return (
                       <>
@@ -6532,7 +6532,7 @@ Topic or question: ${question || '[type your question here]'}`)
                             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Level</p>
                           </div>
                           <div className="bg-white rounded-2xl p-3 border border-emerald-100">
-                            <p className="text-2xl font-black text-amber-600">{quizAvg > 0 ? `${quizAvg}%` : 'â€”'}</p>
+                             <p className="text-2xl font-black text-amber-600">{quizAvg > 0 ? `${quizAvg}%` : "--"}</p>
                             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Quiz Avg</p>
                           </div>
                         </div>
@@ -6609,7 +6609,7 @@ Topic or question: ${question || '[type your question here]'}`)
                       const result = await Notification.requestPermission();
                       setNotifStatus(result as 'granted' | 'denied');
                       if (result === 'granted') {
-                        new Notification('Somo Smart ðŸ”¥', {
+                        new Notification('Somo Smart', {
                           body: "Reminders enabled! We'll nudge you at 6pm if you haven't studied.",
                           icon: '/icons/icon-192x192.png',
                         });
@@ -6620,7 +6620,7 @@ Topic or question: ${question || '[type your question here]'}`)
                       <div className="flex items-center justify-between gap-4">
                         <div>
                           <p className="text-sm font-black text-slate-800">
-                            {notifStatus === 'granted' ? 'ðŸ”” Reminders are on' : notifStatus === 'denied' ? 'ðŸ”• Blocked in browser settings' : 'ðŸ”” Enable daily study reminders'}
+                            {notifStatus === 'granted' ? 'Reminders are on' : notifStatus === 'denied' ? 'Blocked in browser settings' : 'Enable daily study reminders'}
                           </p>
                           <p className="text-xs font-bold text-slate-400 mt-0.5">
                             {notifStatus === 'granted' ? "You'll get a nudge at 6pm if you haven't studied today." : notifStatus === 'denied' ? 'Allow notifications in your browser site settings.' : "Get a 6pm reminder if you haven't studied yet."}
@@ -6632,7 +6632,7 @@ Topic or question: ${question || '[type your question here]'}`)
                             disabled={notifStatus === 'granted'}
                             className={`shrink-0 px-4 py-2 rounded-xl text-xs font-black transition-colors ${notifStatus === 'granted' ? 'bg-emerald-100 text-emerald-700 cursor-default' : 'bg-violet-600 hover:bg-violet-700 text-white'}`}
                           >
-                            {notifStatus === 'granted' ? 'Enabled âœ“' : 'Enable'}
+                            {notifStatus === 'granted' ? 'Enabled ?' : 'Enable'}
                           </button>
                         )}
                       </div>
@@ -6924,13 +6924,13 @@ Topic or question: ${question || '[type your question here]'}`)
                         onClick={() => setOriginalViewType('text')}
                         className={`px-2.5 py-1 rounded-md transition-all ${originalViewType === 'text' ? 'bg-white dark:bg-slate-700 text-indigo-750 dark:text-indigo-400 shadow-sm font-black' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
                       >
-                        ðŸ“– Text
+                        Text
                       </button>
                       <button
                         onClick={() => setOriginalViewType('pdf')}
                         className={`px-2.5 py-1 rounded-md transition-all ${originalViewType === 'pdf' ? 'bg-white dark:bg-slate-700 text-indigo-750 dark:text-indigo-400 shadow-sm font-black' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
                       >
-                        ðŸ“„ PDF
+                        PDF
                       </button>
                     </div>
                   )}
@@ -7212,7 +7212,7 @@ Topic or question: ${question || '[type your question here]'}`)
                                 <ul className="space-y-1.5">
                                   {syllabus.outcomes.map((out, i) => (
                                     <li key={i} className="text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-start gap-2">
-                                      <span className="text-emerald-500 mt-0.5">âœ“</span>
+                                       <span className="text-emerald-500 mt-0.5">Yes</span>
                                       <span>{out}</span>
                                     </li>
                                   ))}
@@ -7351,7 +7351,7 @@ Topic or question: ${question || '[type your question here]'}`)
                     }}
                     className="flex items-center gap-2 px-4 py-2 border border-slate-200 dark:border-slate-700 rounded-full text-xs font-black uppercase tracking-wider text-slate-650 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-50 disabled:hover:bg-transparent transition-all font-semibold"
                   >
-                    â† Previous
+                     Previous
                   </button>
                   <div className="flex items-center gap-1 overflow-x-auto max-w-[200px] sm:max-w-none no-scrollbar">
                     {Array.from({ length: studyViewMode === 'guide' ? totalPages : extractedOriginalPages.length }).map((_, i) => {
@@ -7386,7 +7386,7 @@ Topic or question: ${question || '[type your question here]'}`)
                     }}
                     className="flex items-center gap-2 px-4 py-2 border border-slate-200 dark:border-slate-700 rounded-full text-xs font-black uppercase tracking-wider text-slate-650 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-50 disabled:hover:bg-transparent transition-all font-semibold"
                   >
-                    Next â†’
+                     Next
                   </button>
                 </div>
               )}
@@ -7426,7 +7426,7 @@ Topic or question: ${question || '[type your question here]'}`)
                     {/* Mobile Back to Lesson Button */}
                     <div className="lg:hidden flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shrink-0">
                       <button onClick={() => setStudyTab('LESSON')} className="flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-indigo-600 dark:text-indigo-400 font-semibold">
-                        â† Back to Lesson
+                         Back to Lesson
                       </button>
                       <span className="text-xs font-black text-slate-800 dark:text-white uppercase tracking-widest">Raise Hand</span>
                     </div>
@@ -7531,7 +7531,7 @@ Topic or question: ${question || '[type your question here]'}`)
                       {pendingMedia && (
                         <div className="mb-2 inline-flex items-center gap-2 p-2 bg-white dark:bg-slate-850 border border-slate-250 dark:border-slate-700 rounded-xl shadow-md">
                           <span className="text-[10px] font-black uppercase text-indigo-600 font-semibold">Attached {pendingMedia.type}</span>
-                          <button onClick={() => setPendingMedia(null)} className="text-slate-400 hover:text-red-500">âœ•</button>
+                        <button onClick={() => setPendingMedia(null)} className="text-slate-400 hover:text-red-500">Close</button>
                         </div>
                       )}
                       <div className="flex items-center bg-white dark:bg-slate-900 border border-slate-350 dark:border-slate-700 rounded-2xl p-1 shadow-md focus-within:ring-2 focus-within:ring-indigo-500">
@@ -7567,7 +7567,7 @@ Topic or question: ${question || '[type your question here]'}`)
                     {/* Mobile Back */}
                     <div className="lg:hidden flex items-center justify-between pb-4 border-b border-slate-200 dark:border-slate-800 shrink-0">
                       <button onClick={() => setStudyTab('LESSON')} className="flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-indigo-600 font-semibold">
-                        â† Back to Lesson
+                         Back to Lesson
                       </button>
                       <span className="text-xs font-black text-slate-800 dark:text-white uppercase tracking-widest">Quick Recap</span>
                     </div>
@@ -7616,7 +7616,7 @@ Topic or question: ${question || '[type your question here]'}`)
                     {/* Mobile Back */}
                     <div className="lg:hidden w-full flex items-center justify-between pb-4 border-b border-slate-200 dark:border-slate-800 shrink-0 mb-10">
                       <button onClick={() => setStudyTab('LESSON')} className="flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-indigo-600 font-semibold">
-                        â† Back to Lesson
+                         Back to Lesson
                       </button>
                       <span className="text-xs font-black text-slate-850 dark:text-white uppercase tracking-widest font-semibold">Pop Quiz</span>
                     </div>
@@ -7645,7 +7645,7 @@ Topic or question: ${question || '[type your question here]'}`)
                     {/* Mobile Back */}
                     <div className="lg:hidden flex items-center justify-between pb-4 border-b border-slate-200 dark:border-slate-850 shrink-0">
                       <button onClick={() => setStudyTab('LESSON')} className="flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-indigo-600 font-semibold">
-                        â† Back to Lesson
+                         Back to Lesson
                       </button>
                       <span className="text-xs font-black text-slate-800 dark:text-white uppercase tracking-widest font-semibold">References</span>
                     </div>
@@ -7677,7 +7677,7 @@ Topic or question: ${question || '[type your question here]'}`)
                             <ul className="space-y-1 pl-1">
                               {syllabus.outcomes.map((out, i) => (
                                 <li key={i} className="text-slate-650 dark:text-slate-350 flex items-start gap-1">
-                                  <span className="text-emerald-500">âœ“</span>
+                                   <span className="text-emerald-500">Yes</span>
                                   <span>{out}</span>
                                 </li>
                               ))}
@@ -7872,8 +7872,8 @@ Topic or question: ${question || '[type your question here]'}`)
                 {imageData
                   ? (educationLevel === EducationLevel.JUNIOR ? "I see your picture! What should I help with?" : "Image attached! What would you like Akili to explain?")
                   : isHomework
-                    ? (educationLevel === EducationLevel.JUNIOR ? "Show me your task or tell me about it!" : "Upload your homework or record audio â€” Akili will break it down step by step.")
-                    : (educationLevel === EducationLevel.JUNIOR ? "Ask Akili anything, show a picture, or just talk!" : "Type a topic, upload an image, or record audio â€” Akili has you covered.")}
+                     ? (educationLevel === EducationLevel.JUNIOR ? "Show me your task or tell me about it!" : "Upload your homework or record audio - Akili will break it down step by step.")
+                     : (educationLevel === EducationLevel.JUNIOR ? "Ask Akili anything, show a picture, or just talk!" : "Type a topic, upload an image, or record audio - Akili has you covered.")}
               </p>
             </div>
 
@@ -7922,7 +7922,7 @@ Topic or question: ${question || '[type your question here]'}`)
                     ))}
                   </div>
 
-                  {/* Stop button â€” big and obvious */}
+                   {/* Stop button - big and obvious */}
                   <button
                     onClick={stopRecording}
                     className="w-full flex items-center justify-center gap-3 py-3.5 bg-red-500 hover:bg-red-400 active:scale-95 text-white font-black text-sm uppercase tracking-wider rounded-2xl transition-all shadow-lg shadow-red-900/50"
@@ -8174,7 +8174,7 @@ Topic or question: ${question || '[type your question here]'}`)
               </motion.div>
             )}
 
-            {/* Podcast Player Overlay â€” Premium Media Player */}
+             {/* Podcast Player Overlay - Premium Media Player */}
             <AnimatePresence>
               {(isPodcastPlaying || podcastLoading) && (isPodcastPlaying ? podcastScript : true) && (
                 <motion.div
@@ -8224,7 +8224,7 @@ Topic or question: ${question || '[type your question here]'}`)
                                 ? 'bg-indigo-500/40 text-indigo-200'
                                 : 'bg-violet-500/40 text-violet-200'
                             }`}>
-                              {seg.speaker === 'Host' ? 'ðŸŽ™ï¸ Host' : 'ðŸŽ“ Expert'}
+                              {seg.speaker === 'Host' ? 'Host' : 'Expert'}
                             </span>
                             <p className="text-white text-sm leading-relaxed font-medium">{seg.text}</p>
                           </div>
@@ -8367,7 +8367,7 @@ Topic or question: ${question || '[type your question here]'}`)
                     {isPodcastPlaying && podcastScript && currentSegmentIndex >= 0 ? (
                       <>
                         <p className="text-[11px] font-bold text-indigo-500 truncate max-w-[180px]">
-                          {podcastScript.script[currentSegmentIndex].speaker === 'Host' ? 'ðŸŽ™ï¸ Host' : 'ðŸŽ“ Expert'}
+                          {podcastScript.script[currentSegmentIndex].speaker === 'Host' ? 'Host' : 'Expert'}
                         </p>
                         {podcastTotalSegments > 0 && (
                           <div className="mt-1 h-1 w-28 bg-indigo-200 rounded-full overflow-hidden">
@@ -8530,7 +8530,7 @@ Topic or question: ${question || '[type your question here]'}`)
                 return (
                   <div className="mt-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
                     <div className="flex items-center justify-between mb-3">
-                      <p className="text-xs font-black text-slate-500 uppercase tracking-widest">Flashcards â€” {gotCount}/{total} Got It</p>
+                       <p className="text-xs font-black text-slate-500 uppercase tracking-widest">Flashcards - {gotCount}/{total} Got It</p>
                       <p className="text-xs font-bold text-slate-400">{flashcardIndex + 1} / {total}</p>
                     </div>
                     <div
@@ -8567,7 +8567,7 @@ Topic or question: ${question || '[type your question here]'}`)
                         }}
                         className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white font-black py-3 rounded-2xl text-sm transition-colors"
                       >
-                        âœ“ Got It
+                         Yes Got It
                       </button>
                       <button
                         onClick={() => {
@@ -8576,7 +8576,7 @@ Topic or question: ${question || '[type your question here]'}`)
                         }}
                         className="flex-1 bg-rose-100 hover:bg-rose-200 text-rose-700 font-black py-3 rounded-2xl text-sm transition-colors"
                       >
-                        âœ— Still Learning
+                         No Still Learning
                       </button>
                     </div>
                     {flashcardIndex === total - 1 && (
@@ -8751,7 +8751,7 @@ Topic or question: ${question || '[type your question here]'}`)
             <div className="fixed inset-0 z-[200] bg-slate-900/80 backdrop-blur-md flex items-end sm:items-center justify-center p-4">
               <div className="bg-white dark:bg-slate-900 rounded-[2rem] w-full max-w-sm shadow-2xl overflow-hidden">
                 <div className="bg-gradient-to-r from-indigo-600 to-purple-600 p-6 text-white text-center">
-                  <div className="text-3xl mb-2">ðŸŽ“</div>
+                  <div className="text-3xl mb-2">Class</div>
                   <h2 className="text-xl font-black">Welcome to Somo Smart!</h2>
                   <p className="text-indigo-100 text-sm mt-1">{"Let's personalise your learning"}</p>
                   <div className="flex justify-center gap-2 mt-3">
@@ -8779,13 +8779,13 @@ Topic or question: ${question || '[type your question here]'}`)
                         onClick={() => setOnboardStep(2)}
                         className="mt-5 w-full bg-indigo-600 disabled:opacity-40 text-white py-3.5 rounded-xl font-black"
                       >
-                        Next â†’
+                        Next
                       </button>
                     </>
                   )}
                   {onboardStep === 2 && (
                     <>
-                      <p className="text-sm font-black text-slate-700 dark:text-slate-200 mb-2">Class set to <span className="text-indigo-600">{onboardGrade}</span> ðŸ‘Œ</p>
+                      <p className="text-sm font-black text-slate-700 dark:text-slate-200 mb-2">Class set to <span className="text-indigo-600">{onboardGrade}</span> OK</p>
                       <p className="text-xs text-slate-500 dark:text-slate-400 mb-5">{"You're ready to explore. Scan a page, ask a question, or browse notes for your class."}</p>
                       <button
                         onClick={async () => {
@@ -8796,9 +8796,9 @@ Topic or question: ${question || '[type your question here]'}`)
                         }}
                         className="w-full bg-indigo-600 text-white py-3.5 rounded-xl font-black"
                       >
-                        Start Learning ðŸš€
+                        Start Learning
                       </button>
-                      <button onClick={() => setOnboardStep(1)} className="mt-2 w-full text-slate-400 text-xs font-bold py-2">â† Back</button>
+                      <button onClick={() => setOnboardStep(1)} className="mt-2 w-full text-slate-400 text-xs font-bold py-2">Back</button>
                     </>
                   )}
                   <button
@@ -8816,11 +8816,11 @@ Topic or question: ${question || '[type your question here]'}`)
           {showQuizSharePrompt && (
             <div className="fixed inset-0 z-[200] bg-slate-900/70 backdrop-blur-sm flex items-end sm:items-center justify-center p-4">
               <div className="bg-white dark:bg-slate-900 rounded-[2rem] w-full max-w-sm shadow-2xl p-6 text-center">
-                <div className="text-4xl mb-3">ðŸŽ‰</div>
+                <div className="text-4xl mb-3">Done</div>
                 <h2 className="text-2xl font-black text-slate-900 dark:text-white">{showQuizSharePrompt.score}%!</h2>
                 <p className="text-sm font-bold text-slate-500 dark:text-slate-400 mt-1 mb-5">{showQuizSharePrompt.topic}</p>
                 <a
-                  href={`https://wa.me/?text=${encodeURIComponent(`I just scored ${showQuizSharePrompt.score}% on ${showQuizSharePrompt.topic} on Somo Smart! ðŸŽ‰\n\nStudy smarter â€” try it free: https://somaai.co.ke`)}`}
+                  href={`https://wa.me/?text=${encodeURIComponent(`I just scored ${showQuizSharePrompt.score}% on ${showQuizSharePrompt.topic} on Somo Smart! Done\n\nStudy smarter - try it free: https://somaai.co.ke`)}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={() => { setShowQuizSharePrompt(null); trackFunnelEvent('quiz_whatsapp_share', { score: showQuizSharePrompt.score }); }}
@@ -9265,10 +9265,10 @@ Topic or question: ${question || '[type your question here]'}`)
               {/* Content-Type Filter Tabs */}
               <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-hide -mx-2 px-2">
                 {([
-                  { id: 'ALL',        emoji: 'ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œÃƒâ€¦Ã‚Â¡', label: 'All',         activeClass: 'bg-indigo-600 text-white shadow-lg shadow-indigo-200' },
-                  { id: 'SYLLABUS',   emoji: 'ðŸ“–', label: 'Syllabus',    activeClass: 'bg-purple-600 text-white shadow-lg shadow-purple-200' },
-  { id: 'NOTES',      emoji: 'ðŸ“', label: 'Notes',       activeClass: 'bg-blue-600 text-white shadow-lg shadow-blue-200' },
-  { id: 'PAST_PAPER', emoji: 'ðŸ“„', label: 'Past Papers', activeClass: 'bg-amber-500 text-white shadow-lg shadow-amber-200' },
+                  { id: 'ALL',        emoji: '', label: 'All',         activeClass: 'bg-indigo-600 text-white shadow-lg shadow-indigo-200' },
+                  { id: 'SYLLABUS',   emoji: '', label: 'Syllabus',    activeClass: 'bg-purple-600 text-white shadow-lg shadow-purple-200' },
+  { id: 'NOTES',      emoji: '', label: 'Notes',       activeClass: 'bg-blue-600 text-white shadow-lg shadow-blue-200' },
+  { id: 'PAST_PAPER', emoji: '', label: 'Past Papers', activeClass: 'bg-amber-500 text-white shadow-lg shadow-amber-200' },
                 ] as const).map(tab => (
                   <button
                     key={tab.id}
@@ -9350,7 +9350,7 @@ Topic or question: ${question || '[type your question here]'}`)
                     }}
                     className="text-[9px] font-black text-indigo-500 hover:text-indigo-700 uppercase tracking-wider px-3 py-2 rounded-xl hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-all"
                   >
-                    Reset âœ•
+                     Reset
                   </button>
                 )}
               </div>
@@ -9571,16 +9571,16 @@ Topic or question: ${question || '[type your question here]'}`)
       // Helper to get cover illustration emoji
       const getSubjectEmoji = (subj: string) => {
         const s = String(subj || '').toLowerCase();
-        if (s.includes('math') || s.includes('calc')) return 'ðŸ“';
-        if (s.includes('bio')) return 'ðŸŒ¿';
-        if (s.includes('agri')) return 'ðŸŒ±';
-        if (s.includes('scie')) return 'ðŸ”¬';
-        if (s.includes('chem')) return 'ðŸ§ª';
-        if (s.includes('phys')) return 'âš¡';
-        if (s.includes('kisw') || s.includes('swah')) return 'ðŸ‡°ðŸ‡ª';
-        if (s.includes('cre') || s.includes('ire')) return 'ðŸ“–';
-        if (s.includes('hist') || s.includes('social')) return 'ðŸŒ';
-        return 'ðŸ“š';
+        if (s.includes('math') || s.includes('calc')) return 'Math';
+        if (s.includes('bio')) return 'Biology';
+        if (s.includes('agri')) return 'Agriculture';
+        if (s.includes('scie')) return 'Science';
+        if (s.includes('chem')) return 'Chemistry';
+        if (s.includes('phys')) return 'Physics';
+        if (s.includes('kisw') || s.includes('swah')) return 'Kiswahili';
+        if (s.includes('cre') || s.includes('ire')) return 'CRE';
+        if (s.includes('hist') || s.includes('social')) return 'History';
+        return 'Books';
       };
 
       return (
@@ -9650,7 +9650,7 @@ Topic or question: ${question || '[type your question here]'}`)
                       : 'bg-white dark:bg-slate-900 text-slate-650 dark:text-slate-400 border border-slate-200 dark:border-slate-800 hover:border-slate-300'
                     }`}
                   >
-                    {subj === 'ALL' ? 'ðŸ“š All Subjects' : `${getSubjectEmoji(subj)} ${subj}`}
+                    {subj === 'ALL' ? 'All Subjects' : `${getSubjectEmoji(subj)} ${subj}`}
                   </button>
                 ))}
               </div>
@@ -9691,7 +9691,7 @@ Topic or question: ${question || '[type your question here]'}`)
                 {syllabuses.length > 0 && (
                   <div>
                     <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
-                      <span className="p-1 rounded bg-purple-100 dark:bg-purple-900/40 text-purple-600">ðŸ“–</span>
+                      <span className="p-1 rounded bg-purple-100 dark:bg-purple-900/40 text-purple-600">Book</span>
                       Syllabuses & Strands ({syllabuses.length})
                     </h3>
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-6">
@@ -9732,7 +9732,7 @@ Topic or question: ${question || '[type your question here]'}`)
                 {pastPapers.length > 0 && (
                   <div>
                     <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
-                      <span className="p-1 rounded bg-amber-100 dark:bg-amber-900/40 text-amber-600">ðŸ“„</span>
+                      <span className="p-1 rounded bg-amber-100 dark:bg-amber-900/40 text-amber-600">PDF</span>
                       Past Revision Papers ({pastPapers.length})
                     </h3>
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-6">
@@ -9773,7 +9773,7 @@ Topic or question: ${question || '[type your question here]'}`)
                 {studyNotes.length > 0 && (
                   <div>
                     <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
-                      <span className="p-1 rounded bg-blue-100 dark:bg-blue-900/40 text-blue-600">ðŸ“</span>
+                      <span className="p-1 rounded bg-blue-100 dark:bg-blue-900/40 text-blue-600">Note</span>
                       Subject Notes & Guides ({studyNotes.length})
                     </h3>
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-6">
@@ -9845,7 +9845,7 @@ Topic or question: ${question || '[type your question here]'}`)
                       <span className="text-[7px] font-black uppercase text-center text-white/90 leading-none truncate">{libraryItemPreview.subject}</span>
                     </div>
                     <div className="flex-1 min-w-0 flex flex-col justify-center">
-                      <span className="text-[9px] font-black text-indigo-500 uppercase tracking-widest">{libraryItemPreview.subject} Â· {libraryItemPreview.grade}</span>
+                      <span className="text-[9px] font-black text-indigo-500 uppercase tracking-widest">{libraryItemPreview.subject} - {libraryItemPreview.grade}</span>
                       <h4 className="font-black text-base text-slate-950 dark:text-white truncate mt-1 leading-tight">{libraryItemPreview.title}</h4>
                       <p className="text-[11px] font-medium text-slate-550 dark:text-slate-400 leading-snug mt-1.5 line-clamp-2">{libraryItemPreview.description || 'Verified curriculum source notes and resources.'}</p>
                     </div>
@@ -9858,7 +9858,7 @@ Topic or question: ${question || '[type your question here]'}`)
                         <BookOpen className="w-4 h-4" />
                       </div>
                       <div>
-                        <h5 className="text-xs font-black text-slate-900 dark:text-white">ðŸ“– AI Study Guide</h5>
+                        <h5 className="text-xs font-black text-slate-900 dark:text-white">Book AI Study Guide</h5>
                         <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400 mt-0.5">Soma reads the PDF and rewrites it into clean, bite-sized lessons with visual emojis, bold highlights, and curriculum-aligned outlines.</p>
                       </div>
                     </div>
@@ -9868,7 +9868,7 @@ Topic or question: ${question || '[type your question here]'}`)
                         <Headphones className="w-4 h-4" />
                       </div>
                       <div>
-                        <h5 className="text-xs font-black text-slate-900 dark:text-white">ðŸŽ§ Audio Lectures</h5>
+                        <h5 className="text-xs font-black text-slate-900 dark:text-white">Audio Lectures</h5>
                         <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400 mt-0.5">Generate a narrated audio pod. Sit back and listen to Akili explain the material hands-free.</p>
                       </div>
                     </div>
@@ -9878,7 +9878,7 @@ Topic or question: ${question || '[type your question here]'}`)
                         <CheckCircle className="w-4 h-4" />
                       </div>
                       <div>
-                        <h5 className="text-xs font-black text-slate-900 dark:text-white">ðŸŽ¯ Pop Quizzes & Flashcards</h5>
+                        <h5 className="text-xs font-black text-slate-900 dark:text-white">Pop Quizzes & Flashcards</h5>
                         <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400 mt-0.5">Turn the material into interactive practice drills instantly to test your memory and lock in grades.</p>
                       </div>
                     </div>
@@ -9900,7 +9900,7 @@ Topic or question: ${question || '[type your question here]'}`)
                       }}
                       className="flex-1 py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-black transition-all text-xs shadow-lg shadow-indigo-200 dark:shadow-none"
                     >
-                      âœ¨ Read & Rewrite
+                      Sparkle Read & Rewrite
                     </button>
                   </div>
                 </motion.div>
