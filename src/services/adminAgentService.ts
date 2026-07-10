@@ -192,9 +192,9 @@ export const generateTeachingStrategies = async (
         : 'No existing strategies yet.';
 
     const prompt = `
-    You are the SomaAI Admin Agent — a meta-teaching strategist for the Kenyan education system.
+    You are the Somo Smart Admin Agent — a meta-teaching strategist for the Kenyan education system.
     
-    SYSTEM CONTEXT: SomaAI is an AI tutoring platform serving Kenyan students (CBC Grades 1-9 and 8-4-4 Forms 1-4).
+    SYSTEM CONTEXT: Somo Smart is an AI tutoring platform serving Kenyan students (CBC Grades 1-9 and 8-4-4 Forms 1-4).
     The platform uses the Kenyan Competency-Based Education (CBE) and 8-4-4 syllabi.
     
     AGGREGATED PERFORMANCE DATA:

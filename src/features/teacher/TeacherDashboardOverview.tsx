@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import { AlertCircle, ArrowRight, BookOpen, Brain, CheckCircle2, ChevronRight, ClipboardList, FileText, Library, Sparkles, Target, Users } from 'lucide-react';
 import { TeacherProfile, TutoringRequest, TeacherActivity, TeacherWallet } from '../../types';
 import { fetchTeacherWorkflowAnalytics, type TeacherWorkflowAnalyticsSummary } from '../../services/analyticsEventService';
@@ -123,8 +123,8 @@ export const TeacherDashboardOverview: React.FC<TeacherDashboardOverviewProps> =
 
   const nav = (tab: TeacherDashboardTab) => { onTrackEvent?.('teacher_dashboard_quick_action', { tab }); onNavigate(tab); };
   const sharePlan = async () => {
-    const text = ['Soma Smart Teacher Intervention Plan', `Class: ${hasContext ? selectedClass : 'Not selected'}`, `Subject: ${hasContext ? selectedSubject : 'Not selected'}`, `Focus: ${intervention.title}`, intervention.body, '', 'Actions:', ...intervention.actions.map((a, i) => `${i + 1}. ${a.label} - ${a.helper}`), '', 'Evidence:', ...intervention.evidence.map(x => `- ${x}`), 'https://somaai.co.ke'].join('\n');
-    try { if (navigator.share) { await navigator.share({ title: 'Soma Smart teacher intervention plan', text }); setShareState('shared'); } else if (navigator.clipboard?.writeText) { await navigator.clipboard.writeText(text); setShareState('copied'); } } catch { if (navigator.clipboard?.writeText) { await navigator.clipboard.writeText(text); setShareState('copied'); } }
+    const text = ['Somo Smart Teacher Intervention Plan', `Class: ${hasContext ? selectedClass : 'Not selected'}`, `Subject: ${hasContext ? selectedSubject : 'Not selected'}`, `Focus: ${intervention.title}`, intervention.body, '', 'Actions:', ...intervention.actions.map((a, i) => `${i + 1}. ${a.label} - ${a.helper}`), '', 'Evidence:', ...intervention.evidence.map(x => `- ${x}`), 'https://somaai.co.ke'].join('\n');
+    try { if (navigator.share) { await navigator.share({ title: 'Somo Smart teacher intervention plan', text }); setShareState('shared'); } else if (navigator.clipboard?.writeText) { await navigator.clipboard.writeText(text); setShareState('copied'); } } catch { if (navigator.clipboard?.writeText) { await navigator.clipboard.writeText(text); setShareState('copied'); } }
   };
 
   return <div className="space-y-6">
@@ -222,6 +222,3 @@ export const TeacherDashboardOverview: React.FC<TeacherDashboardOverviewProps> =
     </div>
   </div>;
 };
-
-
-

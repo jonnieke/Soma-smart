@@ -12,3 +12,6 @@ entrypoint = "./functions/recover-notes/index.ts"
 
 [functions.gemini-proxy]
 verify_jwt = false
+
+[functions.search-knowledge]
+verify_jwt = false

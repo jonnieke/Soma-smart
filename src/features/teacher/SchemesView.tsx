@@ -304,7 +304,7 @@ export const SchemesView: React.FC<SchemesViewProps> = ({ onBack, subject, grade
 
     const handleShare = () => {
         if (!generatedScheme) return;
-        const text = `Habari! I just generated a new KICD CBC compliant Scheme of Work for ${subject} (${grade}) - ${term}, ${year} using Soma Smart! 🚀 Check it out here: https://somaai.co.ke/teacher`;
+        const text = `Habari! I just generated a new KICD CBC compliant Scheme of Work for ${subject} (${grade}) - ${term}, ${year} using Somo Smart! 🚀 Check it out here: https://somaai.co.ke/teacher`;
         const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
         window.open(url, '_blank');
     };
@@ -502,4 +502,3 @@ export const SchemesView: React.FC<SchemesViewProps> = ({ onBack, subject, grade
         </div>
     );
 };
-

@@ -88,7 +88,7 @@ export const TeacherLanding: React.FC<TeacherLandingProps> = ({ onLogin, onRegis
                             </h1>
 
                             <p className="text-lg sm:text-xl text-blue-100 mb-8 sm:mb-10 max-w-xl mx-auto lg:mx-0 leading-relaxed font-medium">
-                                Plan, teach, mark, and follow up without bouncing between tools. Soma Smart keeps the workflow moving.
+                                Plan, teach, mark, and follow up without bouncing between tools. Somo Smart keeps the workflow moving.
                             </p>
 
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-8 text-left max-w-xl mx-auto lg:mx-0">
@@ -257,7 +257,7 @@ export const TeacherLanding: React.FC<TeacherLandingProps> = ({ onLogin, onRegis
             <div className="bg-white py-24 relative z-10">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="text-center mb-16">
-                        <h2 className="text-3xl font-black text-slate-900 mb-4">Why Teachers Love Soma Smart</h2>
+                        <h2 className="text-3xl font-black text-slate-900 mb-4">Why Teachers Love Somo Smart</h2>
                         <div className="w-24 h-1.5 bg-blue-600 mx-auto rounded-full"></div>
                     </div>
 
@@ -284,8 +284,3 @@ export const TeacherLanding: React.FC<TeacherLandingProps> = ({ onLogin, onRegis
         </div>
     );
 };
-
-
-
-
-

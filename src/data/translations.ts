@@ -127,7 +127,7 @@ export const translations = {
             actions: {
                 scan: "Scan Homework",
                 audio: "Listen to Lesson",
-                topic: "Ask Somo Smart",
+                topic: "Ask Akili",
                 library: "My Library",
                 pastPapers: "CBC & KCSE Revision",
                 lessonRecap: "Lesson Recap",

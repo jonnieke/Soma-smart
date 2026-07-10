@@ -743,6 +743,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                 userName={studentProfile?.name || teacherProfile?.name}
                 onStartLearning={() => handleRoleSelect(UserRole.LEARNER)}
                 onAskQuestion={(question) => handleLearnerQuickStart('SMART_TUTOR', 'ask_akili', question)}
+                onLearnerShortcut={handleLearnerQuickStart}
                 onTeacher={() => handleRoleSelect(UserRole.TEACHER)}
                 onParent={() => handleRoleSelect(UserRole.PARENT)}
                 onLibrary={handleLibraryAccess}
@@ -2523,5 +2524,3 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
         </div>
     );
 };
-
-

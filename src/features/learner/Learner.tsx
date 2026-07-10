@@ -30,14 +30,16 @@ import {
 import { translations } from '../../data/translations';
 import { QuizReviewSummary, QuizRunner } from './QuizRunner';
 import { ThemeToggle } from '../../components/ThemeToggle';
-import { DashboardSidebar, SidebarTab } from '../../components/DashboardSidebar';
+import { SidebarTab } from '../../components/DashboardSidebar';
+import { LearnerHome } from './home/LearnerHome';
+import { LearnerSidebar } from './home/LearnerSidebar';
 import { classroomService, StudentClassroomSummary } from '../../services/classroomService';
 import { getBulkMasteryMemories } from '../../services/learnerMemoryService';
 import { getLearnerCtaVariant } from '../../utils/abExperiments';
 import { QuestRoadmap } from './QuestRoadmap';
 import { LearningPathView } from './LearningPathView';
 import { safeImport } from '../../utils/safeImport';
-import { PlanLimitError, getPlanLimit, getPlanUsage, getCreditPackExpiry } from '../../services/planLimitService';
+import { PlanLimitError, formatLearningCredits, getPlanLimit, getPlanUsage, getCreditPackExpiry } from '../../services/planLimitService';
 import { pesapalService } from '../../services/pesapalService';
 import { supabase } from '../../lib/supabase';
 import { trackAnalyticsEvent } from '../../services/analyticsEventService';
@@ -98,6 +100,139 @@ const formatUsageRemaining = (remaining: number, unit: 'calls' | 'characters') =
     return `${remaining} chars`;
   }
   return `${remaining} left`;
+};
+
+
+
+type ContinueLearningSnapshot = {
+  topic: string;
+  description: string;
+  summaryPoints: string[];
+  progress: number;
+};
+
+const cleanAcademicText = (value: unknown) => {
+  if (typeof value !== "string") return "";
+  return value
+    .replace(String.fromCharCode(0), " ")
+    .replace(/\s+/g, " ")
+    .replace(/[{}]/g, "")
+    .trim();
+};
+
+const takeAcademicLead = (value: unknown, maxSentences = 2) => {
+  const text = cleanAcademicText(value);
+  if (!text) return "";
+  const sentences = text.match(/[^.!?]+[.!?]?/g)?.map((part) => part.trim()).filter(Boolean) || [text];
+  return sentences.slice(0, maxSentences).join(" ").replace(/\s+/g, " ").trim();
+};
+
+const extractReadablePoints = (value: unknown): string[] => {
+  if (Array.isArray(value)) {
+    return value
+      .map((item) => {
+        if (typeof item === "string") return cleanAcademicText(item);
+        if (item && typeof item === "object") {
+          const record = item as Record<string, unknown>;
+          return cleanAcademicText(record.point || record.title || record.details || record.text);
+        }
+        return "";
+      })
+      .filter(Boolean)
+      .slice(0, 3);
+  }
+
+  if (typeof value === "string") {
+    return value
+      .split(/\r?\n|\u2022/)
+      .map((part) => cleanAcademicText(part))
+      .filter(Boolean)
+      .slice(0, 3);
+  }
+
+  return [];
+};
+
+const buildContinueLearningSnapshot = (activity?: LearnerActivity, fallbackTopic = "Photosynthesis"): ContinueLearningSnapshot => {
+  const topic = cleanAcademicText(activity?.topic) || fallbackTopic;
+  const fallbackDescription = "You were learning about " + topic.toLowerCase() + ".";
+  let parsed: Record<string, unknown> | null = null;
+
+  if (typeof activity?.details === "string" && activity.details.trim()) {
+    try {
+      const decoded = JSON.parse(activity.details);
+      if (decoded && typeof decoded === "object") {
+        parsed = decoded as Record<string, unknown>;
+      }
+    } catch {
+      parsed = null;
+    }
+  }
+
+  const explanationRecord = parsed?.explanation && typeof parsed.explanation === "object"
+    ? parsed.explanation as Record<string, unknown>
+    : null;
+
+  const descriptionCandidates = [
+    explanationRecord?.explanation,
+    parsed?.explanation,
+    parsed?.description,
+    parsed?.summaryText,
+    parsed?.text,
+    activity?.details,
+  ];
+
+  let description = "";
+  for (const candidate of descriptionCandidates) {
+    const lead = takeAcademicLead(candidate, 2);
+    if (lead) {
+      description = lead;
+      break;
+    }
+  }
+
+  if (!description) {
+    description = fallbackDescription;
+  }
+
+  const summaryCandidates = [
+    explanationRecord?.summaryPoints,
+    parsed?.summaryPoints,
+    parsed?.summary,
+    parsed?.recapNodes,
+    explanationRecord?.recapNodes,
+  ];
+
+  let summaryPoints: string[] = [];
+  for (const candidate of summaryCandidates) {
+    summaryPoints = extractReadablePoints(candidate);
+    if (summaryPoints.length > 0) break;
+  }
+
+  if (summaryPoints.length === 0) {
+    summaryPoints = [description];
+  }
+
+  const progress = typeof activity?.score === "number"
+    ? Math.max(10, Math.min(100, activity.score))
+    : activity ? 70 : 35;
+
+  return {
+    topic,
+    description,
+    summaryPoints: summaryPoints.slice(0, 3),
+    progress,
+  };
+};
+
+const inferSubjectFromTopic = (topic?: string): string => {
+  const lower = (topic || '').toLowerCase();
+  if (/(math|equation|algebra|number|fraction|geometry)/.test(lower)) return 'Mathematics';
+  if (/(english|grammar|composition|reading|literature)/.test(lower)) return 'English';
+  if (/(kiswahili|swahili|translation)/.test(lower)) return 'Kiswahili';
+  if (/(photosynthesis|plant|biology|science|leaf|chlorophyll|chemistry|physics)/.test(lower)) return 'Science';
+  if (/(social|history|geography|civics|cre)/.test(lower)) return 'Social Studies';
+  return '';
 };
 
 // ------ Branded lazy-load skeleton ------
@@ -4346,1668 +4481,54 @@ ${explanation.explanation}
     }
 
     if (mode === 'MENU') {
-      const hour = new Date().getHours();
-      const getGreetingWord = () => hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
-      const recentTopics = [...new Set(history.map((h: any) => h.topic))].filter(Boolean).slice(0, 3) as string[];
-      const hasHistory = history.length > 0;
-      const hasProgress = totalXP > 0;
-      const freeUsesLeft = Math.max(0, 5 - usageCount);
-      const latestStudy = history.find((h: any) => h.type === 'EXPLANATION' || h.type === 'STUDY');
-      const latestQuiz = history.find((h: any) => h.type === 'QUIZ');
-      const hasStudiedTopic = Boolean(latestStudy?.topic);
-      const hasQuizAttempt = Boolean(latestQuiz);
-      const hasScoreGain = typeof latestQuiz?.score === 'number' && latestQuiz.score >= 0;
-      const quizAttempts = history.filter((h: any) => h.type === 'QUIZ').length;
-      const scoredQuizzes = history.filter((h: any) => h.type === 'QUIZ' && typeof h.score === 'number') as Array<{ score: number }>;
-      const averageQuizScore = scoredQuizzes.length
-        ? Math.round(scoredQuizzes.reduce((sum, item) => sum + item.score, 0) / scoredQuizzes.length)
-        : null;
-      const effectivePlan = isPro ? subscriptionPlan : 'FREE';
-      const planMeters = [
-        { feature: 'ai_generation', label: 'Ask Akili', icon: <Sparkles className="w-4 h-4" />, unit: 'calls' as const },
-        { feature: 'exam_guru', label: 'Exam Guru', icon: <ClipboardList className="w-4 h-4" />, unit: 'calls' as const },
-        { feature: 'exam_marking', label: 'Smart Marking', icon: <PenTool className="w-4 h-4" />, unit: 'calls' as const },
-        { feature: 'listen_and_learn', label: 'Listen & Learn', icon: <Mic className="w-4 h-4" />, unit: 'calls' as const },
-        { feature: 'listen_and_learn_voice', label: 'Voice Lessons', icon: <Headphones className="w-4 h-4" />, unit: 'characters' as const },
-      ].map(item => {
-        const limit = getPlanLimit(item.feature, effectivePlan);
-        const used = getPlanUsage(item.feature, effectivePlan);
-        const remaining = Math.max(0, limit - used);
-        return {
-          ...item,
-          limit,
-          used,
-          remaining,
-          pct: limit > 0 ? Math.min(100, Math.round((used / limit) * 100)) : 100
-        };
-      });
-      const dueFlashcardsCountForNext = dueForReview?.filter(i => i.question && i.answer).length || 0;
-      const focusTopic = (lastQuizReview?.missedQuestions.length && explanation?.topic)
-        ? explanation.topic
-        : (weakTopics?.[0] || latestQuiz?.topic || latestStudy?.topic || recentTopics[0] || 'today\'s topic');
-      const nextStep = lastQuizReview?.missedQuestions.length
-        ? {
-            label: 'Repair last quiz misses',
-            title: `Fix ${lastQuizReview.missedQuestions.length} missed question${lastQuizReview.missedQuestions.length === 1 ? '' : 's'}`,
-            body: 'Do a correction-first drill before moving to a new topic.',
-            cta: 'Start Repair Drill',
-            action: () => {
-              const repairPrompt = `Create a correction-first repair drill on ${focusTopic}. Start with the key idea, then give 5 practice questions. Do not show answers until I try.`;
-              setPromptText(repairPrompt);
-              handlePromptSubmit(repairPrompt);
-            }
-          }
-        : weakTopics?.length
-        ? {
-            label: 'Weak topic detected',
-            title: `Strengthen ${focusTopic}`,
-            body: 'Akili will explain the idea, test you, then help repair mistakes.',
-            cta: 'Start Weakness Drill',
-            action: () => {
-              const weakPrompt = `Help me improve in ${focusTopic}. Explain the core idea briefly, then generate a 5-question quiz and mark my answers after I try.`;
-              setPromptText(weakPrompt);
-              handlePromptSubmit(weakPrompt);
-            }
-          }
-        : dueFlashcardsCountForNext > 0
-        ? {
-            label: 'Memory review due',
-            title: `${dueFlashcardsCountForNext} recall card${dueFlashcardsCountForNext === 1 ? '' : 's'} due`,
-            body: 'Reviewing before you forget is the fastest way to improve exam memory.',
-            cta: 'Review Cards',
-            action: () => {
-              setPracticeMode('due');
-              setCurrentCardIndex(0);
-              setIsFlipped(false);
-              setReviewComplete(false);
-              setMode('FLASHCARDS');
-            }
-          }
-        : hasQuizAttempt
-        ? {
-            label: 'Beat your last score',
-            title: `Last quiz: ${typeof latestQuiz?.score === 'number' ? `${latestQuiz.score}%` : 'completed'}`,
-            body: `Take a focused retry on ${focusTopic} and aim for a better score.`,
-            cta: 'Try Again',
-            action: () => {
-              const retryPrompt = `Generate a fresh 5-question quiz on ${focusTopic}. Make it exam-style and wait for my answers before marking.`;
-              setPromptText(retryPrompt);
-              handlePromptSubmit(retryPrompt);
-            }
-          }
-        : {
-            label: 'First performance loop',
-            title: 'Pick one topic, learn it, then test yourself',
-            body: 'Start from library notes or a past paper question, then ask Akili to quiz you.',
-            cta: 'Open Library',
-            action: () => handleSidebarTabChange('RESOURCES')
-          };
-      const learningModePrompts = [
-        {
-          label: 'Hint First',
-          body: 'Get guidance without giving away the answer.',
-          buildPrompt: (question: string) => buildSyllabusPromptContext(`Act like a tutor, not a lecturer. Give me one hint first, ask me to try, then reveal the next step only after I respond.
-
-Do not explain what a quiz, exam, or lesson is.
-
-My question: ${question || '[type or paste your question here]'}`)
-        },
-        {
-          label: 'Mark My Working',
-          body: 'Paste your attempt and get corrections.',
-          buildPrompt: (question: string) => buildSyllabusPromptContext(`Mark my working like a KNEC examiner. Identify the first mistake, explain why it is wrong, and give me one similar practice question.
-
-Do not give a lesson about what marking is. Go straight to the correction.
-
-My working: ${question || '[paste your working here]'}`)
-        },
-        {
-          label: 'Quiz Me',
-          body: 'Turn this topic into a self-test.',
-          buildPrompt: (question: string) => buildSyllabusPromptContext(`Create a 5-question quiz on this topic only. Do not explain what a quiz is, what a test is, or add an introduction.
-
-Ask one question at a time, wait for my answer, then mark it and explain the correction.
-
-Topic: ${question || currentDocument?.title || '[type the topic here]'}`)
-        },
-        {
-          label: 'Past Paper Coach',
-          body: 'Work through exam questions step by step.',
-          buildPrompt: (question: string) => buildSyllabusPromptContext(`Help me solve this past paper question like an exam coach. First identify the topic and command word, then guide me through the method.
-
-Do not explain what a past paper is. Do not give the final answer until I try.
-
-Question: ${question || '[paste the past paper question here]'}`)
-        },
-        {
-          label: 'Explain Simply',
-          body: 'Break it down for a stuck learner.',
-          buildPrompt: (question: string) => buildSyllabusPromptContext(`Give a short, direct answer first in simple language for a Kenyan learner. Then add one short example and one check question. If I ask for more detail, expand after the answer. Do not define the learning tool itself.
-
-Topic or question: ${question || '[type what you do not understand here]'}`)
-        },
-        {
-          label: 'Swahili Support',
-          body: 'Use simple English with Kiswahili help.',
-          buildPrompt: (question: string) => buildSyllabusPromptContext(`Give a short, direct answer first using simple English, and add short Kiswahili support for hard words only if needed. Then ask me to explain it back in my own words. If I need more, expand after the answer.
-
-Do not add generic tutorial text.
-
-Topic or question: ${question || '[type your question here]'}`)
-        }
-      ];
+      const latestLearningActivity = history.find((item: LearnerActivity) => item.type === 'EXPLANATION' || item.type === 'STUDY');
+      const latestQuizActivity = history.find((item: LearnerActivity) => item.type === 'QUIZ');
+      const latestLearningSnapshot = buildContinueLearningSnapshot(latestLearningActivity, latestQuizActivity?.topic || 'Photosynthesis');
+      const featuredSubject = inferSubjectFromTopic(latestLearningSnapshot.topic || latestQuizActivity?.topic || latestLearningActivity?.topic);
+      const recommendedHomeTopic = weakTopics?.[0]
+        || (latestQuizActivity?.score !== undefined && latestQuizActivity.score < 70 ? latestQuizActivity.topic : 'Linear Equations');
+      const sessionsLeft = Math.max(0, 5 - usageCount);
 
       return (
-        <div className="min-h-screen bg-slate-50 dark:bg-slate-950 font-sans text-slate-800 dark:text-slate-100 w-full transition-colors duration-300">
-
-          {/* TOP BAR */}
-          <div className="sticky top-0 z-50 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-b border-slate-200/70 dark:border-slate-800/70">
-            <div className="max-w-3xl mx-auto px-4 h-14 flex items-center justify-between">
-              <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/')}>
-                <img src={logoImg} alt="Somo Smart" width={64} height={64} className="h-8 w-auto object-contain" />
-              </div>
-              <div className="flex items-center gap-2">
-                <ThemeToggle />
-                {!isRegistered ? (
-                  <>
-                    <button
-                      onClick={() => navigate('/parent')}
-                      className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 text-xs font-black text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 rounded-xl transition-colors"
-                    >
-                      <Users className="w-3.5 h-3.5" />
-                      Parent
-                    </button>
-                    <button
-                      onClick={() => setShowRegistration(true)}
-                      className="hidden sm:block px-4 py-1.5 text-sm font-bold text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
-                    >
-                      Register
-                    </button>
-                    <button
-                      onClick={() => setShowLogin(true)}
-                      className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all shadow-sm"
-                    >
-                      Log In
-                    </button>
-                  </>
-                ) : (
-                  <button
-                    onClick={() => setMode('PROFILE')}
-                    className="w-9 h-9 bg-gradient-to-br from-indigo-500 to-blue-600 rounded-full flex items-center justify-center text-white font-black text-sm shadow-md hover:scale-105 transition-transform"
-                    aria-label="Open profile"
-                  >
-                    {profile?.name?.charAt(0) || 'S'}
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* SCROLL CONTENT */}
-          <div className="max-w-5xl mx-auto px-4 pb-32 pt-6">
-            <AnimatePresence>
-              {joinedClassNotice && (
-                <motion.div
-                  initial={{ opacity: 0, y: -8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -8 }}
-                  className="mb-6 bg-emerald-50 dark:bg-emerald-950/40 border-2 border-emerald-200 dark:border-emerald-900 rounded-2xl p-4 flex items-start gap-3"
-                >
-                  <CheckCircle className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
-                  <div className="flex-1">
-                    <p className="text-sm font-black text-emerald-900 dark:text-emerald-100">You joined {joinedClassNotice}</p>
-                    <p className="text-xs font-bold text-emerald-800/80 dark:text-emerald-200/80 mt-1">
-                      Your teacher can now see you in the classroom roster.
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => setJoinedClassNotice(null)}
-                    className="p-1 rounded-lg text-emerald-700 hover:bg-emerald-100 dark:text-emerald-300 dark:hover:bg-emerald-900/60 transition-colors"
-                    aria-label="Dismiss class joined notice"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-
-            {/* WELCOME CARD - newly registered users on first login (registered + zero history) */}
-            {isRegistered && !hasHistory && (
-              <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="mb-6 rounded-3xl bg-gradient-to-br from-emerald-600 via-teal-600 to-blue-700 p-5 sm:p-6 text-white shadow-lg shadow-emerald-500/20"
-              >
-                <div className="flex items-start gap-4">
-                  <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center shrink-0 text-xl font-black">AK</div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-200 mb-1">
-                      Welcome, {profile?.name?.split(' ')[0] || 'Learner'}!
-                    </p>
-                    <p className="font-bold text-base mb-4">Start with Ask Akili for help, or open the Library for notes and papers.</p>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      <button
-                        onClick={() => setMode('SCAN_EXPLAIN')}
-                        className="rounded-xl bg-white text-emerald-700 hover:bg-emerald-50 px-3 py-2.5 text-left font-black text-sm transition-colors"
-                      >
-                        Ask Akili
-                        <span className="block text-[10px] font-bold text-emerald-500 mt-0.5">Type, scan, or talk</span>
-                      </button>
-                      <button
-                        onClick={() => handleSidebarTabChange('RESOURCES')}
-                        className="rounded-xl bg-white/15 hover:bg-white/25 border border-white/20 px-3 py-2.5 text-left font-black text-sm transition-colors"
-                      >
-                        Browse Library
-                        <span className="block text-[10px] font-bold text-emerald-100 mt-0.5">Notes and past papers</span>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-            )}
-
-            {/* START HERE - Onboarding card for brand-new users (zero history, not registered) */}
-            {!isRegistered && !hasHistory && (
-              <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="hidden"
-              >
-                <div className="flex items-start gap-4">
-                  <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center shrink-0 text-xl">Start</div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-200 mb-1">Welcome to Somo Smart!</p>
-                  <p className="font-bold text-base mb-3">Start with these 3 steps - no signup needed</p>
-                    <div className="space-y-2">
-                      {[
-                      { step: "1", label: "Type a question below or scan your textbook", icon: "Note" },
-                      { step: "2", label: "Get a step-by-step explanation instantly", icon: "Fast" },
-                        { step: "3", label: "Test yourself with a quick quiz on the topic", icon: "Check" },
-                      ].map(({ step, label, icon }) => (
-                        <div key={step} className="flex items-center gap-2.5 text-sm font-medium text-white/90">
-                          <span className="text-base">{icon}</span>
-                          <span>{label}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-            )}
-
-            {/* FREE USAGE METER - visible for all non-pro, non-registered users */}
-            {!isRegistered && !hasHistory && (
-              <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="hidden"
-              >
-                <div className="flex flex-col lg:flex-row lg:items-center gap-5">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-200 mb-2">Free trial: solve one school problem now</p>
-                    <h2 className="text-2xl sm:text-3xl font-black tracking-tight leading-tight mb-2">Stuck on homework, revision, or past papers?</h2>
-                    <p className="text-sm font-semibold text-indigo-100 leading-relaxed max-w-2xl">
-                      Ask Akili for hints, a worked method, and a quick practice check. No signup needed to start.
-                    </p>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-1 gap-2 lg:w-56">
-                    <button
-                      onClick={() => setMode('SCAN_EXPLAIN')}
-                      className="rounded-2xl bg-white text-indigo-700 hover:bg-indigo-50 px-4 py-3 text-left font-black text-sm transition-colors"
-                    >
-                      Ask a Question
-                      <span className="block text-[10px] font-bold text-indigo-500 mt-0.5">Type or scan work</span>
-                    </button>
-                    <button
-                      onClick={() => handleSidebarTabChange('RESOURCES')}
-                      className="rounded-2xl bg-white/12 hover:bg-white/20 border border-white/15 px-4 py-3 text-left font-black text-sm transition-colors"
-                    >
-                      Open Library
-                      <span className="block text-[10px] font-bold text-indigo-100 mt-0.5">Notes and past papers</span>
-                    </button>
-                    <button
-                      onClick={() => handleSidebarTabChange('SUBJECTS')}
-                      className="rounded-2xl bg-white/12 hover:bg-white/20 border border-white/15 px-4 py-3 text-left font-black text-sm transition-colors"
-                    >
-                      Exam Prep
-                      <span className="block text-[10px] font-bold text-indigo-100 mt-0.5">Exam-style drills</span>
-                    </button>
-                  </div>
-                </div>
-              </motion.div>
-            )}
-
-            <div className="mb-8">
-              <div className="rounded-3xl border border-indigo-100/80 bg-white/90 p-4 shadow-sm shadow-indigo-50 dark:border-slate-800 dark:bg-slate-900/70">
-                <p className="text-[10px] font-black uppercase tracking-[0.18em] text-indigo-500 mb-3">Usage & Credits</p>
-
-                {/* Credit balance display */}
-                {isRegistered && learningCredits > 0 ? (
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="w-10 h-10 rounded-2xl bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center shrink-0">
-                      <span className="text-lg">Credits</span>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xl font-black text-slate-900 dark:text-white leading-none">{formatLearningCredits(learningCredits)} <span className="text-sm font-bold text-slate-500">credits</span></p>
-                      <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400 mt-0.5">Credits top up your wallet for heavier AI actions after the plan limit</p>
-                    </div>
-                  </div>
-                ) : (
-                  <h2 className="text-base font-black text-slate-900 dark:text-white mb-1">
-                    {!isRegistered
-                      ? 'Log in to view your credits'
-                      : freeUsesLeft > 0
-                        ? `${freeUsesLeft} free answers left today`
-                        : 'Trial complete - choose a plan or top up credits'}
-                  </h2>
-                )}
-
-                {/* How the wallet works */}
-                <div className="bg-slate-50 dark:bg-slate-800/60 rounded-2xl p-3 mb-3 border border-slate-100 dark:border-slate-700/50">
-                  <p className="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-2">How the wallet works</p>
-                  <div className="space-y-1.5">
-                    <div className="flex items-center gap-2 text-xs font-semibold text-slate-600 dark:text-slate-300">
-                      <span className="w-5 h-5 rounded-full bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center text-[10px]">Monthly</span>
-                      <span>Monthly plan - auto-topped up each billing cycle</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-xs font-semibold text-slate-600 dark:text-slate-300">
-                      <span className="w-5 h-5 rounded-full bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center text-[10px]">Pack</span>
-                      <span>Credit packs - buy any time (KES 20 / 50 / 100)</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-xs font-semibold text-slate-600 dark:text-slate-300">
-                      <span className="w-5 h-5 rounded-full bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center text-[10px]">Bonus</span>
-                      <span>Bonus credits - granted by your school or Soma team</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Usage note */}
-                <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 mb-3">
-                  Credits are used when your daily plan limit is reached. Grounded answers, marking, deep analysis, and voice each cost 1 credit.
-                </p>
-
-                {/* Progress bar */}
-                <div className="h-2 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden mb-3">
-                  <div
-                    className={`h-full rounded-full transition-all ${learningCredits <= 0 ? 'bg-slate-400' : learningCredits < 10 ? 'bg-amber-500' : 'bg-emerald-500'}`}
-                    style={{ width: `${creditMeterPct}%` }}
-                  />
-                </div>
-
-                {/* Actions */}
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    onClick={handlePricingNavigation}
-                    className="rounded-xl bg-indigo-600 px-3 py-2 text-[11px] font-black uppercase tracking-wider text-white hover:bg-indigo-700"
-                  >
-                    Manage Plans
-                  </button>
-                  {isRegistered && (
-                    <button
-                      onClick={async () => {
-                        setLoading(true);
-                        setLoadingText('Checking credit payments...');
-                        const restored = await restoreMissingCreditWallet();
-                        setLoading(false);
-                        if (!restored) {
-                          setError({
-                            title: 'No Credit Payment Found',
-                            message: 'We could not find a completed credit-pack payment for this learner yet. If you just paid, wait a moment and try again.'
-                          });
-                        }
-                      }}
-                      className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2 text-[11px] font-bold text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
-                    >
-                      Paid but credits missing?
-                    </button>
-                  )}
-                </div>
-              </div>
-
-
-            {/* HEADER METRICS */}
-            <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 gap-4">
-              <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <h1 className="text-2xl md:text-3xl font-bold text-slate-900 dark:text-white tracking-tight">
-                    {cloudMemoryRow?.total_sessions > 1 || history.length > 0
-                      ? `${getGreetingWord()}, ${profile?.name?.split(' ')[0] || 'Learner'}!`
-                      : `Hey ${profile?.name?.split(' ')[0] || 'there'}!`}
-                  </h1>
-                </div>
-                <div className="flex items-center gap-2 mt-1 flex-wrap">
-                  {cloudMemoryRow?.last_topic || history[0]?.topic ? (
-                    <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
-                      Last studied: <span className="font-bold text-indigo-600 dark:text-indigo-400">{cloudMemoryRow?.last_topic || history[0]?.topic}</span>
-                      {streak > 1 && <span className="ml-2 inline-flex items-center gap-1.5"><span className="text-slate-400">|</span><Flame className="w-3.5 h-3.5 text-orange-500" /> <span>{streak}-day streak!</span></span>}
-                    </p>
-                  ) : (
-                    <p className="text-sm font-medium text-slate-500 dark:text-slate-400">{"Let's keep learning and growing today."}</p>
-                  )}
-                  <button
-                    onClick={() => { /* open level picker in sidebar */ setSidebarOpen(true); }}
-                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider transition-all hover:opacity-80 ${
-                      educationLevel === 'JUNIOR' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' :
-                      educationLevel === 'CAMPUS' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400' :
-                      'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
-                    }`}
-                  >
-                    <span>{educationLevel === 'JUNIOR' ? <BookOpen className="w-3.5 h-3.5" /> : educationLevel === 'CAMPUS' ? <GraduationCap className="w-3.5 h-3.5" /> : <School className="w-3.5 h-3.5" />}</span>
-                    {educationLevel === 'JUNIOR' ? 'Junior' : educationLevel === 'CAMPUS' ? 'Campus' : 'Senior'}
-                  </button>
-                </div>
-              </div>
-              
-              <AnimatePresence>
-              </AnimatePresence>
-
-              <div className="flex items-center gap-2 sm:gap-3 w-full md:w-auto">
-                {/* Day Streak */}
-                <div className="flex-1 md:flex-none flex items-center gap-2 sm:gap-3 bg-white dark:bg-slate-900 px-3 sm:px-4 py-2 sm:py-2.5 rounded-2xl shadow-sm border-2 border-slate-300 dark:border-slate-800">
-                  <div className="text-orange-500 shrink-0"><Flame className="w-4 h-4 sm:w-5 sm:h-5 fill-orange-500 stroke-orange-500" /></div>
-                  <div>
-                    <div className="text-xs sm:text-sm font-bold text-slate-800 dark:text-white leading-none">{streak}</div>
-                    <div className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Streak</div>
-                  </div>
-                </div>
-                {/* Points */}
-                <div className="flex-1 md:flex-none flex items-center gap-2 sm:gap-3 bg-white dark:bg-slate-900 px-3 sm:px-4 py-2 sm:py-2.5 rounded-2xl shadow-sm border-2 border-slate-300 dark:border-slate-800">
-                  <div className="text-amber-500 shrink-0"><Star className="w-4 h-4 sm:w-5 sm:h-5 fill-amber-500" /></div>
-                  <div>
-                    <div className="text-xs sm:text-sm font-bold text-slate-800 dark:text-white leading-none">{totalXP}</div>
-                    <div className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Points</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* STREAK NUDGE - only when learner has a streak but hasn't studied today */}
-            {(() => {
-              const today = new Date().toLocaleDateString();
-              const studiedToday = history.some((h: any) => h.date === today);
-              if (streak > 0 && !studiedToday) {
-                return (
-                  <div className="flex items-center justify-between gap-3 bg-amber-50 dark:bg-amber-900/20 border-2 border-amber-200 dark:border-amber-800 rounded-2xl px-4 py-3">
-                    <div className="flex items-center gap-3">
-                      <span className="text-2xl">Hot</span>
-                      <div>
-                        <p className="text-sm font-black text-amber-900 dark:text-amber-100">Keep your {streak}-day streak alive!</p>
-                        <p className="text-xs font-bold text-amber-700 dark:text-amber-300">{"You haven't studied yet today. One topic is all it takes."}</p>
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => {
-                        const nudgePrompt = weakTopics?.[0]
-                          ? `Quick 5-minute revision on ${weakTopics[0]}. Focus on the one key idea I need to remember.`
-                          : `Quick 5-minute revision on ${latestStudy?.topic || 'today\'s key topic'}. Focus on the one key idea.`;
-                        setPromptText(nudgePrompt);
-                        handlePromptSubmit(nudgePrompt);
-                      }}
-                      className="shrink-0 bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-xl text-xs font-black transition-colors whitespace-nowrap"
-                    >
-                      Study Now
-                    </button>
-                  </div>
-                );
-              }
-              return null;
-            })()}
-
-            {/* EXAM COUNTDOWN */}
-            {(() => {
-              const grade = studentProfile?.grade || '';
-              const now = new Date();
-              const year = now.getFullYear();
-              // KCSE: last week of Oct / KPSEA: last week of Oct
-              const exams = [
-                { name: 'KCSE', date: new Date(year, 9, 27), grades: ['Form 4', 'Grade 12', 'S4', '12'] },
-                { name: 'KPSEA', date: new Date(year, 9, 20), grades: ['Grade 6', 'Standard 6', '6', 'P6'] },
-              ];
-              const relevant = exams.find(e =>
-                !grade || e.grades.some(g => grade.toLowerCase().includes(g.toLowerCase()))
-              ) || (grade ? null : exams[0]);
-              if (!relevant) return null;
-              const diffMs = relevant.date.getTime() - now.getTime();
-              const days = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
-              if (days < 0 || days > 200) return null;
-              const urgency = days <= 14 ? 'bg-rose-50 border-rose-300 text-rose-900' : days <= 60 ? 'bg-amber-50 border-amber-200 text-amber-900' : 'bg-blue-50 border-blue-200 text-blue-900';
-              const emoji = days <= 14 ? 'Alert' : days <= 60 ? 'Soon' : 'Date';
-              return (
-                <div className={`flex items-center justify-between gap-3 border-2 rounded-2xl px-4 py-3 ${urgency}`}>
-                  <div className="flex items-center gap-3">
-                    <span className="text-2xl">{emoji}</span>
-                    <div>
-                      <p className="text-sm font-black">{days} days to {relevant.name} {year}</p>
-                      <p className="text-xs font-bold opacity-70">
-              {days <= 14 ? 'Final push - every session counts!' : days <= 60 ? 'Exam season is near. Stay consistent.' : 'Start building your revision habit now.'}
-                      </p>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => {
-                      const prompt = `Give me a ${relevant.name} exam revision plan. I have ${days} days left. My weak topics are: ${(weakTopics as string[])?.slice(0, 3).join(', ') || 'general revision needed'}.`;
-                      setPromptText(prompt);
-                      handlePromptSubmit(prompt);
-                    }}
-                    className="shrink-0 bg-white/80 hover:bg-white border border-current/20 px-3 py-2 rounded-xl text-xs font-black transition-colors whitespace-nowrap"
-                  >
-                    Make Plan
-                  </button>
-                </div>
-              );
-            })()}
-
-            {/* STUDY TIMER */}
-            {(() => {
-              const mins = Math.floor(timerSeconds / 60);
-              const secs = timerSeconds % 60;
-              const pct = Math.round(((25 * 60 - timerSeconds) / (25 * 60)) * 100);
-              if (timerDone) return (
-                <div className="flex items-center justify-between gap-3 bg-emerald-50 dark:bg-emerald-900/20 border-2 border-emerald-300 dark:border-emerald-700 rounded-2xl px-4 py-3">
-                  <div className="flex items-center gap-3">
-                    <span className="text-2xl">Done</span>
-                    <div>
-                      <p className="text-sm font-black text-emerald-900 dark:text-emerald-100">25 minutes done! Great focus.</p>
-                      <p className="text-xs font-bold text-emerald-700 dark:text-emerald-300">Lock it in with a quick quiz.</p>
-                    </div>
-                  </div>
-                  <div className="flex gap-2">
-                    <button onClick={() => { setTimerSeconds(25 * 60); setTimerDone(false); }} className="text-xs font-bold text-emerald-600 hover:text-emerald-800 px-2 py-1 rounded-lg hover:bg-emerald-100 transition-colors">Reset</button>
-                    <button onClick={() => { const p = `Quick 5-question quiz on ${weakTopics?.[0] || latestStudy?.topic || 'my last topic'}.`; setPromptText(p); handlePromptSubmit(p); setTimerDone(false); }} className="shrink-0 bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 rounded-xl text-xs font-black transition-colors">Quiz me</button>
-                  </div>
-                </div>
-              );
-              return (
-                <div className="bg-slate-900 dark:bg-slate-800 rounded-2xl overflow-hidden">
-                  {/* Idle state - explain what this is */}
-                  {!timerActive && timerSeconds === 25 * 60 ? (
-                    <div className="px-4 py-4 flex items-center gap-4">
-                      <div className="relative w-12 h-12 flex-shrink-0">
-                        <svg className="w-12 h-12 -rotate-90" viewBox="0 0 36 36">
-                          <circle cx="18" cy="18" r="15.9" fill="none" stroke="#334155" strokeWidth="3" />
-                          <circle cx="18" cy="18" r="15.9" fill="none" stroke="#6366f1" strokeWidth="3" strokeDasharray="0 100" strokeLinecap="round" />
-                        </svg>
-                        <span className="absolute inset-0 flex items-center justify-center text-xl">Tomato</span>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-black text-white leading-tight">Focus Timer</p>
-                        <p className="text-[11px] font-medium text-slate-400 leading-snug mt-0.5">25-min study session - no distractions, then take a break.</p>
-                      </div>
-                      <button
-                        onClick={() => setTimerActive(a => !a)}
-                        className="shrink-0 bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2.5 rounded-xl text-xs font-black transition-colors shadow-lg shadow-indigo-900/40"
-                      >
-                        Start
-                      </button>
-                    </div>
-                  ) : (
-                    /* Active / paused / counting state */
-                    <div className="px-4 py-3 flex items-center gap-4">
-                      <div className="relative w-10 h-10 flex-shrink-0">
-                        <svg className="w-10 h-10 -rotate-90" viewBox="0 0 36 36">
-                          <circle cx="18" cy="18" r="15.9" fill="none" stroke="#334155" strokeWidth="3" />
-                          <circle cx="18" cy="18" r="15.9" fill="none" stroke="#6366f1" strokeWidth="3" strokeDasharray={`${pct} ${100 - pct}`} strokeDashoffset="0" strokeLinecap="round" />
-                        </svg>
-                        <span className="absolute inset-0 flex items-center justify-center text-[9px] font-black text-white">{pct}%</span>
-                      </div>
-                      <div className="flex-1">
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">{timerActive ? 'Focus Session - in progress' : 'Focus Session - paused'}</p>
-                        <p className="text-lg font-black text-indigo-400 leading-none">{String(mins).padStart(2, '0')}:{String(secs).padStart(2, '0')}</p>
-                      </div>
-                      <div className="flex gap-2">
-                        <button onClick={() => setTimerActive(a => !a)} className={`px-4 py-2 rounded-xl text-xs font-black transition-colors ${timerActive ? 'bg-slate-700 text-slate-300 hover:bg-slate-600' : 'bg-indigo-600 hover:bg-indigo-500 text-white'}`}>
-                          {timerActive ? 'Pause' : 'Resume'}
-                        </button>
-                        <button onClick={() => { setTimerSeconds(25 * 60); setTimerActive(false); }} className="text-[10px] font-bold text-slate-500 hover:text-slate-300 px-2 transition-colors">Reset</button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              );
-            })()}
-
-            {/* OFFLINE SAVES */}
-            {(() => {
-              const saves = getOfflineSaves();
-              if (!saves.length) return null;
-              return (
-                <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-sm border-2 border-slate-200 dark:border-slate-800 p-5">
-                  <div className="flex items-center justify-between mb-3">
-                    <p className="text-xs font-black text-slate-700 dark:text-slate-300 uppercase tracking-widest flex items-center gap-2">
-                      <Download className="w-3.5 h-3.5 text-slate-400" /> Saved for Offline ({saves.length})
-                    </p>
-                    <button onClick={() => { localStorage.removeItem(OFFLINE_KEY); triggerToast('Cleared.'); }} className="text-[10px] font-bold text-slate-400 hover:text-rose-500 transition-colors">Clear all</button>
-                  </div>
-                  <div className="space-y-2">
-                    {saves.slice(0, 3).map(s => (
-                      <button key={s.id} onClick={() => { setPromptText(`Explain ${s.topic} in detail.`); handlePromptSubmit(`Explain ${s.topic} in detail.`); }} className="w-full flex items-center gap-3 p-2.5 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-left">
-                        <div className="w-7 h-7 bg-slate-100 dark:bg-slate-800 rounded-lg flex items-center justify-center flex-shrink-0"><BookOpen className="w-3.5 h-3.5 text-slate-400" /></div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate">{s.topic}</p>
-                          <p className="text-[10px] font-medium text-slate-400">{s.subject} - {s.savedAt}</p>
-                        </div>
-                        <ChevronRight className="w-4 h-4 text-slate-300 flex-shrink-0" />
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              );
-            })()}
-
-            {/* REVISION TIMETABLE */}
-            {(() => {
-              const CBC_SUBJECTS_LIST = ['Mathematics', 'English', 'Kiswahili', 'Science', 'Social Studies', 'CRE', 'History', 'Geography', 'Physics', 'Chemistry', 'Biology', 'Business Studies', 'Agriculture', 'Computer Science', 'Creative Arts', 'Home Science'];
-              const handleBuildTimetable = async () => {
-                const subjectList = timetableSubjects.split(',').map(s => s.trim()).filter(Boolean);
-                if (!timetableExamDate || subjectList.length === 0) { triggerToast('Enter exam date and at least one subject.'); return; }
-                setTimetableLoading(true);
-                try {
-                  const days = await generateRevisionTimetable(timetableExamDate, subjectList);
-                  const newTimetable = { examDate: timetableExamDate, days };
-                  localStorage.setItem(TIMETABLE_KEY, JSON.stringify(newTimetable));
-                  setTimetable(newTimetable);
-                  setShowTimetableBuilder(false);
-                } catch { triggerToast('Could not generate timetable. Try again.'); }
-                finally { setTimetableLoading(false); }
-              };
-              const toggleDay = (idx: number) => {
-                if (!timetable) return;
-                const updated = { ...timetable, days: timetable.days.map((d, i) => i === idx ? { ...d, done: !d.done } : d) };
-                localStorage.setItem(TIMETABLE_KEY, JSON.stringify(updated));
-                setTimetable(updated);
-              };
-              const today = new Date().toISOString().split('T')[0];
-              const subjectColors: Record<string, string> = {
-                Mathematics: 'bg-blue-100 text-blue-800', English: 'bg-emerald-100 text-emerald-800',
-                Kiswahili: 'bg-amber-100 text-amber-800', Science: 'bg-violet-100 text-violet-800',
-                Physics: 'bg-indigo-100 text-indigo-800', Chemistry: 'bg-rose-100 text-rose-800',
-                Biology: 'bg-teal-100 text-teal-800', History: 'bg-orange-100 text-orange-800',
-              };
-              const getSubjectColor = (subject: string) => {
-                for (const [key, cls] of Object.entries(subjectColors)) {
-                  if (subject.toLowerCase().includes(key.toLowerCase())) return cls;
-                }
-                return 'bg-slate-100 text-slate-800';
-              };
-              return (
-                <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-sm border-2 border-slate-200 dark:border-slate-800 p-5">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-2">
-                      <ClipboardList className="w-4 h-4 text-indigo-500" />
-                      <p className="text-xs font-black text-slate-700 dark:text-slate-300 uppercase tracking-widest">Revision Timetable</p>
-                    </div>
-                    <div className="flex gap-2">
-                      {timetable && (
-                        <button onClick={() => { localStorage.removeItem(TIMETABLE_KEY); setTimetable(null); }} className="text-[10px] font-bold text-slate-400 hover:text-rose-500">Clear</button>
-                      )}
-                      <button onClick={() => setShowTimetableBuilder(b => !b)} className="text-[10px] font-bold text-indigo-500 hover:text-indigo-700 underline">
-                        {timetable ? 'Rebuild' : 'Build Plan'}
-                      </button>
-                    </div>
-                  </div>
-
-                  {showTimetableBuilder && (
-                    <div className="mb-4 p-4 bg-indigo-50 dark:bg-indigo-950/30 rounded-2xl space-y-3 animate-in fade-in duration-200">
-                      <div>
-                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider block mb-1">Exam Date</label>
-                        <input type="date" value={timetableExamDate} min={today}
-                          onChange={e => setTimetableExamDate(e.target.value)}
-                          className="w-full border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 rounded-xl px-3 py-2 text-sm font-bold text-slate-800 dark:text-white focus:outline-none focus:border-indigo-400" />
-                      </div>
-                      <div>
-                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider block mb-1">Subjects (comma-separated)</label>
-                        <input type="text" value={timetableSubjects}
-                          onChange={e => setTimetableSubjects(e.target.value)}
-                          placeholder="e.g. Mathematics, English, Biology"
-                          className="w-full border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 rounded-xl px-3 py-2 text-sm font-bold text-slate-800 dark:text-white focus:outline-none focus:border-indigo-400" />
-                        <div className="flex flex-wrap gap-1 mt-2">
-                          {CBC_SUBJECTS_LIST.slice(0, 8).map(s => (
-                            <button key={s} onClick={() => setTimetableSubjects(prev => prev ? `${prev}, ${s}` : s)}
-                              className="text-[9px] font-bold bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 px-2 py-0.5 rounded-full text-slate-600 dark:text-slate-300 hover:border-indigo-400 hover:text-indigo-600 transition-colors">
-                              + {s}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                      <button onClick={handleBuildTimetable} disabled={timetableLoading || !timetableExamDate || !timetableSubjects.trim()}
-                        className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-black py-3 rounded-xl text-sm transition-colors flex items-center justify-center gap-2">
-                        {timetableLoading ? <><Loader2 className="w-4 h-4 animate-spin" /> Generating...</> : <><Sparkles className="w-4 h-4" /> Generate My Plan</>}
-                      </button>
-                    </div>
-                  )}
-
-                  {timetable && !showTimetableBuilder && (
-                    <div className="space-y-2">
-                      {timetable.days.slice(0, 7).map((day, idx) => (
-                        <div key={idx} onClick={() => toggleDay(idx)}
-                          className={`flex items-center gap-3 p-3 rounded-2xl cursor-pointer transition-all ${day.done ? 'bg-emerald-50 dark:bg-emerald-900/20 opacity-70' : 'bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700'}`}>
-                          <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${day.done ? 'bg-emerald-500 border-emerald-500' : 'border-slate-300 dark:border-slate-600'}`}>
-                            {day.done && <CheckCircle className="w-3 h-3 text-white" />}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-0.5">
-                              <p className="text-[10px] font-bold text-slate-400">{day.dayLabel}</p>
-                              <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-full ${getSubjectColor(day.subject)}`}>{day.subject}</span>
-                            </div>
-                            <p className="text-xs font-bold text-slate-700 dark:text-slate-200 truncate">{day.topics}</p>
-                          </div>
-                          <span className="text-[9px] font-bold text-slate-400 flex-shrink-0">{day.duration}</span>
-                        </div>
-                      ))}
-                      {timetable.days.length > 7 && (
-                        <p className="text-[10px] font-bold text-slate-400 text-center">+ {timetable.days.length - 7} more days - Tap {"\"Rebuild\""} to view all</p>
-                      )}
-                    </div>
-                  )}
-
-                  {!timetable && !showTimetableBuilder && (
-                    <div className="text-center py-6">
-                      <ClipboardList className="w-10 h-10 text-indigo-200 mx-auto mb-2" />
-                      <p className="text-sm font-bold text-slate-500">No plan yet.</p>
-                      <p className="text-xs text-slate-400 mt-1">Add your exam date and subjects to get an AI-generated study schedule.</p>
-                    </div>
-                  )}
-                </div>
-              );
-            })()}
-
-            <div className="hidden">
-              {[
-                {
-                  icon: <Lightbulb className="w-4 h-4" />,
-                  label: 'For homework',
-                  title: 'Get hints before answers',
-                  body: 'Akili makes the learner try a step first, then explains the method.'
-                },
-                {
-                  icon: <ListChecks className="w-4 h-4" />,
-                  label: 'For exams',
-                  title: 'Practice and repair mistakes',
-                  body: quizAttempts > 0
-                    ? `${quizAttempts} quiz attempt${quizAttempts === 1 ? '' : 's'} recorded${averageQuizScore !== null ? `, average ${averageQuizScore}%` : ''}.`
-                    : 'Turn any topic into a short quiz and fix weak areas immediately.'
-                },
-                {
-                  icon: <Users className="w-4 h-4" />,
-                  label: 'For parents',
-                  title: 'Visible learning proof',
-                  body: hasHistory
-                    ? `${history.length} learning action${history.length === 1 ? '' : 's'} saved for review.`
-                    : 'Parents can see progress, not just trust that screen time was useful.'
-                }
-              ].map((item) => (
-                <div key={item.label} className="bg-white dark:bg-slate-900 rounded-2xl border-2 border-slate-200 dark:border-slate-800 p-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-300 flex items-center justify-center">
-                      {item.icon}
-                    </div>
-                    <p className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-400">{item.label}</p>
-                  </div>
-                  <h3 className="text-sm font-black text-slate-900 dark:text-white leading-tight">{item.title}</h3>
-                  <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">{item.body}</p>
-                </div>
-              ))}
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                
-              <div className="lg:col-span-2 space-y-6">
-                  {/* RETURNING GUEST CONTINUE CARD */}
-                  {!isRegistered && hasHistory && recentTopics.length > 0 && (
-                    <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-sm border-2 border-indigo-200 dark:border-indigo-800 p-5">
-                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-500 mb-2">Continue Where You Left Off</p>
-                      <h3 className="text-lg font-black text-slate-900 dark:text-white mb-1">{recentTopics[0]}</h3>
-                      <p className="text-xs font-semibold text-slate-500 mb-4">Jump back into your last learning thread and keep momentum.</p>
-                      <button
-                        onClick={async () => {
-                          const restored = await restoreMemberSessionForResume();
-                          if (restored) {
-                            // Immediate one-shot bypass for the resumed action in the same tick.
-                            resumeBypassRef.current = true;
-                          }
-                          const resumePrompt = `Continue explaining: ${recentTopics[0]}`;
-                          setPromptText(resumePrompt);
-                          handlePromptSubmit(resumePrompt);
-                        }}
-                        className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black uppercase tracking-wider"
-                      >
-                        Resume Learning
-                      </button>
-                    </div>
-                  )}
-
-                  {/* FIRST SESSION WELCOME - keep it compact */}
-                  {isRegistered && !hasHistory && !hasProgress && (
-                    <motion.div
-                      initial={{ opacity: 0, y: -8 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="rounded-3xl border-2 border-indigo-200 dark:border-indigo-900/60 bg-indigo-50 dark:bg-indigo-950/30 p-4 sm:p-5"
-                    >
-                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                        <div className="min-w-0">
-                          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-600 dark:text-indigo-300 mb-1">Welcome, {profile?.name?.split(' ')[0] || 'Learner'}!</p>
-                          <p className="font-bold text-sm text-slate-800 dark:text-slate-100">Start with Ask Akili or open the Library.</p>
-                        </div>
-                        <div className="flex flex-wrap gap-2">
-                          <button onClick={() => setMode('SCAN_EXPLAIN')} className="rounded-xl bg-indigo-600 px-3 py-2 text-xs font-black text-white hover:bg-indigo-700">Ask Akili</button>
-                          <button onClick={() => handleSidebarTabChange('RESOURCES')} className="rounded-xl border border-indigo-200 dark:border-indigo-800 px-3 py-2 text-xs font-black text-indigo-700 dark:text-indigo-300 hover:border-indigo-400 dark:hover:border-indigo-600">Library</button>
-                        </div>
-                      </div>
-                    </motion.div>
-                  )}
-
-                  <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-sm border-2 border-slate-200 dark:border-slate-800 p-4 sm:p-5">
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
-                      <div>
-                        <p className="text-[10px] font-black uppercase tracking-[0.18em] text-indigo-500">Start Learning</p>
-                        <h2 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">Pick one thing to do now</h2>
-                        <p className="mt-1 text-xs font-semibold text-slate-500 dark:text-slate-400">Open the quickest path, then keep going from there.</p>
-                      </div>
-                      <button
-                        onClick={() => setSidebarOpen(true)}
-                        className="self-start sm:self-auto rounded-xl border border-slate-200 dark:border-slate-700 px-3 py-2 text-[11px] font-black uppercase tracking-wider text-slate-500 dark:text-slate-300 hover:border-indigo-300 hover:text-indigo-600 dark:hover:border-indigo-600 dark:hover:text-indigo-300"
-                      >
-                        All Tools
-                      </button>
-                    </div>
-                    <div className="grid grid-cols-2 md:grid-cols-2 xl:grid-cols-4 gap-3">
-                      {[{
-                        title: 'Ask Akili',
-                        body: 'Get help now',
-                        icon: <Sparkles className="w-5 h-5" />,
-                        className: 'bg-blue-600 text-white border-blue-600 md:col-span-2 xl:col-span-1',
-                        action: () => setMode('SCAN_EXPLAIN')
-                      },
-                      {
-                        title: 'Library',
-                        body: 'Notes & papers',
-                        icon: <Library className="w-5 h-5" />,
-                        className: 'bg-white dark:bg-slate-950 text-slate-900 dark:text-white border-slate-200 dark:border-slate-700',
-                        action: () => handleSidebarTabChange('RESOURCES')
-                      },
-                      {
-                        title: 'Exam Prep',
-                        body: 'Practice drills',
-                        icon: <ClipboardList className="w-5 h-5" />,
-                        className: 'bg-white dark:bg-slate-950 text-slate-900 dark:text-white border-slate-200 dark:border-slate-700',
-                        action: () => {
-                          setRevisionInitialSubject(currentDocument?.subject || 'All');
-                          setRevisionInitialSearchQuery(currentDocument?.title || currentDocument?.subject || '');
-                          handleSidebarTabChange('SUBJECTS');
-                        }
-                      },
-                      {
-                        title: 'Syllabus Tutor',
-                        body: currentDocument?.title ? `Talk through ${currentDocument.title}` : 'Talk through your current topic',
-                        icon: <Headphones className="w-5 h-5" />,
-                        className: 'bg-white dark:bg-slate-950 text-slate-900 dark:text-white border-slate-200 dark:border-slate-700',
-                        action: () => {
-                          setTutorInitialActiveMode('TALKBACK');
-                          setTutorInitialTutorMode('conversation');
-                          handleSidebarTabChange('TALKBACK', true);
-                        }
-                      }
-                      ].map((tool) => (
-                        <button
-                          key={tool.title}
-                          onClick={tool.action}
-                          className={`min-h-[92px] rounded-2xl border-2 p-4 text-left transition-all hover:-translate-y-0.5 hover:shadow-md active:scale-[0.99] ${tool.className}`}
-                        >
-                          <div className="flex items-center justify-between gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-black/5 dark:bg-white/10 flex items-center justify-center shrink-0">
-                              {tool.icon}
-                            </div>
-                            <ArrowRight className="w-4 h-4 opacity-50" />
-                          </div>
-                          <p className="mt-3 text-sm font-black leading-tight">{tool.title}</p>
-                          <p className="mt-0.5 text-[11px] font-bold opacity-70">{tool.body}</p>
-                        </button>
-                      ))}
-                    </div>
-                    <div className="mt-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/50 p-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                      <div>
-                        <p className="text-xs font-black text-slate-900 dark:text-white">Credits & Plans</p>
-                        <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">Grounded answers, deep analysis, marking, and voice use credits or a plan when needed.</p>
-                      </div>
-                      <button
-                        onClick={handlePricingNavigation}
-                        className="self-start sm:self-auto rounded-xl bg-indigo-600 px-4 py-2 text-[11px] font-black uppercase tracking-wider text-white hover:bg-indigo-700"
-                      >
-                        Plans & Credits
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* START HERE: PRIMARY FIRST-SESSION PATH - for returning users or registered with history */}
-                  {(!isRegistered || hasHistory || hasProgress) && (
-                  <div className="hidden">
-                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-100 mb-2">Start Here</p>
-                    <h2 className="text-2xl font-black tracking-tight mb-2">
-                      {learnerCtaVariant === 'A' ? 'Open one topic and finish with a score' : 'Pick one topic and test yourself'}
-                    </h2>
-                    <p className="text-sm font-medium text-indigo-100 mb-5">
-                      {learnerCtaVariant === 'A'
-                        ? 'Open notes or past papers, get help, then take a quick quiz.'
-                        : 'Choose one note or paper, get help, then finish with a short quiz.'}
-                    </p>
-                    <div className="flex flex-col sm:flex-row gap-3">
-                      <button
-                        onClick={() => {
-                          trackFunnelEvent('library_intent_selected', { intent: 'start_here_library', variant: learnerCtaVariant });
-                          handleSidebarTabChange('RESOURCES');
-                        }}
-                        className="flex-1 bg-white text-indigo-700 hover:bg-indigo-50 rounded-2xl py-3.5 px-4 font-black text-sm transition-colors shadow-sm"
-                      >
-                        {learnerCtaVariant === 'A' ? '1. Open Library' : '1. Pick A Topic'}
-                      </button>
-                      <button
-                        onClick={() => {
-                          trackFunnelEvent('library_intent_selected', { intent: 'start_here_ask_akili', variant: learnerCtaVariant });
-                          setMode('SCAN_EXPLAIN');
-                        }}
-                        className="flex-1 bg-indigo-500/40 hover:bg-indigo-500/60 border border-indigo-300/40 rounded-2xl py-3.5 px-4 font-black text-sm transition-colors"
-                      >
-                        {learnerCtaVariant === 'A' ? '2. Ask Akili' : '2. Get Instant Help'}
-                      </button>
-                    </div>
-                  </div>
-                  )}
-
-                  {/* ASK AKILI QUICK ENTRY */}
-                  <div className="hidden">
-                    <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-                      <div className="max-w-xl">
-                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-sky-100 mb-2">Ask Akili</p>
-                        <h3 className="text-xl font-black tracking-tight leading-tight">Stuck on a question? Start here.</h3>
-                        <p className="text-sm font-medium text-sky-100/90 mt-2 leading-relaxed">
-                          Get a hint, a worked method, or a quick quiz. Type, scan, or talk to Akili in one tap.
-                        </p>
-                      </div>
-                      <div className="flex flex-col sm:items-end gap-2 shrink-0">
-                        <button
-                          onClick={() => setMode('SCAN_EXPLAIN')}
-                          className="inline-flex items-center justify-center gap-2 rounded-2xl bg-white text-blue-700 hover:bg-blue-50 px-4 py-3 text-sm font-black shadow-sm transition-colors"
-                        >
-                          <Sparkles className="w-4 h-4" />
-                          Open Ask Akili
-                        </button>
-                        <div className="flex flex-wrap gap-2 justify-start sm:justify-end">
-                          <button
-                            onClick={() => setMode('SCAN_EXPLAIN')}
-                            className="rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-[11px] font-black text-white hover:bg-white/20 transition-colors"
-                          >
-                            Scan
-                          </button>
-                          <button
-                            onClick={() => setMode('SCAN_EXPLAIN')}
-                            className="rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-[11px] font-black text-white hover:bg-white/20 transition-colors"
-                          >
-                            Type
-                          </button>
-                          <button
-                            onClick={() => handleSidebarTabChange('TALKBACK')}
-                            className="rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-[11px] font-black text-white hover:bg-white/20 transition-colors"
-                          >
-                            Talk
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* SOLVE IT NOW: immediate student pain points */}
-                  <div className="hidden">
-                    <div className="flex items-center justify-between mb-4">
-                      <div>
-                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-1">Solve It Now</p>
-                        <h3 className="text-base font-bold text-slate-800 dark:text-white">Choose one thing to do now</h3>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                      <button
-                        onClick={() => setMode('SCAN_EXPLAIN')}
-                        className="text-left rounded-2xl border-2 border-slate-200 dark:border-slate-800 p-4 hover:border-blue-300 dark:hover:border-blue-700 transition-colors"
-                      >
-                        <p className="text-sm font-bold text-slate-800 dark:text-slate-100">I am stuck on one question</p>
-                        <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-1">Get hints, steps, then a quick check question.</p>
-                      </button>
-                      <button
-                        onClick={() => handleSidebarTabChange('SUBJECTS')}
-                        className="text-left rounded-2xl border-2 border-slate-200 dark:border-slate-800 p-4 hover:border-orange-300 dark:hover:border-orange-700 transition-colors"
-                      >
-                        <p className="text-sm font-bold text-slate-800 dark:text-slate-100">Exam is near, I need practice</p>
-                        <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-1">Go to Exam Prep and start drills.</p>
-                      </button>
-                      <button
-                        onClick={() => handleSidebarTabChange('RESOURCES')}
-                        className="text-left rounded-2xl border-2 border-slate-200 dark:border-slate-800 p-4 hover:border-indigo-300 dark:hover:border-indigo-700 transition-colors"
-                      >
-                        <p className="text-sm font-bold text-slate-800 dark:text-slate-100">I need notes or past papers now</p>
-                        <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-1">Open the library with all materials.</p>
-                      </button>
-                    </div>
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      <button
-                        onClick={() => handleSidebarTabChange('TALKBACK')}
-                        className="rounded-full border border-pink-200 dark:border-pink-900/40 bg-pink-50 dark:bg-pink-950/30 px-4 py-2 text-xs font-black text-pink-700 dark:text-pink-300"
-                      >
-                        Listen to a lesson
-                      </button>
-                      <button
-                        onClick={() => setMode('SCAN_EXPLAIN')}
-                        className="rounded-full border border-indigo-200 dark:border-indigo-900/40 bg-indigo-50 dark:bg-indigo-950/30 px-4 py-2 text-xs font-black text-indigo-700 dark:text-indigo-300"
-                      >
-                        Open Ask Akili
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* AI INPUT BUBBLE */}
-                  <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-sm border-2 border-slate-300 dark:border-slate-800 p-6 relative overflow-hidden">
-                    <div className="absolute top-0 right-0 w-48 h-48 bg-blue-50 dark:bg-blue-900/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
-                    <div className="flex flex-col sm:flex-row items-start gap-4 relative z-10">
-                      <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center shrink-0 shadow-md">
-                        <Sparkles className="w-6 h-6 text-white" />
-                      </div>
-                      <div className="flex-1 w-full">
-                        <div className="mb-3">
-                          <h2 className="text-base font-bold text-slate-800 dark:text-white">Ask Akili</h2>
-                          <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mt-1">
-                            Type, scan, or upload. Akili helps step by step.
-                          </p>
-                        </div>
-                        <div className="mb-3 rounded-2xl border border-emerald-200 dark:border-emerald-900/60 bg-emerald-50 dark:bg-emerald-950/20 p-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                          <div>
-                            <p className="text-xs font-black text-emerald-800 dark:text-emerald-200">Soma Library grounding</p>
-                            <p className="text-[11px] font-semibold text-emerald-700/80 dark:text-emerald-300/80">
-                              Akili will try to use indexed notes and past papers before answering.
-                            </p>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => setGroundedAnswerMode(prev => !prev)}
-                            className={`relative h-8 w-16 rounded-full p-1 transition-colors ${groundedAnswerMode ? 'bg-emerald-600' : 'bg-slate-300 dark:bg-slate-700'}`}
-                            aria-pressed={groundedAnswerMode}
-                            aria-label="Toggle Soma Library grounding"
-                          >
-                            <span className={`block h-6 w-6 rounded-full bg-white shadow transition-transform ${groundedAnswerMode ? 'translate-x-8' : 'translate-x-0'}`} />
-                          </button>
-                        </div>
-                        <div className="bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-3 border-2 border-slate-300 dark:border-slate-700 focus-within:border-blue-400 focus-within:ring-4 focus-within:ring-blue-50 dark:focus-within:ring-blue-900/20 transition-all">
-                          <textarea
-                            value={promptText}
-                            onChange={(e) => setPromptText(e.target.value)}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handlePromptSubmit(); }
-                            }}
-                            placeholder={educationLevel === 'JUNIOR' ? "Hey Akili, help me with..." : educationLevel === 'CAMPUS' ? "Ask Akili to research..." : "Ask Akili a question..."}
-                            rows={2}
-                            className="w-full bg-transparent border-0 focus:ring-0 text-sm font-medium py-2 px-2 resize-none outline-none text-slate-800 dark:text-slate-100 placeholder:text-slate-400"
-                          />
-                          <div className="flex flex-wrap gap-2 mt-2">
-                            {learningModePrompts.slice(0, 4).map((modePrompt) => (
-                              <button
-                                key={modePrompt.label}
-                                type="button"
-                                onClick={() => {
-                                  const currentQuestion = promptText.trim();
-                                  const nextPromptValue = modePrompt.buildPrompt(currentQuestion);
-                                  setPromptText(nextPromptValue);
-                                  if (currentQuestion) {
-                                    handlePromptSubmit(nextPromptValue);
-                                  }
-                                }}
-                                className="rounded-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-1.5 text-left hover:border-blue-300 dark:hover:border-blue-700 transition-colors"
-                              >
-                                <span className="block text-[11px] font-black text-slate-800 dark:text-white">{modePrompt.label}</span>
-                              </button>
-                            ))}
-                          </div>
-                          <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-200 dark:border-slate-700">
-                             <div className="flex gap-1">
-                                <button onClick={() => fileInputRef.current?.click()} className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-xl transition-colors" title="Upload Image"><ImageIcon className="w-4 h-4" /></button>
-                                <button onClick={isRecording ? stopRecording : startRecording} className={`p-2 rounded-xl transition-colors ${isRecording ? 'text-red-500 bg-red-50 dark:bg-red-900/20 animate-pulse' : 'text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30'}`} title="Voice Note"><Mic className="w-4 h-4" /></button>
-                                <button onClick={startCamera} className="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 rounded-xl transition-colors" title="Scan Document"><Camera className="w-4 h-4" /></button>
-                             </div>
-                             <button onClick={handlePromptSubmit} disabled={(!promptText.trim() && !pendingMedia) || loading} className="px-5 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-200 disabled:text-slate-400 text-white text-xs font-bold rounded-xl transition-colors flex items-center gap-2 shadow-sm">
-                                {loading ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Get Help'}
-                              </button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* SHORTCUTS - secondary actions */}
-                  <div className="hidden grid-cols-3 gap-2 sm:gap-4">
-                     {(
-                       educationLevel === 'JUNIOR' ? [
-                          { icon: <Library className="w-5 h-5 sm:w-6 sm:h-6" />, label: 'Library', color: 'bg-blue-600', onClick: () => handleSidebarTabChange('RESOURCES') },
-                         { icon: <Brain className="w-5 h-5 sm:w-6 sm:h-6" />, label: 'Exam Prep', color: 'bg-orange-500', onClick: () => {
-                           setRevisionInitialSubject(currentDocument?.subject || 'All');
-                           setRevisionInitialSearchQuery(currentDocument?.title || currentDocument?.subject || '');
-                           handleSidebarTabChange('SUBJECTS');
-                         } },
-                         { icon: <Mic className="w-5 h-5 sm:w-6 sm:h-6" />, label: 'Talk & Play', color: 'bg-pink-500', onClick: () => handleSidebarTabChange('TALKBACK') }
-                       ] : educationLevel === 'CAMPUS' ? [
-                         { icon: <Library className="w-5 h-5 sm:w-6 sm:h-6" />, label: 'Research', color: 'bg-purple-600', onClick: () => handleSidebarTabChange('RESOURCES') },
-                         { icon: <Brain className="w-5 h-5 sm:w-6 sm:h-6" />, label: 'Courses', color: 'bg-indigo-500', onClick: () => handleSidebarTabChange('SUBJECTS') },
-                         { icon: <Users className="w-5 h-5 sm:w-6 sm:h-6" />, label: 'Study Group', color: 'bg-emerald-500', onClick: () => handleSidebarTabChange('EXAM_ROOMS') }
-                       ] : [
-                          { icon: <Library className="w-5 h-5 sm:w-6 sm:h-6" />, label: 'Library', color: 'bg-blue-600', onClick: () => handleSidebarTabChange('RESOURCES') },
-                         { icon: <Brain className="w-5 h-5 sm:w-6 sm:h-6" />, label: 'Exam Hall', color: 'bg-orange-500', onClick: () => handleSidebarTabChange('SUBJECTS') },
-                         { icon: <Trophy className="w-5 h-5 sm:w-6 sm:h-6" />, label: 'My Progress', color: 'bg-indigo-600', onClick: () => setShowMasteryDashboard(true) }
-                       ]
-                     ).map((item, i) => (
-                        <button key={i} onClick={item.onClick} className="bg-white/80 dark:bg-slate-900/80 rounded-2xl p-3 sm:p-4 shadow-sm border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 transition-all flex flex-col items-center justify-center gap-2 text-center group">
-                           <div className={`w-10 h-10 sm:w-12 sm:h-12 ${item.color} rounded-xl flex items-center justify-center text-white shadow-sm group-hover:scale-105 transition-transform shrink-0`}>
-                              {item.icon}
-                           </div>
-                           <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 line-clamp-1">{item.label}</span>
-                        </button>
-                     ))}
-                  </div>
-
-                  {/* CONTINUE LEARNING */}
-                  {hasHistory && recentTopics.length > 0 && (
-                     <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-sm border-2 border-slate-300 dark:border-slate-800 p-6">
-                        <div className="flex items-center justify-between mb-4">
-                           <h3 className="font-bold text-slate-800 dark:text-white">Continue Learning</h3>
-                           <button onClick={() => setMode('HISTORY' as any)} className="text-xs font-bold text-blue-600 hover:text-blue-700">View All</button>
-                        </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                           {recentTopics.map((topic, i) => (
-                              <div key={i} onClick={() => { setPromptText(`Continue explaining: ${topic}`); handlePromptSubmit(`Continue explaining: ${topic}`); }} className="flex flex-col p-4 rounded-2xl border-2 border-slate-300 dark:border-slate-800 hover:border-blue-200 dark:hover:border-blue-800 cursor-pointer transition-colors group">
-                                 <div className="w-8 h-8 bg-slate-50 dark:bg-slate-800 rounded-full flex items-center justify-center mb-3">
-                                    <BookOpen className="w-4 h-4 text-slate-400 group-hover:text-blue-600 transition-colors" />
-                                 </div>
-                                 <span className="text-sm font-bold text-slate-700 dark:text-slate-300 line-clamp-2 mb-2 group-hover:text-blue-600 transition-colors">{topic}</span>
-                                 <div className="mt-auto flex items-center justify-between">
-                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Review Topic</span>
-                                    <ArrowRight className="w-4 h-4 text-slate-300 group-hover:text-blue-600 group-hover:translate-x-1 transition-transform" />
-                                 </div>
-                              </div>
-                           ))}
-                        </div>
-                     </div>
-                  )}
-
-              </div>
-
-              <div className="space-y-6">
-                  {/* PARENT VALUE CARD */}
-                  <div className="hidden">
-                    <div className="flex items-start justify-between gap-3 mb-4">
-                      <div>
-                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-600 dark:text-emerald-300 mb-1">Parent Confidence</p>
-                        <h3 className="font-black text-slate-900 dark:text-white text-lg leading-tight">KES 20 should buy learning, not scrolling.</h3>
-                      </div>
-                      <div className="w-10 h-10 rounded-2xl bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-300 flex items-center justify-center shrink-0">
-                        <Users className="w-5 h-5" />
-                      </div>
-                    </div>
-                    <div className="space-y-3 mb-5">
-                      {[
-                        'Try-first answers reduce copy and paste homework.',
-                        'Notes, past papers, quizzes, and audio learning stay in one place.',
-                        'Progress history gives parents a simple proof of study.'
-                      ].map((item) => (
-                        <div key={item} className="flex items-start gap-2">
-                          <CheckCircle className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
-                          <p className="text-xs font-bold text-slate-600 dark:text-slate-300 leading-relaxed">{item}</p>
-                        </div>
-                      ))}
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                      <button
-                        onClick={() => setShowMasteryDashboard(true)}
-                        className="py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black uppercase tracking-wider transition-colors"
-                      >
-                        See Progress
-                      </button>
-                      <button
-                        onClick={() => navigate('/parent')}
-                        className="py-3 rounded-2xl border-2 border-emerald-200 dark:border-emerald-800 hover:border-emerald-400 dark:hover:border-emerald-600 text-emerald-700 dark:text-emerald-300 text-xs font-black uppercase tracking-wider transition-colors"
-                      >
-                        Parent Portal
-                      </button>
-                      <button
-                        onClick={handlePricingNavigation}
-                        className="py-3 rounded-2xl border-2 border-slate-200 dark:border-slate-700 hover:border-emerald-300 dark:hover:border-emerald-700 text-slate-700 dark:text-slate-200 text-xs font-black uppercase tracking-wider transition-colors"
-                      >
-                        View Plans
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* RECOMMENDED NEXT STEP */}
-                  <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-sm border-2 border-indigo-200 dark:border-indigo-900/60 p-6 relative overflow-hidden">
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
-                    <div className="relative z-10">
-                      <div className="flex items-start justify-between gap-3 mb-4">
-                        <div>
-                          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-600 dark:text-indigo-300 mb-1">{"Today's 10-minute plan"}</p>
-                          <h3 className="font-black text-slate-900 dark:text-white text-lg leading-tight">{nextStep.title}</h3>
-                        </div>
-                        <div className="w-10 h-10 rounded-2xl bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-300 flex items-center justify-center shrink-0">
-                          <Zap className="w-5 h-5" />
-                        </div>
-                      </div>
-                      <span className="inline-flex mb-3 text-[10px] font-black uppercase tracking-widest text-indigo-700 dark:text-indigo-200 bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-900 px-3 py-1 rounded-full">
-                        {nextStep.label}
-                      </span>
-                      <p className="text-sm font-semibold text-slate-600 dark:text-slate-300 leading-relaxed mb-4">{nextStep.body}</p>
-                      <div className="grid grid-cols-3 gap-2 mb-4">
-                        {[
-                          { step: '1', label: 'Repair', body: 'Fix the weakest point' },
-                          { step: '2', label: 'Test', body: 'Score a short quiz' },
-                          { step: '3', label: 'Proof', body: 'Share progress' }
-                        ].map((item) => (
-                          <div key={item.step} className="rounded-2xl bg-indigo-50/70 dark:bg-indigo-950/30 border border-indigo-100 dark:border-indigo-900/70 p-3">
-                            <div className="w-6 h-6 rounded-full bg-indigo-600 text-white flex items-center justify-center text-[10px] font-black mb-2">
-                              {item.step}
-                            </div>
-                            <p className="text-xs font-black text-slate-900 dark:text-white">{item.label}</p>
-                            <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 leading-snug mt-0.5">{item.body}</p>
-                          </div>
-                        ))}
-                      </div>
-                      <button
-                        onClick={nextStep.action}
-                        className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl text-xs font-black uppercase tracking-wider transition-colors shadow-sm"
-                      >
-                        {nextStep.cta}
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* PERSONALISED RECOMMENDATION */}
-                  {isRegistered && (weakTopics?.length > 0 || studentProfile?.grade) && (
-                    <div className="bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/30 border-2 border-emerald-200 dark:border-emerald-800 rounded-3xl p-5">
-                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-600 dark:text-emerald-400 mb-3">Recommended for you</p>
-                      <div className="space-y-2">
-                        {weakTopics?.slice(0, 2).map((topic: string, i: number) => (
-                          <button
-                            key={i}
-                            onClick={() => {
-                              const p = `Explain ${topic} in simple terms for ${studentProfile?.grade || 'a secondary school'} student. Give one example, then ask me a quick question to test myself.`;
-                              setPromptText(p);
-                              handlePromptSubmit(p);
-                            }}
-                            className="w-full flex items-center justify-between gap-3 bg-white dark:bg-slate-900 border border-emerald-100 dark:border-emerald-900 rounded-2xl px-4 py-3 text-left hover:border-emerald-400 transition-all group"
-                          >
-                            <div>
-                              <p className="text-xs font-black text-slate-900 dark:text-white">{topic}</p>
-                            <p className="text-[10px] font-bold text-slate-400 mt-0.5">Weak area - tap to revise</p>
-                            </div>
-                              <span className="text-emerald-500 group-hover:translate-x-1 transition-transform">Open</span>
-                          </button>
-                        ))}
-                        {(!weakTopics?.length) && studentProfile?.grade && (
-                          <button
-                            onClick={() => {
-                              const p = `I'm in ${studentProfile.grade}. Give me the 3 most important topics I should be revising right now for exams. Then pick one and explain it.`;
-                              setPromptText(p);
-                              handlePromptSubmit(p);
-                            }}
-                            className="w-full flex items-center justify-between gap-3 bg-white dark:bg-slate-900 border border-emerald-100 dark:border-emerald-900 rounded-2xl px-4 py-3 text-left hover:border-emerald-400 transition-all group"
-                          >
-                            <div>
-                              <p className="text-xs font-black text-slate-900 dark:text-white">Top revision topics for {studentProfile.grade}</p>
-                              <p className="text-[10px] font-bold text-slate-400 mt-0.5">Tap to explore</p>
-                            </div>
-                              <span className="text-emerald-500 group-hover:translate-x-1 transition-transform">Open</span>
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* MY CLASSES */}
-                  {(isRegistered || studentClasses.length > 0) && (
-                    <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-sm border-2 border-slate-300 dark:border-slate-800 p-6">
-                      <div className="flex items-center justify-between mb-5">
-                        <div>
-                          <h3 className="font-bold text-slate-800 dark:text-white">My Classes</h3>
-                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-0.5">Teacher updates</p>
-                        </div>
-                        {isLoadingStudentClasses && <Loader2 className="w-4 h-4 text-emerald-500 animate-spin" />}
-                      </div>
-
-                      {studentClasses.length === 0 ? (
-                        <div className="rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-800 p-5 text-center">
-                          <Users className="w-8 h-8 text-slate-300 mx-auto mb-3" />
-                          <p className="text-sm font-bold text-slate-500 dark:text-slate-400">No classes joined yet.</p>
-                          <p className="text-xs font-medium text-slate-400 mt-1 mb-4">Ask your teacher for the class join code.</p>
-                          <a
-                            href="/join"
-                            className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-xs font-black transition-colors"
-                          >
-                            + Join a Class
-                          </a>
-                        </div>
-                      ) : (
-                        <div className="space-y-4">
-                          {studentClasses.slice(0, 3).map((item) => {
-                            const latestPost = item.latestPosts[0];
-                            return (
-                              <div key={item.class.id} className="rounded-2xl border-2 border-slate-200 dark:border-slate-800 p-4">
-                                <div className="flex items-start justify-between gap-3 mb-3">
-                                  <div>
-                                    <h4 className="text-sm font-black text-slate-900 dark:text-white">{item.class.name}</h4>
-                                    <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest mt-1">{item.class.subject}</p>
-                                  </div>
-                                  <span className="text-[10px] font-bold text-slate-400 whitespace-nowrap">
-                                    {item.class.profiles?.name || 'Teacher'}
-                                  </span>
-                                </div>
-
-                                {latestPost ? (
-                                  <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-3">
-                                    <div className="flex items-center gap-2 mb-1">
-                                      <ClipboardList className="w-3.5 h-3.5 text-slate-400" />
-                                      <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">
-                                        {latestPost.post_type === 'ASSIGNMENT' ? 'Assignment' : 'Announcement'}
-                                      </span>
-                                    </div>
-                                    <p className="text-xs font-bold text-slate-600 dark:text-slate-300 line-clamp-3 whitespace-pre-wrap">{latestPost.content}</p>
-                                  </div>
-                                ) : (
-                                  <p className="text-xs font-bold text-slate-400">No teacher posts yet.</p>
-                                )}
-
-                                {/* Ask Teacher */}
-                                <div className="mt-3 pt-3 border-t border-slate-200 dark:border-slate-700">
-                                  {askTeacherClassId === item.class.id ? (
-                                    <div className="space-y-2">
-                                      <textarea
-                                        value={askTeacherText}
-                                        onChange={e => setAskTeacherText(e.target.value)}
-                                        placeholder={`Ask ${item.class.profiles?.name || 'your teacher'} a question...`}
-                                        rows={2}
-                                        className="w-full text-xs font-medium border-2 border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-200 focus:outline-none focus:border-indigo-400 resize-none"
-                                      />
-                                      <div className="flex gap-2">
-                                        <button
-                                          disabled={!askTeacherText.trim() || askTeacherSending}
-                                          onClick={async () => {
-                                            if (!askTeacherText.trim() || !userId) return;
-                                            setAskTeacherSending(true);
-                                            try {
-                                              await classroomService.createPost(item.class.id, userId, 'ANNOUNCEMENT', `[Student Question] ${askTeacherText.trim()}`);
-                                              setAskTeacherText('');
-                                              setAskTeacherClassId(null);
-                                triggerToast('Question sent to teacher');
-                                            } catch { triggerToast('Could not send. Try again.'); }
-                                            finally { setAskTeacherSending(false); }
-                                          }}
-                                          className="flex-1 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs font-black py-2 rounded-xl transition-colors"
-                                        >
-                                          {askTeacherSending ? 'Sending...' : 'Send Question'}
-                                        </button>
-                                        <button onClick={() => { setAskTeacherClassId(null); setAskTeacherText(''); }} className="text-xs font-bold text-slate-400 hover:text-slate-600 px-3 py-2 rounded-xl transition-colors">Cancel</button>
-                                      </div>
-                                    </div>
-                                  ) : (
-                                    <button onClick={() => setAskTeacherClassId(item.class.id)} className="w-full flex items-center gap-2 text-xs font-bold text-indigo-500 hover:text-indigo-700 py-1 transition-colors">
-                                      <Hand className="w-3.5 h-3.5" /> Ask your teacher a question
-                                    </button>
-                                  )}
-                                </div>
-
-                                {/* Class Leaderboard */}
-                                {(classLeaderboards[item.class.id] || []).length > 0 && (
-                                  <div className="mt-3 pt-3 border-t border-slate-200 dark:border-slate-700">
-                                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-1">
-                                      <Trophy className="w-3 h-3 text-amber-500" /> Class Leaderboard
-                                    </p>
-                                    <div className="space-y-1.5">
-                                      {classLeaderboards[item.class.id].map((entry, idx) => (
-                                        <div key={idx} className={`flex items-center gap-2 px-2 py-1.5 rounded-lg ${entry.isMe ? 'bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800' : ''}`}>
-                                          <span className="text-xs font-black w-4 text-slate-400">{idx + 1}</span>
-                                          <div className="w-5 h-5 rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center text-white text-[9px] font-black flex-shrink-0">
-                                            {entry.name.charAt(0).toUpperCase()}
-                                          </div>
-                                          <span className={`flex-1 text-xs font-bold truncate ${entry.isMe ? 'text-emerald-700 dark:text-emerald-400' : 'text-slate-600 dark:text-slate-300'}`}>
-                                            {entry.isMe ? 'You' : entry.name}
-                                          </span>
-                                          <span className="text-[10px] font-black text-amber-600">{entry.xp} XP</span>
-                                        </div>
-                                      ))}
-                                    </div>
-                                  </div>
-                                )}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* ACTIVE RECALL FLASHCARDS NUDGE */}
-                  {(() => {
-                    const totalFlashcards = spacedRepetitionItems?.filter(i => i.question && i.answer).length || 0;
-                    const dueFlashcardsCount = dueForReview?.filter(i => i.question && i.answer).length || 0;
-
-                    return (
-                      <div className="bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 rounded-3xl shadow-xl border border-indigo-500/25 p-6 relative overflow-hidden group">
-                        {/* Glowing radial backdrops */}
-                        <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2 group-hover:scale-125 transition-transform duration-700"></div>
-                        <div className="absolute -bottom-10 -left-10 w-24 h-24 bg-purple-500/10 rounded-full blur-xl group-hover:scale-125 transition-transform duration-700"></div>
-
-                        <div className="flex items-center justify-between mb-4 relative z-10">
-                          <div className="flex items-center gap-2.5">
-                            <div className="w-9 h-9 bg-indigo-500/20 rounded-xl flex items-center justify-center border border-indigo-500/30">
-                              <Brain className="w-5 h-5 text-indigo-400" />
-                            </div>
-                            <div>
-                              <h3 className="font-bold text-white text-sm tracking-wide">Active Recall</h3>
-                              <p className="text-[10px] font-medium text-indigo-300/70">Spaced Repetition (SM-2)</p>
-                            </div>
-                          </div>
-                          {dueFlashcardsCount > 0 ? (
-                            <span className="text-[9px] font-black text-emerald-400 bg-emerald-500/15 border border-emerald-500/35 px-2.5 py-1 rounded-full uppercase tracking-widest animate-pulse">
-                              {dueFlashcardsCount} Due
-                            </span>
-                          ) : (
-                            <span className="text-[9px] font-black text-indigo-300 bg-indigo-500/15 border border-indigo-500/35 px-2.5 py-1 rounded-full uppercase tracking-widest">
-                              Clear
-                            </span>
-                          )}
-                        </div>
-
-                        {dueFlashcardsCount > 0 ? (
-                          <>
-                            <p className="text-xs font-semibold text-slate-300 mb-5 relative z-10 leading-relaxed">
-                              You have <span className="text-indigo-400 font-bold">{dueFlashcardsCount} cards</span> due for review. Keep your daily streak going!
-                            </p>
-                            <button
-                              onClick={() => {
-                                setPracticeMode('due');
-                                setCurrentCardIndex(0);
-                                setIsFlipped(false);
-                                setReviewComplete(false);
-                                setMode('FLASHCARDS');
-                              }}
-                              className="w-full py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white rounded-2xl text-xs font-bold transition-all shadow-lg shadow-indigo-600/20 active:scale-95 duration-200 cursor-pointer text-center relative z-10"
-                            >
-                              Review Due Cards
-                            </button>
-                          </>
-                        ) : (
-                          <>
-                            <p className="text-xs font-semibold text-slate-300 mb-5 relative z-10 leading-relaxed">
-                              {totalFlashcards > 0 
-                                ? "Excellent! Your daily review queue is fully clear. Review past cards to strengthen memory."
-                                : "Supercharge your long-term memory! Seed our CBC/KCSE high-yield cards to get started."
-                              }
-                            </p>
-                            <div className="flex flex-col gap-2 relative z-10">
-                              {totalFlashcards > 0 && (
-                                <button
-                                  onClick={() => {
-                                    setPracticeMode('all');
-                                    setCurrentCardIndex(0);
-                                    setIsFlipped(false);
-                                    setReviewComplete(false);
-                                    setMode('FLASHCARDS');
-                                  }}
-                                  className="w-full py-3 bg-slate-800 hover:bg-slate-700/80 border border-slate-700 text-slate-200 rounded-2xl text-xs font-bold transition-all active:scale-95 duration-200 cursor-pointer text-center"
-                                >
-                                  Review All Decks
-                                </button>
-                              )}
-                              <button
-                                onClick={() => {
-                                  // Seed samples
-                                  const samples = [
-                                    {
-                                      topic: "Photosynthesis",
-                                      subject: "Biology",
-                                      grade: "Form 1",
-                                      nextReviewDate: new Date().toISOString(),
-                                      intervalDays: 1,
-                                      easeFactor: 2.5,
-                                      lastScore: 0,
-                                      reviewCount: 0,
-                                      question: "What are the raw materials and products of photosynthesis in plants?",
-      answer: "Raw Materials:\n- Carbon dioxide (absorbed through stomata)\n- Water (absorbed through roots)\n\nProducts:\n- Glucose (chemical energy stored as starch)\n- Oxygen gas (released as a byproduct through stomata)\n\nReaction Equation:\n6CO2 + 6H2O + light -> C6H12O6 + 6O2",
-                                    },
-                                    {
-                                      topic: "Quadratic Equations",
-                                      subject: "Mathematics",
-                                      grade: "Form 2",
-                                      nextReviewDate: new Date().toISOString(),
-                                      intervalDays: 1,
-                                      easeFactor: 2.5,
-                                      lastScore: 0,
-                                      reviewCount: 0,
-                                      question: "State the quadratic formula and explain what the discriminant determines about the roots.",
-                                      answer: "Quadratic Formula:\nx = [-b +/- sqrt(b2 - 4ac)] / (2a)\n\nDiscriminant (D = b2 - 4ac):\n1. D > 0: Two distinct real roots.\n2. D = 0: One repeated real root (equal roots).\n3. D < 0: Two complex/imaginary roots."
-                                    },
-                                    {
-                                      topic: "Devolution in Kenya",
-                                      subject: "History & Government",
-                                      grade: "Form 4",
-                                      nextReviewDate: new Date().toISOString(),
-                                      intervalDays: 1,
-                                      easeFactor: 2.5,
-                                      lastScore: 0,
-                                      reviewCount: 0,
-                                      question: "What are the primary objectives of devolving governance to the 47 counties in Kenya?",
-                                      answer: "Primary Objectives:\n1. Promote democratic and accountable exercise of power.\n2. Foster national unity by recognizing diversity.\n3. Give powers of self-governance to the people and enhance their participation.\n4. Ensure equitable sharing of national and local resources across Kenya.\n5. Facilitate the decentralization of state organs and public services from the capital."
-                                    }
-                                  ];
-                                  samples.forEach(item => addSpacedRepetitionItem(item));
-                                  
-                                  // Navigate directly
-                                  setPracticeMode('due');
-                                  setCurrentCardIndex(0);
-                                  setIsFlipped(false);
-                                  setReviewComplete(false);
-                                  setMode('FLASHCARDS');
-                                }}
-                                className="w-full py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-2xl text-xs font-bold transition-all shadow-lg active:scale-95 duration-200 cursor-pointer text-center"
-                              >
-                                {totalFlashcards > 0 ? "Reset & Seed 3 Q&A Cards" : "Seed 3 Sample Q&A Cards"}
-                              </button>
-                            </div>
-                          </>
-                        )}
-                      </div>
-                    );
-                  })()}
-
-                  {/* DAILY CHALLENGE */}
-                  {dailyChallenge && (
-                     <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-sm border-2 border-slate-300 dark:border-slate-800 p-6 relative overflow-hidden group">
-                        <div className="absolute top-0 right-0 w-32 h-32 bg-orange-500/10 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2"></div>
-                        <div className="flex items-center justify-between mb-4 relative z-10">
-                           <div className="flex items-center gap-2">
-                              <div className="w-8 h-8 bg-orange-100 dark:bg-orange-900/30 rounded-full flex items-center justify-center">
-                                 <Trophy className="w-4 h-4 text-orange-500" />
-                              </div>
-                              <h3 className="font-bold text-slate-800 dark:text-white">Daily Goal</h3>
-                           </div>
-                           <span className="text-[10px] font-black text-orange-500 bg-orange-50 dark:bg-orange-900/20 px-2 py-1 rounded-md uppercase tracking-widest">Active</span>
-                        </div>
-                        <p className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-5 relative z-10">{dailyChallenge.quiz}</p>
-                        <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-1.5 mb-5 overflow-hidden">
-                           <div className="bg-orange-500 h-1.5 rounded-full w-1/4"></div>
-                        </div>
-                        <button onClick={() => { setPromptText(`Generate a ${dailyChallenge.quiz}`); handlePromptSubmit(`Generate a ${dailyChallenge.quiz}`); }} className="w-full py-3 bg-white border-2 border-slate-300 dark:border-slate-700 hover:border-orange-300 hover:bg-orange-50 dark:hover:bg-orange-900/20 text-slate-800 dark:text-white rounded-xl text-xs font-bold transition-all relative z-10">
-                           Start Challenge
-                        </button>
-                     </div>
-                  )}
-
-                  {/* REAL PROGRESS PROOF */}
-                  <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-sm border-2 border-slate-300 dark:border-slate-800 p-6">
-                     <div className="flex items-center justify-between mb-5">
-                        <div>
-                          <h3 className="font-bold text-slate-800 dark:text-white">Progress Proof</h3>
-                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-0.5">What a parent can verify</p>
-                        </div>
-                        <button onClick={() => setShowMasteryDashboard(true)} className="text-xs font-bold text-blue-600 hover:text-blue-700">Open</button>
-                     </div>
-                     <div className="grid grid-cols-2 gap-3 mb-4">
-                        {[
-                          { label: 'Study actions', value: history.length, icon: <BookOpen className="w-4 h-4" /> },
-                          { label: 'Quiz attempts', value: quizAttempts, icon: <ListChecks className="w-4 h-4" /> },
-                          { label: 'Average score', value: averageQuizScore !== null ? `${averageQuizScore}%` : '--', icon: <Trophy className="w-4 h-4" /> },
-                          { label: 'Streak days', value: streak, icon: <Star className="w-4 h-4" /> }
-                        ].map((item) => (
-                          <div key={item.label} className="rounded-2xl bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-slate-800 p-3">
-                            <div className="flex items-center justify-between mb-2">
-                              <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">{item.label}</span>
-                              <span className="text-indigo-600 dark:text-indigo-300">{item.icon}</span>
-                            </div>
-                            <p className="text-xl font-black text-slate-900 dark:text-white">{item.value}</p>
-                          </div>
-                        ))}
-                     </div>
-                     <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 leading-relaxed">
-                       This is the story parents should see: what the learner studied, how they tested, and where they need help next.
-                     </p>
-                  </div>
-
-                  {/* LEGACY STATIC BADGES HIDDEN */}
-                  <div className="hidden bg-white dark:bg-slate-900 rounded-3xl shadow-sm border-2 border-slate-300 dark:border-slate-800 p-6">
-                     <div className="flex items-center justify-between mb-5">
-                        <h3 className="font-bold text-slate-800 dark:text-white">Recent Badges</h3>
-                        <button className="text-xs font-bold text-slate-400 hover:text-slate-600">View All</button>
-                     </div>
-                     <div className="space-y-4">
-                        {[
-                           { icon: <Zap className="w-5 h-5 text-blue-600" />, title: 'Quick Learner', desc: 'Completed 5 quizzes', color: 'bg-blue-50 dark:bg-blue-900/20' },
-                           { icon: <Brain className="w-5 h-5 text-emerald-600" />, title: 'Math Whiz', desc: 'Aced Algebra test', color: 'bg-emerald-50 dark:bg-emerald-900/20' },
-                           { icon: <Star className="w-5 h-5 text-amber-500 fill-amber-500" />, title: 'Consistent Star', desc: '7 day streak', color: 'bg-amber-50 dark:bg-amber-900/20' }
-                        ].map((badge, i) => (
-                           <div key={i} className="flex items-center gap-4">
-                              <div className={`w-12 h-12 rounded-2xl ${badge.color} flex items-center justify-center text-xl shadow-inner shrink-0`}>
-                                 {badge.icon}
-                              </div>
-                              <div>
-                                 <div className="text-sm font-bold text-slate-800 dark:text-slate-200">{badge.title}</div>
-                                 <div className="text-[11px] font-medium text-slate-500 mt-0.5">{badge.desc}</div>
-                              </div>
-                           </div>
-                        ))}
-                       </div>
-                    </div>
-                </div>
-
-              </div>
-            </div>
-          </div>
-        </div>
-        );
-      }
-
-
-
+        <LearnerHome
+          learnerName={studentProfile?.name || profile?.name || 'Learner'}
+          grade={studentProfile?.grade || 'Grade 7'}
+          sessionsLeft={sessionsLeft}
+          latestTopic={latestLearningSnapshot.topic}
+          latestTopicDescription={latestLearningSnapshot.description}
+          latestTopicSummary={latestLearningSnapshot.summaryPoints}
+          latestProgress={latestLearningSnapshot.progress}
+          recommendedTopic={recommendedHomeTopic}
+          recommendationReason={latestQuizActivity?.score !== undefined && latestQuizActivity.score < 70
+            ? 'Your last quiz suggests this is the best place to strengthen marks.'
+            : weakTopics?.[0]
+              ? 'This topic came from your weak-topic list and is worth a quick review.'
+              : 'A short revision lesson should help lock in the idea.'}
+          featuredSubject={featuredSubject}
+          onOpenMenu={() => setSidebarOpen(true)}
+          onProfile={() => setMode('PROFILE')}
+          onTeach={(topic) => {
+            setPromptText(topic);
+            void handlePromptSubmit(topic);
+          }}
+          onScan={() => void startCamera()}
+          onUpload={() => fileInputRef.current?.click()}
+          onVoice={() => void startRecording()}
+          onSubject={(subject) => {
+            if (subject === 'More Subjects') {
+              handleSidebarTabChange('RESOURCES');
+              return;
+            }
+            const subjectPrompt = `Teach me an important ${subject} topic for ${studentProfile?.grade || 'my grade'}.`;
+            setPromptText(subjectPrompt);
+            void handlePromptSubmit(subjectPrompt);
+          }}
+          onContinue={(topic) => void handleQuestTakeQuiz(topic)}
+          onViewAll={() => handleSidebarTabChange('PROGRESS')}
+          onStartRecommendation={(topic) => void handleTopicClick(topic)}
+        />
+      );
+    }
 
     if (mode === 'NOTEBOOK') {
       return (
@@ -10077,13 +8598,15 @@ Topic or question: ${question || '[type your question here]'}`)
   return (
     <div className="relative min-h-screen bg-slate-50 dark:bg-slate-950">
       {/* Sidebar */}
-      <DashboardSidebar
+      <LearnerSidebar
         isOpen={sidebarOpen}
         onToggle={() => setSidebarOpen(!sidebarOpen)}
         activeTab={sidebarTab}
         onTabChange={handleSidebarTabChange}
-        onLogout={() => setShowLogoutModal(true)}
         onProfile={() => runWithRecallExitGuard(() => setMode('PROFILE'))}
+        onPlans={() => runWithRecallExitGuard(() => setMode('PRICING'))}
+        onParent={() => navigate('/parent')}
+        sessionsLeft={Math.max(0, 5 - usageCount)}
       />
 
       {/* Main Content */}
@@ -10615,4 +9138,20 @@ Topic or question: ${question || '[type your question here]'}`)
     </div>
   );
 };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 

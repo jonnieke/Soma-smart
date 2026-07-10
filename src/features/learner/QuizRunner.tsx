@@ -43,7 +43,7 @@ export const QuizRunner: React.FC<{
 
     const shareQuizProof = async () => {
         const proofText = [
-            `Soma Smart quiz proof`,
+            `Somo Smart quiz proof`,
             `Topic: ${data.topic}`,
             `Score: ${finalScore}% (${correctCount}/${data.questions.length} correct)`,
             `Weak spots: ${missedQuestions.length}`,
@@ -54,7 +54,7 @@ export const QuizRunner: React.FC<{
         try {
             if (navigator.share) {
                 await navigator.share({
-                    title: 'Soma Smart quiz proof',
+                    title: 'Somo Smart quiz proof',
                     text: proofText
                 });
                 setProofStatus('shared');

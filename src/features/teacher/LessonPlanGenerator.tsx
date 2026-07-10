@@ -268,7 +268,7 @@ export const LessonPlanGenerator: React.FC<LessonPlanGeneratorProps> = ({
                             </div>
                             <h1 className="text-3xl md:text-5xl font-black tracking-tight mb-2">AI Lesson Planner</h1>
                             <p className="text-emerald-100 font-medium max-w-xl text-lg opacity-90 leading-relaxed">
-                                Generate a complete 5E CBC-aligned lesson plan in seconds. Enter your topic and let Soma Smart do the work.
+                                Generate a complete 5E CBC-aligned lesson plan in seconds. Enter your topic and let Somo Smart do the work.
                             </p>
                         </div>
                     </div>
@@ -531,4 +531,3 @@ export const LessonPlanGenerator: React.FC<LessonPlanGeneratorProps> = ({
         </div>
     );
 };
-

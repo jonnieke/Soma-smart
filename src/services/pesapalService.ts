@@ -84,7 +84,7 @@ export const pesapalService = {
         const { data, error } = await supabase.functions.invoke('pesapal/initiate-order', {
             body: {
                 amount: price,
-                description: `Soma Smart Marketplace: ${materialTitle}`,
+                description: `Somo Smart Marketplace: ${materialTitle}`,
                 reference,
                 callback_url: callbackUrl,
                 billing_address: {

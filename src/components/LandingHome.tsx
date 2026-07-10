@@ -84,9 +84,9 @@ export const LandingHome: React.FC<Props> = (props) => {
         <main className="min-h-screen bg-white text-slate-950">
             <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/95 backdrop-blur">
                 <div className="mx-auto flex h-16 max-w-[1440px] items-center justify-between px-4 sm:px-6 lg:px-10">
-                    <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="flex items-center gap-2 focus-visible:ring-2 focus-visible:ring-blue-600" aria-label="SomaAI home">
+                    <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="flex items-center gap-2 focus-visible:ring-2 focus-visible:ring-blue-600" aria-label="Somo Smart home">
                         <img src={logoImg} alt="" width={44} height={44} className="h-10 w-10 object-contain" />
-                        <span className="text-2xl font-black tracking-[0] text-[#07133f]">Soma<span className="text-blue-600">AI</span></span>
+                        <span className="text-2xl font-black tracking-[0] text-[#07133f]">Somo Smart</span>
                     </button>
                     <nav aria-label="Main navigation" className="hidden items-center gap-9 md:flex">
                         {nav.map(([label, action]) => <button key={label} onClick={action} className="text-sm font-bold text-[#111943] hover:text-blue-600 focus-visible:ring-2 focus-visible:ring-blue-600">{label}</button>)}
@@ -123,7 +123,7 @@ export const LandingHome: React.FC<Props> = (props) => {
             </section>
 
             <section aria-labelledby="helps-heading" className="border-b border-slate-200 bg-[#f8fbff] py-8">
-                <div className="mx-auto max-w-[1440px] px-4 sm:px-6 lg:px-10"><h2 id="helps-heading" className="text-center text-2xl font-black text-[#07133f]">What SomaAI helps with</h2><div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">{helps.map(({ title, text, Icon, tone, action }) => <button type="button" key={title} onClick={() => props.onLearnerShortcut(action.tab, action.intent)} className="flex items-center gap-4 rounded-lg border border-slate-200 bg-white p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-blue-300 hover:shadow-md focus-visible:ring-2 focus-visible:ring-blue-500"><div className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-lg ${tone}`}><Icon className="h-7 w-7" /></div><div><h3 className="font-black text-[#111943]">{title}</h3><p className="mt-1 text-sm leading-5 text-slate-600">{text}</p><p className="mt-2 text-xs font-bold text-blue-600">Open tool</p></div></button>)}</div></div>
+                <div className="mx-auto max-w-[1440px] px-4 sm:px-6 lg:px-10"><h2 id="helps-heading" className="text-center text-2xl font-black text-[#07133f]">What Somo Smart helps with</h2><div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">{helps.map(({ title, text, Icon, tone, action }) => <button type="button" key={title} onClick={() => props.onLearnerShortcut(action.tab, action.intent)} className="flex items-center gap-4 rounded-lg border border-slate-200 bg-white p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-blue-300 hover:shadow-md focus-visible:ring-2 focus-visible:ring-blue-500"><div className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-lg ${tone}`}><Icon className="h-7 w-7" /></div><div><h3 className="font-black text-[#111943]">{title}</h3><p className="mt-1 text-sm leading-5 text-slate-600">{text}</p><p className="mt-2 text-xs font-bold text-blue-600">Open tool</p></div></button>)}</div></div>
             </section>
 
             <ToolsSection onStart={props.onStartLearning} onTeacher={props.onTeacher} onLibrary={props.onLibrary} onLearnerShortcut={props.onLearnerShortcut} />

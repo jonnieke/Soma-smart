@@ -446,7 +446,7 @@ export const ParentDashboard: React.FC<ParentProps> = ({ onNavigate, activityLog
 
     const shareWeeklyProof = async () => {
         const summary = [
-            'Soma Smart weekly learning proof',
+            'Somo Smart weekly learning proof',
             `Student ID: ${validStudentCode}`,
             `Average score: ${stats.avgScore}%`,
             `Study missions completed: ${proofStats.studyMissions}`,
@@ -460,7 +460,7 @@ export const ParentDashboard: React.FC<ParentProps> = ({ onNavigate, activityLog
         try {
             if (navigator.share) {
                 await navigator.share({
-                    title: 'Soma Smart weekly learning proof',
+                    title: 'Somo Smart weekly learning proof',
                     text: summary
                 });
                 setProofShareStatus('shared');
@@ -830,7 +830,7 @@ export const ParentDashboard: React.FC<ParentProps> = ({ onNavigate, activityLog
                     <div className="mt-4 flex flex-col sm:flex-row gap-3">
                         <a
                             href={`https://wa.me/?text=${encodeURIComponent([
-                                '📚 *Soma Smart Weekly Proof*',
+                                '📚 *Somo Smart Weekly Proof*',
                                 `Student: ${validStudentCode}`,
                                 `Average score: ${stats.avgScore}%`,
                                 `Study missions: ${proofStats.studyMissions}`,

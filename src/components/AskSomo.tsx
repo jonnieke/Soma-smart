@@ -112,7 +112,7 @@ export const AskSomo: React.FC = () => {
                 ) : (
                     <>
                         <MessageSquare className="w-5 h-5 sm:w-6 sm:h-6" />
-                        <span className="text-xs sm:text-base">{(language as string) === 'FR' ? 'Demander à Somo' : 'Ask Somo'}</span>
+                        <span className="text-xs sm:text-base">{(language as string) === 'FR' ? 'Demander à Somo' : 'Ask Akili'}</span>
                     </>
                 )}
             </motion.button>
@@ -132,7 +132,7 @@ export const AskSomo: React.FC = () => {
                                 <Sparkles className="w-6 h-6 text-white" />
                             </div>
                             <div>
-                                <h3 className="text-white font-bold text-lg">{(language as string) === 'FR' ? 'Demander à Somo' : 'Ask Somo'}</h3>
+                                <h3 className="text-white font-bold text-lg">{(language as string) === 'FR' ? 'Demander à Somo' : 'Ask Akili'}</h3>
                                 <p className="text-blue-100 text-xs">{(language as string) === 'FR' ? "Votre compagnon d'étude IA" : 'Your smart learning buddy'}</p>
                             </div>
                         </div>

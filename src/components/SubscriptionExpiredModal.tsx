@@ -59,7 +59,7 @@ export const SubscriptionExpiredModal: React.FC = () => {
                                 Subscription Expired
                             </h2>
                             <p className="text-slate-600 dark:text-slate-300 mb-6">
-                                It looks like your Soma Smart Pro access has expired. Renew your subscription today to continue enjoying unlimited features, AI tutoring, and deep insights.
+                                It looks like your Somo Smart Pro access has expired. Renew your subscription today to continue enjoying unlimited features, AI tutoring, and deep insights.
                             </p>
 
                             <div className="flex flex-col gap-3">

@@ -2006,11 +2006,22 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       warnIfDev('Learning credit RPC sync failed:', err);
     }
 
-    const { data: creditRow, error: creditError } = await supabase
+    let { data: creditRow, error: creditError } = await supabase
       .from('learning_credit_balances')
       .select('credits, credit_expires_at')
       .eq('profile_id', profileId)
       .maybeSingle();
+
+    // Support deployments that have the credit table but not the expiry migration yet.
+    if (creditError) {
+      const legacyResult = await supabase
+        .from('learning_credit_balances')
+        .select('credits')
+        .eq('profile_id', profileId)
+        .maybeSingle();
+      creditRow = legacyResult.data as typeof creditRow;
+      creditError = legacyResult.error;
+    }
 
     if (!creditError && creditRow) {
       const dbCredits = sanitizeLearningCredits((creditRow as any).credits || 0);
