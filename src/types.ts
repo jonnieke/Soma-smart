@@ -269,16 +269,28 @@ export interface ExamQuestion {
   number: string; // "1a", "2", etc.
   text: string;    // Extracted text
   topic: string;
+  section?: string;
   subStrand?: string;
   competency?: string;
   cognitiveLevel?: string;
   marks?: number;
   markingScheme?: string[];
+  modelAnswer?: string;
+  explanation?: string;
+  commonMistakes?: string[];
 }
 
 export interface ExamAnalysis {
   subject: string;
   grade: string;
+  examType?: 'KCSE' | 'KPSEA' | 'KJSEA' | 'OTHER';
+  year?: number;
+  paperCode?: string;
+  paperNumber?: string;
+  durationMinutes?: number;
+  totalMarks?: number;
+  instructions?: string[];
+  markingSchemeSource?: 'OFFICIAL' | 'AI_DRAFT';
   questions: ExamQuestion[];
 }
 

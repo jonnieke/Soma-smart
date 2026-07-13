@@ -2043,7 +2043,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const fetchResources = async (grade?: string, subject?: string) => {
     try {
-      let query = supabase.from('knowledge_base').select('*').order('created_at', { ascending: false });
+      let query = supabase
+        .from('knowledge_base')
+        .select('*')
+        .or('review_status.is.null,review_status.eq.PUBLISHED')
+        .order('created_at', { ascending: false });
 
       if (grade) query = query.eq('grade', grade);
       if (subject) query = query.eq('subject', subject);

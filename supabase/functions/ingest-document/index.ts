@@ -154,7 +154,24 @@ serve(async (req) => {
 
     const mimeType = inferMimeType(record, fileResponse);
     const bytes = new Uint8Array(await fileResponse.arrayBuffer());
-    const extractedText = await extractText(apiKey, bytes, mimeType, record);
+    const paperText = await extractText(apiKey, bytes, mimeType, record);
+    let extractedText = "QUESTION PAPER\n" + paperText;
+
+    if (record.marking_scheme_url) {
+      const schemeResponse = await fetch(record.marking_scheme_url);
+      if (!schemeResponse.ok) throw new Error('Could not download marking scheme: ' + schemeResponse.status);
+      const schemeRecord = {
+        ...record,
+        file_url: record.marking_scheme_url,
+        file_path: record.marking_scheme_path,
+        title: record.title + ' Marking Scheme'
+      };
+      const schemeMimeType = inferMimeType(schemeRecord, schemeResponse);
+      const schemeBytes = new Uint8Array(await schemeResponse.arrayBuffer());
+      const schemeText = await extractText(apiKey, schemeBytes, schemeMimeType, schemeRecord);
+      extractedText += "\n\nOFFICIAL MARKING SCHEME\n" + schemeText;
+    }
+
     const chunks = chunkText(extractedText);
 
     if (chunks.length === 0) throw new Error("No searchable text was extracted from this document");
@@ -185,6 +202,13 @@ serve(async (req) => {
           mime_type: mimeType,
           source: record.source || "SOMA",
           is_official: record.is_official ?? true,
+          exam_type: record.exam_type,
+          exam_year: record.exam_year,
+          paper_code: record.paper_code,
+          paper_number: record.paper_number,
+          marking_scheme_url: record.marking_scheme_url,
+          marking_scheme_source: record.marking_scheme_source,
+          review_status: record.review_status,
         },
       });
     }

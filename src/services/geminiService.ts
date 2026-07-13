@@ -1601,7 +1601,10 @@ Keep answers short(1 - 3 sentences), warm, and very clear.Always be helpful! ❤
 
 // --- REVISION ASSISTANT FEATURES ---
 
-export const ingestPastPaper = async (file: File): Promise<ExamAnalysis> => {
+export const ingestPastPaper = async (file: File, markingSchemeFile?: File | null): Promise<ExamAnalysis> => {
+  const parseStringArray = (value: unknown): string[] =>
+    Array.isArray(value) ? value.map(item => String(item || '').trim()).filter(Boolean) : [];
+
   const parseExamAnalysis = (rawText: string): ExamAnalysis => {
     const parsed = parseModelJson<ExamAnalysis>(rawText);
     if (!parsed || !Array.isArray(parsed.questions) || parsed.questions.length === 0) {
@@ -1614,17 +1617,35 @@ export const ingestPastPaper = async (file: File): Promise<ExamAnalysis> => {
       number: String(question.number || index + 1).trim(),
       text: String(question.text || '').trim(),
       topic: String(question.topic || 'General').trim(),
+      section: question.section ? String(question.section).trim() : undefined,
+      subStrand: question.subStrand ? String(question.subStrand).trim() : undefined,
       competency: String(question.competency || 'General').trim(),
+      cognitiveLevel: question.cognitiveLevel ? String(question.cognitiveLevel).trim() : undefined,
       marks: Number.isFinite(Number(question.marks)) ? Number(question.marks) : 0,
+      markingScheme: parseStringArray(question.markingScheme),
+      modelAnswer: question.modelAnswer ? String(question.modelAnswer).trim() : undefined,
+      explanation: question.explanation ? String(question.explanation).trim() : undefined,
+      commonMistakes: parseStringArray(question.commonMistakes),
     })).filter(question => question.text.length > 0);
 
     if (questions.length === 0) {
       throw new Error('AI did not extract any readable questions from this paper');
     }
 
+    const calculatedMarks = questions.reduce((sum, question) => sum + Math.max(0, Number(question.marks || 0)), 0);
+    const examType = String(parsed.examType || '').toUpperCase();
+
     return {
       subject: String(parsed.subject || 'General').trim(),
       grade: String(parsed.grade || 'KCSE').trim(),
+      examType: ['KCSE', 'KPSEA', 'KJSEA'].includes(examType) ? examType as ExamAnalysis['examType'] : 'OTHER',
+      year: Number.isFinite(Number(parsed.year)) ? Number(parsed.year) : undefined,
+      paperCode: parsed.paperCode ? String(parsed.paperCode).trim() : undefined,
+      paperNumber: parsed.paperNumber ? String(parsed.paperNumber).trim() : undefined,
+      durationMinutes: Number.isFinite(Number(parsed.durationMinutes)) ? Number(parsed.durationMinutes) : undefined,
+      totalMarks: Number.isFinite(Number(parsed.totalMarks)) ? Number(parsed.totalMarks) : calculatedMarks,
+      instructions: parseStringArray(parsed.instructions),
+      markingSchemeSource: markingSchemeFile ? 'OFFICIAL' : 'AI_DRAFT',
       questions,
     };
   };
@@ -1640,6 +1661,14 @@ export const ingestPastPaper = async (file: File): Promise<ExamAnalysis> => {
         properties: {
           subject: { type: SchemaType.STRING },
           grade: { type: SchemaType.STRING },
+          examType: { type: SchemaType.STRING },
+          year: { type: SchemaType.INTEGER },
+          paperCode: { type: SchemaType.STRING },
+          paperNumber: { type: SchemaType.STRING },
+          durationMinutes: { type: SchemaType.INTEGER },
+          totalMarks: { type: SchemaType.INTEGER },
+          instructions: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
+          markingSchemeSource: { type: SchemaType.STRING },
           questions: {
             type: SchemaType.ARRAY,
             items: {
@@ -1648,51 +1677,69 @@ export const ingestPastPaper = async (file: File): Promise<ExamAnalysis> => {
                 id: { type: SchemaType.INTEGER },
                 number: { type: SchemaType.STRING },
                 text: { type: SchemaType.STRING },
+                section: { type: SchemaType.STRING },
                 topic: { type: SchemaType.STRING },
                 subStrand: { type: SchemaType.STRING },
                 competency: { type: SchemaType.STRING },
-                marks: { type: SchemaType.INTEGER }
+                cognitiveLevel: { type: SchemaType.STRING },
+                marks: { type: SchemaType.INTEGER },
+                markingScheme: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
+                modelAnswer: { type: SchemaType.STRING },
+                explanation: { type: SchemaType.STRING },
+                commonMistakes: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } }
               },
-              required: ["id", "number", "text", "topic", "competency"]
+              required: ["id", "number", "text", "topic", "marks", "markingScheme"]
             }
           }
         },
-        required: ["subject", "grade", "questions"]
+        required: ["subject", "grade", "examType", "questions"]
       }
     }
   });
 
-  const base64Data = await fileToGenerativePart(file);
-  const mimeType = file.type || (file.name.toLowerCase().endsWith('.pdf') ? 'application/pdf' : 'image/jpeg');
+  const paperBase64 = await fileToGenerativePart(file);
+  const paperMimeType = file.type || (file.name.toLowerCase().endsWith('.pdf') ? 'application/pdf' : 'image/jpeg');
+  const schemeBase64 = markingSchemeFile ? await fileToGenerativePart(markingSchemeFile) : null;
+  const schemeMimeType = markingSchemeFile
+    ? markingSchemeFile.type || (markingSchemeFile.name.toLowerCase().endsWith('.pdf') ? 'application/pdf' : 'image/jpeg')
+    : null;
 
   const prompt = [
-    'You are an expert Educational Content Architect.',
-    'Analyze this uploaded document, which is a past national examination paper (KCSE, KPSEA, or KEPSEA).',
-    '1. Identify the Subject (e.g., Mathematics, English, Kiswahili).',
-    '2. Identify the Grade Level (e.g., Form 4, Grade 9, Grade 6).',
-    '3. Extract EVERY question from the paper.',
-    '4. For each question, extract its number, full exact text, topic, sub-strand, competency, and assigned marks (0 if not specified).',
-    'Return only compact JSON compatible with the ExamAnalysis interface.',
-    'Keep question text exact, but keep topic and competency labels concise so the complete paper fits in one response.'
+    'You are an expert Kenyan national-exam content architect.',
+    'The first document is the QUESTION PAPER. A second document, when supplied, is its OFFICIAL MARKING SCHEME.',
+    'Extract the exact paper metadata: exam type, year, subject, grade, paper code, paper number, duration, total marks, and candidate instructions.',
+    'Extract EVERY question and sub-question in the original order. Preserve question wording and section labels.',
+    'For every question provide topic, sub-strand, competency, cognitive level, marks, mark-by-mark markingScheme points, a modelAnswer, a concise explanation of how to earn the marks, and common candidate mistakes.',
+    'When an official marking scheme is supplied, pair its points to the matching question number and treat it as authoritative.',
+    'When no official marking scheme is supplied, create a cautious AI draft marking guide and set markingSchemeSource to AI_DRAFT.',
+    'Never invent an official source or claim an AI draft is official.',
+    'Return only compact, complete JSON. Keep labels concise so no question is omitted.'
   ].join('\n');
 
-  try {
-    const result = await model.generateContent([
-      prompt,
-      { inlineData: { data: base64Data, mimeType } }
-    ]);
+  const buildParts = (retry = false): any[] => {
+    const parts: any[] = [
+      retry ? prompt + '\nRETRY: The prior JSON was incomplete. Return smaller metadata text but include every question in valid JSON.' : prompt,
+      'QUESTION PAPER:',
+      { inlineData: { data: paperBase64, mimeType: paperMimeType } }
+    ];
 
+    if (schemeBase64 && schemeMimeType) {
+      parts.push('OFFICIAL MARKING SCHEME:', { inlineData: { data: schemeBase64, mimeType: schemeMimeType } });
+    }
+
+    return parts;
+  };
+
+  try {
+    const result = await model.generateContent(buildParts());
     const text = result.response.text();
     if (!text) throw new Error("No response from AI");
 
     try {
       return parseExamAnalysis(text);
     } catch (firstParseError) {
-      console.warn('Initial paper extraction was incomplete; retrying once.', firstParseError);
-      const retryResult = await model.generateContent([
-        prompt + '\nIMPORTANT RETRY: The previous response was incomplete. Return valid, complete JSON only. Shorten metadata labels before omitting any question.',
-        { inlineData: { data: base64Data, mimeType } }
-      ]);
+      console.warn('Initial paired paper extraction was incomplete; retrying once.', firstParseError);
+      const retryResult = await model.generateContent(buildParts(true));
       const retryText = retryResult.response.text();
       if (!retryText) throw new Error('No response from AI after retry');
       return parseExamAnalysis(retryText);
@@ -2105,36 +2152,29 @@ export const markStudentAnswer = async (
     ? "LANGUAGE RULE: You MUST respond ENTIRELY in rich, immersive, grammatical Swahili (Kiswahili Sanifu)."
     : "LANGUAGE RULE: You MUST respond exclusively in English. All marking, feedback, model answers, and exam tips must be strictly in English, even if the student language setting is Swahili.";
 
-  const prompt = `
-    You are a STRICT Kenyan National Exam Marker(KNEC standard).
-    You are marking a candidate's answer for a KPSEA/KCSE examination.
+  const markingGuide = question.markingScheme?.length
+    ? question.markingScheme.map((point, index) => String(index + 1) + '. ' + point).join('\n')
+    : 'No supplied marking scheme. Apply a cautious draft rubric and do not claim it is official.';
 
-QUESTION: "${question.text}"
-Topic: ${question.topic}
-    Marks Available: ${question.marks || 2}
-Competency: ${question.competency || 'General'}
-    
-    CANDIDATE'S ANSWER: "${learnerAnswer}"
-    
-    ${langInstruction}
-    
-    MARKING INSTRUCTIONS:
-1. Compare the candidate's answer against the KNEC marking scheme standard.
-2. Award marks strictly — partial marks are allowed.
-    3. In "modelAnswer", provide the COMPLETE correct answer as it would appear in the official marking scheme.
-    4. In "feedback", explain specifically WHY marks were awarded or lost.Be direct: "You got X marks because... You lost Y marks because..."
-5. In "examTip", give a practical tip for this type of question in future KPSEA / KCSE exams.Reference real exam patterns: "This topic frequently appears in KCSE Paper 1 Section B..."
-    
-    Output JSON:
-{
-  "marksAwarded": number,
-    "marksAvailable": ${question.marks || 2},
-  "isCorrect": boolean,
-    "modelAnswer": "The complete correct answer...",
-      "feedback": "You scored X/${question.marks || 2}. Here's why...",
-        "examTip": "In KCSE/KPSEA exams, this type of question..."
-}
-`;
+  const prompt = [
+    'You are a strict Kenyan national-exam marker.',
+    'QUESTION: ' + question.text,
+    'Topic: ' + question.topic,
+    'Marks available: ' + (question.marks || 2),
+    'Competency: ' + (question.competency || 'General'),
+    'MARKING GUIDE:',
+    markingGuide,
+    question.modelAnswer ? 'REFERENCE MODEL ANSWER: ' + question.modelAnswer : '',
+    'CANDIDATE ANSWER: ' + learnerAnswer,
+    langInstruction,
+    'MARKING INSTRUCTIONS:',
+    '1. Treat supplied marking-guide points as the scoring authority.',
+    '2. Award partial marks only where a specific marking point is satisfied.',
+    '3. Never award more than the available marks.',
+    '4. Explain exactly which marking points were earned and missed.',
+    '5. Give a complete model answer and one practical exam technique tip.',
+    'Return JSON with marksAwarded, marksAvailable, isCorrect, modelAnswer, feedback, and examTip.'
+  ].filter(Boolean).join('\n');
 
   try {
     const result = await model.generateContent(prompt);
