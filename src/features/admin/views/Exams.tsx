@@ -42,28 +42,16 @@ export const ExamsView: React.FC = () => {
     const fetchExams = async () => {
         try {
             setLoading(true);
-            const [
-                { data: knowledgePapers, error: kbError },
-                { data: legacyPapers, error: legacyError }
-            ] = await Promise.all([
-                supabase
-                    .from('knowledge_base')
-                    .select('id, title, subject, grade, file_url, file_path, created_at, type')
-                    .eq('type', 'PAST_PAPER')
-                    .order('created_at', { ascending: false }),
-                supabase
-                    .from('activities')
-                    .select('id, topic, subject, class_name, created_at, details, student_id, type')
-                    .eq('student_id', 'ADMIN')
-                    .eq('type', 'QUIZ')
-                    .order('created_at', { ascending: false })
-            ]);
+            const { data: knowledgePapers, error: kbError } = await supabase
+                .from('knowledge_base')
+                .select('id, title, subject, grade, file_url, file_path, created_at, type')
+                .eq('type', 'PAST_PAPER')
+                .order('created_at', { ascending: false });
 
-            if (kbError) console.warn('Knowledge base paper fetch failed:', kbError);
-            if (legacyError) console.warn('Legacy paper fetch failed:', legacyError);
+            if (kbError) throw kbError;
 
             const mappedKnowledge = (knowledgePapers || []).map((d: any) => ({
-                id: `kb-${d.id}`,
+                id: 'kb-' + d.id,
                 title: d.title,
                 subject: d.subject || 'General',
                 className: d.grade || 'Any',
@@ -73,18 +61,9 @@ export const ExamsView: React.FC = () => {
                 source: 'knowledge_base' as const
             }));
 
-            const mappedLegacy = (legacyPapers || []).map((d: any) => ({
-                id: `legacy-${d.id}`,
-                title: d.topic,
-                subject: d.subject || d.details?.subject || 'General',
-                className: d.class_name || d.details?.className || 'Any',
-                created_at: d.created_at,
-                source: 'legacy_activity' as const
-            }));
-
             const unique = new Map<string, Exam>();
-            [...mappedKnowledge, ...mappedLegacy].forEach((paper) => {
-                const key = `${paper.title}__${paper.subject}__${paper.className}`.toLowerCase();
+            mappedKnowledge.forEach((paper) => {
+                const key = (paper.title + '__' + paper.subject + '__' + paper.className).toLowerCase();
                 if (!unique.has(key) || new Date(unique.get(key)!.created_at) < new Date(paper.created_at)) {
                     unique.set(key, paper);
                 }

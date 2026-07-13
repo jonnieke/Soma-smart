@@ -1602,10 +1602,39 @@ Keep answers short(1 - 3 sentences), warm, and very clear.Always be helpful! ❤
 // --- REVISION ASSISTANT FEATURES ---
 
 export const ingestPastPaper = async (file: File): Promise<ExamAnalysis> => {
+  const parseExamAnalysis = (rawText: string): ExamAnalysis => {
+    const parsed = parseModelJson<ExamAnalysis>(rawText);
+    if (!parsed || !Array.isArray(parsed.questions) || parsed.questions.length === 0) {
+      throw new Error('AI did not extract any questions from this paper');
+    }
+
+    const questions = parsed.questions.map((question, index) => ({
+      ...question,
+      id: Number.isFinite(Number(question.id)) ? Number(question.id) : index + 1,
+      number: String(question.number || index + 1).trim(),
+      text: String(question.text || '').trim(),
+      topic: String(question.topic || 'General').trim(),
+      competency: String(question.competency || 'General').trim(),
+      marks: Number.isFinite(Number(question.marks)) ? Number(question.marks) : 0,
+    })).filter(question => question.text.length > 0);
+
+    if (questions.length === 0) {
+      throw new Error('AI did not extract any readable questions from this paper');
+    }
+
+    return {
+      subject: String(parsed.subject || 'General').trim(),
+      grade: String(parsed.grade || 'KCSE').trim(),
+      questions,
+    };
+  };
+
   const model = genAI.getGenerativeModel({
     model: MODEL_NAME,
     generationConfig: {
       responseMimeType: "application/json",
+      temperature: 0.1,
+      maxOutputTokens: 32768,
       responseSchema: {
         type: SchemaType.OBJECT,
         properties: {
@@ -1634,35 +1663,40 @@ export const ingestPastPaper = async (file: File): Promise<ExamAnalysis> => {
   });
 
   const base64Data = await fileToGenerativePart(file);
-  const mimeType = file.type;
+  const mimeType = file.type || (file.name.toLowerCase().endsWith('.pdf') ? 'application/pdf' : 'image/jpeg');
 
-  const prompt = `
-    You are an expert Educational Content Architect. 
-    Analyze this uploaded document, which is a past national examination paper(KCSE, KPSEA, or KEPSEA).
-    
-    1. Identify the Subject(e.g., Mathematics, English, Kiswahili).
-    2. Identify the Grade Level(e.g., Form 4, Grade 9, Grade 6).
-    3. Extract EVERY question from the paper.
-    4. For each question:
-- Extract the question number(e.g., 1, 2a, 3).
-       - Extract the full text of the question.
-       - Identify the specific Topic and Sub - strand it belongs to(based on Kenyan CBC / 844 curriculum).
-       - Identify the Competency being tested(e.g., Critical Thinking, Problem Solving, Literacy, Numeracy).
-       - Extract the Marks assigned to it(0 if not specified).
-    
-    Output JSON compatible with the ExamAnalysis interface.
-  `;
+  const prompt = [
+    'You are an expert Educational Content Architect.',
+    'Analyze this uploaded document, which is a past national examination paper (KCSE, KPSEA, or KEPSEA).',
+    '1. Identify the Subject (e.g., Mathematics, English, Kiswahili).',
+    '2. Identify the Grade Level (e.g., Form 4, Grade 9, Grade 6).',
+    '3. Extract EVERY question from the paper.',
+    '4. For each question, extract its number, full exact text, topic, sub-strand, competency, and assigned marks (0 if not specified).',
+    'Return only compact JSON compatible with the ExamAnalysis interface.',
+    'Keep question text exact, but keep topic and competency labels concise so the complete paper fits in one response.'
+  ].join('\n');
 
   try {
     const result = await model.generateContent([
       prompt,
-      { inlineData: { data: base64Data, mimeType: mimeType } }
+      { inlineData: { data: base64Data, mimeType } }
     ]);
 
     const text = result.response.text();
     if (!text) throw new Error("No response from AI");
 
-    return JSON.parse(text) as ExamAnalysis;
+    try {
+      return parseExamAnalysis(text);
+    } catch (firstParseError) {
+      console.warn('Initial paper extraction was incomplete; retrying once.', firstParseError);
+      const retryResult = await model.generateContent([
+        prompt + '\nIMPORTANT RETRY: The previous response was incomplete. Return valid, complete JSON only. Shorten metadata labels before omitting any question.',
+        { inlineData: { data: base64Data, mimeType } }
+      ]);
+      const retryText = retryResult.response.text();
+      if (!retryText) throw new Error('No response from AI after retry');
+      return parseExamAnalysis(retryText);
+    }
   } catch (error) {
     console.error("Error ingesting exam:", error);
     throw error;
