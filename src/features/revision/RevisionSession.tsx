@@ -11,8 +11,8 @@ import {
     QuestionExplanation
 } from '../../types';
 import {
-    analyzeExamPaper, analyzeExamPaperUrl, fileToGenerativePart, markStudentAnswer,
-    predictLikelyQuestions, getPaperGuidance, explainQuestion, reconstructPaperQuestions
+    analyzeExamPaper, fileToGenerativePart, markStudentAnswer,
+    predictLikelyQuestions, getPaperGuidance, explainQuestion
 } from '../../services/geminiService';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -124,58 +124,28 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
                     setLoadingText('AI is analyzing your exam paper...');
                     const result = await analyzeExamPaper(base64, data.type);
                     setAnalysis(result);
-                } else if ('file_path' in (data as any) || (data as any)?.fileUrl || (data as any)?.file_url) {
+                } else if (Array.isArray((data as any)?.structured_questions) || 'file_path' in (data as any) || (data as any)?.fileUrl || (data as any)?.file_url) {
                     const res = data as any;
                     const savedQuestions = Array.isArray(res.structured_questions) ? res.structured_questions : [];
 
-                    if (savedQuestions.length > 0) {
-                        setLoadingText('Opening structured exam...');
-                        setAnalysis({
-                            subject: res.subject || 'General',
-                            grade: res.grade || 'KCSE',
-                            examType: res.exam_type || undefined,
-                            year: res.exam_year || undefined,
-                            paperCode: res.paper_code || undefined,
-                            paperNumber: res.paper_number || undefined,
-                            durationMinutes: res.duration_minutes || undefined,
-                            totalMarks: res.total_marks || undefined,
-                            instructions: Array.isArray(res.exam_instructions) ? res.exam_instructions : [],
-                            markingSchemeSource: res.marking_scheme_source || 'AI_DRAFT',
-                            questions: savedQuestions
-                        });
-                    } else {
-                        const encodedPath = res.file_path ? res.file_path.split('/').map(encodeURIComponent).join('/') : '';
-                        const fallbackUrl = import.meta.env.VITE_SUPABASE_URL + '/storage/v1/object/public/syllabus-docs/' + encodedPath;
-                        const docUrl = res.file_url || res.fileUrl || fallbackUrl;
-                        setLoadingText('Fetching and analyzing document...');
-
-                        try {
-                            const result = await analyzeExamPaperUrl(docUrl, 'application/pdf');
-                            if (result?.questions?.length) {
-                                setAnalysis(result);
-                            } else {
-                                const reconstructed = await reconstructPaperQuestions(
-                                    res.subject || result?.subject || 'General',
-                                    res.grade || result?.grade || 'KCSE',
-                                    res.title || 'Past Paper',
-                                    language
-                                );
-                                setAnalysis(reconstructed);
-                            }
-                        } catch (fetchErr: any) {
-                            console.error('[RevisionSession] Fallback triggered due to:', fetchErr);
-                            console.error('[RevisionSession] Error name:', fetchErr?.name, 'message:', fetchErr?.message);
-                            setAnalysis({
-                                subject: res.subject,
-                                grade: res.grade,
-                                questions: [
-                                    { id: 1, number: "1", text: 'Explain the key concepts covered in ' + res.title, topic: res.subject, marks: 5 },
-                                    { id: 2, number: "2", text: 'What are the main learning objectives for ' + res.subject + ' at ' + res.grade + ' level?', topic: res.subject, marks: 5 },
-                                    { id: 3, number: "3", text: 'Discuss the most important topics in this ' + res.subject + ' material', topic: res.subject, marks: 10 }
-                                ]
-                            });
-                        }
+                    if (savedQuestions.length === 0) {
+                        throw new Error('This exam has not been structured yet. Ask an administrator to analyze and publish it.');
                     }
+
+                    setLoadingText('Opening structured exam...');
+                    setAnalysis({
+                        subject: res.subject || 'General',
+                        grade: res.grade || 'KCSE',
+                        examType: res.exam_type || undefined,
+                        year: res.exam_year || undefined,
+                        paperCode: res.paper_code || undefined,
+                        paperNumber: res.paper_number || undefined,
+                        durationMinutes: res.duration_minutes || undefined,
+                        totalMarks: res.total_marks || undefined,
+                        instructions: Array.isArray(res.exam_instructions) ? res.exam_instructions : [],
+                        markingSchemeSource: res.marking_scheme_source || 'AI_DRAFT',
+                        questions: savedQuestions
+                    });
                 } else {
                     // Quiz data from teacher
                     const quiz = (data as any).content;

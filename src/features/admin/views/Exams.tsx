@@ -23,6 +23,8 @@ interface Exam {
     examYear?: number | null;
     paperNumber?: string | null;
     reviewStatus: 'DRAFT' | 'PUBLISHED';
+    indexingStatus: 'PENDING' | 'PROCESSING' | 'READY' | 'FAILED';
+    lastIndexError?: string | null;
     questionCount: number;
 }
 
@@ -43,6 +45,7 @@ export const ExamsView: React.FC = () => {
     const [showAdd, setShowAdd] = useState(false);
     const [uploading, setUploading] = useState(false);
     const [saving, setSaving] = useState(false);
+    const [indexingExamId, setIndexingExamId] = useState<string | null>(null);
 
     const [paperFile, setPaperFile] = useState<File | null>(null);
     const [markingSchemeFile, setMarkingSchemeFile] = useState<File | null>(null);
@@ -90,7 +93,7 @@ export const ExamsView: React.FC = () => {
             setLoading(true);
             const { data, error } = await supabase
                 .from('knowledge_base')
-                .select('id, title, subject, grade, file_url, file_path, marking_scheme_url, marking_scheme_path, exam_type, exam_year, paper_number, review_status, structured_questions, created_at')
+                .select('id, title, subject, grade, file_url, file_path, marking_scheme_url, marking_scheme_path, exam_type, exam_year, paper_number, review_status, structured_questions, indexing_status, last_index_error, created_at')
                 .eq('type', 'PAST_PAPER')
                 .order('created_at', { ascending: false });
 
@@ -110,6 +113,8 @@ export const ExamsView: React.FC = () => {
                 examYear: row.exam_year,
                 paperNumber: row.paper_number,
                 reviewStatus: row.review_status === 'DRAFT' ? 'DRAFT' : 'PUBLISHED',
+                indexingStatus: ['PROCESSING', 'READY', 'FAILED'].includes(row.indexing_status) ? row.indexing_status : 'PENDING',
+                lastIndexError: row.last_index_error,
                 questionCount: Array.isArray(row.structured_questions) ? row.structured_questions.length : 0
             })));
         } catch (error) {
@@ -260,6 +265,40 @@ export const ExamsView: React.FC = () => {
         ));
     };
 
+    const indexStructuredExam = async (exam: Exam) => {
+        if (indexingExamId) return;
+        setIndexingExamId(exam.id);
+        try {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) throw new Error('Your admin session has expired. Please sign in again.');
+
+            const { data: record, error: recordError } = await supabase
+                .from('knowledge_base')
+                .select('*')
+                .eq('id', exam.id)
+                .single();
+            if (recordError) throw recordError;
+
+            const response = await fetch(import.meta.env.VITE_SUPABASE_URL + '/functions/v1/ingest-document', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + session.access_token
+                },
+                body: JSON.stringify({ record })
+            });
+            const result = await response.json().catch(() => ({}));
+            if (!response.ok) throw new Error(result.error || 'Structured exam indexing failed.');
+
+            await fetchExams();
+        } catch (error) {
+            const message = error instanceof Error ? error.message : 'Unknown indexing error';
+            alert('Could not index this structured exam. ' + message);
+            await fetchExams();
+        } finally {
+            setIndexingExamId(null);
+        }
+    };
     const handleDelete = async (exam: Exam) => {
         if (!confirm('Delete this paper, its marking scheme, and its structured questions?')) return;
 
@@ -345,6 +384,16 @@ export const ExamsView: React.FC = () => {
                                                 : 'rounded-full bg-amber-50 px-2.5 py-1 text-[10px] font-bold text-amber-700'}>
                                                 {exam.markingSchemeUrl ? 'Official scheme paired' : 'AI draft marking'}
                                             </span>
+                                            <span
+                                                title={exam.lastIndexError || 'Structured exam search status'}
+                                                className={exam.indexingStatus === 'READY'
+                                                    ? 'rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-bold text-emerald-700'
+                                                    : exam.indexingStatus === 'FAILED'
+                                                        ? 'rounded-full bg-rose-50 px-2.5 py-1 text-[10px] font-bold text-rose-700'
+                                                        : 'rounded-full bg-amber-50 px-2.5 py-1 text-[10px] font-bold text-amber-700'}
+                                            >
+                                                {exam.indexingStatus === 'READY' ? 'Interactive index ready' : exam.indexingStatus === 'FAILED' ? 'Index needs retry' : 'Indexing structure'}
+                                            </span>
                                             <span className={exam.reviewStatus === 'PUBLISHED'
                                                 ? 'rounded-full bg-blue-50 px-2.5 py-1 text-[10px] font-bold text-blue-700'
                                                 : 'rounded-full bg-slate-200 px-2.5 py-1 text-[10px] font-bold text-slate-600'}>
@@ -354,6 +403,17 @@ export const ExamsView: React.FC = () => {
                                     </div>
                                 </div>
                                 <div className="flex items-center justify-end gap-2">
+                                    {exam.indexingStatus !== 'READY' && (
+                                        <button
+                                            onClick={() => indexStructuredExam(exam)}
+                                            disabled={Boolean(indexingExamId)}
+                                            title="Index structured questions for Ask Akili"
+                                            className="flex items-center gap-1.5 rounded-lg bg-indigo-50 px-3 py-2 text-xs font-bold text-indigo-700 hover:bg-indigo-100 disabled:opacity-50"
+                                        >
+                                            {indexingExamId === exam.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                                            {exam.indexingStatus === 'FAILED' ? 'Retry index' : 'Index exam'}
+                                        </button>
+                                    )}
                                     {exam.reviewStatus === 'DRAFT' && (
                                         <button onClick={() => publishDraft(exam)} className="rounded-lg bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-700 hover:bg-emerald-100">
                                             Publish

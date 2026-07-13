@@ -2043,29 +2043,46 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const fetchResources = async (grade?: string, subject?: string) => {
     try {
-      let query = supabase
+      // Past papers are delivered as structured exams. Their private source-file URLs
+      // are intentionally excluded from learner queries.
+      let documentQuery = supabase
         .from('knowledge_base')
         .select('*')
+        .neq('type', 'PAST_PAPER')
         .or('review_status.is.null,review_status.eq.PUBLISHED')
         .order('created_at', { ascending: false });
 
-      if (grade) query = query.eq('grade', grade);
-      if (subject) query = query.eq('subject', subject);
+      let examQuery = supabase
+        .from('knowledge_base')
+        .select('id, title, grade, subject, type, source, is_official, rating, download_count, created_at, indexing_status, indexed_at, chunk_count, last_index_error, exam_type, exam_year, paper_code, paper_number, duration_minutes, total_marks, structured_questions, exam_instructions, marking_scheme_source, review_status')
+        .eq('type', 'PAST_PAPER')
+        .eq('review_status', 'PUBLISHED')
+        .order('created_at', { ascending: false });
 
-      const { data, error } = await query;
-      if (error) throw error;
+      if (grade) {
+        documentQuery = documentQuery.eq('grade', grade);
+        examQuery = examQuery.eq('grade', grade);
+      }
+      if (subject) {
+        documentQuery = documentQuery.eq('subject', subject);
+        examQuery = examQuery.eq('subject', subject);
+      }
+
+      const [documentResult, examResult] = await Promise.all([documentQuery, examQuery]);
+      if (documentResult.error) throw documentResult.error;
+      if (examResult.error) throw examResult.error;
 
       // Do not hard-drop resources by education level at context fetch time.
-      // Let learner-side filters decide what to show so admin starter materials
-      // (NOTES / PAST_PAPER) always remain available in the library.
-      const filteredData = (data || []).filter(item => !/^\d{13}$/.test(item.title));
+      // Let learner-side filters decide what to show so admin starter materials remain available.
+      const combined = [...(examResult.data || []), ...(documentResult.data || [])]
+        .filter(item => !/^\d{13}$/.test(item.title))
+        .sort((a, b) => +new Date(b.created_at || 0) - +new Date(a.created_at || 0));
 
-      setResources(filteredData);
+      setResources(combined);
     } catch (e) {
       console.error("Error fetching resources:", e);
     }
   };
-
   const registerTeacher = async (name: string, email: string, password: string, classes: string[], subjects: string[], phone: string): Promise<{ success: boolean; message?: string }> => {
     try {
       const { data, error } = await supabase.auth.signUp({

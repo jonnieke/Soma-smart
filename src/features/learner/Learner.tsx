@@ -1698,7 +1698,20 @@ Stay anchored to this context unless I ask for something broader.`;
       grade: r.grade,
       subject: r.subject,
       category: normalizeMaterialCategory(r.type),
-      fileUrl: r.file_url,
+      fileUrl: normalizeMaterialCategory(r.type) === 'PAST_PAPER' ? undefined : r.file_url,
+      structured_questions: r.structured_questions,
+      exam_instructions: r.exam_instructions,
+      exam_type: r.exam_type,
+      exam_year: r.exam_year,
+      paper_code: r.paper_code,
+      paper_number: r.paper_number,
+      duration_minutes: r.duration_minutes,
+      total_marks: r.total_marks,
+      marking_scheme_source: r.marking_scheme_source,
+      indexing_status: r.indexing_status,
+      indexed_at: r.indexed_at,
+      chunk_count: r.chunk_count,
+      last_index_error: r.last_index_error,
       rating: r.rating || 0,
       downloadCount: r.download_count || 0,
       isInternal: true
@@ -8175,8 +8188,8 @@ ${explanation.explanation}
                               }
                             }}
                             isLoading={loading && pendingDownloadMaterial?.id === item.id}
-                            icon={<Download className="w-4 h-4" />}
-                            title="Download"
+                            icon={isPastPaper ? <ClipboardList className="w-4 h-4" /> : <Download className="w-4 h-4" />}
+                            title={isPastPaper ? "Start structured exam" : "Download"}
                           />
                         </div>
                       </motion.div>

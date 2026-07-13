@@ -562,7 +562,7 @@ Use plain text. No markdown headings or symbols.`;
                                     onClick={() => onStartSession(recommendedStart, RevisionMode.EXAM)}
                                     className="shrink-0 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 text-[11px] font-black transition-colors"
                                 >
-                                    Open paper
+                                    Start exam
                                 </button>
                             </div>
                         </div>

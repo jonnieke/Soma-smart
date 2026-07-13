@@ -8,7 +8,7 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-const EMBEDDING_MODEL = Deno.env.get("GEMINI_EMBEDDING_MODEL") || "text-embedding-005";
+const EMBEDDING_MODEL = Deno.env.get("GEMINI_EMBEDDING_MODEL") || "gemini-embedding-001";
 const EXTRACTION_MODEL = Deno.env.get("GEMINI_EXTRACTION_MODEL") || "gemini-3.5-flash";
 const MAX_CHUNKS = Number(Deno.env.get("RAG_MAX_CHUNKS_PER_DOCUMENT") || "240");
 
@@ -18,6 +18,24 @@ const json = (body: unknown, status = 200) =>
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
 
+const getAdminEmails = () => new Set(
+  String(Deno.env.get("ADMIN_EMAILS") || "")
+    .split(",")
+    .map(email => email.trim().toLowerCase())
+    .filter(Boolean),
+);
+
+const requireAdmin = async (req: Request, supabase: any) => {
+  const authHeader = req.headers.get("Authorization") || "";
+  const token = authHeader.replace(/^Bearer\s+/i, "").trim();
+  if (!token) throw new Error("Admin authentication is required");
+
+  const { data, error } = await supabase.auth.getUser(token);
+  const email = data?.user?.email?.toLowerCase() || "";
+  if (error || !email || !getAdminEmails().has(email)) {
+    throw new Error("This account is not authorized to index exam content");
+  }
+};
 const roughTokens = (text: string) => Math.max(1, Math.ceil(text.length / 4));
 
 const inferMimeType = (record: any, response: Response) => {
@@ -110,12 +128,53 @@ const extractText = async (apiKey: string, bytes: Uint8Array, mimeType: string, 
   return extractWithGemini(apiKey, bytes, mimeType, record);
 };
 
+const asStringList = (value: unknown) =>
+  Array.isArray(value) ? value.map(item => String(item || "").trim()).filter(Boolean) : [];
+
+const structuredExamToText = (record: any) => {
+  const questions = Array.isArray(record?.structured_questions) ? record.structured_questions : [];
+  const header = [
+    "STRUCTURED INTERACTIVE EXAM",
+    "Title: " + (record?.title || "Untitled exam"),
+    "Exam: " + (record?.exam_type || "") + " " + (record?.exam_year || ""),
+    "Subject: " + (record?.subject || "General"),
+    "Grade: " + (record?.grade || "Unknown"),
+    "Paper code: " + (record?.paper_code || ""),
+    "Paper number: " + (record?.paper_number || ""),
+    "Duration minutes: " + (record?.duration_minutes || ""),
+    "Total marks: " + (record?.total_marks || ""),
+    "Marking source: " + (record?.marking_scheme_source || "AI_DRAFT"),
+    ...asStringList(record?.exam_instructions).map(item => "Instruction: " + item),
+  ].filter(line => !line.endsWith(": ")).join("\n");
+
+  const questionText = questions.map((question: any, index: number) => {
+    const markingPoints = asStringList(question?.markingScheme);
+    const commonMistakes = asStringList(question?.commonMistakes);
+    return [
+      "QUESTION " + (question?.number || index + 1),
+      String(question?.text || "").trim(),
+      "Marks: " + (Number(question?.marks) || 0),
+      "Section: " + (question?.section || ""),
+      "Topic: " + (question?.topic || "General"),
+      "Sub-strand: " + (question?.subStrand || ""),
+      "Competency: " + (question?.competency || ""),
+      "Cognitive level: " + (question?.cognitiveLevel || ""),
+      ...markingPoints.map((point, pointIndex) => "Marking point " + (pointIndex + 1) + ": " + point),
+      question?.modelAnswer ? "Model answer: " + question.modelAnswer : "",
+      question?.explanation ? "How to earn marks: " + question.explanation : "",
+      ...commonMistakes.map(mistake => "Common mistake: " + mistake),
+    ].filter(Boolean).filter(line => !line.endsWith(": ")).join("\n");
+  }).join("\n\n");
+
+  return header + "\n\n" + questionText;
+};
 const embedText = async (apiKey: string, text: string) => {
   const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${EMBEDDING_MODEL}:embedContent?key=${apiKey}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       content: { parts: [{ text }] },
+      outputDimensionality: 768,
     }),
   });
 
@@ -137,9 +196,16 @@ serve(async (req) => {
   );
 
   try {
+    await requireAdmin(req, supabase);
     const body = await req.json();
     record = body.record || body;
-    if (!record?.id || !record?.file_url) return json({ error: "record.id and record.file_url are required" }, 400);
+    if (!record?.id) return json({ error: "record.id is required" }, 400);
+
+    const isStructuredExam = String(record?.type || "").toUpperCase() === "PAST_PAPER";
+    const structuredQuestions = Array.isArray(record?.structured_questions) ? record.structured_questions : [];
+    if (isStructuredExam && structuredQuestions.length === 0) {
+      return json({ error: "A past paper must contain structured_questions before it can be indexed" }, 400);
+    }
 
     const apiKey = Deno.env.get("GEMINI_API_KEY");
     if (!apiKey) throw new Error("GEMINI_API_KEY is not set");
@@ -149,27 +215,19 @@ serve(async (req) => {
       .update({ indexing_status: "PROCESSING", last_index_error: null })
       .eq("id", record.id);
 
-    const fileResponse = await fetch(record.file_url);
-    if (!fileResponse.ok) throw new Error(`Could not download file: ${fileResponse.status}`);
+    let mimeType = "application/json";
+    let extractedText = "";
 
-    const mimeType = inferMimeType(record, fileResponse);
-    const bytes = new Uint8Array(await fileResponse.arrayBuffer());
-    const paperText = await extractText(apiKey, bytes, mimeType, record);
-    let extractedText = "QUESTION PAPER\n" + paperText;
-
-    if (record.marking_scheme_url) {
-      const schemeResponse = await fetch(record.marking_scheme_url);
-      if (!schemeResponse.ok) throw new Error('Could not download marking scheme: ' + schemeResponse.status);
-      const schemeRecord = {
-        ...record,
-        file_url: record.marking_scheme_url,
-        file_path: record.marking_scheme_path,
-        title: record.title + ' Marking Scheme'
-      };
-      const schemeMimeType = inferMimeType(schemeRecord, schemeResponse);
-      const schemeBytes = new Uint8Array(await schemeResponse.arrayBuffer());
-      const schemeText = await extractText(apiKey, schemeBytes, schemeMimeType, schemeRecord);
-      extractedText += "\n\nOFFICIAL MARKING SCHEME\n" + schemeText;
+    if (isStructuredExam) {
+      // PDFs remain private admin source material. Search and learner tools use only reviewed structure.
+      extractedText = structuredExamToText(record);
+    } else {
+      if (!record?.file_url) return json({ error: "record.file_url is required for non-exam documents" }, 400);
+      const fileResponse = await fetch(record.file_url);
+      if (!fileResponse.ok) throw new Error("Could not download file: " + fileResponse.status);
+      mimeType = inferMimeType(record, fileResponse);
+      const bytes = new Uint8Array(await fileResponse.arrayBuffer());
+      extractedText = await extractText(apiKey, bytes, mimeType, record);
     }
 
     const chunks = chunkText(extractedText);
@@ -197,8 +255,10 @@ serve(async (req) => {
           grade: record.grade,
           subject: record.subject,
           type: record.type,
-          file_url: record.file_url,
-          file_path: record.file_path,
+          ...(isStructuredExam ? {} : {
+            file_url: record.file_url,
+            file_path: record.file_path,
+          }),
           mime_type: mimeType,
           source: record.source || "SOMA",
           is_official: record.is_official ?? true,
@@ -206,8 +266,8 @@ serve(async (req) => {
           exam_year: record.exam_year,
           paper_code: record.paper_code,
           paper_number: record.paper_number,
-          marking_scheme_url: record.marking_scheme_url,
           marking_scheme_source: record.marking_scheme_source,
+          interaction_mode: isStructuredExam ? "STRUCTURED_EXAM" : "DOCUMENT",
           review_status: record.review_status,
         },
       });
