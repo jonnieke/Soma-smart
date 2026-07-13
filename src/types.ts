@@ -112,6 +112,7 @@ export interface LearnerProfile {
   subscriptionExpiry: string | null;
   schoolId?: string;
   parentPhone?: string;
+  parentWhatsAppConsentAt?: string | null; // Explicit consent timestamp for WhatsApp learning updates
   parentPin?: string; // 4-digit PIN set by parent to approve chat
   chatApproved?: boolean; // Whether parent has approved learner-teacher chat
   sessionId?: string; // For backward compatibility? Or primary current session?

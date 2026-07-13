@@ -5,6 +5,7 @@ import {
   CheckCircle2,
   ClipboardList,
   LogIn,
+  MessageCircle,
   Plus,
   RotateCcw,
   Search,
@@ -20,10 +21,12 @@ import {
   saveStudyNote,
   updateStudyNoteMastery,
 } from '../../services/notebookService';
+import { formatStudyNoteForWhatsApp, formatStudyPackForWhatsApp, openWhatsAppShare } from '../../services/whatsappService';
 
 interface LearnerNotebookProps {
   ownerKey: string;
   grade?: string;
+  parentPhone?: string;
   isRegistered: boolean;
   onBack: () => void;
   onOpenNote: (note: StudyNote) => void;
@@ -31,6 +34,8 @@ interface LearnerNotebookProps {
   onQuizNote: (note: StudyNote) => void;
   onRegister: () => void;
   onNoteSaved?: (note: StudyNote) => void;
+  onWhatsAppShare?: (note: StudyNote, destination: 'contact' | 'parent') => void;
+  onWhatsAppPackShare?: (notes: StudyNote[], destination: 'contact' | 'parent') => void;
 }
 
 const masteryCopy: Record<StudyNoteMasteryStatus, string> = {
@@ -43,6 +48,7 @@ const masteryCopy: Record<StudyNoteMasteryStatus, string> = {
 export const LearnerNotebook: React.FC<LearnerNotebookProps> = ({
   ownerKey,
   grade,
+  parentPhone,
   isRegistered,
   onBack,
   onOpenNote,
@@ -50,6 +56,8 @@ export const LearnerNotebook: React.FC<LearnerNotebookProps> = ({
   onQuizNote,
   onRegister,
   onNoteSaved,
+  onWhatsAppShare,
+  onWhatsAppPackShare,
 }) => {
   const [notes, setNotes] = React.useState<StudyNote[]>([]);
   const [query, setQuery] = React.useState('');
@@ -58,6 +66,7 @@ export const LearnerNotebook: React.FC<LearnerNotebookProps> = ({
   const [draftTitle, setDraftTitle] = React.useState('');
   const [draftSubject, setDraftSubject] = React.useState('');
   const [draftContent, setDraftContent] = React.useState('');
+  const [selectedNoteIds, setSelectedNoteIds] = React.useState<Set<string>>(new Set());
 
   const refresh = React.useCallback(() => {
     setNotes(loadStudyNotes(ownerKey));
@@ -107,6 +116,33 @@ export const LearnerNotebook: React.FC<LearnerNotebookProps> = ({
 
   const setMastery = (note: StudyNote, masteryStatus: StudyNoteMasteryStatus) => {
     updateStudyNoteMastery(ownerKey, note.id, masteryStatus);
+  };
+
+  const shareNoteToWhatsApp = (note: StudyNote, destination: 'contact' | 'parent') => {
+    const recipient = destination === 'parent' ? parentPhone : undefined;
+    openWhatsAppShare(formatStudyNoteForWhatsApp(note), recipient);
+    onWhatsAppShare?.(note, destination);
+  };
+
+  const selectedNotes = React.useMemo(
+    () => notes.filter(note => selectedNoteIds.has(note.id)).slice(0, 8),
+    [notes, selectedNoteIds]
+  );
+
+  const toggleNoteSelection = (noteId: string) => {
+    setSelectedNoteIds(current => {
+      const next = new Set(current);
+      if (next.has(noteId)) next.delete(noteId);
+      else if (next.size < 8) next.add(noteId);
+      return next;
+    });
+  };
+
+  const shareStudyPack = (destination: 'contact' | 'parent') => {
+    if (selectedNotes.length === 0) return;
+    const recipient = destination === 'parent' ? parentPhone : undefined;
+    openWhatsAppShare(formatStudyPackForWhatsApp(selectedNotes, grade), recipient);
+    onWhatsAppPackShare?.(selectedNotes, destination);
   };
 
   return (
@@ -160,6 +196,44 @@ export const LearnerNotebook: React.FC<LearnerNotebookProps> = ({
       )}
 
       <main className="mx-auto max-w-5xl px-4 py-6">
+        {notes.length > 0 && (
+          <section className="mb-5 flex items-start gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 dark:border-emerald-900 dark:bg-emerald-950/30">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-600 text-white">
+              <MessageCircle className="h-5 w-5" />
+            </span>
+            <div>
+              <h2 className="text-sm font-black text-emerald-950 dark:text-emerald-100">Share learning, not screenshots</h2>
+              <p className="mt-0.5 text-xs font-semibold leading-5 text-emerald-800/80 dark:text-emerald-200/80">
+                Send a clean study note to a parent or study group. You always choose the recipient and tap Send in WhatsApp.
+              </p>
+            </div>
+          </section>
+        )}
+
+        {selectedNotes.length > 0 && (
+          <section className="mb-5 flex flex-col gap-3 rounded-xl border border-[#b9e8cb] bg-white px-4 py-3 shadow-sm dark:border-emerald-900 dark:bg-slate-900 sm:flex-row sm:items-center">
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-black text-slate-900 dark:text-white">
+                {selectedNotes.length} note{selectedNotes.length === 1 ? '' : 's'} in today&apos;s revision pack
+              </p>
+              <p className="mt-0.5 text-xs font-semibold text-slate-500">Choose up to 8 notes, then send one focused study pack.</p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <button type="button" onClick={() => setSelectedNoteIds(new Set())} className="rounded-lg px-3 py-2 text-xs font-black text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800">
+                Clear
+              </button>
+              <button type="button" onClick={() => shareStudyPack('contact')} className="inline-flex items-center gap-1.5 rounded-lg bg-[#159447] px-3 py-2 text-xs font-black text-white hover:bg-[#107c3b]">
+                <MessageCircle className="h-4 w-4" /> Share revision pack
+              </button>
+              {parentPhone && (
+                <button type="button" onClick={() => shareStudyPack('parent')} className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-black text-emerald-800 hover:bg-emerald-100 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-300">
+                  Send pack to parent
+                </button>
+              )}
+            </div>
+          </section>
+        )}
+
         {showComposer && (
           <section className="mb-6 border-y border-indigo-200 bg-white px-4 py-5 dark:border-indigo-900 dark:bg-slate-900 sm:rounded-lg sm:border">
             <div className="mb-4 flex items-center justify-between">
@@ -258,7 +332,7 @@ export const LearnerNotebook: React.FC<LearnerNotebookProps> = ({
             {filteredNotes.map(note => (
               <article
                 key={note.id}
-                className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900"
+                className={'rounded-lg border bg-white p-4 shadow-sm dark:bg-slate-900 ' + (selectedNoteIds.has(note.id) ? 'border-emerald-400 ring-2 ring-emerald-100 dark:border-emerald-700 dark:ring-emerald-950' : 'border-slate-200 dark:border-slate-800')}
               >
                 <div className="flex items-start gap-3">
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 dark:bg-indigo-950/50 dark:text-indigo-300">
@@ -270,6 +344,15 @@ export const LearnerNotebook: React.FC<LearnerNotebookProps> = ({
                       {note.subject}{note.grade ? ' / ' + note.grade : ''} / {masteryCopy[note.masteryStatus]}
                     </p>
                   </div>
+                  <button
+                    type="button"
+                    onClick={() => toggleNoteSelection(note.id)}
+                    className={'inline-flex h-8 items-center justify-center rounded-lg px-2 text-[10px] font-black transition ' + (selectedNoteIds.has(note.id) ? 'bg-emerald-600 text-white' : 'bg-slate-50 text-slate-500 hover:bg-emerald-50 hover:text-emerald-700 dark:bg-slate-950 dark:text-slate-300')}
+                    aria-pressed={selectedNoteIds.has(note.id)}
+                    aria-label={(selectedNoteIds.has(note.id) ? 'Remove ' : 'Add ') + note.title + ' from revision pack'}
+                  >
+                    {selectedNoteIds.has(note.id) ? 'Selected' : 'Select'}
+                  </button>
                   <button
                     type="button"
                     onClick={() => deleteStudyNote(ownerKey, note.id)}
@@ -308,6 +391,27 @@ export const LearnerNotebook: React.FC<LearnerNotebookProps> = ({
                     <ClipboardList className="h-3.5 w-3.5" />
                     Test me
                   </button>
+                </div>
+
+                <div className={'mt-2 grid gap-2 ' + (parentPhone ? 'grid-cols-2' : 'grid-cols-1')}>
+                  <button
+                    type="button"
+                    onClick={() => shareNoteToWhatsApp(note, 'contact')}
+                    className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-[#e9f9ef] px-3 py-2.5 text-[11px] font-black text-[#087a3e] transition hover:bg-[#d8f4e3] dark:bg-emerald-950/40 dark:text-emerald-300"
+                  >
+                    <MessageCircle className="h-4 w-4" />
+                    Share on WhatsApp
+                  </button>
+                  {parentPhone && (
+                    <button
+                      type="button"
+                      onClick={() => shareNoteToWhatsApp(note, 'parent')}
+                      className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-emerald-200 bg-white px-3 py-2.5 text-[11px] font-black text-[#087a3e] transition hover:bg-emerald-50 dark:border-emerald-900 dark:bg-slate-900 dark:text-emerald-300"
+                    >
+                      <MessageCircle className="h-4 w-4" />
+                      Send to parent
+                    </button>
+                  )}
                 </div>
 
                 <div className="mt-3 flex gap-2 border-t border-slate-100 pt-3 dark:border-slate-800">

@@ -17,8 +17,8 @@ interface AppContextType {
   studentCode: string;
   setStudentCode: (code: string) => void;
   isRegistered: boolean;
-  studentProfile: { id: string, name: string, grade: string, schoolId?: string, schoolName?: string, email?: string, parentPhone?: string, parentPin?: string, chatApproved?: boolean, sessionId?: string, educationLevel?: EducationLevel, institutionName?: string } | null;
-  updateStudentProfile: (updates: { name?: string, grade?: string, parentPhone?: string, educationLevel?: EducationLevel, institutionName?: string }) => Promise<{ success: boolean; message?: string }>;
+  studentProfile: { id: string, name: string, grade: string, schoolId?: string, schoolName?: string, email?: string, parentPhone?: string, parentWhatsAppConsentAt?: string | null, parentPin?: string, chatApproved?: boolean, sessionId?: string, educationLevel?: EducationLevel, institutionName?: string } | null;
+  updateStudentProfile: (updates: { name?: string, grade?: string, parentPhone?: string, parentWhatsAppConsentAt?: string | null, educationLevel?: EducationLevel, institutionName?: string }) => Promise<{ success: boolean; message?: string }>;
   usageCount: number;
   incrementUsage: () => void;
   registerStudent: (name: string, grade: string, pin: string, parentPhone?: string, educationLevel?: EducationLevel, institutionName?: string) => Promise<{ success: boolean; message?: string; data?: string }>;
@@ -271,7 +271,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   });
   // studyUsageCount removed
   const [isRegistered, setIsRegistered] = useState<boolean>(false);
-  const [studentProfile, setStudentProfile] = useState<{ id: string, name: string, grade: string, schoolId?: string, schoolName?: string, email?: string, parentPhone?: string, parentPin?: string, chatApproved?: boolean, sessionId?: string, educationLevel?: EducationLevel, institutionName?: string } | null>(null);
+  const [studentProfile, setStudentProfile] = useState<{ id: string, name: string, grade: string, schoolId?: string, schoolName?: string, email?: string, parentPhone?: string, parentWhatsAppConsentAt?: string | null, parentPin?: string, chatApproved?: boolean, sessionId?: string, educationLevel?: EducationLevel, institutionName?: string } | null>(null);
   const [chatApproved, setChatApproved] = useState<boolean>(false);
   const [educationLevel, setEducationLevelState] = useState<EducationLevel>(() => {
     return (localStorage.getItem('soma_education_level') as EducationLevel) || EducationLevel.SENIOR;
@@ -634,6 +634,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             schoolName: profile.school_name,
             email: profile.email,
             parentPhone: profile.parent_phone,
+            parentWhatsAppConsentAt: profile.parent_whatsapp_consent_at,
             parentPin: profile.parent_pin,
             chatApproved: profile.chat_approved,
             sessionId: profile.session_id,
@@ -871,6 +872,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
               schoolName: profile.school_name,
               email: profile.email,
               parentPhone: profile.parent_phone,
+              parentWhatsAppConsentAt: profile.parent_whatsapp_consent_at,
               sessionId: profile.session_id,
               educationLevel: level,
               institutionName: profile.institution_name
@@ -970,6 +972,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
               schoolId: profile.school_id,
               email: profile.email,
               parentPhone: profile.parent_phone,
+              parentWhatsAppConsentAt: profile.parent_whatsapp_consent_at,
               sessionId: profile.session_id,
               educationLevel: profile.education_level || EducationLevel.SENIOR,
               institutionName: profile.institution_name
@@ -2162,17 +2165,19 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   };
 
-  const updateStudentProfile = async (updates: { name?: string, grade?: string, parentPhone?: string }): Promise<{ success: boolean; message?: string }> => {
+  const updateStudentProfile = async (updates: { name?: string, grade?: string, parentPhone?: string, parentWhatsAppConsentAt?: string | null }): Promise<{ success: boolean; message?: string }> => {
     try {
       if (!studentProfile?.id) throw new Error("No active student session");
 
       const newLevel = updates.grade ? getEducationLevelFromGrade(updates.grade) : undefined;
-      const { error } = await supabase.from('profiles').update({
-        full_name: updates.name,
-        grade: updates.grade,
-        parent_phone: updates.parentPhone,
-        education_level: newLevel
-      }).eq('id', studentProfile.id);
+      const profileUpdates: Record<string, unknown> = {};
+      if (updates.name !== undefined) profileUpdates.full_name = updates.name;
+      if (updates.grade !== undefined) profileUpdates.grade = updates.grade;
+      if (updates.parentPhone !== undefined) profileUpdates.parent_phone = updates.parentPhone;
+      if (updates.parentWhatsAppConsentAt !== undefined) profileUpdates.parent_whatsapp_consent_at = updates.parentWhatsAppConsentAt;
+      if (newLevel) profileUpdates.education_level = newLevel;
+
+      const { error } = await supabase.from('profiles').update(profileUpdates).eq('id', studentProfile.id);
 
       if (error) throw error;
 
@@ -2187,6 +2192,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         name: updates.name ?? prev.name,
         grade: updates.grade ?? prev.grade,
         parentPhone: updates.parentPhone ?? prev.parentPhone,
+        parentWhatsAppConsentAt: updates.parentWhatsAppConsentAt !== undefined ? updates.parentWhatsAppConsentAt : prev.parentWhatsAppConsentAt,
         educationLevel: newLevel ?? prev.educationLevel
       } : null);
 
@@ -2265,6 +2271,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         schoolId: profile.school_id,
         email: profile.email,
         parentPhone: profile.parent_phone,
+        parentWhatsAppConsentAt: profile.parent_whatsapp_consent_at,
         parentPin: profile.parent_pin,
         chatApproved: profile.chat_approved,
         sessionId: profile.session_id
@@ -2323,6 +2330,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         schoolId: profile.school_id,
         email: profile.email,
         parentPhone: profile.parent_phone,
+        parentWhatsAppConsentAt: profile.parent_whatsapp_consent_at,
         parentPin: profile.parent_pin,
         chatApproved: profile.chat_approved,
         sessionId: profile.session_id

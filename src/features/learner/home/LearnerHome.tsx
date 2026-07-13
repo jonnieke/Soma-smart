@@ -221,66 +221,70 @@ export const LearnerHome: React.FC<LearnerHomeProps> = ({
       </header>
 
       <main className="mx-auto max-w-[1180px] px-4 pb-12 pt-8 sm:px-6 lg:px-8">
-        <section className="relative min-h-[190px] overflow-hidden rounded-[24px] bg-[#f7f4ff] px-6 py-8 sm:px-9 lg:flex lg:items-center lg:px-10">
-          <div className="relative z-10 max-w-[650px]">
-            <div className="inline-flex items-center gap-2 rounded-full border border-[#e3ddf7] bg-white/70 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.12em] text-[#7a5bef] shadow-sm backdrop-blur">
-              <Sparkles className="h-3.5 w-3.5" />
-              {featuredSubjectName ? ('Recent focus: ' + featuredSubjectName) : ('Welcome back, ' + learnerFirstName)}
+        <section className="relative overflow-hidden rounded-[30px] bg-[#21155c] px-5 pb-6 pt-9 text-white shadow-[0_24px_70px_rgba(52,32,132,0.22)] sm:px-9 sm:pb-9 sm:pt-11 lg:px-12 lg:pb-11">
+          <div className="pointer-events-none absolute -left-24 -top-28 h-72 w-72 rounded-full bg-[#8058ff]/35 blur-3xl" />
+          <div className="pointer-events-none absolute -bottom-40 right-12 h-80 w-80 rounded-full bg-[#42c6a5]/20 blur-3xl" />
+          <div className="relative z-10 max-w-[760px]">
+            <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3.5 py-1.5 text-xs font-bold text-violet-100 backdrop-blur">
+              <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_0_4px_rgba(52,211,153,0.14)]" />
+              Akili is ready to learn with you
             </div>
-            <h1 className="mt-4 text-[34px] font-black leading-tight tracking-[0] text-[#10143a] sm:text-[44px] lg:text-[52px]">Learn with Akili</h1>
-            <p className="mt-4 max-w-[600px] text-[15px] leading-7 text-[#4f5877] sm:text-base">
-              Pick a topic, ask a question or scan a page.<br className="hidden sm:block" /> Akili will explain it clearly and check your understanding.
-            </p>
-            <p className="mt-3 text-sm font-medium text-[#6b7390]">
-              {featuredSubjectName ? ('You are picking up from ' + featuredSubjectName + ' today.') : 'Choose a subject, then move straight into learning.'}
+            <p className="mt-6 text-sm font-semibold text-violet-200">Welcome, {learnerFirstName}</p>
+            <h1 className="mt-1 text-[38px] font-black leading-[1.04] tracking-[-0.035em] text-white sm:text-[52px] lg:text-[62px]">
+              What do you want<br className="hidden sm:block" /> to learn today?
+            </h1>
+            <p className="mt-5 max-w-[590px] text-[15px] leading-7 text-violet-100/85 sm:text-base">
+              Ask Akili anything from class. You'll get a clear explanation, an example, and a quick check to help it stick.
             </p>
           </div>
-          <div className="pointer-events-none absolute -right-8 bottom-0 hidden h-full w-[38%] items-end justify-center lg:flex">
-            <div className="absolute inset-4 rounded-full bg-violet-200/40 blur-3xl" />
-            <img src={mascotImage} alt="Akili learning assistant" className="relative max-h-[205px] w-auto object-contain" />
-          </div>
-        </section>
 
-        <section className="relative z-20 -mt-1 rounded-[22px] border border-[#e3dff5] bg-white p-5 shadow-[0_8px_30px_rgba(70,54,140,0.06)] sm:p-7">
-          <h2 className="text-xl font-bold text-[#5b21e6] sm:text-[22px]">What do you want to learn today?</h2>
-          <form onSubmit={submit} className="mt-5">
-            <label htmlFor="learner-topic" className="sr-only">Topic or question</label>
-            <div className="flex min-h-16 items-center rounded-2xl border-2 border-[#d9d2fa] bg-white px-4 focus-within:border-[#6938ef] focus-within:ring-4 focus-within:ring-violet-100">
-              <Search className="h-5 w-5 shrink-0 text-[#69718d]" />
-              <input
-                id="learner-topic"
-                value={topic}
-                onChange={(event) => setTopic(event.target.value)}
-                placeholder="Type a topic or question..."
-                className="min-w-0 flex-1 bg-transparent px-4 text-base text-[#10143a] outline-none placeholder:text-[#8c93aa]"
-              />
-              <button type="button" onClick={onVoice} className="flex h-11 w-11 items-center justify-center rounded-xl text-[#68708e] hover:bg-[#f4f0ff] hover:text-[#6938ef]" aria-label="Ask using your voice">
-                <Mic className="h-5 w-5" />
-              </button>
+          <div className="pointer-events-none absolute -right-3 bottom-0 hidden w-[31%] max-w-[330px] justify-center lg:flex">
+            <div className="absolute bottom-5 h-40 w-40 rounded-full bg-white/10 blur-2xl" />
+            <img src={mascotImage} alt="Akili learning assistant" className="relative max-h-[255px] max-w-full object-contain drop-shadow-2xl" />
+          </div>
+
+          <form onSubmit={submit} className="relative z-20 mt-8 max-w-[850px] rounded-[22px] bg-white p-2 shadow-[0_18px_50px_rgba(7,4,35,0.28)] sm:flex sm:items-center">
+            <label htmlFor="learner-topic" className="sr-only">Ask Akili a question</label>
+            <div className="flex min-h-14 min-w-0 flex-1 items-center px-2 sm:px-3">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#f0ecff] text-[#6938ef]"><Sparkles className="h-5 w-5" /></span>
+              <input id="learner-topic" value={topic} onChange={(event) => setTopic(event.target.value)} placeholder="Ask Akili a question..." autoComplete="off" className="min-w-0 flex-1 bg-transparent px-3 text-base font-medium text-[#16123d] outline-none placeholder:font-normal placeholder:text-[#85839a] sm:px-4" />
+              <button type="button" onClick={onVoice} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-[#6c6883] transition hover:bg-[#f3f0ff] hover:text-[#6938ef]" aria-label="Ask Akili using your voice"><Mic className="h-5 w-5" /></button>
             </div>
-            <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-[1.2fr_1fr_1.15fr_64px]">
-              <button type="submit" disabled={!topic.trim()} className="flex min-h-13 items-center justify-center gap-2 rounded-xl bg-[#6938ef] px-5 font-bold text-white shadow-lg shadow-violet-200 transition hover:bg-[#5b2bd7] disabled:cursor-not-allowed disabled:opacity-55">
-                <Sparkles className="h-5 w-5" /> Teach Me
-              </button>
-              <button type="button" onClick={onScan} className="flex min-h-13 items-center justify-center gap-2 rounded-xl border border-[#ddd9ef] bg-white px-5 font-semibold hover:bg-[#faf9ff]">
-                <ScanLine className="h-5 w-5" /> Scan a Page
-              </button>
-              <button type="button" onClick={onUpload} className="flex min-h-13 items-center justify-center gap-2 rounded-xl border border-[#ddd9ef] bg-white px-5 font-semibold hover:bg-[#faf9ff]">
-                <Upload className="h-5 w-5" /> Upload Notes
-              </button>
-              <button type="button" onClick={onVoice} className="flex min-h-13 items-center justify-center rounded-xl border border-[#ddd9ef] bg-white hover:bg-[#faf9ff]" aria-label="Record a voice question">
-                <Mic className="h-5 w-5" />
-              </button>
-            </div>
+            <button type="submit" disabled={!topic.trim()} className="flex min-h-12 w-full items-center justify-center gap-2 rounded-[15px] bg-[#6d43ef] px-6 text-sm font-black text-white shadow-md transition hover:bg-[#5e34dd] disabled:cursor-not-allowed disabled:bg-[#b8abd9] sm:w-auto">Ask Akili <ArrowRight className="h-4 w-4" /></button>
           </form>
-          <p className="mt-5 flex items-start gap-2 text-sm leading-6 text-[#68708a]">
-            <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#eee9ff] text-[#6938ef]"><Sparkles className="h-3 w-3" /></span>
-            Akili will explain it, show an example and give you a short practice check.
-          </p>
+
+          <div className="relative z-20 mt-4 flex flex-wrap items-center gap-2 text-sm">
+            <span className="mr-1 text-violet-200/75">Or start with</span>
+            <button type="button" onClick={onScan} className="flex min-h-10 items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 font-semibold text-white backdrop-blur transition hover:bg-white/20"><ScanLine className="h-4 w-4" /> Scan a page</button>
+            <button type="button" onClick={onUpload} className="flex min-h-10 items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 font-semibold text-white backdrop-blur transition hover:bg-white/20"><Upload className="h-4 w-4" /> Upload notes</button>
+            <button type="button" onClick={onVoice} className="flex min-h-10 items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 font-semibold text-white backdrop-blur transition hover:bg-white/20"><Mic className="h-4 w-4" /> Ask by voice</button>
+          </div>
         </section>
 
-        <section className="mt-8">
-          <h2 className="text-[22px] font-bold">Popular subjects</h2>
+        <section className="mt-7 grid gap-3 sm:grid-cols-3" aria-label="How Akili helps you learn">
+          {[
+            { number: '01', title: 'Ask naturally', text: 'Type it just as you would ask your teacher.' },
+            { number: '02', title: 'Understand clearly', text: 'See simple steps and examples at your level.' },
+            { number: '03', title: 'Try it yourself', text: 'Finish with a short practice check.' },
+          ].map((item) => (
+            <div key={item.number} className="flex items-start gap-3 rounded-2xl border border-[#e4e0f2] bg-white px-4 py-4 shadow-[0_6px_18px_rgba(46,34,104,0.035)]">
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#eee9ff] text-[11px] font-black text-[#6938ef]">{item.number}</span>
+              <div>
+                <h2 className="text-sm font-bold text-[#17133e]">{item.title}</h2>
+                <p className="mt-1 text-xs leading-5 text-[#71758b]">{item.text}</p>
+              </div>
+            </div>
+          ))}
+        </section>
+
+        <section className="mt-10">
+          <div className="flex items-end justify-between gap-4">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.14em] text-[#7a5bef]">Quick start</p>
+              <h2 className="mt-1 text-[22px] font-bold">Choose a subject</h2>
+            </div>
+            {featuredSubjectName && <span className="hidden text-sm text-[#74798f] sm:block">Continue exploring {featuredSubjectName}</span>}
+          </div>
           <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
             {orderedSubjects.map((subject) => (
               <button key={subject.name} type="button" onClick={() => onSubject(subject.name)} className={`group flex min-h-[126px] flex-col items-center justify-center rounded-2xl border p-4 transition hover:-translate-y-1 hover:shadow-[0_10px_25px_rgba(70,54,140,0.08)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-violet-200 ${normalizeSubjectLabel(subject.name) === featuredSubjectLabel ? 'border-[#cfc7f8] bg-[#faf8ff] shadow-[0_8px_20px_rgba(118,84,224,0.08)]' : 'border-[#e3e0f2] bg-white hover:border-[#cfc7f8]' }`}>
