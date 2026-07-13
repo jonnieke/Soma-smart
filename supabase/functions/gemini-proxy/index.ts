@@ -46,10 +46,23 @@ const HEAVY_GEMINI_MODEL = Deno.env.get('HEAVY_GEMINI_MODEL') || DEFAULT_GEMINI_
 const EMBEDDING_MODEL = Deno.env.get('GEMINI_EMBEDDING_MODEL') || 'gemini-embedding-001';
 const MAX_OUTPUT_TOKENS_FREE = Math.max(3000, Number(Deno.env.get('MAX_OUTPUT_TOKENS_FREE') || '3000'));
 const MAX_OUTPUT_TOKENS_PAID = Math.max(8000, Number(Deno.env.get('MAX_OUTPUT_TOKENS_PAID') || '8000'));
+const MAX_OUTPUT_TOKENS_ADMIN = Math.max(16000, Number(Deno.env.get('MAX_OUTPUT_TOKENS_ADMIN') || '32768'));
 const DISABLE_GUEST_AI = envFlag('DISABLE_GUEST_AI');
 const DISABLE_AUDIO_GENERATION = envFlag('DISABLE_AUDIO_GENERATION');
 const DISABLE_TALK_AND_LEARN = envFlag('DISABLE_TALK_AND_LEARN');
 const KES_PER_USD = 130;
+
+const getAdminEmails = () => new Set(
+    String(Deno.env.get('ADMIN_EMAILS') || '')
+        .split(',')
+        .map(email => email.trim().toLowerCase())
+        .filter(Boolean)
+);
+
+const isAdminEmail = (email: unknown) => {
+    const normalized = String(email || '').trim().toLowerCase();
+    return Boolean(normalized && getAdminEmails().has(normalized));
+};
 
 const FEATURE_LIMITS: Record<string, Record<string, number>> = {
     GUEST: { ai_generation: 3, exam_guru: 1, exam_marking: 0, quiz_generation: 1, practice_generation: 1, notes_generation: 1, notebook_generation: 1, listen_and_learn: 1, talk_and_learn: 1, grounded_library_help: 0, deep_document_analysis: 0, teacher_ai: 0 },
@@ -393,6 +406,7 @@ const resolveRequester = async (req: Request, supabase: any) => {
     if (token) {
         const { data: userData } = await supabase.auth.getUser(token);
         if (userData?.user?.id) {
+            const isAdmin = isAdminEmail(userData.user.email);
             const { data: profile } = await supabase
                 .from('profiles')
                 .select('id, role, subscription_tier, subscription_status, subscription_expiry, expiry, student_id')
@@ -410,6 +424,7 @@ const resolveRequester = async (req: Request, supabase: any) => {
                 identifier: `user:${userData.user.id}`,
                 profile,
                 hasCredits: (creditBal?.credits || 0) > 0,
+                isAdmin,
             };
         }
     }
@@ -434,15 +449,20 @@ const resolveRequester = async (req: Request, supabase: any) => {
                 identifier: `student:${studentCode}`,
                 profile,
                 hasCredits: (creditBal?.credits || 0) > 0,
+                isAdmin: false,
             };
         }
     }
 
     const identifier = `ip:${getClientIp(req)}`;
-    return { userId: null, studentCode: null, plan: 'GUEST', identifier, profile: null };
+    return { userId: null, studentCode: null, plan: 'GUEST', identifier, profile: null, isAdmin: false };
 };
 
 const enforceFeatureLimit = async (supabase: any, requester: any, feature: string, corsHeaders: Record<string, string>) => {
+    // Verify admin status server-side against the same allowlist used by admin-auth.
+    // Costs are still recorded, but operational ingestion is never blocked by learner limits.
+    if (requester.isAdmin) return;
+
     const plan = requester.plan || 'FREE';
     if (plan === 'GUEST' && DISABLE_GUEST_AI) {
         throw limitResponse('GUEST_AI_DISABLED', 'Guest AI is temporarily unavailable. Sign in to continue learning.', { feature, plan }, 900, corsHeaders);
@@ -661,8 +681,11 @@ serve(async (req) => {
         const normalizedModel = selectGeminiModel(feature, model);
         const supabase = getSupabaseAdmin();
         const requester = await resolveRequester(req, supabase);
-        const paidPlan = !['GUEST', 'FREE'].includes(String(requester.plan || 'FREE')) || !!requester.hasCredits;
-        const outputTokenCap = paidPlan ? MAX_OUTPUT_TOKENS_PAID : MAX_OUTPUT_TOKENS_FREE;
+        const paidPlan = requester.isAdmin || !['GUEST', 'FREE'].includes(String(requester.plan || 'FREE')) || !!requester.hasCredits;
+        const outputTokenCap = requester.isAdmin
+            ? MAX_OUTPUT_TOKENS_ADMIN
+            : paidPlan ? MAX_OUTPUT_TOKENS_PAID : MAX_OUTPUT_TOKENS_FREE;
+        const maxAllowedOutputTokens = requester.isAdmin ? MAX_OUTPUT_TOKENS_ADMIN : MAX_OUTPUT_TOKENS_PAID;
         const requestedOutputTokens = Number(generationConfig?.maxOutputTokens || outputTokenCap);
         const cappedGenerationConfig = {
             ...(generationConfig || {}),
@@ -670,7 +693,7 @@ serve(async (req) => {
             // This prevents low client-side maxOutputTokens values (e.g. 2048) from truncating responses.
             maxOutputTokens: Math.max(
                 outputTokenCap,
-                Number.isFinite(requestedOutputTokens) ? Math.min(requestedOutputTokens, MAX_OUTPUT_TOKENS_PAID) : outputTokenCap
+                Number.isFinite(requestedOutputTokens) ? Math.min(requestedOutputTokens, maxAllowedOutputTokens) : outputTokenCap
             ),
         };
 

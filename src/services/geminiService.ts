@@ -39,7 +39,8 @@ const SchemaType = {
 
 export const callGeminiProxy = async (model: string, contents: any, generationConfig: any = {}, systemInstruction: any = null) => {
   const feature = inferAiFeature(contents, systemInstruction);
-  assertPlanLimit(feature);
+  const isAdminRoute = typeof window !== 'undefined' && window.location.pathname.startsWith('/admin');
+  if (!isAdminRoute) assertPlanLimit(feature);
 
   const { data: { session } } = await supabase.auth.getSession();
   const token = session?.access_token;
@@ -73,7 +74,7 @@ export const callGeminiProxy = async (model: string, contents: any, generationCo
         console.error("System Google API Quota Exceeded:", errorData);
         throw new SystemQuotaError();
       }
-      throw new RateLimitError();
+      throw new RateLimitError(errorData?.error || undefined);
     }
 
     console.error("Gemini Proxy Error:", errorData);
@@ -81,7 +82,7 @@ export const callGeminiProxy = async (model: string, contents: any, generationCo
   }
 
   const data = await response.json();
-  recordPlanUsage(feature);
+  if (!isAdminRoute) recordPlanUsage(feature);
 
   // Convert the raw response to match the structure expected by the rest of the file
   return {
@@ -218,7 +219,8 @@ Rules:
 // --- STREAMING PROXY HELPER ---
 const callGeminiProxyStream = async (_model: string, contents: any, generationConfig: any = {}, systemInstruction: any = null) => {
   const feature = inferAiFeature(contents, systemInstruction);
-  assertPlanLimit(feature);
+  const isAdminRoute = typeof window !== 'undefined' && window.location.pathname.startsWith('/admin');
+  if (!isAdminRoute) assertPlanLimit(feature);
   const { data: { session } } = await supabase.auth.getSession();
   const token = session?.access_token;
 
