@@ -598,9 +598,9 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
                 <div className="w-16 h-16 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center mb-6">
                     <AlertTriangle className="w-8 h-8" />
                 </div>
-                <p className="text-slate-900 dark:text-white font-black text-2xl">Exam not ready yet</p>
-                <p className="mt-3 max-w-lg text-slate-500 dark:text-slate-400 text-sm leading-6">{loadError}</p>
-                <button onClick={onExit} className="mt-6 rounded-2xl bg-indigo-600 px-6 py-3 text-sm font-black text-white shadow-lg shadow-indigo-600/20">Go back</button>
+                <p className="text-slate-900 dark:text-white font-black text-2xl">This paper is still being prepared</p>
+                <p className="mt-3 max-w-lg text-slate-500 dark:text-slate-400 text-sm leading-6">{loadError} Go back to the paper library and open a ready paper to keep learning right away.</p>
+                <button onClick={onExit} className="mt-6 rounded-2xl bg-indigo-600 px-6 py-3 text-sm font-black text-white shadow-lg shadow-indigo-600/20">Browse papers</button>
             </div>
         );
     }

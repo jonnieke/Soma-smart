@@ -283,6 +283,14 @@ export const RevisionLanding: React.FC<Props> = ({ onStartSession, onNavigate, o
         }).slice(0, 3);
     }, [filteredItems]);
 
+    const readyPaperItems = useMemo(() => {
+        return filteredItems.filter(item => isPaperGroundedReady(item));
+    }, [filteredItems]);
+
+    const preparingPaperItems = useMemo(() => {
+        return filteredItems.filter(item => !isPaperGroundedReady(item));
+    }, [filteredItems]);
+
     const typeConfig: Record<string, { label: string; icon: React.ReactNode; color: string }> = {
         paper: { label: 'Past Paper', icon: <FileText className="w-4 h-4" />, color: 'bg-indigo-50 text-indigo-600 dark:bg-indigo-900/40 dark:text-indigo-400' },
         notes: { label: 'Notes', icon: <BookOpen className="w-4 h-4" />, color: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-400' },
@@ -303,13 +311,13 @@ export const RevisionLanding: React.FC<Props> = ({ onStartSession, onNavigate, o
     const missionTitle = weakTopics[0]
         ? `${focusSubject}: fix ${missionTopic}`
         : `${focusSubject}: start with a scored drill`;
-    const missionResource = filteredItems.find(item =>
+    const missionResource = readyPaperItems.find(item =>
         item.subject === focusSubject
-    ) || filteredItems.find(item =>
+    ) || readyPaperItems.find(item =>
         initialSearchQuery?.trim()
             ? String(item.title || '').toLowerCase().includes(initialSearchQuery.trim().toLowerCase())
             : false
-    ) || filteredItems[0];
+    ) || readyPaperItems[0] || filteredItems[0];
     const recommendedStart = missionResource;
     const guruSyllabusContext = {
         grade: studentProfile?.grade || examGoal.examType,
@@ -499,6 +507,48 @@ Use plain text. No markdown headings or symbols.`;
             <main className="max-w-3xl mx-auto px-4 pt-6 pb-28 space-y-8">
 
                 {/* ── ZONE 1: HERO ACTION BAR ── */}
+                <section className="bg-slate-950 text-white rounded-3xl p-4 sm:p-5 overflow-hidden relative shadow-sm">
+                    <div className="absolute -right-12 -top-12 w-36 h-36 bg-indigo-500/20 rounded-full blur-3xl" />
+                    <div className="relative">
+                        <div className="flex items-start justify-between gap-3">
+                            <div>
+                                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-300 mb-1">Past papers first</p>
+                                <h2 className="text-lg sm:text-xl font-black leading-tight">Open a paper now</h2>
+                                <p className="text-xs text-slate-300 mt-1 font-medium">Choose a real paper, work through it under time, and use the feedback to recover marks fast.</p>
+                            </div>
+                            <div className="w-12 h-12 rounded-2xl bg-white/10 border border-white/10 flex items-center justify-center shrink-0">
+                                <FileText className="w-6 h-6 text-emerald-300" />
+                            </div>
+                        </div>
+
+                        {readyPaperItems.length > 0 ? (
+                            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4 mt-4">
+                                {readyPaperItems.slice(0, 4).map((item: any, idx: number) => (
+                                    <button
+                                        key={item.id || item.title || idx}
+                                        onClick={() => onStartSession(item, RevisionMode.EXAM)}
+                                        className="rounded-2xl border border-white/10 bg-white/10 p-4 text-left transition hover:bg-white/15 hover:-translate-y-0.5"
+                                    >
+                                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-300">Ready paper</p>
+                                        <p className="mt-2 text-sm font-bold leading-snug line-clamp-2">{item.title}</p>
+                                        <p className="mt-2 text-[11px] text-slate-300">Tap to start the paper.</p>
+                                    </button>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="mt-4 rounded-2xl border border-white/10 bg-white/10 p-4 text-sm text-slate-300 font-medium">
+                                We&apos;re preparing your papers. As soon as a paper is ready, it appears here first.
+                            </div>
+                        )}
+
+                        {preparingPaperItems.length > 0 && (
+                            <p className="mt-3 text-[11px] text-slate-400">
+                                {preparingPaperItems.length} more paper{preparingPaperItems.length !== 1 ? 's' : ''} are still being structured and will appear once they&apos;re ready.
+                            </p>
+                        )}
+                    </div>
+                </section>
+
                 <section className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-4 sm:p-5 shadow-sm">
                     <div className="flex items-start justify-between gap-3 mb-4">
                         <div>
@@ -509,10 +559,10 @@ Use plain text. No markdown headings or symbols.`;
                                 </div>
                             )}
 
-                            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-500 mb-1">Your {examGoal.examType} preparation</p>
-                            <h1 className="text-xl sm:text-2xl font-black text-slate-950 dark:text-white leading-tight">Welcome back. Let&apos;s improve one result today.</h1>
+                            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-500 mb-1">Paper-first revision for {examGoal.examType}</p>
+                            <h1 className="text-xl sm:text-2xl font-black text-slate-950 dark:text-white leading-tight">Welcome and start learning with a real paper.</h1>
                             <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1 font-medium">
-                                Attempt a realistic paper, see exactly where you lost marks, then recover them through targeted practice.
+                                Pick a paper, answer it like the exam, then use marks and feedback to strengthen weak spots.
                             </p>
                         </div>
                         <div className="hidden sm:flex w-12 h-12 rounded-2xl bg-indigo-600 text-white items-center justify-center shrink-0">
@@ -592,7 +642,7 @@ Use plain text. No markdown headings or symbols.`;
                             <TrendingUp className="inline-block w-4 h-4 mr-1.5 -mt-0.5" />Hot Topics
                         </button>
                         <button onClick={startRecommendedPaper} className="rounded-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 px-4 py-2.5 text-xs font-black text-slate-700 dark:text-slate-200 transition hover:bg-slate-50 dark:hover:bg-slate-900">
-                            Start paper practice
+                            Open a paper
                         </button>
                     </div>
                 </section>
