@@ -257,6 +257,13 @@ export const RevisionLanding: React.FC<Props> = ({ onStartSession, onNavigate, o
         });
     }, [pastPaperItems, activeSubject, searchQuery]);
 
+    const originalMockItems = useMemo(() => {
+        return filteredItems.filter((item: any) => {
+            const title = String(item?.title || '').toLowerCase();
+            return /mock/.test(title) && /(somaai|original)/.test(title);
+        }).slice(0, 3);
+    }, [filteredItems]);
+
     const typeConfig: Record<string, { label: string; icon: React.ReactNode; color: string }> = {
         paper: { label: 'Past Paper', icon: <FileText className="w-4 h-4" />, color: 'bg-indigo-50 text-indigo-600 dark:bg-indigo-900/40 dark:text-indigo-400' },
         notes: { label: 'Notes', icon: <BookOpen className="w-4 h-4" />, color: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-400' },
@@ -571,7 +578,34 @@ Use plain text. No markdown headings or symbols.`;
                     </div>
                 </section>
 
-                    {recommendedStart && (
+                {originalMockItems.length > 0 && (
+                    <section className="bg-gradient-to-br from-slate-950 via-indigo-950 to-slate-950 text-white rounded-3xl p-4 sm:p-5 overflow-hidden relative shadow-sm">
+                        <div className="absolute -right-12 -top-12 w-36 h-36 bg-indigo-500/20 rounded-full blur-3xl" />
+                        <div className="relative flex flex-col gap-4">
+                            <div className="flex items-start justify-between gap-3">
+                                <div>
+                                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-300 mb-1">SomaAI original mocks</p>
+                                    <h2 className="text-lg sm:text-xl font-black leading-tight">Practice with our exam-style mocks</h2>
+                                    <p className="text-xs text-slate-300 mt-1 font-medium">Structured papers, timed practice, and mark-by-mark feedback for KCSE and KPSEA candidates.</p>
+                                </div>
+                                <div className="hidden sm:flex w-12 h-12 rounded-2xl bg-white/10 text-white items-center justify-center shrink-0">
+                                    <GraduationCap className="w-6 h-6" />
+                                </div>
+                            </div>
+                            <div className="grid gap-2 sm:grid-cols-3">
+                                {originalMockItems.map((item: any) => (
+                                    <button key={item.id || item.title} onClick={() => onStartSession(item, RevisionMode.EXAM)} className="rounded-2xl border border-white/10 bg-white/10 p-4 text-left transition hover:bg-white/15">
+                                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-300">Original mock</p>
+                                        <p className="mt-2 text-sm font-bold leading-snug line-clamp-2">{item.title}</p>
+                                        <p className="mt-2 text-[11px] text-slate-300">Tap to start timed practice and mark it like the real exam.</p>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    </section>
+                )}
+
+                {recommendedStart && (
                         <div className="rounded-2xl border border-indigo-200 dark:border-indigo-900/60 bg-indigo-50 dark:bg-indigo-950/30 px-4 py-4">
                             <div className="flex items-start justify-between gap-3">
                                 <div className="min-w-0">
