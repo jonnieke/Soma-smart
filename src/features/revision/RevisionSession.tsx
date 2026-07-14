@@ -14,6 +14,7 @@ import {
     analyzeExamPaper, fileToGenerativePart, markStudentAnswer,
     predictLikelyQuestions, getPaperGuidance, explainQuestion
 } from '../../services/geminiService';
+import { examService } from '../../services/examService';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface Props {
@@ -107,6 +108,13 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
     // Refs
     const answerInputRef = useRef<HTMLTextAreaElement>(null);
     const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+    const activeExamId = React.useMemo(() => {
+        if (data instanceof File) return null;
+        const payload = data as any;
+        if (payload?.content) return null;
+        if (!Array.isArray(payload?.structured_questions)) return null;
+        return payload?.id ? String(payload.id) : null;
+    }, [data]);
 
     // ==================== INITIAL LOAD ====================
     useEffect(() => {
@@ -283,7 +291,9 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
         setPhase('MARKING');
 
         try {
-            const result = await markStudentAnswer(question, userAnswer, language);
+            const result = activeExamId
+                ? await examService.markResponse(activeExamId, question.id, userAnswer, language)
+                : await markStudentAnswer(question, userAnswer, language);
             setCurrentMarking(result);
 
             const attempt: AnswerAttempt = {
@@ -311,7 +321,9 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
                 marksAvailable: question.marks || 2,
                 isCorrect: false,
                 modelAnswer: 'AI could not generate a model answer at this time.',
-                feedback: 'We encountered an error while marking. Please try again.',
+                feedback: activeExamId
+                    ? 'We could not contact the exam marker right now. Please try again.'
+                    : 'We encountered an error while marking. Please try again.',
                 examTip: 'Write clear, structured answers.'
             });
             setShowModelAnswer(true);

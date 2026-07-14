@@ -1284,7 +1284,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
       const lastReference = localStorage.getItem('soma_last_payment_reference') || '';
       const query = supabase
         .from('transactions')
-        .select('reference_code, user_id, amount, status, description, created_at')
+        .select('reference_code, user_id, amount, status, description, created_at, order_tracking_id')
         .order('created_at', { ascending: false })
         .limit(20);
 
@@ -1301,9 +1301,12 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
 
         let status = String(tx.status || '').toUpperCase();
         let remoteStatus: any = null;
-        if (status !== 'SUCCESS' && reference) {
+        if (status !== 'SUCCESS' && reference && tx.order_tracking_id) {
           try {
-            remoteStatus = await pesapalService.checkTransactionStatus({ merchantReference: reference });
+            remoteStatus = await pesapalService.checkTransactionStatus({
+              merchantReference: reference,
+              orderTrackingId: tx.order_tracking_id
+            });
             const statusText = String(
               remoteStatus?.payment_status_description ||
               remoteStatus?.status_description ||
@@ -1370,10 +1373,21 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
     if (!reference.startsWith('CREDIT_') || creditRecoveryAttemptedRef.current === reference) return;
     if (localStorage.getItem(`soma_credit_recovered_${reference}`) === '1') return;
 
-    creditRecoveryAttemptedRef.current = reference;
     const recoverCreditPayment = async () => {
       try {
-        const status = await pesapalService.checkTransactionStatus({ merchantReference: reference });
+        const { data: tx } = await supabase
+          .from('transactions')
+          .select('status, amount, order_tracking_id')
+          .eq('reference_code', reference)
+          .maybeSingle();
+
+        if (!tx?.order_tracking_id) return;
+
+        creditRecoveryAttemptedRef.current = reference;
+        const status = await pesapalService.checkTransactionStatus({
+          merchantReference: reference,
+          orderTrackingId: tx.order_tracking_id
+        });
         const statusText = String(
           status?.payment_status_description ||
           status?.status_description ||

@@ -2052,21 +2052,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         .or('review_status.is.null,review_status.eq.PUBLISHED')
         .order('created_at', { ascending: false });
 
-      let examQuery = supabase
-        .from('knowledge_base')
-        .select('id, title, grade, subject, type, source, is_official, rating, download_count, created_at, indexing_status, indexed_at, chunk_count, last_index_error, exam_type, exam_year, paper_code, paper_number, duration_minutes, total_marks, structured_questions, exam_instructions, marking_scheme_source, review_status')
-        .eq('type', 'PAST_PAPER')
-        .eq('review_status', 'PUBLISHED')
-        .order('created_at', { ascending: false });
-
-      if (grade) {
-        documentQuery = documentQuery.eq('grade', grade);
-        examQuery = examQuery.eq('grade', grade);
-      }
-      if (subject) {
-        documentQuery = documentQuery.eq('subject', subject);
-        examQuery = examQuery.eq('subject', subject);
-      }
+      const examQuery = supabase.rpc('list_published_exams', {
+        p_grade: grade || null,
+        p_subject: subject || null
+      });
 
       const [documentResult, examResult] = await Promise.all([documentQuery, examQuery]);
       if (documentResult.error) throw documentResult.error;
