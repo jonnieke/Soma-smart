@@ -241,6 +241,17 @@ export const RevisionLanding: React.FC<Props> = ({ onStartSession, onNavigate, o
         return 'paper';
     };
 
+    const getPaperIndexStatus = (item: any) => String(item?.indexing_status || '').toUpperCase();
+
+    const getPaperChunkCount = (item: any) => {
+        const count = Number(item?.chunk_count || 0);
+        return Number.isFinite(count) ? count : 0;
+    };
+
+    const isPaperGroundedReady = (item: any) => {
+        return getPaperIndexStatus(item) === 'READY' && getPaperChunkCount(item) > 0;
+    };
+
     // All resources merged
     const allItems = useMemo(() => {
         const typed = resources.map(r => ({
@@ -339,17 +350,6 @@ export const RevisionLanding: React.FC<Props> = ({ onStartSession, onNavigate, o
     const startRecommendedPaper = () => {
         if (recommendedStart) onStartSession(recommendedStart, RevisionMode.EXAM);
         else openGuru('predict');
-    };
-
-    const getPaperIndexStatus = (item: any) => String(item?.indexing_status || '').toUpperCase();
-
-    const getPaperChunkCount = (item: any) => {
-        const count = Number(item?.chunk_count || 0);
-        return Number.isFinite(count) ? count : 0;
-    };
-
-    const isPaperGroundedReady = (item: any) => {
-        return getPaperIndexStatus(item) === 'READY' && getPaperChunkCount(item) > 0;
     };
 
     const getPaperGroundingBadge = (item: any) => {

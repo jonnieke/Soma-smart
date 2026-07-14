@@ -57,12 +57,22 @@ export const RevisionPortal: React.FC = () => {
         return counts;
     }, new Map<string, number>()).entries()).map(([name, count], index) => ({ name, count, ...subjectVisual(index) })), [pathwayExams]);
 
-    const startRevision = () => {
+    const startRevision = (openExamId?: string | number) => {
         setRole(UserRole.REVISION);
+        if (openExamId) {
+            const paper = pathwayExams.find(exam => String(exam.id) === String(openExamId)) || pathwayExams[0];
+            if (paper) sessionStorage.setItem('soma_pending_exam', JSON.stringify(paper));
+        }
         navigate('/revision/dashboard');
     };
 
-    const openExamLibrary = () => isRegistered ? startRevision() : setShowRegister(true);
+    const openExamLibrary = () => {
+        if (!isRegistered) {
+            setShowRegister(true);
+            return;
+        }
+        startRevision(pathwayExams[0]?.id);
+    };
 
     return (
         <div className="min-h-screen bg-slate-50 pb-24 font-sans text-slate-900 dark:bg-slate-950 dark:text-white md:pb-0">
@@ -76,7 +86,7 @@ export const RevisionPortal: React.FC = () => {
                 {isRegistered ? (
                     <div className="flex items-center gap-3">
                         <div className="hidden text-right sm:block"><p className="text-sm font-black">{studentProfile?.name?.split(' ')[0] || 'Candidate'}</p><p className="text-[10px] font-bold text-slate-400">{studentCode}</p></div>
-                        <button onClick={startRevision} className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-black text-white">My Exam Prep</button>
+                        <button onClick={() => startRevision()} className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-black text-white">My Exam Prep</button>
                         <button onClick={() => setShowLogoutModal(true)} className="rounded-xl p-2 text-slate-400 hover:bg-rose-50 hover:text-rose-500"><LogOut className="h-5 w-5" /></button>
                     </div>
                 ) : (
@@ -93,8 +103,8 @@ export const RevisionPortal: React.FC = () => {
                         <div className="flex flex-wrap justify-center gap-3 pt-3">
                             {PATHWAYS.map(item => <button key={item.id} onClick={() => setPathway(item.id)} className={`rounded-2xl border px-6 py-3 text-left transition ${pathway === item.id ? 'border-indigo-600 bg-indigo-600 text-white shadow-lg' : 'border-slate-200 bg-white text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200'}`}><span className="block text-sm font-black">{item.id}</span><span className={`block text-[10px] font-bold ${pathway === item.id ? 'text-indigo-100' : 'text-slate-400'}`}>{item.label}</span></button>)}
                         </div>
-                        <button onClick={openExamLibrary} className="inline-flex items-center gap-3 rounded-2xl bg-gradient-to-r from-orange-500 to-rose-600 px-8 py-4 text-lg font-black text-white shadow-xl shadow-orange-500/20">{isRegistered ? 'Open my papers' : 'Start free'} <ArrowRight className="h-5 w-5" /></button>
-                        {pathwayExams.length > 0 && <div className="grid gap-3 pt-2 sm:grid-cols-3">{pathwayExams.slice(0, 3).map(exam => <button key={exam.id} onClick={openExamLibrary} className="rounded-2xl border border-slate-200 bg-white px-4 py-4 text-left transition hover:-translate-y-0.5 hover:border-indigo-200 hover:shadow-lg dark:border-slate-700 dark:bg-slate-900"><span className="inline-flex rounded-full bg-emerald-50 px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-emerald-700">Ready paper</span><span className="mt-3 block text-sm font-black leading-snug">{exam.title}</span><span className="mt-2 block text-[11px] font-bold text-slate-400">{exam.subject} ? {exam.grade}</span></button>)}</div>}
+                        <button onClick={openExamLibrary} className="inline-flex items-center gap-3 rounded-2xl bg-gradient-to-r from-orange-500 to-rose-600 px-8 py-4 text-lg font-black text-white shadow-xl shadow-orange-500/20">{isRegistered ? 'Open first paper' : 'Start free'} <ArrowRight className="h-5 w-5" /></button>
+                        {pathwayExams.length > 0 && <div className="grid gap-3 pt-2 sm:grid-cols-3">{pathwayExams.slice(0, 3).map(exam => <button key={exam.id} onClick={() => startRevision(exam.id)} className="rounded-2xl border border-slate-200 bg-white px-4 py-4 text-left transition hover:-translate-y-0.5 hover:border-indigo-200 hover:shadow-lg dark:border-slate-700 dark:bg-slate-900"><span className="inline-flex rounded-full bg-emerald-50 px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-emerald-700">Ready paper</span><span className="mt-3 block text-sm font-black leading-snug">{exam.title}</span><span className="mt-2 block text-[11px] font-bold text-slate-400">{exam.subject} ? {exam.grade}</span></button>)}</div>}
                         <div className="flex flex-wrap justify-center gap-5 text-xs font-bold text-slate-500"><span className="flex items-center gap-2"><ShieldCheck className="h-4 w-4 text-indigo-500" /> Paper-first exam packs</span><span className="flex items-center gap-2"><BookOpen className="h-4 w-4 text-indigo-500" /> {publishedExams.length} published exam{publishedExams.length === 1 ? '' : 's'}</span></div>
                     </motion.div>
                 </section>

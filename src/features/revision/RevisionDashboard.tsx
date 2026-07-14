@@ -32,6 +32,22 @@ export const RevisionDashboard: React.FC = () => {
         }
     }, [isRegistered, navigate]);
 
+    useEffect(() => {
+        if (activeView.type !== 'landing') return;
+        const rawPaper = sessionStorage.getItem('soma_pending_exam');
+        if (!rawPaper) return;
+        try {
+            const paper = JSON.parse(rawPaper);
+            if (paper) {
+                setActiveView({ type: 'exam', data: paper as any, mode: RevisionMode.EXAM });
+            }
+        } catch (error) {
+            console.error('Could not open pending paper:', error);
+        } finally {
+            sessionStorage.removeItem('soma_pending_exam');
+        }
+    }, [activeView.type]);
+
     // Helper to determine item type
     const getItemType = (data: File | TeacherActivity): 'syllabus' | 'notes' | 'paper' => {
         if (data instanceof File) return 'paper'; // User uploaded file = past paper
