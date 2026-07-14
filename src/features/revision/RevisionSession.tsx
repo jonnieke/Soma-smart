@@ -100,6 +100,7 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
     // Pre-exam setup
     const [preExamMinutes, setPreExamMinutes] = useState(120); // default 2 hrs
     const [customMinutes, setCustomMinutes] = useState('');
+    const [selectedQuestionIds, setSelectedQuestionIds] = useState<string[]>([]);
 
     // Dashboard state
     const [predictions, setPredictions] = useState<ExamAnalysis | null>(null);
@@ -128,6 +129,7 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
                 if (initialAnalysis) {
                     setAnalysis(initialAnalysis);
                     setPreExamMinutes(initialAnalysis.durationMinutes || 120);
+                    setSelectedQuestionIds((initialAnalysis.questions || []).filter(question => normalizeSection(question.section) === 'II').slice(0, 5).map(question => String(question.id)));
                     setPhase('DASHBOARD');
                     setPastPerformance(loadPerformanceRecords());
                     return;
@@ -139,6 +141,7 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
                     const result = await analyzeExamPaper(base64, data.type);
                     setAnalysis(result);
                     setPreExamMinutes(result.durationMinutes || 120);
+                    setSelectedQuestionIds((result.questions || []).filter(question => normalizeSection(question.section) === 'II').slice(0, 5).map(question => String(question.id)));
                 } else if (Array.isArray((data as any)?.structured_questions) || 'file_path' in (data as any) || (data as any)?.fileUrl || (data as any)?.file_url) {
                     const res = data as any;
                     const savedQuestions = Array.isArray(res.structured_questions) ? res.structured_questions : [];
@@ -162,6 +165,7 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
                         questions: savedQuestions
                     });
                     setPreExamMinutes(res.duration_minutes || 120);
+                    setSelectedQuestionIds(savedQuestions.filter((question: any) => normalizeSection(question.section) === 'II').slice(0, 5).map((question: any) => String(question.id)));
                 } else {
                     // Quiz data from teacher
                     const quiz = (data as any).content;
@@ -174,6 +178,7 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
                             marks: 5
                         }))
                     });
+                    setSelectedQuestionIds([]);
                 }
 
                 setPastPerformance(loadPerformanceRecords());
@@ -226,6 +231,23 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
         return `${m}:${s.toString().padStart(2, '0')}`;
     };
 
+    const normalizeSection = (section?: string) => String(section || '').trim().toUpperCase();
+    const hasSectionTwo = Boolean(analysis?.questions?.some(question => normalizeSection(question.section) === 'II'));
+    const sectionOneQuestions = (analysis?.questions || []).filter(question => normalizeSection(question.section) === 'I');
+    const sectionTwoQuestions = (analysis?.questions || []).filter(question => normalizeSection(question.section) === 'II');
+    const selectedSectionTwoQuestions = sectionTwoQuestions.filter(question => selectedQuestionIds.includes(String(question.id)));
+    const selectedQuestionCount = selectedSectionTwoQuestions.length;
+    const canStartSectionedPaper = !hasSectionTwo || selectedQuestionCount === 5;
+    const toggleSectionTwoQuestion = (questionId: string) => {
+        setSelectedQuestionIds(current => {
+            if (current.includes(questionId)) {
+                return current.filter(id => id !== questionId);
+            }
+            if (current.length >= 5) return current;
+            return [...current, questionId];
+        });
+    };
+
     const persistCurrentAnswer = useCallback(async (answerOverride?: string) => {
         if (!activeExamId || !serverAttemptId || quizQuestions.length === 0) return;
         const question = quizQuestions[currentQuestionIdx];
@@ -268,7 +290,10 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
 
     const startQuiz = async (mode: ExamPracticeMode, questions?: ExamQuestion[], overrideSecs?: number) => {
         const qs = questions || analysis?.questions || [];
-        const preparedQuestions = mode === ExamPracticeMode.PRACTICE_BY_TOPIC && qs.length > 1 ? shuffleQuestions(qs) : qs;
+        const sectionedQuestions = !questions && hasSectionTwo
+            ? qs.filter(question => normalizeSection(question.section) !== 'II' || selectedQuestionIds.includes(String(question.id)))
+            : qs;
+        const preparedQuestions = mode === ExamPracticeMode.PRACTICE_BY_TOPIC && sectionedQuestions.length > 1 ? shuffleQuestions(sectionedQuestions) : sectionedQuestions;
         setQuizQuestions(preparedQuestions);
         setPracticeMode(mode);
         setCurrentQuestionIdx(0);
@@ -584,6 +609,54 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
                         />
                     </div>
 
+                    {hasSectionTwo && (
+                        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-4">
+                            <div className="flex items-center justify-between gap-3">
+                                <div>
+                                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-300">KCSE section choice</p>
+                                    <p className="text-sm text-slate-300 font-medium">Section I is compulsory. Section II: choose any 5 questions.</p>
+                                </div>
+                                <span className={`text-xs font-black px-3 py-1 rounded-full ${canStartSectionedPaper ? 'bg-emerald-500/20 text-emerald-300' : 'bg-amber-500/20 text-amber-300'}`}>
+                                    {selectedQuestionCount}/5 selected
+                                </span>
+                            </div>
+
+                            {sectionOneQuestions.length > 0 && (
+                                <div>
+                                    <p className="text-[10px] font-black uppercase tracking-wider text-slate-500 mb-2">Section I ? compulsory</p>
+                                    <div className="flex flex-wrap gap-2">
+                                        {sectionOneQuestions.map(question => (
+                                            <span key={String(question.id)} className="rounded-xl border border-slate-700 bg-slate-800 px-3 py-1.5 text-xs font-black text-slate-300">
+                                                Q{question.number}
+                                            </span>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {sectionTwoQuestions.length > 0 && (
+                                <div>
+                                    <p className="text-[10px] font-black uppercase tracking-wider text-slate-500 mb-2">Section II ? pick 5</p>
+                                    <div className="flex flex-wrap gap-2">
+                                        {sectionTwoQuestions.map(question => {
+                                            const isSelected = selectedQuestionIds.includes(String(question.id));
+                                            return (
+                                                <button
+                                                    key={String(question.id)}
+                                                    type="button"
+                                                    onClick={() => toggleSectionTwoQuestion(String(question.id))}
+                                                    className={`rounded-xl border px-3 py-1.5 text-xs font-black transition-colors ${isSelected ? 'border-indigo-500 bg-indigo-600 text-white' : 'border-slate-700 bg-slate-800 text-slate-300 hover:border-slate-500'}`}
+                                                >
+                                                    Q{question.number}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
                     {/* Summary */}
                     <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4">
                         <div className="flex justify-between text-sm">
@@ -605,10 +678,10 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
                         whileHover={{ scale: 1.01 }}
                         whileTap={{ scale: 0.98 }}
                         onClick={() => { void startQuiz(ExamPracticeMode.TIMED_QUIZ, undefined, finalMins * 60); }}
-                        disabled={!finalMins || finalMins < 10}
+                        disabled={!finalMins || finalMins < 10 || !canStartSectionedPaper}
                         className="w-full py-4 rounded-2xl bg-gradient-to-r from-indigo-600 to-blue-600 text-white font-black text-base flex items-center justify-center gap-3 shadow-lg disabled:opacity-50"
                     >
-                        <Timer className="w-5 h-5" /> Start Exam  -  {finalMins} min
+                        <Timer className="w-5 h-5" /> {hasSectionTwo && !canStartSectionedPaper ? 'Select 5 Section II questions' : 'Start Exam'}  -  {finalMins} min
                     </motion.button>
                     <button onClick={() => setPhase('DASHBOARD')} className="w-full text-slate-500 text-sm font-bold hover:text-slate-300 transition-colors">
                         â† Back to Paper
@@ -872,6 +945,9 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
                                 <div className="flex items-center gap-2">
                                     <span className="bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-400 px-3 py-1 rounded-lg text-sm font-black">Q{question.number}</span>
                                     <span className="text-[10px] text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded uppercase font-bold">{question.topic}</span>
+                                    {question.section && (
+                                        <span className="text-[10px] text-indigo-600 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-900/40 px-2 py-1 rounded uppercase font-bold">Section {question.section}</span>
+                                    )}
                                 </div>
                                 <span className="text-xs font-black text-slate-500 dark:text-slate-500">{question.marks || 2} marks</span>
                             </div>
@@ -1147,6 +1223,9 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
                                 <div className="flex items-center gap-2">
                                     <span className="bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-400 px-3 py-1 rounded-lg text-sm font-black">Q{question.number}</span>
                                     <span className="text-[10px] text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded uppercase font-bold">{question.topic}</span>
+                                    {question.section && (
+                                        <span className="text-[10px] text-indigo-600 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-900/40 px-2 py-1 rounded uppercase font-bold">Section {question.section}</span>
+                                    )}
                                 </div>
                                 <span className="text-xs font-black text-slate-500 dark:text-slate-500">{question.marks || 2} marks</span>
                             </div>
