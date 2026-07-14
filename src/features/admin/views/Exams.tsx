@@ -444,6 +444,30 @@ export const ExamsView: React.FC = () => {
 
 
 
+    const updateQuestion = (questionId: string | number, patch: Partial<ExamAnalysis['questions'][number]>) => {
+
+        setAnalyzedData(current => {
+
+            if (!current) return current;
+
+            return {
+
+                ...current,
+
+                questions: current.questions.map(question => String(question.id) === String(questionId)
+
+                    ? { ...question, ...patch }
+
+                    : question)
+
+            };
+
+        });
+
+    };
+
+
+
     const validateExamPackage = () => {
 
         const issues: string[] = [];
