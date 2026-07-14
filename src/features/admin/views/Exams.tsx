@@ -142,6 +142,44 @@ export const ExamsView: React.FC = () => {
 
     const [jsonImportError, setJsonImportError] = useState<string | null>(null);
 
+    const buildStructuredTemplate = () => JSON.stringify({
+        exam: {
+            title,
+            examType,
+            grade,
+            subject,
+            paperCode,
+            paperNumber,
+            year: Number(examYear) || currentYear,
+            durationMinutes: Number(durationMinutes) || 0,
+            totalMarks: Number(totalMarks) || 0,
+            instructions: []
+        },
+        questions: [
+            {
+                id: 'Q1',
+                number: '1',
+                orderIndex: 1,
+                section: 'I',
+                questionType: 'multiple_choice',
+                text: 'Question text here',
+                topic: subject || 'General',
+                marks: 1,
+                options: ['A', 'B', 'C', 'D'],
+                answer: 'A'
+            }
+        ]
+    }, null, 2);
+
+    const useStructuredTemplate = () => {
+        setInputMode('STRUCTURED_JSON');
+        setStructuredJson(buildStructuredTemplate());
+        setStructuredJsonFile(null);
+        setJsonImportError(null);
+        setAnalyzedData(null);
+        setPublishImmediately(false);
+    };
+
 
 
     useEffect(() => {
@@ -1160,7 +1198,7 @@ export const ExamsView: React.FC = () => {
 
                                 </h3>
 
-                                <p className="mt-2 text-sm text-slate-500">Upload a PDF for analysis, or import a structured exam directly as JSON when the questions are already prepared.</p>
+                                <p className="mt-2 text-sm text-slate-500">Upload a PDF for analysis, or import a structured exam JSON when the questions are already prepared.</p>
 
 
 
@@ -1208,7 +1246,7 @@ export const ExamsView: React.FC = () => {
 
                                                 <div className="rounded-2xl border border-indigo-100 bg-indigo-50 p-4 text-sm text-indigo-900">
 
-                                                    Upload the structured exam JSON file or paste its contents. We'll validate it and save it directly.
+                                                    Use this for a Soma-created mock or any paper you have already structured. Upload the JSON file or paste its contents, and we'll validate it before saving.
 
                                                 </div>
 
@@ -1223,6 +1261,23 @@ export const ExamsView: React.FC = () => {
                                                     onChange={setStructuredJsonFile}
 
                                                 />
+
+                                                <div className="flex flex-wrap gap-2">
+                                                    <button
+                                                        type="button"
+                                                        onClick={useStructuredTemplate}
+                                                        className="rounded-xl border border-indigo-200 bg-white px-4 py-2 text-xs font-black uppercase tracking-wider text-indigo-700 transition hover:bg-indigo-50"
+                                                    >
+                                                        Insert template
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => { setStructuredJson(''); setStructuredJsonFile(null); setJsonImportError(null); }}
+                                                        className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-black uppercase tracking-wider text-slate-600 transition hover:bg-slate-50"
+                                                    >
+                                                        Clear JSON
+                                                    </button>
+                                                </div>
 
                                                 <textarea
 
@@ -1436,7 +1491,7 @@ export const ExamsView: React.FC = () => {
 
                                                     validateExamPackage().slice(0, 6).map((issue, index) => (
 
-                                                        <p key={index} className="font-medium">? {issue}</p>
+                                                        <p key={index} className="font-medium">- {issue}</p>
 
                                                     ))
 

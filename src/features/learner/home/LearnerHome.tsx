@@ -265,14 +265,14 @@ export const LearnerHome: React.FC<LearnerHomeProps> = ({
           <div className="relative z-10 max-w-[760px]">
             <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3.5 py-1.5 text-xs font-bold text-violet-100 backdrop-blur">
               <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_0_4px_rgba(52,211,153,0.14)]" />
-              Akili is ready to learn with you
+              Welcome and start learning with Akili
             </div>
             <p className="mt-6 text-sm font-semibold text-violet-200">Welcome, {learnerFirstName}</p>
             <h1 className="mt-1 text-[38px] font-black leading-[1.04] tracking-[-0.035em] text-white sm:text-[52px] lg:text-[62px]">
-              What do you want<br className="hidden sm:block" /> to learn today?
+              Welcome and start<br className="hidden sm:block" /> learning today
             </h1>
             <p className="mt-5 max-w-[590px] text-[15px] leading-7 text-violet-100/85 sm:text-base">
-              Ask Akili anything from class. You'll get a clear explanation, an example, and a quick check to help it stick.
+              Ask Akili anything from class, get a clear explanation, see an example, and finish with a quick check to help it stick.
             </p>
           </div>
 
