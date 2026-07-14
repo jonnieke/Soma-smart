@@ -4590,6 +4590,7 @@ ${explanation.explanation}
           onContinue={(topic) => void handleQuestTakeQuiz(topic)}
           onViewAll={() => handleSidebarTabChange('PROGRESS')}
           onStartRecommendation={(topic) => void handleTopicClick(topic)}
+          onStartWeakDrill={(topic) => void handleQuestTakeQuiz(topic)}
         />
       );
     }

@@ -53,6 +53,7 @@ type LearnerHomeProps = {
   onContinue: (topic: string) => void;
   onViewAll: () => void;
   onStartRecommendation: (topic: string) => void;
+  onStartWeakDrill: (topic: string) => void;
 };
 
 const SUBJECTS: LearnerHomeSubject[] = [
@@ -206,6 +207,7 @@ export const LearnerHome: React.FC<LearnerHomeProps> = ({
   onContinue,
   onViewAll,
   onStartRecommendation,
+  onStartWeakDrill,
 }) => {
   const [topic, setTopic] = useState('');
   const submit = (event?: React.FormEvent) => {
@@ -442,7 +444,7 @@ export const LearnerHome: React.FC<LearnerHomeProps> = ({
                   )}
                 </div>
                 <div className="flex shrink-0 flex-col gap-3 lg:w-[220px]">
-                  <button type="button" onClick={() => onStartRecommendation(latestExamSnapshot.weakTopics[0] || recommendedTopic)} className="flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[#6938ef] px-6 font-bold text-white hover:bg-[#5b2bd7]">
+                  <button type="button" onClick={() => onStartWeakDrill(latestExamSnapshot.weakTopics[0] || recommendedTopic)} className="flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[#6938ef] px-6 font-bold text-white hover:bg-[#5b2bd7]">
                     Retry weak area <ChevronRight className="h-4 w-4" />
                   </button>
                   <button type="button" onClick={onViewAll} className="flex min-h-12 items-center justify-center gap-2 rounded-xl border border-[#d9d3f2] bg-white px-6 font-bold text-[#6938ef] hover:bg-[#f4efff]">
