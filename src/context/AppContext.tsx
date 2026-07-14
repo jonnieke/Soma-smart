@@ -509,11 +509,19 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       return;
     }
 
+    const { data: authData } = await supabase.auth.getSession();
+    if (!authData.session) {
+      return;
+    }
+
     const { data, error } = await supabase.functions.invoke('usage-limits/increment', {
       body: { type }
     });
 
     if (error) {
+      if ((error as any)?.status === 401) {
+        return;
+      }
       throw error;
     }
 

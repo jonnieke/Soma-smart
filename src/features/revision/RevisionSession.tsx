@@ -60,6 +60,7 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
     const [phase, setPhase] = useState<SessionPhase>('LOADING');
     const [analysis, setAnalysis] = useState<ExamAnalysis | null>(initialAnalysis || null);
     const [loadingText, setLoadingText] = useState('Scanning exam paper...');
+    const [loadError, setLoadError] = useState<string | null>(null);
 
     // Quiz state
     const [practiceMode, setPracticeMode] = useState<ExamPracticeMode>(ExamPracticeMode.FULL_PAPER);
@@ -148,7 +149,8 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
                     const savedQuestions = Array.isArray(res.structured_questions) ? res.structured_questions : [];
 
                     if (savedQuestions.length === 0) {
-                        throw new Error('This exam has not been structured yet. Ask an administrator to analyze and publish it.');
+                        setLoadError('This exam is not ready yet. Ask an administrator to analyze, structure, and publish it first.');
+                        return;
                     }
 
                     setLoadingText('Opening structured exam...');
@@ -186,8 +188,7 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
                 setPhase('DASHBOARD');
             } catch (error) {
                 console.error(error);
-                alert('Failed to load exam content.');
-                onExit();
+                setLoadError(error instanceof Error ? error.message : 'Failed to load exam content.');
             }
         };
         init();
@@ -591,6 +592,18 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
     // ==================== RENDER ====================
 
     // --- LOADING ---
+    if (loadError) {
+        return (
+            <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 dark:bg-slate-950 px-6 text-center transition-colors">
+                <div className="w-16 h-16 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center mb-6">
+                    <AlertTriangle className="w-8 h-8" />
+                </div>
+                <p className="text-slate-900 dark:text-white font-black text-2xl">Exam not ready yet</p>
+                <p className="mt-3 max-w-lg text-slate-500 dark:text-slate-400 text-sm leading-6">{loadError}</p>
+                <button onClick={onExit} className="mt-6 rounded-2xl bg-indigo-600 px-6 py-3 text-sm font-black text-white shadow-lg shadow-indigo-600/20">Go back</button>
+            </div>
+        );
+    }
     if (phase === 'LOADING') {
         return (
             <div className="h-screen flex flex-col items-center justify-center bg-slate-50 dark:bg-slate-950 transition-colors">
