@@ -298,6 +298,15 @@ export const RevisionLanding: React.FC<Props> = ({ onStartSession, onNavigate, o
         setShowGuru(true);
     };
 
+    const openAskAkili = () => {
+        openGuru('chat', buildPaperCoachPrompt(recommendedStart || missionResource || { title: missionTitle, subject: focusSubject, grade: examGoal.examType }));
+    };
+
+    const startRecommendedPaper = () => {
+        if (recommendedStart) onStartSession(recommendedStart, RevisionMode.EXAM);
+        else openGuru('predict');
+    };
+
     const getPaperIndexStatus = (item: any) => String(item?.indexing_status || '').toUpperCase();
 
     const getPaperChunkCount = (item: any) => {
@@ -530,24 +539,40 @@ Use plain text. No markdown headings or symbols.`;
                         </div>
                     )}
 
-                    <div className="grid grid-cols-3 gap-2 mt-4">
-                        <button onClick={() => openGuru('mark')} className="rounded-2xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white px-3 py-3 transition-all text-left">
+                                        <div className="mt-4 grid gap-2 sm:grid-cols-[1.6fr_1fr_1fr]">
+                        <button
+                            onClick={openAskAkili}
+                            className="flex items-center gap-3 rounded-3xl border border-indigo-200 dark:border-indigo-900/60 bg-indigo-50 dark:bg-indigo-950/30 px-4 py-4 text-left transition hover:-translate-y-0.5 hover:shadow-sm"
+                        >
+                            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-indigo-600 text-white shadow-lg shadow-indigo-200 dark:shadow-none">
+                                <Sparkles className="w-5 h-5" />
+                            </span>
+                            <span className="min-w-0">
+                                <span className="block text-[10px] font-black uppercase tracking-[0.2em] text-indigo-600 dark:text-indigo-300">Ask Akili first</span>
+                                <span className="block text-sm font-bold text-slate-900 dark:text-white">Start with an explanation, example, or a quick check.</span>
+                            </span>
+                        </button>
+                        <button onClick={() => openGuru('mark')} className="rounded-3xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white px-4 py-4 transition-all text-left">
                             <ClipboardCheck className="w-5 h-5 mb-2" />
                             <span className="block text-xs font-black leading-tight">Mark<br />My Answer</span>
                         </button>
-                        <button onClick={() => openGuru('practice')} className="rounded-2xl bg-rose-600 hover:bg-rose-700 active:scale-95 text-white px-3 py-3 transition-all text-left">
+                        <button onClick={() => openGuru('practice')} className="rounded-3xl bg-rose-600 hover:bg-rose-700 active:scale-95 text-white px-4 py-4 transition-all text-left">
                             <PenLine className="w-5 h-5 mb-2" />
                             <span className="block text-xs font-black leading-tight">Timed<br />Drill</span>
                         </button>
-                        <button onClick={() => openGuru('predict')} className="rounded-2xl bg-amber-500 hover:bg-amber-600 active:scale-95 text-white px-3 py-3 transition-all text-left">
-                            <TrendingUp className="w-5 h-5 mb-2" />
-                            <span className="block text-xs font-black leading-tight">Hot<br />Topics</span>
+                    </div>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                        <button onClick={() => openGuru('predict')} className="rounded-full bg-amber-500 hover:bg-amber-600 active:scale-95 text-white px-4 py-2.5 text-xs font-black transition-all">
+                            <TrendingUp className="inline-block w-4 h-4 mr-1.5 -mt-0.5" />Hot Topics
+                        </button>
+                        <button onClick={startRecommendedPaper} className="rounded-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 px-4 py-2.5 text-xs font-black text-slate-700 dark:text-slate-200 transition hover:bg-slate-50 dark:hover:bg-slate-900">
+                            Start paper practice
                         </button>
                     </div>
                 </section>
 
                     {recommendedStart && (
-                        <div className="mt-4 rounded-2xl border border-indigo-200 dark:border-indigo-900/60 bg-indigo-50 dark:bg-indigo-950/30 px-4 py-4">
+                        <div className="rounded-2xl border border-indigo-200 dark:border-indigo-900/60 bg-indigo-50 dark:bg-indigo-950/30 px-4 py-4">
                             <div className="flex items-start justify-between gap-3">
                                 <div className="min-w-0">
                                     <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-600 dark:text-indigo-300 mb-1">Current focus</p>
@@ -559,7 +584,7 @@ Use plain text. No markdown headings or symbols.`;
                                     </p>
                                 </div>
                                 <button
-                                    onClick={() => onStartSession(recommendedStart, RevisionMode.EXAM)}
+                                    onClick={startRecommendedPaper}
                                     className="shrink-0 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 text-[11px] font-black transition-colors"
                                 >
                                     Start exam
