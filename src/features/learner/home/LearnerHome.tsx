@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   ArrowRight,
   BookOpen,
   Calculator,
   Check,
   ChevronDown,
+  ChevronRight,
   Clock3,
   FlaskConical,
   Globe2,
@@ -85,6 +86,40 @@ type TopicArtwork = {
   background: string;
   border: string;
   useImage: boolean;
+};
+
+type ExamCoachSnapshot = {
+  date: string;
+  subject: string;
+  grade: string;
+  score: number;
+  weakTopics: string[];
+  totalQuestions: number;
+  correctAnswers: number;
+};
+
+const EXAM_RESULTS_KEY = 'somo_performance_records';
+
+const getLatestExamSnapshot = (): ExamCoachSnapshot | null => {
+  try {
+    const stored = localStorage.getItem(EXAM_RESULTS_KEY);
+    if (!stored) return null;
+    const records = JSON.parse(stored) as Partial<ExamCoachSnapshot>[];
+    if (!Array.isArray(records) || records.length === 0) return null;
+    const latest = [...records].reverse().find((record) => record && typeof record === 'object');
+    if (!latest) return null;
+    return {
+      date: String(latest.date || ''),
+      subject: String(latest.subject || 'Revision'),
+      grade: String(latest.grade || 'Learner'),
+      score: Number(latest.score || 0),
+      weakTopics: Array.isArray(latest.weakTopics) ? latest.weakTopics.map((topic) => String(topic)) : [],
+      totalQuestions: Number(latest.totalQuestions || 0),
+      correctAnswers: Number(latest.correctAnswers || 0),
+    };
+  } catch {
+    return null;
+  }
 };
 
 const getTopicArtwork = (topic: string): TopicArtwork => {
@@ -184,7 +219,8 @@ export const LearnerHome: React.FC<LearnerHomeProps> = ({
   const featuredSubjectName = featuredSubjectLabel ? (SUBJECTS.find((subject) => normalizeSubjectLabel(subject.name) === featuredSubjectLabel)?.name || '') : '';
   const orderedSubjects = orderSubjects(SUBJECTS, featuredSubjectName);
   const learnerFirstName = learnerName.trim().split(/\s+/)[0] || 'Learner';
-
+  const latestExamSnapshot = useMemo(() => getLatestExamSnapshot(), []);
+  const weakTopicCount = latestExamSnapshot?.weakTopics.length || 0;
 
   return (
     <div className="min-h-screen bg-[#fafaff] text-[#10143a]">
@@ -375,6 +411,48 @@ export const LearnerHome: React.FC<LearnerHomeProps> = ({
             </button>
           </article>
         </section>
+
+        {latestExamSnapshot && (
+          <section className="mt-8">
+            <div className="flex items-end justify-between gap-4">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.14em] text-[#7a5bef]">Exam coach</p>
+                <h2 className="mt-1 text-[22px] font-bold">Recover marks from your last paper</h2>
+              </div>
+              <span className="hidden text-sm text-[#74798f] sm:block">{latestExamSnapshot.score}% scored ? {weakTopicCount} weak area{weakTopicCount === 1 ? '' : 's'}</span>
+            </div>
+            <article className="mt-4 rounded-[20px] border border-[#dcd6f7] bg-[#fbf9ff] p-6 shadow-[0_8px_30px_rgba(70,54,140,0.04)]">
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                <div className="min-w-0 flex-1">
+                  <div className="inline-flex rounded-full border border-[#e6e1f7] bg-white px-3 py-1 text-[11px] font-bold uppercase tracking-[0.12em] text-[#7a5bef]">
+                    Last exam result
+                  </div>
+                  <h3 className="mt-3 text-xl font-bold">{latestExamSnapshot.subject} ? {latestExamSnapshot.grade}</h3>
+                  <p className="mt-1 text-sm text-[#626b87]">{latestExamSnapshot.correctAnswers}/{latestExamSnapshot.totalQuestions} correct ? {latestExamSnapshot.score}% overall</p>
+                  {weakTopicCount > 0 ? (
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      {latestExamSnapshot.weakTopics.slice(0, 4).map((topic) => (
+                        <span key={topic} className="rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-[#5f6681] shadow-sm">
+                          {topic}
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="mt-4 text-sm text-emerald-700">No weak topics were detected in your latest paper. Nice work.</p>
+                  )}
+                </div>
+                <div className="flex shrink-0 flex-col gap-3 lg:w-[220px]">
+                  <button type="button" onClick={() => onStartRecommendation(latestExamSnapshot.weakTopics[0] || recommendedTopic)} className="flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[#6938ef] px-6 font-bold text-white hover:bg-[#5b2bd7]">
+                    Retry weak area <ChevronRight className="h-4 w-4" />
+                  </button>
+                  <button type="button" onClick={onViewAll} className="flex min-h-12 items-center justify-center gap-2 rounded-xl border border-[#d9d3f2] bg-white px-6 font-bold text-[#6938ef] hover:bg-[#f4efff]">
+                    Open revision hub
+                  </button>
+                </div>
+              </div>
+            </article>
+          </section>
+        )}
 
         <section className="mt-8">
           <h2 className="text-[22px] font-bold">How learning with Akili works</h2>
