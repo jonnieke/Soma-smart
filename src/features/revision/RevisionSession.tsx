@@ -1390,6 +1390,26 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
             if (a.isCorrect) topicMap[a.topic].correct++;
         });
 
+        const sectionMap: Record<string, { answered: number; marks: number; available: number }> = {};
+        (analysis?.questions || []).forEach(question => {
+            const section = String(question.section || 'GENERAL').trim().toUpperCase() || 'GENERAL';
+            if (!sectionMap[section]) sectionMap[section] = { answered: 0, marks: 0, available: 0 };
+            sectionMap[section].available += question.marks || 0;
+        });
+        attempts.forEach(attempt => {
+            const question = (analysis?.questions || []).find(item => String(item.id) === String(attempt.questionId));
+            const section = String(question?.section || 'GENERAL').trim().toUpperCase() || 'GENERAL';
+            if (!sectionMap[section]) sectionMap[section] = { answered: 0, marks: 0, available: 0 };
+            sectionMap[section].answered += 1;
+            sectionMap[section].marks += attempt.marksAwarded;
+        });
+
+        const weakTopicList = Object.entries(topicMap)
+            .filter(([_, data]) => data.available > 0 && (data.marks / data.available) < 0.5)
+            .map(([topic]) => topic)
+            .slice(0, 4);
+        const recoveryMarks = Math.max(0, Math.round(totalMarks * 0.12));
+
         const gradeLabel = percentage >= 80 ? 'A' : percentage >= 70 ? 'B+' : percentage >= 60 ? 'B' :
             percentage >= 50 ? 'C+' : percentage >= 40 ? 'C' : percentage >= 30 ? 'D+' : 'D';
 
@@ -1457,6 +1477,58 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
                                         </div>
                                     );
                                 })}
+                            </div>
+                        </div>
+
+                        {/* Section Breakdown */}
+                        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden transition-colors shadow-sm">
+                            <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-800">
+                                <div className="flex items-center gap-2">
+                                    <FileText className="w-4 h-4 text-indigo-500 dark:text-indigo-400" />
+                                    <span className="font-bold text-sm text-slate-800 dark:text-slate-200">Section Breakdown</span>
+                                </div>
+                            </div>
+                            <div className="p-4 space-y-3">
+                                {Object.entries(sectionMap).map(([section, stats]) => {
+                                    const pct = stats.available > 0 ? Math.round((stats.marks / stats.available) * 100) : 0;
+                                    return (
+                                        <div key={section} className="rounded-xl border border-slate-200 dark:border-slate-800 p-3">
+                                            <div className="flex items-center justify-between mb-2">
+                                                <div>
+                                                    <p className="text-xs font-black text-slate-800 dark:text-slate-200">Section {section}</p>
+                                                    <p className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">{stats.answered} answered ? {stats.available} available marks</p>
+                                                </div>
+                                                <span className="text-xs font-black ${pct >= 70 ? 'text-emerald-600 dark:text-emerald-400' : pct >= 50 ? 'text-amber-600 dark:text-amber-400' : 'text-red-500 dark:text-red-400'}">{pct}%</span>
+                                            </div>
+                                            <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-2">
+                                                <div className="h-2 rounded-full ${pct >= 70 ? 'bg-emerald-500' : pct >= 50 ? 'bg-amber-500' : 'bg-red-400'}" style={{ width: `${pct}%` }} />
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+
+                        {/* Recovery Revision */}
+                        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden transition-colors shadow-sm">
+                            <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-800">
+                                <div className="flex items-center gap-2">
+                                    <Sparkles className="w-4 h-4 text-amber-500 dark:text-amber-400" />
+                                    <span className="font-bold text-sm text-slate-800 dark:text-slate-200">Revision Set ? Recover {recoveryMarks} Marks</span>
+                                </div>
+                            </div>
+                            <div className="p-4 space-y-3">
+                                <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Focus on the areas that lost marks first. This is your fastest route back up the grade ladder.</p>
+                                <div className="flex flex-wrap gap-2">
+                                    {weakTopicList.length > 0 ? weakTopicList.map(topic => (
+                                        <span key={topic} className="rounded-full bg-rose-50 dark:bg-rose-950/30 px-3 py-1 text-[10px] font-black text-rose-700 dark:text-rose-300">{topic}</span>
+                                    )) : (
+                                        <span className="rounded-full bg-emerald-50 dark:bg-emerald-950/30 px-3 py-1 text-[10px] font-black text-emerald-700 dark:text-emerald-300">No weak topics detected</span>
+                                    )}
+                                </div>
+                                <div className="rounded-xl bg-slate-50 dark:bg-slate-950/40 border border-slate-100 dark:border-slate-800 p-3 text-xs text-slate-600 dark:text-slate-300 font-medium">
+                                    Retry the questions you missed, then do one short drill per weak topic before another timed run.
+                                </div>
                             </div>
                         </div>
 
