@@ -66,6 +66,7 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
     const [quizQuestions, setQuizQuestions] = useState<ExamQuestion[]>([]);
     const [currentQuestionIdx, setCurrentQuestionIdx] = useState(0);
     const [userAnswer, setUserAnswer] = useState('');
+    const [answerByQuestion, setAnswerByQuestion] = useState<Record<string, string>>({});
     const [attempts, setAttempts] = useState<AnswerAttempt[]>([]);
     const [isMarking, setIsMarking] = useState(false);
     const [currentMarking, setCurrentMarking] = useState<MarkingResult | null>(null);
@@ -299,6 +300,7 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
         setCurrentQuestionIdx(0);
         setAttempts([]);
         setUserAnswer('');
+        setAnswerByQuestion({});
         setCurrentMarking(null);
         setShowModelAnswer(false);
         setQuizStartTime(Date.now());
@@ -336,8 +338,10 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
             setTimerActive(true);
         }
 
-        // If explain-first mode, load explanation for first question
-        if (explainFirst && preparedQuestions.length > 0) {
+        // Timed exams never reveal explanations before or during an attempt.
+        const shouldExplainFirst = mode !== ExamPracticeMode.TIMED_QUIZ && explainFirst;
+        if (mode === ExamPracticeMode.TIMED_QUIZ) setExplainFirst(false);
+        if (shouldExplainFirst && preparedQuestions.length > 0) {
             setPhase('EXPLAINING');
             await loadExplanation(preparedQuestions[0]);
         } else {
@@ -374,6 +378,28 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
             setQuestionTimerActive(true);
         }
         setTimeout(() => answerInputRef.current?.focus(), 200);
+    };
+
+    const updateAnswer = (value: string) => {
+        setUserAnswer(value);
+        const question = quizQuestions[currentQuestionIdx];
+        if (question) setAnswerByQuestion(current => ({ ...current, [String(question.id)]: value }));
+    };
+
+    const handleSaveTimedAnswer = async () => {
+        const question = quizQuestions[currentQuestionIdx];
+        if (!question) return;
+        if (userAnswer.trim()) await persistCurrentAnswer(userAnswer).catch(() => null);
+        if (currentQuestionIdx >= quizQuestions.length - 1) {
+            await finishQuiz();
+            return;
+        }
+        const nextIndex = currentQuestionIdx + 1;
+        setCurrentQuestionIdx(nextIndex);
+        setUserAnswer(answerByQuestion[String(quizQuestions[nextIndex].id)] || '');
+        setCurrentMarking(null);
+        setShowModelAnswer(false);
+        lastSavedAnswerRef.current = '';
     };
 
     const handleSubmitAnswer = async () => {
@@ -436,7 +462,8 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
 
         if (currentQuestionIdx < quizQuestions.length - 1) {
             setCurrentQuestionIdx(prev => prev + 1);
-            setUserAnswer('');
+            const nextQuestion = quizQuestions[currentQuestionIdx + 1];
+            setUserAnswer(nextQuestion ? (answerByQuestion[String(nextQuestion.id)] || '') : '');
             setCurrentMarking(null);
             setShowModelAnswer(false);
             setCurrentExplanation(null);
@@ -464,17 +491,41 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
     const finishQuiz = async () => {
         if (timerRef.current) clearInterval(timerRef.current);
         setTimerActive(false);
-        if (activeExamId) {
-            await persistCurrentAnswer().catch(() => null);
+        if (activeExamId) await persistCurrentAnswer().catch(() => null);
+
+        let completedAttempts = attempts;
+        if (practiceMode === ExamPracticeMode.TIMED_QUIZ) {
+            setPhase('MARKING');
+            setIsMarking(true);
+            const timedAttempts: AnswerAttempt[] = [];
+            for (const question of quizQuestions) {
+                const learnerAnswer = answerByQuestion[String(question.id)]?.trim() || '';
+                if (!learnerAnswer) {
+                    timedAttempts.push({ questionId: question.id, questionNumber: question.number, questionText: question.text, learnerAnswer: '', marksAwarded: 0, marksAvailable: question.marks || 1, modelAnswer: '', feedback: 'This question was not answered.', isCorrect: false, topic: question.topic });
+                    continue;
+                }
+                try {
+                    const result = activeExamId
+                        ? await examService.markResponse(activeExamId, question.id, learnerAnswer, language)
+                        : await markStudentAnswer(question, learnerAnswer, language);
+                    timedAttempts.push({ questionId: question.id, questionNumber: question.number, questionText: question.text, learnerAnswer, marksAwarded: result.marksAwarded, marksAvailable: result.marksAvailable, modelAnswer: result.modelAnswer, feedback: result.feedback, examTip: result.examTip, isCorrect: result.isCorrect, topic: question.topic });
+                } catch (error) {
+                    console.error('Could not mark timed response:', error);
+                    timedAttempts.push({ questionId: question.id, questionNumber: question.number, questionText: question.text, learnerAnswer, marksAwarded: 0, marksAvailable: question.marks || 1, modelAnswer: '', feedback: 'This response is awaiting marking.', isCorrect: false, topic: question.topic });
+                }
+            }
+            completedAttempts = timedAttempts;
+            setAttempts(timedAttempts);
+            setIsMarking(false);
         }
 
-        const totalMarks = attempts.reduce((sum, a) => sum + a.marksAvailable, 0);
-        const marksObtained = attempts.reduce((sum, a) => sum + a.marksAwarded, 0);
+        const totalMarks = completedAttempts.reduce((sum, a) => sum + a.marksAvailable, 0);
+        const marksObtained = completedAttempts.reduce((sum, a) => sum + a.marksAwarded, 0);
         const percentage = totalMarks > 0 ? Math.round((marksObtained / totalMarks) * 100) : 0;
 
         // Find weak/strong topics
         const topicScores: Record<string, { total: number; obtained: number }> = {};
-        attempts.forEach(a => {
+        completedAttempts.forEach(a => {
             if (!topicScores[a.topic]) topicScores[a.topic] = { total: 0, obtained: 0 };
             topicScores[a.topic].total += a.marksAvailable;
             topicScores[a.topic].obtained += a.marksAwarded;
@@ -494,8 +545,8 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
             subject: analysis?.subject || '',
             grade: analysis?.grade || '',
             score: percentage,
-            totalQuestions: attempts.length,
-            correctAnswers: attempts.filter(a => a.isCorrect).length,
+            totalQuestions: completedAttempts.length,
+            correctAnswers: completedAttempts.filter(a => a.isCorrect).length,
             timeSpentSeconds,
             weakTopics,
             mode: practiceMode
@@ -563,7 +614,8 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
             { label: '2.5 hours', mins: 150, hint: 'History / English essays' },
             { label: '3 hours', mins: 180, hint: 'KCSE Maths / Sciences' },
         ];
-        const finalMins = customMinutes ? parseInt(customMinutes) : preExamMinutes;
+        const hasOfficialDuration = Boolean(analysis.durationMinutes);
+        const finalMins = analysis.durationMinutes || (customMinutes ? parseInt(customMinutes) : preExamMinutes);
         return (
             <div className="h-screen bg-slate-950 flex flex-col items-center justify-center p-6 font-sans">
                 <div className="w-full max-w-sm space-y-6">
@@ -572,14 +624,22 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
                         <div className="w-16 h-16 bg-indigo-900/40 border border-indigo-700/60 rounded-2xl flex items-center justify-center mx-auto mb-4">
                             <Timer className="w-8 h-8 text-indigo-400" />
                         </div>
-                        <h2 className="text-white font-black text-xl">Set Exam Time</h2>
+                        <h2 className="text-white font-black text-xl">{hasOfficialDuration ? 'Official Exam Setup' : 'Set Exam Time'}</h2>
                         <p className="text-slate-400 text-sm mt-1 font-medium">
                             {analysis.subject}  -  {analysis.questions.length} questions  -  {totalMarks} marks
                         </p>
                     </div>
 
+                    {hasOfficialDuration && (
+                        <div className="rounded-2xl border border-indigo-700/60 bg-indigo-900/30 p-5 text-center">
+                            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-300">Official paper duration</p>
+                            <p className="mt-2 text-3xl font-black text-white">{analysis.durationMinutes} minutes</p>
+                            <p className="mt-1 text-xs text-slate-400">Timed Exam uses the duration approved with this paper.</p>
+                        </div>
+                    )}
+
                     {/* Time presets */}
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className={hasOfficialDuration ? 'hidden' : 'grid grid-cols-2 gap-3'}>
                         {PRESETS.map(p => (
                             <button
                                 key={p.mins}
@@ -597,7 +657,7 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
                     </div>
 
                     {/* Custom time */}
-                    <div>
+                    <div className={hasOfficialDuration ? 'hidden' : ''}>
                         <label className="text-[11px] font-black text-slate-500 uppercase tracking-wider block mb-1.5">Custom (minutes)</label>
                         <input
                             type="number"
@@ -738,7 +798,7 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
                             >
                                 <Timer className="w-6 h-6 mb-3 opacity-80" />
                                 <p className="font-black text-sm mb-1">Timed Exam</p>
-                                <p className="text-blue-200 text-[10px]">{analysis.questions.length} Qs  -  Set your time</p>
+                                <p className="text-blue-200 text-[10px]">{analysis.questions.length} Qs  -  {analysis.durationMinutes ? `${analysis.durationMinutes} min official` : 'Set your time'}</p>
                             </motion.button>
 
                             <motion.button
@@ -779,8 +839,8 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
                                 ) : (
                                     <Zap className="w-5 h-5 text-amber-500 dark:text-amber-400 mb-2" />
                                 )}
-                                <p className="font-bold text-xs text-slate-800 dark:text-slate-200">Likely Questions</p>
-                                <p className="text-[10px] text-slate-400 dark:text-slate-500">AI-predicted for next exam</p>
+                                <p className="font-bold text-xs text-slate-800 dark:text-slate-200">High-Yield Practice</p>
+                                <p className="text-[10px] text-slate-400 dark:text-slate-500">Frequently tested skills to practise next</p>
                             </button>
                         </div>
 
@@ -811,7 +871,7 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
                                 <div className="bg-amber-50 dark:bg-amber-950/30 px-5 py-3 border-b border-amber-100 dark:border-amber-900/50 flex items-center justify-between">
                                     <div className="flex items-center gap-2">
                                         <Zap className="w-4 h-4 text-amber-500 dark:text-amber-400" />
-                                        <span className="font-bold text-sm text-amber-800 dark:text-amber-300">Most Likely Questions</span>
+                                        <span className="font-bold text-sm text-amber-800 dark:text-amber-300">High-Yield Practice</span>
                                     </div>
                                     <button
                                         onClick={() => { void startQuiz(ExamPracticeMode.PRACTICE_BY_TOPIC, predictions.questions); }}
@@ -952,6 +1012,7 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
                                 <span className="text-xs font-black text-slate-500 dark:text-slate-500">{question.marks || 2} marks</span>
                             </div>
                             <p className="text-slate-800 dark:text-slate-200 text-sm leading-relaxed font-black">{question.text}</p>
+                            {question.diagramUrl && <img src={question.diagramUrl} alt={`Diagram for question ${question.number}`} className="mt-4 max-h-80 w-full rounded-2xl border border-slate-200 object-contain dark:border-slate-700" />}
                         </motion.div>
 
                         {/* Loading Explanation */}
@@ -1097,6 +1158,9 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
     if ((phase === 'QUIZ_ACTIVE' || phase === 'MARKING') && quizQuestions.length > 0) {
         const question = quizQuestions[currentQuestionIdx];
         const progress = ((currentQuestionIdx + (showModelAnswer ? 1 : 0)) / quizQuestions.length) * 100;
+        const answerFormatOptions = (question.answerFormat as any)?.options;
+        const questionOptions = Array.isArray(question.options) ? question.options : Array.isArray(answerFormatOptions) ? answerFormatOptions.map(String) : [];
+        const isMultipleChoice = question.questionType === 'multiple_choice' || questionOptions.length > 0;
 
         return (
             <div className="h-screen bg-slate-50 dark:bg-slate-950 flex flex-col overflow-hidden font-sans transition-colors duration-300">
@@ -1132,15 +1196,12 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
                                     {formatTime(timeRemaining)}
                                 </div>
                             )}
-                            {/* Explain toggle */}
-                            <button
-                                onClick={() => setExplainFirst(!explainFirst)}
-                                className={`text-[9px] font-black px-2 py-1 rounded-full uppercase transition-all ${explainFirst ? 'bg-purple-100 dark:bg-purple-900/40 text-purple-600 dark:text-purple-400' : 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500'
-                                    }`}
-                                title={explainFirst ? 'Explain first: ON' : 'Explain first: OFF'}
-                            >
-                                ?? {explainFirst ? 'ON' : 'OFF'}
-                            </button>
+                            {/* Explain-first belongs to guided practice only. */}
+                            {practiceMode !== ExamPracticeMode.TIMED_QUIZ && (
+                                <button onClick={() => setExplainFirst(!explainFirst)} className={`text-[9px] font-black px-2 py-1 rounded-full uppercase transition-all ${explainFirst ? 'bg-purple-100 dark:bg-purple-900/40 text-purple-600 dark:text-purple-400' : 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500'}`} title={explainFirst ? 'Explain first: ON' : 'Explain first: OFF'}>
+                                    Explain {explainFirst ? 'ON' : 'OFF'}
+                                </button>
+                            )}
                             {activeExamId && (
                                 <span className={autosaveStatus === 'saved'
                                     ? 'text-[9px] font-black px-2 py-1 rounded-full uppercase bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300'
@@ -1184,12 +1245,12 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
                             <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm">
                                 <div className="flex items-center justify-between mb-3">
                                     <p className="text-xs font-black uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Navigator</p>
-                                    <p className="text-[10px] text-slate-400 dark:text-slate-500 font-bold">Answered {attempts.length}/{quizQuestions.length}</p>
+                                    <p className="text-[10px] text-slate-400 dark:text-slate-500 font-bold">Answered {Object.values(answerByQuestion).filter(answer => answer.trim()).length}/{quizQuestions.length}</p>
                                 </div>
                                 <div className="flex flex-wrap gap-2">
                                     {quizQuestions.map((item, index) => {
                                         const isCurrent = index === currentQuestionIdx;
-                                        const isAnswered = attempts.some(attempt => String(attempt.questionId) === String(item.id));
+                                        const isAnswered = Boolean(answerByQuestion[String(item.id)]?.trim()) || attempts.some(attempt => String(attempt.questionId) === String(item.id));
                                         return (
                                             <button
                                                 key={String(item.id)}
@@ -1198,7 +1259,7 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
                                                     if (index === currentQuestionIdx) return;
                                                     void persistCurrentAnswer();
                                                     setCurrentQuestionIdx(index);
-                                                    setUserAnswer('');
+                                                    setUserAnswer(answerByQuestion[String(item.id)] || '');
                                                     setCurrentMarking(null);
                                                     setShowModelAnswer(false);
                                                     setReadyToAnswer(false);
@@ -1230,23 +1291,33 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
                                 <span className="text-xs font-black text-slate-500 dark:text-slate-500">{question.marks || 2} marks</span>
                             </div>
                             <p className="text-slate-800 dark:text-slate-200 text-sm leading-relaxed font-black">{question.text}</p>
+                            {question.diagramUrl && <img src={question.diagramUrl} alt={`Diagram for question ${question.number}`} className="mt-4 max-h-80 w-full rounded-2xl border border-slate-200 object-contain dark:border-slate-700" />}
                         </motion.div>
 
                         {/* Answer Input */}
                         {!showModelAnswer && (
                             <div className="space-y-3">
                                 <div className="relative">
-                                    <textarea
-                                        ref={answerInputRef}
-                                        value={userAnswer}
-                                        onChange={(e) => setUserAnswer(e.target.value)}
-                                        onKeyDown={(e) => {
-                                            if (e.key === 'Enter' && e.ctrlKey) handleSubmitAnswer();
-                                        }}
-                                        placeholder="Write your answer in exam style. Use points, working, and a clear final answer."
-                                        className="w-full min-h-[150px] bg-white dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-800 rounded-2xl p-4 text-sm text-slate-800 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:border-indigo-500 dark:focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900/30 outline-none resize-none transition-all"
-                                        disabled={isMarking}
-                                    />
+                                    {isMultipleChoice ? (
+                                        <div className="grid gap-3">
+                                            {questionOptions.map((option, index) => (
+                                                <button key={`${question.id}-${index}`} type="button" onClick={() => updateAnswer(option)} disabled={isMarking} className={`flex items-start gap-3 rounded-2xl border-2 p-4 text-left transition ${userAnswer === option ? 'border-indigo-600 bg-indigo-50 text-indigo-950 dark:bg-indigo-950/40 dark:text-white' : 'border-slate-200 bg-white text-slate-700 hover:border-indigo-300 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200'}`}>
+                                                    <span className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-[10px] font-black ${userAnswer === option ? 'border-indigo-600 bg-indigo-600 text-white' : 'border-slate-300 text-slate-500'}`}>{String.fromCharCode(65 + index)}</span>
+                                                    <span className="text-sm font-bold leading-relaxed">{option}</span>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <textarea
+                                            ref={answerInputRef}
+                                            value={userAnswer}
+                                            onChange={(e) => updateAnswer(e.target.value)}
+                                            onKeyDown={(e) => { if (e.key === 'Enter' && e.ctrlKey && practiceMode !== ExamPracticeMode.TIMED_QUIZ) handleSubmitAnswer(); }}
+                                            placeholder="Write your answer in exam style. Use points, working, and a clear final answer."
+                                            className="w-full min-h-[150px] bg-white dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-800 rounded-2xl p-4 text-sm text-slate-800 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:border-indigo-500 dark:focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900/30 outline-none resize-none transition-all"
+                                            disabled={isMarking}
+                                        />
+                                    )}
                                     {isMarking && (
                                         <div className="absolute inset-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm rounded-2xl flex items-center justify-center">
                                             <div className="text-center">
@@ -1257,14 +1328,14 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
                                     )}
                                 </div>
                                 <div className="flex justify-between items-center gap-3">
-                                    <p className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase transition-colors">Ctrl+Enter to submit</p>
+                                    <p className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase transition-colors">{practiceMode === ExamPracticeMode.TIMED_QUIZ ? 'No hints or marking until submission' : 'Ctrl+Enter to submit'}</p>
                                     <p className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold text-right">Answer in marks, not a long essay.</p>
                                     <button
-                                        onClick={handleSubmitAnswer}
-                                        disabled={!userAnswer.trim() || isMarking}
+                                        onClick={practiceMode === ExamPracticeMode.TIMED_QUIZ ? handleSaveTimedAnswer : handleSubmitAnswer}
+                                        disabled={(practiceMode !== ExamPracticeMode.TIMED_QUIZ && !userAnswer.trim()) || isMarking}
                                         className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-xl font-bold text-sm disabled:opacity-50 transition-all flex items-center gap-2 shadow-md shadow-indigo-500/20"
                                     >
-                                        Submit Answer <ArrowRight className="w-4 h-4" />
+                                        {practiceMode === ExamPracticeMode.TIMED_QUIZ ? (currentQuestionIdx === quizQuestions.length - 1 ? 'Submit Exam' : 'Save & Next') : 'Submit Answer'} <ArrowRight className="w-4 h-4" />
                                     </button>
                                 </div>
                             </div>
@@ -1601,4 +1672,3 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
         </div>
     );
 };
-

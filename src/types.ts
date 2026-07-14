@@ -272,6 +272,7 @@ export interface ExamQuestion {
   topic: string;
   section?: string;
   questionType?: "numeric" | "fraction" | "algebraic" | "multiple_choice" | "short_text" | "structured_text" | "table" | "graph" | "construction" | "image_upload";
+  options?: string[];
   diagramUrl?: string;
   answerFormat?: Record<string, unknown>;
   subStrand?: string;

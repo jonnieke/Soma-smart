@@ -28,7 +28,7 @@ const SUBJECT_TIPS: Record<string, { tip: string; trap: string }> = {
     'Business Studies': { tip: 'Definitions must include all key elements — incomplete definitions score 0.', trap: 'Advantages/disadvantages: write distinct points, not paraphrases of the same idea.' },
 };
 
-const EXAM_TYPES = ['KCSE', 'KPSEA', 'JSS'] as const;
+const EXAM_TYPES = ['KPSEA', 'KJSEA', 'KCSE'] as const;
 const TARGET_GRADES = ['A', 'B+', 'B', 'C+', 'C', 'Pass'] as const;
 const REVISION_SUBJECTS = [
     'Mathematics', 'Biology', 'Chemistry', 'Physics',
@@ -97,6 +97,20 @@ interface Props {
 const normalizeGrade = (g: any) => {
     const str = String(g || "").toLowerCase();
     return str.replace(/\s*grade\s*/g, '').replace(/\s*\(jss\)\s*/g, '').trim() || "";
+};
+
+const candidatePathwayForGrade = (grade?: string): 'KPSEA' | 'KJSEA' | 'KCSE' => {
+    const normalized = normalizeGrade(grade);
+    if (normalized === '6') return 'KPSEA';
+    if (normalized === '9') return 'KJSEA';
+    return 'KCSE';
+};
+
+const isExactCandidateGrade = (materialGrade: string, studentGrade: string): boolean => {
+    const material = normalizeGrade(materialGrade);
+    const student = normalizeGrade(studentGrade);
+    if (!student || !material || material === 'all') return true;
+    return material === student;
 };
 
 const isGradeInStudentRange = (materialGrade: string, studentGrade: string): boolean => {
@@ -197,6 +211,12 @@ export const RevisionLanding: React.FC<Props> = ({ onStartSession, onNavigate, o
         localStorage.setItem('soma_exam_goal', JSON.stringify(examGoal));
     }, [examGoal]);
 
+    React.useEffect(() => {
+        if (!studentProfile?.grade) return;
+        const pathway = candidatePathwayForGrade(studentProfile.grade);
+        setExamGoal(previous => previous.examType === pathway ? previous : { ...previous, examType: pathway });
+    }, [studentProfile?.grade]);
+
     const getRevisionItemType = (resource: any) => {
         const rawType = String(resource.type || resource.category || resource.resource_type || '').toUpperCase().replace(/[\s-]+/g, '_');
         const title = String(resource.title || '').toLowerCase();
@@ -231,9 +251,8 @@ export const RevisionLanding: React.FC<Props> = ({ onStartSession, onNavigate, o
         // Filter by grade range on profile level for notes and past papers
         return typed.filter(item => {
             if (!studentProfile?.grade) return true;
-            if (item._type === 'notes' || item._type === 'paper') {
-                return isGradeInStudentRange(item.grade || '', studentProfile.grade);
-            }
+            if (item._type === 'paper') return isExactCandidateGrade(item.grade || '', studentProfile.grade);
+            if (item._type === 'notes') return isGradeInStudentRange(item.grade || '', studentProfile.grade);
             return true;
         });
     }, [resources, studentProfile?.grade]);
@@ -459,7 +478,7 @@ Use plain text. No markdown headings or symbols.`;
                             <ArrowRight className="w-5 h-5 rotate-180" />
                         </button>
                         <div>
-                            <p className="font-black text-slate-900 dark:text-white text-base leading-none">Revision Hub</p>
+                            <p className="font-black text-slate-900 dark:text-white text-base leading-none">SomaAI Exam Prep</p>
                             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-0.5">
                                 {studentProfile?.name?.split(' ')[0] || 'Candidate'} · {studentProfile?.grade || 'All Grades'}
                             </p>
@@ -490,10 +509,10 @@ Use plain text. No markdown headings or symbols.`;
                                 </div>
                             )}
 
-                            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-500 mb-1">Past Paper Practice</p>
-                            <h1 className="text-xl sm:text-2xl font-black text-slate-950 dark:text-white leading-tight">Choose a paper, attempt it, then mark it.</h1>
+                            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-500 mb-1">Your {examGoal.examType} preparation</p>
+                            <h1 className="text-xl sm:text-2xl font-black text-slate-950 dark:text-white leading-tight">Welcome back. Let&apos;s improve one result today.</h1>
                             <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1 font-medium">
-                                Set your exam goal once. Soma turns it into paper practice, marking, and revision drills.
+                                Attempt a realistic paper, see exactly where you lost marks, then recover them through targeted practice.
                             </p>
                         </div>
                         <div className="hidden sm:flex w-12 h-12 rounded-2xl bg-indigo-600 text-white items-center justify-center shrink-0">
@@ -555,8 +574,8 @@ Use plain text. No markdown headings or symbols.`;
                                 <Sparkles className="w-5 h-5" />
                             </span>
                             <span className="min-w-0">
-                                <span className="block text-[10px] font-black uppercase tracking-[0.2em] text-indigo-600 dark:text-indigo-300">Ask Akili first</span>
-                                <span className="block text-sm font-bold text-slate-900 dark:text-white">Start with an explanation, example, or a quick check.</span>
+                                <span className="block text-[10px] font-black uppercase tracking-[0.2em] text-indigo-600 dark:text-indigo-300">Ask Akili</span>
+                                <span className="block text-sm font-bold text-slate-900 dark:text-white">Need help choosing today&apos;s mission? Ask Akili.</span>
                             </span>
                         </button>
                         <button onClick={() => openGuru('mark')} className="rounded-3xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white px-4 py-4 transition-all text-left">
@@ -586,7 +605,7 @@ Use plain text. No markdown headings or symbols.`;
                                 <div>
                                     <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-300 mb-1">SomaAI original mocks</p>
                                     <h2 className="text-lg sm:text-xl font-black leading-tight">Practice with our exam-style mocks</h2>
-                                    <p className="text-xs text-slate-300 mt-1 font-medium">Structured papers, timed practice, and mark-by-mark feedback for KCSE and KPSEA candidates.</p>
+                                    <p className="text-xs text-slate-300 mt-1 font-medium">Structured papers, timed practice, and mark-by-mark feedback for KPSEA, KJSEA and KCSE candidates.</p>
                                 </div>
                                 <div className="hidden sm:flex w-12 h-12 rounded-2xl bg-white/10 text-white items-center justify-center shrink-0">
                                     <GraduationCap className="w-6 h-6" />

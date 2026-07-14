@@ -318,7 +318,9 @@ export const ExamsView: React.FC = () => {
 
                     section: question.section ?? '',
 
-                    questionType: question.questionType ?? 'structured_text',
+                    questionType: String(question.questionType ?? question.type ?? '').toLowerCase() === 'mcq' ? 'multiple_choice' : (question.questionType ?? question.type ?? 'structured_text'),
+
+                    options: Array.isArray(question.options) ? question.options.map(String) : [],
 
                     diagramUrl: question.diagramUrl ?? question.diagram_url ?? null,
 
@@ -326,9 +328,9 @@ export const ExamsView: React.FC = () => {
 
                     marks: Number(question.marks ?? 0),
 
-                    markingScheme: Array.isArray(question.markingScheme) ? question.markingScheme : Array.isArray(question.marking_scheme) ? question.marking_scheme : [],
+                    markingScheme: Array.isArray(question.markingScheme) ? question.markingScheme : Array.isArray(question.marking_scheme) ? question.marking_scheme : question.answer ? [String(question.answer)] : [],
 
-                    modelAnswer: question.modelAnswer ?? question.model_answer ?? '',
+                    modelAnswer: question.modelAnswer ?? question.model_answer ?? question.answer ?? '',
 
                     explanation: question.explanation ?? '',
 
@@ -1621,4 +1623,3 @@ const SelectField: React.FC<{
     </label>
 
 );
-
