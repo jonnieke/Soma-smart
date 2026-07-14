@@ -265,11 +265,15 @@ export enum TutoringStep {
 }
 
 export interface ExamQuestion {
-  id: number;
+  id: number | string;
   number: string; // "1a", "2", etc.
+  orderIndex?: number;
   text: string;    // Extracted text
   topic: string;
   section?: string;
+  questionType?: "numeric" | "fraction" | "algebraic" | "multiple_choice" | "short_text" | "structured_text" | "table" | "graph" | "construction" | "image_upload";
+  diagramUrl?: string;
+  answerFormat?: Record<string, unknown>;
   subStrand?: string;
   competency?: string;
   cognitiveLevel?: string;
@@ -320,7 +324,7 @@ export enum ExamPracticeMode {
 }
 
 export interface AnswerAttempt {
-  questionId: number;
+  questionId: number | string;
   questionNumber: string;
   questionText: string;
   learnerAnswer: string;

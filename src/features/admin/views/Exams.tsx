@@ -61,6 +61,9 @@ export const ExamsView: React.FC = () => {
     const [durationMinutes, setDurationMinutes] = useState('');
     const [totalMarks, setTotalMarks] = useState('');
     const [publishImmediately, setPublishImmediately] = useState(true);
+    const [inputMode, setInputMode] = useState<'UPLOAD' | 'STRUCTURED_JSON'>('UPLOAD');
+    const [structuredJson, setStructuredJson] = useState('');
+    const [jsonImportError, setJsonImportError] = useState<string | null>(null);
 
     useEffect(() => {
         fetchExams();
@@ -80,6 +83,9 @@ export const ExamsView: React.FC = () => {
         setDurationMinutes('');
         setTotalMarks('');
         setPublishImmediately(true);
+        setInputMode('UPLOAD');
+        setStructuredJson('');
+        setJsonImportError(null);
     };
 
     const closeModal = () => {
@@ -125,9 +131,65 @@ export const ExamsView: React.FC = () => {
     };
 
     const handleAnalyze = async () => {
-        if (!paperFile || uploading) return;
+        if (uploading) return;
         setUploading(true);
+        setJsonImportError(null);
         try {
+            if (inputMode === 'STRUCTURED_JSON') {
+                const parsed = JSON.parse(structuredJson);
+                const examPayload = parsed?.exam || parsed;
+                const rawQuestions = Array.isArray(parsed?.questions) ? parsed.questions : [];
+                if (!examPayload || rawQuestions.length === 0) {
+                    throw new Error('Provide an exam object and at least one question.');
+                }
+
+                const normalizedQuestions = rawQuestions.map((question: any, index: number) => ({
+                    id: question.id ?? index + 1,
+                    number: String(question.number ?? index + 1),
+                    orderIndex: Number.isFinite(Number(question.orderIndex)) ? Number(question.orderIndex) : index + 1,
+                    text: String(question.text ?? question.questionText ?? ''),
+                    topic: String(question.topic ?? examPayload.subject ?? subject ?? 'General'),
+                    section: question.section ?? '',
+                    questionType: question.questionType ?? 'structured_text',
+                    diagramUrl: question.diagramUrl ?? question.diagram_url ?? null,
+                    answerFormat: question.answerFormat ?? question.answer_format ?? {},
+                    marks: Number(question.marks ?? 0),
+                    markingScheme: Array.isArray(question.markingScheme) ? question.markingScheme : Array.isArray(question.marking_scheme) ? question.marking_scheme : [],
+                    modelAnswer: question.modelAnswer ?? question.model_answer ?? '',
+                    explanation: question.explanation ?? '',
+                    commonMistakes: Array.isArray(question.commonMistakes) ? question.commonMistakes : Array.isArray(question.common_mistakes) ? question.common_mistakes : []
+                }));
+
+                setAnalyzedData({
+                    subject: String(examPayload.subject ?? subject ?? 'General'),
+                    grade: String(examPayload.grade ?? grade ?? 'Form 4'),
+                    examType: (examPayload.examType ?? examPayload.exam_type ?? examType) as 'KCSE' | 'KPSEA' | 'KJSEA' | 'OTHER',
+                    year: Number(examPayload.year ?? examPayload.examYear ?? examYear) || currentYear,
+                    paperCode: String(examPayload.paperCode ?? examPayload.paper_code ?? paperCode ?? ''),
+                    paperNumber: String(examPayload.paperNumber ?? examPayload.paper_number ?? paperNumber ?? ''),
+                    durationMinutes: Number(examPayload.durationMinutes ?? examPayload.duration_minutes ?? durationMinutes) || undefined,
+                    totalMarks: Number(examPayload.totalMarks ?? examPayload.total_marks ?? totalMarks) || undefined,
+                    instructions: Array.isArray(examPayload.instructions) ? examPayload.instructions : [],
+                    markingSchemeSource: 'AI_DRAFT',
+                    questions: normalizedQuestions
+                });
+                setTitle(String(examPayload.title ?? 'Structured exam').trim());
+                setSubject(String(examPayload.subject ?? subject ?? 'General'));
+                setGrade(String(examPayload.grade ?? grade ?? 'Form 4'));
+                setExamType((examPayload.examType ?? examPayload.exam_type ?? examType) as 'KCSE' | 'KPSEA' | 'KJSEA' | 'OTHER');
+                setExamYear(String(examPayload.year ?? examPayload.examYear ?? currentYear));
+                setPaperCode(String(examPayload.paperCode ?? examPayload.paper_code ?? ''));
+                setPaperNumber(String(examPayload.paperNumber ?? examPayload.paper_number ?? ''));
+                setDurationMinutes(String(examPayload.durationMinutes ?? examPayload.duration_minutes ?? ''));
+                setTotalMarks(String(examPayload.totalMarks ?? examPayload.total_marks ?? ''));
+                setPublishImmediately(false);
+                return;
+            }
+
+            if (!paperFile) {
+                throw new Error('Choose a question paper before analyzing.');
+            }
+
             const result = await ingestPastPaper(paperFile, markingSchemeFile);
             setAnalyzedData(result);
             setTitle(paperFile.name.replace(/\.[^/.]+$/, '').replace(/[_-]+/g, ' '));
@@ -142,14 +204,17 @@ export const ExamsView: React.FC = () => {
         } catch (error) {
             console.error('Ingestion failed:', error);
             const message = error instanceof Error ? error.message : 'Unknown extraction error';
-            alert('Somo could not structure this paper. ' + message);
+            const prefix = inputMode === 'STRUCTURED_JSON' ? 'Structured import failed. ' : 'Somo could not structure this paper. ';
+            setJsonImportError(inputMode === 'STRUCTURED_JSON' ? message : null);
+            alert(prefix + message);
         } finally {
             setUploading(false);
         }
     };
 
     const handleCreateExam = async () => {
-        if (!paperFile || !analyzedData || !title.trim() || saving) return;
+        if (!analyzedData || !title.trim() || saving) return;
+        if (inputMode === 'UPLOAD' && !paperFile) return;
         setSaving(true);
         const uploadedPaths: string[] = [];
 
@@ -162,18 +227,21 @@ export const ExamsView: React.FC = () => {
                 String(value).replace(/[^a-z0-9-_]+/gi, '_')
             ).join('/');
             const stamp = Date.now();
-            const paperExt = paperFile.name.split('.').pop() || 'pdf';
-            const paperPath = folder + '/' + stamp + '_' + safeTitle + '.' + paperExt;
 
-            const { error: paperUploadError } = await supabase.storage
-                .from('syllabus-docs')
-                .upload(paperPath, paperFile, { upsert: false });
-            if (paperUploadError) throw paperUploadError;
-            uploadedPaths.push(paperPath);
+            let paperPath: string | null = null;
+            let paperUrl: string | null = null;
+            if (paperFile) {
+                const paperExt = paperFile.name.split('.').pop() || 'pdf';
+                paperPath = folder + '/' + stamp + '_' + safeTitle + '.' + paperExt;
 
-            const { data: { publicUrl: paperUrl } } = supabase.storage
-                .from('syllabus-docs')
-                .getPublicUrl(paperPath);
+                const { error: paperUploadError } = await supabase.storage
+                    .from('syllabus-docs')
+                    .upload(paperPath, paperFile, { upsert: false });
+                if (paperUploadError) throw paperUploadError;
+                uploadedPaths.push(paperPath);
+
+                paperUrl = supabase.storage.from('syllabus-docs').getPublicUrl(paperPath).data.publicUrl;
+            }
 
             let schemePath: string | null = null;
             let schemeUrl: string | null = null;
@@ -191,6 +259,8 @@ export const ExamsView: React.FC = () => {
             const resolvedYear = Number(examYear);
             const resolvedDuration = Number(durationMinutes);
             const resolvedMarks = Number(totalMarks);
+            const isStructuredImport = inputMode === 'STRUCTURED_JSON';
+            const publishDraftState = publishImmediately && !isStructuredImport;
 
             const { data: insertedPaper, error: insertError } = await supabase
                 .from('knowledge_base')
@@ -211,9 +281,9 @@ export const ExamsView: React.FC = () => {
                     total_marks: Number.isFinite(resolvedMarks) && resolvedMarks >= 0 ? resolvedMarks : null,
                     structured_questions: analyzedData.questions,
                     exam_instructions: analyzedData.instructions || [],
-                    marking_scheme_source: markingSchemeFile ? 'OFFICIAL' : 'AI_DRAFT',
-                    review_status: publishImmediately ? 'PUBLISHED' : 'DRAFT',
-                    source: 'SOMA',
+                    marking_scheme_source: markingSchemeFile ? 'OFFICIAL' : isStructuredImport ? 'STRUCTURED_IMPORT' : 'AI_DRAFT',
+                    review_status: publishDraftState ? 'PUBLISHED' : 'DRAFT',
+                    source: isStructuredImport ? 'STRUCTURED_IMPORT' : 'SOMA',
                     is_official: Boolean(markingSchemeFile),
                     indexing_status: 'PENDING'
                 })
@@ -236,7 +306,7 @@ export const ExamsView: React.FC = () => {
             setShowAdd(false);
             resetForm();
             await fetchExams();
-            alert(publishImmediately
+            alert(publishDraftState
                 ? 'Paper and marking scheme published successfully.'
                 : 'Exam package saved as a draft.');
         } catch (error) {
@@ -453,10 +523,53 @@ export const ExamsView: React.FC = () => {
                                 <h3 className="flex items-center gap-2 text-2xl font-bold text-slate-900">
                                     <Plus className="h-6 w-6 text-indigo-600" /> Add Exam Package
                                 </h3>
-                                <p className="mt-2 text-sm text-slate-500">Upload the question paper and its matching marking scheme. Somo will pair every marking point to its question.</p>
+                                <p className="mt-2 text-sm text-slate-500">Upload a PDF for analysis, or import a structured exam directly as JSON when the questions are already prepared.</p>
+
+                                <div className="mt-5 flex flex-wrap gap-2 rounded-2xl bg-slate-100 p-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => setInputMode('UPLOAD')}
+                                        className={`rounded-xl px-4 py-2 text-sm font-bold transition-colors ${inputMode === 'UPLOAD' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                                    >
+                                        Upload PDF
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setInputMode('STRUCTURED_JSON')}
+                                        className={`rounded-xl px-4 py-2 text-sm font-bold transition-colors ${inputMode === 'STRUCTURED_JSON' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                                    >
+                                        Import structured JSON
+                                    </button>
+                                </div>
 
                                 {!analyzedData ? (
                                     <div className="mt-6 space-y-5">
+                                        {inputMode === 'STRUCTURED_JSON' && (
+                                            <div className="space-y-3">
+                                                <div className="rounded-2xl border border-indigo-100 bg-indigo-50 p-4 text-sm text-indigo-900">
+                                                    Paste the structured exam JSON below. We?ll validate it and save it directly.
+                                                </div>
+                                                <textarea
+                                                    value={structuredJson}
+                                                    onChange={event => { setStructuredJson(event.target.value); setJsonImportError(null); }}
+                                                    placeholder='{"exam":{"title":"SomaAI KCSE Mathematics Paper 1 Mock 1"},"questions":[...]}'
+                                                    className="min-h-72 w-full rounded-2xl border border-slate-200 bg-white p-4 font-mono text-xs text-slate-800 outline-none focus:ring-2 focus:ring-indigo-500"
+                                                />
+                                                {jsonImportError && (
+                                                    <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">
+                                                        {jsonImportError}
+                                                    </div>
+                                                )}
+                                                <Button
+                                                    onClick={handleAnalyze}
+                                                    disabled={!structuredJson.trim()}
+                                                    isLoading={uploading}
+                                                    className="mx-auto flex items-center gap-2 bg-indigo-600 text-white"
+                                                >
+                                                    <Sparkles className="h-5 w-5" /> Validate structured exam
+                                                </Button>
+                                            </div>
+                                        )}
                                         <div className="grid gap-4 md:grid-cols-2">
                                             <FilePicker
                                                 id="question-paper-upload"

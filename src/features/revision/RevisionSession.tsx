@@ -53,7 +53,7 @@ const shuffleQuestions = <T,>(items: T[]) => {
 };
 
 export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, onExit }) => {
-    const { language, isPro } = useApp();
+    const { language, isPro, studentCode, studentProfile, userId } = useApp();
     const isLimited = !isPro;
 
     // Core state
@@ -82,6 +82,10 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
     const [questionTimeRemaining, setQuestionTimeRemaining] = useState(0);
     const [questionTimerChoice, setQuestionTimerChoice] = useState<'timed' | 'untimed'>('untimed');
     const questionTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+    const autosaveRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const lastSavedAnswerRef = useRef('');
+    const [serverAttemptId, setServerAttemptId] = useState<string | null>(null);
+    const [autosaveStatus, setAutosaveStatus] = useState<'idle' | 'saving' | 'saved' | 'offline' | 'error'>('idle');
 
     // Confidence rating
     const [showConfidence, setShowConfidence] = useState(false);
@@ -115,6 +119,7 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
         if (!Array.isArray(payload?.structured_questions)) return null;
         return payload?.id ? String(payload.id) : null;
     }, [data]);
+    const learnerId = studentCode || studentProfile?.id || userId || 'guest';
 
     // ==================== INITIAL LOAD ====================
     useEffect(() => {
@@ -122,6 +127,7 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
             try {
                 if (initialAnalysis) {
                     setAnalysis(initialAnalysis);
+                    setPreExamMinutes(initialAnalysis.durationMinutes || 120);
                     setPhase('DASHBOARD');
                     setPastPerformance(loadPerformanceRecords());
                     return;
@@ -132,6 +138,7 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
                     setLoadingText('AI is analyzing your exam paper...');
                     const result = await analyzeExamPaper(base64, data.type);
                     setAnalysis(result);
+                    setPreExamMinutes(result.durationMinutes || 120);
                 } else if (Array.isArray((data as any)?.structured_questions) || 'file_path' in (data as any) || (data as any)?.fileUrl || (data as any)?.file_url) {
                     const res = data as any;
                     const savedQuestions = Array.isArray(res.structured_questions) ? res.structured_questions : [];
@@ -154,6 +161,7 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
                         markingSchemeSource: res.marking_scheme_source || 'AI_DRAFT',
                         questions: savedQuestions
                     });
+                    setPreExamMinutes(res.duration_minutes || 120);
                 } else {
                     // Quiz data from teacher
                     const quiz = (data as any).content;
@@ -218,8 +226,47 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
         return `${m}:${s.toString().padStart(2, '0')}`;
     };
 
+    const persistCurrentAnswer = useCallback(async (answerOverride?: string) => {
+        if (!activeExamId || !serverAttemptId || quizQuestions.length === 0) return;
+        const question = quizQuestions[currentQuestionIdx];
+        if (!question) return;
+        const answerText = (answerOverride ?? userAnswer).trim();
+        if (!answerText) return;
+        if (lastSavedAnswerRef.current === `${question.id}:${answerText}`) return;
+
+        setAutosaveStatus('saving');
+        try {
+            await examService.saveResponse({
+                attemptId: serverAttemptId,
+                questionId: question.id,
+                answerText,
+                timeSpentSeconds: Math.max(0, Math.round((Date.now() - quizStartTime) / 1000))
+            });
+            lastSavedAnswerRef.current = `${question.id}:${answerText}`;
+            setAutosaveStatus('saved');
+        } catch (error) {
+            console.error('Autosave failed:', error);
+            setAutosaveStatus(navigator.onLine ? 'error' : 'offline');
+        }
+    }, [activeExamId, currentQuestionIdx, quizQuestions, quizStartTime, serverAttemptId, userAnswer]);
+
     // ==================== QUIZ CONTROL ====================
-    const startQuiz = (mode: ExamPracticeMode, questions?: ExamQuestion[], overrideSecs?: number) => {
+
+    useEffect(() => {
+        if (!activeExamId || !serverAttemptId) return;
+        if (!userAnswer.trim()) return;
+
+        if (autosaveRef.current) clearTimeout(autosaveRef.current);
+        autosaveRef.current = setTimeout(() => {
+            void persistCurrentAnswer();
+        }, 15000);
+
+        return () => {
+            if (autosaveRef.current) clearTimeout(autosaveRef.current);
+        };
+    }, [activeExamId, currentQuestionIdx, persistCurrentAnswer, serverAttemptId, userAnswer]);
+
+    const startQuiz = async (mode: ExamPracticeMode, questions?: ExamQuestion[], overrideSecs?: number) => {
         const qs = questions || analysis?.questions || [];
         const preparedQuestions = mode === ExamPracticeMode.PRACTICE_BY_TOPIC && qs.length > 1 ? shuffleQuestions(qs) : qs;
         setQuizQuestions(preparedQuestions);
@@ -234,6 +281,28 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
         setReadyToAnswer(false);
         setShowConfidence(false);
         setConfidenceLevel(0);
+        setAutosaveStatus('idle');
+        setServerAttemptId(null);
+        lastSavedAnswerRef.current = '';
+
+        if (activeExamId) {
+            try {
+                const attempt = await examService.startAttempt({
+                    examId: activeExamId,
+                    learnerId,
+                    mode,
+                    selectedQuestions: preparedQuestions.map(question => String(question.id))
+                });
+                const attemptId = String((attempt as any)?.id || (attempt as any)?.attempt_id || (Array.isArray(attempt) ? attempt[0]?.id : '') || '');
+                if (attemptId) {
+                    setServerAttemptId(attemptId);
+                    setAutosaveStatus('saved');
+                }
+            } catch (error) {
+                console.warn('Secure exam attempt could not be opened, continuing locally:', error);
+                setAutosaveStatus('offline');
+            }
+        }
 
         if (mode === ExamPracticeMode.TIMED_QUIZ) {
             const totalTime = overrideSecs ?? preparedQuestions.length * 120;
@@ -245,7 +314,7 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
         // If explain-first mode, load explanation for first question
         if (explainFirst && preparedQuestions.length > 0) {
             setPhase('EXPLAINING');
-            loadExplanation(preparedQuestions[0]);
+            await loadExplanation(preparedQuestions[0]);
         } else {
             setPhase('QUIZ_ACTIVE');
             setTimeout(() => answerInputRef.current?.focus(), 300);
@@ -312,6 +381,7 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
             };
 
             setAttempts(prev => [...prev, attempt]);
+            void persistCurrentAnswer(userAnswer);
             setShowModelAnswer(true);
         } catch (error) {
             console.error('Error marking answer:', error);
@@ -337,6 +407,7 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
         setQuestionTimerActive(false);
         setShowConfidence(false);
         setConfidenceLevel(0);
+        void persistCurrentAnswer();
 
         if (currentQuestionIdx < quizQuestions.length - 1) {
             setCurrentQuestionIdx(prev => prev + 1);
@@ -345,6 +416,7 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
             setShowModelAnswer(false);
             setCurrentExplanation(null);
             setReadyToAnswer(false);
+            lastSavedAnswerRef.current = '';
 
             const nextQ = quizQuestions[currentQuestionIdx + 1];
             if (explainFirst && nextQ) {
@@ -364,9 +436,12 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
         finishQuiz();
     };
 
-    const finishQuiz = () => {
+    const finishQuiz = async () => {
         if (timerRef.current) clearInterval(timerRef.current);
         setTimerActive(false);
+        if (activeExamId) {
+            await persistCurrentAnswer().catch(() => null);
+        }
 
         const totalMarks = attempts.reduce((sum, a) => sum + a.marksAvailable, 0);
         const marksObtained = attempts.reduce((sum, a) => sum + a.marksAwarded, 0);
@@ -387,7 +462,7 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
             .filter(([_, s]) => s.total > 0 && (s.obtained / s.total) >= 0.7)
             .map(([t]) => t);
 
-        // Save performance
+        const timeSpentSeconds = Math.round((Date.now() - quizStartTime) / 1000);
         const record: PerformanceRecord = {
             id: Date.now().toString(),
             date: new Date().toISOString(),
@@ -396,12 +471,22 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
             score: percentage,
             totalQuestions: attempts.length,
             correctAnswers: attempts.filter(a => a.isCorrect).length,
-            timeSpentSeconds: Math.round((Date.now() - quizStartTime) / 1000),
+            timeSpentSeconds,
             weakTopics,
             mode: practiceMode
         };
         savePerformanceRecord(record);
         setPastPerformance(loadPerformanceRecords());
+
+        if (activeExamId && serverAttemptId) {
+            try {
+                await examService.submitAttempt(serverAttemptId, timeSpentSeconds);
+                setAutosaveStatus('saved');
+            } catch (error) {
+                console.error('Could not submit exam attempt:', error);
+                setAutosaveStatus(navigator.onLine ? 'error' : 'offline');
+            }
+        }
 
         setPhase('RESULTS');
     };
@@ -519,7 +604,7 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
                     <motion.button
                         whileHover={{ scale: 1.01 }}
                         whileTap={{ scale: 0.98 }}
-                        onClick={() => startQuiz(ExamPracticeMode.TIMED_QUIZ, undefined, finalMins * 60)}
+                        onClick={() => { void startQuiz(ExamPracticeMode.TIMED_QUIZ, undefined, finalMins * 60); }}
                         disabled={!finalMins || finalMins < 10}
                         className="w-full py-4 rounded-2xl bg-gradient-to-r from-indigo-600 to-blue-600 text-white font-black text-base flex items-center justify-center gap-3 shadow-lg disabled:opacity-50"
                     >
@@ -586,7 +671,7 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
                             <motion.button
                                 whileHover={{ scale: 1.02 }}
                                 whileTap={{ scale: 0.98 }}
-                                onClick={() => startQuiz(ExamPracticeMode.FULL_PAPER)}
+                                onClick={() => { void startQuiz(ExamPracticeMode.FULL_PAPER); }}
                                 className="bg-gradient-to-br from-emerald-600 to-teal-700 text-white p-5 rounded-2xl text-left shadow-lg"
                             >
                                 <FileText className="w-6 h-6 mb-3 opacity-80" />
@@ -656,7 +741,7 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
                                         <span className="font-bold text-sm text-amber-800 dark:text-amber-300">Most Likely Questions</span>
                                     </div>
                                     <button
-                                        onClick={() => startQuiz(ExamPracticeMode.PRACTICE_BY_TOPIC, predictions.questions)}
+                                        onClick={() => { void startQuiz(ExamPracticeMode.PRACTICE_BY_TOPIC, predictions.questions); }}
                                         className="text-[10px] font-black bg-amber-500 hover:bg-amber-600 text-white px-3 py-1 rounded-full transition-colors"
                                     >
                                         Attempt These
@@ -697,7 +782,7 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
                                         <div
                                             key={q.id}
                                             className="flex items-start gap-3 p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer transition-colors"
-                                            onClick={() => startQuiz(ExamPracticeMode.PRACTICE_BY_TOPIC, [q])}
+                                            onClick={() => { void startQuiz(ExamPracticeMode.PRACTICE_BY_TOPIC, [q]); }}
                                         >
                                             <span className="text-[10px] font-black text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/40 px-2 py-0.5 rounded shrink-0">Q{q.number}</span>
                                             <div className="flex-1 min-w-0">
@@ -980,6 +1065,17 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
                             >
                                 ?? {explainFirst ? 'ON' : 'OFF'}
                             </button>
+                            {activeExamId && (
+                                <span className={autosaveStatus === 'saved'
+                                    ? 'text-[9px] font-black px-2 py-1 rounded-full uppercase bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300'
+                                    : autosaveStatus === 'saving'
+                                        ? 'text-[9px] font-black px-2 py-1 rounded-full uppercase bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300'
+                                        : autosaveStatus === 'offline'
+                                            ? 'text-[9px] font-black px-2 py-1 rounded-full uppercase bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'
+                                            : 'text-[9px] font-black px-2 py-1 rounded-full uppercase bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300'}>
+                                    {autosaveStatus === 'saving' ? 'Saving?' : autosaveStatus === 'saved' ? 'Saved' : autosaveStatus === 'offline' ? 'Saved offline' : 'Sync required'}
+                                </span>
+                            )}
                         </div>
                     </div>
                     {/* Progress Bar */}
@@ -1008,6 +1104,38 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
                                 </div>
                             </div>
                         </div>
+                        {quizQuestions.length > 1 && (
+                            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm">
+                                <div className="flex items-center justify-between mb-3">
+                                    <p className="text-xs font-black uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Navigator</p>
+                                    <p className="text-[10px] text-slate-400 dark:text-slate-500 font-bold">Answered {attempts.length}/{quizQuestions.length}</p>
+                                </div>
+                                <div className="flex flex-wrap gap-2">
+                                    {quizQuestions.map((item, index) => {
+                                        const isCurrent = index === currentQuestionIdx;
+                                        const isAnswered = attempts.some(attempt => String(attempt.questionId) === String(item.id));
+                                        return (
+                                            <button
+                                                key={String(item.id)}
+                                                type="button"
+                                                onClick={() => {
+                                                    if (index === currentQuestionIdx) return;
+                                                    void persistCurrentAnswer();
+                                                    setCurrentQuestionIdx(index);
+                                                    setUserAnswer('');
+                                                    setCurrentMarking(null);
+                                                    setShowModelAnswer(false);
+                                                    setReadyToAnswer(false);
+                                                    setPhase('QUIZ_ACTIVE');
+                                                }}
+                                                className={`h-9 min-w-9 rounded-xl px-3 text-xs font-black transition-colors ${isCurrent ? 'bg-indigo-600 text-white' : isAnswered ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'}`}>
+                                                {item.number}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        )}
                         {/* Question Card */}
                         <motion.div
                             key={currentQuestionIdx}
@@ -1293,7 +1421,7 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
                             <button
                                 onClick={() => {
                                     setAttempts([]);
-                                    startQuiz(practiceMode);
+                                    void startQuiz(practiceMode);
                                 }}
                                 className="bg-indigo-600 hover:bg-indigo-700 text-white py-4 rounded-2xl font-black text-sm transition-all shadow-lg shadow-indigo-500/20"
                             >
