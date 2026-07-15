@@ -8273,10 +8273,13 @@ ${explanation.explanation}
       // Extract unique subjects from current view for filtering
       const subjectsList = ['ALL', ...Array.from(new Set(activeList.map(m => m.subject).filter(Boolean))).sort()];
 
-      // Filter by active subject and category
+      const libraryGradeScope = selectedGrade !== 'ALL' ? selectedGrade : (studentProfile?.grade || enrolledGrade);
+
+      // Filter by active subject and class/grade scope
       const visibleLibraryMaterials = activeList.filter(m => {
         const matchesSubject = activeLibrarySubject === 'ALL' || m.subject === activeLibrarySubject;
-        return matchesSubject;
+        const matchesGrade = !libraryGradeScope || normalizeGrade(m.grade || '') === normalizeGrade(libraryGradeScope);
+        return matchesSubject && matchesGrade;
       });
 
       // Group filtered books by category
