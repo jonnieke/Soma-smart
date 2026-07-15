@@ -8353,6 +8353,13 @@ ${explanation.explanation}
         return 'from-slate-700 to-slate-900 text-slate-100';
       };
 
+      const libraryCategoryMeta = {
+        ALL: { label: 'All', count: visibleLibraryMaterials.length, pill: 'bg-slate-50 text-slate-600 dark:bg-slate-800 dark:text-slate-200' },
+        SYLLABUS: { label: 'Syllabus', count: visibleLibraryMaterials.filter(m => normalizeMaterialCategory(m.category) === 'SYLLABUS').length, pill: 'bg-purple-50 text-purple-700 dark:bg-purple-950/40 dark:text-purple-200' },
+        PAST_PAPER: { label: 'Past Papers', count: visibleLibraryMaterials.filter(m => normalizeMaterialCategory(m.category) === 'PAST_PAPER').length, pill: 'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-200' },
+        NOTES: { label: 'Notes', count: visibleLibraryMaterials.filter(m => normalizeMaterialCategory(m.category) === 'NOTES').length, pill: 'bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-200' },
+      } as const;
+
       // Helper to get cover illustration emoji
       const getSubjectEmoji = (subj: string) => {
         const s = String(subj || '').toLowerCase();
@@ -8464,24 +8471,22 @@ ${explanation.explanation}
 
             {/* Category Tabs */}
             <div className="grid grid-cols-4 gap-2 mb-6 bg-slate-100 dark:bg-slate-900 p-1 rounded-2xl">
-              {([
-                { key: 'ALL', label: 'All', count: visibleLibraryMaterials.length },
-                { key: 'SYLLABUS', label: 'Syllabus', count: visibleLibraryMaterials.filter(m => normalizeMaterialCategory(m.category) === 'SYLLABUS').length },
-                { key: 'PAST_PAPER', label: 'Past Papers', count: visibleLibraryMaterials.filter(m => normalizeMaterialCategory(m.category) === 'PAST_PAPER').length },
-                { key: 'NOTES', label: 'Notes', count: visibleLibraryMaterials.filter(m => normalizeMaterialCategory(m.category) === 'NOTES').length },
-              ] as const).map(tab => (
-                <button
-                  key={tab.key}
-                  onClick={() => setActiveLibraryCategory(tab.key)}
-                  className={`rounded-xl px-3 py-2 text-center transition-all font-black text-[10px] sm:text-xs leading-tight ${activeLibraryCategory === tab.key
-                    ? 'bg-white dark:bg-slate-800 text-indigo-600 shadow-sm border border-slate-200/50 dark:border-slate-700/50'
-                    : 'text-slate-500 hover:text-slate-750 dark:hover:text-slate-300'
-                  }`}
-                >
-                  <span className="block uppercase tracking-[0.14em]">{tab.label}</span>
-                  <span className="mt-1 block text-[9px] opacity-70">{tab.count}</span>
-                </button>
-              ))}
+              {(['ALL', 'SYLLABUS', 'PAST_PAPER', 'NOTES'] as const).map(tabKey => {
+                const tab = libraryCategoryMeta[tabKey];
+                return (
+                  <button
+                    key={tabKey}
+                    onClick={() => setActiveLibraryCategory(tabKey)}
+                    className={`rounded-xl px-3 py-2 text-center transition-all font-black text-[10px] sm:text-xs leading-tight ${activeLibraryCategory === tabKey
+                      ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm border border-slate-200/50 dark:border-slate-700/50'
+                      : 'text-slate-500 hover:text-slate-750 dark:hover:text-slate-300'
+                    }`}
+                  >
+                    <span className={`inline-flex items-center justify-center rounded-full px-2 py-0.5 uppercase tracking-[0.14em] ${tab.pill}`}>{tab.label}</span>
+                    <span className="mt-1 block text-[9px] opacity-70">{tab.count}</span>
+                  </button>
+                );
+              })}
             </div>
 
             {/* Subject Filters Row */}
@@ -8565,7 +8570,7 @@ ${explanation.explanation}
                   <div>
                     <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
                       <span className="p-1 rounded bg-purple-100 dark:bg-purple-900/40 text-purple-600">Book</span>
-                      Syllabuses & Strands ({syllabuses.length})
+                      Syllabus lane ({syllabuses.length})
                     </h3>
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-6">
                       {syllabuses.map(item => (
@@ -8576,7 +8581,7 @@ ${explanation.explanation}
                           className="flex flex-col cursor-pointer group"
                         >
                           {/* Visual Book Cover */}
-                          <div className={`w-full aspect-[3/4] bg-gradient-to-br ${getSubjectGradient(item.subject)} rounded-2xl shadow-lg relative p-4 flex flex-col justify-between overflow-hidden border border-white/10 group-hover:shadow-2xl transition-all`}>
+                          <div className={`w-full aspect-[3/4] bg-gradient-to-br ${getSubjectGradient(item.subject)} rounded-2xl shadow-lg relative p-4 flex flex-col justify-between overflow-hidden border border-white/10 group-hover:shadow-2xl transition-all ring-1 ring-purple-300/30`}>
                             {/* Book spine simulation */}
                             <div className="absolute top-0 bottom-0 left-0 w-3 bg-black/10 dark:bg-white/5 border-r border-black/5" />
                             
@@ -8591,7 +8596,7 @@ ${explanation.explanation}
                             </div>
 
                             <div className="flex items-end justify-between border-t border-white/10 pt-2 text-[9px] font-bold opacity-80">
-                              <span>Soma AI Verified</span>
+                              <span>Curriculum guide</span>
                             </div>
                           </div>
                           <span className="mt-2 text-xs font-black text-slate-800 dark:text-slate-200 line-clamp-2 text-center group-hover:text-indigo-600 transition-colors">{item.title}</span>
@@ -8606,7 +8611,7 @@ ${explanation.explanation}
                   <div>
                     <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
                       <span className="p-1 rounded bg-amber-100 dark:bg-amber-900/40 text-amber-600">PDF</span>
-                      Past Revision Papers ({pastPapers.length})
+                      Past paper lane ({pastPapers.length})
                     </h3>
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-6">
                       {pastPapers.map(item => (
@@ -8617,7 +8622,7 @@ ${explanation.explanation}
                           className="flex flex-col cursor-pointer group"
                         >
                           {/* Visual Book Cover */}
-                          <div className={`w-full aspect-[3/4] bg-gradient-to-br ${getSubjectGradient(item.subject)} rounded-2xl shadow-lg relative p-4 flex flex-col justify-between overflow-hidden border border-white/10 group-hover:shadow-2xl transition-all`}>
+                          <div className={`w-full aspect-[3/4] bg-gradient-to-br ${getSubjectGradient(item.subject)} rounded-2xl shadow-lg relative p-4 flex flex-col justify-between overflow-hidden border border-white/10 group-hover:shadow-2xl transition-all ring-1 ring-amber-300/30`}>
                             {/* Book spine simulation */}
                             <div className="absolute top-0 bottom-0 left-0 w-3 bg-black/10 dark:bg-white/5 border-r border-black/5" />
                             
@@ -8647,7 +8652,7 @@ ${explanation.explanation}
                   <div>
                     <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
                       <span className="p-1 rounded bg-blue-100 dark:bg-blue-900/40 text-blue-600">Note</span>
-                      Subject Notes & Guides ({studyNotes.length})
+                      Notes lane ({studyNotes.length})
                     </h3>
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-6">
                       {studyNotes.map(item => (
@@ -8658,7 +8663,7 @@ ${explanation.explanation}
                           className="flex flex-col cursor-pointer group"
                         >
                           {/* Visual Book Cover */}
-                          <div className={`w-full aspect-[3/4] bg-gradient-to-br ${getSubjectGradient(item.subject)} rounded-2xl shadow-lg relative p-4 flex flex-col justify-between overflow-hidden border border-white/10 group-hover:shadow-2xl transition-all`}>
+                          <div className={`w-full aspect-[3/4] bg-gradient-to-br ${getSubjectGradient(item.subject)} rounded-2xl shadow-lg relative p-4 flex flex-col justify-between overflow-hidden border border-white/10 group-hover:shadow-2xl transition-all ring-1 ring-blue-300/30`}>
                             {/* Book spine simulation */}
                             <div className="absolute top-0 bottom-0 left-0 w-3 bg-black/10 dark:bg-white/5 border-r border-black/5" />
                             
