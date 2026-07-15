@@ -8241,6 +8241,8 @@ ${explanation.explanation}
           </div>
         </div>
       );
+    }
+
     if (mode === 'LIBRARY') {
       const purchasedResources = unifiedMaterials.filter(m => getMaterialAccessStatus(m) === 'OWNED');
       const freeStarterResources = unifiedMaterials.filter(m => getMaterialAccessStatus(m) === 'FREE');
@@ -8651,8 +8653,6 @@ ${explanation.explanation}
         </div>
       );
     }
-    }
-
 
     if (mode === 'SCAN') {
       return (
@@ -9333,6 +9333,8 @@ ${explanation.explanation}
     </div>
   );
 };
+
+
 
 
 
