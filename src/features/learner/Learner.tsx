@@ -8295,6 +8295,12 @@ ${explanation.explanation}
         if (isStarterCategory(normalizedCategory)) return true;
         return status === 'OWNED' || status === 'FREE' || status === 'PRO_INCLUDED';
       });
+      const starterPaperResources = featuredPaperResources.length > 0
+        ? featuredPaperResources
+        : unlockedResources
+            .filter(m => normalizeMaterialCategory(m.category) === 'PAST_PAPER')
+            .sort((a, b) => compareGradeProximity(a.grade || '', b.grade || ''))
+            .slice(0, 3);
 
       const activeList =
         libraryView === 'PURCHASED'
@@ -8382,9 +8388,9 @@ ${explanation.explanation}
                   <Layers className="h-6 w-6 text-emerald-200" />
                 </div>
               </div>
-              {featuredPaperResources.length > 0 ? (
+              {starterPaperResources.length > 0 ? (
                 <div className="relative mt-5 grid gap-3 sm:grid-cols-3">
-                  {freeStarterResources.slice(0, 3).map((item, idx) => (
+                  {starterPaperResources.map((item, idx) => (
                     <button
                       key={item.id || idx}
                       onClick={() => { setMode('REVISION'); setPendingMaterialId(item.id); }}
@@ -8488,15 +8494,36 @@ ${explanation.explanation}
                 <div className="w-24 h-24 bg-slate-50 dark:bg-slate-800 rounded-[2.5rem] flex items-center justify-center mx-auto mb-6 border-2 border-slate-300 dark:border-slate-700">
                   <Library className="w-10 h-10 text-slate-300 dark:text-slate-600" />
                 </div>
-                <h4 className="text-xl font-black text-slate-800 dark:text-white mb-2 tracking-tight">Your library is empty</h4>
-                <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.2em] mb-12 max-w-xs mx-auto leading-relaxed">
+                <h4 className="text-xl font-black text-slate-800 dark:text-white mb-2 tracking-tight">Your library is waiting for papers</h4>
+                <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.2em] mb-8 max-w-sm mx-auto leading-relaxed">
                   {libraryView === 'PURCHASED'
-                    ? 'Buy premium resources from the marketplace and they will appear here.'
-                    : 'Unlock premium notes and revision papers from the marketplace to see them here.'}
+                    ? 'No purchased papers match this filter yet.'
+                    : 'We are matching the closest papers for your grade and subject.'}
                 </p>
-                <Button onClick={() => setMode('MARKETPLACE')} className="px-10 py-4 bg-indigo-600 text-white rounded-2xl shadow-xl shadow-indigo-100 font-black uppercase tracking-widest text-[10px] border-none">
-                  Browse Materials
-                </Button>
+                {starterPaperResources.length > 0 ? (
+                  <div className="mx-auto mb-10 grid max-w-3xl gap-3 text-left sm:grid-cols-3">
+                    {starterPaperResources.map((item, idx) => (
+                      <button
+                        key={item.id || idx}
+                        onClick={() => { setMode('REVISION'); setPendingMaterialId(item.id); }}
+                        className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/70 p-4 transition hover:border-indigo-300 hover:bg-white dark:hover:bg-slate-800"
+                      >
+                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-500">Ready paper</p>
+                        <p className="mt-2 text-sm font-bold leading-snug text-slate-800 dark:text-slate-100 line-clamp-2">{item.title}</p>
+                        <p className="mt-2 text-[11px] text-slate-500 dark:text-slate-400">{item.subject} ? {item.grade}</p>
+                        <p className="mt-2 text-[11px] font-black text-indigo-600 dark:text-indigo-400">Open now</p>
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
+                <div className="flex flex-wrap items-center justify-center gap-3">
+                  <Button onClick={() => setMode('REVISION')} className="px-10 py-4 bg-indigo-600 text-white rounded-2xl shadow-xl shadow-indigo-100 font-black uppercase tracking-widest text-[10px] border-none">
+                    Open revision hub
+                  </Button>
+                  <Button onClick={() => setMode('MARKETPLACE')} variant="outline" className="px-10 py-4 rounded-2xl font-black uppercase tracking-widest text-[10px]">
+                    Browse materials
+                  </Button>
+                </div>
               </div>
             ) : (
               /* Redesigned Bookshelf UI */
