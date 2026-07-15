@@ -1534,7 +1534,15 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
   const [selectedGrade, setSelectedGrade] = useState<string>('ALL'); // New Filter
   const [selectedSource, setSelectedSource] = useState<'ALL' | 'SOMO' | 'TEACHERS'>('ALL'); // New Filter
   const [pendingMaterialId, setPendingMaterialId] = useState<string | null>(null);
+  const enrolledGrade = studentProfile?.grade || '';
+  const hasAppliedEnrolledGradeRef = React.useRef(false);
   const [currentDocument, setCurrentDocument] = useState<any>(null);
+
+  useEffect(() => {
+    if (!enrolledGrade || hasAppliedEnrolledGradeRef.current) return;
+    setSelectedGrade(enrolledGrade);
+    hasAppliedEnrolledGradeRef.current = true;
+  }, [enrolledGrade]);
 
   const tutorSyllabusContext = React.useMemo(() => {
     const grade = studentProfile?.grade || currentDocument?.grade || educationLevel || '';
