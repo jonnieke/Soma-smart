@@ -3100,7 +3100,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     try {
       const hasSession = await hasAuthenticatedSupabaseSession();
       if (!hasSession) {
-        setMarketplaceMaterials([]);
+        const fallbackMaterials = MOCK_PEER_MATERIALS.filter(m => getEducationLevelFromGrade(m.grade) === educationLevel);
+        setMarketplaceMaterials(fallbackMaterials);
         return;
       }
 
@@ -3147,8 +3148,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         setMarketplaceMaterials(combined);
       }
     } catch (_) {
+      const fallbackMaterials = MOCK_PEER_MATERIALS.filter(m => getEducationLevelFromGrade(m.grade) === educationLevel);
       markOptionalDataUnavailable('marketplace_materials');
-      setMarketplaceMaterials([]);
+      setMarketplaceMaterials(fallbackMaterials);
     }
   };
 

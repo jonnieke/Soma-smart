@@ -8252,9 +8252,15 @@ ${explanation.explanation}
     }
 
     if (mode === 'LIBRARY') {
+      const libraryGradeScope = selectedGrade !== 'ALL' ? selectedGrade : (studentProfile?.grade || enrolledGrade);
       const purchasedResources = unifiedMaterials.filter(m => getMaterialAccessStatus(m) === 'OWNED');
       const freeStarterResources = unifiedMaterials.filter(m => getMaterialAccessStatus(m) === 'FREE');
-      const featuredPaperResources = freeStarterResources.filter(m => normalizeMaterialCategory(m.category) === 'PAST_PAPER');
+      const preferredStarterResources = freeStarterResources.filter(m => {
+        if (!libraryGradeScope) return true;
+        return normalizeGrade(m.grade || '') === normalizeGrade(libraryGradeScope);
+      });
+      const featuredPaperResources = (preferredStarterResources.length > 0 ? preferredStarterResources : freeStarterResources)
+        .filter(m => normalizeMaterialCategory(m.category) === 'PAST_PAPER');
       const proVaultResources = unifiedMaterials.filter(m => getMaterialAccessStatus(m) === 'PRO_INCLUDED' || getMaterialAccessStatus(m) === 'PRO_LOCKED');
       const unlockedResources = unifiedMaterials.filter(m => {
         const status = getMaterialAccessStatus(m);
@@ -8273,14 +8279,24 @@ ${explanation.explanation}
       // Extract unique subjects from current view for filtering
       const subjectsList = ['ALL', ...Array.from(new Set(activeList.map(m => m.subject).filter(Boolean))).sort()];
 
-      const libraryGradeScope = selectedGrade !== 'ALL' ? selectedGrade : (studentProfile?.grade || enrolledGrade);
 
-      // Filter by active subject and class/grade scope
-      const visibleLibraryMaterials = activeList.filter(m => {
+      const gradeScopedLibraryMaterials = activeList.filter(m => {
+        const materialLevel = getGradeLevel(m.grade || '');
+        const matchesEducationLevel = materialLevel === educationLevel;
+        const matchesStudentRange = !studentProfile?.grade || isGradeInStudentRange(m.grade || '', studentProfile.grade);
+        return matchesEducationLevel && matchesStudentRange;
+      });
+
+      const exactGradeLibraryMaterials = gradeScopedLibraryMaterials.filter(m => {
         const matchesSubject = activeLibrarySubject === 'ALL' || m.subject === activeLibrarySubject;
         const matchesGrade = !libraryGradeScope || normalizeGrade(m.grade || '') === normalizeGrade(libraryGradeScope);
         return matchesSubject && matchesGrade;
       });
+
+      const visibleLibraryMaterials = exactGradeLibraryMaterials.length > 0
+        ? exactGradeLibraryMaterials
+        : gradeScopedLibraryMaterials.filter(m => activeLibrarySubject === 'ALL' || m.subject === activeLibrarySubject);
+      const showingGradeFallback = exactGradeLibraryMaterials.length === 0 && gradeScopedLibraryMaterials.length > 0;
 
       // Group filtered books by category
       const syllabuses = visibleLibraryMaterials.filter(m => normalizeMaterialCategory(m.category) === 'SYLLABUS');
@@ -8357,6 +8373,12 @@ ${explanation.explanation}
                 </div>
               )}
             </div>
+
+            {showingGradeFallback && (
+              <div className="mb-5 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-[11px] font-bold uppercase tracking-[0.18em] text-emerald-700 dark:border-emerald-900/40 dark:bg-emerald-950/40 dark:text-emerald-200">
+                Showing Grade {studentProfile?.grade || enrolledGrade || 'ready'} materials while we finish matching exact papers.
+              </div>
+            )}
 
             {/* Library Category Tabs */}
             <div className="grid grid-cols-3 gap-3 mb-6 bg-slate-100 dark:bg-slate-900 p-1 rounded-2xl">
