@@ -111,6 +111,7 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
     const [loadingStrategy, setLoadingStrategy] = useState(false);
     const [pastPerformance, setPastPerformance] = useState<PerformanceRecord[]>([]);
     const [expandedSection, setExpandedSection] = useState<string | null>('questions');
+    const [showAdvancedTools, setShowAdvancedTools] = useState(false);
 
     // Refs
     const answerInputRef = useRef<HTMLTextAreaElement>(null);
@@ -830,113 +831,133 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
                         </section>
 
 
-                        {/* Quick Actions */}
-                        <div className="grid grid-cols-2 gap-3">
-                            <motion.button
-                                whileHover={{ scale: 1.02 }}
-                                whileTap={{ scale: 0.98 }}
-                                onClick={() => setPhase('PRE_EXAM')}
-                                className="bg-gradient-to-br from-indigo-600 to-blue-700 text-white p-5 rounded-2xl text-left shadow-lg"
-                            >
-                                <Timer className="w-6 h-6 mb-3 opacity-80" />
-                                <p className="font-black text-sm mb-1">Timed Exam</p>
-                                <p className="text-blue-200 text-[10px]">{analysis.questions.length} Qs  -  {analysis.durationMinutes ? `${analysis.durationMinutes} min official` : 'Set your time'}</p>
-                            </motion.button>
-
-                            <motion.button
-                                whileHover={{ scale: 1.02 }}
-                                whileTap={{ scale: 0.98 }}
-                                onClick={() => { void startQuiz(ExamPracticeMode.FULL_PAPER); }}
-                                className="bg-gradient-to-br from-emerald-600 to-teal-700 text-white p-5 rounded-2xl text-left shadow-lg"
-                            >
-                                <FileText className="w-6 h-6 mb-3 opacity-80" />
-                                <p className="font-black text-sm mb-1">Full Paper</p>
-                                <p className="text-emerald-200 text-[10px]">No time limit â€¢ AI marks each answer</p>
-                            </motion.button>
+                        <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm">
+                            <div className="flex items-start justify-between gap-3">
+                                <div>
+                                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Stay focused</p>
+                                    <p className="mt-1 text-sm font-semibold text-slate-700 dark:text-slate-200">Start the paper first. Open more tools only if you need help.</p>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => setShowAdvancedTools(prev => !prev)}
+                                    className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 px-4 py-2 text-xs font-black uppercase tracking-[0.14em] text-slate-600 dark:text-slate-300"
+                                >
+                                    {showAdvancedTools ? "Hide tools" : "More tools"}
+                                </button>
+                            </div>
                         </div>
 
-                        {/* Strategy & Predictions */}
-                        <div className="grid grid-cols-2 gap-3">
-                            <button
-                                onClick={handleStrategy}
-                                disabled={loadingStrategy}
-                                className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 rounded-2xl text-left hover:border-indigo-300 dark:hover:border-indigo-700 transition-all disabled:opacity-60"
-                            >
-                                {loadingStrategy ? (
-                                    <Loader2 className="w-5 h-5 text-indigo-400 animate-spin mb-2" />
-                                ) : (
-                                    <Target className="w-5 h-5 text-indigo-500 dark:text-indigo-400 mb-2" />
-                                )}
-                                <p className="font-bold text-xs text-slate-800 dark:text-slate-200">Exam Strategy</p>
-                                <p className="text-[10px] text-slate-400 dark:text-slate-500">Time allocation & tips</p>
-                            </button>
-
-                            <button
-                                onClick={handlePredictions}
-                                disabled={loadingPredictions}
-                                className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 rounded-2xl text-left hover:border-amber-300 dark:hover:border-amber-700 transition-all disabled:opacity-60"
-                            >
-                                {loadingPredictions ? (
-                                    <Loader2 className="w-5 h-5 text-amber-400 animate-spin mb-2" />
-                                ) : (
-                                    <Zap className="w-5 h-5 text-amber-500 dark:text-amber-400 mb-2" />
-                                )}
-                                <p className="font-bold text-xs text-slate-800 dark:text-slate-200">High-Yield Practice</p>
-                                <p className="text-[10px] text-slate-400 dark:text-slate-500">Frequently tested skills to practise next</p>
-                            </button>
-                        </div>
-
-                        {/* Strategy Display */}
-                        {strategy && (
-                            <motion.div
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                className="bg-white dark:bg-slate-900 border border-indigo-200 dark:border-indigo-900/50 rounded-2xl p-5"
-                            >
-                                <div className="flex items-center gap-2 mb-3">
-                                    <Target className="w-4 h-4 text-indigo-500 dark:text-indigo-400" />
-                                    <span className="font-bold text-sm text-indigo-800 dark:text-indigo-300">Exam Strategy</span>
-                                </div>
-                                <div className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-wrap font-medium">
-                                    {strategy}
-                                </div>
-                            </motion.div>
-                        )}
-
-                        {/* Predictions Display */}
-                        {predictions && (
-                            <motion.div
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                className="bg-white dark:bg-slate-900 border border-amber-200 dark:border-amber-900/50 rounded-2xl overflow-hidden shadow-sm"
-                            >
-                                <div className="bg-amber-50 dark:bg-amber-950/30 px-5 py-3 border-b border-amber-100 dark:border-amber-900/50 flex items-center justify-between">
-                                    <div className="flex items-center gap-2">
-                                        <Zap className="w-4 h-4 text-amber-500 dark:text-amber-400" />
-                                        <span className="font-bold text-sm text-amber-800 dark:text-amber-300">High-Yield Practice</span>
-                                    </div>
-                                    <button
-                                        onClick={() => { void startQuiz(ExamPracticeMode.PRACTICE_BY_TOPIC, predictions.questions); }}
-                                        className="text-[10px] font-black bg-amber-500 hover:bg-amber-600 text-white px-3 py-1 rounded-full transition-colors"
+                        {showAdvancedTools && (
+                            <div className="space-y-3">
+                                {/* Quick Actions */}
+                                <div className="grid grid-cols-2 gap-3">
+                                    <motion.button
+                                        whileHover={{ scale: 1.02 }}
+                                        whileTap={{ scale: 0.98 }}
+                                        onClick={() => setPhase('PRE_EXAM')}
+                                        className="bg-gradient-to-br from-indigo-600 to-blue-700 text-white p-5 rounded-2xl text-left shadow-lg"
                                     >
-                                        Attempt These
+                                        <Timer className="w-6 h-6 mb-3 opacity-80" />
+                                        <p className="font-black text-sm mb-1">Timed Exam</p>
+                                        <p className="text-blue-200 text-[10px]">{analysis.questions.length} Qs  -  {analysis.durationMinutes ? `${analysis.durationMinutes} min official` : 'Set your time'}</p>
+                                    </motion.button>
+
+                                    <motion.button
+                                        whileHover={{ scale: 1.02 }}
+                                        whileTap={{ scale: 0.98 }}
+                                        onClick={() => { void startQuiz(ExamPracticeMode.FULL_PAPER); }}
+                                        className="bg-gradient-to-br from-emerald-600 to-teal-700 text-white p-5 rounded-2xl text-left shadow-lg"
+                                    >
+                                        <FileText className="w-6 h-6 mb-3 opacity-80" />
+                                        <p className="font-black text-sm mb-1">Full Paper</p>
+                                        <p className="text-emerald-200 text-[10px]">No time limit � AI marks each answer</p>
+                                    </motion.button>
+                                </div>
+
+                                {/* Strategy & Predictions */}
+                                <div className="grid grid-cols-2 gap-3">
+                                    <button
+                                        onClick={handleStrategy}
+                                        disabled={loadingStrategy}
+                                        className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 rounded-2xl text-left hover:border-indigo-300 dark:hover:border-indigo-700 transition-all disabled:opacity-60"
+                                    >
+                                        {loadingStrategy ? (
+                                            <Loader2 className="w-5 h-5 text-indigo-400 animate-spin mb-2" />
+                                        ) : (
+                                            <Target className="w-5 h-5 text-indigo-500 dark:text-indigo-400 mb-2" />
+                                        )}
+                                        <p className="font-bold text-xs text-slate-800 dark:text-slate-200">Exam Strategy</p>
+                                        <p className="text-[10px] text-slate-400 dark:text-slate-500">Time allocation & tips</p>
+                                    </button>
+
+                                    <button
+                                        onClick={handlePredictions}
+                                        disabled={loadingPredictions}
+                                        className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 rounded-2xl text-left hover:border-amber-300 dark:hover:border-amber-700 transition-all disabled:opacity-60"
+                                    >
+                                        {loadingPredictions ? (
+                                            <Loader2 className="w-5 h-5 text-amber-400 animate-spin mb-2" />
+                                        ) : (
+                                            <Zap className="w-5 h-5 text-amber-500 dark:text-amber-400 mb-2" />
+                                        )}
+                                        <p className="font-bold text-xs text-slate-800 dark:text-slate-200">High-Yield Practice</p>
+                                        <p className="text-[10px] text-slate-400 dark:text-slate-500">Frequently tested skills to practise next</p>
                                     </button>
                                 </div>
-                                <div className="p-4 space-y-3">
-                                    {predictions.questions.map(q => (
-                                        <div key={q.id} className="flex items-start gap-3 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
-                                            <span className="text-[10px] font-black text-amber-600 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/40 px-2 py-0.5 rounded shrink-0 mt-0.5">Q{q.number}</span>
-                                            <div className="flex-1 min-w-0">
-                                                <p className="text-xs text-slate-700 dark:text-slate-300 font-medium line-clamp-2">{q.text}</p>
-                                                <div className="flex gap-2 mt-1">
-                                                    <span className="text-[9px] text-slate-400 dark:text-slate-500 font-bold uppercase">{q.topic}</span>
-                                                    <span className="text-[9px] text-indigo-400 dark:text-indigo-500 font-bold">{q.marks} marks</span>
-                                                </div>
-                                            </div>
+
+                                {/* Strategy Display */}
+                                {strategy && (
+                                    <motion.div
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        className="bg-white dark:bg-slate-900 border border-indigo-200 dark:border-indigo-900/50 rounded-2xl p-5"
+                                    >
+                                        <div className="flex items-center gap-2 mb-3">
+                                            <Target className="w-4 h-4 text-indigo-500 dark:text-indigo-400" />
+                                            <span className="font-bold text-sm text-indigo-800 dark:text-indigo-300">Exam Strategy</span>
                                         </div>
-                                    ))}
-                                </div>
-                            </motion.div>
+                                        <div className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-wrap font-medium">
+                                            {strategy}
+                                        </div>
+                                    </motion.div>
+                                )}
+
+                                {/* Predictions Display */}
+                                {predictions && (
+                                    <motion.div
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        className="bg-white dark:bg-slate-900 border border-amber-200 dark:border-amber-900/50 rounded-2xl overflow-hidden shadow-sm"
+                                    >
+                                        <div className="bg-amber-50 dark:bg-amber-950/30 px-5 py-3 border-b border-amber-100 dark:border-amber-900/50 flex items-center justify-between">
+                                            <div className="flex items-center gap-2">
+                                                <Zap className="w-4 h-4 text-amber-500 dark:text-amber-400" />
+                                                <span className="font-bold text-sm text-amber-800 dark:text-amber-300">High-Yield Practice</span>
+                                            </div>
+                                            <button
+                                                onClick={() => { void startQuiz(ExamPracticeMode.PRACTICE_BY_TOPIC, predictions.questions); }}
+                                                className="text-[10px] font-black bg-amber-500 hover:bg-amber-600 text-white px-3 py-1 rounded-full transition-colors"
+                                            >
+                                                Attempt These
+                                            </button>
+                                        </div>
+                                        <div className="p-4 space-y-3">
+                                            {predictions.questions.map(q => (
+                                                <div key={q.id} className="flex items-start gap-3 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
+                                                    <span className="text-[10px] font-black text-amber-600 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/40 px-2 py-0.5 rounded shrink-0 mt-0.5">Q{q.number}</span>
+                                                    <div className="flex-1 min-w-0">
+                                                        <p className="text-xs text-slate-700 dark:text-slate-300 font-medium line-clamp-2">{q.text}</p>
+                                                        <div className="flex gap-2 mt-1">
+                                                            <span className="text-[9px] text-slate-400 dark:text-slate-500 font-bold uppercase">{q.topic}</span>
+                                                            <span className="text-[9px] text-indigo-400 dark:text-indigo-500 font-bold">{q.marks} marks</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </motion.div>
+                                )}
+                            </div>
                         )}
 
                         {/* Questions List */}
