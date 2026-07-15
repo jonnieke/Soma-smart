@@ -310,8 +310,8 @@ export const LearnerHome: React.FC<LearnerHomeProps> = ({
               </div>
               <div className="mt-4 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
                 <div className="max-w-2xl">
-                  <h2 className="text-[24px] font-black leading-tight sm:text-[30px]">Open a paper now and use it to learn faster.</h2>
-                  <p className="mt-2 text-sm leading-6 text-violet-100/85 sm:text-base">Choose a real exam paper, work through it under time, then use the feedback to recover marks quickly.</p>
+                  <h2 className="text-[24px] font-black leading-tight sm:text-[30px]">Open the right lane and use it to learn faster.</h2>
+                  <p className="mt-2 text-sm leading-6 text-violet-100/85 sm:text-base">Choose a real paper, work through it under time, then use the feedback to recover marks quickly.</p>
                 </div>
                 <div className="flex flex-wrap gap-2 text-xs font-bold uppercase tracking-[0.14em] text-violet-50/90">
                   <span className="rounded-full border border-white/15 bg-white/10 px-3 py-2">{grade || 'Grade 7'}</span>
@@ -501,7 +501,7 @@ export const LearnerHome: React.FC<LearnerHomeProps> = ({
                     Retry weak area <ChevronRight className="h-4 w-4" />
                   </button>
                   <button type="button" onClick={onViewAll} className="flex min-h-12 items-center justify-center gap-2 rounded-xl border border-[#d9d3f2] bg-white px-6 font-bold text-[#6938ef] hover:bg-[#f4efff]">
-                    Open revision hub
+                    Open the right lane
                   </button>
                 </div>
               </div>
