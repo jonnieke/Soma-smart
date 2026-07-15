@@ -355,7 +355,7 @@ Do not move to a new topic, new example, or new question until the candidate ans
                             <div>
                                 <h3 className="text-white font-black text-base">Learning limit reached</h3>
                                 <p className="text-slate-400 text-xs mt-2 leading-relaxed font-medium">
-                                    You&apos;ve used your free smart quota for today. Sign in or create a free account to get more Exam Guru sessions every day.
+                                    You&apos;ve reached today&apos;s free Exam Guru access. Open a small learner plan to keep practising and marking.
                                 </p>
                             </div>
                             <button

@@ -3516,7 +3516,7 @@ ${explanation.explanation}
         setShowLimitModal(true);
         setError({
           title: "Voice Limit Reached",
-          message: "Your Listen & Learn voice allowance is used up. Buy learning credits or upgrade your plan to continue with natural ElevenLabs audio."
+          message: "Your Listen & Learn voice allowance is used up. Open a small learner plan or top-up to continue with natural ElevenLabs audio."
         });
         return;
       }

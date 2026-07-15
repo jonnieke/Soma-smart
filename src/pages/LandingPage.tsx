@@ -812,7 +812,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                     </>
                                 ) : (
                                     <>
-                                        <button onClick={() => setShowLogin(true)} className="text-slate-800 dark:text-slate-200 hover:text-indigo-600 dark:hover:text-indigo-400 font-bold transition-colors text-sm">Sign In</button>
+                                        <button onClick={() => setShowLogin(true)} className="text-slate-800 dark:text-slate-200 hover:text-indigo-600 dark:hover:text-indigo-400 font-bold transition-colors text-sm">Continue Learning</button>
                                         <button
                                             onClick={() => setShowRegistration(true)}
                                             className="bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-6 py-2.5 rounded-full font-bold text-sm hover:bg-slate-800 dark:hover:bg-slate-100 transition-all shadow-sm"
@@ -887,7 +887,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                     </button>
                                 ) : (
                                     <button onClick={() => { setShowLogin(true); setMobileMenuOpen(false); }} className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 font-medium">
-                                        <Users className="w-5 h-5 text-slate-400" /> Sign In
+                                        <Users className="w-5 h-5 text-slate-400" /> Continue Learning
                                     </button>
                                 )}
                                 <button onClick={() => { toggleLanguage(); setMobileMenuOpen(false); }} className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 text-slate-400 font-medium text-sm">
@@ -980,7 +980,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                                                     onClick={() => { setShowLogin(true); }}
                                                                     className="flex-1 min-h-[38px] border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-lg text-xs font-black transition-colors"
                                                                 >
-                                                                    Sign In
+                                                                    Continue Learning
                                                                 </button>
                                                             </div>
                                                         </div>
@@ -2176,16 +2176,16 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                     </div>
                                     {isRegistered ? (
                                         <div>
-                                            <p className="text-xs font-black uppercase tracking-widest text-slate-400 mb-2">Daily limit reached</p>
+                                            <p className="text-xs font-black uppercase tracking-widest text-slate-400 mb-2">Learning limit reached</p>
                                             <h3 className="text-xl font-black text-slate-900 dark:text-white">You&apos;ve used today&apos;s free daily study limits</h3>
                                             <p className="mt-2 text-sm text-slate-600 dark:text-slate-300 leading-relaxed max-w-xs mx-auto">
-                                                Upgrade to a plan for unlimited step-by-step notes, exam prep, and audio lessons.
+                                                Choose a small learner plan to keep going with step-by-step notes, exam prep, and audio lessons.
                                             </p>
                                         </div>
                                     ) : (
                                         <div>
                                             <p className="text-xs font-black uppercase tracking-widest text-slate-400 mb-2">5 free previews used</p>
-                                            <h3 className="text-xl font-black text-slate-900 dark:text-white">Create a free account to keep going</h3>
+                                            <h3 className="text-xl font-black text-slate-900 dark:text-white">Create a free account to keep learning</h3>
                                             <p className="mt-2 text-sm text-slate-600 dark:text-slate-300 leading-relaxed max-w-xs mx-auto">
                                                 Unlock full step-by-step notes for any question, practice drills, and progress tracking — free to start.
                                             </p>
@@ -2193,11 +2193,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                     )}
                                     <div className="flex flex-col sm:flex-row gap-3 w-full max-w-xs">
                                         {isRegistered ? (
-                                            <button onClick={() => { setShowDetailedView(false); navigate('/pricing'); }} className="flex-1 min-h-[46px] bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-black text-sm transition-colors">See Plans</button>
+                                            <button onClick={() => { setShowDetailedView(false); navigate('/pricing'); }} className="flex-1 min-h-[46px] bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-black text-sm transition-colors">See Learner Plans</button>
                                         ) : (
                                             <>
                                                 <button onClick={() => { setShowDetailedView(false); setShowRegistration(true); }} className="flex-1 min-h-[46px] bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-black text-sm transition-colors">Register Free</button>
-                                                <button onClick={() => { setShowDetailedView(false); setShowLogin(true); }} className="flex-1 min-h-[46px] border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-900 text-slate-800 dark:text-slate-200 rounded-xl font-black text-sm transition-colors">Sign In</button>
+                                                <button onClick={() => { setShowDetailedView(false); setShowLogin(true); }} className="flex-1 min-h-[46px] border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-900 text-slate-800 dark:text-slate-200 rounded-xl font-black text-sm transition-colors">Continue Learning</button>
                                             </>
                                         )}
                                     </div>
@@ -2246,7 +2246,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                             </div>
                                             <div className="flex gap-2">
                                                 <button onClick={() => { setShowDetailedView(false); setShowRegistration(true); }} className="flex-1 min-h-[40px] bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-black text-xs transition-colors">Register Free</button>
-                                                <button onClick={() => { setShowDetailedView(false); setShowLogin(true); }} className="flex-1 min-h-[40px] border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-900 text-slate-700 dark:text-slate-300 rounded-xl font-black text-xs transition-colors">Sign In</button>
+                                                <button onClick={() => { setShowDetailedView(false); setShowLogin(true); }} className="flex-1 min-h-[40px] border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-900 text-slate-700 dark:text-slate-300 rounded-xl font-black text-xs transition-colors">Continue Learning</button>
                                             </div>
                                         </div>
                                     )}
