@@ -303,6 +303,12 @@ export const LearnerHome: React.FC<LearnerHomeProps> = ({
             </div>
             <button type="submit" disabled={!topic.trim()} className="flex min-h-12 w-full items-center justify-center gap-2 rounded-[15px] bg-[#6d43ef] px-6 text-sm font-black text-white shadow-md transition hover:bg-[#5e34dd] disabled:cursor-not-allowed disabled:bg-[#b8abd9] sm:w-auto">Ask Akili <ArrowRight className="h-4 w-4" /></button>
           </form>
+          {voiceTranscript && (
+            <div className="relative z-20 mt-3 inline-flex max-w-[850px] items-start gap-2 rounded-full border border-[#d8d0f1] bg-white px-4 py-2 text-sm font-semibold text-[#3a3570] shadow-sm">
+              <Mic className="mt-0.5 h-4 w-4 shrink-0 text-[#6938ef]" />
+              <span className="min-w-0"><span className="font-black uppercase tracking-[0.14em] text-[10px] text-[#7a5bef]">Heard</span> <span className="break-words">{voiceTranscript}</span></span>
+            </div>
+          )}
 
           <div className="relative z-20 mt-4 flex flex-wrap items-center gap-2 text-sm">
             <span className="mr-1 text-violet-200/75">Or start with</span>

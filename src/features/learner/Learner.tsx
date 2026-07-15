@@ -226,6 +226,36 @@ const buildContinueLearningSnapshot = (activity?: LearnerActivity, fallbackTopic
   };
 };
 
+function getExplanationDepthProfile(grade: string, level: 'Simple' | 'Exam' = 'Simple') {
+  const g = String(grade || '').toLowerCase();
+  const isLowerPrimary = /(grade\s*[1-3]|grade\s*[4-6]|lower primary|upper primary|kcpe|kpsea)/.test(g);
+  const isJunior = /(grade\s*[7-9]|junior|kjsea)/.test(g);
+  const isSenior = /(form\s*[1-4]|senior|kcse)/.test(g) || level === 'Exam';
+
+  if (isLowerPrimary) {
+    return { label: 'Simple depth', introBlocks: 1, subtopics: 2, recapNodes: 2 };
+  }
+  if (isJunior) {
+    return { label: 'Guided depth', introBlocks: 2, subtopics: 3, recapNodes: 3 };
+  }
+  if (isSenior) {
+    return { label: 'Exam depth', introBlocks: 3, subtopics: 4, recapNodes: 4 };
+  }
+  return { label: 'Guided depth', introBlocks: 2, subtopics: 3, recapNodes: 3 };
+}
+
+function buildDetailedExplanationPreview(explanationText: string, topic: string, grade: string, level: 'Simple' | 'Exam' = 'Simple') {
+  const profile = getExplanationDepthProfile(grade, level);
+  const rawBlocks = String(explanationText || '')
+    .split(/\n\s*\n+/)
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .filter((part) => !/^curriculum alignment:/i.test(part));
+  const selected = rawBlocks.slice(0, profile.introBlocks);
+  if (selected.length > 0) return selected.join('\n\n');
+  return `Let's unpack ${topic} step by step for your class level.`;
+}
+
 const inferSubjectFromTopic = (topic?: string): string => {
   const lower = (topic || '').toLowerCase();
   if (/(math|equation|algebra|number|fraction|geometry)/.test(lower)) return 'Mathematics';
@@ -2869,10 +2899,13 @@ Stay anchored to this context unless I ask for something broader.`;
           setVoiceTranscriptPreview(transcript);
           setPromptText(transcript);
           if (voiceSubmitTimerRef.current) window.clearTimeout(voiceSubmitTimerRef.current);
-          voiceSubmitTimerRef.current = window.setTimeout(() => {
-            setVoiceTranscriptPreview(null);
-            void handlePromptSubmit(transcript);
-          }, 900);
+          voiceSubmitTimerRef.current = window.setTimeout(async () => {
+            try {
+              await handlePromptSubmit(transcript);
+            } finally {
+              setVoiceTranscriptPreview(null);
+            }
+          }, 1200);
         } catch (err: any) {
           console.error('Voice transcription failed:', err);
           setError({
@@ -6950,12 +6983,64 @@ ${explanation.explanation}
               </motion.div>
             )}
 
-            {/* Key Takeaways - Placed on top below 'your question' card */}
-            {explanation.summaryPoints && explanation.summaryPoints.length > 0 && (
+            {/* Detailed explanation + Key Takeaways */}
+            {explanation.explanation && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.06 }}
+                className="bg-white dark:bg-slate-900 p-6 rounded-3xl border-2 border-indigo-200 dark:border-indigo-900/40 shadow-sm relative overflow-hidden"
+              >
+                <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-indigo-500"></div>
+                <div className="flex items-start justify-between gap-3 mb-4">
+                  <div className="min-w-0">
+                    <h3 className="font-bold text-slate-900 dark:text-white flex items-center gap-3 text-lg">
+                      <div className="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-950/40 flex items-center justify-center">
+                        <Lightbulb className="w-5 h-5 text-indigo-600" />
+                      </div>
+                      Detailed explanation
+                    </h3>
+                    <p className="mt-1 text-[11px] font-black uppercase tracking-[0.2em] text-indigo-500 dark:text-indigo-300">Grade-sensitive depth - {getExplanationDepthProfile(studentProfile?.grade || currentDocument?.grade || educationLevel || '', explanation.level).label}</p>
+                  </div>
+                </div>
+                <div className="prose prose-sm dark:prose-invert max-w-none rounded-2xl border border-indigo-100/60 dark:border-slate-800/50 bg-indigo-50/30 dark:bg-slate-800/20 p-4 text-slate-700 dark:text-slate-200 leading-relaxed">
+                  <MarkdownText content={buildDetailedExplanationPreview(explanation.explanation, explanation.topic, studentProfile?.grade || currentDocument?.grade || educationLevel || '', explanation.level)} />
+                </div>
+                {Array.isArray(explanation.subtopics) && explanation.subtopics.length > 0 && (
+                  <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                    {explanation.subtopics.slice(0, getExplanationDepthProfile(studentProfile?.grade || currentDocument?.grade || educationLevel || '', explanation.level).subtopics).map((subtopic, index) => (
+                      <div key={`${subtopic.title}-${index}`} className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 p-4 shadow-sm">
+                        <p className="text-[10px] font-black uppercase tracking-[0.18em] text-indigo-500 dark:text-indigo-300">{index + 1}. {subtopic.title}</p>
+                        {subtopic.content && (
+                          <div className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300 prose prose-sm dark:prose-invert max-w-none">
+                            <MarkdownText content={buildDetailedExplanationPreview(subtopic.content, subtopic.title, studentProfile?.grade || currentDocument?.grade || educationLevel || '', explanation.level)} />
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {Array.isArray(explanation.recapNodes) && explanation.recapNodes.length > 0 && (
+                  <div className="mt-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 p-4">
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400 mb-3">Step-by-step recap</p>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      {explanation.recapNodes.slice(0, getExplanationDepthProfile(studentProfile?.grade || currentDocument?.grade || educationLevel || '', explanation.level).recapNodes).map((node, index) => (
+                        <div key={`${node.point}-${index}`} className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4">
+                          <p className="text-sm font-black text-slate-900 dark:text-white">{node.point}</p>
+                          <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">{node.details}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </motion.div>
+            )}
+
+            {explanation.summaryPoints && explanation.summaryPoints.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 }}
                 className="bg-white dark:bg-slate-900 p-6 rounded-3xl border-2 border-slate-300 dark:border-slate-800 shadow-sm relative overflow-hidden"
               >
                 <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-amber-400"></div>
@@ -6965,11 +7050,9 @@ ${explanation.explanation}
                   </div>
                   Key Takeaways
                 </h3>
-                {explanation.explanation && (
-                  <div className="text-slate-600 dark:text-slate-300 text-sm md:text-base leading-relaxed mb-6 font-medium bg-amber-50/20 dark:bg-slate-800/20 p-4 rounded-2xl border border-amber-100/50 dark:border-slate-800/50 prose prose-sm dark:prose-invert max-w-none">
-                    <MarkdownText content={getBriefDefinition(explanation.explanation, explanation.topic)} />
-                  </div>
-                )}
+                <div className="text-slate-600 dark:text-slate-300 text-sm md:text-base leading-relaxed mb-6 font-medium bg-amber-50/20 dark:bg-slate-800/20 p-4 rounded-2xl border border-amber-100/50 dark:border-slate-800/50 prose prose-sm dark:prose-invert max-w-none">
+                  <MarkdownText content={getBriefDefinition(explanation.explanation, explanation.topic)} />
+                </div>
                 <ul className="space-y-4">
                   {explanation.summaryPoints.map((point, i) => (
                     <li key={i} className="flex gap-4 text-slate-600 dark:text-slate-300 leading-relaxed font-medium">
