@@ -8555,10 +8555,10 @@ ${explanation.explanation}
                 ) : null}
                 <div className="flex flex-wrap items-center justify-center gap-3">
                   <Button onClick={() => setMode('REVISION')} className="px-10 py-4 bg-indigo-600 text-white rounded-2xl shadow-xl shadow-indigo-100 font-black uppercase tracking-widest text-[10px] border-none">
-                    Open papers
+                    Open past papers
                   </Button>
                   <Button onClick={() => setMode('MARKETPLACE')} variant="outline" className="px-10 py-4 rounded-2xl font-black uppercase tracking-widest text-[10px]">
-                    Browse more
+                    Back to library
                   </Button>
                 </div>
               </div>

@@ -310,7 +310,7 @@ export const LearnerHome: React.FC<LearnerHomeProps> = ({
               </div>
               <div className="mt-4 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
                 <div className="max-w-2xl">
-                  <h2 className="text-[24px] font-black leading-tight sm:text-[30px]">Open the right lane and use it to learn faster.</h2>
+                  <h2 className="text-[24px] font-black leading-tight sm:text-[30px]">Open past papers and use them to learn faster.</h2>
                   <p className="mt-2 text-sm leading-6 text-violet-100/85 sm:text-base">Choose a real paper, work through it under time, then use the feedback to recover marks quickly.</p>
                 </div>
                 <div className="flex flex-wrap gap-2 text-xs font-bold uppercase tracking-[0.14em] text-violet-50/90">
@@ -322,15 +322,15 @@ export const LearnerHome: React.FC<LearnerHomeProps> = ({
             </div>
             <div className="grid gap-4 px-5 py-5 sm:grid-cols-[1.2fr_0.8fr] sm:px-8 sm:py-7">
               <div className="rounded-[22px] border border-[#ebe6fb] bg-[#faf8ff] p-5">
-                <p className="text-[11px] font-black uppercase tracking-[0.16em] text-[#7a5bef]">Open a paper now</p>
+                <p className="text-[11px] font-black uppercase tracking-[0.16em] text-[#7a5bef]">Open past papers now</p>
                 <h3 className="mt-2 text-xl font-bold text-[#18133f]">Start with a real paper, not a blank dashboard.</h3>
                 <p className="mt-2 text-sm leading-6 text-[#5f6684]">We�ll take you to the revision hub where your past papers, timing and feedback live together.</p>
                 <div className="mt-5 flex flex-wrap gap-3">
                   <button type="button" onClick={onOpenRevision} className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[#6938ef] px-5 text-sm font-black text-white shadow-md shadow-violet-200 transition hover:bg-[#5c2fda]">
-                    Open a paper now <ArrowRight className="h-4 w-4" />
+                    Open past papers now <ArrowRight className="h-4 w-4" />
                   </button>
                   <button type="button" onClick={onViewAll} className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-[#d8d0f1] bg-white px-5 text-sm font-bold text-[#6938ef] transition hover:bg-[#f5f1ff]">
-                    See revision hub
+                    Open all lanes
                   </button>
                 </div>
               </div>
@@ -501,7 +501,7 @@ export const LearnerHome: React.FC<LearnerHomeProps> = ({
                     Retry weak area <ChevronRight className="h-4 w-4" />
                   </button>
                   <button type="button" onClick={onViewAll} className="flex min-h-12 items-center justify-center gap-2 rounded-xl border border-[#d9d3f2] bg-white px-6 font-bold text-[#6938ef] hover:bg-[#f4efff]">
-                    Open the right lane
+                    Open past papers
                   </button>
                 </div>
               </div>

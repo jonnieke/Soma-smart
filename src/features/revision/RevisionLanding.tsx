@@ -513,7 +513,7 @@ Use plain text. No markdown headings or symbols.`;
                         <div className="flex items-start justify-between gap-3">
                             <div className="max-w-2xl">
                                 <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-300 mb-1">Past papers first</p>
-                                <h2 className="text-lg sm:text-xl font-black leading-tight">Open a paper now</h2>
+                                <h2 className="text-lg sm:text-xl font-black leading-tight">Open past papers now</h2>
                                 <p className="text-xs text-slate-300 mt-1 font-medium">Choose a real paper, work through it under time, and use the feedback to recover marks fast.</p>
                             </div>
                             <div className="w-12 h-12 rounded-2xl bg-white/10 border border-white/10 flex items-center justify-center shrink-0">
@@ -664,7 +664,7 @@ Use plain text. No markdown headings or symbols.`;
                             <TrendingUp className="inline-block w-4 h-4 mr-1.5 -mt-0.5" />Hot Topics
                         </button>
                         <button onClick={startRecommendedPaper} className="rounded-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 px-4 py-2.5 text-xs font-black text-slate-700 dark:text-slate-200 transition hover:bg-slate-50 dark:hover:bg-slate-900">
-                            Open a paper
+                            Open past papers
                         </button>
                     </div>
                 </section>
