@@ -8246,6 +8246,7 @@ ${explanation.explanation}
     if (mode === 'LIBRARY') {
       const purchasedResources = unifiedMaterials.filter(m => getMaterialAccessStatus(m) === 'OWNED');
       const freeStarterResources = unifiedMaterials.filter(m => getMaterialAccessStatus(m) === 'FREE');
+      const featuredPaperResources = freeStarterResources.filter(m => normalizeMaterialCategory(m.category) === 'PAST_PAPER');
       const proVaultResources = unifiedMaterials.filter(m => getMaterialAccessStatus(m) === 'PRO_INCLUDED' || getMaterialAccessStatus(m) === 'PRO_LOCKED');
       const unlockedResources = unifiedMaterials.filter(m => {
         const status = getMaterialAccessStatus(m);
@@ -8313,6 +8314,39 @@ ${explanation.explanation}
           </div>
 
           <div className="p-6 flex-1 overflow-y-auto no-scrollbar">
+            <div className="relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-indigo-600 via-slate-950 to-blue-700 p-5 text-white shadow-xl shadow-indigo-500/20 mb-6">
+              <div className="absolute -right-10 -top-10 h-28 w-28 rounded-full bg-white/10 blur-2xl" />
+              <div className="relative flex items-start justify-between gap-4">
+                <div className="min-w-0">
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-100">Past papers first</p>
+                  <h2 className="mt-2 text-xl font-black leading-tight">Open a real paper and start learning right away.</h2>
+                  <p className="mt-2 text-sm text-indigo-50/90 max-w-xl">Pick one paper, work through it under time, and use the feedback to recover marks fast.</p>
+                </div>
+                <div className="hidden sm:flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/10 border border-white/10">
+                  <Layers className="h-6 w-6 text-emerald-200" />
+                </div>
+              </div>
+              {featuredPaperResources.length > 0 ? (
+                <div className="relative mt-5 grid gap-3 sm:grid-cols-3">
+                  {freeStarterResources.slice(0, 3).map((item, idx) => (
+                    <button
+                      key={item.id || idx}
+                      onClick={() => { setMode('REVISION'); setPendingMaterialId(item.id); }}
+                      className="rounded-2xl border border-white/10 bg-white/10 p-4 text-left transition hover:bg-white/15"
+                    >
+                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-200">Featured paper</p>
+                      <p className="mt-2 text-sm font-bold leading-snug line-clamp-2">{item.title}</p>
+                      <p className="mt-2 text-[11px] text-indigo-100/80">Tap to open in exam mode.</p>
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div className="relative mt-5 rounded-2xl border border-white/10 bg-white/10 p-4 text-sm text-indigo-50/90">
+                  We're preparing your papers. As soon as a paper is ready, it appears here first.
+                </div>
+              )}
+            </div>
+
             {/* Library Category Tabs */}
             <div className="grid grid-cols-3 gap-3 mb-6 bg-slate-100 dark:bg-slate-900 p-1 rounded-2xl">
               <button
