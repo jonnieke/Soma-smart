@@ -537,13 +537,15 @@ Use plain text. No markdown headings or symbols.`;
                             </div>
                         ) : (
                             <div className="mt-4 rounded-2xl border border-white/10 bg-white/10 p-4 text-sm text-slate-300 font-medium">
-                                We&apos;re preparing your papers. As soon as a paper is ready, it appears here first.
+                                We&apos;re preparing your papers. As soon as one is ready, it appears here first.
                             </div>
                         )}
 
                         {preparingPaperItems.length > 0 && (
                             <p className="mt-3 text-[11px] text-slate-400">
-                                {preparingPaperItems.length} more paper{preparingPaperItems.length !== 1 ? 's' : ''} are still being structured and will appear once they&apos;re ready.
+                                {preparingPaperItems.length === 1
+                                    ? "1 more paper is still being structured and will appear once it's ready."
+                                    : `${preparingPaperItems.length} more papers are still being structured and will appear once they're ready.`}
                             </p>
                         )}
                     </div>
