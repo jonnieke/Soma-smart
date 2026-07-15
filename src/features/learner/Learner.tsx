@@ -8370,7 +8370,7 @@ ${explanation.explanation}
           <div className="sticky top-0 z-40 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 px-6 py-4 flex items-center justify-between">
             <div>
               <h1 className="text-xl font-black text-slate-900 dark:text-white tracking-tight leading-none">My Library</h1>
-              <p className="text-[10px] font-black text-indigo-500 uppercase tracking-[0.15em] mt-1.5">Soma Bookshelf & PDF Reader</p>
+              <p className="text-[10px] font-black text-indigo-500 uppercase tracking-[0.15em] mt-1.5">Past paper library</p>
             </div>
             <button onClick={() => setMode('MENU')} className="p-2 hover:bg-slate-100 rounded-full transition-colors"><X className="w-5 h-5" /></button>
           </div>
@@ -8398,7 +8398,7 @@ ${explanation.explanation}
                     >
                       <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-200">Featured paper</p>
                       <p className="mt-2 text-sm font-bold leading-snug line-clamp-2">{item.title}</p>
-                      <p className="mt-2 text-[11px] text-indigo-100/80">Tap to open in exam mode.</p>
+                      <p className="mt-2 text-[11px] text-indigo-100/80">Open this paper.</p>
                     </button>
                   ))}
                 </div>
@@ -8498,7 +8498,7 @@ ${explanation.explanation}
                 <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.2em] mb-8 max-w-sm mx-auto leading-relaxed">
                   {libraryView === 'PURCHASED'
                     ? 'No purchased papers match this filter yet.'
-                    : 'We are matching the closest papers for your grade and subject.'}
+                    : 'We are matching the closest papers for your grade and subject. Open one now if it looks close enough.'}
                 </p>
                 {starterPaperResources.length > 0 ? (
                   <div className="mx-auto mb-10 grid max-w-3xl gap-3 text-left sm:grid-cols-3">
@@ -8518,10 +8518,10 @@ ${explanation.explanation}
                 ) : null}
                 <div className="flex flex-wrap items-center justify-center gap-3">
                   <Button onClick={() => setMode('REVISION')} className="px-10 py-4 bg-indigo-600 text-white rounded-2xl shadow-xl shadow-indigo-100 font-black uppercase tracking-widest text-[10px] border-none">
-                    Open revision hub
+                    Open papers
                   </Button>
                   <Button onClick={() => setMode('MARKETPLACE')} variant="outline" className="px-10 py-4 rounded-2xl font-black uppercase tracking-widest text-[10px]">
-                    Browse materials
+                    Browse more
                   </Button>
                 </div>
               </div>
@@ -8559,7 +8559,7 @@ ${explanation.explanation}
                             </div>
 
                             <div className="flex items-end justify-between border-t border-white/10 pt-2 text-[9px] font-bold opacity-80">
-                              <span>Somo AI Verified</span>
+                              <span>Soma AI Verified</span>
                             </div>
                           </div>
                           <span className="mt-2 text-xs font-black text-slate-800 dark:text-slate-200 line-clamp-2 text-center group-hover:text-indigo-600 transition-colors">{item.title}</span>
