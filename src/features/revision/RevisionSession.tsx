@@ -1591,29 +1591,31 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
                             </div>
                         </div>
 
-                        {/* Recovery Revision */}
-                        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden transition-colors shadow-sm">
-                            <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-800">
-                                <div className="flex items-center gap-2">
-                                    <Sparkles className="w-4 h-4 text-amber-500 dark:text-amber-400" />
-                                    <span className="font-bold text-sm text-slate-800 dark:text-slate-200">Revision Set ? Recover {recoveryMarks} Marks</span>
+                        {/* Recovery Action */}
+                        <div className="bg-gradient-to-br from-indigo-600 to-blue-700 rounded-3xl p-5 text-white shadow-xl shadow-indigo-500/20">
+                            <div className="flex items-start justify-between gap-4">
+                                <div>
+                                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-100">Recover marks now</p>
+                                    <h3 className="mt-2 text-2xl font-black leading-tight">{weakTopicList.length > 0 ? `Focus on ${weakTopicList[0]}` : "You're close ? keep going"}</h3>
+                                    <p className="mt-2 text-sm text-indigo-100/90 max-w-xl">Use the paper feedback to fix the exact topics that cost you marks, then retry the paper under time.</p>
+                                </div>
+                                <div className="rounded-2xl bg-white/10 px-4 py-3 text-right border border-white/10 shrink-0">
+                                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-100">Marks to recover</p>
+                                    <p className="mt-1 text-3xl font-black">{recoveryMarks}</p>
                                 </div>
                             </div>
-                            <div className="p-4 space-y-3">
-                                <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Focus on the areas that lost marks first. This is your fastest route back up the grade ladder.</p>
-                                <div className="flex flex-wrap gap-2">
-                                    {weakTopicList.length > 0 ? weakTopicList.map(topic => (
-                                        <span key={topic} className="rounded-full bg-rose-50 dark:bg-rose-950/30 px-3 py-1 text-[10px] font-black text-rose-700 dark:text-rose-300">{topic}</span>
-                                    )) : (
-                                        <span className="rounded-full bg-emerald-50 dark:bg-emerald-950/30 px-3 py-1 text-[10px] font-black text-emerald-700 dark:text-emerald-300">No weak topics detected</span>
-                                    )}
-                                </div>
-                                <div className="rounded-xl bg-slate-50 dark:bg-slate-950/40 border border-slate-100 dark:border-slate-800 p-3 text-xs text-slate-600 dark:text-slate-300 font-medium">
-                                    Retry the questions you missed, then do one short drill per weak topic before another timed run.
-                                </div>
+                            <div className="mt-5 flex flex-wrap gap-2">
+                                {weakTopicList.length > 0 ? weakTopicList.map(topic => (
+                                    <span key={topic} className="rounded-full bg-white/15 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-white border border-white/10">{topic}</span>
+                                )) : (
+                                    <span className="rounded-full bg-white/15 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-white border border-white/10">No weak topics detected</span>
+                                )}
+                            </div>
+                            <div className="mt-5 rounded-2xl bg-white/10 border border-white/10 p-4">
+                                <p className="text-xs font-black uppercase tracking-[0.18em] text-indigo-100">Your next step</p>
+                                <p className="mt-2 text-sm font-medium text-indigo-50 leading-relaxed">Retry the paper, then do one short drill per weak topic before another timed run.</p>
                             </div>
                         </div>
-
                         {/* Question-by-Question Review */}
                         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden transition-colors shadow-sm">
                             <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-800">
