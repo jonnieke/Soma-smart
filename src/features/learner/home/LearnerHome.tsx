@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowRight,
   BookOpen,
@@ -51,6 +51,7 @@ type LearnerHomeProps = {
   onScan: () => void;
   onUpload: () => void;
   onVoice: () => void;
+  voiceTranscript?: string | null;
   onSubject: (subject: string) => void;
   onContinue: (topic: string) => void;
   onViewAll: () => void;
@@ -206,6 +207,7 @@ export const LearnerHome: React.FC<LearnerHomeProps> = ({
   onScan,
   onUpload,
   onVoice,
+  voiceTranscript,
   onSubject,
   onContinue,
   onViewAll,
@@ -214,11 +216,18 @@ export const LearnerHome: React.FC<LearnerHomeProps> = ({
   onStartWeakDrill,
 }) => {
   const [topic, setTopic] = useState('');
+  const topicInputRef = useRef<HTMLInputElement>(null);
   const submit = (event?: React.FormEvent) => {
     event?.preventDefault();
     const cleanTopic = topic.trim();
     if (cleanTopic) onTeach(cleanTopic);
   };
+
+  useEffect(() => {
+    if (!voiceTranscript) return;
+    setTopic(voiceTranscript);
+    topicInputRef.current?.focus();
+  }, [voiceTranscript]);
 
   const topicArtwork = getTopicArtwork(latestTopic);
   const featuredSubjectLabel = normalizeSubjectLabel(featuredSubject);
@@ -289,7 +298,7 @@ export const LearnerHome: React.FC<LearnerHomeProps> = ({
             <label htmlFor="learner-topic" className="sr-only">Ask Akili a question</label>
             <div className="flex min-h-14 min-w-0 flex-1 items-center px-2 sm:px-3">
               <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#f0ecff] text-[#6938ef]"><Sparkles className="h-5 w-5" /></span>
-              <input id="learner-topic" value={topic} onChange={(event) => setTopic(event.target.value)} placeholder="Ask Akili a question..." autoComplete="off" className="min-w-0 flex-1 bg-transparent px-3 text-base font-medium text-[#16123d] outline-none placeholder:font-normal placeholder:text-[#85839a] sm:px-4" />
+              <input ref={topicInputRef} id="learner-topic" value={topic} onChange={(event) => setTopic(event.target.value)} placeholder="Ask Akili a question..." autoComplete="off" className="min-w-0 flex-1 bg-transparent px-3 text-base font-medium text-[#16123d] outline-none placeholder:font-normal placeholder:text-[#85839a] sm:px-4" />
               <button type="button" onClick={onVoice} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-[#6c6883] transition hover:bg-[#f3f0ff] hover:text-[#6938ef]" aria-label="Ask Akili using your voice"><Mic className="h-5 w-5" /></button>
             </div>
             <button type="submit" disabled={!topic.trim()} className="flex min-h-12 w-full items-center justify-center gap-2 rounded-[15px] bg-[#6d43ef] px-6 text-sm font-black text-white shadow-md transition hover:bg-[#5e34dd] disabled:cursor-not-allowed disabled:bg-[#b8abd9] sm:w-auto">Ask Akili <ArrowRight className="h-4 w-4" /></button>

@@ -675,6 +675,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<{ title: string, message: string } | null>(null);
   const [micPermissionNotice, setMicPermissionNotice] = useState(false);
+  const voiceSubmitTimerRef = useRef<number | null>(null);
   const [loadingText, setLoadingText] = useState("Akili is on it...");
   const [audioData, setAudioData] = useState<{ base64: string, mimeType: string } | null>(null);
 
@@ -814,6 +815,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
   const [scanStatus, setScanStatus] = useState<'idle' | 'scanning' | 'success' | 'STABILIZING' | 'CAPTURING' | 'LOOKING'>('idle');
   const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan | null>(null);
   const [promptText, setPromptText] = useState("");
+  const [voiceTranscriptPreview, setVoiceTranscriptPreview] = useState<string | null>(null);
   const [groundedAnswerMode, setGroundedAnswerMode] = useState(() => localStorage.getItem('soma_grounded_answer_mode') !== 'off');
 
   useEffect(() => {
@@ -2864,8 +2866,13 @@ Stay anchored to this context unless I ask for something broader.`;
             return;
           }
 
+          setVoiceTranscriptPreview(transcript);
           setPromptText(transcript);
-          await handlePromptSubmit(transcript);
+          if (voiceSubmitTimerRef.current) window.clearTimeout(voiceSubmitTimerRef.current);
+          voiceSubmitTimerRef.current = window.setTimeout(() => {
+            setVoiceTranscriptPreview(null);
+            void handlePromptSubmit(transcript);
+          }, 900);
         } catch (err: any) {
           console.error('Voice transcription failed:', err);
           setError({
@@ -2988,6 +2995,14 @@ Stay anchored to this context unless I ask for something broader.`;
       setIsRecording(false);
     }
   };
+
+  useEffect(() => {
+    return () => {
+      if (voiceSubmitTimerRef.current) {
+        window.clearTimeout(voiceSubmitTimerRef.current);
+      }
+    };
+  }, []);
 
   const handleAudioExplanation = async (blob: Blob, mimeType: string) => {
     if (!checkLimit({ type: 'AUDIO_EXPLANATION', blob, mimeType })) return;
@@ -4678,6 +4693,7 @@ ${explanation.explanation}
           onScan={() => void startCamera()}
           onUpload={() => fileInputRef.current?.click()}
           onVoice={() => void startVoiceQuestion()}
+          voiceTranscript={voiceTranscriptPreview}
           onSubject={(subject) => {
             if (subject === 'More Subjects') {
               handleSidebarTabChange('RESOURCES');
