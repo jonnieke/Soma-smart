@@ -58,7 +58,7 @@ const ReferralView = React.lazy(() => safeImport(() => import('./ReferralView').
 const loadMemoryService = () => safeImport(() => import('../../services/learnerMemoryService'));
 
 const loadGeminiService = () => safeImport(() => import('../../services/learnerGeminiService'));
-import { RateLimitError } from '../../services/geminiService';
+import { RateLimitError, transcribeAudioForChat } from '../../services/geminiService';
 
 const fileToGenerativePart = async (...args: any[]) => (await loadGeminiService()).fileToGenerativePart(...args as [File]);
 const explainImage = async (...args: any[]) => (await loadGeminiService()).explainImage(...args as [string, string, 'Simple' | 'Exam', 'EN' | 'SW', any]);
@@ -2813,6 +2813,97 @@ Stay anchored to this context unless I ask for something broader.`;
     handleAudioExplanation(file, file.type || 'audio/mp3');
   };
 
+  const startVoiceQuestion = async () => {
+    // ConversationalTutor (TALKBACK) manages its own recording - don't interfere.
+    if (mode === 'TALKBACK') return;
+    try {
+      setMicPermissionNotice(false);
+
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error("Microphone access is not supported in this browser or context (HTTPS may be required).");
+      }
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+      let mimeType = 'audio/webm';
+      if (MediaRecorder.isTypeSupported('audio/webm')) {
+        mimeType = 'audio/webm';
+      } else if (MediaRecorder.isTypeSupported('audio/mp4')) {
+        mimeType = 'audio/mp4';
+      }
+
+      const mediaRecorder = new MediaRecorder(stream, { mimeType });
+      mediaRecorderRef.current = mediaRecorder;
+      chunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) chunksRef.current.push(e.data);
+      };
+
+      mediaRecorder.onstop = async () => {
+        console.log('Voice question recorder stopped. Chunks:', chunksRef.current.length);
+        const blob = new Blob(chunksRef.current, { type: mimeType });
+        stream.getTracks().forEach(t => t.stop());
+
+        if (blob.size === 0) {
+          setIsRecording(false);
+          setError({ title: 'Voice Not Captured', message: 'We could not hear a clear question. Please try again.' });
+          return;
+        }
+
+        setLoading(true);
+        setLoadingText('Transcribing your question...');
+        setMode('SCAN');
+
+        try {
+          const transcriptFile = new File([blob], `voice_${Date.now()}.webm`, { type: mimeType });
+          const base64Data = await fileToGenerativePart(transcriptFile);
+          const transcript = (await transcribeAudioForChat(base64Data, mimeType, language === 'SW' ? 'sw' : 'en')).trim();
+
+          if (!transcript) {
+            setError({ title: 'Voice Not Clear', message: 'I could not transcribe that recording. Please try again closer to the microphone.' });
+            return;
+          }
+
+          setPromptText(transcript);
+          await handlePromptSubmit(transcript);
+        } catch (err: any) {
+          console.error('Voice transcription failed:', err);
+          setError({
+            title: 'Voice Question Failed',
+            message: err?.message || 'We could not transcribe your voice question. Please try again.'
+          });
+        } finally {
+          setLoading(false);
+          setIsRecording(false);
+        }
+      };
+
+      mediaRecorder.start(1000);
+      setIsRecording(true);
+      console.log('Voice question recording started...');
+    } catch (e: any) {
+      console.error('Failed to start voice question recording:', e);
+      setIsRecording(false);
+      const message = String(e?.message || '');
+      const isPermissionError =
+        e?.name === 'NotAllowedError' ||
+        e?.name === 'PermissionDeniedError' ||
+        message.toLowerCase().includes('denied') ||
+        message.toLowerCase().includes('permission');
+
+      if (isPermissionError) {
+        setError(null);
+        setMicPermissionNotice(true);
+        return;
+      }
+
+      setError({
+        title: 'Microphone Error',
+        message: 'Your browser could not start the microphone. Check that your device has a working mic, then try again.'
+      });
+    }
+  };
+
   const startRecording = async () => {
     // ConversationalTutor (TALKBACK) manages its own recording - don't interfere.
     if (mode === 'TALKBACK') return;
@@ -4586,7 +4677,7 @@ ${explanation.explanation}
           }}
           onScan={() => void startCamera()}
           onUpload={() => fileInputRef.current?.click()}
-          onVoice={() => handleSidebarTabChange('TALKBACK')}
+          onVoice={() => void startVoiceQuestion()}
           onSubject={(subject) => {
             if (subject === 'More Subjects') {
               handleSidebarTabChange('RESOURCES');
@@ -8977,6 +9068,35 @@ ${explanation.explanation}
       <div className="lg:ml-[260px] min-h-screen overflow-x-hidden min-w-0">
         {renderMode()}
       </div>
+
+      <AnimatePresence>
+        {isRecording && (
+          <motion.div
+            role="status"
+            initial={{ opacity: 0, y: 18 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 18 }}
+            className="fixed bottom-4 left-4 right-4 md:left-auto md:right-6 md:w-[420px] z-[131] rounded-2xl border border-red-200 bg-white shadow-2xl shadow-slate-900/15 dark:border-red-500/40 dark:bg-slate-900"
+          >
+            <div className="p-4 flex items-center gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-300">
+                <Mic className="h-5 w-5 animate-pulse" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-red-600 dark:text-red-300">Listening</p>
+                <p className="mt-1 text-sm font-semibold text-slate-700 dark:text-slate-200">Speak your question and Akili will transcribe it for the same learning flow as text.</p>
+              </div>
+              <button
+                type="button"
+                onClick={stopRecording}
+                className="rounded-xl bg-red-500 px-4 py-2 text-xs font-black uppercase tracking-wide text-white hover:bg-red-600"
+              >
+                Stop
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <AnimatePresence>
         {micPermissionNotice && (
