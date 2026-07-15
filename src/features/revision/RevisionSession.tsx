@@ -757,7 +757,7 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
                         <Timer className="w-5 h-5" /> {hasSectionTwo && !canStartSectionedPaper ? 'Select 5 Section II questions' : 'Start Exam'}  -  {finalMins} min
                     </motion.button>
                     <button onClick={() => setPhase('DASHBOARD')} className="w-full text-slate-500 text-sm font-bold hover:text-slate-300 transition-colors">
-                        â† Back to Paper
+                        ? Back to Paper
                     </button>
                 </div>
             </div>
@@ -1526,7 +1526,7 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
                                 <p className="text-6xl font-black mb-2 tracking-tighter">{percentage}%</p>
                                 <p className="text-2xl font-black opacity-90 mb-1">Grade {gradeLabel}</p>
                                 <p className="text-sm opacity-80 font-medium">
-                                    {marksObtained}/{totalMarks} marks â€¢ {correctCount}/{attempts.length} correct â€¢ {formatTime(timeSpent)}
+                                    {marksObtained}/{totalMarks} marks ? {correctCount}/{attempts.length} correct ? {formatTime(timeSpent)}
                                 </p>
                             </div>
                             <div className="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full blur-3xl -mr-20 -mt-20" />
@@ -1548,9 +1548,7 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
                                         <div key={topic} className="space-y-1">
                                             <div className="flex justify-between items-center">
                                                 <span className="text-xs font-black text-slate-700 dark:text-slate-300">{topic}</span>
-                                                <span className={`text-xs font-black ${pct >= 70 ? 'text-emerald-600 dark:text-emerald-400' : pct >= 50 ? 'text-amber-600 dark:text-amber-400' : 'text-red-500 dark:text-red-400'}`}>
-                                                    {pct}%
-                                                </span>
+                                                <span className={`text-xs font-black ${pct >= 70 ? 'text-emerald-600 dark:text-emerald-400' : pct >= 50 ? 'text-amber-600 dark:text-amber-400' : 'text-red-500 dark:text-red-400'}`}>{pct}%</span>
                                             </div>
                                             <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-2">
                                                 <div
@@ -1582,10 +1580,10 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
                                                     <p className="text-xs font-black text-slate-800 dark:text-slate-200">Section {section}</p>
                                                     <p className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">{stats.answered} answered ? {stats.available} available marks</p>
                                                 </div>
-                                                <span className="text-xs font-black ${pct >= 70 ? 'text-emerald-600 dark:text-emerald-400' : pct >= 50 ? 'text-amber-600 dark:text-amber-400' : 'text-red-500 dark:text-red-400'}">{pct}%</span>
+                                                <span className={`text-xs font-black ${pct >= 70 ? 'text-emerald-600 dark:text-emerald-400' : pct >= 50 ? 'text-amber-600 dark:text-amber-400' : 'text-red-500 dark:text-red-400'}`}>{pct}%</span>
                                             </div>
                                             <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-2">
-                                                <div className="h-2 rounded-full ${pct >= 70 ? 'bg-emerald-500' : pct >= 50 ? 'bg-amber-500' : 'bg-red-400'}" style={{ width: `${pct}%` }} />
+                                                <div className={`h-2 rounded-full ${pct >= 70 ? 'bg-emerald-500' : pct >= 50 ? 'bg-amber-500' : 'bg-red-400'}`} style={{ width: `${pct}%` }} />
                                             </div>
                                         </div>
                                     );
@@ -1666,7 +1664,7 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
                                 onClick={() => setPhase('DASHBOARD')}
                                 className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 py-4 rounded-2xl font-black text-sm hover:bg-slate-50 dark:hover:bg-slate-800 transition-all shadow-sm"
                             >
-                                Back to Dashboard
+                                Back to paper list
                             </button>
                         </div>
                     </div>
