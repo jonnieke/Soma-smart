@@ -800,6 +800,35 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
                 {/* Content */}
                 <div className="flex-1 overflow-y-auto">
                     <div className="max-w-2xl mx-auto p-4 space-y-4">
+                        <section className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 shadow-sm">
+                            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-500 mb-1">Past papers first</p>
+                            <h2 className="text-xl font-black text-slate-950 dark:text-white leading-tight">Open this paper and start learning right away.</h2>
+                            <p className="mt-2 text-sm text-slate-500 dark:text-slate-400 leading-6">Work through the paper like the exam, then use feedback to recover marks fast.</p>
+                            <div className="mt-4 flex flex-wrap gap-2 text-[11px] font-black uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
+                                <span className="rounded-full border border-slate-200 dark:border-slate-800 px-3 py-2">{analysis.subject}</span>
+                                <span className="rounded-full border border-slate-200 dark:border-slate-800 px-3 py-2">{analysis.grade}</span>
+                                <span className="rounded-full border border-slate-200 dark:border-slate-800 px-3 py-2">{analysis.questions.length} questions</span>
+                                <span className="rounded-full border border-slate-200 dark:border-slate-800 px-3 py-2">{totalMarks} marks</span>
+                            </div>
+                            {hasSectionTwo && (
+                                <p className="mt-4 text-sm font-semibold text-slate-600 dark:text-slate-300">Section I is compulsory � Section II: choose any 5 questions.</p>
+                            )}
+                            <div className="mt-5 flex flex-wrap gap-3">
+                                <button
+                                    onClick={() => setPhase('PRE_EXAM')}
+                                    className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-indigo-600 px-5 text-sm font-black text-white shadow-lg shadow-indigo-600/20 transition hover:bg-indigo-500"
+                                >
+                                    Start paper <ArrowRight className="w-4 h-4" />
+                                </button>
+                                <button
+                                    onClick={() => { void startQuiz(ExamPracticeMode.FULL_PAPER); }}
+                                    className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-5 text-sm font-bold text-slate-700 dark:text-slate-200 transition hover:bg-slate-50 dark:hover:bg-slate-900"
+                                >
+                                    Practice only
+                                </button>
+                            </div>
+                        </section>
+
 
                         {/* Quick Actions */}
                         <div className="grid grid-cols-2 gap-3">
