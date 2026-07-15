@@ -1,4 +1,5 @@
 import React, { useState, useRef, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 import {
     Upload, BookOpen, Brain, ArrowRight, ScanLine, X,
@@ -170,6 +171,7 @@ export const RevisionLanding: React.FC<Props> = ({ onStartSession, onNavigate, o
     const [loadingResources, setLoadingResources] = useState(false);
     const [overflowItem, setOverflowItem] = useState<any>(null);
     const [showLoginModal, setShowLoginModal] = useState(false);
+    const navigate = useNavigate();
     const [examGoal, setExamGoal] = useState(() => {
         try {
             const saved = localStorage.getItem('soma_exam_goal');
@@ -1147,7 +1149,7 @@ Use plain text. No markdown headings or symbols.`;
                 {showGuru && (
                     <ExamGuruPanel
                         onClose={() => setShowGuru(false)}
-                        onLogin={() => setShowLoginModal(true)}
+                        onLogin={() => navigate('/pricing')}
                         initialMode={guruMode}
                         initialPrompt={guruPrompt}
                         syllabusContext={guruSyllabusContext}

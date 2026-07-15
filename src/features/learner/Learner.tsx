@@ -703,7 +703,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
   const [recapData, setRecapData] = useState<any>(null); // Store LessonRecap
 
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<{ title: string; message: string; action?: 'voice_retry' | 'go_home' | 'menu' } | null>(null);
+  const [error, setError] = useState<{ title: string; message: string; action?: 'voice_retry' | 'paywall' | 'go_home' | 'menu' } | null>(null);
   const [micPermissionNotice, setMicPermissionNotice] = useState(false);
   const voiceSubmitTimerRef = useRef<number | null>(null);
   const [loadingText, setLoadingText] = useState("Akili is on it...");
@@ -928,42 +928,46 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
   const handleRateLimitError = (error: any) => {
     setLoading(false);
     setMode('MENU');
-    if (isRegistered) {
-      const message = error?.message || '';
-      let feature = 'ai_generation';
-      if (message.includes('grounded') || message.includes('library')) {
-        feature = 'grounded_library_help';
-      } else if (message.includes('listen and learn') || message.includes('listen_and_learn')) {
-        feature = 'listen_and_learn';
-      } else if (message.includes('voice') || message.includes('audio') || message.includes('listen')) {
-        feature = 'listen_and_learn_voice';
-      } else if (message.includes('exam') || message.includes('marking')) {
-        feature = 'exam_marking';
-      } else if (message.includes('quiz')) {
-        feature = 'quiz_generation';
-      }
-      const featureLabelMap: Record<string, string> = {
-        ai_generation: 'AI Tutor',
-        grounded_library_help: 'Library Help',
-        listen_and_learn: 'Listen & Learn',
-        listen_and_learn_voice: 'Voice Lessons',
-        exam_marking: 'Smart Marking',
-        quiz_generation: 'Quiz Generation',
-        exam_guru: 'Exam Guru',
-      };
-      try {
-        window.dispatchEvent(new CustomEvent('soma-show-upgrade-modal', {
-          detail: {
-            feature,
-            featureLabel: featureLabelMap[feature] || 'AI Tutor',
-            plan: subscriptionPlan || 'FREE',
-            limit: getPlanLimit(feature, subscriptionPlan || 'FREE')
-          }
-        }));
-      } catch (_) { /* ignore */ }
-    } else {
-      setShowLogin(true);
+    const message = error?.message || '';
+    let feature = 'ai_generation';
+    let action: PendingPaywallAction = { type: 'STUDY_CHAT', query: '' };
+    if (message.includes('grounded') || message.includes('library')) {
+      feature = 'grounded_library_help';
+      action = { type: 'TOPIC_CLICK', topic: currentDocument?.topic || 'Library help' };
+    } else if (message.includes('listen and learn') || message.includes('listen_and_learn')) {
+      feature = 'listen_and_learn';
+      action = { type: 'TALKBACK_MESSAGE' };
+    } else if (message.includes('voice') || message.includes('audio') || message.includes('listen')) {
+      feature = 'listen_and_learn_voice';
+      action = { type: 'VOICE_QUESTION' };
+    } else if (message.includes('exam') || message.includes('marking')) {
+      feature = 'exam_marking';
+      action = { type: 'REVISION_ENTRY' };
+    } else if (message.includes('quiz')) {
+      feature = 'quiz_generation';
+      action = { type: 'STUDY_QUIZ' };
     }
+    setPendingPaywallAction(action);
+    setShowLimitModal(true);
+    const featureLabelMap: Record<string, string> = {
+      ai_generation: 'AI Tutor',
+      grounded_library_help: 'Library Help',
+      listen_and_learn: 'Listen & Learn',
+      listen_and_learn_voice: 'Voice Lessons',
+      exam_marking: 'Smart Marking',
+      quiz_generation: 'Quiz Generation',
+      exam_guru: 'Exam Guru',
+    };
+    try {
+      window.dispatchEvent(new CustomEvent('soma-show-upgrade-modal', {
+        detail: {
+          feature,
+          featureLabel: featureLabelMap[feature] || 'AI Tutor',
+          plan: subscriptionPlan || 'FREE',
+          limit: getPlanLimit(feature, subscriptionPlan || 'FREE')
+        }
+      }));
+    } catch (_) { /* ignore */ }
   };
 
   const handleGlossaryTrigger = (termKey: string) => {
@@ -1559,6 +1563,8 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
       case 'TALKBACK_ENTRY':
       case 'TALKBACK_MESSAGE':
         return { completed: 'started Talk & Play practice', next: 'continue the conversation-based learning session' };
+      case 'VOICE_QUESTION':
+        return { completed: 'used voice question support', next: 'continue asking questions by voice and text' };
       default:
         return { completed: 'used your free learning credits', next: 'continue learning without interruption' };
     }
@@ -2617,7 +2623,8 @@ Stay anchored to this context unless I ask for something broader.`;
     | { type: 'PODCAST' }
     | { type: 'REVISION_ENTRY' }
     | { type: 'TALKBACK_ENTRY' }
-    | { type: 'TALKBACK_MESSAGE' };
+    | { type: 'TALKBACK_MESSAGE' }
+    | { type: 'VOICE_QUESTION' };
   const [pendingPaywallAction, setPendingPaywallAction] = useState<PendingPaywallAction | null>(null);
 
   const handleSidebarTabChange = (tab: SidebarTab, preserveTutorState = false) => {
@@ -2909,13 +2916,21 @@ Stay anchored to this context unless I ask for something broader.`;
         } catch (err: any) {
           console.error('Voice transcription failed:', err);
           const voiceLimitReached = err instanceof RateLimitError || err?.name === 'RateLimitError';
-          setError({
-            title: voiceLimitReached ? 'Voice Limit Reached' : 'Voice Question Failed',
-            message: voiceLimitReached
-              ? 'Your voice listening limit is used up for today. You can keep learning by typing, scanning a page, or uploading notes.'
-              : (err?.message || 'We could not transcribe your voice question. Please try again.'),
-            action: voiceLimitReached ? 'go_home' : 'voice_retry'
-          });
+          if (voiceLimitReached) {
+            setPendingPaywallAction({ type: 'VOICE_QUESTION' });
+            setShowLimitModal(true);
+            setError({
+              title: 'Keep learning with Akili',
+              message: 'Your voice learning limit is used up for today. Open the learner plans to continue with voice, marking, and exam practice from a small fee.',
+              action: 'paywall'
+            });
+          } else {
+            setError({
+              title: 'Voice Question Failed',
+              message: err?.message || 'We could not transcribe your voice question. Please try again.',
+              action: 'voice_retry'
+            });
+          }
         } finally {
           setLoading(false);
           setIsRecording(false);
@@ -4314,6 +4329,13 @@ ${explanation.explanation}
                 void retry();
               }}>
                 Try Voice Again
+              </Button>
+            ) : error.action === 'paywall' ? (
+              <Button variant="ghost" fullWidth onClick={() => {
+                setError(null);
+                setShowLimitModal(true);
+              }}>
+                View learner plans
               </Button>
             ) : error.action === 'go_home' ? (
               <Button variant="ghost" fullWidth onClick={() => { setError(null); setMode('MENU'); }}>
@@ -9473,7 +9495,7 @@ ${explanation.explanation}
                   <Sparkles className="w-8 h-8 text-indigo-600" />
                 </div>
 
-                <h3 className="text-xl font-black text-slate-800 mb-2">Continue Guided Learning</h3>
+                <h3 className="text-xl font-black text-slate-800 mb-2">Continue learning with Akili</h3>
                 <p className="text-slate-500 text-sm leading-relaxed mb-6">
                   {(() => {
                     const ctx = getPaywallActionContext(pendingPaywallAction);
@@ -9489,7 +9511,7 @@ ${explanation.explanation}
                   <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-500 mb-2">What parents and learners get</p>
                   <ul className="space-y-1.5 text-xs font-bold text-slate-700">
                     <li>Step-by-step Ask Akili help that asks the learner to try first</li>
-                    <li>High daily limits for quizzes, instant marking, and repair drills</li>
+                    <li>Continue voice, quizzes, marking, and repair drills with learner plans</li>
                     <li>Notes, past papers, and shareable parent progress proof</li>
                   </ul>
                 </div>
@@ -9508,7 +9530,7 @@ ${explanation.explanation}
                     }}
                     className="py-4 text-base shadow-xl shadow-indigo-200"
                   >
-                    View Learner Plans
+                    Continue Learning - View Plans
                   </Button>
                   <button
                     onClick={() => {
@@ -9523,13 +9545,13 @@ ${explanation.explanation}
                     }}
                     className="w-full rounded-2xl border-2 border-indigo-100 bg-indigo-50 px-4 py-3 text-left hover:border-indigo-200 hover:bg-indigo-100 transition-colors"
                   >
-                    <span className="block text-[10px] font-black uppercase tracking-[0.18em] text-indigo-500">Need just a top-up?</span>
+                    <span className="block text-[10px] font-black uppercase tracking-[0.18em] text-indigo-500">Need a small top-up?</span>
                     <span className="mt-1 flex items-center justify-between gap-3">
                       <span className="text-sm font-black text-slate-800">Buy 30 Learning Credits</span>
-                      <span className="text-sm font-black text-indigo-700">KES 20</span>
+                      <span className="text-sm font-black text-indigo-700">from KES 20</span>
                     </span>
                     <span className="mt-1 block text-[11px] font-bold text-slate-500">
-                      Current wallet: {formatLearningCredits(learningCredits)} credit{learningCredits === 1 ? '' : 's'}
+                      Current wallet: {formatLearningCredits(learningCredits)} credit{learningCredits === 1 ? '' : 's'} - small top-ups keep you learning
                     </span>
                   </button>
                   <button
@@ -9601,7 +9623,7 @@ ${explanation.explanation}
 
                 <h3 className="text-xl font-black text-slate-800 mb-2">Subscription Expired</h3>
                 <p className="text-slate-500 text-sm leading-relaxed mb-6">
-                  Your premium access has expired. If you still have learning credits, you can keep using Soma Smart with metered access. Otherwise renew now to continue enjoying <span className="text-indigo-600 font-bold">full plan access</span> to learning for as little as <span className="text-indigo-600 font-bold">20 KES</span>.
+                  Your premium access has expired. You can keep learning with credits or renew with a small plan to continue enjoying <span className="text-indigo-600 font-bold">full plan access</span> to learning from as little as <span className="text-indigo-600 font-bold">KES 20</span>.
                 </p>
 
                 <div className="mb-5 rounded-2xl border border-indigo-100 bg-indigo-50 px-4 py-3 text-left">

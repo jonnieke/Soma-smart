@@ -353,7 +353,7 @@ Do not move to a new topic, new example, or new question until the candidate ans
                                 <ShieldAlert className="w-7 h-7 text-indigo-400" />
                             </div>
                             <div>
-                                <h3 className="text-white font-black text-base">Daily daily limit Reached</h3>
+                                <h3 className="text-white font-black text-base">Learning limit reached</h3>
                                 <p className="text-slate-400 text-xs mt-2 leading-relaxed font-medium">
                                     You&apos;ve used your free smart quota for today. Sign in or create a free account to get more Exam Guru sessions every day.
                                 </p>
@@ -362,7 +362,7 @@ Do not move to a new topic, new example, or new question until the candidate ans
                                 onClick={() => { onClose(); onLogin?.(); }}
                                 className="w-full py-3.5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-black text-sm flex items-center justify-center gap-2 transition-colors shadow-lg"
                             >
-                                <LogIn className="w-4 h-4" /> Sign In to Continue
+                                <LogIn className="w-4 h-4" /> See Plans
                             </button>
                             <button
                                 onClick={() => setRateLimited(false)}
