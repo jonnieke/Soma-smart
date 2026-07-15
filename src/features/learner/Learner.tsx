@@ -4597,6 +4597,7 @@ ${explanation.explanation}
           }}
           onContinue={(topic) => void handleQuestTakeQuiz(topic)}
           onViewAll={() => handleSidebarTabChange('PROGRESS')}
+          onOpenRevision={() => setMode('REVISION')}
           onStartRecommendation={(topic) => void handleTopicClick(topic)}
           onStartWeakDrill={(topic) => void handleQuestTakeQuiz(topic)}
         />

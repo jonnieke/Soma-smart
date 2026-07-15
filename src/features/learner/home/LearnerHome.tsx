@@ -52,6 +52,7 @@ type LearnerHomeProps = {
   onSubject: (subject: string) => void;
   onContinue: (topic: string) => void;
   onViewAll: () => void;
+  onOpenRevision: () => void;
   onStartRecommendation: (topic: string) => void;
   onStartWeakDrill: (topic: string) => void;
 };
@@ -206,6 +207,7 @@ export const LearnerHome: React.FC<LearnerHomeProps> = ({
   onSubject,
   onContinue,
   onViewAll,
+  onOpenRevision,
   onStartRecommendation,
   onStartWeakDrill,
 }) => {
@@ -296,6 +298,57 @@ export const LearnerHome: React.FC<LearnerHomeProps> = ({
             <button type="button" onClick={onScan} className="flex min-h-10 items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 font-semibold text-white backdrop-blur transition hover:bg-white/20"><ScanLine className="h-4 w-4" /> Scan a page</button>
             <button type="button" onClick={onUpload} className="flex min-h-10 items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 font-semibold text-white backdrop-blur transition hover:bg-white/20"><Upload className="h-4 w-4" /> Upload notes</button>
             <button type="button" onClick={onVoice} className="flex min-h-10 items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 font-semibold text-white backdrop-blur transition hover:bg-white/20"><Mic className="h-4 w-4" /> Ask by voice</button>
+          </div>
+        </section>
+
+        <section className="mt-8">
+          <div className="overflow-hidden rounded-[26px] border border-[#ddd7f4] bg-white shadow-[0_10px_36px_rgba(70,54,140,0.06)]">
+            <div className="bg-gradient-to-r from-[#1c1648] via-[#2b1c78] to-[#4d2fe0] px-5 py-5 text-white sm:px-8 sm:py-6">
+              <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[11px] font-black uppercase tracking-[0.16em] text-violet-100">
+                <BookOpen className="h-4 w-4" />
+                Past papers first
+              </div>
+              <div className="mt-4 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+                <div className="max-w-2xl">
+                  <h2 className="text-[24px] font-black leading-tight sm:text-[30px]">Open a paper now and use it to learn faster.</h2>
+                  <p className="mt-2 text-sm leading-6 text-violet-100/85 sm:text-base">Choose a real exam paper, work through it under time, then use the feedback to recover marks quickly.</p>
+                </div>
+                <div className="flex flex-wrap gap-2 text-xs font-bold uppercase tracking-[0.14em] text-violet-50/90">
+                  <span className="rounded-full border border-white/15 bg-white/10 px-3 py-2">{grade || 'Grade 7'}</span>
+                  <span className="rounded-full border border-white/15 bg-white/10 px-3 py-2">KCPE � KPSEA � KCSE</span>
+                  <span className="rounded-full border border-white/15 bg-white/10 px-3 py-2">Timed practice</span>
+                </div>
+              </div>
+            </div>
+            <div className="grid gap-4 px-5 py-5 sm:grid-cols-[1.2fr_0.8fr] sm:px-8 sm:py-7">
+              <div className="rounded-[22px] border border-[#ebe6fb] bg-[#faf8ff] p-5">
+                <p className="text-[11px] font-black uppercase tracking-[0.16em] text-[#7a5bef]">Open a paper now</p>
+                <h3 className="mt-2 text-xl font-bold text-[#18133f]">Start with a real paper, not a blank dashboard.</h3>
+                <p className="mt-2 text-sm leading-6 text-[#5f6684]">We�ll take you to the revision hub where your past papers, timing and feedback live together.</p>
+                <div className="mt-5 flex flex-wrap gap-3">
+                  <button type="button" onClick={onOpenRevision} className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[#6938ef] px-5 text-sm font-black text-white shadow-md shadow-violet-200 transition hover:bg-[#5c2fda]">
+                    Open a paper now <ArrowRight className="h-4 w-4" />
+                  </button>
+                  <button type="button" onClick={onViewAll} className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-[#d8d0f1] bg-white px-5 text-sm font-bold text-[#6938ef] transition hover:bg-[#f5f1ff]">
+                    See revision hub
+                  </button>
+                </div>
+              </div>
+              <div className="grid gap-3">
+                <div className="rounded-[18px] border border-[#e7e3f6] bg-white p-4">
+                  <p className="text-[11px] font-black uppercase tracking-[0.14em] text-[#7a5bef]">Best next move</p>
+                  <p className="mt-2 text-sm font-semibold text-[#1a163f]">Open your paper, attempt the questions, then review weak topics.</p>
+                </div>
+                <div className="rounded-[18px] border border-[#e7e3f6] bg-white p-4">
+                  <p className="text-[11px] font-black uppercase tracking-[0.14em] text-[#7a5bef]">What you get</p>
+                  <ul className="mt-2 space-y-2 text-sm text-[#4f5673]">
+                    <li>� Past papers by subject and grade</li>
+                    <li>� Timed exam mode with feedback</li>
+                    <li>� Weak-topic revision after you finish</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
           </div>
         </section>
 
