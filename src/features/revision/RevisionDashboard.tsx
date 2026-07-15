@@ -27,10 +27,8 @@ export const RevisionDashboard: React.FC = () => {
     const [showRevisionPaywall, setShowRevisionPaywall] = useState(false);
 
     useEffect(() => {
-        if (!isRegistered) {
-            navigate('/revision');
-        }
-    }, [isRegistered, navigate]);
+        // Keep the session on the dashboard so candidates can open ready papers directly.
+    }, []);
 
     useEffect(() => {
         if (activeView.type !== 'landing') return;
@@ -196,3 +194,4 @@ export const RevisionDashboard: React.FC = () => {
         />
     );
 };
+
