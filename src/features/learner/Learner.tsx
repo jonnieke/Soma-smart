@@ -4586,7 +4586,7 @@ ${explanation.explanation}
           }}
           onScan={() => void startCamera()}
           onUpload={() => fileInputRef.current?.click()}
-          onVoice={() => void startRecording()}
+          onVoice={() => handleSidebarTabChange('TALKBACK')}
           onSubject={(subject) => {
             if (subject === 'More Subjects') {
               handleSidebarTabChange('RESOURCES');
