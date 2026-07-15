@@ -8584,6 +8584,9 @@ ${explanation.explanation}
                           <div className={`w-full aspect-[3/4] bg-gradient-to-br ${getSubjectGradient(item.subject)} rounded-2xl shadow-lg relative p-4 flex flex-col justify-between overflow-hidden border border-white/10 group-hover:shadow-2xl transition-all ring-1 ring-purple-300/30`}>
                             {/* Book spine simulation */}
                             <div className="absolute top-0 bottom-0 left-0 w-3 bg-black/10 dark:bg-white/5 border-r border-black/5" />
+                            <div className="absolute right-3 top-3 rounded-full bg-white/15 px-2.5 py-1 text-[8px] font-black uppercase tracking-[0.18em] text-white shadow-sm backdrop-blur">
+                              Curriculum
+                            </div>
                             
                             <div className="flex items-center justify-between mb-2">
                               <span className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 bg-black/20 rounded-full">{item.grade}</span>
@@ -8596,7 +8599,7 @@ ${explanation.explanation}
                             </div>
 
                             <div className="flex items-end justify-between border-t border-white/10 pt-2 text-[9px] font-bold opacity-80">
-                              <span>Curriculum guide</span>
+                              <span className="rounded-full bg-white/10 px-2 py-0.5 text-white/90">Curriculum guide</span>
                             </div>
                           </div>
                           <span className="mt-2 text-xs font-black text-slate-800 dark:text-slate-200 line-clamp-2 text-center group-hover:text-indigo-600 transition-colors">{item.title}</span>
@@ -8625,6 +8628,9 @@ ${explanation.explanation}
                           <div className={`w-full aspect-[3/4] bg-gradient-to-br ${getSubjectGradient(item.subject)} rounded-2xl shadow-lg relative p-4 flex flex-col justify-between overflow-hidden border border-white/10 group-hover:shadow-2xl transition-all ring-1 ring-amber-300/30`}>
                             {/* Book spine simulation */}
                             <div className="absolute top-0 bottom-0 left-0 w-3 bg-black/10 dark:bg-white/5 border-r border-black/5" />
+                            <div className="absolute right-3 top-3 rounded-full bg-white/15 px-2.5 py-1 text-[8px] font-black uppercase tracking-[0.18em] text-white shadow-sm backdrop-blur">
+                              Paper
+                            </div>
                             
                             <div className="flex items-center justify-between mb-2">
                               <span className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 bg-black/20 rounded-full">{item.grade}</span>
@@ -8637,7 +8643,7 @@ ${explanation.explanation}
                             </div>
 
                             <div className="flex items-end justify-between border-t border-white/10 pt-2 text-[9px] font-bold opacity-80">
-                              <span>Somo AI Verified</span>
+                              <span className="rounded-full bg-white/10 px-2 py-0.5 text-white/90">Timed paper</span>
                             </div>
                           </div>
                           <span className="mt-2 text-xs font-black text-slate-800 dark:text-slate-200 line-clamp-2 text-center group-hover:text-indigo-600 transition-colors">{item.title}</span>
@@ -8666,6 +8672,9 @@ ${explanation.explanation}
                           <div className={`w-full aspect-[3/4] bg-gradient-to-br ${getSubjectGradient(item.subject)} rounded-2xl shadow-lg relative p-4 flex flex-col justify-between overflow-hidden border border-white/10 group-hover:shadow-2xl transition-all ring-1 ring-blue-300/30`}>
                             {/* Book spine simulation */}
                             <div className="absolute top-0 bottom-0 left-0 w-3 bg-black/10 dark:bg-white/5 border-r border-black/5" />
+                            <div className="absolute right-3 top-3 rounded-full bg-white/15 px-2.5 py-1 text-[8px] font-black uppercase tracking-[0.18em] text-white shadow-sm backdrop-blur">
+                              Notes
+                            </div>
                             
                             <div className="flex items-center justify-between mb-2">
                               <span className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 bg-black/20 rounded-full">{item.grade}</span>
@@ -8678,7 +8687,7 @@ ${explanation.explanation}
                             </div>
 
                             <div className="flex items-end justify-between border-t border-white/10 pt-2 text-[9px] font-bold opacity-80">
-                              <span className="truncate max-w-[100px]">{item.isInternal ? 'Somo Smart' : item.teacherName || 'Verified Teacher'}</span>
+                              <span className="rounded-full bg-white/10 px-2 py-0.5 text-white/90">Quick revision</span>
                             </div>
                           </div>
                           <span className="mt-2 text-xs font-black text-slate-800 dark:text-slate-200 line-clamp-2 text-center group-hover:text-indigo-600 transition-colors">{item.title}</span>
