@@ -8253,6 +8253,30 @@ ${explanation.explanation}
 
     if (mode === 'LIBRARY') {
       const libraryGradeScope = selectedGrade !== 'ALL' ? selectedGrade : (studentProfile?.grade || enrolledGrade);
+      const learnerGradeKey = normalizeGrade(libraryGradeScope || '');
+      const parseGradeNumber = (grade: string) => {
+        const g = String(grade || '').toLowerCase();
+        const match = g.match(/\b(?:grade|form)\s*(\d{1,2})\b/) || g.match(/\b(\d{1,2})\b/);
+        return match ? Number(match[1]) : null;
+      };
+      const compareGradeProximity = (a: string, b: string) => {
+        const aGrade = normalizeGrade(a || '');
+        const bGrade = normalizeGrade(b || '');
+        if (learnerGradeKey) {
+          if (aGrade === learnerGradeKey && bGrade !== learnerGradeKey) return -1;
+          if (bGrade === learnerGradeKey && aGrade !== learnerGradeKey) return 1;
+        }
+        const aClusterMatch = !libraryGradeScope ? false : getAcademicCluster(a || '') === getAcademicCluster(libraryGradeScope);
+        const bClusterMatch = !libraryGradeScope ? false : getAcademicCluster(b || '') === getAcademicCluster(libraryGradeScope);
+        if (aClusterMatch !== bClusterMatch) return aClusterMatch ? -1 : 1;
+        const learnerNum = parseGradeNumber(libraryGradeScope || '');
+        const aNum = parseGradeNumber(a || '');
+        const bNum = parseGradeNumber(b || '');
+        const aDistance = learnerNum != null && aNum != null ? Math.abs(aNum - learnerNum) : 99;
+        const bDistance = learnerNum != null && bNum != null ? Math.abs(bNum - learnerNum) : 99;
+        if (aDistance !== bDistance) return aDistance - bDistance;
+        return String(a || '').localeCompare(String(b || ''));
+      };
       const purchasedResources = unifiedMaterials.filter(m => getMaterialAccessStatus(m) === 'OWNED');
       const freeStarterResources = unifiedMaterials.filter(m => getMaterialAccessStatus(m) === 'FREE');
       const preferredStarterResources = freeStarterResources.filter(m => {
@@ -8260,7 +8284,9 @@ ${explanation.explanation}
         return normalizeGrade(m.grade || '') === normalizeGrade(libraryGradeScope);
       });
       const featuredPaperResources = (preferredStarterResources.length > 0 ? preferredStarterResources : freeStarterResources)
-        .filter(m => normalizeMaterialCategory(m.category) === 'PAST_PAPER');
+        .filter(m => normalizeMaterialCategory(m.category) === 'PAST_PAPER')
+        .sort((a, b) => compareGradeProximity(a.grade || '', b.grade || ''))
+        .slice(0, 3);
       const proVaultResources = unifiedMaterials.filter(m => getMaterialAccessStatus(m) === 'PRO_INCLUDED' || getMaterialAccessStatus(m) === 'PRO_LOCKED');
       const unlockedResources = unifiedMaterials.filter(m => {
         const status = getMaterialAccessStatus(m);
@@ -8280,12 +8306,14 @@ ${explanation.explanation}
       const subjectsList = ['ALL', ...Array.from(new Set(activeList.map(m => m.subject).filter(Boolean))).sort()];
 
 
-      const gradeScopedLibraryMaterials = activeList.filter(m => {
-        const materialLevel = getGradeLevel(m.grade || '');
-        const matchesEducationLevel = materialLevel === educationLevel;
-        const matchesStudentRange = !studentProfile?.grade || isGradeInStudentRange(m.grade || '', studentProfile.grade);
-        return matchesEducationLevel && matchesStudentRange;
-      });
+      const gradeScopedLibraryMaterials = activeList
+        .filter(m => {
+          const materialLevel = getGradeLevel(m.grade || '');
+          const matchesEducationLevel = materialLevel === educationLevel;
+          const matchesStudentRange = !studentProfile?.grade || isGradeInStudentRange(m.grade || '', studentProfile.grade);
+          return matchesEducationLevel && matchesStudentRange;
+        })
+        .sort((a, b) => compareGradeProximity(a.grade || '', b.grade || ''));
 
       const exactGradeLibraryMaterials = gradeScopedLibraryMaterials.filter(m => {
         const matchesSubject = activeLibrarySubject === 'ALL' || m.subject === activeLibrarySubject;
