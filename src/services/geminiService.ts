@@ -3586,7 +3586,10 @@ export const transcribeAudioForChat = async (
     return text || '';
   } catch (error) {
     console.error("Transcription error:", error);
-    return '';
+    if (error instanceof RateLimitError || error instanceof SystemQuotaError) {
+      throw error;
+    }
+    throw error;
   }
 };
 
