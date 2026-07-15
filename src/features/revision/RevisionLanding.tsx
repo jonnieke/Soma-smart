@@ -779,9 +779,10 @@ Use plain text. No markdown headings or symbols.`;
                         <div className="grid sm:grid-cols-3 gap-2 mt-4">
                             <button
                                 onClick={() => openGuru('practice')}
-                                className="rounded-2xl border border-white/10 bg-white/10 p-3 text-left transition-colors hover:bg-white/15 hover:-translate-y-0.5"
+                                className="rounded-2xl border border-white/10 bg-gradient-to-br from-purple-500/15 to-purple-500/5 p-3 text-left transition-colors hover:bg-white/15 hover:-translate-y-0.5"
                             >
-                                <span className="text-[10px] font-black uppercase tracking-wider text-purple-300">Syllabus lane</span>
+                                <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-purple-400/15 text-purple-200"><BookOpen className="w-5 h-5" /></span>
+                                <span className="mt-2 block text-[10px] font-black uppercase tracking-wider text-purple-300">Syllabus lane</span>
                                 <p className="text-sm font-black mt-1">Know what to revise</p>
                                 <p className="text-[11px] text-slate-300 mt-1">Open the syllabus and focus on the topics your paper will test.</p>
                             </button>
@@ -790,17 +791,19 @@ Use plain text. No markdown headings or symbols.`;
                                     if (missionResource) onStartSession(missionResource, RevisionMode.EXAM);
                                     else openGuru('predict');
                                 }}
-                                className="rounded-2xl border border-white/10 bg-white/10 p-3 text-left transition-colors hover:bg-white/15 hover:-translate-y-0.5"
+                                className="rounded-2xl border border-white/10 bg-gradient-to-br from-amber-500/15 to-amber-500/5 p-3 text-left transition-colors hover:bg-white/15 hover:-translate-y-0.5"
                             >
-                                <span className="text-[10px] font-black uppercase tracking-wider text-amber-300">Past papers lane</span>
+                                <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-amber-400/15 text-amber-200"><FileText className="w-5 h-5" /></span>
+                                <span className="mt-2 block text-[10px] font-black uppercase tracking-wider text-amber-300">Past papers lane</span>
                                 <p className="text-sm font-black mt-1">Open a real paper</p>
                                 <p className="text-[11px] text-slate-300 mt-1">Work through a paper under time and recover marks quickly.</p>
                             </button>
                             <button
                                 onClick={() => openGuru('mark')}
-                                className="rounded-2xl border border-white/10 bg-white/10 p-3 text-left transition-colors hover:bg-white/15 hover:-translate-y-0.5"
+                                className="rounded-2xl border border-white/10 bg-gradient-to-br from-sky-500/15 to-sky-500/5 p-3 text-left transition-colors hover:bg-white/15 hover:-translate-y-0.5"
                             >
-                                <span className="text-[10px] font-black uppercase tracking-wider text-sky-300">Notes lane</span>
+                                <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-sky-400/15 text-sky-200"><BookOpen className="w-5 h-5" /></span>
+                                <span className="mt-2 block text-[10px] font-black uppercase tracking-wider text-sky-300">Notes lane</span>
                                 <p className="text-sm font-black mt-1">Revise the lesson notes</p>
                                 <p className="text-[11px] text-slate-300 mt-1">Read the summary, then practise the exact idea from the lesson.</p>
                             </button>

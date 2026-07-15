@@ -3,6 +3,8 @@ import {
   ArrowRight,
   BookOpen,
   Calculator,
+  FileText,
+  GraduationCap,
   Check,
   ChevronDown,
   ChevronRight,
