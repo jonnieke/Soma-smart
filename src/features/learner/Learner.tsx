@@ -703,7 +703,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
   const [recapData, setRecapData] = useState<any>(null); // Store LessonRecap
 
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<{ title: string, message: string } | null>(null);
+  const [error, setError] = useState<{ title: string; message: string; action?: 'voice_retry' | 'go_home' | 'menu' } | null>(null);
   const [micPermissionNotice, setMicPermissionNotice] = useState(false);
   const voiceSubmitTimerRef = useRef<number | null>(null);
   const [loadingText, setLoadingText] = useState("Akili is on it...");
@@ -2878,7 +2878,7 @@ Stay anchored to this context unless I ask for something broader.`;
 
         if (blob.size === 0) {
           setIsRecording(false);
-          setError({ title: 'Voice Not Captured', message: 'We could not hear a clear question. Please try again.' });
+          setError({ title: 'Voice Not Captured', message: 'We could not hear a clear question. Please try again.', action: 'voice_retry' });
           return;
         }
 
@@ -2892,7 +2892,7 @@ Stay anchored to this context unless I ask for something broader.`;
           const transcript = (await transcribeAudioForChat(base64Data, mimeType, language === 'SW' ? 'sw' : 'en')).trim();
 
           if (!transcript) {
-            setError({ title: 'Voice Not Clear', message: 'I could not transcribe that recording. Please try again closer to the microphone.' });
+            setError({ title: 'Voice Not Clear', message: 'I could not transcribe that recording. Please try again closer to the microphone.', action: 'voice_retry' });
             return;
           }
 
@@ -2908,9 +2908,13 @@ Stay anchored to this context unless I ask for something broader.`;
           }, 1200);
         } catch (err: any) {
           console.error('Voice transcription failed:', err);
+          const voiceLimitReached = err instanceof RateLimitError || err?.name === 'RateLimitError';
           setError({
-            title: 'Voice Question Failed',
-            message: err?.message || 'We could not transcribe your voice question. Please try again.'
+            title: voiceLimitReached ? 'Voice Limit Reached' : 'Voice Question Failed',
+            message: voiceLimitReached
+              ? 'Your voice listening limit is used up for today. You can keep learning by typing, scanning a page, or uploading notes.'
+              : (err?.message || 'We could not transcribe your voice question. Please try again.'),
+            action: voiceLimitReached ? 'go_home' : 'voice_retry'
           });
         } finally {
           setLoading(false);
@@ -4303,9 +4307,23 @@ ${explanation.explanation}
             <Button fullWidth onClick={() => { setError(null); setMode('MENU'); }}>
               Go Home
             </Button>
-            <Button variant="ghost" fullWidth onClick={() => setError(null)}>
-              Try Again
-            </Button>
+            {error.action === 'voice_retry' ? (
+              <Button variant="ghost" fullWidth onClick={() => {
+                const retry = startVoiceQuestion;
+                setError(null);
+                void retry();
+              }}>
+                Try Voice Again
+              </Button>
+            ) : error.action === 'go_home' ? (
+              <Button variant="ghost" fullWidth onClick={() => { setError(null); setMode('MENU'); }}>
+                Continue typing instead
+              </Button>
+            ) : (
+              <Button variant="ghost" fullWidth onClick={() => setError(null)}>
+                Try Again
+              </Button>
+            )}
           </div>
         </div>
       );
