@@ -511,7 +511,7 @@ Use plain text. No markdown headings or symbols.`;
                     <div className="absolute -right-12 -top-12 w-36 h-36 bg-indigo-500/20 rounded-full blur-3xl" />
                     <div className="relative">
                         <div className="flex items-start justify-between gap-3">
-                            <div>
+                            <div className="max-w-2xl">
                                 <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-300 mb-1">Past papers first</p>
                                 <h2 className="text-lg sm:text-xl font-black leading-tight">Open a paper now</h2>
                                 <p className="text-xs text-slate-300 mt-1 font-medium">Choose a real paper, work through it under time, and use the feedback to recover marks fast.</p>
@@ -520,6 +520,24 @@ Use plain text. No markdown headings or symbols.`;
                                 <FileText className="w-6 h-6 text-emerald-300" />
                             </div>
                         </div>
+
+                        {missionResource && (
+                            <div className="mt-4 rounded-2xl border border-white/10 bg-white/5 p-4 sm:p-5">
+                                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-300">Start here</p>
+                                <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                                    <div className="min-w-0">
+                                        <p className="text-sm font-bold text-white line-clamp-2">{missionResource.title}</p>
+                                        <p className="mt-1 text-[11px] text-slate-300">{studentProfile?.grade || examGoal.targetGrade || 'Your grade'} - {missionResource.subject || 'Past paper'}</p>
+                                    </div>
+                                    <button
+                                        onClick={() => onStartSession(missionResource, RevisionMode.EXAM)}
+                                        className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl bg-white px-4 py-3 text-sm font-black text-slate-950 transition hover:bg-emerald-50"
+                                    >
+                                        Open this paper <ArrowRight className="w-4 h-4" />
+                                    </button>
+                                </div>
+                            </div>
+                        )}
 
                         {readyPaperItems.length > 0 ? (
                             <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4 mt-4">
