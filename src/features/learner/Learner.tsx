@@ -1470,6 +1470,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
   const [materialCategory, setMaterialCategory] = useState<'ALL' | 'NOTES' | 'PAST_PAPER' | 'SYLLABUS'>('ALL');
   const [libraryView, setLibraryView] = useState<'UNLOCKED' | 'PURCHASED' | 'PRO_VAULT'>('UNLOCKED');
   const [libraryItemPreview, setLibraryItemPreview] = useState<any>(null);
+  const [activeLibraryCategory, setActiveLibraryCategory] = useState<'ALL' | 'SYLLABUS' | 'PAST_PAPER' | 'NOTES'>('ALL');
   const [activeLibrarySubject, setActiveLibrarySubject] = useState<string>('ALL');
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const learnerCtaVariant = React.useMemo(() => getLearnerCtaVariant(), []);
@@ -7974,7 +7975,7 @@ ${explanation.explanation}
                     key={tab.id}
                     role="tab"
                     aria-selected={mode === tab.id}
-                    aria-label={`Switch to ${tab.label} section`}
+                    aria-label={`Switch to {tab.label} section`}
                     onClick={() => setMode(tab.id as any)}
                     className={`flex items-center gap-2 px-6 py-3 rounded-2xl font-black text-sm whitespace-nowrap transition-all active:scale-95 ${mode === tab.id
                       ? `bg-${tab.color}-600 text-white shadow-lg shadow-${tab.color}-200`
@@ -8332,11 +8333,14 @@ ${explanation.explanation}
         ? exactGradeLibraryMaterials
         : gradeScopedLibraryMaterials.filter(m => activeLibrarySubject === 'ALL' || m.subject === activeLibrarySubject);
       const showingGradeFallback = exactGradeLibraryMaterials.length === 0 && gradeScopedLibraryMaterials.length > 0;
+      const categoryLibraryMaterials = activeLibraryCategory === 'ALL'
+        ? visibleLibraryMaterials
+        : visibleLibraryMaterials.filter(m => normalizeMaterialCategory(m.category) === activeLibraryCategory);
 
       // Group filtered books by category
-      const syllabuses = visibleLibraryMaterials.filter(m => normalizeMaterialCategory(m.category) === 'SYLLABUS');
-      const pastPapers = visibleLibraryMaterials.filter(m => normalizeMaterialCategory(m.category) === 'PAST_PAPER');
-      const studyNotes = visibleLibraryMaterials.filter(m => normalizeMaterialCategory(m.category) === 'NOTES');
+      const syllabuses = categoryLibraryMaterials.filter(m => normalizeMaterialCategory(m.category) === 'SYLLABUS');
+      const pastPapers = categoryLibraryMaterials.filter(m => normalizeMaterialCategory(m.category) === 'PAST_PAPER');
+      const studyNotes = categoryLibraryMaterials.filter(m => normalizeMaterialCategory(m.category) === 'NOTES');
 
       // Helper to generate a gradient background class based on the subject name
       const getSubjectGradient = (subj: string) => {
@@ -8458,6 +8462,28 @@ ${explanation.explanation}
               </button>
             </div>
 
+            {/* Category Tabs */}
+            <div className="grid grid-cols-4 gap-2 mb-6 bg-slate-100 dark:bg-slate-900 p-1 rounded-2xl">
+              {([
+                { key: 'ALL', label: 'All', count: visibleLibraryMaterials.length },
+                { key: 'SYLLABUS', label: 'Syllabus', count: visibleLibraryMaterials.filter(m => normalizeMaterialCategory(m.category) === 'SYLLABUS').length },
+                { key: 'PAST_PAPER', label: 'Past Papers', count: visibleLibraryMaterials.filter(m => normalizeMaterialCategory(m.category) === 'PAST_PAPER').length },
+                { key: 'NOTES', label: 'Notes', count: visibleLibraryMaterials.filter(m => normalizeMaterialCategory(m.category) === 'NOTES').length },
+              ] as const).map(tab => (
+                <button
+                  key={tab.key}
+                  onClick={() => setActiveLibraryCategory(tab.key)}
+                  className={`rounded-xl px-3 py-2 text-center transition-all font-black text-[10px] sm:text-xs leading-tight ${activeLibraryCategory === tab.key
+                    ? 'bg-white dark:bg-slate-800 text-indigo-600 shadow-sm border border-slate-200/50 dark:border-slate-700/50'
+                    : 'text-slate-500 hover:text-slate-750 dark:hover:text-slate-300'
+                  }`}
+                >
+                  <span className="block uppercase tracking-[0.14em]">{tab.label}</span>
+                  <span className="mt-1 block text-[9px] opacity-70">{tab.count}</span>
+                </button>
+              ))}
+            </div>
+
             {/* Subject Filters Row */}
             {subjectsList.length > 2 && (
               <div className="flex gap-2 overflow-x-auto pb-4 mb-6 scrollbar-none no-scrollbar shrink-0">
@@ -8488,17 +8514,23 @@ ${explanation.explanation}
                   Unlock Pro Vault
                 </Button>
               </div>
-            ) : visibleLibraryMaterials.length === 0 ? (
+            ) : categoryLibraryMaterials.length === 0 ? (
               /* Empty Library State */
               <div className="py-16 md:py-28 text-center bg-white dark:bg-slate-900 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-[3rem]">
                 <div className="w-24 h-24 bg-slate-50 dark:bg-slate-800 rounded-[2.5rem] flex items-center justify-center mx-auto mb-6 border-2 border-slate-300 dark:border-slate-700">
                   <Library className="w-10 h-10 text-slate-300 dark:text-slate-600" />
                 </div>
-                <h4 className="text-xl font-black text-slate-800 dark:text-white mb-2 tracking-tight">Your library is waiting for papers</h4>
+                <h4 className="text-xl font-black text-slate-800 dark:text-white mb-2 tracking-tight">Nothing in this section yet</h4>
                 <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.2em] mb-8 max-w-sm mx-auto leading-relaxed">
-                  {libraryView === 'PURCHASED'
-                    ? 'No purchased papers match this filter yet.'
-                    : 'We are matching the closest papers for your grade and subject. Open one now if it looks close enough.'}
+                  {activeLibraryCategory === 'SYLLABUS'
+                    ? 'Syllabus items will appear here once they are ready.'
+                    : activeLibraryCategory === 'PAST_PAPER'
+                      ? 'Past papers for your grade will appear here once they are ready.'
+                      : activeLibraryCategory === 'NOTES'
+                        ? 'Notes for your grade will appear here once they are ready.'
+                        : libraryView === 'PURCHASED'
+                          ? 'No purchased materials match this filter yet.'
+                          : 'We are matching the closest materials for your grade and subject. Open one now if it looks close enough.'}
                 </p>
                 {starterPaperResources.length > 0 ? (
                   <div className="mx-auto mb-10 grid max-w-3xl gap-3 text-left sm:grid-cols-3">
