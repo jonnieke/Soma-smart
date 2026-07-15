@@ -1,6 +1,7 @@
 import React, { Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
+import { BookOpen, GraduationCap, Home, Shield, Users } from 'lucide-react';
 import { ConnectivityBanner } from './components/ConnectivityBanner';
 import { SessionConflictModal } from './components/SessionConflictModal';
 import { SubscriptionExpiredModal } from './components/SubscriptionExpiredModal';
@@ -53,6 +54,58 @@ const PageLoader = () => (
         </div>
     </div>
 );
+
+const GlobalNavigation: React.FC = () => {
+    const navigate = useNavigate();
+    const { pathname } = useLocation();
+
+    const items = [
+        { label: 'Home', icon: Home, to: '/', active: pathname === '/' },
+        { label: 'Learner', icon: GraduationCap, to: '/learner', active: pathname.startsWith('/learner') },
+        { label: 'Revision', icon: BookOpen, to: '/revision', active: pathname.startsWith('/revision') },
+        { label: 'Teacher', icon: Users, to: '/teacher', active: pathname.startsWith('/teacher') },
+        { label: 'Admin', icon: Shield, to: '/admin', active: pathname.startsWith('/admin') },
+    ];
+
+    if (pathname === '/') return null;
+
+    return (
+        <div className="sticky top-0 z-[90] border-b border-slate-200/80 bg-white/95 backdrop-blur dark:border-slate-800/80 dark:bg-slate-950/95">
+            <div className="mx-auto flex max-w-[1280px] flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:px-8">
+                <button
+                    type="button"
+                    onClick={() => navigate('/')}
+                    className="inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-indigo-50 px-4 py-2 text-sm font-black text-indigo-700 transition hover:bg-indigo-100 dark:border-indigo-900/50 dark:bg-indigo-950/30 dark:text-indigo-200 dark:hover:bg-indigo-950/50"
+                    aria-label="Go to homepage"
+                >
+                    <Home className="h-4 w-4" />
+                    Back to homepage
+                </button>
+
+                <div className="flex flex-wrap items-center gap-2">
+                    {items.map((item) => {
+                        const Icon = item.icon;
+                        return (
+                            <button
+                                key={item.to}
+                                type="button"
+                                onClick={() => navigate(item.to)}
+                                className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition ${
+                                    item.active
+                                        ? 'bg-slate-900 text-white shadow-sm dark:bg-white dark:text-slate-900'
+                                        : 'border border-slate-200 bg-white text-slate-600 hover:border-indigo-200 hover:text-indigo-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300 dark:hover:border-indigo-900 dark:hover:text-indigo-200'
+                                }`}
+                            >
+                                <Icon className="h-4 w-4" />
+                                {item.label}
+                            </button>
+                        );
+                    })}
+                </div>
+            </div>
+        </div>
+    );
+};
 
 const App: React.FC = () => {
     const navigate = useNavigate();
@@ -146,6 +199,7 @@ const App: React.FC = () => {
             <ErrorBoundary>
                 <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:z-[100] focus:top-2 focus:left-2 focus:bg-indigo-600 focus:text-white focus:px-4 focus:py-2 focus:rounded-lg focus:font-bold">Skip to content</a>
                 <ConnectivityBanner />
+                <GlobalNavigation />
                 {!hideGlobalAssistant && (
                     <Suspense fallback={null}>
                         <AskSomo />
