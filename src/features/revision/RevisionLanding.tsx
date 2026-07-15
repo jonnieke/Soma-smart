@@ -521,6 +521,8 @@ Use plain text. No markdown headings or symbols.`;
                             </div>
                         </div>
 
+                        <p className="mt-4 text-[11px] font-black uppercase tracking-[0.18em] text-slate-400">Choose a lane: syllabus, past papers, or notes.</p>
+
                         {missionResource && (
                             <div className="mt-4 rounded-2xl border border-white/10 bg-white/5 p-4 sm:p-5">
                                 <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-300">Start here</p>
@@ -774,28 +776,33 @@ Use plain text. No markdown headings or symbols.`;
                                 {daysToExam !== null ? <CalendarDays className="w-6 h-6 text-emerald-300" /> : <TimerReset className="w-6 h-6 text-emerald-300" />}
                             </div>
                         </div>
-
                         <div className="grid sm:grid-cols-3 gap-2 mt-4">
-                            <button onClick={() => openGuru('practice')} className="bg-white/10 hover:bg-white/15 border border-white/10 rounded-2xl p-3 text-left transition-colors">
-                                <span className="text-[10px] font-black text-emerald-300 uppercase tracking-wider">Step 1</span>
-                                <p className="text-sm font-black mt-1">Try 3 questions</p>
-                                <p className="text-[11px] text-slate-400 mt-1">Do a short exam-style drill before you see the marking.</p>
-                            </button>
-                            <button onClick={() => openGuru('mark')} className="bg-white/10 hover:bg-white/15 border border-white/10 rounded-2xl p-3 text-left transition-colors">
-                                <span className="text-[10px] font-black text-emerald-300 uppercase tracking-wider">Step 2</span>
-                                <p className="text-sm font-black mt-1">Mark your answer</p>
-                                <p className="text-[11px] text-slate-400 mt-1">See where marks were won or lost.</p>
+                            <button
+                                onClick={() => openGuru('practice')}
+                                className="rounded-2xl border border-white/10 bg-white/10 p-3 text-left transition-colors hover:bg-white/15 hover:-translate-y-0.5"
+                            >
+                                <span className="text-[10px] font-black uppercase tracking-wider text-purple-300">Syllabus lane</span>
+                                <p className="text-sm font-black mt-1">Know what to revise</p>
+                                <p className="text-[11px] text-slate-300 mt-1">Open the syllabus and focus on the topics your paper will test.</p>
                             </button>
                             <button
                                 onClick={() => {
                                     if (missionResource) onStartSession(missionResource, RevisionMode.EXAM);
                                     else openGuru('predict');
                                 }}
-                                className="bg-white/10 hover:bg-white/15 border border-white/10 rounded-2xl p-3 text-left transition-colors"
+                                className="rounded-2xl border border-white/10 bg-white/10 p-3 text-left transition-colors hover:bg-white/15 hover:-translate-y-0.5"
                             >
-                                <span className="text-[10px] font-black text-emerald-300 uppercase tracking-wider">Step 3</span>
-                                <p className="text-sm font-black mt-1">Do paper drills</p>
-                                <p className="text-[11px] text-slate-400 mt-1">Use this paper or drill the likely topics you just checked.</p>
+                                <span className="text-[10px] font-black uppercase tracking-wider text-amber-300">Past papers lane</span>
+                                <p className="text-sm font-black mt-1">Open a real paper</p>
+                                <p className="text-[11px] text-slate-300 mt-1">Work through a paper under time and recover marks quickly.</p>
+                            </button>
+                            <button
+                                onClick={() => openGuru('mark')}
+                                className="rounded-2xl border border-white/10 bg-white/10 p-3 text-left transition-colors hover:bg-white/15 hover:-translate-y-0.5"
+                            >
+                                <span className="text-[10px] font-black uppercase tracking-wider text-sky-300">Notes lane</span>
+                                <p className="text-sm font-black mt-1">Revise the lesson notes</p>
+                                <p className="text-[11px] text-slate-300 mt-1">Read the summary, then practise the exact idea from the lesson.</p>
                             </button>
                         </div>
 
