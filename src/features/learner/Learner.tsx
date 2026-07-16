@@ -8592,7 +8592,7 @@ ${explanation.explanation}
       const libraryCategoryMeta = {
         ALL: { label: 'All', count: visibleLibraryMaterials.length, pill: 'bg-slate-50 text-slate-600 dark:bg-slate-800 dark:text-slate-200' },
         SYLLABUS: { label: 'Syllabus', count: visibleLibraryMaterials.filter(m => normalizeMaterialCategory(m.category) === 'SYLLABUS').length, pill: 'bg-purple-50 text-purple-700 dark:bg-purple-950/40 dark:text-purple-200' },
-        PAST_PAPER: { label: 'SomaAI Originals', count: visibleLibraryMaterials.filter(m => isSomaOriginalPaper(m)).length, pill: 'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-200' },
+        PAST_PAPER: { label: 'Exam Papers', count: visibleLibraryMaterials.filter(m => isSomaOriginalPaper(m)).length, pill: 'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-200' },
         NOTES: { label: 'Notes', count: visibleLibraryMaterials.filter(m => normalizeMaterialCategory(m.category) === 'NOTES').length, pill: 'bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-200' },
       } as const;
 
@@ -8617,7 +8617,7 @@ ${explanation.explanation}
           <div className="sticky top-0 z-40 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 px-6 py-4 flex items-center justify-between">
             <div>
               <h1 className="text-xl font-black text-slate-900 dark:text-white tracking-tight leading-none">My Library</h1>
-              <p className="text-[10px] font-black text-indigo-500 uppercase tracking-[0.15em] mt-1.5">SomaAI Originals library</p>
+              <p className="text-[10px] font-black text-indigo-500 uppercase tracking-[0.15em] mt-1.5">SomaAI Originals / Exam Papers</p>
             </div>
             <button onClick={() => setMode('MENU')} className="p-2 hover:bg-slate-100 rounded-full transition-colors"><X className="w-5 h-5" /></button>
           </div>
@@ -8766,7 +8766,7 @@ ${explanation.explanation}
                   {activeLibraryCategory === 'SYLLABUS'
                     ? 'Syllabus items will appear here once they are ready.'
                     : activeLibraryCategory === 'PAST_PAPER'
-                      ? 'SomaAI Originals for your grade will appear here once they are ready.'
+                      ? 'Exam papers for your grade will appear here once they are ready.'
                       : activeLibraryCategory === 'NOTES'
                         ? 'Notes for your grade will appear here once they are ready.'
                         : libraryView === 'PURCHASED'
@@ -8850,7 +8850,7 @@ ${explanation.explanation}
                   <div>
                     <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
                       <span className="p-1 rounded bg-amber-100 dark:bg-amber-900/40 text-amber-600">PDF</span>
-                      SomaAI Originals lane ({originalPapers.length})
+                      Exam Papers lane ({originalPapers.length})
                     </h3>
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-6">
                       {originalPapers.map(item => (
