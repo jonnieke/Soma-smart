@@ -1,6 +1,6 @@
 import React from 'react';
 import {
-    ArrowRight, BarChart3, BookOpen, Bot, CircleHelp, FileText, Headphones,
+    ArrowRight, BarChart3, BookOpen, Bot, CircleHelp, Clock, FileText, Headphones,
     Leaf, ListChecks, Menu, Mic, Monitor, Notebook, Search, ShieldCheck,
     Users, Volume2, X,
 } from 'lucide-react';
@@ -18,10 +18,21 @@ type Props = {
     onTeacher: () => void;
     onParent: () => void;
     onLibrary: () => void;
+    onRevision: () => void;
     onPricing: () => void;
     onSignIn: () => void;
     onDashboard: () => void;
     onTrack: (eventName: string, params?: Record<string, unknown>) => void;
+    latestPapers?: Array<{
+        id: string | number;
+        title: string;
+        subject: string;
+        grade: string;
+        duration_minutes?: number | null;
+        total_marks?: number | null;
+        source?: string | null;
+        exam_type?: string | null;
+    }>;
 };
 
 const helps = [
@@ -119,6 +130,81 @@ export const LandingHome: React.FC<Props> = (props) => {
                         <div className="absolute inset-y-0 left-0 w-20 bg-gradient-to-r from-white to-transparent" /><div className="absolute inset-y-0 right-0 w-12 bg-gradient-to-l from-white to-transparent" />
                     </div>
                     <AskAkiliDemo {...props} />
+                </div>
+            </section>
+
+            <section aria-labelledby="latest-papers-heading" className="border-b border-slate-200 bg-white py-10">
+                <div className="mx-auto max-w-[1440px] px-4 sm:px-6 lg:px-10">
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+                        <div>
+                            <p className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-black uppercase tracking-[0.18em] text-emerald-700">
+                                <FileText className="h-3.5 w-3.5" /> Latest SomaAI Originals
+                            </p>
+                            <h2 id="latest-papers-heading" className="mt-3 text-2xl font-black text-[#07133f] sm:text-3xl">Latest papers carousel</h2>
+                            <p className="mt-2 max-w-2xl text-sm font-medium leading-6 text-slate-600 sm:text-base">
+                                Open a fresh paper, then jump to the revision page to work it under time. If you just want the library shelf, go there in one tap.
+                            </p>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                            <button onClick={props.onLibrary} className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 shadow-sm transition hover:-translate-y-0.5 hover:border-blue-300 hover:text-blue-600">Open Library</button>
+                            <button onClick={props.onRevision} className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-black text-white shadow-lg shadow-blue-200 transition hover:-translate-y-0.5 hover:bg-blue-700">Go to Revision</button>
+                        </div>
+                    </div>
+
+                    <div className="mt-6 overflow-x-auto pb-3">
+                        <div className="flex min-w-max gap-4 snap-x snap-mandatory">
+                            {(props.latestPapers?.length ? props.latestPapers : []).slice(0, 6).map((paper) => {
+                                const isOriginal = String(paper.source || '').toUpperCase().includes('STRUCTURED_IMPORT') || /somaai\s+original|original mock|originals/i.test(String(paper.title || ''));
+                                return (
+                                    <div
+                                        key={paper.id}
+                                        className="snap-start w-[280px] rounded-3xl border border-slate-200 bg-slate-50 p-5 text-left shadow-sm transition hover:-translate-y-1 hover:border-emerald-300 hover:bg-white hover:shadow-lg"
+                                    >
+                                        <div className="flex items-start justify-between gap-3">
+                                            <div className="min-w-0">
+                                                <span className="inline-flex rounded-full bg-emerald-50 px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-emerald-700">Latest original</span>
+                                                <h3 className="mt-3 line-clamp-2 text-base font-black leading-snug text-slate-900">{paper.title}</h3>
+                                            </div>
+                                            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-600">
+                                                <BookOpen className="h-6 w-6" />
+                                            </div>
+                                        </div>
+                                        <div className="mt-4 flex flex-wrap gap-2 text-[10px] font-bold text-slate-500">
+                                            <span className="rounded-full bg-white px-2 py-1">{paper.subject}</span>
+                                            <span className="rounded-full bg-white px-2 py-1">{paper.grade}</span>
+                                            {paper.duration_minutes ? <span className="inline-flex items-center gap-1 rounded-full bg-white px-2 py-1"><Clock className="h-3 w-3" /> {paper.duration_minutes} min</span> : null}
+                                            {paper.total_marks ? <span className="rounded-full bg-white px-2 py-1">{paper.total_marks} marks</span> : null}
+                                        </div>
+                                        <div className="mt-5 flex items-center justify-between">
+                                            <span className="text-xs font-black uppercase tracking-[0.16em] text-slate-400">{isOriginal ? 'SomaAI Original' : 'Published exam'}</span>
+                                            <span className="inline-flex items-center gap-1 text-xs font-black text-blue-600">Open in Revision <ArrowRight className="h-4 w-4" /></span>
+                                        </div>
+                                        <div className="mt-4 flex items-center justify-between gap-3">
+                                            <span className="text-[10px] font-bold text-slate-400">Jump to the attempt screen</span>
+                                            <div className="flex gap-2">
+                                                <button type="button" onClick={props.onRevision} className="rounded-xl bg-blue-600 px-3 py-2 text-[10px] font-black uppercase tracking-[0.14em] text-white">Revision</button>
+                                                <button type="button" onClick={props.onLibrary} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-[10px] font-black uppercase tracking-[0.14em] text-emerald-600">Library</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+
+                            {(!props.latestPapers || props.latestPapers.length === 0) && (
+                                <div className="flex w-full min-w-0 max-w-[920px] items-center justify-between gap-4 rounded-3xl border border-dashed border-slate-300 bg-slate-50 p-6 text-left">
+                                    <div className="max-w-2xl">
+                                        <p className="text-xs font-black uppercase tracking-[0.18em] text-slate-400">Preparing the shelf</p>
+                                        <h3 className="mt-2 text-xl font-black text-slate-900">Your latest SomaAI Originals will appear here once admin publishes them.</h3>
+                                        <p className="mt-2 text-sm leading-6 text-slate-600">We are keeping this section paper-first and rights-safe. Use the library for the full shelf, or go to revision when you are ready to attempt a paper.</p>
+                                    </div>
+                                    <div className="flex shrink-0 flex-col gap-2">
+                                        <button onClick={props.onLibrary} className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700">Open Library</button>
+                                        <button onClick={props.onRevision} className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-black text-white">Open Revision</button>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
                 </div>
             </section>
 

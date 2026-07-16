@@ -41,6 +41,7 @@ import { LogoutModal } from '../components/LogoutModal';
 import { translations } from '../data/translations';
 import { ThemeToggle } from '../components/ThemeToggle';
 import { LandingHome } from '../components/LandingHome';
+import { examService } from '../services/examService';
 import { safeImport } from '../utils/safeImport';
 import { trackAnalyticsEvent } from '../services/analyticsEventService';
 
@@ -95,6 +96,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
         }
     });
     const [showMobileStickyCta, setShowMobileStickyCta] = useState(false);
+    const [latestPapers, setLatestPapers] = useState<Array<{ id: string | number; title: string; subject: string; grade: string; duration_minutes?: number | null; total_marks?: number | null; source?: string | null; exam_type?: string | null; created_at?: string | null }>>([]);
 
     const trackFunnelEvent = (eventName: string, params: Record<string, unknown> = {}) => {
         try {
@@ -191,6 +193,33 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
         handleScroll();
         window.addEventListener('scroll', handleScroll, { passive: true });
         return () => window.removeEventListener('scroll', handleScroll);
+    }, []);
+
+    const isSomaOriginalExam = (exam: { title?: string; source?: string | null }) => {
+        const source = String(exam.source || '').toUpperCase();
+        const title = String(exam.title || '').toLowerCase();
+        return source.includes('STRUCTURED_IMPORT') || /somaai\s+original|original mock|originals/.test(title);
+    };
+
+    React.useEffect(() => {
+        let active = true;
+        examService.listPublishedExams()
+            .then((exams) => {
+                if (!active) return;
+                const latest = (Array.isArray(exams) ? exams : [])
+                    .filter(isSomaOriginalExam)
+                    .sort((a, b) => {
+                        const aTime = Date.parse(String((a as any).published_at || (a as any).created_at || 0)) || 0;
+                        const bTime = Date.parse(String((b as any).published_at || (b as any).created_at || 0)) || 0;
+                        return bTime - aTime;
+                    })
+                    .slice(0, 6);
+                setLatestPapers(latest as any);
+            })
+            .catch(() => {
+                if (active) setLatestPapers([]);
+            });
+        return () => { active = false; };
     }, []);
 
     const handleGenerateAnswer = async () => {
@@ -747,7 +776,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                 onTeacher={() => handleRoleSelect(UserRole.TEACHER)}
                 onParent={() => handleRoleSelect(UserRole.PARENT)}
                 onLibrary={handleLibraryAccess}
+                onRevision={() => navigate('/revision')}
                 onPricing={() => navigate('/pricing')}
+                latestPapers={latestPapers}
                 onSignIn={() => { setLoginTab('STUDENT'); setShowLogin(true); }}
                 onDashboard={() => navigate(role === UserRole.TEACHER ? '/teacher' : role === UserRole.SCHOOL ? '/school' : role === UserRole.PARENT ? '/parent' : '/learner')}
                 onTrack={trackFunnelEvent}

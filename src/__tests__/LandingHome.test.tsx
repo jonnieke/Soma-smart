@@ -10,6 +10,7 @@ const baseProps = {
   onTeacher: vi.fn(),
   onParent: vi.fn(),
   onLibrary: vi.fn(),
+  onRevision: vi.fn(),
   onPricing: vi.fn(),
   onSignIn: vi.fn(),
   onDashboard: vi.fn(),
