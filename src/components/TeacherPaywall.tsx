@@ -28,7 +28,7 @@ export const TeacherPaywall: React.FC<TeacherPaywallProps> = ({ isOpen, onClose 
                     <Crown className="w-10 h-10" />
                 </div>
 
-                <h2 className="text-3xl font-black text-slate-900 mb-3 tracking-tight">Pro Studio Limit</h2>
+                <h2 className="text-3xl font-black text-slate-900 mb-3 tracking-tight">Keep teaching with Pro Studio</h2>
                 <p className="text-slate-500 font-medium mb-8 leading-relaxed">
                     You&apos;ve reached your 5 free lessons this week. Upgrade to <span className="text-indigo-600 font-bold">Teacher Pro</span> to unlock unlimited studio tools and national distribution.
                 </p>
@@ -38,13 +38,13 @@ export const TeacherPaywall: React.FC<TeacherPaywallProps> = ({ isOpen, onClose 
                         <div className="w-8 h-8 bg-indigo-100 rounded-xl flex items-center justify-center text-indigo-600">
                             <TrendingUp className="w-4 h-4" />
                         </div>
-                        <span className="text-sm font-bold text-slate-700">Unlimited smart lesson plans</span>
+                        <span className="text-sm font-bold text-slate-700">Unlimited smart lesson plans and notes</span>
                     </div>
                     <div className="flex items-center gap-4 bg-slate-50 p-4 rounded-2xl border border-slate-100">
                         <div className="w-8 h-8 bg-amber-100 rounded-xl flex items-center justify-center text-amber-600">
                             <Sparkles className="w-4 h-4" />
                         </div>
-                        <span className="text-sm font-bold text-slate-700">Kenyan National Exam Predictors</span>
+                        <span className="text-sm font-bold text-slate-700">Exam-aligned planning and analysis</span>
                     </div>
                 </div>
 
@@ -58,14 +58,14 @@ export const TeacherPaywall: React.FC<TeacherPaywallProps> = ({ isOpen, onClose 
                         className="py-5 text-lg bg-indigo-600 hover:bg-indigo-700 shadow-xl shadow-indigo-100 border-none group"
                     >
                         <span className="flex items-center justify-center gap-2">
-                            Activate Somo Pro <ShieldCheck className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                            See Teacher Plans <ShieldCheck className="w-5 h-5 group-hover:scale-110 transition-transform" />
                         </span>
                     </Button>
                     <button
                         onClick={onClose}
                         className="text-slate-400 text-xs font-black uppercase tracking-widest hover:text-slate-600 transition-colors pt-4"
                     >
-                        Keep Using Basic Studio
+                        Keep using basic studio
                     </button>
                 </div>
 

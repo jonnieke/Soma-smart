@@ -68,13 +68,13 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({ isOpen, on
                             <Sparkles className="w-10 h-10 text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-pink-600 fill-current" />
                         </div>
 
-                        <h2 className="text-3xl font-extrabold text-slate-900 mb-1">Upgrade to Pro</h2>
-                        <p className="text-slate-500 font-medium text-sm mb-6">Unlock your full learning potential.</p>
+                        <h2 className="text-3xl font-extrabold text-slate-900 mb-1">Continue learning with Akili</h2>
+                        <p className="text-slate-500 font-medium text-sm mb-6">Keep moving with fuller access to learning tools.</p>
 
                         {/* Free Trial Badge */}
                         <div className="inline-flex items-center gap-2 bg-gradient-to-r from-emerald-500 to-teal-500 text-white px-4 py-1.5 rounded-full text-xs font-bold shadow-lg shadow-emerald-200 mb-8 animate-bounce">
                             <Shield className="w-3 h-3 fill-white" />
-                            First 30 Days Free!
+                            Start free for 30 days!
                         </div>
 
                         {/* Pricing Cards */}
@@ -138,16 +138,16 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({ isOpen, on
                             {loading ? (
                                 <>
                                     <Loader2 className="w-5 h-5 animate-spin" />
-                                    Starting Trial...
+                                    Opening your plan...
                                 </>
                             ) : (
                                 <>
                                     <Zap className="w-5 h-5 text-yellow-400 group-hover:scale-110 transition-transform" />
-                                    Start Free Trial ({selectedPlan === 'MONTHLY' ? 'Monthly' : 'Daily'})
+                                    Start free trial ({selectedPlan === 'MONTHLY' ? 'Monthly' : 'Daily'})
                                 </>
                             )}
                         </button>
-                        <p className="text-xs text-slate-400 mt-3 font-medium">No credit card required for trial.</p>
+                        <p className="text-xs text-slate-400 mt-3 font-medium">No credit card required to start.</p>
                     </div>
                 </motion.div>
             </div>

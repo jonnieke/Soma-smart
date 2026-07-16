@@ -123,13 +123,13 @@ export const UpgradeModal: React.FC<UpgradeModalProps> = ({ onUpgrade }) => {
                                 </div>
                                 <div>
                                     <div className="inline-flex items-center gap-1.5 bg-amber-500/10 border border-amber-500/20 text-amber-400 text-[10px] font-black px-2.5 py-1 rounded-full uppercase tracking-widest mb-2">
-                                        <Zap className="w-3 h-3" /> Learning limit reached
+                                        <Zap className="w-3 h-3" /> Continue learning with a small plan
                                     </div>
                                     <h2 className="text-2xl font-black text-white leading-tight">
                                         You&apos;ve used your {detail?.featureLabel || 'feature'} allowance
                                     </h2>
                                     <p className="text-slate-400 text-sm font-medium mt-1 leading-relaxed">
-                                        Your <span className="text-white font-bold">{detail?.plan || 'Free'} plan</span> has reached its limit. Choose a small learning plan or top-up to continue without interruption.
+                                        Your <span className="text-white font-bold">{detail?.plan || 'Free'} plan</span> has reached its limit. Choose a small learning plan or top-up to keep going without interruption.
                                     </p>
                                 </div>
                             </div>
@@ -196,14 +196,14 @@ export const UpgradeModal: React.FC<UpgradeModalProps> = ({ onUpgrade }) => {
                                     className="flex-1 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-black py-4 rounded-2xl shadow-xl shadow-indigo-600/30 flex items-center justify-center gap-2 transition-all text-sm"
                                 >
                                     <Sparkles className="w-4 h-4" />
-                                    Continue with {PLAN_PRICES.find(p => p.id === selectedPlan)?.label}
+                                    Keep learning with {PLAN_PRICES.find(p => p.id === selectedPlan)?.label}
                                     <ArrowRight className="w-4 h-4" />
                                 </motion.button>
                                 <button
                                     onClick={() => setIsOpen(false)}
                                     className="px-5 text-slate-400 hover:text-white font-black text-sm transition-colors"
                                 >
-                                    Maybe later
+                                    Keep browsing for now
                                 </button>
                             </div>
 
