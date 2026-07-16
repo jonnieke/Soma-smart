@@ -418,7 +418,7 @@ export const LandingHome: React.FC<Props> = (props) => {
                           {isOriginal ? 'SomaAI Original' : 'Published exam'}
                         </span>
                         <span className="inline-flex items-center gap-1 text-xs font-black text-blue-600">
-                          Open in Revision <ArrowRight className="h-4 w-4" />
+                          Start paper <ArrowRight className="h-4 w-4" />
                         </span>
                       </div>
                       <div className="mt-4 flex items-center justify-between gap-3">

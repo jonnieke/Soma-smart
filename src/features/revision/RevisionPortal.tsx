@@ -109,8 +109,8 @@ export const RevisionPortal: React.FC = () => {
                         <div className="flex flex-wrap justify-center gap-3 pt-3">
                             {PATHWAYS.map(item => <button key={item.id} onClick={() => setPathway(item.id)} className={`rounded-2xl border px-6 py-3 text-left transition ${pathway === item.id ? 'border-indigo-600 bg-indigo-600 text-white shadow-lg' : 'border-slate-200 bg-white text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200'}`}><span className="block text-sm font-black">{item.id}</span><span className={`block text-[10px] font-bold ${pathway === item.id ? 'text-indigo-100' : 'text-slate-400'}`}>{item.label}</span></button>)}
                         </div>
-                        <button onClick={openExamLibrary} className="inline-flex items-center gap-3 rounded-2xl bg-gradient-to-r from-orange-500 to-rose-600 px-8 py-4 text-lg font-black text-white shadow-xl shadow-orange-500/20">{isRegistered ? 'Start with first original' : 'Start free'} <ArrowRight className="h-5 w-5" /></button>
-                        {pathwayExams.length > 0 && <div className="grid gap-3 pt-2 sm:grid-cols-3">{pathwayExams.slice(0, 3).map(exam => <button key={exam.id} onClick={() => startRevision(exam.id)} className="rounded-2xl border border-slate-200 bg-white px-4 py-4 text-left transition hover:-translate-y-0.5 hover:border-indigo-200 hover:shadow-lg dark:border-slate-700 dark:bg-slate-900"><span className="inline-flex rounded-full bg-emerald-50 px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-emerald-700">Ready paper</span><span className="mt-3 block text-sm font-black leading-snug">{exam.title}</span><span className="mt-2 block text-[11px] font-bold text-slate-400">{exam.subject} ? {exam.grade}</span></button>)}</div>}
+                        <button onClick={openExamLibrary} className="inline-flex items-center gap-3 rounded-2xl bg-gradient-to-r from-orange-500 to-rose-600 px-8 py-4 text-lg font-black text-white shadow-xl shadow-orange-500/20">{isRegistered ? 'Start paper' : 'Start free'} <ArrowRight className="h-5 w-5" /></button>
+                        {pathwayExams.length > 0 && <div className="grid gap-3 pt-2 sm:grid-cols-3">{pathwayExams.slice(0, 3).map(exam => <button key={exam.id} onClick={() => startRevision(exam.id)} className="rounded-2xl border border-slate-200 bg-white px-4 py-4 text-left transition hover:-translate-y-0.5 hover:border-indigo-200 hover:shadow-lg dark:border-slate-700 dark:bg-slate-900"><span className="inline-flex rounded-full bg-emerald-50 px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-emerald-700">Paper ready</span><span className="mt-3 block text-sm font-black leading-snug">{exam.title}</span><span className="mt-2 block text-[11px] font-bold text-slate-400">{exam.subject} ? {exam.grade}</span></button>)}</div>}
                         <div className="flex flex-wrap justify-center gap-5 text-xs font-bold text-slate-500"><span className="flex items-center gap-2"><ShieldCheck className="h-4 w-4 text-indigo-500" /> Papers first</span><span className="flex items-center gap-2"><BookOpen className="h-4 w-4 text-indigo-500" /> {publishedExams.length} published exam{publishedExams.length === 1 ? '' : 's'}</span></div>
                     </motion.div>
                 </section>
@@ -121,7 +121,7 @@ export const RevisionPortal: React.FC = () => {
                         <div className="grid gap-4 md:grid-cols-3">
                             {pathwayExams.slice(0, 3).map(exam => (
                                 <button key={exam.id} onClick={() => startRevision(exam.id)} className="group rounded-2xl border border-slate-200 bg-slate-50 p-5 text-left transition hover:-translate-y-0.5 hover:border-indigo-200 hover:bg-white dark:border-slate-800 dark:bg-slate-950">
-                                    <span className="inline-flex rounded-full bg-emerald-50 px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-emerald-700">Ready paper</span>
+                                    <span className="inline-flex rounded-full bg-emerald-50 px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-emerald-700">Paper ready</span>
                                     <span className="mt-3 block text-base font-black leading-snug">{exam.title}</span>
                                     <span className="mt-2 block text-[11px] font-bold text-slate-400">{exam.subject} ? {exam.grade}</span>
                                     <span className="mt-3 flex flex-wrap gap-2 text-[10px] font-bold text-slate-500">
@@ -129,7 +129,7 @@ export const RevisionPortal: React.FC = () => {
                                         {Array.isArray(exam.structured_questions) && <span className="rounded-full bg-slate-100 px-2 py-1 dark:bg-slate-800">{exam.structured_questions.length} questions</span>}
                                         {exam.total_marks && <span className="rounded-full bg-slate-100 px-2 py-1 dark:bg-slate-800">{exam.total_marks} marks</span>}
                                     </span>
-                                    <span className="mt-4 inline-flex items-center gap-2 text-xs font-black text-indigo-600 group-hover:translate-x-0.5 transition-transform">Start timed exam <ArrowRight className="h-3.5 w-3.5" /></span>
+                                    <span className="mt-4 inline-flex items-center gap-2 text-xs font-black text-indigo-600 group-hover:translate-x-0.5 transition-transform">Start paper <ArrowRight className="h-3.5 w-3.5" /></span>
                                 </button>
                             ))}
                         </div>
