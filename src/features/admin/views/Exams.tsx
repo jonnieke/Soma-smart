@@ -55,6 +55,7 @@ interface Exam {
     source?: string | null;
 
     isOfficial?: boolean;
+    homepageFeatured?: boolean;
 
     questionCount: number;
 
@@ -133,6 +134,7 @@ export const ExamsView: React.FC = () => {
     const [totalMarks, setTotalMarks] = useState('');
 
     const [publishImmediately, setPublishImmediately] = useState(true);
+    const [featureOnHomepage, setFeatureOnHomepage] = useState(true);
 
     const [inputMode, setInputMode] = useState<'UPLOAD' | 'STRUCTURED_JSON'>('UPLOAD');
 
@@ -178,6 +180,7 @@ export const ExamsView: React.FC = () => {
         setJsonImportError(null);
         setAnalyzedData(null);
         setPublishImmediately(false);
+        setFeatureOnHomepage(false);
     };
 
 
@@ -217,6 +220,7 @@ export const ExamsView: React.FC = () => {
         setTotalMarks('');
 
         setPublishImmediately(true);
+        setFeatureOnHomepage(true);
 
         setInputMode('UPLOAD');
 
@@ -252,7 +256,7 @@ export const ExamsView: React.FC = () => {
 
                 .from('knowledge_base')
 
-                .select('id, title, subject, grade, file_url, file_path, marking_scheme_url, marking_scheme_path, exam_type, exam_year, paper_number, review_status, structured_questions, indexing_status, last_index_error, source, is_official, created_at')
+                .select('id, title, subject, grade, file_url, file_path, marking_scheme_url, marking_scheme_path, exam_type, exam_year, paper_number, review_status, structured_questions, indexing_status, last_index_error, source, is_official, homepage_featured, created_at')
 
                 .eq('type', 'PAST_PAPER')
 
@@ -425,6 +429,7 @@ export const ExamsView: React.FC = () => {
                 setTotalMarks(String(examPayload.totalMarks ?? examPayload.total_marks ?? ''));
 
                 setPublishImmediately(false);
+        setFeatureOnHomepage(false);
 
                 return;
 
@@ -713,6 +718,7 @@ export const ExamsView: React.FC = () => {
                     source: isStructuredImport ? 'STRUCTURED_IMPORT' : 'SOMA',
 
                     is_official: Boolean(markingSchemeFile),
+                    homepage_featured: publishImmediately && featureOnHomepage,
 
                     indexing_status: 'PENDING'
 
@@ -807,6 +813,36 @@ export const ExamsView: React.FC = () => {
         setExams(current => current.map(item =>
 
             item.id === exam.id ? { ...item, reviewStatus: 'PUBLISHED' } : item
+
+        ));
+
+    };
+
+
+
+    const toggleHomepageFeatured = async (exam: Exam) => {
+
+        const nextFeatured = !Boolean(exam.homepageFeatured);
+
+        const { error } = await supabase
+
+            .from('knowledge_base')
+
+            .update({ homepage_featured: nextFeatured })
+
+            .eq('id', exam.id);
+
+        if (error) {
+
+            alert('Could not update homepage feature: ' + error.message);
+
+            return;
+
+        }
+
+        setExams(current => current.map(item =>
+
+            item.id === exam.id ? { ...item, homepageFeatured: nextFeatured } : item
 
         ));
 
@@ -1090,6 +1126,10 @@ export const ExamsView: React.FC = () => {
                                                 <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-bold text-emerald-700">Official upload</span>
                                             )}
 
+                                            {exam.homepageFeatured && (
+                                                <span className="rounded-full bg-indigo-50 px-2.5 py-1 text-[10px] font-bold text-indigo-700">Homepage carousel</span>
+                                            )}
+
                                         </div>
 
                                     </div>
@@ -1125,6 +1165,16 @@ export const ExamsView: React.FC = () => {
                                         <button onClick={() => publishDraft(exam)} className="rounded-lg bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-700 hover:bg-emerald-100">
 
                                             Publish
+
+                                        </button>
+
+                                    )}
+
+                                    {exam.reviewStatus === 'PUBLISHED' && (
+
+                                        <button onClick={() => toggleHomepageFeatured(exam)} className={`rounded-lg px-3 py-2 text-xs font-bold transition ${exam.homepageFeatured ? 'bg-indigo-600 text-white hover:bg-indigo-700' : 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100'}`}>
+
+                                            {exam.homepageFeatured ? 'Remove from carousel' : 'Feature on carousel'}
 
                                         </button>
 
@@ -1522,6 +1572,30 @@ export const ExamsView: React.FC = () => {
                                                 <span className="block text-sm font-bold text-slate-800">Publish to learners after saving</span>
 
                                                 <span className="block text-xs text-slate-500">Turn this off to keep the package as a private admin draft.</span>
+
+                                            </span>
+
+                                        </label>
+
+                                        <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-indigo-200 bg-indigo-50/50 p-4">
+
+                                            <input
+
+                                                type="checkbox"
+
+                                                checked={featureOnHomepage}
+
+                                                onChange={event => setFeatureOnHomepage(event.target.checked)}
+
+                                                className="mt-1 h-4 w-4"
+
+                                            />
+
+                                            <span>
+
+                                                <span className="block text-sm font-bold text-slate-800">Feature on homepage carousel</span>
+
+                                                <span className="block text-xs text-slate-500">Turn this on to place the original in the homepage carousel after publishing.</span>
 
                                             </span>
 

@@ -96,7 +96,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
         }
     });
     const [showMobileStickyCta, setShowMobileStickyCta] = useState(false);
-    const [latestPapers, setLatestPapers] = useState<Array<{ id: string | number; title: string; subject: string; grade: string; duration_minutes?: number | null; total_marks?: number | null; source?: string | null; exam_type?: string | null; created_at?: string | null }>>([]);
+    const [latestPapers, setLatestPapers] = useState<Array<{ id: string | number; title: string; subject: string; grade: string; duration_minutes?: number | null; total_marks?: number | null; source?: string | null; exam_type?: string | null; created_at?: string | null; homepage_featured?: boolean | null }>>([]);
 
     const trackFunnelEvent = (eventName: string, params: Record<string, unknown> = {}) => {
         try {
@@ -209,6 +209,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                 const latest = (Array.isArray(exams) ? exams : [])
                     .filter(isSomaOriginalExam)
                     .sort((a, b) => {
+                        const aFeatured = Boolean((a as any).homepage_featured);
+                        const bFeatured = Boolean((b as any).homepage_featured);
+                        if (aFeatured !== bFeatured) return bFeatured ? 1 : -1;
                         const aTime = Date.parse(String((a as any).published_at || (a as any).created_at || 0)) || 0;
                         const bTime = Date.parse(String((b as any).published_at || (b as any).created_at || 0)) || 0;
                         return bTime - aTime;
