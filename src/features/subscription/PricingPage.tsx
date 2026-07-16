@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Check, Zap, Star, ShieldCheck, Smartphone, Building2, UserCircle2, GraduationCap, ArrowRight, X, BookOpen, FileSearch, Mic } from 'lucide-react';
-import { LEARNING_CREDIT_PACKS, STUDENT_PLANS, TEACHER_PLANS, SCHOOL_PLANS } from '../../data/pricing';
+import { STUDENT_PLANS, TEACHER_PLANS, SCHOOL_PLANS } from '../../data/pricing';
 import { SubscriptionPlan, UserSegment } from '../../types';
 import { getPlanLimit } from '../../services/planLimitService';
 
@@ -169,27 +169,22 @@ export const PricingPage: React.FC<Props> = ({ onSelectPlan, onClose, currentTie
                                     ))}
                                 </div>
                                 <section className="rounded-[2rem] border border-indigo-100 bg-indigo-50/70 p-5">
-                                    <div className="mb-4">
-                                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-500">Need to keep going today?</p>
-                                        <h2 className="text-xl font-black text-slate-900 mt-1">Top up learning credits</h2>
-                                        <p className="text-sm font-semibold text-slate-600 mt-1">Credits extend capped tools without replacing your active plan. Basic Ask Akili stays plan-based; credits are for heavier work like grounded answers, marking, deep documents, and voice. Extra packs expire with the active term.</p>
+                                    <div className="mb-2">
+                                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-500">Need lighter access?</p>
+                                        <h2 className="text-xl font-black text-slate-900 mt-1">Choose the plan that fits your pace</h2>
+                                        <p className="text-sm font-semibold text-slate-600 mt-1">Daily, weekly, and monthly learner plans are designed to keep revision, marking, and voice moving without turning the journey into wallet management.</p>
                                     </div>
-                                    <div className="mb-4 grid grid-cols-1 md:grid-cols-3 gap-3">
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                                         {[
-                                            { icon: BookOpen, title: 'Grounded library help', body: 'Answers from Soma notes, syllabus guides, and past papers.' },
-                                            { icon: FileSearch, title: 'Deep Exam Analysis', body: 'Long paper/PDF analysis costs more, so it uses plans or credits.' },
-                                            { icon: Mic, title: 'Voice practice', body: 'Speech, pronunciation, and audio lessons use credits by length.' },
+                                            { icon: BookOpen, title: 'Guided revision', body: 'Try first, then get step-by-step help.' },
+                                            { icon: FileSearch, title: 'Paper repair', body: 'Turn mistakes into focused follow-up practice.' },
+                                            { icon: Mic, title: 'Voice learning', body: 'Ask by voice and keep the flow natural.' },
                                         ].map((item) => (
                                             <div key={item.title} className="rounded-2xl border border-indigo-100 bg-white/80 p-4">
                                                 <item.icon className="h-5 w-5 text-indigo-600 mb-2" />
                                                 <p className="text-xs font-black text-slate-900">{item.title}</p>
                                                 <p className="mt-1 text-[11px] font-semibold leading-snug text-slate-500">{item.body}</p>
                                             </div>
-                                        ))}
-                                    </div>
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                        {LEARNING_CREDIT_PACKS.map((pack) => (
-                                            <CreditPackCard key={pack.id} plan={pack} onSelect={() => onSelectPlan(pack)} />
                                         ))}
                                     </div>
                                 </section>
@@ -425,31 +420,6 @@ const SchoolCard = ({ plan, onSelect, isCurrent, currentTier }: { plan: any, onS
     </div>
 );
 
-const CreditPackCard = ({ plan, onSelect }: { plan: SubscriptionPlan, onSelect: () => void }) => (
-    <div className="bg-white rounded-3xl border border-indigo-100 p-5 shadow-sm flex flex-col">
-        <div className="flex items-start justify-between gap-3 mb-4">
-            <div>
-                <h3 className="text-lg font-black text-slate-900">{plan.name}</h3>
-                {plan.savings && <p className="text-[10px] font-black uppercase tracking-wider text-emerald-600 mt-1">{plan.savings}</p>}
-            </div>
-            <div className="text-right">
-                <p className="text-2xl font-black text-indigo-600">KES {plan.price}</p>
-                <p className="text-[10px] font-bold text-slate-400">{plan.credits} credits</p>
-            </div>
-        </div>
-        <div className="space-y-2 flex-1 mb-5">
-            {(plan.features || []).map((feature) => (
-                <Feature key={feature} item={feature} />
-            ))}
-        </div>
-        <button
-            onClick={onSelect}
-            className="w-full py-3 rounded-2xl bg-indigo-600 text-white text-xs font-black uppercase tracking-widest hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-200"
-        >
-            Buy Credits
-        </button>
-    </div>
-);
 
 const Feature = ({ item, bold }: { item: string, bold?: boolean }) => (
     <div className="flex items-center gap-3">
