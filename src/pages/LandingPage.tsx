@@ -203,25 +203,49 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
 
     React.useEffect(() => {
         let active = true;
-        examService.listPublishedExams()
-            .then((exams) => {
-                if (!active) return;
-                const latest = (Array.isArray(exams) ? exams : [])
-                    .filter(isSomaOriginalExam)
-                    .sort((a, b) => {
-                        const aFeatured = Boolean((a as any).homepage_featured);
-                        const bFeatured = Boolean((b as any).homepage_featured);
-                        if (aFeatured !== bFeatured) return bFeatured ? 1 : -1;
-                        const aTime = Date.parse(String((a as any).published_at || (a as any).created_at || 0)) || 0;
-                        const bTime = Date.parse(String((b as any).published_at || (b as any).created_at || 0)) || 0;
-                        return bTime - aTime;
-                    })
-                    .slice(0, 6);
-                setLatestPapers(latest as any);
+        const sortLatest = (items: Array<Record<string, any>>) => items
+            .sort((a, b) => {
+                const aFeatured = Boolean(a.homepage_featured);
+                const bFeatured = Boolean(b.homepage_featured);
+                if (aFeatured !== bFeatured) return bFeatured ? 1 : -1;
+                const aTime = Date.parse(String(a.published_at || a.created_at || 0)) || 0;
+                const bTime = Date.parse(String(b.published_at || b.created_at || 0)) || 0;
+                return bTime - aTime;
             })
-            .catch(() => {
+            .slice(0, 6);
+
+        const fetchHomepagePapers = async () => {
+            try {
+                const exams = await examService.listPublishedExams();
+                const latest = sortLatest(Array.isArray(exams) ? exams.map(item => ({ ...item })) : []);
+                if (!active) return;
+                if (latest.length > 0) {
+                    setLatestPapers(latest as any);
+                    return;
+                }
+            } catch (error) {
+                console.warn('Homepage RPC paper fetch failed, using direct query fallback.', error);
+            }
+
+            try {
+                const { data, error } = await supabase
+                    .from('knowledge_base')
+                    .select('id, title, subject, grade, duration_minutes, total_marks, source, exam_type, created_at, review_status, type')
+                    .eq('type', 'PAST_PAPER')
+                    .eq('review_status', 'PUBLISHED')
+                    .order('homepage_featured', { ascending: false })
+                    .order('created_at', { ascending: false });
+
+                if (error) throw error;
+                if (!active) return;
+                setLatestPapers(sortLatest((data || []) as Array<Record<string, any>>) as any);
+            } catch (error) {
+                console.warn('Homepage paper fallback fetch failed.', error);
                 if (active) setLatestPapers([]);
-            });
+            }
+        };
+
+        void fetchHomepagePapers();
         return () => { active = false; };
     }, []);
 
@@ -2558,3 +2582,4 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
         </div>
     );
 };
+
