@@ -18,7 +18,7 @@ export const PricingPage: React.FC<Props> = ({ onSelectPlan, onClose, currentTie
     const [activeTab, setActiveTab] = useState<UserSegment>(initialTab);
     const personaValueCopy = {
         STUDENT: {
-            title: 'Learner Outcomes',
+            title: 'Learner plans',
             points: [
                 'Get unstuck without copy-paste answers.',
                 'Turn every topic into quizzes, marking, and repair.',
@@ -87,7 +87,7 @@ export const PricingPage: React.FC<Props> = ({ onSelectPlan, onClose, currentTie
                         animate={{ opacity: 1, y: 0 }}
                     >
                         <h1 className="text-4xl md:text-6xl font-black mb-6 tracking-tighter leading-none">
-                            Pay for progress, not just answers.
+                            Keep learning without interruption.
                         </h1>
                         <p className="text-lg md:text-xl text-slate-300 font-medium max-w-2xl mx-auto leading-relaxed">
                             Soma helps learners try first, get guided help, practise with quizzes, and show parents clear proof of study.
@@ -104,7 +104,7 @@ export const PricingPage: React.FC<Props> = ({ onSelectPlan, onClose, currentTie
                     <span className="w-px h-4 bg-slate-200 hidden sm:block" />
                     <span className="flex items-center gap-1.5">
                         <svg viewBox="0 0 24 24" className="w-4 h-4 fill-[#4CAF50]"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/></svg>
-                        Pay via M-Pesa
+                        Continue with M-Pesa
                     </span>
                     <span className="w-px h-4 bg-slate-200 hidden sm:block" />
                     <span className="flex items-center gap-1.5"><ShieldCheck className="w-4 h-4 text-emerald-500" /> Secure & instant</span>
@@ -170,15 +170,15 @@ export const PricingPage: React.FC<Props> = ({ onSelectPlan, onClose, currentTie
                                 </div>
                                 <section className="rounded-[2rem] border border-indigo-100 bg-indigo-50/70 p-5">
                                     <div className="mb-4">
-                                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-500">Need to continue today?</p>
-                                        <h2 className="text-xl font-black text-slate-900 mt-1">Buy learning credits</h2>
+                                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-500">Need to keep going today?</p>
+                                        <h2 className="text-xl font-black text-slate-900 mt-1">Top up learning credits</h2>
                                         <p className="text-sm font-semibold text-slate-600 mt-1">Credits extend capped tools without replacing your active plan. Basic Ask Akili stays plan-based; credits are for heavier work like grounded answers, marking, deep documents, and voice. Extra packs expire with the active term.</p>
                                     </div>
                                     <div className="mb-4 grid grid-cols-1 md:grid-cols-3 gap-3">
                                         {[
-                                            { icon: BookOpen, title: 'Grounded Library Help', body: 'Answers from Soma notes, syllabus guides, and past papers.' },
+                                            { icon: BookOpen, title: 'Grounded library help', body: 'Answers from Soma notes, syllabus guides, and past papers.' },
                                             { icon: FileSearch, title: 'Deep Exam Analysis', body: 'Long paper/PDF analysis costs more, so it uses plans or credits.' },
-                                            { icon: Mic, title: 'Voice Practice', body: 'Speech, pronunciation, and audio lessons use credits by length.' },
+                                            { icon: Mic, title: 'Voice practice', body: 'Speech, pronunciation, and audio lessons use credits by length.' },
                                         ].map((item) => (
                                             <div key={item.title} className="rounded-2xl border border-indigo-100 bg-white/80 p-4">
                                                 <item.icon className="h-5 w-5 text-indigo-600 mb-2" />
@@ -378,7 +378,7 @@ const PricingCard = ({ plan, onSelect, popular, isCurrent, disabled, currentTier
                     ? 'Your Active Plan'
                     : (disabled
                         ? 'Not Available'
-                        : (currentTier && currentTier !== 'FREE' ? 'Upgrade to Pro' : 'Pay via M-Pesa'))}
+                        : (currentTier && currentTier !== 'FREE' ? 'Keep learning' : 'Continue with M-Pesa'))}
                 {!isCurrent && !disabled && <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />}
             </button>
         </div>

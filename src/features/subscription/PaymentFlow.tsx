@@ -322,7 +322,7 @@ export const PaymentFlow: React.FC<Props> = ({ plan, materialId, onSuccess, onCa
 
     const handlePayment = async () => {
         if (!isRegistered && !isGuestExistingStudent) {
-            setError('For guest checkout, use Existing Student and verify a SOMA ID first.');
+            setError('For guest checkout, use Existing student and verify a SOMA ID first.');
             return;
         }
 
@@ -485,7 +485,7 @@ export const PaymentFlow: React.FC<Props> = ({ plan, materialId, onSuccess, onCa
                             className="p-8"
                         >
                             <button onClick={onCancel} className="mb-6 flex items-center gap-2 text-slate-400 hover:text-slate-600 font-bold text-sm">
-                                <ArrowLeft className="w-4 h-4" /> Back to Plans
+                                <ArrowLeft className="w-4 h-4" /> Back to plans
                             </button>
 
                             <div className="flex items-center gap-4 mb-8">
@@ -493,8 +493,8 @@ export const PaymentFlow: React.FC<Props> = ({ plan, materialId, onSuccess, onCa
                                     <Smartphone className="w-8 h-8" />
                                 </div>
                                 <div>
-                                    <h2 className="text-2xl font-black text-slate-900">M-Pesa Payment</h2>
-                                    <p className="text-slate-500 font-medium">Paying KES {plan.price.toLocaleString()} for {plan.name}</p>
+                                    <h2 className="text-2xl font-black text-slate-900">M-Pesa checkout</h2>
+                                    <p className="text-slate-500 font-medium">Continue with {plan.name} for KES {plan.price.toLocaleString()}</p>
                                 </div>
                             </div>
 
@@ -506,25 +506,25 @@ export const PaymentFlow: React.FC<Props> = ({ plan, materialId, onSuccess, onCa
                                             onClick={() => setPayerMode('NEW')}
                                             className={`py-2 rounded-lg text-xs font-black uppercase tracking-widest transition ${payerMode === 'NEW' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'}`}
                                         >
-                                            New Learner
+                                            New learner
                                         </button>
                                         <button
                                             type="button"
                                             onClick={() => setPayerMode('EXISTING')}
                                             className={`py-2 rounded-lg text-xs font-black uppercase tracking-widest transition ${payerMode === 'EXISTING' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'}`}
                                         >
-                                            Existing Student
+                                            Existing student
                                         </button>
                                     </div>
                                 )}
                                 {!isRegistered && payerMode === 'NEW' && (
                                     <div className="mx-1 p-3 rounded-lg bg-indigo-50 border border-indigo-200 text-indigo-800 text-xs font-medium">
-                                        We will automatically generate a <span className="font-black">SOMA ID</span> for you after payment so you can access your resources on any device.
+                                        We will automatically generate a <span className="font-black">SOMA ID</span> after payment so you can access your resources on any device.
                                     </div>
                                 )}
 
                                 <div className="bg-indigo-50/50 p-4 rounded-2xl border border-indigo-100 mb-2">
-                                    <p className="text-[10px] font-black uppercase text-indigo-400 tracking-widest mb-1">Paying as</p>
+                                    <p className="text-[10px] font-black uppercase text-indigo-400 tracking-widest mb-1">Billing details</p>
                                     <p className="font-bold text-slate-700">{firstName} {lastName}</p>
                                     <p className="text-[10px] text-slate-400 truncate">{email}</p>
                                 </div>
@@ -611,12 +611,12 @@ export const PaymentFlow: React.FC<Props> = ({ plan, materialId, onSuccess, onCa
                                     onClick={handlePayment}
                                     className="w-full py-5 bg-indigo-600 text-white rounded-2xl font-black text-lg shadow-xl shadow-indigo-100 hover:bg-indigo-700 transition-all flex items-center justify-center gap-3"
                                 >
-                                    Proceed to Payment <ArrowRight className="w-6 h-6" />
+                                    Continue to M-Pesa <ArrowRight className="w-6 h-6" />
                                 </button>
 
                                 <div className="flex flex-col items-center justify-center gap-3 pt-6">
                                     <div className="flex items-center gap-2 text-slate-400 text-[10px] font-black uppercase tracking-widest">
-                                        <ShieldCheck className="w-4 h-4 text-emerald-500" /> Secure SSL Checkout
+                                        <ShieldCheck className="w-4 h-4 text-emerald-500" /> Secure checkout
                                     </div>
                                     <div className="flex gap-4 opacity-50 grayscale scale-75">
                                         <div className="w-10 h-6 bg-slate-200 rounded"></div>
@@ -643,7 +643,7 @@ export const PaymentFlow: React.FC<Props> = ({ plan, materialId, onSuccess, onCa
                                 ></motion.div>
                                 <Sparkles className="w-full h-full text-indigo-600 animate-pulse" />
                             </div>
-                            <h2 className="text-2xl font-black text-slate-900 mb-2 tracking-tight">Securing Connection</h2>
+                            <h2 className="text-2xl font-black text-slate-900 mb-2 tracking-tight">Opening secure checkout</h2>
                             <p className="text-slate-500 font-medium leading-relaxed px-4">
                                 Preparing your secure gateway to <br /><span className="text-indigo-600 font-black">Pesapal Africa</span>
                             </p>
@@ -660,21 +660,21 @@ export const PaymentFlow: React.FC<Props> = ({ plan, materialId, onSuccess, onCa
                             <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
                                 <div className="flex items-center gap-2">
                                     <ShieldCheck className="w-4 h-4 text-emerald-500" />
-                                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Secure Pesapal Checkout</span>
+                                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Secure checkout</span>
                                 </div>
                                 <div className="flex items-center gap-3">
                                     <button
                                         onClick={openCheckoutDirectly}
                                         className="text-indigo-600 hover:text-indigo-800 font-bold text-xs uppercase inline-flex items-center gap-1"
                                     >
-                                        Open Checkout <ExternalLink className="w-3 h-3" />
+                                        Open checkout <ExternalLink className="w-3 h-3" />
                                     </button>
                                     <button onClick={onCancel} className="text-slate-400 hover:text-red-500 font-bold text-xs uppercase">Cancel</button>
                                 </div>
                             </div>
                             {iframeFailed && (
                                 <div className="mx-4 mt-4 p-3 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-xs font-medium">
-                                    Embedded checkout could not load in this browser. Use <span className="font-black">Open Checkout</span> above to continue payment securely.
+                                    Embedded checkout could not load in this browser. Use <span className="font-black">Open checkout</span> above to continue payment securely.
                                 </div>
                             )}
                             <iframe
@@ -699,12 +699,12 @@ export const PaymentFlow: React.FC<Props> = ({ plan, materialId, onSuccess, onCa
                                 <CheckCircle2 className="w-12 h-12" />
                             </div>
                             <h2 className="text-3xl font-black text-slate-900 mb-2">
-                                {isCreditPackCheckout ? 'Credits Added' : 'Karibu Pro!'}
+                                {isCreditPackCheckout ? 'Credits added' : 'You are in!'}
                             </h2>
                             <p className="text-slate-500 font-medium mb-6">
                                 {isCreditPackCheckout
                                     ? `${plan?.credits || 0} learning credits are being added for the active term.`
-                                    : 'Payment received. Your account is being upgraded right now.'}
+                                    : 'Payment received. Your learning access is being updated right now.'}
                             </p>
                             
                             {!isRegistered && existingStudentCode && payerMode === 'NEW' && (
@@ -728,13 +728,13 @@ export const PaymentFlow: React.FC<Props> = ({ plan, materialId, onSuccess, onCa
                             <div className="w-24 h-24 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-8 text-red-600">
                                 <XCircle className="w-12 h-12" />
                             </div>
-                            <h2 className="text-2xl font-black text-slate-900 mb-2">Payment Cancelled</h2>
-                            <p className="text-slate-500 font-medium mb-8">It seems the payment was declined or timed out. Please try again.</p>
+                            <h2 className="text-2xl font-black text-slate-900 mb-2">Payment paused</h2>
+                            <p className="text-slate-500 font-medium mb-8">It seems the payment was declined or timed out. You can try again when ready.</p>
                             <button
                                 onClick={() => setStep('INPUT')}
                                 className="w-full py-4 bg-slate-900 text-white rounded-xl font-bold"
                             >
-                                Try Again
+                                Try again
                             </button>
                         </motion.div>
                     )}
