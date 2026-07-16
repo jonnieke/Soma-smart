@@ -2917,13 +2917,10 @@ Stay anchored to this context unless I ask for something broader.`;
           console.error('Voice transcription failed:', err);
           const voiceLimitReached = err instanceof RateLimitError || err?.name === 'RateLimitError';
           if (voiceLimitReached) {
+            setError(null);
             setPendingPaywallAction({ type: 'VOICE_QUESTION' });
+            setMode('MENU');
             setShowLimitModal(true);
-            setError({
-              title: 'Keep learning with Akili',
-              message: 'Your voice learning limit is used up for today. Open the learner plans to continue with voice, marking, and exam practice from a small fee.',
-              action: 'paywall'
-            });
           } else {
             setError({
               title: 'Voice Question Failed',
