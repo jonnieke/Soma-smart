@@ -3510,11 +3510,10 @@ ${explanation.explanation}
     } catch (e: any) {
       console.error("TTS Error:", e);
       if (e instanceof PlanLimitError || e?.name === 'PlanLimitError') {
+        setError(null);
+        setPendingPaywallAction({ type: 'PODCAST' });
+        setMode('MENU');
         setShowLimitModal(true);
-        setError({
-          title: "Voice Limit Reached",
-          message: "Your Listen & Learn voice allowance is used up. Open a small learner plan or top-up to continue with natural ElevenLabs audio."
-        });
         return;
       }
       setError({
