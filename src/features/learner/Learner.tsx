@@ -1768,6 +1768,7 @@ Stay anchored to this context unless I ask for something broader.`;
       paper_number: r.paper_number,
       duration_minutes: r.duration_minutes,
       total_marks: r.total_marks,
+      source: r.source,
       marking_scheme_source: r.marking_scheme_source,
       indexing_status: r.indexing_status,
       indexed_at: r.indexed_at,
@@ -7234,7 +7235,7 @@ ${explanation.explanation}
                   </p>
                   <p className="mt-1 text-sm font-semibold text-slate-700 dark:text-slate-300">
                     {explanation.grounding?.used
-                      ? 'This answer used indexed Soma notes, syllabuses, or past papers where relevant.'
+                      ? 'This answer used indexed Soma notes, syllabuses, or original papers where relevant.'
                       : groundedAnswerMode
                         ? 'No matching indexed source was found, so Akili answered from general curriculum knowledge.'
                         : 'Soma Library grounding was switched off for this answer.'}
@@ -8035,7 +8036,7 @@ ${explanation.explanation}
                       ? 'University lecture notes & course materials.'
                       : educationLevel === EducationLevel.JUNIOR
                         ? 'KPSEA prep & fun learning notes.'
-                        : 'Verified CBC past papers & professional revision notes.'}
+                        : 'Verified CBC original papers & professional revision notes.'}
                   </p>
                 </div>
 
@@ -8482,6 +8483,15 @@ ${explanation.explanation}
     if (mode === 'LIBRARY') {
       const libraryGradeScope = selectedGrade !== 'ALL' ? selectedGrade : (studentProfile?.grade || enrolledGrade);
       const learnerGradeKey = normalizeGrade(libraryGradeScope || '');
+      const isSomaOriginalPaper = (material: any) => {
+        const normalizedCategory = normalizeMaterialCategory(material?.category);
+        const source = String(material?.source || material?.marking_scheme_source || '').toUpperCase();
+        const title = String(material?.title || '').toLowerCase();
+        return normalizedCategory === 'PAST_PAPER' && (
+          source.includes('STRUCTURED_IMPORT') ||
+          /somaai\s+original|original mock|originals/.test(title)
+        );
+      };
       const parseGradeNumber = (grade: string) => {
         const g = String(grade || '').toLowerCase();
         const match = g.match(/\b(?:grade|form)\s*(\d{1,2})\b/) || g.match(/\b(\d{1,2})\b/);
@@ -8512,7 +8522,7 @@ ${explanation.explanation}
         return normalizeGrade(m.grade || '') === normalizeGrade(libraryGradeScope);
       });
       const featuredPaperResources = (preferredStarterResources.length > 0 ? preferredStarterResources : freeStarterResources)
-        .filter(m => normalizeMaterialCategory(m.category) === 'PAST_PAPER')
+        .filter(m => isSomaOriginalPaper(m))
         .sort((a, b) => compareGradeProximity(a.grade || '', b.grade || ''))
         .slice(0, 3);
       const proVaultResources = unifiedMaterials.filter(m => getMaterialAccessStatus(m) === 'PRO_INCLUDED' || getMaterialAccessStatus(m) === 'PRO_LOCKED');
@@ -8525,7 +8535,7 @@ ${explanation.explanation}
       const starterPaperResources = featuredPaperResources.length > 0
         ? featuredPaperResources
         : unlockedResources
-            .filter(m => normalizeMaterialCategory(m.category) === 'PAST_PAPER')
+            .filter(m => isSomaOriginalPaper(m))
             .sort((a, b) => compareGradeProximity(a.grade || '', b.grade || ''))
             .slice(0, 3);
 
@@ -8565,7 +8575,7 @@ ${explanation.explanation}
 
       // Group filtered books by category
       const syllabuses = categoryLibraryMaterials.filter(m => normalizeMaterialCategory(m.category) === 'SYLLABUS');
-      const pastPapers = categoryLibraryMaterials.filter(m => normalizeMaterialCategory(m.category) === 'PAST_PAPER');
+      const originalPapers = categoryLibraryMaterials.filter(m => isSomaOriginalPaper(m));
       const studyNotes = categoryLibraryMaterials.filter(m => normalizeMaterialCategory(m.category) === 'NOTES');
 
       // Helper to generate a gradient background class based on the subject name
@@ -8582,7 +8592,7 @@ ${explanation.explanation}
       const libraryCategoryMeta = {
         ALL: { label: 'All', count: visibleLibraryMaterials.length, pill: 'bg-slate-50 text-slate-600 dark:bg-slate-800 dark:text-slate-200' },
         SYLLABUS: { label: 'Syllabus', count: visibleLibraryMaterials.filter(m => normalizeMaterialCategory(m.category) === 'SYLLABUS').length, pill: 'bg-purple-50 text-purple-700 dark:bg-purple-950/40 dark:text-purple-200' },
-        PAST_PAPER: { label: 'Past Papers', count: visibleLibraryMaterials.filter(m => normalizeMaterialCategory(m.category) === 'PAST_PAPER').length, pill: 'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-200' },
+        PAST_PAPER: { label: 'SomaAI Originals', count: visibleLibraryMaterials.filter(m => isSomaOriginalPaper(m)).length, pill: 'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-200' },
         NOTES: { label: 'Notes', count: visibleLibraryMaterials.filter(m => normalizeMaterialCategory(m.category) === 'NOTES').length, pill: 'bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-200' },
       } as const;
 
@@ -8607,7 +8617,7 @@ ${explanation.explanation}
           <div className="sticky top-0 z-40 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 px-6 py-4 flex items-center justify-between">
             <div>
               <h1 className="text-xl font-black text-slate-900 dark:text-white tracking-tight leading-none">My Library</h1>
-              <p className="text-[10px] font-black text-indigo-500 uppercase tracking-[0.15em] mt-1.5">Past paper library</p>
+              <p className="text-[10px] font-black text-indigo-500 uppercase tracking-[0.15em] mt-1.5">SomaAI Originals library</p>
             </div>
             <button onClick={() => setMode('MENU')} className="p-2 hover:bg-slate-100 rounded-full transition-colors"><X className="w-5 h-5" /></button>
           </div>
@@ -8617,9 +8627,9 @@ ${explanation.explanation}
               <div className="absolute -right-10 -top-10 h-28 w-28 rounded-full bg-white/10 blur-2xl" />
               <div className="relative flex items-start justify-between gap-4">
                 <div className="min-w-0">
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-100">Past papers first</p>
-                  <h2 className="mt-2 text-xl font-black leading-tight">Open a real paper and start learning right away.</h2>
-                  <p className="mt-2 text-sm text-indigo-50/90 max-w-xl">Pick one paper, work through it under time, and use the feedback to recover marks fast.</p>
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-100">SomaAI Originals first</p>
+                  <h2 className="mt-2 text-xl font-black leading-tight">Welcome and start learning with a real SomaAI paper.</h2>
+                  <p className="mt-2 text-sm text-indigo-50/90 max-w-xl">Open a curated original mock, work through it under time, and use the feedback to recover marks fast.</p>
                 </div>
                 <div className="hidden sm:flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/10 border border-white/10">
                   <Layers className="h-6 w-6 text-emerald-200" />
@@ -8633,22 +8643,22 @@ ${explanation.explanation}
                       onClick={() => { setMode('REVISION'); setPendingMaterialId(item.id); }}
                       className="rounded-2xl border border-white/10 bg-white/10 p-4 text-left transition hover:bg-white/15"
                     >
-                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-200">Featured paper</p>
+                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-200">Featured original</p>
                       <p className="mt-2 text-sm font-bold leading-snug line-clamp-2">{item.title}</p>
-                      <p className="mt-2 text-[11px] text-indigo-100/80">Open this paper.</p>
+                      <p className="mt-2 text-[11px] text-indigo-100/80">Open this original mock.</p>
                     </button>
                   ))}
                 </div>
               ) : (
                 <div className="relative mt-5 rounded-2xl border border-white/10 bg-white/10 p-4 text-sm text-indigo-50/90">
-                  We're preparing your papers. As soon as a paper is ready, it appears here first.
+                  We're preparing your SomaAI Originals. As soon as one is ready, it appears here first.
                 </div>
               )}
             </div>
 
             {showingGradeFallback && (
               <div className="mb-5 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-[11px] font-bold uppercase tracking-[0.18em] text-emerald-700 dark:border-emerald-900/40 dark:bg-emerald-950/40 dark:text-emerald-200">
-                Showing Grade {studentProfile?.grade || enrolledGrade || 'ready'} materials while we finish matching exact papers.
+                Showing Grade {studentProfile?.grade || enrolledGrade || 'ready'} materials while we finish matching exact originals.
               </div>
             )}
 
@@ -8756,7 +8766,7 @@ ${explanation.explanation}
                   {activeLibraryCategory === 'SYLLABUS'
                     ? 'Syllabus items will appear here once they are ready.'
                     : activeLibraryCategory === 'PAST_PAPER'
-                      ? 'Past papers for your grade will appear here once they are ready.'
+                      ? 'SomaAI Originals for your grade will appear here once they are ready.'
                       : activeLibraryCategory === 'NOTES'
                         ? 'Notes for your grade will appear here once they are ready.'
                         : libraryView === 'PURCHASED'
@@ -8771,7 +8781,7 @@ ${explanation.explanation}
                         onClick={() => { setMode('REVISION'); setPendingMaterialId(item.id); }}
                         className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/70 p-4 transition hover:border-indigo-300 hover:bg-white dark:hover:bg-slate-800"
                       >
-                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-500">Ready paper</p>
+                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-500">Ready original</p>
                         <p className="mt-2 text-sm font-bold leading-snug text-slate-800 dark:text-slate-100 line-clamp-2">{item.title}</p>
                         <p className="mt-2 text-[11px] text-slate-500 dark:text-slate-400">{item.subject} ? {item.grade}</p>
                         <p className="mt-2 text-[11px] font-black text-indigo-600 dark:text-indigo-400">Open now</p>
@@ -8781,7 +8791,7 @@ ${explanation.explanation}
                 ) : null}
                 <div className="flex flex-wrap items-center justify-center gap-3">
                   <Button onClick={() => setMode('REVISION')} className="px-10 py-4 bg-indigo-600 text-white rounded-2xl shadow-xl shadow-indigo-100 font-black uppercase tracking-widest text-[10px] border-none">
-                    Open past papers
+                    Open originals
                   </Button>
                   <Button onClick={() => setMode('MARKETPLACE')} variant="outline" className="px-10 py-4 rounded-2xl font-black uppercase tracking-widest text-[10px]">
                     Back to library
@@ -8835,15 +8845,15 @@ ${explanation.explanation}
                   </div>
                 )}
 
-                {/* 2. Past Examination Papers */}
-                {pastPapers.length > 0 && (
+                {/* 2. SomaAI Original Papers */}
+                {originalPapers.length > 0 && (
                   <div>
                     <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
                       <span className="p-1 rounded bg-amber-100 dark:bg-amber-900/40 text-amber-600">PDF</span>
-                      Past paper lane ({pastPapers.length})
+                      SomaAI Originals lane ({originalPapers.length})
                     </h3>
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-6">
-                      {pastPapers.map(item => (
+                      {originalPapers.map(item => (
                         <motion.div
                           key={item.id}
                           whileHover={{ y: -6 }}
@@ -8855,12 +8865,12 @@ ${explanation.explanation}
                             {/* Book spine simulation */}
                             <div className="absolute top-0 bottom-0 left-0 w-3 bg-black/10 dark:bg-white/5 border-r border-black/5" />
                             <div className="absolute right-3 top-3 rounded-full bg-white/15 px-2.5 py-1 text-[8px] font-black uppercase tracking-[0.18em] text-white shadow-sm backdrop-blur">
-                              Paper
+                              Original
                             </div>
                             
                             <div className="flex items-center justify-between mb-2">
                               <span className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 bg-black/20 rounded-full">{item.grade}</span>
-                              <span className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 bg-amber-500/30 text-amber-100 rounded-full border border-amber-400/20">Exam Paper</span>
+                              <span className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 bg-amber-500/30 text-amber-100 rounded-full border border-amber-400/20">SomaAI Original</span>
                             </div>
                             
                             <div className="my-auto text-center">
@@ -8869,7 +8879,7 @@ ${explanation.explanation}
                             </div>
 
                             <div className="flex items-end justify-between border-t border-white/10 pt-2 text-[9px] font-bold opacity-80">
-                              <span className="rounded-full bg-white/10 px-2 py-0.5 text-white/90">Timed paper</span>
+                              <span className="rounded-full bg-white/10 px-2 py-0.5 text-white/90">Timed original</span>
                             </div>
                           </div>
                           <span className="mt-2 text-xs font-black text-slate-800 dark:text-slate-200 line-clamp-2 text-center group-hover:text-indigo-600 transition-colors">{item.title}</span>
@@ -9508,7 +9518,7 @@ ${explanation.explanation}
                   <ul className="space-y-1.5 text-xs font-bold text-slate-700">
                     <li>Step-by-step Ask Akili help that asks the learner to try first</li>
                     <li>Continue voice, quizzes, marking, and repair drills with learner plans</li>
-                    <li>Notes, past papers, and shareable parent progress proof</li>
+                    <li>Notes, original papers, and shareable parent progress proof</li>
                   </ul>
                 </div>
 
