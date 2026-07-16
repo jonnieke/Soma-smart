@@ -9526,28 +9526,22 @@ ${explanation.explanation}
                     }}
                     className="py-4 text-base shadow-xl shadow-indigo-200"
                   >
-                    Continue Learning - View Plans
+                    See learner plans
                   </Button>
                   <button
                     onClick={() => {
-                      trackFunnelEvent('credit_pack_selected', {
-                        source: 'learner_limit_modal',
-                        credits: LEARNING_CREDIT_PACKS[0].credits,
-                        amount_kes: LEARNING_CREDIT_PACKS[0].price
-                      });
                       setShowLimitModal(false);
-                      setSelectedPlan(LEARNING_CREDIT_PACKS[0]);
-                      setMode('PAYMENT' as any);
+                      handlePricingNavigation();
                     }}
                     className="w-full rounded-2xl border-2 border-indigo-100 bg-indigo-50 px-4 py-3 text-left hover:border-indigo-200 hover:bg-indigo-100 transition-colors"
                   >
-                    <span className="block text-[10px] font-black uppercase tracking-[0.18em] text-indigo-500">Need a small top-up?</span>
+                    <span className="block text-[10px] font-black uppercase tracking-[0.18em] text-indigo-500">Prefer to keep going?</span>
                     <span className="mt-1 flex items-center justify-between gap-3">
-                      <span className="text-sm font-black text-slate-800">Buy 30 Learning Credits</span>
+                      <span className="text-sm font-black text-slate-800">Open a smaller learner plan</span>
                       <span className="text-sm font-black text-indigo-700">from KES 20</span>
                     </span>
                     <span className="mt-1 block text-[11px] font-bold text-slate-500">
-                      Current wallet: {formatLearningCredits(learningCredits)} credit{learningCredits === 1 ? '' : 's'} - small top-ups keep you learning
+                      Plans keep revision, marking, and voice moving without interruption.
                     </span>
                   </button>
                   <button
@@ -9619,17 +9613,8 @@ ${explanation.explanation}
 
                 <h3 className="text-xl font-black text-slate-800 mb-2">Subscription Expired</h3>
                 <p className="text-slate-500 text-sm leading-relaxed mb-6">
-                  Your premium access has expired. You can keep learning with credits or renew with a small plan to continue enjoying <span className="text-indigo-600 font-bold">full plan access</span> to learning from as little as <span className="text-indigo-600 font-bold">KES 20</span>.
+                  Your premium access has expired. Choose a small plan to continue enjoying <span className="text-indigo-600 font-bold">full plan access</span> to learning from as little as <span className="text-indigo-600 font-bold">KES 20</span>.
                 </p>
-
-                <div className="mb-5 rounded-2xl border border-indigo-100 bg-indigo-50 px-4 py-3 text-left">
-                  <p className="text-[10px] font-black uppercase tracking-[0.18em] text-indigo-500">Wallet status</p>
-                  <p className="mt-1 text-sm font-bold text-slate-800">
-                    {learningCredits > 0
-                      ? `${formatLearningCredits(learningCredits)} learning credit${learningCredits === 1 ? '' : 's'} available`
-                      : 'No learning credits available'}
-                  </p>
-                </div>
 
                 <div className="space-y-3">
                   <Button
