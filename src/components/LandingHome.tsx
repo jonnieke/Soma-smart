@@ -53,6 +53,7 @@ type Props = {
     total_marks?: number | null;
     source?: string | null;
     exam_type?: string | null;
+    homepage_featured?: boolean | null;
   }>;
 };
 

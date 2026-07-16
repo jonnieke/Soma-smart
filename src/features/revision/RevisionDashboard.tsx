@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Lock, Sparkles, TrendingUp, ShieldCheck } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
-import { RevisionLanding } from './RevisionLanding';
+import { RevisionHubPage } from './RevisionHubPage';
 import { RevisionSession } from './RevisionSession';
 import { SyllabusViewer } from './SyllabusViewer';
 import { NotesViewer } from './NotesViewer';
@@ -148,7 +148,7 @@ export const RevisionDashboard: React.FC = () => {
     }
 
     return (
-        <RevisionLanding
+        <RevisionHubPage
             onStartSession={(data, mode) => {
                 const itemType = getItemType(data);
 
