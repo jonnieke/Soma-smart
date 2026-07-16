@@ -494,7 +494,7 @@ export const PaymentFlow: React.FC<Props> = ({ plan, materialId, onSuccess, onCa
                                 </div>
                                 <div>
                                     <h2 className="text-2xl font-black text-slate-900">M-Pesa checkout</h2>
-                                    <p className="text-slate-500 font-medium">Continue with {plan.name} for KES {plan.price.toLocaleString()}</p>
+                                    <p className="text-slate-500 font-medium">Continue with your learning plan for KES {plan.price.toLocaleString()}</p>
                                 </div>
                             </div>
 
@@ -699,12 +699,10 @@ export const PaymentFlow: React.FC<Props> = ({ plan, materialId, onSuccess, onCa
                                 <CheckCircle2 className="w-12 h-12" />
                             </div>
                             <h2 className="text-3xl font-black text-slate-900 mb-2">
-                                {isCreditPackCheckout ? 'Credits added' : 'You are in!'}
+                                Access added
                             </h2>
                             <p className="text-slate-500 font-medium mb-6">
-                                {isCreditPackCheckout
-                                    ? `${plan?.credits || 0} learning credits are being added for the active term.`
-                                    : 'Payment received. Your learning access is being updated right now.'}
+                                Payment received. Your learning access is being updated right now.
                             </p>
                             
                             {!isRegistered && existingStudentCode && payerMode === 'NEW' && (
