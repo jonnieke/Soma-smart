@@ -18,9 +18,9 @@ interface LibraryItem {
 }
 
 const typeConfig = {
-    SYLLABUS:   { label: 'Syllabus',    badge: 'Free', icon: '📖', bg: 'bg-purple-50 dark:bg-purple-900/20', border: 'border-purple-100 dark:border-purple-800/50' },
-    NOTES:      { label: 'Notes',       badge: 'Free', icon: '📝', bg: 'bg-blue-50 dark:bg-blue-900/20',    border: 'border-blue-100 dark:border-blue-800/50' },
-    PAST_PAPER: { label: 'Past Paper',  badge: 'Free', icon: '📄', bg: 'bg-amber-50 dark:bg-amber-900/20',  border: 'border-amber-100 dark:border-amber-800/50' },
+    SYLLABUS:   { label: 'Syllabus',    badge: 'Free', icon: '📖', bg: 'bg-purple-50 ', border: 'border-purple-100 ' },
+    NOTES:      { label: 'Notes',       badge: 'Free', icon: '📝', bg: 'bg-blue-50 ',    border: 'border-blue-100 ' },
+    PAST_PAPER: { label: 'Past Paper',  badge: 'Free', icon: '📄', bg: 'bg-amber-50 ',  border: 'border-amber-100 ' },
 } as const;
 
 const TABS = [
@@ -71,7 +71,7 @@ export const LibraryStorefront: React.FC<LibraryStorefrontProps> = ({ onGetAcces
                         📚 Content Library
                     </div>
                     <h2 className="text-3xl md:text-4xl font-bold text-slate-900 tracking-tight mb-3">
-                        Official Soma Study Materials, <span className="text-indigo-600 dark:text-indigo-400">All Free.</span>
+                        Official Soma Study Materials, <span className="text-indigo-600">All Free.</span>
                     </h2>
                     <p className="text-slate-500 max-w-xl mx-auto font-medium">
                         Browse verified syllabuses, expert notes, and KCSE/KPSEA past papers — free for every Kenyan learner.
@@ -141,16 +141,16 @@ export const LibraryStorefront: React.FC<LibraryStorefrontProps> = ({ onGetAcces
                                     whileInView={{ opacity: 1, y: 0 }}
                                     viewport={{ once: true }}
                                     transition={{ delay: idx * 0.05, duration: 0.4 }}
-                                    className={`flex flex-col justify-between p-5 rounded-2xl border-2 ${cfg.bg} ${cfg.border} hover:shadow-lg hover:-translate-y-0.5 transition-all group`}
+                                    className={`flex flex-col justify-between p-5 rounded-2xl border-2 ${cfg.bg} ${cfg.border} hover:shadow-lg hover:-translate-y-0.5 transition-all group bg-white`}
                                 >
                                     <div>
                                         <div className="flex items-center justify-between mb-3">
                                             <span className="text-2xl">{cfg.icon}</span>
-                                            <span className="text-[9px] font-black uppercase tracking-widest bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800/50">
+                                            <span className="text-[9px] font-black uppercase tracking-widest bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full border border-emerald-200 ">
                                                 {cfg.badge}
                                             </span>
                                         </div>
-                                        <h3 className="font-bold text-slate-900 text-sm leading-snug line-clamp-2 mb-3 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                                        <h3 className="font-bold text-slate-900 text-sm leading-snug line-clamp-2 mb-3 group-hover:text-indigo-600 transition-colors">
                                             {item.title}
                                         </h3>
                                         <div className="flex items-center gap-2 flex-wrap">
@@ -168,7 +168,7 @@ export const LibraryStorefront: React.FC<LibraryStorefrontProps> = ({ onGetAcces
                                     </div>
                                     <button
                                         onClick={onGetAccess}
-                                        className="mt-4 w-full py-2.5 bg-slate-900 text-white rounded-xl text-xs font-black hover:bg-indigo-600 hover:bg-indigo-50 transition-all active:scale-95 flex items-center justify-center gap-1"
+                                        className="mt-4 w-full py-2.5 bg-indigo-600 text-white rounded-xl text-xs font-black hover:bg-indigo-700 transition-all active:scale-95 flex items-center justify-center gap-1"
                                     >
                                         Access Free <ChevronRight className="w-3.5 h-3.5" />
                                     </button>
@@ -182,11 +182,11 @@ export const LibraryStorefront: React.FC<LibraryStorefrontProps> = ({ onGetAcces
                 <div className="mt-12 text-center">
                     <button
                         onClick={onGetAccess}
-                        className="inline-flex items-center gap-2 px-8 py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-2xl shadow-lg shadow-indigo-200  hover:-translate-y-0.5 transition-all"
+                        className="inline-flex items-center gap-2 px-8 py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-2xl shadow-lg shadow-indigo-200 hover:-translate-y-0.5 transition-all"
                     >
                         Browse Full Library <ChevronRight className="w-5 h-5" />
                     </button>
-                    <p className="text-xs text-slate-400 dark:text-slate-600 mt-3 font-medium">
+                    <p className="text-xs text-slate-400 mt-3 font-medium">
                         {items.length > 0 ? `${items.length}+` : 'Hundreds of'} materials available · Always free · No account required to browse
                     </p>
                 </div>
