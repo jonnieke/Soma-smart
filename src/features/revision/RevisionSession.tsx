@@ -595,26 +595,26 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
     // --- LOADING ---
     if (loadError) {
         return (
-            <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 dark:bg-slate-950 px-6 text-center transition-colors">
+            <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 px-6 text-center transition-colors">
                 <div className="w-16 h-16 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center mb-6">
                     <AlertTriangle className="w-8 h-8" />
                 </div>
-                <p className="text-slate-900 dark:text-white font-black text-2xl">This paper is not ready yet</p>
-                <p className="mt-3 max-w-lg text-slate-500 dark:text-slate-400 text-sm leading-6">{loadError} Open a ready past paper from the library and keep practicing right away.</p>
-                <button onClick={onExit} className="mt-6 rounded-2xl bg-indigo-600 px-6 py-3 text-sm font-black text-white shadow-lg shadow-indigo-600/20">Open paper library</button>
+                <p className="text-slate-900 font-black text-2xl">This paper is not ready yet</p>
+                <p className="mt-3 max-w-lg text-slate-500 text-sm leading-6">{loadError} Open a ready past paper from the library and keep practicing right away.</p>
+                <button onClick={onExit} className="mt-6 rounded-2xl bg-indigo-600 px-6 py-3 text-sm font-black text-slate-900 shadow-lg shadow-indigo-600/20">Open paper library</button>
             </div>
         );
     }
     if (phase === 'LOADING') {
         return (
-            <div className="h-screen flex flex-col items-center justify-center bg-slate-50 dark:bg-slate-950 transition-colors">
+            <div className="h-screen flex flex-col items-center justify-center bg-slate-50 transition-colors">
                 <div className="w-16 h-16 relative mb-6">
-                    <div className="absolute inset-0 border-4 border-indigo-200 dark:border-indigo-900/30 rounded-full"></div>
-                    <div className="absolute inset-0 border-4 border-indigo-600 dark:border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
-                    <Brain className="w-6 h-6 text-indigo-600 dark:text-indigo-400 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+                    <div className="absolute inset-0 border-4 border-indigo-200 rounded-full"></div>
+                    <div className="absolute inset-0 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+                    <Brain className="w-6 h-6 text-indigo-600 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
                 </div>
-                <p className="text-slate-700 dark:text-white font-bold text-lg mb-1">Analyzing Paper</p>
-                <p className="text-slate-400 dark:text-slate-500 text-sm animate-pulse">{loadingText}</p>
+                <p className="text-slate-700 font-bold text-lg mb-1">Analyzing Paper</p>
+                <p className="text-slate-500 text-sm animate-pulse">{loadingText}</p>
             </div>
         );
     }
@@ -631,15 +631,15 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
         const hasOfficialDuration = Boolean(analysis.durationMinutes);
         const finalMins = analysis.durationMinutes || (customMinutes ? parseInt(customMinutes) : preExamMinutes);
         return (
-            <div className="h-screen bg-slate-950 flex flex-col items-center justify-center p-6 font-sans">
+            <div className="h-screen bg-slate-50 flex flex-col items-center justify-center p-6 font-sans">
                 <div className="w-full max-w-sm space-y-6">
                     {/* Header */}
                     <div className="text-center">
                         <div className="w-16 h-16 bg-indigo-900/40 border border-indigo-700/60 rounded-2xl flex items-center justify-center mx-auto mb-4">
                             <Timer className="w-8 h-8 text-indigo-400" />
                         </div>
-                        <h2 className="text-white font-black text-xl">{hasOfficialDuration ? 'Official Exam Setup' : 'Set Exam Time'}</h2>
-                        <p className="text-slate-400 text-sm mt-1 font-medium">
+                        <h2 className="text-slate-900 font-black text-xl">{hasOfficialDuration ? 'Official Exam Setup' : 'Set Exam Time'}</h2>
+                        <p className="text-slate-500 text-sm mt-1 font-medium">
                             {analysis.subject}  -  {analysis.questions.length} questions  -  {totalMarks} marks
                         </p>
                     </div>
@@ -647,8 +647,8 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
                     {hasOfficialDuration && (
                         <div className="rounded-2xl border border-indigo-700/60 bg-indigo-900/30 p-5 text-center">
                             <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-300">Official paper duration</p>
-                            <p className="mt-2 text-3xl font-black text-white">{analysis.durationMinutes} minutes</p>
-                            <p className="mt-1 text-xs text-slate-400">Timed Exam uses the duration approved with this paper.</p>
+                            <p className="mt-2 text-3xl font-black text-slate-900">{analysis.durationMinutes} minutes</p>
+                            <p className="mt-1 text-xs text-slate-500">Timed Exam uses the duration approved with this paper.</p>
                         </div>
                     )}
 
@@ -660,8 +660,8 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
                                 onClick={() => { setPreExamMinutes(p.mins); setCustomMinutes(''); }}
                                 className={`p-4 rounded-2xl border text-left transition-all ${
                                     preExamMinutes === p.mins && !customMinutes
-                                        ? 'bg-indigo-600 border-indigo-500 text-white'
-                                        : 'bg-slate-900 border-slate-700 text-slate-300 hover:border-slate-500'
+                                        ? 'bg-indigo-600 border-indigo-500 text-slate-900'
+                                        : 'bg-white border-slate-200 text-slate-600 hover:border-slate-500'
                                 }`}
                             >
                                 <p className="font-black text-sm">{p.label}</p>
@@ -679,16 +679,16 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
                             onChange={e => setCustomMinutes(e.target.value)}
                             placeholder="e.g. 90"
                             min="10" max="300"
-                            className="w-full bg-slate-900 border border-slate-700 focus:border-indigo-500 rounded-xl px-3 py-2.5 text-sm text-white outline-none transition-colors placeholder:text-slate-600"
+                            className="w-full bg-white border border-slate-200 focus:border-indigo-500 rounded-xl px-3 py-2.5 text-sm text-slate-900 outline-none transition-colors placeholder:text-slate-600"
                         />
                     </div>
 
                     {hasSectionTwo && (
-                        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-4">
+                        <div className="bg-white border border-slate-200 rounded-2xl p-4 space-y-4">
                             <div className="flex items-center justify-between gap-3">
                                 <div>
                                     <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-300">KCSE section choice</p>
-                                    <p className="text-sm text-slate-300 font-medium">Section I is compulsory. Section II: choose any 5 questions.</p>
+                                    <p className="text-sm text-slate-600 font-medium">Section I is compulsory. Section II: choose any 5 questions.</p>
                                 </div>
                                 <span className={`text-xs font-black px-3 py-1 rounded-full ${canStartSectionedPaper ? 'bg-emerald-500/20 text-emerald-300' : 'bg-amber-500/20 text-amber-300'}`}>
                                     {selectedQuestionCount}/5 selected
@@ -700,7 +700,7 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
                                     <p className="text-[10px] font-black uppercase tracking-wider text-slate-500 mb-2">Section I / compulsory</p>
                                     <div className="flex flex-wrap gap-2">
                                         {sectionOneQuestions.map(question => (
-                                            <span key={String(question.id)} className="rounded-xl border border-slate-700 bg-slate-800 px-3 py-1.5 text-xs font-black text-slate-300">
+                                            <span key={String(question.id)} className="rounded-xl border border-slate-200 bg-slate-100 px-3 py-1.5 text-xs font-black text-slate-600">
                                                 Q{question.number}
                                             </span>
                                         ))}
@@ -719,7 +719,7 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
                                                     key={String(question.id)}
                                                     type="button"
                                                     onClick={() => toggleSectionTwoQuestion(String(question.id))}
-                                                    className={`rounded-xl border px-3 py-1.5 text-xs font-black transition-colors ${isSelected ? 'border-indigo-500 bg-indigo-600 text-white' : 'border-slate-700 bg-slate-800 text-slate-300 hover:border-slate-500'}`}
+                                                    className={`rounded-xl border px-3 py-1.5 text-xs font-black transition-colors ${isSelected ? 'border-indigo-500 bg-indigo-600 text-slate-900' : 'border-slate-200 bg-slate-100 text-slate-600 hover:border-slate-500'}`}
                                                 >
                                                     Q{question.number}
                                                 </button>
@@ -732,18 +732,18 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
                     )}
 
                     {/* Summary */}
-                    <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4">
+                    <div className="bg-white border border-slate-200 rounded-2xl p-4">
                         <div className="flex justify-between text-sm">
-                            <span className="text-slate-400 font-medium">Time per question (avg)</span>
-                            <span className="text-white font-black">{formatTime(Math.floor((finalMins * 60) / analysis.questions.length))}</span>
+                            <span className="text-slate-500 font-medium">Time per question (avg)</span>
+                            <span className="text-slate-900 font-black">{formatTime(Math.floor((finalMins * 60) / analysis.questions.length))}</span>
                         </div>
                         <div className="flex justify-between text-sm mt-2">
-                            <span className="text-slate-400 font-medium">Total exam time</span>
-                            <span className="text-white font-black">{finalMins} min</span>
+                            <span className="text-slate-500 font-medium">Total exam time</span>
+                            <span className="text-slate-900 font-black">{finalMins} min</span>
                         </div>
                         <div className="flex justify-between text-sm mt-2">
-                            <span className="text-slate-400 font-medium">Time per mark (avg)</span>
-                            <span className="text-white font-black">{Math.round((finalMins * 60) / totalMarks)}s</span>
+                            <span className="text-slate-500 font-medium">Time per mark (avg)</span>
+                            <span className="text-slate-900 font-black">{Math.round((finalMins * 60) / totalMarks)}s</span>
                         </div>
                     </div>
 
@@ -757,7 +757,7 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
                     >
                         <Timer className="w-5 h-5" /> {hasSectionTwo && !canStartSectionedPaper ? 'Select 5 Section II questions' : 'Start Exam'}  -  {finalMins} min
                     </motion.button>
-                    <button onClick={() => setPhase('DASHBOARD')} className="w-full text-slate-500 text-sm font-bold hover:text-slate-300 transition-colors">
+                    <button onClick={() => setPhase('DASHBOARD')} className="w-full text-slate-500 text-sm font-bold hover:text-slate-600 transition-colors">
                         ? Back to Paper
                     </button>
                 </div>
@@ -776,22 +776,22 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
             : null;
 
         return (
-            <div className="h-screen bg-slate-50 dark:bg-slate-950 flex flex-col overflow-hidden font-sans transition-colors duration-300">
+            <div className="h-screen bg-slate-50 flex flex-col overflow-hidden font-sans transition-colors duration-300">
                 {/* Header */}
-                <div className="bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 px-4 py-3 flex items-center justify-between shadow-sm transition-colors">
+                <div className="bg-white border-b border-slate-100 px-4 py-3 flex items-center justify-between shadow-sm transition-colors">
                     <div className="flex items-center gap-3">
-                        <button onClick={onExit} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors">
-                            <ArrowLeft className="w-5 h-5 text-slate-600 dark:text-slate-400" />
+                        <button onClick={onExit} className="p-2 hover:bg-slate-100 rounded-xl transition-colors">
+                            <ArrowLeft className="w-5 h-5 text-slate-600" />
                         </button>
                         <div>
-                            <h1 className="text-base font-black text-slate-900 dark:text-white">{analysis.subject}  -  {analysis.grade}</h1>
-                            <p className="text-[10px] text-slate-400 dark:text-slate-500">{analysis.questions.length} questions / {totalMarks} marks</p>
+                            <h1 className="text-base font-black text-slate-900">{analysis.subject}  -  {analysis.grade}</h1>
+                            <p className="text-[10px] text-slate-500">{analysis.questions.length} questions / {totalMarks} marks</p>
                         </div>
                     </div>
                     {avgScore !== null && (
-                        <div className="bg-indigo-50 dark:bg-indigo-950/40 px-3 py-1.5 rounded-xl">
-                            <p className="text-[10px] text-indigo-400 dark:text-indigo-400/80 font-bold">YOUR AVERAGE</p>
-                            <p className={`text-lg font-black ${avgScore >= 70 ? 'text-emerald-600 dark:text-emerald-400' : avgScore >= 50 ? 'text-amber-600 dark:text-amber-400' : 'text-red-500 dark:text-red-400'}`}>
+                        <div className="bg-indigo-50 px-3 py-1.5 rounded-xl">
+                            <p className="text-[10px] text-indigo-400 font-bold">YOUR AVERAGE</p>
+                            <p className={`text-lg font-black ${avgScore >= 70 ? 'text-emerald-600' : avgScore >= 50 ? 'text-amber-600' : 'text-red-500'}`}>
                                 {avgScore}%
                             </p>
                         </div>
@@ -801,29 +801,29 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
                 {/* Content */}
                 <div className="flex-1 overflow-y-auto">
                     <div className="max-w-2xl mx-auto p-4 space-y-4">
-                        <section className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 shadow-sm">
+                        <section className="bg-white border border-slate-200 rounded-3xl p-5 shadow-sm">
                             <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-500 mb-1">Past papers first</p>
-                            <h2 className="text-xl font-black text-slate-950 dark:text-white leading-tight">Open this paper and start learning right away.</h2>
-                            <p className="mt-2 text-sm text-slate-500 dark:text-slate-400 leading-6">Work through the paper like the exam, then use feedback to recover marks fast.</p>
-                            <div className="mt-4 flex flex-wrap gap-2 text-[11px] font-black uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
-                                <span className="rounded-full border border-slate-200 dark:border-slate-800 px-3 py-2">{analysis.subject}</span>
-                                <span className="rounded-full border border-slate-200 dark:border-slate-800 px-3 py-2">{analysis.grade}</span>
-                                <span className="rounded-full border border-slate-200 dark:border-slate-800 px-3 py-2">{analysis.questions.length} questions</span>
-                                <span className="rounded-full border border-slate-200 dark:border-slate-800 px-3 py-2">{totalMarks} marks</span>
+                            <h2 className="text-xl font-black text-slate-950 leading-tight">Open this paper and start learning right away.</h2>
+                            <p className="mt-2 text-sm text-slate-500 leading-6">Work through the paper like the exam, then use feedback to recover marks fast.</p>
+                            <div className="mt-4 flex flex-wrap gap-2 text-[11px] font-black uppercase tracking-[0.14em] text-slate-500">
+                                <span className="rounded-full border border-slate-200 px-3 py-2">{analysis.subject}</span>
+                                <span className="rounded-full border border-slate-200 px-3 py-2">{analysis.grade}</span>
+                                <span className="rounded-full border border-slate-200 px-3 py-2">{analysis.questions.length} questions</span>
+                                <span className="rounded-full border border-slate-200 px-3 py-2">{totalMarks} marks</span>
                             </div>
                             {hasSectionTwo && (
-                                <p className="mt-4 text-sm font-semibold text-slate-600 dark:text-slate-300">Section I is compulsory. Section II: choose any 5 questions.</p>
+                                <p className="mt-4 text-sm font-semibold text-slate-600">Section I is compulsory. Section II: choose any 5 questions.</p>
                             )}
                             <div className="mt-5 flex flex-wrap gap-3">
                                 <button
                                     onClick={() => setPhase('PRE_EXAM')}
-                                    className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-indigo-600 px-5 text-sm font-black text-white shadow-lg shadow-indigo-600/20 transition hover:bg-indigo-500"
+                                    className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-indigo-600 px-5 text-sm font-black text-slate-900 shadow-lg shadow-indigo-600/20 transition hover:bg-indigo-500"
                                 >
                                     Start paper <ArrowRight className="w-4 h-4" />
                                 </button>
                                 <button
                                     onClick={() => { void startQuiz(ExamPracticeMode.FULL_PAPER); }}
-                                    className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-5 text-sm font-bold text-slate-700 dark:text-slate-200 transition hover:bg-slate-50 dark:hover:bg-slate-900"
+                                    className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 text-sm font-bold text-slate-700 transition hover:bg-slate-50"
                                 >
                                     Practice only
                                 </button>
@@ -831,16 +831,16 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
                         </section>
 
 
-                        <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm">
+                        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
                             <div className="flex items-start justify-between gap-3">
                                 <div>
-                                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Stay focused</p>
-                                    <p className="mt-1 text-sm font-semibold text-slate-700 dark:text-slate-200">Start the paper first. Open more tools only if you need help.</p>
+                                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Stay focused</p>
+                                    <p className="mt-1 text-sm font-semibold text-slate-700">Start the paper first. Open more tools only if you need help.</p>
                                 </div>
                                 <button
                                     type="button"
                                     onClick={() => setShowAdvancedTools(prev => !prev)}
-                                    className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 px-4 py-2 text-xs font-black uppercase tracking-[0.14em] text-slate-600 dark:text-slate-300"
+                                    className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2 text-xs font-black uppercase tracking-[0.14em] text-slate-600"
                                 >
                                     {showAdvancedTools ? "Hide tools" : "More tools"}
                                 </button>
@@ -855,7 +855,7 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
                                         whileHover={{ scale: 1.02 }}
                                         whileTap={{ scale: 0.98 }}
                                         onClick={() => setPhase('PRE_EXAM')}
-                                        className="bg-gradient-to-br from-indigo-600 to-blue-700 text-white p-5 rounded-2xl text-left shadow-lg"
+                                        className="bg-gradient-to-br from-indigo-600 to-blue-700 text-slate-900 p-5 rounded-2xl text-left shadow-lg"
                                     >
                                         <Timer className="w-6 h-6 mb-3 opacity-80" />
                                         <p className="font-black text-sm mb-1">Timed Exam</p>
@@ -866,7 +866,7 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
                                         whileHover={{ scale: 1.02 }}
                                         whileTap={{ scale: 0.98 }}
                                         onClick={() => { void startQuiz(ExamPracticeMode.FULL_PAPER); }}
-                                        className="bg-gradient-to-br from-emerald-600 to-teal-700 text-white p-5 rounded-2xl text-left shadow-lg"
+                                        className="bg-gradient-to-br from-emerald-600 to-teal-700 text-slate-900 p-5 rounded-2xl text-left shadow-lg"
                                     >
                                         <FileText className="w-6 h-6 mb-3 opacity-80" />
                                         <p className="font-black text-sm mb-1">Full Paper</p>
@@ -879,29 +879,29 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
                                     <button
                                         onClick={handleStrategy}
                                         disabled={loadingStrategy}
-                                        className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 rounded-2xl text-left hover:border-indigo-300 dark:hover:border-indigo-700 transition-all disabled:opacity-60"
+                                        className="bg-white border border-slate-200 p-4 rounded-2xl text-left hover:border-indigo-300 transition-all disabled:opacity-60"
                                     >
                                         {loadingStrategy ? (
                                             <Loader2 className="w-5 h-5 text-indigo-400 animate-spin mb-2" />
                                         ) : (
-                                            <Target className="w-5 h-5 text-indigo-500 dark:text-indigo-400 mb-2" />
+                                            <Target className="w-5 h-5 text-indigo-500 mb-2" />
                                         )}
-                                        <p className="font-bold text-xs text-slate-800 dark:text-slate-200">Exam Strategy</p>
-                                        <p className="text-[10px] text-slate-400 dark:text-slate-500">Time allocation & tips</p>
+                                        <p className="font-bold text-xs text-slate-800">Exam Strategy</p>
+                                        <p className="text-[10px] text-slate-500">Time allocation & tips</p>
                                     </button>
 
                                     <button
                                         onClick={handlePredictions}
                                         disabled={loadingPredictions}
-                                        className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 rounded-2xl text-left hover:border-amber-300 dark:hover:border-amber-700 transition-all disabled:opacity-60"
+                                        className="bg-white border border-slate-200 p-4 rounded-2xl text-left hover:border-amber-300 transition-all disabled:opacity-60"
                                     >
                                         {loadingPredictions ? (
                                             <Loader2 className="w-5 h-5 text-amber-400 animate-spin mb-2" />
                                         ) : (
-                                            <Zap className="w-5 h-5 text-amber-500 dark:text-amber-400 mb-2" />
+                                            <Zap className="w-5 h-5 text-amber-500 mb-2" />
                                         )}
-                                        <p className="font-bold text-xs text-slate-800 dark:text-slate-200">High-Yield Practice</p>
-                                        <p className="text-[10px] text-slate-400 dark:text-slate-500">Frequently tested skills to practise next</p>
+                                        <p className="font-bold text-xs text-slate-800">High-Yield Practice</p>
+                                        <p className="text-[10px] text-slate-500">Frequently tested skills to practise next</p>
                                     </button>
                                 </div>
 
@@ -910,13 +910,13 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
                                     <motion.div
                                         initial={{ opacity: 0, y: 10 }}
                                         animate={{ opacity: 1, y: 0 }}
-                                        className="bg-white dark:bg-slate-900 border border-indigo-200 dark:border-indigo-900/50 rounded-2xl p-5"
+                                        className="bg-white border border-indigo-200 rounded-2xl p-5"
                                     >
                                         <div className="flex items-center gap-2 mb-3">
-                                            <Target className="w-4 h-4 text-indigo-500 dark:text-indigo-400" />
-                                            <span className="font-bold text-sm text-indigo-800 dark:text-indigo-300">Exam Strategy</span>
+                                            <Target className="w-4 h-4 text-indigo-500" />
+                                            <span className="font-bold text-sm text-indigo-800">Exam Strategy</span>
                                         </div>
-                                        <div className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-wrap font-medium">
+                                        <div className="text-xs text-slate-700 leading-relaxed whitespace-pre-wrap font-medium">
                                             {strategy}
                                         </div>
                                     </motion.div>
@@ -927,29 +927,29 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
                                     <motion.div
                                         initial={{ opacity: 0, y: 10 }}
                                         animate={{ opacity: 1, y: 0 }}
-                                        className="bg-white dark:bg-slate-900 border border-amber-200 dark:border-amber-900/50 rounded-2xl overflow-hidden shadow-sm"
+                                        className="bg-white border border-amber-200 rounded-2xl overflow-hidden shadow-sm"
                                     >
-                                        <div className="bg-amber-50 dark:bg-amber-950/30 px-5 py-3 border-b border-amber-100 dark:border-amber-900/50 flex items-center justify-between">
+                                        <div className="bg-amber-50 px-5 py-3 border-b border-amber-100 flex items-center justify-between">
                                             <div className="flex items-center gap-2">
-                                                <Zap className="w-4 h-4 text-amber-500 dark:text-amber-400" />
-                                                <span className="font-bold text-sm text-amber-800 dark:text-amber-300">High-Yield Practice</span>
+                                                <Zap className="w-4 h-4 text-amber-500" />
+                                                <span className="font-bold text-sm text-amber-800">High-Yield Practice</span>
                                             </div>
                                             <button
                                                 onClick={() => { void startQuiz(ExamPracticeMode.PRACTICE_BY_TOPIC, predictions.questions); }}
-                                                className="text-[10px] font-black bg-amber-500 hover:bg-amber-600 text-white px-3 py-1 rounded-full transition-colors"
+                                                className="text-[10px] font-black bg-amber-500 hover:bg-amber-600 text-slate-900 px-3 py-1 rounded-full transition-colors"
                                             >
                                                 Attempt These
                                             </button>
                                         </div>
                                         <div className="p-4 space-y-3">
                                             {predictions.questions.map(q => (
-                                                <div key={q.id} className="flex items-start gap-3 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
-                                                    <span className="text-[10px] font-black text-amber-600 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/40 px-2 py-0.5 rounded shrink-0 mt-0.5">Q{q.number}</span>
+                                                <div key={q.id} className="flex items-start gap-3 p-3 bg-slate-50 rounded-xl">
+                                                    <span className="text-[10px] font-black text-amber-600 bg-amber-100 px-2 py-0.5 rounded shrink-0 mt-0.5">Q{q.number}</span>
                                                     <div className="flex-1 min-w-0">
-                                                        <p className="text-xs text-slate-700 dark:text-slate-300 font-medium line-clamp-2">{q.text}</p>
+                                                        <p className="text-xs text-slate-700 font-medium line-clamp-2">{q.text}</p>
                                                         <div className="flex gap-2 mt-1">
-                                                            <span className="text-[9px] text-slate-400 dark:text-slate-500 font-bold uppercase">{q.topic}</span>
-                                                            <span className="text-[9px] text-indigo-400 dark:text-indigo-500 font-bold">{q.marks} marks</span>
+                                                            <span className="text-[9px] text-slate-500 font-bold uppercase">{q.topic}</span>
+                                                            <span className="text-[9px] text-indigo-400 font-bold">{q.marks} marks</span>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -961,34 +961,34 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
                         )}
 
                         {/* Questions List */}
-                        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden transition-colors">
+                        <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden transition-colors">
                             <button
                                 onClick={() => setExpandedSection(expandedSection === 'questions' ? null : 'questions')}
-                                className="w-full px-5 py-4 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                                className="w-full px-5 py-4 flex items-center justify-between hover:bg-slate-50 transition-colors"
                             >
                                 <div className="flex items-center gap-2">
-                                    <FileText className="w-4 h-4 text-slate-500 dark:text-slate-400" />
-                                    <span className="font-bold text-sm text-slate-800 dark:text-slate-200">Paper Questions ({analysis.questions.length})</span>
+                                    <FileText className="w-4 h-4 text-slate-500" />
+                                    <span className="font-bold text-sm text-slate-800">Paper Questions ({analysis.questions.length})</span>
                                 </div>
-                                {expandedSection === 'questions' ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
+                                {expandedSection === 'questions' ? <ChevronUp className="w-4 h-4 text-slate-500" /> : <ChevronDown className="w-4 h-4 text-slate-500" />}
                             </button>
                             {expandedSection === 'questions' && (
-                                <div className="border-t border-slate-100 dark:border-slate-800 p-4 space-y-2 max-h-64 overflow-y-auto">
+                                <div className="border-t border-slate-100 p-4 space-y-2 max-h-64 overflow-y-auto">
                                     {analysis.questions.map(q => (
                                         <div
                                             key={q.id}
-                                            className="flex items-start gap-3 p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer transition-colors"
+                                            className="flex items-start gap-3 p-3 rounded-xl hover:bg-slate-50 cursor-pointer transition-colors"
                                             onClick={() => { void startQuiz(ExamPracticeMode.PRACTICE_BY_TOPIC, [q]); }}
                                         >
-                                            <span className="text-[10px] font-black text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/40 px-2 py-0.5 rounded shrink-0">Q{q.number}</span>
+                                            <span className="text-[10px] font-black text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded shrink-0">Q{q.number}</span>
                                             <div className="flex-1 min-w-0">
-                                                <p className="text-xs text-slate-700 dark:text-slate-300 line-clamp-2 font-medium">{q.text}</p>
+                                                <p className="text-xs text-slate-700 line-clamp-2 font-medium">{q.text}</p>
                                                 <div className="flex gap-2 mt-1">
-                                                    <span className="text-[9px] bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 px-1.5 py-0.5 rounded font-bold uppercase">{q.topic}</span>
-                                                    {q.marks && <span className="text-[9px] text-slate-400 dark:text-slate-500">{q.marks}m</span>}
+                                                    <span className="text-[9px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded font-bold uppercase">{q.topic}</span>
+                                                    {q.marks && <span className="text-[9px] text-slate-500">{q.marks}m</span>}
                                                 </div>
                                             </div>
-                                            <ChevronRight className="w-3 h-3 text-slate-300 dark:text-slate-600 shrink-0 mt-1" />
+                                            <ChevronRight className="w-3 h-3 text-slate-600 shrink-0 mt-1" />
                                         </div>
                                     ))}
                                 </div>
@@ -997,26 +997,26 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
 
                         {/* Performance History */}
                         {pastPerformance.length > 0 && (
-                            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden transition-colors">
+                            <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden transition-colors">
                                 <button
                                     onClick={() => setExpandedSection(expandedSection === 'performance' ? null : 'performance')}
-                                    className="w-full px-5 py-4 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                                    className="w-full px-5 py-4 flex items-center justify-between hover:bg-slate-50 transition-colors"
                                 >
                                     <div className="flex items-center gap-2">
-                                        <BarChart3 className="w-4 h-4 text-emerald-500 dark:text-emerald-400" />
-                                        <span className="font-bold text-sm text-slate-800 dark:text-slate-200">Your Performance</span>
+                                        <BarChart3 className="w-4 h-4 text-emerald-500" />
+                                        <span className="font-bold text-sm text-slate-800">Your Performance</span>
                                     </div>
-                                    {expandedSection === 'performance' ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
+                                    {expandedSection === 'performance' ? <ChevronUp className="w-4 h-4 text-slate-500" /> : <ChevronDown className="w-4 h-4 text-slate-500" />}
                                 </button>
                                 {expandedSection === 'performance' && (
-                                    <div className="border-t border-slate-100 dark:border-slate-800 p-4 space-y-2 max-h-64 overflow-y-auto">
+                                    <div className="border-t border-slate-100 p-4 space-y-2 max-h-64 overflow-y-auto">
                                         {pastPerformance.slice(-10).reverse().map(p => (
-                                            <div key={p.id} className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
+                                            <div key={p.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
                                                 <div>
-                                                    <p className="text-xs font-black text-slate-700 dark:text-slate-200">{p.subject}  -  {p.grade}</p>
-                                                    <p className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">{new Date(p.date).toLocaleDateString()} / {p.correctAnswers}/{p.totalQuestions} correct</p>
+                                                    <p className="text-xs font-black text-slate-700">{p.subject}  -  {p.grade}</p>
+                                                    <p className="text-[10px] text-slate-500 font-medium">{new Date(p.date).toLocaleDateString()} / {p.correctAnswers}/{p.totalQuestions} correct</p>
                                                 </div>
-                                                <div className={`text-lg font-black ${p.score >= 70 ? 'text-emerald-600 dark:text-emerald-400' : p.score >= 50 ? 'text-amber-600 dark:text-amber-400' : 'text-red-500 dark:text-red-400'}`}>
+                                                <div className={`text-lg font-black ${p.score >= 70 ? 'text-emerald-600' : p.score >= 50 ? 'text-amber-600' : 'text-red-500'}`}>
                                                     {p.score}%
                                                 </div>
                                             </div>
@@ -1037,22 +1037,22 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
         const progress = (currentQuestionIdx / quizQuestions.length) * 100;
 
         return (
-            <div className="h-screen bg-slate-50 dark:bg-slate-950 flex flex-col overflow-hidden font-sans transition-colors duration-300">
+            <div className="h-screen bg-slate-50 flex flex-col overflow-hidden font-sans transition-colors duration-300">
                 {/* Header */}
-                <div className="bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 px-4 py-3 shadow-sm transition-colors">
+                <div className="bg-white border-b border-slate-100 px-4 py-3 shadow-sm transition-colors">
                     <div className="flex items-center justify-between mb-2">
-                        <button onClick={onExit} className="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors">
-                            <ArrowLeft className="w-4 h-4 text-slate-500 dark:text-slate-400" />
+                        <button onClick={onExit} className="p-1 hover:bg-slate-100 rounded-lg transition-colors">
+                            <ArrowLeft className="w-4 h-4 text-slate-500" />
                         </button>
-                        <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                        <p className="text-[10px] font-black text-slate-500 uppercase tracking-wider">
                             Question {currentQuestionIdx + 1} of {quizQuestions.length}
                         </p>
-                        <span className="bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 text-[10px] font-black px-2 py-1 rounded-full uppercase">
+                        <span className="bg-purple-100 text-purple-700 text-[10px] font-black px-2 py-1 rounded-full uppercase">
                             ?? Explain First
                         </span>
                     </div>
-                    <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-1.5">
-                        <motion.div className="bg-purple-600 dark:bg-purple-500 h-1.5 rounded-full" animate={{ width: `${progress}%` }} transition={{ duration: 0.3 }} />
+                    <div className="w-full bg-slate-100 rounded-full h-1.5">
+                        <motion.div className="bg-purple-600 h-1.5 rounded-full" animate={{ width: `${progress}%` }} transition={{ duration: 0.3 }} />
                     </div>
                 </div>
 
@@ -1062,20 +1062,20 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
                         <motion.div
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
-                            className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm transition-colors"
+                            className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm transition-colors"
                         >
                             <div className="flex items-center justify-between mb-4">
                                 <div className="flex items-center gap-2">
-                                    <span className="bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-400 px-3 py-1 rounded-lg text-sm font-black">Q{question.number}</span>
-                                    <span className="text-[10px] text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded uppercase font-bold">{question.topic}</span>
+                                    <span className="bg-indigo-100 text-indigo-700 px-3 py-1 rounded-lg text-sm font-black">Q{question.number}</span>
+                                    <span className="text-[10px] text-slate-500 bg-slate-100 px-2 py-1 rounded uppercase font-bold">{question.topic}</span>
                                     {question.section && (
-                                        <span className="text-[10px] text-indigo-600 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-900/40 px-2 py-1 rounded uppercase font-bold">Section {question.section}</span>
+                                        <span className="text-[10px] text-indigo-600 bg-indigo-50 px-2 py-1 rounded uppercase font-bold">Section {question.section}</span>
                                     )}
                                 </div>
-                                <span className="text-xs font-black text-slate-500 dark:text-slate-500">{question.marks || 2} marks</span>
+                                <span className="text-xs font-black text-slate-500">{question.marks || 2} marks</span>
                             </div>
-                            <p className="text-slate-800 dark:text-slate-200 text-sm leading-relaxed font-black">{question.text}</p>
-                            {question.diagramUrl && <img src={question.diagramUrl} alt={`Diagram for question ${question.number}`} className="mt-4 max-h-80 w-full rounded-2xl border border-slate-200 object-contain dark:border-slate-700" />}
+                            <p className="text-slate-800 text-sm leading-relaxed font-black">{question.text}</p>
+                            {question.diagramUrl && <img src={question.diagramUrl} alt={`Diagram for question ${question.number}`} className="mt-4 max-h-80 w-full rounded-2xl border border-slate-200 object-contain" />}
                         </motion.div>
 
                         {/* Loading Explanation */}
@@ -1083,11 +1083,11 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
                             <motion.div
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
-                                className="bg-purple-50 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-900/40 rounded-2xl p-6 text-center"
+                                className="bg-purple-50 border border-purple-200 rounded-2xl p-6 text-center"
                             >
-                                <Loader2 className="w-8 h-8 text-purple-600 dark:text-purple-400 animate-spin mx-auto mb-3" />
-                                <p className="font-bold text-sm text-purple-800 dark:text-purple-300">Analyzing this question for you...</p>
-                                <p className="text-xs text-purple-500 dark:text-purple-500 mt-1 font-medium">Understanding what it tests and how to approach it</p>
+                                <Loader2 className="w-8 h-8 text-purple-600 animate-spin mx-auto mb-3" />
+                                <p className="font-bold text-sm text-purple-800">Analyzing this question for you...</p>
+                                <p className="text-xs text-purple-500 mt-1 font-medium">Understanding what it tests and how to approach it</p>
                             </motion.div>
                         )}
 
@@ -1099,25 +1099,25 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
                                 className="space-y-4"
                             >
                                 {/* What It Tests */}
-                                <div className="bg-white dark:bg-slate-900 border border-blue-200 dark:border-blue-900/40 rounded-2xl p-5 shadow-sm">
+                                <div className="bg-white border border-blue-200 rounded-2xl p-5 shadow-sm">
                                     <div className="flex items-center gap-2 mb-3">
-                                        <div className="w-7 h-7 bg-blue-100 dark:bg-blue-900/60 rounded-lg flex items-center justify-center">
-                                            <Target className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                                        <div className="w-7 h-7 bg-blue-100 rounded-lg flex items-center justify-center">
+                                            <Target className="w-3.5 h-3.5 text-blue-600" />
                                         </div>
-                                        <span className="font-bold text-sm text-blue-800 dark:text-blue-300">What This Tests</span>
+                                        <span className="font-bold text-sm text-blue-800">What This Tests</span>
                                     </div>
-                                    <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed font-medium">{currentExplanation.whatItTests}</p>
+                                    <p className="text-sm text-slate-700 leading-relaxed font-medium">{currentExplanation.whatItTests}</p>
                                 </div>
 
                                 {/* Key Concepts */}
-                                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm">
+                                <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
                                     <div className="flex items-center gap-2 mb-3">
-                                        <Brain className="w-4 h-4 text-indigo-500 dark:text-indigo-400" />
-                                        <span className="font-bold text-sm text-slate-800 dark:text-slate-200">Key Concepts You Need</span>
+                                        <Brain className="w-4 h-4 text-indigo-500" />
+                                        <span className="font-bold text-sm text-slate-800">Key Concepts You Need</span>
                                     </div>
                                     <div className="flex flex-wrap gap-2">
                                         {currentExplanation.keyConcepts.map((concept, i) => (
-                                            <span key={i} className="bg-indigo-50 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-400 px-3 py-1.5 rounded-lg text-xs font-black">
+                                            <span key={i} className="bg-indigo-50 text-indigo-700 px-3 py-1.5 rounded-lg text-xs font-black">
                                                 {concept}
                                             </span>
                                         ))}
@@ -1125,50 +1125,50 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
                                 </div>
 
                                 {/* Approach Strategy */}
-                                <div className="bg-white dark:bg-slate-900 border border-emerald-200 dark:border-emerald-900/40 rounded-2xl p-5 shadow-sm">
+                                <div className="bg-white border border-emerald-200 rounded-2xl p-5 shadow-sm">
                                     <div className="flex items-center gap-2 mb-3">
-                                        <div className="w-7 h-7 bg-emerald-100 dark:bg-emerald-900/60 rounded-lg flex items-center justify-center">
-                                            <Sparkles className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                                        <div className="w-7 h-7 bg-emerald-100 rounded-lg flex items-center justify-center">
+                                            <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
                                         </div>
-                                        <span className="font-bold text-sm text-emerald-800 dark:text-emerald-300">How to Approach This</span>
+                                        <span className="font-bold text-sm text-emerald-800">How to Approach This</span>
                                     </div>
-                                    <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-wrap font-medium">{currentExplanation.approachStrategy}</p>
+                                    <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap font-medium">{currentExplanation.approachStrategy}</p>
                                 </div>
 
                                 {/* Common Pitfalls */}
-                                <div className="bg-white dark:bg-slate-900 border border-amber-200 dark:border-amber-900/40 rounded-2xl p-5 shadow-sm">
+                                <div className="bg-white border border-amber-200 rounded-2xl p-5 shadow-sm">
                                     <div className="flex items-center gap-2 mb-3">
-                                        <AlertTriangle className="w-4 h-4 text-amber-500 dark:text-amber-400" />
-                                        <span className="font-bold text-sm text-amber-800 dark:text-amber-300">Watch Out For</span>
+                                        <AlertTriangle className="w-4 h-4 text-amber-500" />
+                                        <span className="font-bold text-sm text-amber-800">Watch Out For</span>
                                     </div>
                                     <div className="space-y-2">
                                         {currentExplanation.commonPitfalls.map((pitfall, i) => (
                                             <div key={i} className="flex items-start gap-2">
-                                                <XCircle className="w-3.5 h-3.5 text-amber-400 dark:text-amber-600 mt-0.5 shrink-0" />
-                                                <p className="text-xs text-amber-700 dark:text-amber-500 font-medium">{pitfall}</p>
+                                                <XCircle className="w-3.5 h-3.5 text-amber-400 mt-0.5 shrink-0" />
+                                                <p className="text-xs text-amber-700 font-medium">{pitfall}</p>
                                             </div>
                                         ))}
                                     </div>
                                 </div>
 
                                 {/* Exam Context */}
-                                <div className="bg-gradient-to-r from-slate-50 to-blue-50 dark:from-slate-800 dark:to-blue-900/30 border border-slate-200 dark:border-slate-800 rounded-2xl p-4">
+                                <div className="bg-gradient-to-r from-slate-50 to-blue-50 border border-slate-200 rounded-2xl p-4">
                                     <div className="flex items-center gap-2 mb-2">
-                                        <FileText className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
-                                        <span className="font-bold text-xs text-slate-600 dark:text-slate-300">KPSEA/KCSE Exam Context</span>
+                                        <FileText className="w-3.5 h-3.5 text-slate-500" />
+                                        <span className="font-bold text-xs text-slate-600">KPSEA/KCSE Exam Context</span>
                                     </div>
-                                    <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed font-medium">{currentExplanation.examContext}</p>
+                                    <p className="text-xs text-slate-600 leading-relaxed font-medium">{currentExplanation.examContext}</p>
                                 </div>
 
                                 {/* Timer Choice */}
-                                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm">
-                                    <p className="text-xs font-bold text-slate-700 dark:text-slate-300 mb-3">How do you want to answer?</p>
+                                <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
+                                    <p className="text-xs font-bold text-slate-700 mb-3">How do you want to answer?</p>
                                     <div className="flex gap-2">
                                         <button
                                             onClick={() => setQuestionTimerChoice('untimed')}
                                             className={`flex-1 py-3 rounded-xl text-sm font-black flex items-center justify-center gap-2 transition-all ${questionTimerChoice === 'untimed'
-                                                ? 'bg-indigo-100 dark:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 border-2 border-indigo-300 dark:border-indigo-700'
-                                                : 'bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-500 border-2 border-transparent'
+                                                ? 'bg-indigo-100 text-indigo-700 border-2 border-indigo-300'
+                                                : 'bg-slate-50 text-slate-500 border-2 border-transparent'
                                                 }`}
                                         >
                                             <FileText className="w-4 h-4" />
@@ -1177,8 +1177,8 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
                                         <button
                                             onClick={() => setQuestionTimerChoice('timed')}
                                             className={`flex-1 py-3 rounded-xl text-sm font-black flex items-center justify-center gap-2 transition-all ${questionTimerChoice === 'timed'
-                                                ? 'bg-amber-100 dark:bg-amber-900/60 text-amber-700 dark:text-amber-300 border-2 border-amber-300 dark:border-amber-700'
-                                                : 'bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-500 border-2 border-transparent'
+                                                ? 'bg-amber-100 text-amber-700 border-2 border-amber-300'
+                                                : 'bg-slate-50 text-slate-500 border-2 border-transparent'
                                                 }`}
                                         >
                                             <Timer className="w-4 h-4" />
@@ -1205,7 +1205,7 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
                                         setPhase('QUIZ_ACTIVE');
                                         setTimeout(() => answerInputRef.current?.focus(), 200);
                                     }}
-                                    className="w-full text-center text-[10px] text-slate-400 dark:text-slate-500 font-bold hover:text-slate-600 dark:hover:text-slate-300 py-2 transition-colors"
+                                    className="w-full text-center text-[10px] text-slate-500 font-bold hover:text-slate-600 py-2 transition-colors"
                                 >
                                     Skip explanations for remaining questions
                                 </button>
@@ -1226,24 +1226,24 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
         const isMultipleChoice = question.questionType === 'multiple_choice' || questionOptions.length > 0;
 
         return (
-            <div className="h-screen bg-slate-50 dark:bg-slate-950 flex flex-col overflow-hidden font-sans transition-colors duration-300">
+            <div className="h-screen bg-slate-50 flex flex-col overflow-hidden font-sans transition-colors duration-300">
                 {/* Quiz Header */}
-                <div className="bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 px-4 py-3 shadow-sm transition-colors">
+                <div className="bg-white border-b border-slate-100 px-4 py-3 shadow-sm transition-colors">
                     <div className="flex items-center justify-between mb-2">
-                        <button onClick={onExit} className="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors">
-                            <ArrowLeft className="w-4 h-4 text-slate-500 dark:text-slate-400" />
+                        <button onClick={onExit} className="p-1 hover:bg-slate-100 rounded-lg transition-colors">
+                            <ArrowLeft className="w-4 h-4 text-slate-500" />
                         </button>
                         <div className="text-center">
-                            <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                            <p className="text-[10px] font-black text-slate-500 uppercase tracking-wider">
                                 Question {currentQuestionIdx + 1} of {quizQuestions.length}
                             </p>
                         </div>
                         <div className="flex items-center gap-2">
                             {/* Per-question timer */}
                             {questionTimerActive && (
-                                <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-black ${questionTimeRemaining < 30 ? 'bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400 animate-pulse' :
-                                    questionTimeRemaining < 60 ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400' :
-                                        'bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400'
+                                <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-black ${questionTimeRemaining < 30 ? 'bg-red-100 text-red-600 animate-pulse' :
+                                    questionTimeRemaining < 60 ? 'bg-amber-100 text-amber-600' :
+                                        'bg-blue-100 text-blue-600'
                                     }`}>
                                     <Timer className="w-3 h-3" />
                                     {formatTime(questionTimeRemaining)}
@@ -1251,9 +1251,9 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
                             )}
                             {/* Overall timed quiz timer */}
                             {practiceMode === ExamPracticeMode.TIMED_QUIZ && (
-                                <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-black ${timeRemaining < 60 ? 'bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400 animate-pulse' :
-                                    timeRemaining < 300 ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400' :
-                                        'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
+                                <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-black ${timeRemaining < 60 ? 'bg-red-100 text-red-600 animate-pulse' :
+                                    timeRemaining < 300 ? 'bg-amber-100 text-amber-600' :
+                                        'bg-slate-100 text-slate-700'
                                     }`}>
                                     <Clock className="w-3.5 h-3.5" />
                                     {formatTime(timeRemaining)}
@@ -1261,27 +1261,27 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
                             )}
                             {/* Explain-first belongs to guided practice only. */}
                             {practiceMode !== ExamPracticeMode.TIMED_QUIZ && (
-                                <button onClick={() => setExplainFirst(!explainFirst)} className={`text-[9px] font-black px-2 py-1 rounded-full uppercase transition-all ${explainFirst ? 'bg-purple-100 dark:bg-purple-900/40 text-purple-600 dark:text-purple-400' : 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500'}`} title={explainFirst ? 'Explain first: ON' : 'Explain first: OFF'}>
+                                <button onClick={() => setExplainFirst(!explainFirst)} className={`text-[9px] font-black px-2 py-1 rounded-full uppercase transition-all ${explainFirst ? 'bg-purple-100 text-purple-600' : 'bg-slate-100 text-slate-500'}`} title={explainFirst ? 'Explain first: ON' : 'Explain first: OFF'}>
                                     Explain {explainFirst ? 'ON' : 'OFF'}
                                 </button>
                             )}
                             {activeExamId && (
                                 <span className={autosaveStatus === 'saved'
-                                    ? 'text-[9px] font-black px-2 py-1 rounded-full uppercase bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300'
+                                    ? 'text-[9px] font-black px-2 py-1 rounded-full uppercase bg-emerald-100 text-emerald-700'
                                     : autosaveStatus === 'saving'
-                                        ? 'text-[9px] font-black px-2 py-1 rounded-full uppercase bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300'
+                                        ? 'text-[9px] font-black px-2 py-1 rounded-full uppercase bg-amber-100 text-amber-700'
                                         : autosaveStatus === 'offline'
-                                            ? 'text-[9px] font-black px-2 py-1 rounded-full uppercase bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'
-                                            : 'text-[9px] font-black px-2 py-1 rounded-full uppercase bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300'}>
+                                            ? 'text-[9px] font-black px-2 py-1 rounded-full uppercase bg-slate-100 text-slate-500'
+                                            : 'text-[9px] font-black px-2 py-1 rounded-full uppercase bg-indigo-100 text-indigo-700'}>
                                     {autosaveStatus === 'saving' ? 'Saving...' : autosaveStatus === 'saved' ? 'Saved' : autosaveStatus === 'offline' ? 'Saved offline' : 'Sync required'}
                                 </span>
                             )}
                         </div>
                     </div>
                     {/* Progress Bar */}
-                    <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-1.5">
+                    <div className="w-full bg-slate-100 rounded-full h-1.5">
                         <motion.div
-                            className="bg-indigo-600 dark:bg-indigo-500 h-1.5 rounded-full"
+                            className="bg-indigo-600 h-1.5 rounded-full"
                             animate={{ width: `${progress}%` }}
                             transition={{ duration: 0.3 }}
                         />
@@ -1291,24 +1291,24 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
                 {/* Question & Answer Area */}
                 <div className="flex-1 overflow-y-auto">
                     <div className="max-w-2xl mx-auto p-5 space-y-5">
-                        <div className="bg-slate-900 text-white rounded-2xl p-4 shadow-sm border border-slate-800">
+                        <div className="bg-white text-slate-900 rounded-2xl p-4 shadow-sm border border-slate-200">
                             <div className="flex items-center justify-between gap-3">
                                 <div>
                                     <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-300 mb-1">Paper Snapshot</p>
                                     <p className="text-sm font-black">{analysis?.subject} / {analysis?.grade}</p>
-                                    <p className="text-[11px] text-slate-300 mt-1">Answer like an exam paper: short points, full working, and clear final lines.</p>
+                                    <p className="text-[11px] text-slate-600 mt-1">Answer like an exam paper: short points, full working, and clear final lines.</p>
                                 </div>
                                 <div className="text-right">
-                                    <p className="text-[10px] uppercase tracking-[0.2em] text-slate-400 font-black">Question</p>
-                                    <p className="text-lg font-black text-white">{currentQuestionIdx + 1}/{quizQuestions.length}</p>
+                                    <p className="text-[10px] uppercase tracking-[0.2em] text-slate-500 font-black">Question</p>
+                                    <p className="text-lg font-black text-slate-900">{currentQuestionIdx + 1}/{quizQuestions.length}</p>
                                 </div>
                             </div>
                         </div>
                         {quizQuestions.length > 1 && (
-                            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm">
+                            <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
                                 <div className="flex items-center justify-between mb-3">
-                                    <p className="text-xs font-black uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Navigator</p>
-                                    <p className="text-[10px] text-slate-400 dark:text-slate-500 font-bold">Answered {Object.values(answerByQuestion).filter(answer => answer.trim()).length}/{quizQuestions.length}</p>
+                                    <p className="text-xs font-black uppercase tracking-[0.2em] text-slate-500">Navigator</p>
+                                    <p className="text-[10px] text-slate-500 font-bold">Answered {Object.values(answerByQuestion).filter(answer => answer.trim()).length}/{quizQuestions.length}</p>
                                 </div>
                                 <div className="flex flex-wrap gap-2">
                                     {quizQuestions.map((item, index) => {
@@ -1328,7 +1328,7 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
                                                     setReadyToAnswer(false);
                                                     setPhase('QUIZ_ACTIVE');
                                                 }}
-                                                className={`h-9 min-w-9 rounded-xl px-3 text-xs font-black transition-colors ${isCurrent ? 'bg-indigo-600 text-white' : isAnswered ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'}`}>
+                                                className={`h-9 min-w-9 rounded-xl px-3 text-xs font-black transition-colors ${isCurrent ? 'bg-indigo-600 text-slate-900' : isAnswered ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>
                                                 {item.number}
                                             </button>
                                         );
@@ -1341,20 +1341,20 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
                             key={currentQuestionIdx}
                             initial={{ opacity: 0, x: 20 }}
                             animate={{ opacity: 1, x: 0 }}
-                            className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm transition-colors"
+                            className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm transition-colors"
                         >
                             <div className="flex items-center justify-between mb-4">
                                 <div className="flex items-center gap-2">
-                                    <span className="bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-400 px-3 py-1 rounded-lg text-sm font-black">Q{question.number}</span>
-                                    <span className="text-[10px] text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded uppercase font-bold">{question.topic}</span>
+                                    <span className="bg-indigo-100 text-indigo-700 px-3 py-1 rounded-lg text-sm font-black">Q{question.number}</span>
+                                    <span className="text-[10px] text-slate-500 bg-slate-100 px-2 py-1 rounded uppercase font-bold">{question.topic}</span>
                                     {question.section && (
-                                        <span className="text-[10px] text-indigo-600 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-900/40 px-2 py-1 rounded uppercase font-bold">Section {question.section}</span>
+                                        <span className="text-[10px] text-indigo-600 bg-indigo-50 px-2 py-1 rounded uppercase font-bold">Section {question.section}</span>
                                     )}
                                 </div>
-                                <span className="text-xs font-black text-slate-500 dark:text-slate-500">{question.marks || 2} marks</span>
+                                <span className="text-xs font-black text-slate-500">{question.marks || 2} marks</span>
                             </div>
-                            <p className="text-slate-800 dark:text-slate-200 text-sm leading-relaxed font-black">{question.text}</p>
-                            {question.diagramUrl && <img src={question.diagramUrl} alt={`Diagram for question ${question.number}`} className="mt-4 max-h-80 w-full rounded-2xl border border-slate-200 object-contain dark:border-slate-700" />}
+                            <p className="text-slate-800 text-sm leading-relaxed font-black">{question.text}</p>
+                            {question.diagramUrl && <img src={question.diagramUrl} alt={`Diagram for question ${question.number}`} className="mt-4 max-h-80 w-full rounded-2xl border border-slate-200 object-contain" />}
                         </motion.div>
 
                         {/* Answer Input */}
@@ -1364,8 +1364,8 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
                                     {isMultipleChoice ? (
                                         <div className="grid gap-3">
                                             {questionOptions.map((option, index) => (
-                                                <button key={`${question.id}-${index}`} type="button" onClick={() => updateAnswer(option)} disabled={isMarking} className={`flex items-start gap-3 rounded-2xl border-2 p-4 text-left transition ${userAnswer === option ? 'border-indigo-600 bg-indigo-50 text-indigo-950 dark:bg-indigo-950/40 dark:text-white' : 'border-slate-200 bg-white text-slate-700 hover:border-indigo-300 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200'}`}>
-                                                    <span className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-[10px] font-black ${userAnswer === option ? 'border-indigo-600 bg-indigo-600 text-white' : 'border-slate-300 text-slate-500'}`}>{String.fromCharCode(65 + index)}</span>
+                                                <button key={`${question.id}-${index}`} type="button" onClick={() => updateAnswer(option)} disabled={isMarking} className={`flex items-start gap-3 rounded-2xl border-2 p-4 text-left transition ${userAnswer === option ? 'border-indigo-600 bg-indigo-50 text-indigo-950' : 'border-slate-200 bg-white text-slate-700 hover:border-indigo-300'}`}>
+                                                    <span className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-[10px] font-black ${userAnswer === option ? 'border-indigo-600 bg-indigo-600 text-slate-900' : 'border-slate-300 text-slate-500'}`}>{String.fromCharCode(65 + index)}</span>
                                                     <span className="text-sm font-bold leading-relaxed">{option}</span>
                                                 </button>
                                             ))}
@@ -1377,26 +1377,26 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
                                             onChange={(e) => updateAnswer(e.target.value)}
                                             onKeyDown={(e) => { if (e.key === 'Enter' && e.ctrlKey && practiceMode !== ExamPracticeMode.TIMED_QUIZ) handleSubmitAnswer(); }}
                                             placeholder="Write your answer in exam style. Use points, working, and a clear final answer."
-                                            className="w-full min-h-[150px] bg-white dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-800 rounded-2xl p-4 text-sm text-slate-800 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:border-indigo-500 dark:focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900/30 outline-none resize-none transition-all"
+                                            className="w-full min-h-[150px] bg-white border-2 border-slate-200 rounded-2xl p-4 text-sm text-slate-800 placeholder:text-slate-500 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none resize-none transition-all"
                                             disabled={isMarking}
                                         />
                                     )}
                                     {isMarking && (
-                                        <div className="absolute inset-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm rounded-2xl flex items-center justify-center">
+                                        <div className="absolute inset-0 bg-white/80 backdrop-blur-sm rounded-2xl flex items-center justify-center">
                                             <div className="text-center">
-                                                <Loader2 className="w-8 h-8 text-indigo-600 dark:text-indigo-400 animate-spin mx-auto mb-2" />
-                                                <p className="text-sm font-bold text-slate-700 dark:text-slate-300">Exam marker is checking...</p>
+                                                <Loader2 className="w-8 h-8 text-indigo-600 animate-spin mx-auto mb-2" />
+                                                <p className="text-sm font-bold text-slate-700">Exam marker is checking...</p>
                                             </div>
                                         </div>
                                     )}
                                 </div>
                                 <div className="flex justify-between items-center gap-3">
-                                    <p className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase transition-colors">{practiceMode === ExamPracticeMode.TIMED_QUIZ ? 'No hints or marking until submission' : 'Ctrl+Enter to submit'}</p>
-                                    <p className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold text-right">Answer in marks, not a long essay.</p>
+                                    <p className="text-[10px] text-slate-500 font-bold uppercase transition-colors">{practiceMode === ExamPracticeMode.TIMED_QUIZ ? 'No hints or marking until submission' : 'Ctrl+Enter to submit'}</p>
+                                    <p className="text-[10px] text-slate-500 font-semibold text-right">Answer in marks, not a long essay.</p>
                                     <button
                                         onClick={practiceMode === ExamPracticeMode.TIMED_QUIZ ? handleSaveTimedAnswer : handleSubmitAnswer}
                                         disabled={(practiceMode !== ExamPracticeMode.TIMED_QUIZ && !userAnswer.trim()) || isMarking}
-                                        className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-xl font-bold text-sm disabled:opacity-50 transition-all flex items-center gap-2 shadow-md shadow-indigo-500/20"
+                                        className="bg-indigo-600 hover:bg-indigo-700 text-slate-900 px-6 py-2.5 rounded-xl font-bold text-sm disabled:opacity-50 transition-all flex items-center gap-2 shadow-md shadow-indigo-500/20"
                                     >
                                         {practiceMode === ExamPracticeMode.TIMED_QUIZ ? (currentQuestionIdx === quizQuestions.length - 1 ? 'Submit Exam' : 'Save & Next') : 'Submit Answer'} <ArrowRight className="w-4 h-4" />
                                     </button>
@@ -1413,68 +1413,68 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
                             >
                                 {/* Score Banner */}
                                 <div className={`rounded-2xl p-5 transition-colors ${currentMarking.isCorrect
-                                    ? 'bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-900/40'
+                                    ? 'bg-emerald-50 border border-emerald-200'
                                     : currentMarking.marksAwarded > 0
-                                        ? 'bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/40'
-                                        : 'bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900/40'
+                                        ? 'bg-amber-50 border border-amber-200'
+                                        : 'bg-red-50 border border-red-200'
                                     }`}>
                                     <div className="flex items-center justify-between mb-3">
                                         <div className="flex items-center gap-2">
                                             {currentMarking.isCorrect ? (
-                                                <CheckCircle className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
+                                                <CheckCircle className="w-6 h-6 text-emerald-600" />
                                             ) : currentMarking.marksAwarded > 0 ? (
-                                                <AlertTriangle className="w-6 h-6 text-amber-600 dark:text-amber-400" />
+                                                <AlertTriangle className="w-6 h-6 text-amber-600" />
                                             ) : (
-                                                <XCircle className="w-6 h-6 text-red-500 dark:text-red-400" />
+                                                <XCircle className="w-6 h-6 text-red-500" />
                                             )}
-                                            <span className={`font-black text-lg ${currentMarking.isCorrect ? 'text-emerald-900 dark:text-emerald-300' : currentMarking.marksAwarded > 0 ? 'text-amber-900 dark:text-amber-300' : 'text-red-900 dark:text-red-300'}`}>
+                                            <span className={`font-black text-lg ${currentMarking.isCorrect ? 'text-emerald-900' : currentMarking.marksAwarded > 0 ? 'text-amber-900' : 'text-red-900'}`}>
                                                 {currentMarking.marksAwarded}/{currentMarking.marksAvailable} marks
                                             </span>
                                         </div>
                                         {currentMarking.isCorrect && <Star className="w-5 h-5 text-amber-400 fill-current" />}
                                     </div>
-                                    <p className={`text-sm leading-relaxed font-medium ${currentMarking.isCorrect ? 'text-emerald-800 dark:text-emerald-400/90' : currentMarking.marksAwarded > 0 ? 'text-amber-800 dark:text-amber-400/90' : 'text-red-800 dark:text-red-400/90'}`}>{currentMarking.feedback}</p>
+                                    <p className={`text-sm leading-relaxed font-medium ${currentMarking.isCorrect ? 'text-emerald-800' : currentMarking.marksAwarded > 0 ? 'text-amber-800' : 'text-red-800'}`}>{currentMarking.feedback}</p>
                                 </div>
 
-                                <div className="bg-slate-50 dark:bg-slate-950/40 border border-slate-200 dark:border-slate-800 rounded-2xl p-4">
-                                    <p className="text-xs font-bold text-slate-700 dark:text-slate-300">Before moving on, compare your answer to the marking scheme and fix the missing point.</p>
+                                <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4">
+                                    <p className="text-xs font-bold text-slate-700">Before moving on, compare your answer to the marking scheme and fix the missing point.</p>
                                 </div>
 
                                 {/* Model Answer */}
-                                <div className="bg-white dark:bg-slate-900 border border-indigo-200 dark:border-indigo-900/50 rounded-2xl p-5 shadow-sm transition-colors">
+                                <div className="bg-white border border-indigo-200 rounded-2xl p-5 shadow-sm transition-colors">
                                     <div className="flex items-center gap-2 mb-3">
-                                        <div className="w-6 h-6 bg-indigo-100 dark:bg-indigo-900/60 rounded-lg flex items-center justify-center">
-                                            <CheckCircle className="w-3 h-3 text-indigo-600 dark:text-indigo-400" />
+                                        <div className="w-6 h-6 bg-indigo-100 rounded-lg flex items-center justify-center">
+                                            <CheckCircle className="w-3 h-3 text-indigo-600" />
                                         </div>
-                                        <span className="font-bold text-sm text-indigo-800 dark:text-indigo-300">Model Answer (Marking Scheme)</span>
+                                        <span className="font-bold text-sm text-indigo-800">Model Answer (Marking Scheme)</span>
                                     </div>
-                                    <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-wrap font-medium">{currentMarking.modelAnswer}</p>
+                                    <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap font-medium">{currentMarking.modelAnswer}</p>
                                 </div>
 
                                 {/* Exam Tip */}
                                 {currentMarking.examTip && (
-                                    <div className="bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/20 border border-amber-200 dark:border-amber-900/40 rounded-2xl p-4 transition-colors">
+                                    <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-2xl p-4 transition-colors">
                                         <div className="flex items-center gap-2 mb-2">
-                                            <Sparkles className="w-4 h-4 text-amber-500 dark:text-amber-400" />
-                                            <span className="font-bold text-xs text-amber-800 dark:text-amber-300">KCSE/KPSEA Exam Tip</span>
+                                            <Sparkles className="w-4 h-4 text-amber-500" />
+                                            <span className="font-bold text-xs text-amber-800">KCSE/KPSEA Exam Tip</span>
                                         </div>
-                                        <p className="text-xs text-amber-700 dark:text-amber-500/90 leading-relaxed font-medium">{currentMarking.examTip}</p>
+                                        <p className="text-xs text-amber-700 leading-relaxed font-medium">{currentMarking.examTip}</p>
                                     </div>
                                 )}
 
                                 {/* Confidence Self-Rating */}
-                                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm transition-colors">
-                                    <p className="text-xs font-bold text-slate-700 dark:text-slate-300 mb-3">How confident do you feel about this topic now?</p>
+                                <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm transition-colors">
+                                    <p className="text-xs font-bold text-slate-700 mb-3">How confident do you feel about this topic now?</p>
                                     <div className="flex gap-2 justify-center">
                                         {[1, 2, 3, 4, 5].map(level => (
                                             <button
                                                 key={level}
                                                 onClick={() => setConfidenceLevel(level)}
                                                 className={`w-10 h-10 rounded-xl text-sm font-black transition-all ${confidenceLevel === level
-                                                    ? level <= 2 ? 'bg-red-500 text-white scale-110 shadow-lg shadow-red-500/20'
-                                                        : level === 3 ? 'bg-amber-500 text-white scale-110 shadow-lg shadow-amber-500/20'
-                                                            : 'bg-emerald-500 text-white scale-110 shadow-lg shadow-emerald-500/20'
-                                                    : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
+                                                    ? level <= 2 ? 'bg-red-500 text-slate-900 scale-110 shadow-lg shadow-red-500/20'
+                                                        : level === 3 ? 'bg-amber-500 text-slate-900 scale-110 shadow-lg shadow-amber-500/20'
+                                                            : 'bg-emerald-500 text-slate-900 scale-110 shadow-lg shadow-emerald-500/20'
+                                                    : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
                                                     }`}
                                             >
                                                 {level}
@@ -1482,15 +1482,15 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
                                         ))}
                                     </div>
                                     <div className="flex justify-between mt-2">
-                                        <span className="text-[9px] text-slate-400 dark:text-slate-500 font-bold uppercase">Need more study</span>
-                                        <span className="text-[9px] text-slate-400 dark:text-slate-500 font-bold uppercase">Fully confident</span>
+                                        <span className="text-[9px] text-slate-500 font-bold uppercase">Need more study</span>
+                                        <span className="text-[9px] text-slate-500 font-bold uppercase">Fully confident</span>
                                     </div>
                                 </div>
 
                                 {/* Next Button */}
                                 <button
                                     onClick={handleNextQuestion}
-                                    className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3.5 rounded-2xl font-black text-sm transition-all flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/20"
+                                    className="w-full bg-indigo-600 hover:bg-indigo-700 text-slate-900 py-3.5 rounded-2xl font-black text-sm transition-all flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/20"
                                 >
                                     {currentQuestionIdx < quizQuestions.length - 1 ? (
                                         <>Next Question <ArrowRight className="w-5 h-5" /></>
@@ -1548,14 +1548,14 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
             percentage >= 50 ? 'C+' : percentage >= 40 ? 'C' : percentage >= 30 ? 'D+' : 'D';
 
         return (
-            <div className="h-screen bg-slate-50 dark:bg-slate-950 flex flex-col overflow-hidden font-sans transition-colors duration-300">
+            <div className="h-screen bg-slate-50 flex flex-col overflow-hidden font-sans transition-colors duration-300">
                 {/* Header */}
-                <div className="bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 px-4 py-3 flex items-center justify-between shadow-sm transition-colors">
-                    <button onClick={() => setPhase('DASHBOARD')} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors">
-                        <ArrowLeft className="w-5 h-5 text-slate-600 dark:text-slate-400" />
+                <div className="bg-white border-b border-slate-100 px-4 py-3 flex items-center justify-between shadow-sm transition-colors">
+                    <button onClick={() => setPhase('DASHBOARD')} className="p-2 hover:bg-slate-100 rounded-xl transition-colors">
+                        <ArrowLeft className="w-5 h-5 text-slate-600" />
                     </button>
-                    <h2 className="font-black text-slate-800 dark:text-white">Exam Results</h2>
-                    <button onClick={onExit} className="text-xs text-indigo-600 dark:text-indigo-400 font-black hover:underline uppercase tracking-tight">
+                    <h2 className="font-black text-slate-800">Exam Results</h2>
+                    <button onClick={onExit} className="text-xs text-indigo-600 font-black hover:underline uppercase tracking-tight">
                         Exit
                     </button>
                 </div>
@@ -1566,7 +1566,7 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
                         <motion.div
                             initial={{ scale: 0.9, opacity: 0 }}
                             animate={{ scale: 1, opacity: 1 }}
-                            className={`rounded-3xl p-8 text-center text-white relative overflow-hidden shadow-xl ${percentage >= 70 ? 'bg-gradient-to-br from-emerald-600 to-teal-700' :
+                            className={`rounded-3xl p-8 text-center text-slate-900 relative overflow-hidden shadow-xl ${percentage >= 70 ? 'bg-gradient-to-br from-emerald-600 to-teal-700' :
                                 percentage >= 50 ? 'bg-gradient-to-br from-amber-500 to-orange-600' :
                                     'bg-gradient-to-br from-red-500 to-rose-700'
                                 }`}
@@ -1584,11 +1584,11 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
                         </motion.div>
 
                         {/* Topic Breakdown */}
-                        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden transition-colors shadow-sm">
-                            <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-800">
+                        <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden transition-colors shadow-sm">
+                            <div className="px-5 py-4 border-b border-slate-100">
                                 <div className="flex items-center gap-2">
-                                    <BarChart3 className="w-4 h-4 text-indigo-500 dark:text-indigo-400" />
-                                    <span className="font-bold text-sm text-slate-800 dark:text-slate-200">Topic Performance</span>
+                                    <BarChart3 className="w-4 h-4 text-indigo-500" />
+                                    <span className="font-bold text-sm text-slate-800">Topic Performance</span>
                                 </div>
                             </div>
                             <div className="p-4 space-y-3">
@@ -1597,10 +1597,10 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
                                     return (
                                         <div key={topic} className="space-y-1">
                                             <div className="flex justify-between items-center">
-                                                <span className="text-xs font-black text-slate-700 dark:text-slate-300">{topic}</span>
-                                                <span className={`text-xs font-black ${pct >= 70 ? 'text-emerald-600 dark:text-emerald-400' : pct >= 50 ? 'text-amber-600 dark:text-amber-400' : 'text-red-500 dark:text-red-400'}`}>{pct}%</span>
+                                                <span className="text-xs font-black text-slate-700">{topic}</span>
+                                                <span className={`text-xs font-black ${pct >= 70 ? 'text-emerald-600' : pct >= 50 ? 'text-amber-600' : 'text-red-500'}`}>{pct}%</span>
                                             </div>
-                                            <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-2">
+                                            <div className="w-full bg-slate-100 rounded-full h-2">
                                                 <div
                                                     className={`h-2 rounded-full transition-all ${pct >= 70 ? 'bg-emerald-500' : pct >= 50 ? 'bg-amber-500' : 'bg-red-400'}`}
                                                     style={{ width: `${pct}%` }}
@@ -1613,26 +1613,26 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
                         </div>
 
                         {/* Section Breakdown */}
-                        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden transition-colors shadow-sm">
-                            <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-800">
+                        <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden transition-colors shadow-sm">
+                            <div className="px-5 py-4 border-b border-slate-100">
                                 <div className="flex items-center gap-2">
-                                    <FileText className="w-4 h-4 text-indigo-500 dark:text-indigo-400" />
-                                    <span className="font-bold text-sm text-slate-800 dark:text-slate-200">Section Breakdown</span>
+                                    <FileText className="w-4 h-4 text-indigo-500" />
+                                    <span className="font-bold text-sm text-slate-800">Section Breakdown</span>
                                 </div>
                             </div>
                             <div className="p-4 space-y-3">
                                 {Object.entries(sectionMap).map(([section, stats]) => {
                                     const pct = stats.available > 0 ? Math.round((stats.marks / stats.available) * 100) : 0;
                                     return (
-                                        <div key={section} className="rounded-xl border border-slate-200 dark:border-slate-800 p-3">
+                                        <div key={section} className="rounded-xl border border-slate-200 p-3">
                                             <div className="flex items-center justify-between mb-2">
                                                 <div>
-                                                    <p className="text-xs font-black text-slate-800 dark:text-slate-200">Section {section}</p>
-                                                    <p className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">{stats.answered} answered / {stats.available} available marks</p>
+                                                    <p className="text-xs font-black text-slate-800">Section {section}</p>
+                                                    <p className="text-[10px] text-slate-500 font-medium">{stats.answered} answered / {stats.available} available marks</p>
                                                 </div>
-                                                <span className={`text-xs font-black ${pct >= 70 ? 'text-emerald-600 dark:text-emerald-400' : pct >= 50 ? 'text-amber-600 dark:text-amber-400' : 'text-red-500 dark:text-red-400'}`}>{pct}%</span>
+                                                <span className={`text-xs font-black ${pct >= 70 ? 'text-emerald-600' : pct >= 50 ? 'text-amber-600' : 'text-red-500'}`}>{pct}%</span>
                                             </div>
-                                            <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-2">
+                                            <div className="w-full bg-slate-100 rounded-full h-2">
                                                 <div className={`h-2 rounded-full ${pct >= 70 ? 'bg-emerald-500' : pct >= 50 ? 'bg-amber-500' : 'bg-red-400'}`} style={{ width: `${pct}%` }} />
                                             </div>
                                         </div>
@@ -1642,7 +1642,7 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
                         </div>
 
                         {/* Recovery Action */}
-                        <div className="bg-gradient-to-br from-indigo-600 to-blue-700 rounded-3xl p-5 text-white shadow-xl shadow-indigo-500/20">
+                        <div className="bg-gradient-to-br from-indigo-600 to-blue-700 rounded-3xl p-5 text-slate-900 shadow-xl shadow-indigo-500/20">
                             <div className="flex items-start justify-between gap-4">
                                 <div>
                                     <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-100">Recover marks now</p>
@@ -1667,33 +1667,33 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
                             </div>
                         </div>
                         {/* Question-by-Question Review */}
-                        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden transition-colors shadow-sm">
-                            <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-800">
-                                <span className="font-bold text-sm text-slate-800 dark:text-slate-200">Answer Review</span>
+                        <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden transition-colors shadow-sm">
+                            <div className="px-5 py-4 border-b border-slate-100">
+                                <span className="font-bold text-sm text-slate-800">Answer Review</span>
                             </div>
-                            <div className="divide-y divide-slate-100 dark:divide-slate-800">
+                            <div className="divide-y divide-slate-100">
                                 {attempts.map((a, idx) => (
-                                    <div key={idx} className="p-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                                    <div key={idx} className="p-4 hover:bg-slate-50 transition-colors">
                                         <div className="flex items-center justify-between mb-2">
-                                            <span className="font-black text-xs text-slate-600 dark:text-slate-400">Q{a.questionNumber}</span>
+                                            <span className="font-black text-xs text-slate-600">Q{a.questionNumber}</span>
                                             <div className="flex items-center gap-1">
                                                 {a.isCorrect ? (
-                                                    <CheckCircle className="w-4 h-4 text-emerald-500 dark:text-emerald-400" />
+                                                    <CheckCircle className="w-4 h-4 text-emerald-500" />
                                                 ) : (
-                                                    <XCircle className="w-4 h-4 text-red-500 dark:text-red-400" />
+                                                    <XCircle className="w-4 h-4 text-red-500" />
                                                 )}
-                                                <span className={`text-xs font-black ${a.isCorrect ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>{a.marksAwarded}/{a.marksAvailable}</span>
+                                                <span className={`text-xs font-black ${a.isCorrect ? 'text-emerald-600' : 'text-red-600'}`}>{a.marksAwarded}/{a.marksAvailable}</span>
                                             </div>
                                         </div>
-                                        <p className="text-[11px] text-slate-600 dark:text-slate-400 mb-2 line-clamp-1 font-medium">{a.questionText}</p>
+                                        <p className="text-[11px] text-slate-600 mb-2 line-clamp-1 font-medium">{a.questionText}</p>
                                         <div className="grid grid-cols-2 gap-2">
-                                            <div className="bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 rounded-lg p-2.5">
-                                                <p className="text-[9px] font-black text-slate-400 dark:text-slate-500 mb-1 uppercase">YOUR ANSWER</p>
-                                                <p className="text-[10px] text-slate-600 dark:text-slate-300 line-clamp-2 font-medium">{a.learnerAnswer}</p>
+                                            <div className="bg-slate-50 border border-slate-100 rounded-lg p-2.5">
+                                                <p className="text-[9px] font-black text-slate-500 mb-1 uppercase">YOUR ANSWER</p>
+                                                <p className="text-[10px] text-slate-600 line-clamp-2 font-medium">{a.learnerAnswer}</p>
                                             </div>
-                                            <div className="bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/40 rounded-lg p-2.5">
-                                                <p className="text-[9px] font-black text-emerald-600 dark:text-emerald-400 mb-1 uppercase">MODEL ANSWER</p>
-                                                <p className="text-[10px] text-emerald-800 dark:text-emerald-300 line-clamp-2 font-medium">{a.modelAnswer}</p>
+                                            <div className="bg-emerald-50 border border-emerald-100 rounded-lg p-2.5">
+                                                <p className="text-[9px] font-black text-emerald-600 mb-1 uppercase">MODEL ANSWER</p>
+                                                <p className="text-[10px] text-emerald-800 line-clamp-2 font-medium">{a.modelAnswer}</p>
                                             </div>
                                         </div>
                                     </div>
@@ -1708,13 +1708,13 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
                                     setAttempts([]);
                                     void startQuiz(practiceMode);
                                 }}
-                                className="bg-indigo-600 hover:bg-indigo-700 text-white py-4 rounded-2xl font-black text-sm transition-all shadow-lg shadow-indigo-500/20"
+                                className="bg-indigo-600 hover:bg-indigo-700 text-slate-900 py-4 rounded-2xl font-black text-sm transition-all shadow-lg shadow-indigo-500/20"
                             >
                                 Retry Paper
                             </button>
                             <button
                                 onClick={() => setPhase('DASHBOARD')}
-                                className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 py-4 rounded-2xl font-black text-sm hover:bg-slate-50 dark:hover:bg-slate-800 transition-all shadow-sm"
+                                className="bg-white border border-slate-200 text-slate-700 py-4 rounded-2xl font-black text-sm hover:bg-slate-50 transition-all shadow-sm"
                             >
                                 Back to paper list
                             </button>
@@ -1727,11 +1727,13 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
 
     // Fallback
     return (
-        <div className="h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950 transition-colors">
+        <div className="h-screen flex items-center justify-center bg-slate-50 transition-colors">
             <div className="text-center">
-                <p className="text-slate-600 dark:text-slate-400 font-black">Something went wrong</p>
-                <button onClick={onExit} className="mt-4 text-indigo-600 dark:text-indigo-400 font-black hover:underline text-sm uppercase tracking-tight">Go back</button>
+                <p className="text-slate-600 font-black">Something went wrong</p>
+                <button onClick={onExit} className="mt-4 text-indigo-600 font-black hover:underline text-sm uppercase tracking-tight">Go back</button>
             </div>
         </div>
     );
 };
+
+
