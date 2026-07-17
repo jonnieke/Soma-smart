@@ -187,7 +187,7 @@ const ChatBubble: React.FC<{
                 {/* Main bubble */}
                 <div className={`px-4 py-3 rounded-2xl text-sm leading-relaxed ${isUser
                     ? 'bg-indigo-600 text-white rounded-br-sm shadow-lg shadow-indigo-500/20'
-                    : 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 rounded-tl-sm shadow-md border-2 border-slate-300 dark:border-slate-700/50'
+                    : 'bg-white text-slate-800 rounded-tl-sm shadow-md border-2 border-slate-300'
                 }`}
                 >
                     <p className="whitespace-pre-wrap font-medium">{message.text.replace(/\*\*/g, '')}</p>
@@ -195,8 +195,8 @@ const ChatBubble: React.FC<{
                         <button
                             onClick={() => onSpeak?.(message.text)}
                             className={`mt-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold tracking-wide transition-all ${isSpeaking
-                                ? 'bg-indigo-50 text-indigo-600 dark:bg-indigo-900/40 dark:text-indigo-400 ring-1 ring-indigo-200 dark:ring-indigo-800'
-                                : 'bg-slate-50 text-slate-600 hover:bg-slate-100 hover:text-slate-800 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 border-2 border-slate-300 dark:border-slate-700'
+                                ? 'bg-indigo-50 text-indigo-600 ring-1 ring-indigo-200'
+                                : 'bg-slate-50 text-slate-600 hover:bg-slate-100 hover:text-slate-800 border-2 border-slate-300'
                             }`}
                         >
                             {isSpeaking
@@ -211,22 +211,22 @@ const ChatBubble: React.FC<{
                 {!isUser && isLanguageTutor && tutorResponse && (
                     <div className="mt-1.5 space-y-1">
                         {tutorResponse.correction && (
-                            <div className="px-3 py-2 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-800/30 text-xs text-amber-800 dark:text-amber-300">
+                            <div className="px-3 py-2 rounded-xl bg-amber-50 border border-amber-100 text-xs text-amber-800">
                                 <span className="font-bold">✏️ </span>{tutorResponse.correction}
                             </div>
                         )}
                         {tutorResponse.pronunciationTip && (
-                            <div className="px-3 py-2 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800/30 text-xs text-blue-800 dark:text-blue-300">
+                            <div className="px-3 py-2 rounded-xl bg-blue-50 border border-blue-100 text-xs text-blue-800">
                                 <span className="font-bold">🗣️ </span>{tutorResponse.pronunciationTip}
                             </div>
                         )}
                         {tutorResponse.exampleSentence && (
-                            <div className="px-3 py-2 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800/30 text-xs text-emerald-800 dark:text-emerald-300 italic">
+                            <div className="px-3 py-2 rounded-xl bg-emerald-50 border border-emerald-100 text-xs text-emerald-800 italic">
                                 &ldquo;{tutorResponse.exampleSentence}&rdquo;
                             </div>
                         )}
                         {tutorResponse.encouragement && (
-                            <p className="text-center text-[10px] text-indigo-500 dark:text-indigo-400 font-semibold py-0.5">
+                            <p className="text-center text-[10px] text-indigo-500 font-semibold py-0.5">
                                 ⭐ {tutorResponse.encouragement}
                             </p>
                         )}
@@ -235,7 +235,7 @@ const ChatBubble: React.FC<{
             </div>
 
             {isUser && (
-                <div className="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-bold text-xs flex-shrink-0 self-end border border-indigo-200 dark:border-indigo-800">
+                <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold text-xs flex-shrink-0 self-end border border-indigo-200">
                     You
                 </div>
             )}
@@ -717,20 +717,20 @@ export const ConversationalTutor: React.FC<ConversationalTutorProps> = ({
         return (
             <div className="max-w-2xl mx-auto space-y-6 py-2 px-1">
                 {/* 1. Header & Difficulty selector */}
-                <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 shadow-xl border-2 border-slate-200 dark:border-slate-850 transition-all">
+                <div className="bg-white rounded-3xl p-6 shadow-xl border-2 border-slate-200 transition-all">
                     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
                         <div>
-                            <h3 className="text-sm font-black text-slate-805 dark:text-slate-200 uppercase tracking-wider flex items-center gap-2">
+                            <h3 className="text-sm font-black text-slate-800 uppercase tracking-wider flex items-center gap-2">
                                 <Headphones className="w-5 h-5 text-blue-500 animate-pulse" />
                                 Pronunciation Challenge
                             </h3>
-                            <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                            <p className="text-xs text-slate-500 font-medium">
                                 Practice speaking this phrase and receive word-by-word visual corrections.
                             </p>
                         </div>
                         
                         {/* Difficulty Pills */}
-                        <div className="flex gap-1 bg-slate-100 dark:bg-slate-805 p-1 rounded-xl border border-slate-200 dark:border-slate-700">
+                        <div className="flex gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200">
                             {(['easy', 'medium', 'hard'] as const).map((diff) => (
                                 <button
                                     key={diff}
@@ -740,7 +740,7 @@ export const ConversationalTutor: React.FC<ConversationalTutorProps> = ({
                                             ? diff === 'easy' ? 'bg-emerald-500 text-white shadow-md' :
                                               diff === 'medium' ? 'bg-blue-500 text-white shadow-md' :
                                               'bg-rose-500 text-white shadow-md'
-                                            : 'text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-750'
+                                            : 'text-slate-600 hover:bg-slate-200'
                                     }`}
                                 >
                                     {diff}
@@ -750,7 +750,7 @@ export const ConversationalTutor: React.FC<ConversationalTutorProps> = ({
                     </div>
 
                     {/* 2. Challenge Phrase Box */}
-                    <div className="bg-slate-50 dark:bg-slate-950 rounded-2xl p-6 border border-slate-200 dark:border-slate-800/80 flex flex-col items-center justify-center text-center relative overflow-hidden">
+                    <div className="bg-slate-50 rounded-2xl p-6 border border-slate-200 flex flex-col items-center justify-center text-center relative overflow-hidden">
                         
                         {/* Listen Button top right */}
                         <button
@@ -758,7 +758,7 @@ export const ConversationalTutor: React.FC<ConversationalTutorProps> = ({
                             className={`absolute top-3 right-3 p-2 rounded-xl border transition-all ${
                                 isPlayingChallengeAudio
                                     ? 'bg-blue-500 border-blue-500 text-white animate-bounce'
-                                    : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-650 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                                    : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-100'
                             }`}
                             title="Listen to standard pronunciation"
                         >
@@ -777,8 +777,8 @@ export const ConversationalTutor: React.FC<ConversationalTutorProps> = ({
                                             key={idx}
                                             className={`text-lg sm:text-2xl font-black px-2 py-0.5 rounded-lg border-b-4 transition-all ${
                                                 item.isMatch
-                                                    ? 'text-emerald-600 dark:text-emerald-400 border-emerald-500 bg-emerald-500/5'
-                                                    : 'text-rose-600 dark:text-rose-450 border-rose-500 bg-rose-500/5'
+                                                    ? 'text-emerald-600 border-emerald-500 bg-emerald-500/5'
+                                                    : 'text-rose-600 border-rose-500 bg-rose-500/5'
                                             }`}
                                         >
                                             {item.word}
@@ -788,7 +788,7 @@ export const ConversationalTutor: React.FC<ConversationalTutorProps> = ({
                                     currentChallenge.split(/\s+/).map((word, idx) => (
                                         <span
                                             key={idx}
-                                            className="text-lg sm:text-2xl font-black text-slate-800 dark:text-slate-100 border-b-4 border-slate-300 dark:border-slate-700 px-1"
+                                            className="text-lg sm:text-2xl font-black text-slate-800 border-b-4 border-slate-300 px-1"
                                         >
                                             {word}
                                         </span>
@@ -813,7 +813,7 @@ export const ConversationalTutor: React.FC<ConversationalTutorProps> = ({
                                 className={`w-16 h-16 rounded-full flex items-center justify-center shadow-xl border-4 transition-all ${
                                     isRecording
                                         ? 'bg-rose-500 border-rose-200 text-white shadow-rose-500/30 animate-pulse'
-                                        : 'bg-gradient-to-r from-blue-600 to-indigo-600 border-blue-205 dark:border-indigo-900 text-white shadow-indigo-600/20'
+                                        : 'bg-gradient-to-r from-blue-600 to-indigo-600 border-blue-500 text-white shadow-indigo-600/20'
                                 }`}
                             >
                                 {isRecording ? <MicOff className="w-6 h-6" /> : <Mic className="w-6 h-6" />}
@@ -823,7 +823,7 @@ export const ConversationalTutor: React.FC<ConversationalTutorProps> = ({
                             {spokenTranscript && (
                                 <button
                                     onClick={handleNextChallenge}
-                                    className="px-5 py-3 rounded-2xl bg-slate-100 dark:bg-slate-800 border-2 border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-350 hover:bg-slate-200 dark:hover:bg-slate-750 font-black text-xs uppercase tracking-wider transition-all"
+                                    className="px-5 py-3 rounded-2xl bg-slate-100 border-2 border-slate-300 text-slate-700 hover:bg-slate-200 font-black text-xs uppercase tracking-wider transition-all"
                                 >
                                     Next Challenge
                                 </button>
@@ -841,12 +841,12 @@ export const ConversationalTutor: React.FC<ConversationalTutorProps> = ({
                     <motion.div
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="bg-indigo-50/50 dark:bg-slate-900/40 border border-indigo-100 dark:border-indigo-950/30 rounded-3xl p-5"
+                        className="bg-indigo-50/50 border border-indigo-100 rounded-3xl p-5"
                     >
-                        <span className="text-[10px] font-black uppercase tracking-widest text-indigo-600 dark:text-indigo-400 block mb-1">
+                        <span className="text-[10px] font-black uppercase tracking-widest text-indigo-600 block mb-1">
                             Your Attempt
                         </span>
-                        <p className="text-sm font-semibold text-slate-750 dark:text-slate-300 italic">
+                        <p className="text-sm font-semibold text-slate-700 italic">
                             &ldquo;{spokenTranscript}&rdquo;
                         </p>
                     </motion.div>
@@ -854,13 +854,13 @@ export const ConversationalTutor: React.FC<ConversationalTutorProps> = ({
 
                 {/* 5. Analysis & Tips Area */}
                 {isAnalyzingPronunciation && (
-                    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-8 shadow-md flex flex-col items-center justify-center text-center gap-3">
+                    <div className="bg-white border border-slate-200 rounded-3xl p-8 shadow-md flex flex-col items-center justify-center text-center gap-3">
                         <Loader2 className="w-8 h-8 animate-spin text-indigo-500" />
                         <div>
-                            <h4 className="text-xs font-black uppercase tracking-wider text-slate-800 dark:text-slate-200">
+                            <h4 className="text-xs font-black uppercase tracking-wider text-slate-800">
                                 Mwalimu Akili is listening...
                             </h4>
-                            <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                            <p className="text-[11px] text-slate-500">
                                 Analyzing your syllables, intonation, and speech accuracy...
                             </p>
                         </div>
@@ -871,10 +871,10 @@ export const ConversationalTutor: React.FC<ConversationalTutorProps> = ({
                     <motion.div
                         initial={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
-                        className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-xl space-y-6"
+                        className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xl space-y-6"
                     >
                         {/* Score and feedback */}
-                        <div className="flex flex-col sm:flex-row items-center gap-6 pb-6 border-b border-slate-100 dark:border-slate-800">
+                        <div className="flex flex-col sm:flex-row items-center gap-6 pb-6 border-b border-slate-100">
                             {/* Circular progress bar */}
                             <div className="relative w-24 h-24 flex items-center justify-center flex-shrink-0">
                                 <svg className="w-full h-full transform -rotate-90">
@@ -882,7 +882,7 @@ export const ConversationalTutor: React.FC<ConversationalTutorProps> = ({
                                         cx="48"
                                         cy="48"
                                         r="40"
-                                        className="stroke-slate-100 dark:stroke-slate-800"
+                                        className="stroke-slate-100"
                                         strokeWidth="8"
                                         fill="transparent"
                                     />
@@ -903,20 +903,20 @@ export const ConversationalTutor: React.FC<ConversationalTutorProps> = ({
                                     />
                                 </svg>
                                 <div className="absolute flex flex-col items-center justify-center">
-                                    <span className="text-2xl font-black text-slate-800 dark:text-slate-100 leading-none">
+                                    <span className="text-2xl font-black text-slate-800 leading-none">
                                         {phoneticCoaching.score}%
                                     </span>
-                                    <span className="text-[8px] font-bold text-slate-450 uppercase tracking-widest mt-0.5">
+                                    <span className="text-[8px] font-bold text-slate-500 uppercase tracking-widest mt-0.5">
                                         Accuracy
                                     </span>
                                 </div>
                             </div>
 
                             <div className="flex-1 text-center sm:text-left">
-                                <span className="text-[10px] font-black uppercase tracking-wider text-blue-600 dark:text-blue-400 block mb-1">
+                                <span className="text-[10px] font-black uppercase tracking-wider text-blue-600 block mb-1">
                                     {"Mwalimu's Feedback"}
                                 </span>
-                                <p className="text-sm font-semibold text-slate-800 dark:text-slate-200 leading-relaxed">
+                                <p className="text-sm font-semibold text-slate-800 leading-relaxed">
                                     {phoneticCoaching.feedback}
                                 </p>
                             </div>
@@ -925,7 +925,7 @@ export const ConversationalTutor: React.FC<ConversationalTutorProps> = ({
                         {/* Phonetic tips checklist */}
                         {phoneticCoaching.phoneticTips && phoneticCoaching.phoneticTips.length > 0 && (
                             <div>
-                                <h4 className="text-xs font-black uppercase tracking-wider text-slate-800 dark:text-slate-200 mb-3 flex items-center gap-1.5">
+                                <h4 className="text-xs font-black uppercase tracking-wider text-slate-800 mb-3 flex items-center gap-1.5">
                                     <Sparkles className="w-4 h-4 text-amber-500" />
                                     Pronunciation & Mouth Guides
                                 </h4>
@@ -933,16 +933,16 @@ export const ConversationalTutor: React.FC<ConversationalTutorProps> = ({
                                     {phoneticCoaching.phoneticTips.map((tip, idx) => (
                                         <div
                                             key={idx}
-                                            className="bg-slate-50 dark:bg-slate-950 p-4 rounded-2xl border border-slate-200 dark:border-slate-800/80 flex items-start gap-3"
+                                            className="bg-slate-50 p-4 rounded-2xl border border-slate-200 flex items-start gap-3"
                                         >
-                                            <div className="w-6 h-6 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold text-xs flex-shrink-0 mt-0.5">
+                                            <div className="w-6 h-6 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-xs flex-shrink-0 mt-0.5">
                                                 {idx + 1}
                                             </div>
                                             <div>
-                                                <h5 className="text-xs font-black text-slate-850 dark:text-slate-200 capitalize">
+                                                <h5 className="text-xs font-black text-slate-850 capitalize">
                                                     {tip.word}
                                                 </h5>
-                                                <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed mt-1 font-medium">
+                                                <p className="text-xs text-slate-600 leading-relaxed mt-1 font-medium">
                                                     {tip.tip}
                                                 </p>
                                             </div>
@@ -958,7 +958,7 @@ export const ConversationalTutor: React.FC<ConversationalTutorProps> = ({
     };
 
     return (
-        <div className="flex flex-col bg-slate-50 dark:bg-slate-950 relative" style={{ height: '100dvh' }}>
+        <div className="flex flex-col bg-slate-50 relative" style={{ height: '100dvh' }}>
 
             {/* ── Header ── */}
             <div className="flex-shrink-0 bg-gradient-to-r from-indigo-600 to-purple-700 relative z-50">
@@ -1114,7 +1114,7 @@ export const ConversationalTutor: React.FC<ConversationalTutorProps> = ({
                                         <button
                                             key={i}
                                             onClick={() => handleSendMessage(starter)}
-                                            className="px-3 py-2 rounded-xl bg-white dark:bg-slate-800 border-2 border-slate-300 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:border-indigo-300 hover:text-indigo-600 dark:hover:border-indigo-700 dark:hover:text-indigo-400 hover:shadow-sm transition-all active:scale-95"
+                                            className="px-3 py-2 rounded-xl bg-white border-2 border-slate-300 text-xs font-semibold text-slate-700 hover:border-indigo-300 hover:text-indigo-600 hover:shadow-sm transition-all active:scale-95"
                                         >
                                             {starter}
                                         </button>
@@ -1143,10 +1143,10 @@ export const ConversationalTutor: React.FC<ConversationalTutorProps> = ({
                                 animate={{ opacity: 1 }}
                                 className="flex items-center gap-2 mb-3"
                             >
-                                <div className="w-8 h-8 rounded-xl overflow-hidden border-2 border-slate-300 dark:border-slate-700 flex-shrink-0">
+                                <div className="w-8 h-8 rounded-xl overflow-hidden border-2 border-slate-300 flex-shrink-0">
                                     <img src={isTutor ? mwalimuSomoImg : somoBuddyImg} alt="AI" className="w-full h-full object-cover" />
                                 </div>
-                                <div className="px-4 py-3 rounded-2xl rounded-tl-sm bg-white dark:bg-slate-800 shadow-sm border-2 border-slate-300 dark:border-slate-700 flex items-center gap-2">
+                                <div className="px-4 py-3 rounded-2xl rounded-tl-sm bg-white shadow-sm border-2 border-slate-300 flex items-center gap-2">
                                     <Loader2 className="w-3.5 h-3.5 animate-spin text-indigo-500" />
                                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                                         {chatLang === 'sw' ? 'Inafikiri...' : 'Thinking...'}
@@ -1162,7 +1162,7 @@ export const ConversationalTutor: React.FC<ConversationalTutorProps> = ({
 
             {/* ── Input Area ── */}
             {!(isTutor && tutorMode === 'pronunciation' && !isLiveCall) ? (
-                <div className="flex-shrink-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-t border-slate-200 dark:border-slate-800 px-4 pt-3 pb-6 relative z-50">
+                <div className="flex-shrink-0 bg-white/80 backdrop-blur-xl border-t border-slate-200 px-4 pt-3 pb-6 relative z-50">
                     {/* Status bar */}
                     <AnimatePresence mode="wait">
                         {isRecording && (
@@ -1191,7 +1191,7 @@ export const ConversationalTutor: React.FC<ConversationalTutorProps> = ({
                                 <span className="text-[10px] font-black text-indigo-500 uppercase tracking-widest">Speaking</span>
                                 <button
                                     onClick={() => { stopSpeech(); setIsSpeaking(false); }}
-                                    className="text-[9px] font-black text-red-500 uppercase border-l border-slate-200 dark:border-slate-700 pl-2 ml-1"
+                                    className="text-[9px] font-black text-red-500 uppercase border-l border-slate-200 pl-2 ml-1"
                                 >
                                     Stop
                                 </button>
@@ -1218,7 +1218,7 @@ export const ConversationalTutor: React.FC<ConversationalTutorProps> = ({
                                     isRecording ? 'Listening...' :
                                     chatLang === 'sw' ? 'Andika ujumbe...' : 'Ask anything...'
                                 }
-                                className="w-full px-5 py-3.5 rounded-2xl text-sm text-slate-900 dark:text-white placeholder:text-slate-400 bg-slate-100 dark:bg-slate-800 border-2 border-slate-300 dark:border-slate-700 focus:outline-none focus:border-indigo-400 focus:bg-white dark:focus:bg-slate-700 transition-all"
+                                className="w-full px-5 py-3.5 rounded-2xl text-sm text-slate-900 placeholder:text-slate-400 bg-slate-100 border-2 border-slate-300 focus:outline-none focus:border-indigo-400 focus:bg-white transition-all"
                                 disabled={isLoading || isRecording || isLiveCall}
                             />
                         </div>
@@ -1254,7 +1254,7 @@ export const ConversationalTutor: React.FC<ConversationalTutorProps> = ({
                     </div>
                 </div>
             ) : (
-                <div className="flex-shrink-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-t border-slate-200 dark:border-slate-800 px-4 py-4 text-center z-50">
+                <div className="flex-shrink-0 bg-white/80 backdrop-blur-xl border-t border-slate-200 px-4 py-4 text-center z-50">
                     <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">
                         English Pronunciation Mode (Matamshi ya Kiingereza) — English Only
                     </p>
@@ -1265,3 +1265,4 @@ export const ConversationalTutor: React.FC<ConversationalTutorProps> = ({
 };
 
 export default ConversationalTutor;
+
