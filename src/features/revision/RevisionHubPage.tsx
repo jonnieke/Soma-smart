@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import type { PDFDocumentProxy } from 'pdfjs-dist';
-import { BookOpen, ChevronLeft, ChevronRight, ExternalLink, FileText, Share2, X } from 'lucide-react';
+import { BookOpen, Check, ChevronLeft, ChevronRight, ExternalLink, FileText, Share2, X } from 'lucide-react';
 import { Helmet } from 'react-helmet-async';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
@@ -172,6 +172,50 @@ export const RevisionHubPage: React.FC<Props> = ({
     .map(([topic, score]) => ({ topic, score: Math.round(score) }));
   const papersCompleted = performance.filter(isFullPaperMode).length;
   const firstName = studentProfile?.name?.trim().split(/\s+/)[0] || 'Learner';
+  const inlinePdfQuestions = useMemo(
+    () => (Array.isArray(inlinePdfPaper?.structured_questions) ? (inlinePdfPaper.structured_questions as Array<Record<string, any>>) : []),
+    [inlinePdfPaper]
+  );
+  const inlinePdfSections = useMemo(
+    () => Array.from(new Set(inlinePdfQuestions.map((question) => String((question as any)?.section || '').trim()).filter(Boolean))),
+    [inlinePdfQuestions]
+  );
+  const inlinePdfGuideTips = useMemo(() => {
+    const grade = String(studentProfile?.grade || '').toLowerCase();
+    const isLowerPrimary = /grade\s*[1-3]|pp[123]/.test(grade);
+    const isUpperPrimary = /grade\s*[4-6]|pp[456]/.test(grade);
+    const isSecondary = /form\s*[1-4]|grade\s*[7-9]/.test(grade);
+
+    if (isLowerPrimary) {
+      return [
+        'Read the whole question once before you answer.',
+        'Look for key words like name, circle, match, count, and draw.',
+        'Keep answers short, clear, and neat.',
+      ];
+    }
+
+    if (isUpperPrimary) {
+      return [
+        'Show working for calculations even when the answer looks simple.',
+        'Write units, labels, and final answers clearly.',
+        'If a diagram is given, use it to guide your answer.',
+      ];
+    }
+
+    if (isSecondary) {
+      return [
+        'Match the command word: state, explain, describe, compare, calculate.',
+        'Earn method marks by showing your steps, not just the final answer.',
+        'Check all parts of the question before moving on.',
+      ];
+    }
+
+    return [
+      'Read the whole question before you begin.',
+      'Use the marking scheme to see exactly what earns marks.',
+      'Switch between paper and marking guide without leaving the app.',
+    ];
+  }, [studentProfile?.grade]);
 
   useEffect(() => {
     if (!initialPreviewPaperId) return;
@@ -556,6 +600,72 @@ export const RevisionHubPage: React.FC<Props> = ({
                         <FileText className="mt-0.5 h-4 w-4 text-indigo-600" />
                         <span>Switch between the question paper and marking scheme without leaving the app.</span>
                       </div>
+                    </div>
+                  </div>
+                  <div className="rounded-[1.25rem] border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950">
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-600">
+                      Question guide
+                    </p>
+                    <h3 className="mt-2 text-lg font-black text-slate-950 dark:text-white">
+                      {inlinePdfQuestions.length > 0
+                        ? `${inlinePdfQuestions.length} question${inlinePdfQuestions.length === 1 ? '' : 's'} ? ${inlinePdfPaper.total_marks || 'unknown'} marks available`
+                        : 'Quick mark-earning tips'}
+                    </h3>
+                    <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
+                      Keep the paper on the left and use this rail to spot the structure, the topics, and the marks before you attempt.
+                    </p>
+
+                    {inlinePdfSections.length > 0 && (
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        {inlinePdfSections.map((section) => (
+                          <span key={section} className="rounded-full bg-indigo-50 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-indigo-700">
+                            {section}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+
+                    <div className="mt-4 space-y-2">
+                      {inlinePdfQuestions.length > 0 ? inlinePdfQuestions.slice(0, 5).map((question, index) => {
+                        const questionNumber = String((question as any)?.number || index + 1);
+                        const questionText = String((question as any)?.text || '').trim();
+                        const questionTopic = String((question as any)?.topic || '').trim();
+                        const questionType = String((question as any)?.questionType || '').replaceAll('_', ' ').trim();
+                        const questionMarks = Number((question as any)?.marks || 1) || 1;
+                        return (
+                          <div key={`${questionNumber}-${index}`} className="rounded-2xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-800 dark:bg-slate-900/60">
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="min-w-0">
+                                <p className="text-xs font-black uppercase tracking-[0.16em] text-indigo-600">Q{questionNumber}</p>
+                                <p className="mt-1 line-clamp-2 text-sm font-bold text-slate-900 dark:text-white">
+                                  {questionText || 'Question details loading'}
+                                </p>
+                              </div>
+                              <span className="shrink-0 rounded-full bg-white px-2 py-1 text-[10px] font-black text-slate-600 shadow-sm dark:bg-slate-950 dark:text-slate-300">
+                                {questionMarks} mark{questionMarks === 1 ? '' : 's'}
+                              </span>
+                            </div>
+                            <div className="mt-2 flex flex-wrap gap-2 text-[10px] font-black uppercase tracking-[0.14em] text-slate-500">
+                              {questionTopic && <span className="rounded-full bg-white px-2 py-1 dark:bg-slate-950">{questionTopic}</span>}
+                              {questionType && <span className="rounded-full bg-white px-2 py-1 dark:bg-slate-950">{questionType}</span>}
+                              {Boolean((question as any)?.diagramUrl || (question as any)?.diagram_url) && <span className="rounded-full bg-white px-2 py-1 dark:bg-slate-950">diagram</span>}
+                            </div>
+                          </div>
+                        );
+                      }) : (
+                        <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-3 text-sm text-slate-600 dark:border-slate-800 dark:bg-slate-900/50 dark:text-slate-300">
+                          No question structure is available yet. Open the marking scheme for answer guidance or start the paper to revise in exam mode.
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="mt-4 space-y-2 text-sm text-slate-600 dark:text-slate-300">
+                      {inlinePdfGuideTips.map((tip) => (
+                        <div key={tip} className="flex items-start gap-2">
+                          <Check className="mt-0.5 h-4 w-4 text-emerald-500" />
+                          <span>{tip}</span>
+                        </div>
+                      ))}
                     </div>
                   </div>
                   <div className="grid gap-3 rounded-[1.25rem] border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950">
