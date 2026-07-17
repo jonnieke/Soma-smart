@@ -57,31 +57,31 @@ export const RevisionDashboard: React.FC = () => {
 
     if (showRevisionPaywall) {
         return (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 dark:bg-black/60 p-4 backdrop-blur-md">
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-white/70 p-4 backdrop-blur-md">
                 <motion.div
                     initial={{ scale: 0.9, opacity: 0, y: 20 }}
                     animate={{ scale: 1, opacity: 1, y: 0 }}
-                    className="bg-white dark:bg-slate-900 rounded-[2.5rem] p-10 max-w-md w-full text-center relative overflow-hidden shadow-2xl transition-colors"
+                    className="bg-white rounded-[2.5rem] p-10 max-w-md w-full text-center relative overflow-hidden shadow-2xl border border-[#ece8fb] transition-colors"
                 >
-                    <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500" />
+                    <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-indigo-300 via-purple-300 to-indigo-300" />
 
-                    <div className="w-20 h-20 bg-indigo-50 dark:bg-indigo-950/50 rounded-3xl flex items-center justify-center mx-auto mb-6 text-indigo-600 dark:text-indigo-400 shadow-inner">
+                    <div className="w-20 h-20 bg-indigo-50 rounded-3xl flex items-center justify-center mx-auto mb-6 text-indigo-600 shadow-inner">
                         <Lock className="w-10 h-10" />
                     </div>
 
-                    <h2 className="text-3xl font-black text-slate-900 dark:text-white mb-3 tracking-tight">Success Limit Reached</h2>
-                    <p className="text-slate-500 dark:text-slate-400 font-medium mb-8 leading-relaxed">
-                        You&apos;ve completed your 5 free paper analysis sessions. Your journey to being a <span className="text-indigo-600 dark:text-indigo-400 font-bold">Top Candidate</span> represents an investment in your future.
+                    <h2 className="text-3xl font-black text-slate-900 mb-3 tracking-tight">Success Limit Reached</h2>
+                    <p className="text-slate-600 font-medium mb-8 leading-relaxed">
+                        You&apos;ve completed your 5 free paper analysis sessions. Your journey to being a <span className="text-indigo-600 font-bold">Top Candidate</span> represents an investment in your future.
                     </p>
 
                     <div className="space-y-4 mb-8">
-                        <div className="flex items-center gap-3 bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-800">
+                        <div className="flex items-center gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-100">
                             <TrendingUp className="w-5 h-5 text-emerald-500" />
-                            <span className="text-sm font-bold text-slate-700 dark:text-slate-300">Unlimited Papers & smart marking</span>
+                            <span className="text-sm font-bold text-slate-700">Unlimited Papers & smart marking</span>
                         </div>
-                        <div className="flex items-center gap-3 bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-800">
+                        <div className="flex items-center gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-100">
                             <Sparkles className="w-5 h-5 text-amber-500" />
-                            <span className="text-sm font-bold text-slate-700 dark:text-slate-300">Predicted Questions & Exam Strategy</span>
+                            <span className="text-sm font-bold text-slate-700">Predicted Questions & Exam Strategy</span>
                         </div>
                     </div>
 
@@ -103,7 +103,7 @@ export const RevisionDashboard: React.FC = () => {
                         </button>
                     </div>
 
-                    <div className="absolute -bottom-12 -right-12 w-32 h-32 bg-indigo-50 rounded-full blur-2xl opacity-50" />
+                    <div className="absolute -bottom-12 -right-12 w-32 h-32 bg-indigo-100 rounded-full blur-2xl opacity-60" />
                 </motion.div>
             </div>
         );

@@ -272,19 +272,19 @@ export const LearnerHome: React.FC<LearnerHomeProps> = ({
       </header>
 
       <main className="mx-auto max-w-[1180px] px-4 pb-12 pt-8 sm:px-6 lg:px-8">
-        <section className="relative overflow-hidden rounded-[30px] bg-[#21155c] px-5 pb-6 pt-9 text-white shadow-[0_24px_70px_rgba(52,32,132,0.22)] sm:px-9 sm:pb-9 sm:pt-11 lg:px-12 lg:pb-11">
-          <div className="pointer-events-none absolute -left-24 -top-28 h-72 w-72 rounded-full bg-[#8058ff]/35 blur-3xl" />
-          <div className="pointer-events-none absolute -bottom-40 right-12 h-80 w-80 rounded-full bg-[#42c6a5]/20 blur-3xl" />
+        <section className="relative overflow-hidden rounded-[30px] bg-gradient-to-br from-[#faf7ff] via-white to-[#eef4ff] px-5 pb-6 pt-9 text-[#10143a] shadow-[0_24px_70px_rgba(118,84,224,0.12)] border border-[#e7e1f6] sm:px-9 sm:pb-9 sm:pt-11 lg:px-12 lg:pb-11">
+          <div className="pointer-events-none absolute -left-24 -top-28 h-72 w-72 rounded-full bg-[#cbbcff]/45 blur-3xl" />
+          <div className="pointer-events-none absolute -bottom-40 right-12 h-80 w-80 rounded-full bg-[#dbe6ff]/45 blur-3xl" />
           <div className="relative z-10 max-w-[760px]">
-            <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3.5 py-1.5 text-xs font-bold text-violet-100 backdrop-blur">
+            <div className="inline-flex items-center gap-2 rounded-full border border-[#e1daf8] bg-white/90 px-3.5 py-1.5 text-xs font-bold text-[#6d43ef] shadow-sm backdrop-blur">
               <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_0_4px_rgba(52,211,153,0.14)]" />
               Welcome and start learning with Akili
             </div>
-            <p className="mt-6 text-sm font-semibold text-violet-200">Welcome, {learnerFirstName}</p>
-            <h1 className="mt-1 text-[38px] font-black leading-[1.04] tracking-[-0.035em] text-white sm:text-[52px] lg:text-[62px]">
+            <p className="mt-6 text-sm font-semibold text-[#6f7391]">Welcome, {learnerFirstName}</p>
+            <h1 className="mt-1 text-[38px] font-black leading-[1.04] tracking-[-0.035em] text-[#10143a] sm:text-[52px] lg:text-[62px]">
               Welcome and start<br className="hidden sm:block" /> learning today
             </h1>
-            <p className="mt-5 max-w-[590px] text-[15px] leading-7 text-violet-100/85 sm:text-base">
+            <p className="mt-5 max-w-[590px] text-[15px] leading-7 text-[#545d7b] sm:text-base">
               Ask Akili anything from class, get a clear explanation, see an example, and finish with a quick check to help it stick.
             </p>
           </div>
@@ -294,7 +294,7 @@ export const LearnerHome: React.FC<LearnerHomeProps> = ({
             <img src={mascotImage} alt="Akili learning assistant" className="relative max-h-[255px] max-w-full object-contain drop-shadow-2xl" />
           </div>
 
-          <form onSubmit={submit} className="relative z-20 mt-8 max-w-[850px] rounded-[22px] bg-white p-2 shadow-[0_18px_50px_rgba(7,4,35,0.28)] sm:flex sm:items-center">
+          <form onSubmit={submit} className="relative z-20 mt-8 max-w-[850px] rounded-[22px] bg-white p-2 shadow-[0_18px_50px_rgba(118,84,224,0.12)] border border-[#e8e2f7] sm:flex sm:items-center">
             <label htmlFor="learner-topic" className="sr-only">Ask Akili a question</label>
             <div className="flex min-h-14 min-w-0 flex-1 items-center px-2 sm:px-3">
               <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#f0ecff] text-[#6938ef]"><Sparkles className="h-5 w-5" /></span>
@@ -311,34 +311,34 @@ export const LearnerHome: React.FC<LearnerHomeProps> = ({
           )}
 
           <div className="relative z-20 mt-4 flex flex-wrap items-center gap-2 text-sm">
-            <span className="mr-1 text-violet-200/75">Or start with</span>
-            <button type="button" onClick={onScan} className="flex min-h-10 items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 font-semibold text-white backdrop-blur transition hover:bg-white/20"><ScanLine className="h-4 w-4" /> Scan a page</button>
-            <button type="button" onClick={onUpload} className="flex min-h-10 items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 font-semibold text-white backdrop-blur transition hover:bg-white/20"><Upload className="h-4 w-4" /> Upload notes</button>
-            <button type="button" onClick={onVoice} className="flex min-h-10 items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 font-semibold text-white backdrop-blur transition hover:bg-white/20"><Mic className="h-4 w-4" /> Ask by voice</button>
+            <span className="mr-1 text-[#6f7391]">Or start with</span>
+            <button type="button" onClick={onScan} className="flex min-h-10 items-center gap-2 rounded-full border border-[#dcd7f5] bg-white px-4 font-semibold text-[#3c4370] backdrop-blur transition hover:bg-[#f6f3ff] hover:text-[#6938ef]"><ScanLine className="h-4 w-4" /> Scan a page</button>
+            <button type="button" onClick={onUpload} className="flex min-h-10 items-center gap-2 rounded-full border border-[#dcd7f5] bg-white px-4 font-semibold text-[#3c4370] backdrop-blur transition hover:bg-[#f6f3ff] hover:text-[#6938ef]"><Upload className="h-4 w-4" /> Upload notes</button>
+            <button type="button" onClick={onVoice} className="flex min-h-10 items-center gap-2 rounded-full border border-[#dcd7f5] bg-white px-4 font-semibold text-[#3c4370] backdrop-blur transition hover:bg-[#f6f3ff] hover:text-[#6938ef]"><Mic className="h-4 w-4" /> Ask by voice</button>
           </div>
         </section>
 
         <section className="mt-8">
           <div className="overflow-hidden rounded-[26px] border border-[#ddd7f4] bg-white shadow-[0_10px_36px_rgba(70,54,140,0.06)]">
-            <div className="bg-gradient-to-r from-[#1c1648] via-[#2b1c78] to-[#4d2fe0] px-5 py-5 text-white sm:px-8 sm:py-6">
-              <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[11px] font-black uppercase tracking-[0.16em] text-violet-100">
+            <div className="bg-gradient-to-r from-[#f7f4ff] via-white to-[#eef4ff] px-5 py-5 text-[#10143a] sm:px-8 sm:py-6 border-b border-[#ece6fb]">
+              <div className="inline-flex items-center gap-2 rounded-full border border-[#e1daf8] bg-white px-3 py-1 text-[11px] font-black uppercase tracking-[0.16em] text-[#6d43ef]">
                 <BookOpen className="h-4 w-4" />
                 Past papers first
               </div>
               <div className="mt-4 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
                 <div className="max-w-2xl">
-                  <h2 className="text-[24px] font-black leading-tight sm:text-[30px]">Open past papers and use them to learn faster.</h2>
-                  <p className="mt-2 text-sm leading-6 text-violet-100/85 sm:text-base">Choose a real paper, work through it under time, then use the feedback to recover marks quickly.</p>
+                  <h2 className="text-[24px] font-black leading-tight sm:text-[30px] text-[#10143a]">Open past papers and use them to learn faster.</h2>
+                  <p className="mt-2 text-sm leading-6 text-[#535c7a] sm:text-base">Choose a real paper, work through it under time, then use the feedback to recover marks quickly.</p>
                 </div>
-                <div className="flex flex-wrap gap-2 text-xs font-bold uppercase tracking-[0.14em] text-violet-50/90">
-                  <span className="rounded-full border border-white/15 bg-white/10 px-3 py-2">{grade || 'Grade 7'}</span>
-                  <span className="rounded-full border border-white/15 bg-white/10 px-3 py-2">KPSEA / KJSEA / KCSE</span>
+                <div className="flex flex-wrap gap-2 text-xs font-bold uppercase tracking-[0.14em] text-[#5a6081]">
+                  <span className="rounded-full border border-[#e0dbf4] bg-white px-3 py-2 text-[#5a6081]">{grade || 'Grade 7'}</span>
+                  <span className="rounded-full border border-[#e0dbf4] bg-white px-3 py-2 text-[#5a6081]">KPSEA / KJSEA / KCSE</span>
                   <span className="rounded-full border border-white/15 bg-white/10 px-3 py-2">Timed practice</span>
                 </div>
               </div>
             </div>
             <div className="grid gap-4 px-5 py-5 sm:grid-cols-[1.2fr_0.8fr] sm:px-8 sm:py-7">
-              <div className="rounded-[22px] border border-[#ebe6fb] bg-[#faf8ff] p-5">
+              <div className="rounded-[22px] border border-[#ebe6fb] bg-[#fbfaff] p-5">
                 <p className="text-[11px] font-black uppercase tracking-[0.16em] text-[#7a5bef]">Open past papers now</p>
                 <h3 className="mt-2 text-xl font-bold text-[#18133f]">Start with a real paper, not a blank dashboard.</h3>
                 <p className="mt-2 text-sm leading-6 text-[#5f6684]">We&apos;ll take you to the revision hub where your papers, timing and feedback live together.</p>
@@ -352,7 +352,7 @@ export const LearnerHome: React.FC<LearnerHomeProps> = ({
                 </div>
               </div>
               <div className="grid gap-3">
-                <div className="rounded-[18px] border border-[#e7e3f6] bg-white p-4">
+                <div className="rounded-[18px] border border-[#e7e3f6] bg-white p-4 shadow-sm">
                   <p className="text-[11px] font-black uppercase tracking-[0.14em] text-[#7a5bef]">Best next move</p>
                   <p className="mt-2 text-sm font-semibold text-[#1a163f]">Open your paper, attempt the questions, then review weak topics.</p>
                 </div>
