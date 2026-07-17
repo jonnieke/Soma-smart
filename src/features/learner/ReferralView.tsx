@@ -85,9 +85,9 @@ export const ReferralView: React.FC = () => {
                 {/* Share */}
                 <motion.div
                     initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
-                    className="bg-white dark:bg-slate-900 border-2 border-slate-300 dark:border-slate-800 rounded-3xl p-8 shadow-sm"
+                    className="bg-white border-2 border-slate-300 rounded-3xl p-8 shadow-sm"
                 >
-                    <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-6 flex items-center gap-2">
+                    <h3 className="text-xl font-bold text-slate-900 mb-6 flex items-center gap-2">
                         <Share2 className="w-6 h-6 text-indigo-500" /> Share your code
                     </h3>
                     <div className="space-y-4">
@@ -100,7 +100,7 @@ export const ReferralView: React.FC = () => {
                         </button>
                         <button
                             onClick={handleCopy}
-                            className="w-full bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white hover:bg-slate-200 dark:hover:bg-slate-700 font-bold py-4 rounded-xl flex items-center justify-center gap-2 transition-colors"
+                            className="w-full bg-slate-100 text-slate-900 hover:bg-slate-200 font-bold py-4 rounded-xl flex items-center justify-center gap-2 transition-colors"
                         >
                             {copied ? <><CheckCircle className="w-4 h-4 text-emerald-500" /> Copied!</> : <><Copy className="w-4 h-4" /> Copy invite link</>}
                         </button>
@@ -110,23 +110,23 @@ export const ReferralView: React.FC = () => {
                 {/* Progress */}
                 <motion.div
                     initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
-                    className="bg-white dark:bg-slate-900 border-2 border-slate-300 dark:border-slate-800 rounded-3xl p-8 shadow-sm flex flex-col justify-between"
+                    className="bg-white border-2 border-slate-300 rounded-3xl p-8 shadow-sm flex flex-col justify-between"
                 >
                     <div>
-                        <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2 flex items-center gap-2">
+                        <h3 className="text-xl font-bold text-slate-900 mb-2 flex items-center gap-2">
                             <Users className="w-6 h-6 text-emerald-500" /> Your progress
                         </h3>
-                        <p className="text-slate-500 dark:text-slate-400 text-sm mb-6">
+                        <p className="text-slate-500 text-sm mb-6">
                             Friends who joined using your code.
                         </p>
                         <div className="flex items-end gap-2 mb-4">
-                            <span className="text-5xl font-black text-slate-900 dark:text-white leading-none">{referralCount}</span>
+                            <span className="text-5xl font-black text-slate-900 leading-none">{referralCount}</span>
                             <span className="text-lg font-bold text-slate-400 mb-1">friends joined</span>
                         </div>
-                        <div className="w-full bg-slate-100 dark:bg-slate-800 h-3 rounded-full overflow-hidden mb-1">
+                        <div className="w-full bg-slate-100 h-3 rounded-full overflow-hidden mb-1">
                             <div className="bg-emerald-500 h-full rounded-full transition-all" style={{ width: `${progressPct}%` }} />
                         </div>
-                        <p className="text-xs font-bold text-emerald-600 dark:text-emerald-400 text-right">
+                        <p className="text-xs font-bold text-emerald-600 text-right">
                             {referralCount} / {nextTier.friends} to unlock {nextTier.icon} {nextTier.reward}
                         </p>
                     </div>
@@ -135,11 +135,11 @@ export const ReferralView: React.FC = () => {
                         {rewardTiers.map(tier => (
                             <div
                                 key={tier.friends}
-                                className={`flex items-center gap-3 p-3 rounded-xl border-2 transition-all ${referralCount >= tier.friends ? 'border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/20' : 'border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50'}`}
+                                className={`flex items-center gap-3 p-3 rounded-xl border-2 transition-all ${referralCount >= tier.friends ? 'border-emerald-200 bg-emerald-50' : 'border-slate-200 bg-slate-50'}`}
                             >
                                 <span className="text-xl">{referralCount >= tier.friends ? '✅' : tier.icon}</span>
                                 <div className="flex-1">
-                                    <p className="text-xs font-black text-slate-700 dark:text-slate-300">{tier.friends} friend{tier.friends > 1 ? 's' : ''} → {tier.reward}</p>
+                                    <p className="text-xs font-black text-slate-700">{tier.friends} friend{tier.friends > 1 ? 's' : ''} → {tier.reward}</p>
                                 </div>
                                 {referralCount >= tier.friends && (
                                     <span className="text-[10px] font-black text-emerald-600 uppercase tracking-wider">Earned</span>
@@ -155,8 +155,8 @@ export const ReferralView: React.FC = () => {
 
             {/* How it works */}
             <div className="px-4 md:px-0">
-                <div className="bg-white dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-800 rounded-3xl p-6">
-                    <h3 className="text-base font-black text-slate-700 dark:text-slate-300 uppercase tracking-widest mb-4">How it works</h3>
+                <div className="bg-white border-2 border-slate-200 rounded-3xl p-6">
+                    <h3 className="text-base font-black text-slate-700 uppercase tracking-widest mb-4">How it works</h3>
                     <div className="grid grid-cols-3 gap-4">
                         {[
                             { step: '1', text: 'Share your code on WhatsApp or copy the link' },
@@ -165,7 +165,7 @@ export const ReferralView: React.FC = () => {
                         ].map(item => (
                             <div key={item.step} className="text-center">
                                 <div className="w-8 h-8 bg-indigo-600 rounded-full text-white font-black text-sm flex items-center justify-center mx-auto mb-2">{item.step}</div>
-                                <p className="text-xs font-bold text-slate-500 dark:text-slate-400 leading-snug">{item.text}</p>
+                                <p className="text-xs font-bold text-slate-500 leading-snug">{item.text}</p>
                             </div>
                         ))}
                     </div>
@@ -174,3 +174,4 @@ export const ReferralView: React.FC = () => {
         </div>
     );
 };
+

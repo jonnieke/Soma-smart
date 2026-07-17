@@ -12,10 +12,10 @@ import { generatePersonalisedPath, LearningPathTopic } from '../../services/gemi
 // ─────────────────────────────────────────────────────────────────────────────
 
 const STATUS_CONFIG: Record<string, { color: string; label: string }> = {
-    MASTERED:     { color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300', label: 'Mastered' },
-    IN_PROGRESS:  { color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300', label: 'In Progress' },
-    RECOMMENDED:  { color: 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300', label: 'Recommended' },
-    LOCKED:       { color: 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400', label: 'Locked' },
+    MASTERED:     { color: 'bg-emerald-100 text-emerald-700', label: 'Mastered' },
+    IN_PROGRESS:  { color: 'bg-blue-100 text-blue-700', label: 'In Progress' },
+    RECOMMENDED:  { color: 'bg-violet-100 text-violet-700', label: 'Recommended' },
+    LOCKED:       { color: 'bg-slate-100 text-slate-500', label: 'Locked' },
 };
 
 const DIFF_DOT: Record<string, string> = {
@@ -45,14 +45,14 @@ const StepCard: React.FC<{
         >
             {/* Connector */}
             {index > 0 && (
-                <div className="absolute left-5 -top-4 w-px h-4 bg-slate-200 dark:bg-slate-700" />
+                <div className="absolute left-5 -top-4 w-px h-4 bg-slate-200" />
             )}
 
             {/* Bubble */}
             <div className={`shrink-0 w-10 h-10 rounded-xl flex items-center justify-center shadow-sm mt-1 ${
                 isMastered ? 'bg-emerald-500' :
                 !isLocked ? 'bg-indigo-600' :
-                'bg-slate-200 dark:bg-slate-700'
+                'bg-slate-200'
             }`}>
                 {isMastered
                     ? <CheckCircle2 className="w-5 h-5 text-white" />
@@ -64,9 +64,9 @@ const StepCard: React.FC<{
             {/* Card */}
             <div
                 className={`flex-1 rounded-2xl border-2 overflow-hidden transition-all ${
-                    isMastered ? 'border-emerald-100 dark:border-emerald-900 bg-emerald-50/40 dark:bg-emerald-900/10' :
-                    !isLocked ? 'border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-indigo-200 dark:hover:border-indigo-800 cursor-pointer' :
-                    'border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50'
+                    isMastered ? 'border-emerald-100 bg-emerald-50/40' :
+                    !isLocked ? 'border-slate-100 bg-white hover:border-indigo-200 cursor-pointer' :
+                    'border-slate-100 bg-slate-50'
                 }`}
                 onClick={() => !isLocked && setExpanded(e => !e)}
             >
@@ -81,11 +81,11 @@ const StepCard: React.FC<{
                             </span>
                             <span className="text-[10px] text-slate-400 font-medium">{topic.subject}</span>
                         </div>
-                        <h4 className="font-black text-slate-900 dark:text-white text-sm leading-snug">{topic.topic}</h4>
+                        <h4 className="font-black text-slate-900 text-sm leading-snug">{topic.topic}</h4>
                     </div>
                     <div className="shrink-0 text-right">
-                        <p className="text-xs font-black text-slate-900 dark:text-white">{topic.masteryPercent}%</p>
-                        <div className="h-1.5 w-16 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden mt-1">
+                        <p className="text-xs font-black text-slate-900">{topic.masteryPercent}%</p>
+                        <div className="h-1.5 w-16 bg-slate-100 rounded-full overflow-hidden mt-1">
                             <div
                                 className={`h-full rounded-full ${DIFF_DOT[topic.difficulty] || 'bg-indigo-500'}`}
                                 style={{ width: `${topic.masteryPercent}%` }}
@@ -103,20 +103,20 @@ const StepCard: React.FC<{
                             initial={{ height: 0, opacity: 0 }}
                             animate={{ height: 'auto', opacity: 1 }}
                             exit={{ height: 0, opacity: 0 }}
-                            className="overflow-hidden border-t border-slate-100 dark:border-slate-800 px-4 py-3 bg-slate-50/50 dark:bg-slate-800/30"
+                            className="overflow-hidden border-t border-slate-100 px-4 py-3 bg-slate-50/50"
                         >
-                            <p className="text-xs text-slate-600 dark:text-slate-300 font-medium leading-relaxed mb-3">
+                            <p className="text-xs text-slate-600 font-medium leading-relaxed mb-3">
                                 {topic.rationale}
                             </p>
                             {topic.prerequisite && (
-                                <p className="text-[10px] text-amber-600 dark:text-amber-400 font-black mb-3 flex items-center gap-1">
+                                <p className="text-[10px] text-amber-600 font-black mb-3 flex items-center gap-1">
                                     <Target className="w-3 h-3" /> Prerequisite: {topic.prerequisite}
                                 </p>
                             )}
                             {onStart && (
                                 <button
                                     onClick={(e) => { e.stopPropagation(); onStart(topic.topic); }}
-                                    className="flex items-center gap-1.5 text-xs font-black text-indigo-600 dark:text-indigo-400 hover:gap-2.5 transition-all"
+                                    className="flex items-center gap-1.5 text-xs font-black text-indigo-600 hover:gap-2.5 transition-all"
                                 >
                                     <Brain className="w-3.5 h-3.5" /> Start Practice <ArrowRight className="w-3 h-3" />
                                 </button>
@@ -216,7 +216,7 @@ export const LearningPathView: React.FC<LearningPathViewProps> = ({
 
             {/* Error */}
             {error && (
-                <div className="flex items-center gap-3 p-4 bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800 rounded-2xl text-rose-700 dark:text-rose-300 text-sm font-medium">
+                <div className="flex items-center gap-3 p-4 bg-rose-50 border border-rose-200 rounded-2xl text-rose-700 text-sm font-medium">
                     <AlertTriangle className="w-4 h-4 shrink-0" /> {error}
                 </div>
             )}
@@ -226,10 +226,10 @@ export const LearningPathView: React.FC<LearningPathViewProps> = ({
                 <div className="space-y-3">
                     {[1, 2, 3, 4, 5].map(i => (
                         <div key={i} className="flex gap-4">
-                            <div className="w-10 h-10 rounded-xl bg-slate-200 dark:bg-slate-800 animate-pulse shrink-0 mt-1" />
-                            <div className="flex-1 rounded-2xl border-2 border-slate-100 dark:border-slate-800 p-4">
-                                <div className="h-3 bg-slate-200 dark:bg-slate-800 rounded animate-pulse mb-2 w-1/4" />
-                                <div className="h-4 bg-slate-100 dark:bg-slate-700 rounded animate-pulse w-3/4" />
+                            <div className="w-10 h-10 rounded-xl bg-slate-200 animate-pulse shrink-0 mt-1" />
+                            <div className="flex-1 rounded-2xl border-2 border-slate-100 p-4">
+                                <div className="h-3 bg-slate-200 rounded animate-pulse mb-2 w-1/4" />
+                                <div className="h-4 bg-slate-100 rounded animate-pulse w-3/4" />
                             </div>
                         </div>
                     ))}
@@ -240,14 +240,14 @@ export const LearningPathView: React.FC<LearningPathViewProps> = ({
             {path && !isLoading && (
                 <div className="space-y-6">
                     {/* Progress bar */}
-                    <div className="bg-white dark:bg-slate-900 rounded-2xl border-2 border-slate-100 dark:border-slate-800 p-4">
+                    <div className="bg-white rounded-2xl border-2 border-slate-100 p-4">
                         <div className="flex items-center justify-between mb-2">
-                            <p className="text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+                            <p className="text-xs font-black text-slate-500 uppercase tracking-widest flex items-center gap-1.5">
                                 <Star className="w-3.5 h-3.5 text-amber-400" /> Path Progress
                             </p>
-                            <p className="text-xs font-black text-slate-900 dark:text-white">{masteredCount}/{totalCount} mastered</p>
+                            <p className="text-xs font-black text-slate-900">{masteredCount}/{totalCount} mastered</p>
                         </div>
-                        <div className="h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                        <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
                             <motion.div
                                 initial={{ width: 0 }}
                                 animate={{ width: `${(masteredCount / Math.max(1, totalCount)) * 100}%` }}
@@ -276,10 +276,10 @@ export const LearningPathView: React.FC<LearningPathViewProps> = ({
                             <div key={status}>
                                 <div className="flex items-center gap-3 mb-3">
                                     <BookOpen className="w-4 h-4 text-indigo-500 shrink-0" />
-                                    <h3 className="text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">
+                                    <h3 className="text-xs font-black text-slate-500 uppercase tracking-widest">
                                         {STATUS_CONFIG[status]?.label ?? status}
                                     </h3>
-                                    <div className="flex-1 h-px bg-slate-100 dark:bg-slate-800" />
+                                    <div className="flex-1 h-px bg-slate-100" />
                                 </div>
                                 <div className="space-y-3 ml-2">
                                     {group.map((topic, idx) => (
@@ -299,11 +299,11 @@ export const LearningPathView: React.FC<LearningPathViewProps> = ({
 
             {/* Empty prompt */}
             {!path && !isLoading && (
-                <div className="bg-white dark:bg-slate-900 rounded-[2rem] border-2 border-dashed border-slate-200 dark:border-slate-800 p-10 text-center">
-                    <div className="w-16 h-16 bg-indigo-50 dark:bg-indigo-900/30 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <div className="bg-white rounded-[2rem] border-2 border-dashed border-slate-200 p-10 text-center">
+                    <div className="w-16 h-16 bg-indigo-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
                         <Sparkles className="w-8 h-8 text-indigo-500" />
                     </div>
-                    <h3 className="font-black text-slate-900 dark:text-white text-xl mb-2">Ready to build your path?</h3>
+                    <h3 className="font-black text-slate-900 text-xl mb-2">Ready to build your path?</h3>
                     <p className="text-slate-400 font-medium text-sm max-w-xs mx-auto leading-relaxed mb-5">
                         Akili Smart will analyse your mastery data and create a personalised 8-topic study roadmap, tackling your weakest areas first.
                     </p>
@@ -318,3 +318,4 @@ export const LearningPathView: React.FC<LearningPathViewProps> = ({
         </div>
     );
 };
+
