@@ -43,6 +43,7 @@ type Props = {
   onLibrary: () => void;
   onSomaGuide: () => void;
   onRevision: () => void;
+  onStartPaper: (paperId: string | number) => void;
   onPricing: () => void;
   onSignIn: () => void;
   onDashboard: () => void;
@@ -203,13 +204,20 @@ export const LandingHome: React.FC<Props> = (props) => {
     return `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/syllabus-docs/${encodedPath}`;
   };
 
+  const buildPaperAttemptUrl = (paper: NonNullable<Props['latestPapers']>[number]) => {
+    const paperId = encodeURIComponent(String(paper.id));
+    return `${window.location.origin}/revision/dashboard?paper=${paperId}`;
+  };
+
   const sharePaper = async (paper: NonNullable<Props['latestPapers']>[number]) => {
-    const url = resolvePaperUrl(paper);
-    if (!url) return;
+    const url = buildPaperAttemptUrl(paper);
+    const pdfUrl = resolvePaperUrl(paper);
 
     const payload = {
       title: String(paper.title || 'SomaAI paper'),
-      text: `${paper.title || 'SomaAI paper'} - open this paper in Soma AI revision`,
+      text: pdfUrl
+        ? `${paper.title || 'SomaAI paper'} - open the paper or PDF in Soma AI revision`
+        : `${paper.title || 'SomaAI paper'} - open this paper in Soma AI revision`,
       url,
     };
 
@@ -467,9 +475,13 @@ export const LandingHome: React.FC<Props> = (props) => {
                         <span className="text-xs font-black uppercase tracking-[0.16em] text-slate-400">
                           {isOriginal ? 'SomaAI Original' : 'Published exam'}
                         </span>
-                        <span className="inline-flex items-center gap-1 text-xs font-black text-blue-600">
+                        <button
+                          type="button"
+                          onClick={() => props.onStartPaper(paper.id)}
+                          className="inline-flex items-center gap-1 text-xs font-black text-blue-600 hover:text-blue-700"
+                        >
                           Start paper <ArrowRight className="h-4 w-4" />
-                        </span>
+                        </button>
                       </div>
                       <div className="mt-4 space-y-2">
                         <div className="grid grid-cols-2 gap-2">

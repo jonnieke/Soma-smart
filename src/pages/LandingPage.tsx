@@ -96,7 +96,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
         }
     });
     const [showMobileStickyCta, setShowMobileStickyCta] = useState(false);
-    const [latestPapers, setLatestPapers] = useState<Array<{ id: string | number; title: string; subject: string; grade: string; duration_minutes?: number | null; total_marks?: number | null; source?: string | null; exam_type?: string | null; created_at?: string | null; homepage_featured?: boolean | null; file_url?: string | null; file_path?: string | null }>>([]);
+    const [latestPapers, setLatestPapers] = useState<Array<{ id: string | number; title: string; subject: string; grade: string; duration_minutes?: number | null; total_marks?: number | null; source?: string | null; exam_type?: string | null; created_at?: string | null; published_at?: string | null; homepage_featured?: boolean | null; file_url?: string | null; file_path?: string | null }>>([]);
 
     const trackFunnelEvent = (eventName: string, params: Record<string, unknown> = {}) => {
         try {
@@ -460,6 +460,20 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
         navigate('/learner', { state: { targetTab: 'RESOURCES', targetIntent: 'official_library' } });
     };
 
+    const handleStartPaperFromHome = (paperId: string | number) => {
+        if (!isRegistered && role === UserRole.NONE) {
+            startGuestSession();
+        }
+        setRole(UserRole.LEARNER);
+        const id = String(paperId);
+        try {
+            sessionStorage.setItem('soma_pending_exam_id', id);
+        } catch (_) {
+            // Ignore storage issues and still navigate.
+        }
+        navigate(`/revision/dashboard?paper=${encodeURIComponent(id)}`);
+    };
+
     const handleGetStarted = () => {
         setRole(UserRole.LEARNER); // Default to learner
         setShowRegistration(true);
@@ -805,6 +819,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                 onLibrary={handleLibraryAccess}
                 onSomaGuide={() => navigate('/guide')}
                 onRevision={() => navigate('/revision')}
+                onStartPaper={handleStartPaperFromHome}
                 onPricing={() => navigate('/pricing')}
                 latestPapers={latestPapers}
                 onSignIn={() => { setLoginTab('STUDENT'); setShowLogin(true); }}

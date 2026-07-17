@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+﻿import React, { useState, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Lock, Sparkles, TrendingUp, ShieldCheck } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
@@ -7,6 +7,7 @@ import { RevisionHubPage } from './RevisionHubPage';
 import { RevisionSession } from './RevisionSession';
 import { SyllabusViewer } from './SyllabusViewer';
 import { NotesViewer } from './NotesViewer';
+import { examService } from '../../services/examService';
 import { RevisionMode, TeacherActivity, ViewState, UserRole, ExamAnalysis } from '../../types';
 import { Button } from '../../components/Shared';
 
@@ -18,6 +19,7 @@ type ActiveView =
 
 export const RevisionDashboard: React.FC = () => {
     const navigate = useNavigate();
+    const location = useLocation();
     const {
         isRegistered, studentProfile, logout, isPro,
         revisionUsageCount, incrementRevisionUsage, role
@@ -32,19 +34,44 @@ export const RevisionDashboard: React.FC = () => {
 
     useEffect(() => {
         if (activeView.type !== 'landing') return;
+
+        const params = new URLSearchParams(location.search);
+        const paperId = params.get('paper') || sessionStorage.getItem('soma_pending_exam_id');
         const rawPaper = sessionStorage.getItem('soma_pending_exam');
-        if (!rawPaper) return;
-        try {
-            const paper = JSON.parse(rawPaper);
-            if (paper) {
-                setActiveView({ type: 'exam', data: paper as any, mode: RevisionMode.EXAM });
+
+        if (rawPaper) {
+            try {
+                const paper = JSON.parse(rawPaper);
+                if (paper) {
+                    setActiveView({ type: 'exam', data: paper as any, mode: RevisionMode.EXAM });
+                }
+            } catch (error) {
+                console.error('Could not open pending paper:', error);
+            } finally {
+                sessionStorage.removeItem('soma_pending_exam');
+                sessionStorage.removeItem('soma_pending_exam_id');
             }
-        } catch (error) {
-            console.error('Could not open pending paper:', error);
-        } finally {
-            sessionStorage.removeItem('soma_pending_exam');
+            return;
         }
-    }, [activeView.type]);
+
+        if (!paperId) return;
+
+        let cancelled = false;
+        const openPaper = async () => {
+            try {
+                const paper = await examService.getExamForAttempt(paperId);
+                if (cancelled || !paper) return;
+                setActiveView({ type: 'exam', data: paper as any, mode: RevisionMode.EXAM });
+            } catch (error) {
+                console.error('Could not load pending paper by id:', error);
+            } finally {
+                sessionStorage.removeItem('soma_pending_exam_id');
+            }
+        };
+
+        void openPaper();
+        return () => { cancelled = true; };
+    }, [activeView.type, location.search]);
 
     // Helper to determine item type
     const getItemType = (data: File | TeacherActivity): 'syllabus' | 'notes' | 'paper' => {
@@ -152,13 +179,13 @@ export const RevisionDashboard: React.FC = () => {
             onStartSession={(data, mode) => {
                 const itemType = getItemType(data);
 
-                // Syllabus items are always free — no paywall, straight to viewer
+                // Syllabus items are always free â€” no paywall, straight to viewer
                 if (itemType === 'syllabus') {
                     setActiveView({ type: 'syllabus', data });
                     return;
                 }
 
-                // Notes — check paywall but different viewer
+                // Notes â€” check paywall but different viewer
                 if (itemType === 'notes') {
                     if (role === UserRole.GUEST && revisionUsageCount >= 1) {
                         setShowRevisionPaywall(true);
@@ -173,7 +200,7 @@ export const RevisionDashboard: React.FC = () => {
                     return;
                 }
 
-                // Past papers — standard paywall
+                // Past papers â€” standard paywall
                 if (role === UserRole.GUEST && revisionUsageCount >= 1) {
                     setShowRevisionPaywall(true);
                     return;
