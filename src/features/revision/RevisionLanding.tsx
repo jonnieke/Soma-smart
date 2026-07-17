@@ -381,7 +381,7 @@ export const RevisionLanding: React.FC<Props> = ({ onStartSession, onNavigate, o
         return {
             label: 'Needs indexing',
             title: 'Read and exam modes still work, but grounded Guru coaching needs admin indexing.',
-            className: 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400'
+            className: 'bg-slate-100 text-slate-500 bg-slate-200 text-slate-500'
         };
     };
 
@@ -471,24 +471,24 @@ Use plain text. No markdown headings or symbols.`;
     const hasHistory = weakCount > 0;
 
     return (
-        <div className="min-h-screen bg-slate-50 dark:bg-slate-950 font-sans text-slate-800 dark:text-slate-100 transition-colors duration-300">
+        <div className="min-h-screen bg-slate-50 font-sans text-slate-800 text-slate-900 transition-colors duration-300">
             <Helmet>
                 <title>Revision Hub | Somo Smart — KCSE &amp; KPSEA Exam Prep</title>
                 <meta name="description" content="smart-powered exam prep: scan questions, access past papers, get instant guidance from Exam Guru." />
             </Helmet>
 
             {/* ── HEADER ── */}
-            <header className="bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 sticky top-0 z-30">
+            <header className="bg-white bg-white border-b border-slate-100 border-slate-200 sticky top-0 z-30">
                 <div className="max-w-3xl mx-auto px-4 flex items-center justify-between h-14">
                     <div className="flex items-center gap-3">
                         <button
                             onClick={onBack || (() => onNavigate(ViewState.DASHBOARD))}
-                            className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl text-slate-400 transition-colors"
+                            className="p-2 hover:bg-slate-100 hover:bg-slate-100 rounded-xl text-slate-400 transition-colors"
                         >
                             <ArrowRight className="w-5 h-5 rotate-180" />
                         </button>
                         <div>
-                            <p className="font-black text-slate-900 dark:text-white text-base leading-none">SomaAI Exam Prep</p>
+                            <p className="font-black text-slate-900 text-slate-900 text-base leading-none">SomaAI Exam Prep</p>
                             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-0.5">
                                 {studentProfile?.name?.split(' ')[0] || 'Candidate'} · {studentProfile?.grade || 'All Grades'}
                             </p>
@@ -498,7 +498,7 @@ Use plain text. No markdown headings or symbols.`;
                         <ThemeToggle />
                         <button
                             onClick={() => setShowLogoutModal(true)}
-                            className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-xl transition-colors"
+                            className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 hover:bg-red-50 rounded-xl transition-colors"
                         >
                             <LogOut className="w-4 h-4" />
                         </button>
@@ -573,19 +573,19 @@ Use plain text. No markdown headings or symbols.`;
                     </div>
                 </section>
 
-                <section className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-4 sm:p-5 shadow-sm">
+                <section className="bg-white bg-white border border-slate-200 rounded-3xl p-4 sm:p-5 shadow-sm">
                     <div className="flex items-start justify-between gap-3 mb-4">
                         <div>
                             {initialSubject && initialSubject !== "All" && (
-                                <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-indigo-200 dark:border-indigo-900/60 bg-indigo-50 dark:bg-indigo-950/30 px-3 py-1.5">
-                                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-600 dark:text-indigo-300">Focused revision</span>
-                                    <span className="text-[11px] font-bold text-slate-800 dark:text-slate-100">{initialSubject}</span>
+                                <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-indigo-200 border-indigo-200 bg-indigo-50 bg-indigo-50 px-3 py-1.5">
+                                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-600 text-indigo-600">Focused revision</span>
+                                    <span className="text-[11px] font-bold text-slate-800 text-slate-900">{initialSubject}</span>
                                 </div>
                             )}
 
                             <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-500 mb-1">Paper-first revision for {examGoal.examType}</p>
-                            <h1 className="text-xl sm:text-2xl font-black text-slate-950 dark:text-white leading-tight">Welcome and start learning with a real paper.</h1>
-                            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1 font-medium">
+                            <h1 className="text-xl sm:text-2xl font-black text-slate-950 text-slate-900 leading-tight">Welcome and start learning with a real paper.</h1>
+                            <p className="text-xs sm:text-sm text-slate-500 text-slate-500 mt-1 font-medium">
                                 Pick a paper, answer it like the exam, then use marks and feedback to strengthen weak spots.
                             </p>
                         </div>
@@ -598,7 +598,7 @@ Use plain text. No markdown headings or symbols.`;
                         <select
                             value={examGoal.examType}
                             onChange={e => setExamGoal(prev => ({ ...prev, examType: e.target.value }))}
-                            className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl px-3 py-3 text-xs font-black text-slate-800 dark:text-slate-100 outline-none"
+                            className="bg-slate-50 border border-slate-200 rounded-2xl px-3 py-3 text-xs font-black text-slate-800 text-slate-900 outline-none"
                             aria-label="Exam type"
                         >
                             {EXAM_TYPES.map(type => <option key={type} value={type}>{type}</option>)}
@@ -609,7 +609,7 @@ Use plain text. No markdown headings or symbols.`;
                                 setExamGoal(prev => ({ ...prev, subject: e.target.value }));
                                 setActiveSubject(e.target.value);
                             }}
-                            className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl px-3 py-3 text-xs font-black text-slate-800 dark:text-slate-100 outline-none"
+                            className="bg-slate-50 border border-slate-200 rounded-2xl px-3 py-3 text-xs font-black text-slate-800 text-slate-900 outline-none"
                             aria-label="Revision subject"
                         >
                             {REVISION_SUBJECTS.map(subject => <option key={subject} value={subject}>{subject}</option>)}
@@ -617,7 +617,7 @@ Use plain text. No markdown headings or symbols.`;
                         <select
                             value={examGoal.targetGrade}
                             onChange={e => setExamGoal(prev => ({ ...prev, targetGrade: e.target.value }))}
-                            className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl px-3 py-3 text-xs font-black text-slate-800 dark:text-slate-100 outline-none"
+                            className="bg-slate-50 border border-slate-200 rounded-2xl px-3 py-3 text-xs font-black text-slate-800 text-slate-900 outline-none"
                             aria-label="Target grade"
                         >
                             {TARGET_GRADES.map(grade => <option key={grade} value={grade}>Target {grade}</option>)}
@@ -626,15 +626,15 @@ Use plain text. No markdown headings or symbols.`;
                             type="date"
                             value={examGoal.examDate}
                             onChange={e => setExamGoal(prev => ({ ...prev, examDate: e.target.value }))}
-                            className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl px-3 py-3 text-xs font-black text-slate-800 dark:text-slate-100 outline-none"
+                            className="bg-slate-50 border border-slate-200 rounded-2xl px-3 py-3 text-xs font-black text-slate-800 text-slate-900 outline-none"
                             aria-label="Exam date"
                         />
                     </div>
 
                     {initialSubject && initialSubject !== 'All' && (
-                        <div className="mt-4 rounded-2xl border border-indigo-200 dark:border-indigo-900/60 bg-indigo-50 dark:bg-indigo-950/30 px-4 py-3">
-                            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-600 dark:text-indigo-300 mb-1">Focused revision</p>
-                            <p className="text-sm font-bold text-slate-900 dark:text-white">Starting with {initialSubject}</p>
+                        <div className="mt-4 rounded-2xl border border-indigo-200 border-indigo-200 bg-indigo-50 bg-indigo-50 px-4 py-3">
+                            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-600 text-indigo-600 mb-1">Focused revision</p>
+                            <p className="text-sm font-bold text-slate-900 text-slate-900">Starting with {initialSubject}</p>
                             <p className="text-[11px] font-semibold text-slate-500 mt-0.5">We&apos;ve preselected the subject from your current lesson so you can jump straight in.</p>
                         </div>
                     )}
@@ -724,14 +724,14 @@ Use plain text. No markdown headings or symbols.`;
                     {/* Scan */}
                     <button
                         onClick={startCamera}
-                        className="flex flex-col items-center gap-2 bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white p-4 rounded-2xl transition-all shadow-lg shadow-indigo-200 dark:shadow-none"
+                        className="flex flex-col items-center gap-2 bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white p-4 rounded-2xl transition-all shadow-lg shadow-indigo-200 "
                     >
                         <ScanLine className="w-6 h-6" />
                         <span className="text-xs font-black leading-tight text-center">Scan<br/>Question</span>
                     </button>
 
                     {/* Upload */}
-                    <label className="flex flex-col items-center gap-2 bg-white dark:bg-slate-900 border-2 border-dashed border-slate-200 dark:border-slate-700 hover:border-indigo-300 dark:hover:border-indigo-600 active:scale-95 text-slate-500 dark:text-slate-400 p-4 rounded-2xl transition-all cursor-pointer">
+                    <label className="flex flex-col items-center gap-2 bg-white bg-white border-2 border-dashed border-slate-200 hover:border-indigo-300 active:scale-95 text-slate-500 text-slate-500 p-4 rounded-2xl transition-all cursor-pointer">
                         <Upload className="w-6 h-6" />
                         <span className="text-xs font-black leading-tight text-center">Upload<br/>Paper</span>
                         <input
@@ -748,7 +748,7 @@ Use plain text. No markdown headings or symbols.`;
                     {/* Ask Exam Guru */}
                     <button
                         onClick={() => setShowGuru(true)}
-                        className="flex flex-col items-center gap-2 bg-gradient-to-br from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 active:scale-95 text-white p-4 rounded-2xl transition-all shadow-lg shadow-purple-200 dark:shadow-none relative"
+                        className="flex flex-col items-center gap-2 bg-gradient-to-br from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 active:scale-95 text-white p-4 rounded-2xl transition-all shadow-lg shadow-purple-200  relative"
                     >
                         <div className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-emerald-400 rounded-full flex items-center justify-center">
                             <div className="w-2 h-2 bg-emerald-400 rounded-full animate-ping absolute" />
@@ -837,7 +837,7 @@ Use plain text. No markdown headings or symbols.`;
                             <div className="flex items-center justify-between mb-3">
                                 <div className="flex items-center gap-2">
                                     <Target className="w-4 h-4 text-rose-500" />
-                                    <h2 className="font-black text-sm text-slate-800 dark:text-slate-200 uppercase tracking-wider">Your Weak Areas</h2>
+                                    <h2 className="font-black text-sm text-slate-800 text-slate-800 uppercase tracking-wider">Your Weak Areas</h2>
                                 </div>
                                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Fix these first</span>
                             </div>
@@ -851,11 +851,11 @@ Use plain text. No markdown headings or symbols.`;
                                             className="bg-white border border-slate-200 hover:border-rose-300 rounded-2xl p-4 text-left transition-all group shadow-sm"
                                         >
                                             <div className="flex items-center justify-between mb-2">
-                                                <span className="text-xs font-black text-rose-500 bg-rose-50 dark:bg-rose-950/50 px-2 py-0.5 rounded-md">{score}%</span>
+                                                <span className="text-xs font-black text-rose-500 bg-rose-50 bg-rose-50 px-2 py-0.5 rounded-md">{score}%</span>
                                                 <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-rose-400 transition-colors" />
                                             </div>
-                                            <p className="font-bold text-slate-800 dark:text-slate-200 text-sm leading-tight">{topic}</p>
-                                            <div className="mt-2 w-full bg-slate-100 dark:bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                                            <p className="font-bold text-slate-800 text-slate-800 text-sm leading-tight">{topic}</p>
+                                            <div className="mt-2 w-full bg-slate-100 bg-slate-200 h-1.5 rounded-full overflow-hidden">
                                                 <div
                                                     className="h-full bg-rose-400 rounded-full"
                                                     style={{ width: `${score}%` }}
@@ -911,7 +911,7 @@ Use plain text. No markdown headings or symbols.`;
                                 onClick={() => setActiveSubject(s)}
                                 className={`shrink-0 text-xs font-bold px-4 py-2 rounded-xl transition-all ${activeSubject === s
                                     ? 'bg-indigo-600 text-white shadow-sm'
-                                    : 'bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-800 hover:border-indigo-300 dark:hover:border-indigo-700'
+                                    : 'bg-white bg-white text-slate-500 text-slate-500 border border-slate-200 hover:border-indigo-300'
                                 }`}
                             >
                                 {s}
