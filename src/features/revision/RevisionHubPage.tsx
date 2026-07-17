@@ -217,6 +217,47 @@ export const RevisionHubPage: React.FC<Props> = ({
     ];
   }, [studentProfile?.grade]);
 
+  const inlinePdfQuestionInsights = useMemo(() => inlinePdfQuestions.slice(0, 4).map((question, index) => {
+    const questionNumber = String((question as any)?.number || index + 1).replace(/\s+/g, '');
+    const questionText = String((question as any)?.text || '').trim();
+    const questionTopic = String((question as any)?.topic || '').trim();
+    const questionType = String((question as any)?.questionType || '').replaceAll('_', ' ').trim();
+    const questionMarks = Number((question as any)?.marks || 1) || 1;
+    const questionCompetency = String((question as any)?.competency || '').trim();
+    const questionLevel = String((question as any)?.cognitiveLevel || '').trim();
+    const rawMarkingScheme = Array.isArray((question as any)?.markingScheme) ? (question as any).markingScheme : [];
+    const modelAnswer = String((question as any)?.modelAnswer || '').trim();
+    const explanation = String((question as any)?.explanation || '').trim();
+    const commonMistakes = Array.isArray((question as any)?.commonMistakes) ? (question as any).commonMistakes.map((item: unknown) => String(item).trim()).filter(Boolean) : [];
+
+    const whatItTests = questionCompetency || questionLevel || questionType || questionTopic || 'core understanding';
+    const earnMarks = rawMarkingScheme.length > 0
+      ? rawMarkingScheme.slice(0, 3).map((point: unknown) => String(point).trim()).filter(Boolean)
+      : [
+          modelAnswer ? `Write the final answer clearly: ${modelAnswer}` : 'State the answer clearly and keep your working visible.',
+          explanation ? explanation : 'Use the paper wording and the topic clue to support your response.',
+        ];
+    const commonTrap = commonMistakes[0] || (questionType === 'multiple choice'
+      ? 'Do not guess without reading every option carefully.'
+      : questionType === 'construction'
+        ? 'Neatness and correct labels matter here.'
+        : questionType === 'image upload'
+          ? 'Upload the working clearly and make sure it is readable.'
+          : 'Do not skip the working or the final conclusion.');
+
+    return {
+      questionNumber,
+      questionText,
+      questionTopic,
+      questionType,
+      questionMarks,
+      whatItTests,
+      earnMarks,
+      commonTrap,
+      hasDiagram: Boolean((question as any)?.diagramUrl || (question as any)?.diagram_url),
+    };
+  }), [inlinePdfQuestions]);
+
   useEffect(() => {
     if (!initialPreviewPaperId) return;
     const targetId = String(initialPreviewPaperId);
@@ -626,33 +667,47 @@ export const RevisionHubPage: React.FC<Props> = ({
                     )}
 
                     <div className="mt-4 space-y-2">
-                      {inlinePdfQuestions.length > 0 ? inlinePdfQuestions.slice(0, 5).map((question, index) => {
-                        const questionNumber = String((question as any)?.number || index + 1);
-                        const questionText = String((question as any)?.text || '').trim();
-                        const questionTopic = String((question as any)?.topic || '').trim();
-                        const questionType = String((question as any)?.questionType || '').replaceAll('_', ' ').trim();
-                        const questionMarks = Number((question as any)?.marks || 1) || 1;
-                        return (
-                          <div key={`${questionNumber}-${index}`} className="rounded-2xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-800 dark:bg-slate-900/60">
-                            <div className="flex items-start justify-between gap-3">
-                              <div className="min-w-0">
-                                <p className="text-xs font-black uppercase tracking-[0.16em] text-indigo-600">Q{questionNumber}</p>
-                                <p className="mt-1 line-clamp-2 text-sm font-bold text-slate-900 dark:text-white">
-                                  {questionText || 'Question details loading'}
-                                </p>
-                              </div>
-                              <span className="shrink-0 rounded-full bg-white px-2 py-1 text-[10px] font-black text-slate-600 shadow-sm dark:bg-slate-950 dark:text-slate-300">
-                                {questionMarks} mark{questionMarks === 1 ? '' : 's'}
-                              </span>
+                      {inlinePdfQuestionInsights.length > 0 ? inlinePdfQuestionInsights.map((question) => (
+                        <div key={question.questionNumber} className="rounded-2xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-800 dark:bg-slate-900/60">
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="min-w-0">
+                              <p className="text-xs font-black uppercase tracking-[0.16em] text-indigo-600">Q{question.questionNumber}</p>
+                              <p className="mt-1 line-clamp-2 text-sm font-bold text-slate-900 dark:text-white">
+                                {question.questionText || 'Question details loading'}
+                              </p>
                             </div>
-                            <div className="mt-2 flex flex-wrap gap-2 text-[10px] font-black uppercase tracking-[0.14em] text-slate-500">
-                              {questionTopic && <span className="rounded-full bg-white px-2 py-1 dark:bg-slate-950">{questionTopic}</span>}
-                              {questionType && <span className="rounded-full bg-white px-2 py-1 dark:bg-slate-950">{questionType}</span>}
-                              {Boolean((question as any)?.diagramUrl || (question as any)?.diagram_url) && <span className="rounded-full bg-white px-2 py-1 dark:bg-slate-950">diagram</span>}
+                            <span className="shrink-0 rounded-full bg-white px-2 py-1 text-[10px] font-black text-slate-600 shadow-sm dark:bg-slate-950 dark:text-slate-300">
+                              {question.questionMarks} mark{question.questionMarks === 1 ? '' : 's'}
+                            </span>
+                          </div>
+                          <div className="mt-2 flex flex-wrap gap-2 text-[10px] font-black uppercase tracking-[0.14em] text-slate-500">
+                            {question.questionTopic && <span className="rounded-full bg-white px-2 py-1 dark:bg-slate-950">{question.questionTopic}</span>}
+                            {question.questionType && <span className="rounded-full bg-white px-2 py-1 dark:bg-slate-950">{question.questionType}</span>}
+                            {question.hasDiagram && <span className="rounded-full bg-white px-2 py-1 dark:bg-slate-950">diagram</span>}
+                          </div>
+                          <div className="mt-3 space-y-2 rounded-2xl bg-white p-3 dark:bg-slate-950">
+                            <div>
+                              <p className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-400">What this tests</p>
+                              <p className="mt-1 text-sm font-semibold leading-6 text-slate-700 dark:text-slate-300">{question.whatItTests}</p>
+                            </div>
+                            <div>
+                              <p className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-400">How to earn marks</p>
+                              <ul className="mt-1 space-y-1 text-sm leading-6 text-slate-600 dark:text-slate-300">
+                                {question.earnMarks.map((point) => (
+                                  <li key={point} className="flex items-start gap-2">
+                                    <Check className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />
+                                    <span>{point}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                            <div>
+                              <p className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-400">Common trap</p>
+                              <p className="mt-1 text-sm leading-6 text-amber-700 dark:text-amber-300">{question.commonTrap}</p>
                             </div>
                           </div>
-                        );
-                      }) : (
+                        </div>
+                      )) : (
                         <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-3 text-sm text-slate-600 dark:border-slate-800 dark:bg-slate-900/50 dark:text-slate-300">
                           No question structure is available yet. Open the marking scheme for answer guidance or start the paper to revise in exam mode.
                         </div>
