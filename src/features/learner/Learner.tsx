@@ -1506,7 +1506,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
   const [materialCategory, setMaterialCategory] = useState<'ALL' | 'NOTES' | 'PAST_PAPER' | 'SYLLABUS'>('ALL');
   const [libraryView, setLibraryView] = useState<'UNLOCKED' | 'PURCHASED' | 'PRO_VAULT'>('UNLOCKED');
   const [libraryItemPreview, setLibraryItemPreview] = useState<any>(null);
-  const [activeLibraryCategory, setActiveLibraryCategory] = useState<'ALL' | 'SYLLABUS' | 'PAST_PAPER' | 'NOTES'>('ALL');
+  const [activeLibraryCategory, setActiveLibraryCategory] = useState<'ALL' | 'PAST_PAPER' | 'NOTES'>('ALL');
   const [activeLibrarySubject, setActiveLibrarySubject] = useState<string>('ALL');
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const learnerCtaVariant = React.useMemo(() => getLearnerCtaVariant(), []);
@@ -8219,7 +8219,6 @@ ${explanation.explanation}
               <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-hide -mx-2 px-2">
                 {([
                   { id: 'ALL',        emoji: '', label: 'All',         activeClass: 'bg-indigo-600 text-white shadow-lg shadow-indigo-200' },
-                  { id: 'SYLLABUS',   emoji: '', label: 'Syllabus',    activeClass: 'bg-purple-600 text-white shadow-lg shadow-purple-200' },
   { id: 'NOTES',      emoji: '', label: 'Notes',       activeClass: 'bg-blue-600 text-white shadow-lg shadow-blue-200' },
   { id: 'PAST_PAPER', emoji: '', label: 'Past Papers', activeClass: 'bg-amber-500 text-white shadow-lg shadow-amber-200' },
                 ] as const).map(tab => (
@@ -8764,15 +8763,13 @@ ${explanation.explanation}
                 </div>
                 <h4 className="text-xl font-black text-slate-800 dark:text-white mb-2 tracking-tight">Nothing in this section yet</h4>
                 <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.2em] mb-8 max-w-sm mx-auto leading-relaxed">
-                  {activeLibraryCategory === 'SYLLABUS'
-                    ? 'Syllabus items will appear here once they are ready.'
-                    : activeLibraryCategory === 'PAST_PAPER'
-                      ? 'Exam papers for your grade will appear here once they are ready.'
-                      : activeLibraryCategory === 'NOTES'
-                        ? 'Notes for your grade will appear here once they are ready.'
-                        : libraryView === 'PURCHASED'
-                          ? 'No purchased materials match this filter yet.'
-                          : 'We are matching the closest materials for your grade and subject. Open one now if it looks close enough.'}
+                  {activeLibraryCategory === 'PAST_PAPER'
+                    ? 'Exam papers for your grade will appear here once they are ready.'
+                    : activeLibraryCategory === 'NOTES'
+                      ? 'Notes for your grade will appear here once they are ready.'
+                      : libraryView === 'PURCHASED'
+                        ? 'No purchased materials match this filter yet.'
+                        : 'We are matching the closest materials for your grade and subject. Open one now if it looks close enough.'}
                 </p>
                 {starterPaperResources.length > 0 ? (
                   <div className="mx-auto mb-10 grid max-w-3xl gap-3 text-left sm:grid-cols-3">
@@ -8802,50 +8799,6 @@ ${explanation.explanation}
             ) : (
               /* Redesigned Bookshelf UI */
               <div className="space-y-10 pb-24">
-                {/* 1. Syllabuses & Curriculum Guides */}
-                {syllabuses.length > 0 && (
-                  <div>
-                    <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
-                      <span className="p-1 rounded bg-purple-100 dark:bg-purple-900/40 text-purple-600">Book</span>
-                      Syllabus lane ({syllabuses.length})
-                    </h3>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-6">
-                      {syllabuses.map(item => (
-                        <motion.div
-                          key={item.id}
-                          whileHover={{ y: -6 }}
-                          onClick={() => setLibraryItemPreview(item)}
-                          className="flex flex-col cursor-pointer group"
-                        >
-                          {/* Visual Book Cover */}
-                          <div className={`w-full aspect-[3/4] bg-gradient-to-br ${getSubjectGradient(item.subject)} rounded-2xl shadow-lg relative p-4 flex flex-col justify-between overflow-hidden border border-white/10 group-hover:shadow-2xl transition-all ring-1 ring-purple-300/30`}>
-                            {/* Book spine simulation */}
-                            <div className="absolute top-0 bottom-0 left-0 w-3 bg-black/10 dark:bg-white/5 border-r border-black/5" />
-                            <div className="absolute right-3 top-3 rounded-full bg-white/15 px-2.5 py-1 text-[8px] font-black uppercase tracking-[0.18em] text-white shadow-sm backdrop-blur">
-                              Curriculum
-                            </div>
-                            
-                            <div className="flex items-center justify-between mb-2">
-                              <span className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 bg-black/20 rounded-full">{item.grade}</span>
-                              <span className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 bg-purple-500/30 text-purple-100 rounded-full border border-purple-400/20">Syllabus</span>
-                            </div>
-                            
-                            <div className="my-auto text-center">
-                              <span className="text-4xl block mb-2 filter drop-shadow-md">{getSubjectEmoji(item.subject)}</span>
-                              <h4 className="font-black text-sm tracking-tight text-white leading-tight line-clamp-3 px-1">{item.title}</h4>
-                            </div>
-
-                            <div className="flex items-end justify-between border-t border-white/10 pt-2 text-[9px] font-bold opacity-80">
-                              <span className="rounded-full bg-white/10 px-2 py-0.5 text-white/90">Curriculum guide</span>
-                            </div>
-                          </div>
-                          <span className="mt-2 text-xs font-black text-slate-800 dark:text-slate-200 line-clamp-2 text-center group-hover:text-indigo-600 transition-colors">{item.title}</span>
-                        </motion.div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
                 {/* 2. SomaAI Original Papers */}
                 {originalPapers.length > 0 && (
                   <div>
