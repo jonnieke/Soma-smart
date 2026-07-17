@@ -138,7 +138,7 @@ export const SomaGuidePage: React.FC = () => {
         <section id="dos-donts" className="mt-10 rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
           <div className="flex items-center gap-2">
             <ClipboardList className="h-5 w-5 text-indigo-600" />
-            <p className="text-[10px] font-black uppercase tracking-[0.22em] text-indigo-600">Exam Dos & Don\'ts</p>
+            <p className="text-[10px] font-black uppercase tracking-[0.22em] text-indigo-600">Exam Dos &amp; Don&apos;ts</p>
           </div>
           <div className="mt-5 grid gap-4 md:grid-cols-2">
             {dosDonts.map((item) => (
