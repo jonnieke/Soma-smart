@@ -820,6 +820,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                 onSomaGuide={() => navigate('/guide')}
                 onRevision={() => navigate('/revision')}
                 onStartPaper={handleStartPaperFromHome}
+                onPreviewPaper={handlePreviewPaperFromHome}
                 onPricing={() => navigate('/pricing')}
                 latestPapers={latestPapers}
                 onSignIn={() => { setLoginTab('STUDENT'); setShowLogin(true); }}

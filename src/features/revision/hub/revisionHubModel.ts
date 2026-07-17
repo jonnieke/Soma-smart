@@ -145,6 +145,13 @@ export const paperPdfUrl = (paper: RevisionPaper): string => {
   return `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/syllabus-docs/${encodedPath}`;
 };
 
+
+export const paperMarkingSchemeUrl = (paper: RevisionPaper): string => {
+  const directUrl = String(paper.marking_scheme_url || paper.markingSchemeUrl || '').trim();
+  if (directUrl) return directUrl;
+  return '';
+};
+
 export const paperHasDiagrams = (paper: RevisionPaper): boolean =>
   Array.isArray(paper.structured_questions) &&
   paper.structured_questions.some((question) =>

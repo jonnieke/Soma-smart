@@ -44,6 +44,7 @@ type Props = {
   onSomaGuide: () => void;
   onRevision: () => void;
   onStartPaper: (paperId: string | number) => void;
+  onPreviewPaper: (paperId: string | number) => void;
   onPricing: () => void;
   onSignIn: () => void;
   onDashboard: () => void;
@@ -493,16 +494,17 @@ export const LandingHome: React.FC<Props> = (props) => {
                       <div className="mt-4 space-y-2">
                         <div className="grid grid-cols-2 gap-2">
                           {resolvePaperUrl(paper) ? (
-                            <a
-                              href={resolvePaperUrl(paper)}
-                              target="_blank"
-                              rel="noreferrer"
-                              onClick={(event) => event.stopPropagation()}
+                            <button
+                              type="button"
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                props.onPreviewPaper(paper.id);
+                              }}
                               className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-[10px] font-black uppercase tracking-[0.14em] text-blue-700"
                             >
                               <ExternalLink className="h-3.5 w-3.5" />
                               Open Exam Paper
-                            </a>
+                            </button>
                           ) : (
                             <button
                               type="button"

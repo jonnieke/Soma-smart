@@ -24,6 +24,7 @@ import {
   paperHasDiagrams,
   paperPdfUrl,
   pickRecommendedPaper,
+  paperMarkingSchemeUrl,
   RevisionPaper,
 } from './hub/revisionHubModel';
 
@@ -33,6 +34,7 @@ interface Props {
   onBack?: () => void;
   initialSubject?: string;
   initialSearchQuery?: string;
+  initialPreviewPaperId?: string | number | null;
 }
 
 const normalizeGrade = (value: unknown): string =>
@@ -80,6 +82,7 @@ export const RevisionHubPage: React.FC<Props> = ({
   onBack,
   initialSubject,
   initialSearchQuery,
+  initialPreviewPaperId,
 }) => {
   const {
     availableQuizzes,
@@ -106,6 +109,7 @@ export const RevisionHubPage: React.FC<Props> = ({
   const [inlinePdfError, setInlinePdfError] = useState<string | null>(null);
   const [inlinePdfPage, setInlinePdfPage] = useState(1);
   const [inlinePdfJump, setInlinePdfJump] = useState('1');
+  const [inlinePdfSource, setInlinePdfSource] = useState<'paper' | 'marking_scheme'>('paper');
   const inlinePdfCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const inlinePdfRenderTaskRef = useRef<any>(null);
   const performance = useMemo(() => loadRevisionPerformance(), [learnerHistory]);
@@ -169,6 +173,16 @@ export const RevisionHubPage: React.FC<Props> = ({
   const papersCompleted = performance.filter(isFullPaperMode).length;
   const firstName = studentProfile?.name?.trim().split(/\s+/)[0] || 'Learner';
 
+  useEffect(() => {
+    if (!initialPreviewPaperId) return;
+    const targetId = String(initialPreviewPaperId);
+    const match = allPapers.find((paper) => String(paper.id) === targetId);
+    if (match) {
+      setInlinePdfSource('paper');
+      setInlinePdfPaper(match);
+    }
+  }, [allPapers, initialPreviewPaperId]);
+
   const startPaper = (paper?: RevisionPaper, mode: RevisionMode = RevisionMode.EXAM) => {
     if (!paper) {
       libraryRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -178,16 +192,25 @@ export const RevisionHubPage: React.FC<Props> = ({
   };
 
 
-  const openPaperPdf = (paper?: RevisionPaper) => {
-    const url = paper ? paperPdfUrl(paper) : '';
+  const getInlinePdfUrl = (paper?: RevisionPaper) => {
+    if (!paper) return '';
+    return inlinePdfSource === 'marking_scheme' ? paperMarkingSchemeUrl(paper) : paperPdfUrl(paper);
+  };
+
+  const openPaperPdf = (paper?: RevisionPaper, source: 'paper' | 'marking_scheme' = 'paper') => {
+    const url = source === 'marking_scheme' ? paperMarkingSchemeUrl(paper || {}) : paperPdfUrl(paper || {});
     if (!url) {
       if (paper) startPaper(paper);
       return;
     }
-    setInlinePdfPaper(paper);
+    setInlinePdfSource(source);
+    setInlinePdfPaper(paper || null);
   };
 
-  const closeInlinePdf = () => setInlinePdfPaper(null);
+  const closeInlinePdf = () => {
+    setInlinePdfPaper(null);
+    setInlinePdfSource('paper');
+  };
 
   useEffect(() => {
     if (!inlinePdfPaper) {
@@ -202,7 +225,7 @@ export const RevisionHubPage: React.FC<Props> = ({
     }
 
     let cancelled = false;
-    const url = paperPdfUrl(inlinePdfPaper);
+    const url = getInlinePdfUrl(inlinePdfPaper);
 
     const loadDocument = async () => {
       setInlinePdfLoading(true);
@@ -232,7 +255,7 @@ export const RevisionHubPage: React.FC<Props> = ({
       cancelled = true;
       inlinePdfRenderTaskRef.current?.cancel?.();
     };
-  }, [inlinePdfPaper]);
+  }, [inlinePdfPaper, inlinePdfSource]);
 
   useEffect(() => {
     const document = inlinePdfDocument;
@@ -407,18 +430,17 @@ export const RevisionHubPage: React.FC<Props> = ({
       </main>
 
       {inlinePdfPaper && (() => {
-        const pdfUrl = paperPdfUrl(inlinePdfPaper);
-        const totalPages = inlinePdfDocument?.numPages || 0;
+                const totalPages = inlinePdfDocument?.numPages || 0;
         return (
           <div className="fixed inset-0 z-[80] bg-slate-950/75 px-3 py-4 backdrop-blur-sm sm:px-4">
             <div className="mx-auto flex h-full max-w-7xl flex-col overflow-hidden rounded-[1.5rem] bg-white shadow-2xl dark:bg-slate-950">
               <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3 dark:border-slate-800 sm:px-5">
                 <div className="min-w-0">
                   <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-600">
-                    Read first, then attempt
+                    {inlinePdfSource === 'paper' ? 'Read first, then attempt' : 'Marking guide'}
                   </p>
                   <h2 className="mt-1 truncate text-sm font-black text-slate-950 dark:text-white sm:text-base">
-                    {inlinePdfPaper.title || 'Revision paper'}
+                    {inlinePdfSource === 'paper' ? (inlinePdfPaper.title || 'Revision paper') : `Marking scheme - ${inlinePdfPaper.title || 'Revision paper'}`}
                   </h2>
                 </div>
                 <div className="flex items-center gap-2">
@@ -430,15 +452,16 @@ export const RevisionHubPage: React.FC<Props> = ({
                     <Share2 className="h-4 w-4" />
                     Share
                   </button>
-                  <a
-                    href={pdfUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-indigo-600 px-3 text-xs font-black text-white hover:bg-indigo-700"
-                  >
-                    <ExternalLink className="h-4 w-4" />
-                    Open full screen
-                  </a>
+                  {paperMarkingSchemeUrl(inlinePdfPaper) ? (
+                    <button
+                      type="button"
+                      onClick={() => setInlinePdfSource((current) => (current === 'paper' ? 'marking_scheme' : 'paper'))}
+                      className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-indigo-600 px-3 text-xs font-black text-white hover:bg-indigo-700"
+                    >
+                      <ExternalLink className="h-4 w-4" />
+                      {inlinePdfSource === 'paper' ? 'View marking scheme' : 'View question paper'}
+                    </button>
+                  ) : null}
                   <button
                     type="button"
                     onClick={closeInlinePdf}
@@ -531,7 +554,7 @@ export const RevisionHubPage: React.FC<Props> = ({
                       </div>
                       <div className="flex items-start gap-2">
                         <FileText className="mt-0.5 h-4 w-4 text-indigo-600" />
-                        <span>Open the exam paper in a new tab or share it if you want to study with someone else.</span>
+                        <span>Switch between the question paper and marking scheme without leaving the app.</span>
                       </div>
                     </div>
                   </div>
@@ -550,14 +573,14 @@ export const RevisionHubPage: React.FC<Props> = ({
                     >
                       Practice this paper
                     </button>
-                    <a
-                      href={pdfUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-slate-200 px-4 text-sm font-black text-slate-700 hover:bg-slate-50 dark:border-slate-800 dark:text-slate-200 dark:hover:bg-slate-900"
+                    <button
+                      type="button"
+                      onClick={() => setInlinePdfSource((current) => (current === 'paper' ? 'marking_scheme' : 'paper'))}
+                      disabled={!paperMarkingSchemeUrl(inlinePdfPaper)}
+                      className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-slate-200 px-4 text-sm font-black text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-slate-800 dark:text-slate-200 dark:hover:bg-slate-900"
                     >
-                      Open exam paper
-                    </a>
+                      {inlinePdfSource === 'paper' ? 'Open marking scheme' : 'Open question paper'}
+                    </button>
                     <button
                       type="button"
                       onClick={() => void sharePaper(inlinePdfPaper)}
