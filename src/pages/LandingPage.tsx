@@ -803,6 +803,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                 onTeacher={() => handleRoleSelect(UserRole.TEACHER)}
                 onParent={() => handleRoleSelect(UserRole.PARENT)}
                 onLibrary={handleLibraryAccess}
+                onSomaGuide={() => navigate('/guide')}
                 onRevision={() => navigate('/revision')}
                 onPricing={() => navigate('/pricing')}
                 latestPapers={latestPapers}

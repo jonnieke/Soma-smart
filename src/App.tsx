@@ -26,6 +26,7 @@ const AdminDashboard = React.lazy(() => safeImport(() => import('./features/admi
 const AdminKnowledgeBase = React.lazy(() => safeImport(() => import('./features/admin/KnowledgeBase').then(module => ({ default: module.AdminKnowledgeBase }))));
 const RevisionPortal = React.lazy(() => safeImport(() => import('./features/revision/RevisionPortal').then(module => ({ default: module.RevisionPortal }))));
 const RevisionDashboard = React.lazy(() => safeImport(() => import('./features/revision/RevisionDashboard').then(module => ({ default: module.RevisionDashboard }))));
+const SomaGuidePage = React.lazy(() => safeImport(() => import('./pages/SomaGuidePage').then(module => ({ default: module.SomaGuidePage }))));
 const ResetPassword = React.lazy(() => safeImport(() => import('./pages/ResetPassword').then(module => ({ default: module.ResetPassword }))));
 const PricingPage = React.lazy(() => safeImport(() => import('./pages/PricingPage').then(module => ({ default: module.PricingPage }))));
 const SchoolDashboard = React.lazy(() => safeImport(() => import('./features/school/SchoolDashboard').then(module => ({ default: module.SchoolDashboard }))));
@@ -63,6 +64,7 @@ const GlobalNavigation: React.FC = () => {
         { label: 'Home', icon: Home, to: '/', active: pathname === '/' },
         { label: 'Learner', icon: GraduationCap, to: '/learner', active: pathname.startsWith('/learner') },
         { label: 'Revision', icon: BookOpen, to: '/revision', active: pathname.startsWith('/revision') },
+        { label: 'Soma Guide', icon: BookOpen, to: '/guide', active: pathname.startsWith('/guide') },
         { label: 'Teacher', icon: Users, to: '/teacher', active: pathname.startsWith('/teacher') },
         { label: 'Admin', icon: Shield, to: '/admin', active: pathname.startsWith('/admin') },
     ];
@@ -222,6 +224,7 @@ const App: React.FC = () => {
                             <Route path="/admin" element={<AdminGuard onNavigateBack={() => navigate('/')}><AdminDashboard onNavigate={() => navigate('/')} /></AdminGuard>} />
                             <Route path="/admin/knowledge" element={<AdminGuard onNavigateBack={() => navigate('/')}><AdminKnowledgeBase /></AdminGuard>} />
                             <Route path="/revision" element={<RevisionPortal />} />
+                            <Route path="/guide" element={<SomaGuidePage />} />
                             <Route path="/revision/dashboard" element={<RevisionDashboard />} />
                             <Route path="/exam-rooms" element={launchFeatures.examRooms ? <ExamRoomsListPage /> : <Navigate to="/learner" replace />} />
                             <Route path="/exam-rooms/:id" element={launchFeatures.examRooms ? <ExamRoomChatPage /> : <Navigate to="/learner" replace />} />

@@ -1,4 +1,4 @@
-﻿import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi, beforeEach } from 'vitest';
 import { LandingHome } from '../components/LandingHome';
 
@@ -10,6 +10,7 @@ const baseProps = {
   onTeacher: vi.fn(),
   onParent: vi.fn(),
   onLibrary: vi.fn(),
+  onSomaGuide: vi.fn(),
   onRevision: vi.fn(),
   onPricing: vi.fn(),
   onSignIn: vi.fn(),

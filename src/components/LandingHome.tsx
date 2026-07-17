@@ -41,6 +41,7 @@ type Props = {
   onTeacher: () => void;
   onParent: () => void;
   onLibrary: () => void;
+  onSomaGuide: () => void;
   onRevision: () => void;
   onPricing: () => void;
   onSignIn: () => void;
@@ -172,6 +173,7 @@ export const LandingHome: React.FC<Props> = (props) => {
         props.onLibrary();
       },
     ],
+    ['Soma Guide', props.onSomaGuide],
     [
       'Pricing',
       () => {

@@ -8566,16 +8566,17 @@ ${explanation.explanation}
         return matchesSubject && matchesGrade;
       });
 
-      const visibleLibraryMaterials = exactGradeLibraryMaterials.length > 0
+      const visibleLibraryMaterials = (exactGradeLibraryMaterials.length > 0
         ? exactGradeLibraryMaterials
-        : gradeScopedLibraryMaterials.filter(m => activeLibrarySubject === 'ALL' || m.subject === activeLibrarySubject);
+        : gradeScopedLibraryMaterials.filter(m => activeLibrarySubject === 'ALL' || m.subject === activeLibrarySubject))
+        .filter(m => normalizeMaterialCategory(m.category) !== 'SYLLABUS');
       const showingGradeFallback = exactGradeLibraryMaterials.length === 0 && gradeScopedLibraryMaterials.length > 0;
       const categoryLibraryMaterials = activeLibraryCategory === 'ALL'
         ? visibleLibraryMaterials
         : visibleLibraryMaterials.filter(m => normalizeMaterialCategory(m.category) === activeLibraryCategory);
 
       // Group filtered books by category
-      const syllabuses = categoryLibraryMaterials.filter(m => normalizeMaterialCategory(m.category) === 'SYLLABUS');
+      const syllabuses = [] as typeof categoryLibraryMaterials;
       const originalPapers = categoryLibraryMaterials.filter(m => isPublishedPaper(m));
       const studyNotes = categoryLibraryMaterials.filter(m => normalizeMaterialCategory(m.category) === 'NOTES');
 
@@ -8592,7 +8593,6 @@ ${explanation.explanation}
 
       const libraryCategoryMeta = {
         ALL: { label: 'All', count: visibleLibraryMaterials.length, pill: 'bg-slate-50 text-slate-600 dark:bg-slate-800 dark:text-slate-200' },
-        SYLLABUS: { label: 'Syllabus', count: visibleLibraryMaterials.filter(m => normalizeMaterialCategory(m.category) === 'SYLLABUS').length, pill: 'bg-purple-50 text-purple-700 dark:bg-purple-950/40 dark:text-purple-200' },
         PAST_PAPER: { label: 'Exam Papers', count: visibleLibraryMaterials.filter(m => isPublishedPaper(m)).length, pill: 'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-200' },
         NOTES: { label: 'Notes', count: visibleLibraryMaterials.filter(m => normalizeMaterialCategory(m.category) === 'NOTES').length, pill: 'bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-200' },
       } as const;
@@ -8707,8 +8707,8 @@ ${explanation.explanation}
             </div>
 
             {/* Category Tabs */}
-            <div className="grid grid-cols-4 gap-2 mb-6 bg-slate-100 dark:bg-slate-900 p-1 rounded-2xl">
-              {(['ALL', 'SYLLABUS', 'PAST_PAPER', 'NOTES'] as const).map(tabKey => {
+            <div className="grid grid-cols-3 gap-2 mb-6 bg-slate-100 dark:bg-slate-900 p-1 rounded-2xl">
+              {(['ALL', 'PAST_PAPER', 'NOTES'] as const).map(tabKey => {
                 const tab = libraryCategoryMeta[tabKey];
                 return (
                   <button
