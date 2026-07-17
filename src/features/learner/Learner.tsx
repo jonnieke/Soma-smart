@@ -3806,7 +3806,7 @@ ${explanation.explanation}
                 onClick={() => setMode('MENU')}
                 className="p-2.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl transition-all cursor-pointer flex items-center justify-center group active:scale-95"
               >
-                <ArrowRight className="rotate-180 w-4 h-4 text-slate-300 group-hover:text-white" />
+                <ArrowRight className="rotate-180 w-4 h-4 text-slate-600 group-hover:text-white" />
               </button>
               <div>
                 <h1 className="text-base font-extrabold tracking-wide flex items-center gap-2">
@@ -4275,7 +4275,7 @@ ${explanation.explanation}
                 {recapData.keyPoints.map((p: string, i: number) => (
                   <li key={i} className="bg-white p-4 rounded-xl border-2 border-slate-300 shadow-sm flex gap-3">
                     <span className="w-6 h-6 bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 rounded-full flex items-center justify-center font-bold text-xs flex-shrink-0">{i + 1}</span>
-                    <span className="text-sm dark:text-slate-300">{p}</span>
+                    <span className="text-sm dark:text-slate-600">{p}</span>
                   </li>
                 ))}
               </ul>
@@ -4527,7 +4527,7 @@ ${explanation.explanation}
                     }
                   }}
                   disabled={!chatInput.trim() || chatSending}
-                  className={`p-3 rounded-2xl transition-all flex-shrink-0 ${chatInput.trim() ? 'bg-blue-600 text-white shadow-lg shadow-blue-200 hover:bg-blue-700' : 'bg-slate-100 text-slate-300 dark:text-slate-600 cursor-not-allowed'
+                  className={`p-3 rounded-2xl transition-all flex-shrink-0 ${chatInput.trim() ? 'bg-blue-600 text-white shadow-lg shadow-blue-200 hover:bg-blue-700' : 'bg-slate-100 text-slate-600 dark:text-slate-600 cursor-not-allowed'
                     }`}
                 >
                   <ArrowRight className="w-5 h-5" />
@@ -4568,7 +4568,7 @@ ${explanation.explanation}
                       {req.status}
                     </span>
                   </div>
-                  <p className="text-slate-600 dark:text-slate-300 text-sm mb-4 bg-slate-50 p-3 rounded-xl leading-relaxed">{req.description}</p>
+                  <p className="text-slate-600 dark:text-slate-600 text-sm mb-4 bg-slate-50 p-3 rounded-xl leading-relaxed">{req.description}</p>
 
                   {/* Payment Required Card for priced requests */}
                   {req.status === 'ACCEPTED' && req.price > 0 && req.response && (
@@ -4674,7 +4674,7 @@ ${explanation.explanation}
                                   setRatingFeedback('');
                                   setRatingSubmitted(false);
                                 }}
-                                className={`px-5 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${ratingValue > 0 ? 'bg-amber-500 text-white shadow-lg shadow-amber-200 hover:bg-amber-600' : 'bg-slate-100 text-slate-300 cursor-not-allowed'
+                                className={`px-5 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${ratingValue > 0 ? 'bg-amber-500 text-white shadow-lg shadow-amber-200 hover:bg-amber-600' : 'bg-slate-100 text-slate-600 cursor-not-allowed'
                                   }`}
                               >
                                 {ratingSubmitted ? 'Saving...' : 'Submit Rating'}
@@ -4893,7 +4893,7 @@ ${explanation.explanation}
           <div className="flex-1 p-6 overflow-y-auto">
             {history.length === 0 ? (
               <div className="text-center py-20 opacity-50">
-                <Clock className="w-12 h-12 mx-auto mb-4 text-slate-300" />
+                <Clock className="w-12 h-12 mx-auto mb-4 text-slate-600" />
                 <p>No history yet. Start a chat!</p>
               </div>
             ) : (
@@ -5162,7 +5162,7 @@ ${explanation.explanation}
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 relative z-10">
                   <div className="flex items-center gap-6">
                     <div className={`w-16 h-16 rounded-[1.5rem] flex items-center justify-center border-2 shadow-sm ${isPro ? 'bg-amber-100 border-amber-200' : 'bg-slate-50 border-slate-100'}`}>
-                      <Star className={`w-8 h-8 ${isPro ? 'text-amber-600 fill-amber-600' : 'text-slate-300'}`} />
+                      <Star className={`w-8 h-8 ${isPro ? 'text-amber-600 fill-amber-600' : 'text-slate-600'}`} />
                     </div>
                     <div>
                       <div className="flex items-center gap-2 mb-1.5">
@@ -5660,12 +5660,12 @@ ${explanation.explanation}
         <div className="bg-slate-50 min-h-screen flex flex-col md:flex-row max-w-[1440px] mx-auto shadow-2xl border-x border-slate-100 overflow-hidden relative">
           
           {/* Virtual Classroom Sidebar Navigation */}
-          <div className="w-full md:w-72 bg-slate-900 border-r border-slate-800 flex flex-col h-auto md:h-screen shrink-0 relative z-20">
+          <div className="w-full md:w-72 bg-white border-r border-slate-200 flex flex-col h-auto md:h-screen shrink-0 relative z-20">
             {/* Header Area */}
-            <div className="p-6 pb-8 border-b border-white/10 bg-gradient-to-b from-indigo-900/50 to-slate-900">
+            <div className="p-6 pb-8 border-b border-slate-200 bg-gradient-to-b from-indigo-50 to-white">
               <button
                 onClick={() => setMode('LIBRARY')}
-                className="flex items-center gap-2 mb-6 px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white transition-colors w-fit"
+                className="flex items-center gap-2 mb-6 px-3 py-1.5 rounded-full bg-white hover:bg-slate-50 text-slate-600 hover:text-slate-900 border border-slate-200 transition-colors w-fit"
                 title="Exit Classroom"
               >
                 <ArrowRight className="w-4 h-4 rotate-180" />
@@ -5673,14 +5673,14 @@ ${explanation.explanation}
               </button>
 
               <div className="flex items-start gap-4 mt-2">
-                <div className="p-2.5 bg-indigo-500/20 rounded-xl mt-1 border border-indigo-500/30 shrink-0">
-                  <BookOpen className="w-6 h-6 text-indigo-400" />
+                <div className="p-2.5 bg-indigo-50 rounded-xl mt-1 border border-indigo-100 shrink-0">
+                  <BookOpen className="w-6 h-6 text-indigo-600" />
                 </div>
                 <div>
-                  <h1 className="text-xl font-black text-white leading-tight mb-3 tracking-tight">{currentDocument.title}</h1>
+                  <h1 className="text-xl font-black text-slate-900 leading-tight mb-3 tracking-tight">{currentDocument.title}</h1>
                   <div className="flex flex-wrap gap-2">
-                    <span className="text-[9px] font-black uppercase tracking-widest text-indigo-200 bg-indigo-500/20 px-2.5 py-1 rounded w-fit border border-indigo-500/20">{currentDocument.grade}</span>
-                    <span className="text-[9px] font-black uppercase tracking-widest text-emerald-300 bg-emerald-500/20 px-2.5 py-1 rounded w-fit border border-emerald-500/20">{currentDocument.subject}</span>
+                    <span className="text-[9px] font-black uppercase tracking-widest text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded w-fit border border-indigo-100">{currentDocument.grade}</span>
+                    <span className="text-[9px] font-black uppercase tracking-widest text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded w-fit border border-emerald-100">{currentDocument.subject}</span>
                   </div>
                 </div>
               </div>
@@ -5692,7 +5692,7 @@ ${explanation.explanation}
 
               <button
                 onClick={() => setStudyTab('LESSON')}
-                className={`w-full flex items-center gap-3 p-3.5 rounded-xl transition-all ${studyTab === 'LESSON' ? 'bg-indigo-600 shadow-lg shadow-indigo-900/50 text-white font-bold' : 'text-slate-400 hover:bg-white/5 hover:text-slate-200'}`}
+                className={`w-full flex items-center gap-3 p-3.5 rounded-xl transition-all ${studyTab === 'LESSON' ? 'bg-indigo-50 border border-indigo-100 text-indigo-700 font-bold' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'}`}
               >
                 <FileText className={`w-5 h-5 ${studyTab === 'LESSON' ? 'text-indigo-200' : ''}`} />
                 <span className="text-[15px] tracking-wide">The Lesson</span>
@@ -5700,7 +5700,7 @@ ${explanation.explanation}
 
               <button
                 onClick={() => setStudyTab('RECAP')}
-                className={`w-full flex items-center gap-3 p-3.5 rounded-xl transition-all ${studyTab === 'RECAP' ? 'bg-indigo-600 shadow-lg shadow-indigo-900/50 text-white font-bold' : 'text-slate-400 hover:bg-white/5 hover:text-slate-200'}`}
+                className={`w-full flex items-center gap-3 p-3.5 rounded-xl transition-all ${studyTab === 'RECAP' ? 'bg-indigo-50 border border-indigo-100 text-indigo-700 font-bold' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'}`}
               >
                 <ListChecks className={`w-5 h-5 ${studyTab === 'RECAP' ? 'text-indigo-200' : ''}`} />
                 <span className="text-[15px] tracking-wide">Quick Recap</span>
@@ -5708,7 +5708,7 @@ ${explanation.explanation}
 
               <button
                 onClick={() => setStudyTab('QNA')}
-                className={`w-full flex items-center justify-between p-3.5 rounded-xl transition-all ${studyTab === 'QNA' ? 'bg-indigo-600 shadow-lg shadow-indigo-900/50 text-white font-bold' : 'text-slate-400 hover:bg-white/5 hover:text-slate-200'}`}
+                className={`w-full flex items-center justify-between p-3.5 rounded-xl transition-all ${studyTab === 'QNA' ? 'bg-indigo-50 border border-indigo-100 text-indigo-700 font-bold' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'}`}
               >
                 <div className="flex items-center gap-3">
                   <div className="relative">
@@ -5723,16 +5723,16 @@ ${explanation.explanation}
 
               <button
                 onClick={() => setStudyTab('REFERENCES')}
-                className={`w-full flex items-center gap-3 p-3.5 rounded-xl transition-all ${studyTab === 'REFERENCES' ? 'bg-indigo-600 shadow-lg shadow-indigo-900/50 text-white font-bold' : 'text-slate-400 hover:bg-white/5 hover:text-slate-200'}`}
+                className={`w-full flex items-center gap-3 p-3.5 rounded-xl transition-all ${studyTab === 'REFERENCES' ? 'bg-indigo-50 border border-indigo-100 text-indigo-700 font-bold' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'}`}
               >
                 <ClipboardList className={`w-5 h-5 ${studyTab === 'REFERENCES' ? 'text-indigo-200' : ''}`} />
                 <span className="text-[15px] tracking-wide">Citations & Syllabus</span>
               </button>
 
-              <div className="pt-4 mt-4 border-t border-white/5">
+              <div className="pt-4 mt-4 border-t border-slate-200">
                 <button
                   onClick={() => setStudyTab('QUIZ')}
-                  className={`w-full flex items-center justify-between p-3.5 rounded-xl transition-all border border-dashed ${studyTab === 'QUIZ' ? 'bg-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.1)] border-emerald-500/50 text-emerald-400 font-bold' : 'border-slate-700 text-slate-400 hover:bg-emerald-500/10 hover:border-emerald-500/30 hover:text-emerald-300'}`}
+                  className={`w-full flex items-center justify-between p-3.5 rounded-xl transition-all border border-dashed ${studyTab === 'QUIZ' ? 'bg-emerald-50 shadow-none border-emerald-100 text-emerald-700 font-bold' : 'border-slate-200 text-slate-600 hover:bg-emerald-50 hover:border-emerald-200 hover:text-emerald-700'}`}
                 >
                   <div className="flex items-center gap-3">
                     <CheckCircle className="w-5 h-5" />
@@ -5744,15 +5744,15 @@ ${explanation.explanation}
             </div>
 
             <div className="p-6 border-t border-slate-200 bg-white/90 backdrop-blur-md">
-              <div className="mb-5 rounded-2xl bg-white/5 border border-white/10 p-4">
-                <p className="text-[10px] font-black uppercase tracking-widest text-emerald-300 mb-2">Study Mission</p>
-                <div className="h-2 rounded-full bg-slate-800 overflow-hidden mb-2">
+              <div className="mb-5 rounded-2xl bg-slate-50 border border-slate-200 p-4">
+                <p className="text-[10px] font-black uppercase tracking-widest text-emerald-700 mb-2">Study Mission</p>
+                <div className="h-2 rounded-full bg-slate-200 overflow-hidden mb-2">
                   <div
-                    className="h-full bg-emerald-400 rounded-full transition-all"
+                    className="h-full bg-emerald-500 rounded-full transition-all"
                     style={{ width: `${Math.round((studyMissionChecks.length / 3) * 105)}%` }}
                   />
                 </div>
-                <p className="text-xs font-bold text-slate-300">
+                <p className="text-xs font-bold text-slate-600">
                   {studyMissionRewarded ? 'Mission complete. Study XP added.' : `${studyMissionChecks.length}/3 active steps done`}
                 </p>
               </div>
@@ -5782,13 +5782,13 @@ ${explanation.explanation}
                     <div className="flex bg-slate-100 p-0.5 rounded-lg text-[10px] font-black select-none border border-slate-200/10 ml-2">
                       <button
                         onClick={() => setStudyViewMode('guide')}
-                        className={`px-2.5 py-1 rounded-md transition-all ${studyViewMode === 'guide' ? 'bg-white dark:bg-slate-700 text-indigo-750 dark:text-indigo-400 shadow-sm font-black' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
+                        className={`px-2.5 py-1 rounded-md transition-all ${studyViewMode === 'guide' ? 'bg-white dark:bg-slate-700 text-indigo-750 dark:text-indigo-400 shadow-sm font-black' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-600'}`}
                       >
                         Study Guide
                       </button>
                       <button
                         onClick={() => setStudyViewMode('original')}
-                        className={`px-2.5 py-1 rounded-md transition-all ${studyViewMode === 'original' ? 'bg-white dark:bg-slate-700 text-indigo-750 dark:text-indigo-400 shadow-sm font-black' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
+                        className={`px-2.5 py-1 rounded-md transition-all ${studyViewMode === 'original' ? 'bg-white dark:bg-slate-700 text-indigo-750 dark:text-indigo-400 shadow-sm font-black' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-600'}`}
                       >
                         Original Book
                       </button>
@@ -5799,13 +5799,13 @@ ${explanation.explanation}
                     <div className="flex bg-slate-100 p-0.5 rounded-lg text-[10px] font-black select-none border border-slate-200/10 ml-2">
                       <button
                         onClick={() => setOriginalViewType('text')}
-                        className={`px-2.5 py-1 rounded-md transition-all ${originalViewType === 'text' ? 'bg-white dark:bg-slate-700 text-indigo-750 dark:text-indigo-400 shadow-sm font-black' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
+                        className={`px-2.5 py-1 rounded-md transition-all ${originalViewType === 'text' ? 'bg-white dark:bg-slate-700 text-indigo-750 dark:text-indigo-400 shadow-sm font-black' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-600'}`}
                       >
                         Text
                       </button>
                       <button
                         onClick={() => setOriginalViewType('pdf')}
-                        className={`px-2.5 py-1 rounded-md transition-all ${originalViewType === 'pdf' ? 'bg-white dark:bg-slate-700 text-indigo-750 dark:text-indigo-400 shadow-sm font-black' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
+                        className={`px-2.5 py-1 rounded-md transition-all ${originalViewType === 'pdf' ? 'bg-white dark:bg-slate-700 text-indigo-750 dark:text-indigo-400 shadow-sm font-black' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-600'}`}
                       >
                         PDF
                       </button>
@@ -5833,21 +5833,21 @@ ${explanation.explanation}
                   <div className="flex items-center gap-1.5 border-l border-slate-200 pl-3">
                     <button
                       onClick={() => setFontScale(prev => Math.max(0.8, prev - 0.1))}
-                      className="w-8 h-8 rounded bg-slate-50 border border-slate-200 text-slate-600 dark:text-slate-300 font-bold hover:bg-slate-100 text-xs flex items-center justify-center transition-colors"
+                      className="w-8 h-8 rounded bg-slate-50 border border-slate-200 text-slate-600 dark:text-slate-600 font-bold hover:bg-slate-100 text-xs flex items-center justify-center transition-colors"
                       title="Make text smaller"
                     >
                       A-
                     </button>
                     <button
                       onClick={() => setFontScale(prev => Math.min(1.5, prev + 0.1))}
-                      className="w-8 h-8 rounded bg-slate-50 border border-slate-200 text-slate-600 dark:text-slate-300 font-bold hover:bg-slate-100 text-xs flex items-center justify-center transition-colors"
+                      className="w-8 h-8 rounded bg-slate-50 border border-slate-200 text-slate-600 dark:text-slate-600 font-bold hover:bg-slate-100 text-xs flex items-center justify-center transition-colors"
                       title="Make text larger"
                     >
                       A+
                     </button>
                     <button
                       onClick={() => setFontFamily(prev => prev === 'sans' ? 'serif' : 'sans')}
-                      className="px-2.5 h-8 rounded bg-slate-50 border border-slate-200 text-slate-600 dark:text-slate-300 font-bold hover:bg-slate-100 text-[10px] uppercase tracking-wider flex items-center justify-center transition-colors font-semibold"
+                      className="px-2.5 h-8 rounded bg-slate-50 border border-slate-200 text-slate-600 dark:text-slate-600 font-bold hover:bg-slate-100 text-[10px] uppercase tracking-wider flex items-center justify-center transition-colors font-semibold"
                       title="Change font style"
                     >
                       {fontFamily === 'sans' ? 'Serif' : 'Sans'}
@@ -5929,7 +5929,7 @@ ${explanation.explanation}
                                     }`}
                                   >
                                     <span>{lbl}</span>
-                                    <CheckCircle className={`w-3.5 h-3.5 ${done ? 'text-white' : 'text-slate-300'}`} />
+                                    <CheckCircle className={`w-3.5 h-3.5 ${done ? 'text-white' : 'text-slate-600'}`} />
                                   </button>
                                 );
                               })}
@@ -5952,7 +5952,7 @@ ${explanation.explanation}
                             
                             <div className="relative group/paragraph flex items-start gap-4">
                               <div className="flex-1">
-                                <p style={{ fontSize: `${fontScale}rem` }} className={`text-slate-700 dark:text-slate-300 leading-relaxed m-0 whitespace-pre-line ${fontFamily === 'serif' ? 'font-serif' : 'font-sans'}`}>
+                                <p style={{ fontSize: `${fontScale}rem` }} className={`text-slate-700 dark:text-slate-600 leading-relaxed m-0 whitespace-pre-line ${fontFamily === 'serif' ? 'font-serif' : 'font-sans'}`}>
                                   {renderFormattedText(explanation.explanation, readerSearchTerm, handleGlossaryTrigger)}
                                 </p>
                               </div>
@@ -5998,7 +5998,7 @@ ${explanation.explanation}
                                       {block.type === 'paragraph' && block.text && (
                                         <div className="relative group/paragraph flex items-start gap-4">
                                           <div className="flex-1">
-                                            <p style={{ fontSize: `${fontScale}rem` }} className={`text-slate-700 dark:text-slate-300 leading-relaxed m-0 whitespace-pre-line ${fontFamily === 'serif' ? 'font-serif' : 'font-sans'}`}>
+                                            <p style={{ fontSize: `${fontScale}rem` }} className={`text-slate-700 dark:text-slate-600 leading-relaxed m-0 whitespace-pre-line ${fontFamily === 'serif' ? 'font-serif' : 'font-sans'}`}>
                                               {renderFormattedText(block.text, readerSearchTerm, handleGlossaryTrigger)}
                                             </p>
                                           </div>
@@ -6022,7 +6022,7 @@ ${explanation.explanation}
                                       )}
 
                                       {block.type === 'list' && block.items && block.items.length > 0 && (
-                                        <ul className={`list-disc list-outside ml-6 space-y-2 m-0 text-slate-700 dark:text-slate-300 ${fontFamily === 'serif' ? 'font-serif' : 'font-sans'}`} style={{ fontSize: `${fontScale}rem` }}>
+                                        <ul className={`list-disc list-outside ml-6 space-y-2 m-0 text-slate-700 dark:text-slate-600 ${fontFamily === 'serif' ? 'font-serif' : 'font-sans'}`} style={{ fontSize: `${fontScale}rem` }}>
                                           {block.items.map((item, iIdx) => (
                                             <li key={iIdx} className="pl-2 leading-relaxed">
                                               {renderFormattedText(item, readerSearchTerm, handleGlossaryTrigger)}
@@ -6058,7 +6058,7 @@ ${explanation.explanation}
                             {/* Quick summary points */}
                             <div>
                               <h3 className="text-base font-black text-slate-800 dark:text-white mb-3 uppercase tracking-wider font-semibold">Key Takeaways</h3>
-                              <ul className="list-disc list-outside ml-6 space-y-2.5 text-slate-700 dark:text-slate-300">
+                              <ul className="list-disc list-outside ml-6 space-y-2.5 text-slate-700 dark:text-slate-600">
                                 {(explanation.summaryPoints || []).map((pt, i) => (
                                   <li key={i} className="text-sm font-semibold leading-relaxed">
                                     {renderFormattedText(pt, readerSearchTerm, handleGlossaryTrigger)}
@@ -6088,7 +6088,7 @@ ${explanation.explanation}
                                 <span className="block text-[8px] font-black uppercase tracking-widest text-slate-400 mb-2">Target Learning Outcomes</span>
                                 <ul className="space-y-1.5">
                                   {syllabus.outcomes.map((out, i) => (
-                                    <li key={i} className="text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-start gap-2">
+                                    <li key={i} className="text-xs font-semibold text-slate-700 dark:text-slate-600 flex items-start gap-2">
                                        <span className="text-emerald-500 mt-0.5">Yes</span>
                                       <span>{out}</span>
                                     </li>
@@ -6145,7 +6145,7 @@ ${explanation.explanation}
                     ) : (
                       <div className="text-center py-32 flex flex-col items-center">
                         <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mb-6">
-                          <BookOpen className="w-10 h-10 text-slate-300 animate-pulse" />
+                          <BookOpen className="w-10 h-10 text-slate-600 animate-pulse" />
                         </div>
                         <h3 className="text-xl font-black text-slate-400">Loading lesson material...</h3>
                       </div>
@@ -6226,7 +6226,7 @@ ${explanation.explanation}
                         handleOriginalPageChange(originalPageIndex - 1);
                       }
                     }}
-                    className="flex items-center gap-2 px-4 py-2 border border-slate-200 rounded-full text-xs font-black uppercase tracking-wider text-slate-650 dark:text-slate-300 hover:bg-slate-50 hover:bg-slate-50 disabled:opacity-50 disabled:hover:bg-transparent transition-all font-semibold"
+                    className="flex items-center gap-2 px-4 py-2 border border-slate-200 rounded-full text-xs font-black uppercase tracking-wider text-slate-650 dark:text-slate-600 hover:bg-slate-50 hover:bg-slate-50 disabled:opacity-50 disabled:hover:bg-transparent transition-all font-semibold"
                   >
                      Previous
                   </button>
@@ -6261,7 +6261,7 @@ ${explanation.explanation}
                         handleOriginalPageChange(originalPageIndex + 1);
                       }
                     }}
-                    className="flex items-center gap-2 px-4 py-2 border border-slate-200 rounded-full text-xs font-black uppercase tracking-wider text-slate-650 dark:text-slate-300 hover:bg-slate-50 hover:bg-slate-50 disabled:opacity-50 disabled:hover:bg-transparent transition-all font-semibold"
+                    className="flex items-center gap-2 px-4 py-2 border border-slate-200 rounded-full text-xs font-black uppercase tracking-wider text-slate-650 dark:text-slate-600 hover:bg-slate-50 hover:bg-slate-50 disabled:opacity-50 disabled:hover:bg-transparent transition-all font-semibold"
                   >
                      Next
                   </button>
@@ -6637,11 +6637,11 @@ ${explanation.explanation}
                 <div className="mt-6 space-y-4">
                   <div>
                     <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1 font-semibold">Definition (English)</p>
-                    <p className="text-xs font-semibold text-slate-700 dark:text-slate-300 leading-relaxed">{activeGlossaryTerm.definition}</p>
+                    <p className="text-xs font-semibold text-slate-700 dark:text-slate-600 leading-relaxed">{activeGlossaryTerm.definition}</p>
                   </div>
                   <div className="border-t border-slate-100 dark:border-slate-855 pt-4">
                     <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1 font-semibold">Tafsiri (Kiswahili)</p>
-                    <p className="text-xs font-semibold text-slate-700 dark:text-slate-300 leading-relaxed">{activeGlossaryTerm.translation}</p>
+                    <p className="text-xs font-semibold text-slate-700 dark:text-slate-600 leading-relaxed">{activeGlossaryTerm.translation}</p>
                   </div>
                 </div>
                 <div className="mt-8">
@@ -6917,7 +6917,7 @@ ${explanation.explanation}
                 setImageData(null);
                 setMode('MENU');
               }}
-              className="mt-8 mx-auto block text-sm font-bold text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300 transition-colors"
+              className="mt-8 mx-auto block text-sm font-bold text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-600 transition-colors"
             >
               Cancel and go back
             </button>
@@ -7049,7 +7049,7 @@ ${explanation.explanation}
                       <div key={`${subtopic.title}-${index}`} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
                         <p className="text-[10px] font-black uppercase tracking-[0.18em] text-indigo-500 dark:text-indigo-300">{index + 1}. {subtopic.title}</p>
                         {subtopic.content && (
-                          <div className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300 prose prose-sm dark:prose-invert max-w-none">
+                          <div className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-600 prose prose-sm dark:prose-invert max-w-none">
                             <MarkdownText content={buildDetailedExplanationPreview(subtopic.content, subtopic.title, studentProfile?.grade || currentDocument?.grade || educationLevel || '', explanation.level)} />
                           </div>
                         )}
@@ -7064,7 +7064,7 @@ ${explanation.explanation}
                       {explanation.recapNodes.slice(0, getExplanationDepthProfile(studentProfile?.grade || currentDocument?.grade || educationLevel || '', explanation.level).recapNodes).map((node, index) => (
                         <div key={`${node.point}-${index}`} className="rounded-2xl border border-slate-200 bg-white p-4">
                           <p className="text-sm font-black text-slate-900 dark:text-white">{node.point}</p>
-                          <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">{node.details}</p>
+                          <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-600">{node.details}</p>
                         </div>
                       ))}
                     </div>
@@ -7087,12 +7087,12 @@ ${explanation.explanation}
                   </div>
                   Key Takeaways
                 </h3>
-                <div className="text-slate-600 dark:text-slate-300 text-sm md:text-base leading-relaxed mb-6 font-medium bg-amber-50/20 p-4 rounded-2xl border border-amber-100/50 prose prose-sm dark:prose-invert max-w-none">
+                <div className="text-slate-600 dark:text-slate-600 text-sm md:text-base leading-relaxed mb-6 font-medium bg-amber-50/20 p-4 rounded-2xl border border-amber-100/50 prose prose-sm dark:prose-invert max-w-none">
                   <MarkdownText content={getBriefDefinition(explanation.explanation, explanation.topic)} />
                 </div>
                 <ul className="space-y-4">
                   {explanation.summaryPoints.map((point, i) => (
-                    <li key={i} className="flex gap-4 text-slate-600 dark:text-slate-300 leading-relaxed font-medium">
+                    <li key={i} className="flex gap-4 text-slate-600 dark:text-slate-600 leading-relaxed font-medium">
                       <div className="w-6 h-6 rounded-full bg-slate-50 text-slate-400 border-2 border-slate-300 flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5">{i + 1}</div>
                       <span className="text-sm md:text-base">{point}</span>
                     </li>
@@ -7161,7 +7161,7 @@ ${explanation.explanation}
                       {podcastLoading && (
                         <div className="bg-slate-50 rounded-2xl px-4 py-3 mb-4 flex items-center gap-3 border border-slate-200">
                           <Loader2 className="w-4 h-4 text-indigo-400 animate-spin shrink-0" />
-                          <p className="text-slate-300 text-sm font-medium">Scripting your audio episode with AI...</p>
+                          <p className="text-slate-600 text-sm font-medium">Scripting your audio episode with AI...</p>
                         </div>
                       )}
 
@@ -7223,17 +7223,17 @@ ${explanation.explanation}
                 <div className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 ${
                   explanation.grounding?.used
                     ? 'bg-emerald-600 text-white'
-                    : 'bg-slate-100 text-slate-500 dark:text-slate-300'
+                    : 'bg-slate-100 text-slate-500 dark:text-slate-600'
                 }`}>
                   <Library className="w-5 h-5" />
                 </div>
                 <div className="min-w-0">
                   <p className={`text-xs font-black uppercase tracking-[0.16em] ${
-                    explanation.grounding?.used ? 'text-emerald-700 dark:text-emerald-300' : 'text-slate-500 dark:text-slate-400'
+                    explanation.grounding?.used ? 'text-emerald-700 dark:text-emerald-700' : 'text-slate-500 dark:text-slate-400'
                   }`}>
                     {explanation.grounding?.used ? 'Grounded by Soma Library' : 'General Akili answer'}
                   </p>
-                  <p className="mt-1 text-sm font-semibold text-slate-700 dark:text-slate-300">
+                  <p className="mt-1 text-sm font-semibold text-slate-700 dark:text-slate-600">
                     {explanation.grounding?.used
                       ? 'This answer used indexed Soma notes, curriculum guides, or original papers where relevant.'
                       : groundedAnswerMode
@@ -7332,7 +7332,7 @@ ${explanation.explanation}
                     <h3 className="font-bold text-slate-900 dark:text-white text-lg">
                       Fix {lastQuizReview.missedQuestions.length} weak spot{lastQuizReview.missedQuestions.length === 1 ? '' : 's'} from your last quiz
                     </h3>
-                    <p className="text-sm font-semibold text-slate-600 dark:text-slate-300 mt-1">
+                    <p className="text-sm font-semibold text-slate-600 dark:text-slate-600 mt-1">
                       Score: {lastQuizReview.score}%. Review the exact questions you missed before moving on.
                     </p>
                   </div>
@@ -7347,7 +7347,7 @@ ${explanation.explanation}
                       <p className="text-sm font-bold text-slate-900 dark:text-white mb-2">{question.question}</p>
                       <div className="grid gap-1 text-xs font-semibold">
                         <p className="text-rose-700 dark:text-rose-300">Your answer: {selectedAnswer || 'No answer'}</p>
-                        <p className="text-emerald-700 dark:text-emerald-300">Correct answer: {String(question.correctAnswer)}</p>
+                        <p className="text-emerald-700 dark:text-emerald-700">Correct answer: {String(question.correctAnswer)}</p>
                       </div>
                     </div>
                   ))}
@@ -7390,7 +7390,7 @@ ${explanation.explanation}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.08 }}
-              className="bg-white p-6 rounded-3xl shadow-sm border-2 border-slate-300 prose prose-sm md:prose-base prose-slate dark:prose-invert max-w-none prose-p:text-slate-600 dark:prose-p:text-slate-300 prose-headings:text-slate-800 dark:prose-headings:text-slate-100 prose-strong:text-slate-900 dark:prose-strong:text-white"
+              className="bg-white p-6 rounded-3xl shadow-sm border-2 border-slate-300 prose prose-sm md:prose-base prose-slate dark:prose-invert max-w-none prose-p:text-slate-600 dark:prose-p:text-slate-600 prose-headings:text-slate-800 dark:prose-headings:text-slate-100 prose-strong:text-slate-900 dark:prose-strong:text-white"
             >
               <div>
                 <MarkdownText content={explanation.explanation} />
@@ -7414,7 +7414,7 @@ ${explanation.explanation}
                 {studentProfile?.parentPhone && studentProfile?.parentWhatsAppConsentAt && (
                   <button
                     onClick={() => handleShareExplanationToWhatsApp('parent')}
-                    className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-white hover:bg-emerald-50 text-[#087a3e] font-bold text-sm px-4 sm:px-5 py-3 rounded-xl transition-colors border border-emerald-200 hover:bg-emerald-50 dark:text-emerald-300 dark:border-emerald-900"
+                    className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-white hover:bg-emerald-50 text-[#087a3e] font-bold text-sm px-4 sm:px-5 py-3 rounded-xl transition-colors border border-emerald-200 hover:bg-emerald-50 dark:text-emerald-700 dark:border-emerald-900"
                   >
                     <Share2 className="w-4 h-4" />
                     Send to parent
@@ -7646,7 +7646,7 @@ ${explanation.explanation}
               <div className="flex-1 text-center md:text-left">
                 <div className="flex items-center justify-center md:justify-start gap-2 mb-2">
                   <h3 className="text-xl font-black">Still confused?</h3>
-                  <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest ${isAvailableForTutoring ? 'bg-emerald-400 text-indigo-900 animate-pulse' : 'bg-indigo-500/50 text-indigo-200'}`}>
+                  <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest ${isAvailableForTutoring ? 'bg-emerald-500 text-indigo-900 animate-pulse' : 'bg-indigo-500/50 text-indigo-200'}`}>
                     {isAvailableForTutoring ? 'Teachers online' : 'Teachers offline'}
                   </span>
                 </div>
@@ -7711,7 +7711,7 @@ ${explanation.explanation}
                           <button
                             key={g}
                             onClick={() => setOnboardGrade(g)}
-                            className={`py-3 rounded-xl text-sm font-black transition-all border-2 ${onboardGrade === g ? 'bg-indigo-600 text-white border-indigo-600' : 'border-slate-200 text-slate-600 dark:text-slate-300 hover:border-indigo-300'}`}
+                            className={`py-3 rounded-xl text-sm font-black transition-all border-2 ${onboardGrade === g ? 'bg-indigo-600 text-white border-indigo-600' : 'border-slate-200 text-slate-600 dark:text-slate-600 hover:border-indigo-300'}`}
                           >
                             {g}
                           </button>
@@ -7746,7 +7746,7 @@ ${explanation.explanation}
                   )}
                   <button
                     onClick={() => { localStorage.setItem('soma_onboarded', '1'); setShowOnboarding(false); }}
-                    className="mt-1 w-full text-slate-300 dark:text-slate-600 text-xs py-1"
+                    className="mt-1 w-full text-slate-600 dark:text-slate-600 text-xs py-1"
                   >
                     Skip
                   </button>
@@ -7775,7 +7775,7 @@ ${explanation.explanation}
                     <button
                       type="button"
                       onClick={() => handleShareQuizResultToWhatsApp('parent')}
-                      className="flex items-center justify-center gap-2 w-full border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 py-3 rounded-xl font-black transition-colors dark:border-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-300"
+                      className="flex items-center justify-center gap-2 w-full border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 py-3 rounded-xl font-black transition-colors dark:border-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-700"
                     >
                       <Share2 className="w-5 h-5" />
                       Send result to parent
@@ -8042,11 +8042,11 @@ ${explanation.explanation}
 
                 {/* Right: Compact Stats */}
                 <div className="relative z-10 flex items-center gap-3 shrink-0">
-                  <div className="flex flex-col items-center justify-center bg-white/10 backdrop-blur-md px-5 py-2.5 rounded-2xl border border-white/5 min-w-[90px]">
+                  <div className="flex flex-col items-center justify-center bg-white/10 backdrop-blur-md px-5 py-2.5 rounded-2xl border border-slate-200 min-w-[90px]">
                     <span className="text-2xl font-black leading-none mb-0.5">{gradeFilteredMaterials.length}</span>
                     <span className="text-[7px] opacity-70 font-black uppercase tracking-widest">Available</span>
                   </div>
-                  <div className="flex flex-col items-center justify-center bg-indigo-500/30 backdrop-blur-md px-5 py-2.5 rounded-2xl border border-white/5 min-w-[90px]">
+                  <div className="flex flex-col items-center justify-center bg-indigo-500/30 backdrop-blur-md px-5 py-2.5 rounded-2xl border border-slate-200 min-w-[90px]">
                     <span className="text-2xl font-black leading-none mb-0.5">{purchasedMaterialIds.length}</span>
                     <span className="text-[7px] opacity-70 font-black uppercase tracking-widest">Unlocked</span>
                   </div>
@@ -8314,7 +8314,7 @@ ${explanation.explanation}
                 {filteredMaterials.length === 0 ? (
                   <div className="md:col-span-2 py-12 md:py-32 text-center bg-white border-2 border-dashed border-slate-200 rounded-[2.5rem]">
                     <ShoppingBag className="w-12 h-12 text-slate-200 mx-auto mb-4" />
-                    <h4 className="font-black text-slate-300 uppercase tracking-widest text-xs">No materials found in this category</h4>
+                    <h4 className="font-black text-slate-600 uppercase tracking-widest text-xs">No materials found in this category</h4>
                     <button onClick={() => { setMaterialCategory('ALL'); setSubjectFilter('ALL'); setSelectedSource('ALL'); trackFunnelEvent('library_filters_reset', { source: 'ALL' }); }} className="mt-4 text-indigo-600 font-black uppercase text-[10px] tracking-widest hover:underline">Reset Filters</button>
                   </div>
                 ) : (
@@ -8672,7 +8672,7 @@ ${explanation.explanation}
                 }}
                 className={`rounded-xl px-3 py-2 text-center transition-all font-black text-xs ${libraryView === 'UNLOCKED'
                   ? 'bg-white text-indigo-600 shadow-sm border border-slate-200/50'
-                  : 'text-slate-500 hover:text-slate-750 dark:hover:text-slate-300'
+                  : 'text-slate-500 hover:text-slate-750 dark:hover:text-slate-600'
                 }`}
               >
                 Unlocked ({unlockedResources.length})
@@ -8685,7 +8685,7 @@ ${explanation.explanation}
                 }}
                 className={`rounded-xl px-3 py-2 text-center transition-all font-black text-xs ${libraryView === 'PURCHASED'
                   ? 'bg-white text-indigo-600 shadow-sm border border-slate-200/50'
-                  : 'text-slate-500 hover:text-slate-750 dark:hover:text-slate-300'
+                  : 'text-slate-500 hover:text-slate-750 dark:hover:text-slate-600'
                 }`}
               >
                 Purchased ({purchasedResources.length})
@@ -8698,7 +8698,7 @@ ${explanation.explanation}
                 }}
                 className={`rounded-xl px-3 py-2 text-center transition-all font-black text-xs ${libraryView === 'PRO_VAULT'
                   ? 'bg-white text-amber-600 shadow-sm border border-slate-200/50'
-                  : 'text-slate-500 hover:text-slate-750 dark:hover:text-slate-300'
+                  : 'text-slate-500 hover:text-slate-750 dark:hover:text-slate-600'
                 }`}
               >
                 Pro Vault ({proVaultResources.length})
@@ -8715,7 +8715,7 @@ ${explanation.explanation}
                     onClick={() => setActiveLibraryCategory(tabKey)}
                     className={`rounded-xl px-3 py-2 text-center transition-all font-black text-[10px] sm:text-xs leading-tight ${activeLibraryCategory === tabKey
                       ? 'bg-white text-slate-900 dark:text-white shadow-sm border border-slate-200/50'
-                      : 'text-slate-500 hover:text-slate-750 dark:hover:text-slate-300'
+                      : 'text-slate-500 hover:text-slate-750 dark:hover:text-slate-600'
                     }`}
                   >
                     <span className={`inline-flex items-center justify-center rounded-full px-2 py-0.5 uppercase tracking-[0.14em] ${tab.pill}`}>{tab.label}</span>
@@ -8759,7 +8759,7 @@ ${explanation.explanation}
               /* Empty Library State */
               <div className="py-16 md:py-28 text-center bg-white border-2 border-dashed border-slate-200 rounded-[3rem]">
                 <div className="w-24 h-24 bg-slate-50 rounded-[2.5rem] flex items-center justify-center mx-auto mb-6 border-2 border-slate-300">
-                  <Library className="w-10 h-10 text-slate-300 dark:text-slate-600" />
+                  <Library className="w-10 h-10 text-slate-600 dark:text-slate-600" />
                 </div>
                 <h4 className="text-xl font-black text-slate-800 dark:text-white mb-2 tracking-tight">Nothing in this section yet</h4>
                 <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.2em] mb-8 max-w-sm mx-auto leading-relaxed">
@@ -8915,7 +8915,7 @@ ${explanation.explanation}
 
                   {/* Book Preview Detail */}
                   <div className="flex gap-4 mb-6 bg-slate-50 p-4 rounded-3xl border border-slate-100 dark:border-slate-850">
-                    <div className={`w-20 aspect-[3/4] rounded-xl shrink-0 bg-gradient-to-br ${getSubjectGradient(libraryItemPreview.subject)} p-2 flex flex-col justify-between overflow-hidden shadow-md relative border border-white/5`}>
+                    <div className={`w-20 aspect-[3/4] rounded-xl shrink-0 bg-gradient-to-br ${getSubjectGradient(libraryItemPreview.subject)} p-2 flex flex-col justify-between overflow-hidden shadow-md relative border border-slate-200`}>
                       <div className="absolute top-0 bottom-0 left-0 w-2 bg-white/25" />
                       <span className="text-[7px] font-black bg-white/80 text-slate-700 px-1 py-0.5 rounded w-fit leading-none">{libraryItemPreview.grade}</span>
                       <span className="text-xl block text-center my-auto filter drop-shadow">{getSubjectEmoji(libraryItemPreview.subject)}</span>
@@ -8965,7 +8965,7 @@ ${explanation.explanation}
                   <div className="flex gap-3">
                     <button
                       onClick={() => setLibraryItemPreview(null)}
-                      className="flex-1 py-3 rounded-2xl bg-slate-100 hover:bg-slate-200 dark:hover:bg-slate-750 text-slate-700 dark:text-slate-300 font-bold transition-all text-xs"
+                      className="flex-1 py-3 rounded-2xl bg-slate-100 hover:bg-slate-200 dark:hover:bg-slate-750 text-slate-700 dark:text-slate-600 font-bold transition-all text-xs"
                     >
                       Go Back
                     </button>
@@ -9044,7 +9044,7 @@ ${explanation.explanation}
               <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-50 rounded-full blur-3xl opacity-50 -translate-y-1/2 translate-x-1/2 pointer-events-none" />
 
               <div className="relative z-10">
-                <p className="text-slate-600 dark:text-slate-300 font-medium leading-relaxed mb-8 text-center bg-slate-50 p-4 rounded-xl border-2 border-slate-300">
+                <p className="text-slate-600 dark:text-slate-600 font-medium leading-relaxed mb-8 text-center bg-slate-50 p-4 rounded-xl border-2 border-slate-300">
                   Snap a clear photo of your question. Somo will explain it simply.
                 </p>
 
@@ -9222,7 +9222,7 @@ ${explanation.explanation}
                     <X className="h-4 w-4" />
                   </button>
                 </div>
-                <p className="mt-1 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
+                <p className="mt-1 text-sm leading-relaxed text-slate-600 dark:text-slate-600">
                   Your browser blocked Soma from using the mic. Click the lock icon near the address bar, allow Microphone for this site, then reload or test the mic again.
                 </p>
                 <div className="mt-3 flex flex-wrap gap-2">
@@ -9249,7 +9249,7 @@ ${explanation.explanation}
                   <button
                     type="button"
                     onClick={() => setMicPermissionNotice(false)}
-                    className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-black uppercase tracking-wide text-slate-600 hover:bg-slate-50 dark:text-slate-300 hover:bg-slate-50"
+                    className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-black uppercase tracking-wide text-slate-600 hover:bg-slate-50 dark:text-slate-600 hover:bg-slate-50"
                   >
                     Not Now
                   </button>
@@ -9292,7 +9292,7 @@ ${explanation.explanation}
                   onClick={() => setFadedSolutionData(prev => ({ ...prev, show: false }))}
                   className="p-3 hover:bg-slate-100 hover:bg-slate-50 rounded-full transition-colors group"
                 >
-                  <X className="w-6 h-6 text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300" />
+                  <X className="w-6 h-6 text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-600" />
                 </button>
               </div>
 
@@ -9319,7 +9319,7 @@ ${explanation.explanation}
                     </div>
                   </div>
                 ) : (
-                  <div className={`prose dark:prose-invert max-w-none text-slate-700 dark:text-slate-300 ${!isRegistered ? 'pointer-events-none' : ''}`}>
+                  <div className={`prose dark:prose-invert max-w-none text-slate-700 dark:text-slate-600 ${!isRegistered ? 'pointer-events-none' : ''}`}>
                     <MarkdownText content={fadedSolutionData.answer || ''} />
                   </div>
                 )}
