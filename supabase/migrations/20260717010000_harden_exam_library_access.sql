@@ -93,6 +93,7 @@ returns table (
   source text,
   is_official boolean,
   file_url text,
+  file_path text,
   homepage_featured boolean,
   created_at timestamptz,
   exam_type text,
@@ -112,7 +113,7 @@ security definer
 set search_path = public
 as $$
   select kb.id, kb.title, kb.grade, kb.subject, kb.type, kb.source,
-    kb.is_official, kb.file_url, coalesce(kb.homepage_featured, false),
+    kb.is_official, kb.file_url, kb.file_path, coalesce(kb.homepage_featured, false),
     kb.created_at, kb.exam_type, kb.exam_year, kb.paper_code, kb.paper_number,
     kb.duration_minutes, kb.total_marks,
     public._public_exam_questions(kb.structured_questions),
@@ -137,6 +138,7 @@ returns table (
   source text,
   is_official boolean,
   file_url text,
+  file_path text,
   homepage_featured boolean,
   created_at timestamptz,
   exam_type text,
@@ -156,7 +158,7 @@ security definer
 set search_path = public
 as $$
   select kb.id, kb.title, kb.grade, kb.subject, kb.type, kb.source,
-    kb.is_official, kb.file_url, coalesce(kb.homepage_featured, false),
+    kb.is_official, kb.file_url, kb.file_path, coalesce(kb.homepage_featured, false),
     kb.created_at, kb.exam_type, kb.exam_year, kb.paper_code, kb.paper_number,
     kb.duration_minutes, kb.total_marks,
     public._public_exam_questions(kb.structured_questions),

@@ -217,46 +217,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
         const fetchHomepagePapers = async () => {
             try {
                 const exams = await examService.listPublishedExams();
-                const rpcPapers = Array.isArray(exams) ? exams.map(item => ({ ...item })) : [];
-                const missingLinkIds = rpcPapers
-                    .filter((paper) => !String((paper as any).file_url || (paper as any).fileUrl || (paper as any).file_path || (paper as any).filePath || '').trim())
-                    .map((paper) => paper.id);
-
-                if (missingLinkIds.length > 0) {
-                    const { data: repairRows } = await supabase
-                        .from('knowledge_base')
-                        .select('id, file_url, file_path, homepage_featured, created_at, published_at')
-                        .in('id', missingLinkIds as Array<string | number>);
-
-                    const repairMap = new Map(
-                        (repairRows || []).map((row: Record<string, any>) => [
-                            String(row.id),
-                            row,
-                        ])
-                    );
-
-                    rpcPapers.forEach((paper) => {
-                        const repair = repairMap.get(String(paper.id));
-                        if (!repair) return;
-                        if (!String((paper as any).file_url || (paper as any).fileUrl || '').trim() && String(repair.file_url || '').trim()) {
-                            (paper as any).file_url = repair.file_url;
-                        }
-                        if (!String((paper as any).file_path || (paper as any).filePath || '').trim() && String(repair.file_path || '').trim()) {
-                            (paper as any).file_path = repair.file_path;
-                        }
-                        if (typeof (paper as any).homepage_featured === 'undefined' && typeof repair.homepage_featured !== 'undefined') {
-                            (paper as any).homepage_featured = repair.homepage_featured;
-                        }
-                        if (!String((paper as any).published_at || '').trim() && String(repair.published_at || '').trim()) {
-                            (paper as any).published_at = repair.published_at;
-                        }
-                        if (!String((paper as any).created_at || '').trim() && String(repair.created_at || '').trim()) {
-                            (paper as any).created_at = repair.created_at;
-                        }
-                    });
-                }
-
-                const latest = sortLatest(rpcPapers);
+                const latest = sortLatest(Array.isArray(exams) ? exams.map(item => ({ ...item })) : []);
                 if (!active) return;
                 if (latest.length > 0) {
                     setLatestPapers(latest as any);
