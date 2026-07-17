@@ -128,8 +128,22 @@ export const paperContentType = (paper: RevisionPaper): string => {
 };
 
 
-export const paperPdfUrl = (paper: RevisionPaper): string =>
-  String(paper.file_url || paper.fileUrl || '').trim();
+export const paperPdfUrl = (paper: RevisionPaper): string => {
+  const directUrl = String(paper.file_url || paper.fileUrl || '').trim();
+  if (directUrl) return directUrl;
+
+  const filePath = String(paper.file_path || paper.filePath || '').trim();
+  if (!filePath) return '';
+  if (/^https?:\/\//i.test(filePath)) return filePath;
+
+  const encodedPath = filePath
+    .split('/')
+    .filter(Boolean)
+    .map((segment) => encodeURIComponent(segment))
+    .join('/');
+
+  return `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/syllabus-docs/${encodedPath}`;
+};
 
 export const paperHasDiagrams = (paper: RevisionPaper): boolean =>
   Array.isArray(paper.structured_questions) &&

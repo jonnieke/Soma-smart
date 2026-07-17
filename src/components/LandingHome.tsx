@@ -8,6 +8,7 @@ import {
   ChevronRight,
   CircleHelp,
   Clock,
+  ExternalLink,
   FileText,
   Headphones,
   Leaf,
@@ -17,6 +18,7 @@ import {
   Monitor,
   Notebook,
   Search,
+  Share2,
   ShieldCheck,
   Users,
   Volume2,
@@ -54,6 +56,8 @@ type Props = {
     source?: string | null;
     exam_type?: string | null;
     homepage_featured?: boolean | null;
+    file_url?: string | null;
+    file_path?: string | null;
   }>;
 };
 
@@ -179,6 +183,49 @@ export const LandingHome: React.FC<Props> = (props) => {
   const go = (action: () => void) => {
     setMenuOpen(false);
     action();
+  };
+  const resolvePaperUrl = (paper: NonNullable<Props['latestPapers']>[number]) => {
+    const directUrl = String(paper.file_url || '').trim();
+    if (directUrl) return directUrl;
+
+    const filePath = String(paper.file_path || '').trim();
+    if (!filePath) return '';
+    if (/^https?:\/\//i.test(filePath)) return filePath;
+
+    const encodedPath = filePath
+      .split('/')
+      .filter(Boolean)
+      .map((segment) => encodeURIComponent(segment))
+      .join('/');
+
+    return `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/syllabus-docs/${encodedPath}`;
+  };
+
+  const sharePaper = async (paper: NonNullable<Props['latestPapers']>[number]) => {
+    const url = resolvePaperUrl(paper);
+    if (!url) return;
+
+    const payload = {
+      title: String(paper.title || 'SomaAI paper'),
+      text: `${paper.title || 'SomaAI paper'} - open this paper in Soma AI revision`,
+      url,
+    };
+
+    try {
+      if (navigator.share) {
+        await navigator.share(payload);
+        return;
+      }
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(`${payload.title}\n${payload.url}`);
+        window.alert('Paper link copied.');
+        return;
+      }
+    } catch {
+      // Fall through to WhatsApp.
+    }
+
+    window.open(`https://wa.me/?text=${encodeURIComponent(`${payload.title}\n${payload.url}`)}`, '_blank', 'noopener,noreferrer');
   };
 
   return (
@@ -422,25 +469,57 @@ export const LandingHome: React.FC<Props> = (props) => {
                           Start paper <ArrowRight className="h-4 w-4" />
                         </span>
                       </div>
-                      <div className="mt-4 flex items-center justify-between gap-3">
-                        <span className="text-[10px] font-bold text-slate-400">
-                          Jump to the attempt screen
-                        </span>
-                        <div className="flex gap-2">
+                      <div className="mt-4 space-y-2">
+                        <div className="grid grid-cols-2 gap-2">
+                          {resolvePaperUrl(paper) ? (
+                            <a
+                              href={resolvePaperUrl(paper)}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-[10px] font-black uppercase tracking-[0.14em] text-blue-700"
+                            >
+                              <ExternalLink className="h-3.5 w-3.5" />
+                              PDF
+                            </a>
+                          ) : (
+                            <button
+                              type="button"
+                              disabled
+                              className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-[10px] font-black uppercase tracking-[0.14em] text-slate-300"
+                            >
+                              <ExternalLink className="h-3.5 w-3.5" />
+                              PDF pending
+                            </button>
+                          )}
                           <button
                             type="button"
-                            onClick={props.onRevision}
-                            className="rounded-xl bg-blue-600 px-3 py-2 text-[10px] font-black uppercase tracking-[0.14em] text-white"
+                            onClick={() => void sharePaper(paper)}
+                            className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-[10px] font-black uppercase tracking-[0.14em] text-slate-700"
                           >
-                            Revision
+                            <Share2 className="h-3.5 w-3.5" />
+                            Share
                           </button>
-                          <button
-                            type="button"
-                            onClick={props.onLibrary}
-                            className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-[10px] font-black uppercase tracking-[0.14em] text-emerald-600"
-                          >
-                            Library
-                          </button>
+                        </div>
+                        <div className="flex items-center justify-between gap-3">
+                          <span className="text-[10px] font-bold text-slate-400">
+                            Jump to the attempt screen
+                          </span>
+                          <div className="flex gap-2">
+                            <button
+                              type="button"
+                              onClick={props.onRevision}
+                              className="rounded-xl bg-blue-600 px-3 py-2 text-[10px] font-black uppercase tracking-[0.14em] text-white"
+                            >
+                              Revision
+                            </button>
+                            <button
+                              type="button"
+                              onClick={props.onLibrary}
+                              className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-[10px] font-black uppercase tracking-[0.14em] text-emerald-600"
+                            >
+                              Library
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </div>
