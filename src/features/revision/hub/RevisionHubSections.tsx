@@ -307,14 +307,14 @@ export const QuickRevisionActions: React.FC<{
           key={title}
           type="button"
           onClick={onClick}
-          className={`group flex min-h-[92px] items-center gap-4 rounded-2xl border border-slate-200 bg-white p-4 text-left transition hover:-translate-y-0.5 hover:border-indigo-300 hover:shadow-sm dark:border-slate-800 dark:bg-slate-900 ${focusRing}`}
+          className={`group flex min-h-[92px] items-center gap-4 rounded-2xl border border-slate-200 bg-white p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-indigo-300 hover:bg-slate-50 hover:shadow-md ${focusRing}`}
         >
-          <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-indigo-50 text-indigo-600 dark:bg-indigo-950/60 dark:text-indigo-300">
+          <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-indigo-50 text-indigo-600">
             <Icon className="h-6 w-6" />
           </span>
           <span className="min-w-0 flex-1">
             <span className="block font-black text-slate-950 dark:text-white">{title}</span>
-            <span className="mt-1 block text-xs leading-relaxed text-slate-500 dark:text-slate-400">
+            <span className="mt-1 block text-xs leading-relaxed text-slate-500">
               {description}
             </span>
           </span>
@@ -353,7 +353,7 @@ export const RevisionPaperCard: React.FC<{
           <BookOpen className="h-5 w-5" />
         </span>
         <div className="min-w-0 flex-1">
-          <p className="text-xs font-black text-indigo-600 dark:text-indigo-300">
+          <p className="text-xs font-black text-indigo-600">
             {String(paper.subject || 'General')}
           </p>
           <h3 className="mt-1 line-clamp-2 min-h-10 text-sm font-black leading-snug text-slate-950 dark:text-white">
@@ -376,7 +376,7 @@ export const RevisionPaperCard: React.FC<{
           <span className="rounded-full bg-blue-50 px-2.5 py-1 text-blue-700">Diagrams included</span>
         )}
       </div>
-      <div className="mt-4 flex items-center gap-4 border-t border-slate-100 pt-3 text-xs text-slate-500 dark:border-slate-800">
+      <div className="mt-4 flex items-center gap-4 border-t border-slate-100 pt-3 text-xs text-slate-500">
         {duration > 0 && (
           <span className="flex items-center gap-1.5">
             <Timer className="h-4 w-4" />
@@ -457,7 +457,7 @@ export const RevisionPaperLibrary: React.FC<{
   <section
     id="papers"
     aria-labelledby="papers-title"
-    className="scroll-mt-28 rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900 sm:p-5"
+    className="scroll-mt-28 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5"
   >
     <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
       <div>
@@ -480,7 +480,7 @@ export const RevisionPaperLibrary: React.FC<{
             value={searchQuery}
             onChange={(event) => onSearch(event.target.value)}
             placeholder="Search papers..."
-            className={`min-h-11 w-full rounded-xl border border-slate-200 bg-white pl-9 pr-9 text-sm outline-none focus:border-indigo-400 dark:border-slate-700 dark:bg-slate-950 ${focusRing}`}
+            className={`min-h-11 w-full rounded-xl border border-slate-200 bg-white pl-9 pr-9 text-sm outline-none focus:border-indigo-400 ${focusRing}`}
           />
           {searchQuery && (
             <button
@@ -505,7 +505,7 @@ export const RevisionPaperLibrary: React.FC<{
     </div>
 
     <div
-      className={`${filtersOpen ? 'grid' : 'hidden'} mt-4 gap-3 rounded-xl bg-slate-50 p-3 dark:bg-slate-950 lg:grid lg:grid-cols-[1fr_1fr_auto] lg:bg-transparent lg:p-0`}
+      className={`${filtersOpen ? 'grid' : 'hidden'} mt-4 gap-3 rounded-xl bg-slate-50 p-3 lg:grid lg:grid-cols-[1fr_1fr_auto] lg:bg-transparent lg:p-0`}
     >
       <label className="text-xs font-bold text-slate-600 dark:text-slate-300">
         Subject or learning area
