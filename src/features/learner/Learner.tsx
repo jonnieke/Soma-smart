@@ -7235,7 +7235,7 @@ ${explanation.explanation}
                   </p>
                   <p className="mt-1 text-sm font-semibold text-slate-700 dark:text-slate-300">
                     {explanation.grounding?.used
-                      ? 'This answer used indexed Soma notes, syllabuses, or original papers where relevant.'
+                      ? 'This answer used indexed Soma notes, curriculum guides, or original papers where relevant.'
                       : groundedAnswerMode
                         ? 'No matching indexed source was found, so Akili answered from general curriculum knowledge.'
                         : 'Soma Library grounding was switched off for this answer.'}
