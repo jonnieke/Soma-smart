@@ -442,7 +442,16 @@ export const LandingHome: React.FC<Props> = (props) => {
                     <div
                       key={paper.id}
                       data-paper-card
-                      className={`snap-start rounded-3xl border p-5 text-left shadow-sm transition hover:-translate-y-1 hover:border-emerald-300 hover:bg-white hover:shadow-lg ${featuredCard ? 'w-[320px] md:w-[340px] bg-white border-emerald-300 shadow-lg shadow-emerald-100/60' : 'w-[280px] bg-slate-50 border-slate-200'}`}
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => props.onStartPaper(paper.id)}
+                      onKeyDown={(event) => {
+                        if (event.key === 'Enter' || event.key === ' ') {
+                          event.preventDefault();
+                          props.onStartPaper(paper.id);
+                        }
+                      }}
+                      className={`snap-start rounded-3xl border p-5 text-left shadow-sm transition hover:-translate-y-1 hover:border-emerald-300 hover:bg-white hover:shadow-lg focus-visible:ring-2 focus-visible:ring-blue-500 ${featuredCard ? 'w-[320px] md:w-[340px] bg-white border-emerald-300 shadow-lg shadow-emerald-100/60' : 'w-[280px] bg-slate-50 border-slate-200'}`}
                     >
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
@@ -471,17 +480,13 @@ export const LandingHome: React.FC<Props> = (props) => {
                           </span>
                         ) : null}
                       </div>
-                      <div className="mt-5 flex items-center justify-between">
+                      <div className="mt-5 flex items-center justify-between gap-3">
                         <span className="text-xs font-black uppercase tracking-[0.16em] text-slate-400">
                           {isOriginal ? 'SomaAI Original' : 'Published exam'}
                         </span>
-                        <button
-                          type="button"
-                          onClick={() => props.onStartPaper(paper.id)}
-                          className="inline-flex items-center gap-1 text-xs font-black text-blue-600 hover:text-blue-700"
-                        >
-                          Start paper <ArrowRight className="h-4 w-4" />
-                        </button>
+                        <span className="inline-flex items-center gap-1 text-xs font-black text-blue-600">
+                          Open paper <ArrowRight className="h-4 w-4" />
+                        </span>
                       </div>
                       <div className="mt-4 space-y-2">
                         <div className="grid grid-cols-2 gap-2">
@@ -490,15 +495,17 @@ export const LandingHome: React.FC<Props> = (props) => {
                               href={resolvePaperUrl(paper)}
                               target="_blank"
                               rel="noreferrer"
+                              onClick={(event) => event.stopPropagation()}
                               className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-[10px] font-black uppercase tracking-[0.14em] text-blue-700"
                             >
                               <ExternalLink className="h-3.5 w-3.5" />
-                              PDF
+                              Preview PDF
                             </a>
                           ) : (
                             <button
                               type="button"
                               disabled
+                              onClick={(event) => event.stopPropagation()}
                               className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-[10px] font-black uppercase tracking-[0.14em] text-slate-300"
                             >
                               <ExternalLink className="h-3.5 w-3.5" />
@@ -507,34 +514,19 @@ export const LandingHome: React.FC<Props> = (props) => {
                           )}
                           <button
                             type="button"
-                            onClick={() => void sharePaper(paper)}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              void sharePaper(paper);
+                            }}
                             className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-[10px] font-black uppercase tracking-[0.14em] text-slate-700"
                           >
                             <Share2 className="h-3.5 w-3.5" />
                             Share
                           </button>
                         </div>
-                        <div className="flex items-center justify-between gap-3">
-                          <span className="text-[10px] font-bold text-slate-400">
-                            Jump to the attempt screen
-                          </span>
-                          <div className="flex gap-2">
-                            <button
-                              type="button"
-                              onClick={props.onRevision}
-                              className="rounded-xl bg-blue-600 px-3 py-2 text-[10px] font-black uppercase tracking-[0.14em] text-white"
-                            >
-                              Revision
-                            </button>
-                            <button
-                              type="button"
-                              onClick={props.onLibrary}
-                              className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-[10px] font-black uppercase tracking-[0.14em] text-emerald-600"
-                            >
-                              Library
-                            </button>
-                          </div>
-                        </div>
+                        <p className="text-[10px] font-medium leading-4 text-slate-400">
+                          Tap anywhere on the card to start the paper under time. Use the PDF preview when you want to read the original first.
+                        </p>
                       </div>
                     </div>
                   );
