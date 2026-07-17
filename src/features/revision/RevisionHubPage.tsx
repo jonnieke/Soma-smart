@@ -220,7 +220,7 @@ export const RevisionHubPage: React.FC<Props> = ({
       } catch (error) {
         if (cancelled) return;
         console.error('Inline PDF preview failed:', error);
-        setInlinePdfError('We could not open this paper preview. You can still open the PDF in a new tab.');
+        setInlinePdfError('We could not open this paper preview. You can still open the exam paper in a new tab.');
       } finally {
         if (!cancelled) setInlinePdfLoading(false);
       }
@@ -267,7 +267,7 @@ export const RevisionHubPage: React.FC<Props> = ({
       } catch (error) {
         if (cancelled) return;
         console.error('Inline PDF page render failed:', error);
-        setInlinePdfError('We hit a problem rendering this page. Try opening the PDF in a new tab.');
+        setInlinePdfError('We hit a problem rendering this page. Try opening the exam paper in a new tab.');
       }
     };
 
@@ -531,7 +531,7 @@ export const RevisionHubPage: React.FC<Props> = ({
                       </div>
                       <div className="flex items-start gap-2">
                         <FileText className="mt-0.5 h-4 w-4 text-indigo-600" />
-                        <span>Open the PDF in a new tab or share it if you want to study with someone else.</span>
+                        <span>Open the exam paper in a new tab or share it if you want to study with someone else.</span>
                       </div>
                     </div>
                   </div>
@@ -556,7 +556,7 @@ export const RevisionHubPage: React.FC<Props> = ({
                       rel="noreferrer"
                       className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-slate-200 px-4 text-sm font-black text-slate-700 hover:bg-slate-50 dark:border-slate-800 dark:text-slate-200 dark:hover:bg-slate-900"
                     >
-                      Open PDF
+                      Open exam paper
                     </a>
                     <button
                       type="button"
@@ -579,7 +579,7 @@ export const RevisionHubPage: React.FC<Props> = ({
                       <div className="flex items-start justify-between gap-3">
                         <span>Diagrams</span>
                         <span className="font-black text-slate-900 dark:text-white">
-                          {paperHasDiagrams(inlinePdfPaper) ? 'Shown in PDF' : 'Not detected'}
+                          {paperHasDiagrams(inlinePdfPaper) ? 'Shown in paper' : 'Not detected'}
                         </span>
                       </div>
                       <div className="flex items-start justify-between gap-3">

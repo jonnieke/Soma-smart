@@ -363,15 +363,15 @@ export const ExamsView: React.FC = () => {
       setAttachmentPaperFile(null);
       setAttachmentSchemeFile(null);
       await fetchExams();
-      alert('PDF attached successfully.');
+      alert('Exam paper attached successfully.');
     } catch (error) {
       if (uploadedPaths.length > 0) {
         await supabase.storage.from('syllabus-docs').remove(uploadedPaths).catch(() => null);
       }
 
-      console.error('Attach PDF failed:', error);
+      console.error('Attach exam paper failed:', error);
       const message = error instanceof Error ? error.message : 'Unknown attachment error';
-      alert('Failed to attach PDF. ' + message);
+      alert('Failed to attach exam paper. ' + message);
     } finally {
       setSaving(false);
     }
@@ -1225,7 +1225,7 @@ export const ExamsView: React.FC = () => {
                       setAttachmentPaperFile(null);
                       setAttachmentSchemeFile(null);
                     }}
-                    title={exam.fileUrl ? 'Replace question paper PDF' : 'Attach question paper PDF'}
+                    title={exam.fileUrl ? 'Replace exam paper' : 'Attach exam paper'}
                     className="rounded-lg p-2 text-slate-400 hover:bg-amber-50 hover:text-amber-600"
                   >
                     <Upload className="h-5 w-5" />
@@ -1283,22 +1283,22 @@ export const ExamsView: React.FC = () => {
             >
               <div className="p-6 sm:p-8">
                 <h3 className="flex items-center gap-2 text-2xl font-bold text-slate-900">
-                  <Upload className="h-6 w-6 text-indigo-600" /> {attachmentExam.fileUrl ? 'Replace PDF' : 'Attach PDF'}
+                  <Upload className="h-6 w-6 text-indigo-600" /> {attachmentExam.fileUrl ? 'Replace exam paper' : 'Attach exam paper'}
                 </h3>
                 <p className="mt-2 text-sm text-slate-500">
                   {attachmentExam.title} ? {attachmentExam.subject} / {attachmentExam.className}
                 </p>
                 <div className="mt-6 grid gap-5">
                   <FilePicker
-                    id="attach-paper-pdf"
-                    label="Question paper PDF"
+                    id="attach-exam-paper"
+                    label="Exam paper"
                     required
                     file={attachmentPaperFile}
                     onChange={setAttachmentPaperFile}
                   />
                   <FilePicker
-                    id="attach-marking-pdf"
-                    label="Marking scheme PDF"
+                    id="attach-marking-scheme"
+                    label="Marking scheme"
                     file={attachmentSchemeFile}
                     onChange={setAttachmentSchemeFile}
                   />
@@ -1320,7 +1320,7 @@ export const ExamsView: React.FC = () => {
                     isLoading={saving}
                     className="bg-indigo-600 px-7 text-white"
                   >
-                    Save PDF links
+                    Save exam links
                   </Button>
                 </div>
               </div>
@@ -1345,7 +1345,7 @@ export const ExamsView: React.FC = () => {
                 </h3>
 
                 <p className="mt-2 text-sm text-slate-500">
-                  Upload a PDF for analysis, or import a structured exam JSON when the questions are
+                  Upload an exam paper for analysis, or import a structured exam JSON when the questions are
                   already prepared.
                 </p>
 
@@ -1355,7 +1355,7 @@ export const ExamsView: React.FC = () => {
                     onClick={() => setInputMode('UPLOAD')}
                     className={`rounded-xl px-4 py-2 text-sm font-bold transition-colors ${inputMode === 'UPLOAD' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
                   >
-                    Upload PDF
+                    Upload exam paper
                   </button>
 
                   <button
@@ -1713,7 +1713,7 @@ const FilePicker: React.FC<{
       </p>
 
       <p className="mt-1 truncate text-sm text-slate-500">
-        {file ? file.name : 'Choose PDF, JPG, or PNG'}
+        {file ? file.name : 'Choose file to attach'}
       </p>
     </label>
   </div>

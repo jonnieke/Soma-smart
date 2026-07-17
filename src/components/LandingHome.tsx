@@ -218,7 +218,7 @@ export const LandingHome: React.FC<Props> = (props) => {
     const payload = {
       title: String(paper.title || 'SomaAI paper'),
       text: pdfUrl
-        ? `${paper.title || 'SomaAI paper'} - open the paper or PDF in Soma AI revision`
+        ? `${paper.title || 'SomaAI paper'} - open the exam paper in Soma AI revision`
         : `${paper.title || 'SomaAI paper'} - open this paper in Soma AI revision`,
       url,
     };
@@ -501,7 +501,7 @@ export const LandingHome: React.FC<Props> = (props) => {
                               className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-[10px] font-black uppercase tracking-[0.14em] text-blue-700"
                             >
                               <ExternalLink className="h-3.5 w-3.5" />
-                              Preview PDF
+                              Open Exam Paper
                             </a>
                           ) : (
                             <button
@@ -511,7 +511,7 @@ export const LandingHome: React.FC<Props> = (props) => {
                               className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-[10px] font-black uppercase tracking-[0.14em] text-slate-300"
                             >
                               <ExternalLink className="h-3.5 w-3.5" />
-                              PDF pending
+                              Exam paper pending
                             </button>
                           )}
                           <button
@@ -527,7 +527,7 @@ export const LandingHome: React.FC<Props> = (props) => {
                           </button>
                         </div>
                         <p className="text-[10px] font-medium leading-4 text-slate-400">
-                          Tap anywhere on the card to start the paper under time. Use the PDF preview when you want to read the original first.
+                          Tap anywhere on the card to start the paper under time. Use the exam paper when you want to read the original first.
                         </p>
                       </div>
                     </div>
