@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+﻿import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import logoImg from '../../assets/images/main_logo.png';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -347,7 +347,7 @@ const DeferredViewLoader = () => (
       />
     </div>
     <style>{`@keyframes soma-shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}`}</style>
-    <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">Loading Somo&hellip;</p>
+    <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">Loading Somo&hellip;</p>
   </div>
 );
 
@@ -1173,7 +1173,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
       // Add match element
       if (match.type === 'search') {
         elements.push(
-          <mark key={`search-${idx}`} className="bg-yellow-200 dark:bg-yellow-800 text-slate-900 rounded px-0.5 font-bold shadow-sm">
+          <mark key={`search-${idx}`} className="bg-yellow-200 text-slate-900 rounded px-0.5 font-bold shadow-sm">
             {match.value}
           </mark>
         );
@@ -1186,7 +1186,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
               e.stopPropagation();
               onGlossaryClick(match.key!);
             }}
-            className="underline decoration-dotted decoration-indigo-400 hover:decoration-solid hover:text-indigo-600 dark:hover:text-indigo-400 font-bold transition-all inline-flex items-center gap-0.5 cursor-help"
+            className="underline decoration-dotted decoration-indigo-400 hover:decoration-solid hover:text-indigo-600 font-bold transition-all inline-flex items-center gap-0.5 cursor-help"
           >
             {match.value}
             <span className="text-[10px] text-indigo-400">Guide</span>
@@ -4107,7 +4107,7 @@ ${explanation.explanation}
                 className={`flex-1 py-2 text-sm font-black rounded-xl transition-all ${
                   questSubTabState === tab
                     ? 'bg-indigo-600 text-white shadow-sm'
-                    : 'bg-slate-100 text-slate-500 dark:text-slate-400 hover:bg-slate-200 hover:bg-slate-50'
+                    : 'bg-slate-100 text-slate-500 hover:bg-slate-200 hover:bg-slate-50'
                 }`}
               >
             {tab === 'MAP' ? 'Quest Map' : 'My Path'}
@@ -4327,10 +4327,10 @@ ${explanation.explanation}
 
     if (mode === 'RECAP_RESULT' && recapData) {
       return (
-        <div className="min-h-screen bg-slate-50 pb-20 font-sans text-slate-800 dark:text-slate-100 w-full">
+        <div className="min-h-screen bg-slate-50 pb-20 font-sans text-slate-800 w-full">
           <div className="bg-white p-6 sticky top-0 z-10 shadow-sm flex items-center gap-4 border-b border-slate-200">
-            <button onClick={() => setMode('MENU')} className="p-2 hover:bg-slate-100 hover:bg-slate-50 rounded-full transition-colors"><ArrowRight className="w-6 h-6 rotate-180 dark:text-slate-400" /></button>
-            <h2 className="font-bold text-lg dark:text-white">Lesson Recap</h2>
+            <button onClick={() => setMode('MENU')} className="p-2 hover:bg-slate-100 hover:bg-slate-50 rounded-full transition-colors"><ArrowRight className="w-6 h-6 rotate-180" /></button>
+            <h2 className="font-bold text-lg">Lesson Recap</h2>
           </div>
 
           <div className="p-6 space-y-6">
@@ -4340,19 +4340,19 @@ ${explanation.explanation}
             </div>
 
             <div>
-              <h3 className="font-bold text-slate-900 dark:text-white mb-3 flex items-center gap-2"><Star className="w-5 h-5 text-yellow-500" /> Key Points</h3>
+              <h3 className="font-bold text-slate-900 mb-3 flex items-center gap-2"><Star className="w-5 h-5 text-yellow-500" /> Key Points</h3>
               <ul className="space-y-3">
                 {recapData.keyPoints.map((p: string, i: number) => (
                   <li key={i} className="bg-white p-4 rounded-xl border-2 border-slate-300 shadow-sm flex gap-3">
-                    <span className="w-6 h-6 bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 rounded-full flex items-center justify-center font-bold text-xs flex-shrink-0">{i + 1}</span>
-                    <span className="text-sm dark:text-slate-600">{p}</span>
+                    <span className="w-6 h-6 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center font-bold text-xs flex-shrink-0">{i + 1}</span>
+                    <span className="text-sm">{p}</span>
                   </li>
                 ))}
               </ul>
             </div>
 
             <div>
-              <h3 className="font-bold text-slate-900 dark:text-white mb-3 flex items-center gap-2"><AlertTriangle className="w-5 h-5 text-red-500" /> Exam Tips</h3>
+              <h3 className="font-bold text-slate-900 mb-3 flex items-center gap-2"><AlertTriangle className="w-5 h-5 text-red-500" /> Exam Tips</h3>
               <div className="bg-red-50 border border-red-100 rounded-xl p-4 space-y-2">
                 {recapData.examTips.map((tip: string, i: number) => (
                   <p key={i} className="text-sm text-red-800 font-medium">- {tip}</p>
@@ -4361,7 +4361,7 @@ ${explanation.explanation}
             </div>
 
             <div>
-              <h3 className="font-bold text-slate-900 dark:text-white mb-3 flex items-center gap-2"><BookOpen className="w-5 h-5 text-blue-500" /> Definitions</h3>
+              <h3 className="font-bold text-slate-900 mb-3 flex items-center gap-2"><BookOpen className="w-5 h-5 text-blue-500" /> Definitions</h3>
               <div className="space-y-2">
                 {recapData.definitions.map((def: any, i: number) => (
                   <div key={i} className="bg-blue-50 p-3 rounded-lg">
@@ -4423,13 +4423,13 @@ ${explanation.explanation}
       if (chatRequestId) {
         const chatReq = activeTutoringRequests.find(r => r.id === chatRequestId);
         return (
-          <div className="min-h-screen bg-slate-50 flex flex-col font-sans text-slate-800 dark:text-slate-100 w-full relative">
+          <div className="min-h-screen bg-slate-50 flex flex-col font-sans text-slate-800 w-full relative">
             {/* Chat Header */}
             <div className="sticky top-0 z-40 bg-white/90 backdrop-blur-xl border-b border-slate-200 px-6 py-4 flex items-center gap-4">
-              <button onClick={() => { setChatRequestId(null); setChatInput(''); }} className="p-2 hover:bg-slate-100 hover:bg-slate-50 rounded-full transition-colors"><ArrowRight className="w-5 h-5 rotate-180 dark:text-slate-400" /></button>
+              <button onClick={() => { setChatRequestId(null); setChatInput(''); }} className="p-2 hover:bg-slate-100 hover:bg-slate-50 rounded-full transition-colors"><ArrowRight className="w-5 h-5 rotate-180" /></button>
               <div className="flex-1">
-                <h2 className="font-bold text-lg dark:text-white leading-tight">{chatReq?.topic || 'Chat'}</h2>
-                <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Continuous study session</p>
+                <h2 className="font-bold text-lg leading-tight">{chatReq?.topic || 'Chat'}</h2>
+                <p className="text-xs text-slate-500 font-medium">Continuous study session</p>
               </div>
               <button onClick={() => fetchChatMessages(chatRequestId)} className="p-2 hover:bg-slate-100 rounded-full transition-colors text-slate-400 hover:text-blue-600">
                 <Loader2 className="w-4 h-4" />
@@ -4445,7 +4445,7 @@ ${explanation.explanation}
                   <div className="bg-emerald-50 border border-emerald-100 rounded-2xl rounded-bl-md px-4 py-3 max-w-[80%] shadow-sm">
                     <p className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest mb-1">Teacher&apos;s Response</p>
                     {chatReq.responseType === 'TEXT' && (
-                      <p className="text-slate-800 dark:text-slate-200 text-sm leading-relaxed whitespace-pre-wrap">{formatReadableResponse(chatReq.response)}</p>
+                      <p className="text-slate-800 text-sm leading-relaxed whitespace-pre-wrap">{formatReadableResponse(chatReq.response)}</p>
                     )}
                     {chatReq.responseType === 'VOICE' && typeof chatReq.response === 'string' && chatReq.response && (
                       <audio src={chatReq.response} controls className="w-full" />
@@ -4546,7 +4546,7 @@ ${explanation.explanation}
                   }}
                   className={`p-3 rounded-2xl transition-all flex-shrink-0 ${isRecordingChat
                     ? 'bg-red-500 text-white shadow-lg shadow-red-200 animate-pulse'
-                    : 'bg-slate-100 text-slate-500 dark:text-slate-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:text-blue-600 dark:hover:text-blue-400'
+                    : 'bg-slate-100 text-slate-500 hover:bg-blue-50 hover:text-blue-600'
                     }`}
                   title={isRecordingChat ? 'Stop recording' : 'Record voice message'}
                 >
@@ -4556,7 +4556,7 @@ ${explanation.explanation}
                 {/* Image Upload Button */}
                 <button
                   onClick={() => chatImageInputRef.current?.click()}
-                  className="p-3 rounded-2xl bg-slate-100 text-slate-500 dark:text-slate-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:text-blue-600 dark:hover:text-blue-400 transition-all flex-shrink-0"
+                  className="p-3 rounded-2xl bg-slate-100 text-slate-500 hover:bg-blue-50 hover:text-blue-600 transition-all flex-shrink-0"
                   title="Send an image"
                 >
                   <ImageIcon className="w-5 h-5" />
@@ -4581,7 +4581,7 @@ ${explanation.explanation}
                   }}
                   placeholder="Type your follow-up question..."
                   rows={1}
-                  className="flex-1 bg-slate-50 border-2 border-slate-100 rounded-2xl px-4 py-3 text-sm font-medium text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 resize-none focus:ring-0 focus:border-blue-300 dark:focus:border-blue-700 focus:bg-white dark:focus:bg-slate-800 transition-all outline-none"
+                  className="flex-1 bg-slate-50 border-2 border-slate-100 rounded-2xl px-4 py-3 text-sm font-medium text-slate-800 placeholder:text-slate-400 resize-none focus:ring-0 focus:border-blue-300 focus:bg-white transition-all outline-none"
                 />
 
                 {/* Send Button */}
@@ -4597,7 +4597,7 @@ ${explanation.explanation}
                     }
                   }}
                   disabled={!chatInput.trim() || chatSending}
-                  className={`p-3 rounded-2xl transition-all flex-shrink-0 ${chatInput.trim() ? 'bg-blue-600 text-white shadow-lg shadow-blue-200 hover:bg-blue-700' : 'bg-slate-100 text-slate-600 dark:text-slate-600 cursor-not-allowed'
+                  className={`p-3 rounded-2xl transition-all flex-shrink-0 ${chatInput.trim() ? 'bg-blue-600 text-white shadow-lg shadow-blue-200 hover:bg-blue-700' : 'bg-slate-100 text-slate-600 cursor-not-allowed'
                     }`}
                 >
                   <ArrowRight className="w-5 h-5" />
@@ -4609,10 +4609,10 @@ ${explanation.explanation}
       }
 
       return (
-        <div className="min-h-screen bg-slate-50 flex flex-col font-sans text-slate-800 dark:text-slate-100 w-full relative">
+        <div className="min-h-screen bg-slate-50 flex flex-col font-sans text-slate-800 w-full relative">
           <div className="sticky top-0 z-40 bg-white/90 backdrop-blur-xl border-b border-slate-200 px-6 py-4 flex items-center gap-4">
-            <button onClick={() => setMode('MENU')} className="p-2 hover:bg-slate-100 hover:bg-slate-50 rounded-full transition-colors"><ArrowRight className="w-5 h-5 rotate-180 dark:text-slate-400" /></button>
-            <h2 className="font-bold text-lg dark:text-white">My Requests</h2>
+            <button onClick={() => setMode('MENU')} className="p-2 hover:bg-slate-100 hover:bg-slate-50 rounded-full transition-colors"><ArrowRight className="w-5 h-5 rotate-180" /></button>
+            <h2 className="font-bold text-lg">My Requests</h2>
             <span className="bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full text-xs font-bold">{activeTutoringRequests.length}</span>
           </div>
 
@@ -4628,7 +4628,7 @@ ${explanation.explanation}
                 <div key={req.id} className="bg-white p-5 rounded-2xl shadow-sm border-2 border-slate-300 transition-all hover:shadow-md">
                   <div className="flex justify-between items-start mb-3">
                     <div>
-                      <h3 className="font-bold text-slate-900 dark:text-white leading-tight mb-1">{req.topic}</h3>
+                      <h3 className="font-bold text-slate-900 leading-tight mb-1">{req.topic}</h3>
                       <p className="text-xs text-slate-500 font-medium flex items-center gap-1"><Clock className="w-3 h-3" /> {!isNaN(new Date(req.createdAt).getTime()) ? new Date(req.createdAt).toLocaleDateString() : 'Unknown Date'}</p>
                     </div>
                     <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${req.status === 'COMPLETED' ? 'bg-emerald-100 text-emerald-700' :
@@ -4638,7 +4638,7 @@ ${explanation.explanation}
                       {req.status}
                     </span>
                   </div>
-                  <p className="text-slate-600 dark:text-slate-600 text-sm mb-4 bg-slate-50 p-3 rounded-xl leading-relaxed">{req.description}</p>
+                  <p className="text-slate-600 text-sm mb-4 bg-slate-50 p-3 rounded-xl leading-relaxed">{req.description}</p>
 
                   {/* Payment Required Card for priced requests */}
                   {req.status === 'ACCEPTED' && req.price > 0 && req.response && (
@@ -4662,7 +4662,7 @@ ${explanation.explanation}
                       <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Teacher Response</p>
 
                       {req.responseType === 'TEXT' && (
-                        <p className="text-slate-800 dark:text-slate-200 text-sm leading-relaxed whitespace-pre-wrap bg-slate-50 p-4 rounded-xl border-2 border-slate-300">
+                        <p className="text-slate-800 text-sm leading-relaxed whitespace-pre-wrap bg-slate-50 p-4 rounded-xl border-2 border-slate-300">
                           {formatReadableResponse(req.response)}
                         </p>
                       )}
@@ -4954,7 +4954,7 @@ ${explanation.explanation}
     // --- HISTORY VIEW ---
     if (mode === 'HISTORY' as any) {
       return (
-        <div className="min-h-screen bg-white font-sans text-slate-800 dark:text-slate-100 w-full flex flex-col transition-colors duration-300">
+        <div className="min-h-screen bg-white font-sans text-slate-800 w-full flex flex-col transition-colors duration-300">
           <div className="p-4 border-b border-slate-100 flex items-center gap-3 sticky top-0 bg-white z-20">
             <button onClick={() => setMode('MENU')} className="p-2 hover:bg-slate-100 hover:bg-slate-50 rounded-full transition-colors"><ArrowRight className="w-6 h-6 rotate-180" /></button>
             <h1 className="text-lg font-bold">Learning History</h1>
@@ -4969,13 +4969,13 @@ ${explanation.explanation}
             ) : (
               <div className="space-y-4">
                 {history.slice().reverse().map((item) => (
-                  <div key={item.id} onClick={() => restoreActivity(item)} className="p-4 rounded-2xl border-2 border-slate-300 hover:border-blue-200 dark:hover:border-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all cursor-pointer flex items-center gap-4">
+                  <div key={item.id} onClick={() => restoreActivity(item)} className="p-4 rounded-2xl border-2 border-slate-300 hover:border-blue-200 hover:bg-blue-50 transition-all cursor-pointer flex items-center gap-4">
                     <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center border-2 border-slate-300 shadow-sm text-lg">
                       {item.type === 'QUIZ' ? <FileText className="w-5 h-5 text-indigo-500" /> : <Lightbulb className="w-5 h-5 text-amber-500" />}
                     </div>
                     <div>
-                      <h3 className="font-bold text-slate-800 dark:text-slate-200">{item.topic || "Untitled Session"}</h3>
-                      <p className="text-xs text-slate-500 dark:text-slate-500">{item.date}</p>
+                      <h3 className="font-bold text-slate-800">{item.topic || "Untitled Session"}</h3>
+                      <p className="text-xs text-slate-500">{item.date}</p>
                     </div>
                   </div>
                 ))}
@@ -5014,17 +5014,17 @@ ${explanation.explanation}
               <div className="mb-8">
                 <button
                   onClick={() => setShowLogin(true)}
-                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-sm font-bold hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-all border border-blue-100 dark:border-blue-800 mb-8"
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-blue-50 text-blue-600 text-sm font-bold hover:bg-blue-100 transition-all border border-blue-100 mb-8"
                 >
                   Already have an ID? Login here
                 </button>
 
-                <div className="w-24 h-24 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-[2.5rem] flex items-center justify-center mx-auto mb-6 shadow-xl shadow-blue-100 dark:shadow-none rotate-3">
+                <div className="w-24 h-24 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-[2.5rem] flex items-center justify-center mx-auto mb-6 shadow-xl shadow-blue-100 rotate-3">
                   <UserCircle className="w-12 h-12 text-white" />
                 </div>
                 
-                <h2 className="text-3xl font-black text-slate-900 dark:text-white mb-3 tracking-tight">Create Student Profile</h2>
-                <p className="text-slate-500 dark:text-slate-400 font-medium mb-10 leading-relaxed">
+                <h2 className="text-3xl font-black text-slate-900 mb-3 tracking-tight">Create Student Profile</h2>
+                <p className="text-slate-500 font-medium mb-10 leading-relaxed">
                   Join thousands of students and get personalized AI tutoring, progress tracking, and access to all study materials.
                 </p>
               </div>
@@ -5032,7 +5032,7 @@ ${explanation.explanation}
               <div className="flex flex-col gap-4 w-full">
                 <button
                   onClick={() => setShowRegistration(true)}
-                  className="bg-blue-600 hover:bg-blue-700 text-white font-black rounded-2xl w-full px-8 py-5 transition-all shadow-xl shadow-blue-200 dark:shadow-none active:scale-95 text-lg flex items-center justify-center gap-3 group"
+                  className="bg-blue-600 hover:bg-blue-700 text-white font-black rounded-2xl w-full px-8 py-5 transition-all shadow-xl shadow-blue-200 active:scale-95 text-lg flex items-center justify-center gap-3 group"
                 >
                   Get Your Student ID
                   <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
@@ -5046,17 +5046,17 @@ ${explanation.explanation}
 
                 <button
                   onClick={() => setMode('MENU')}
-                  className="text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white font-bold py-2 transition-colors text-sm"
+                  className="text-slate-500 hover:text-slate-800 font-bold py-2 transition-colors text-sm"
                 >
                   Continue as Guest
                 </button>
               </div>
 
-              <div className="mt-12 p-6 bg-amber-50 dark:bg-amber-900/20 rounded-3xl border border-amber-100 dark:border-amber-900/30 text-left">
-                <h4 className="font-bold text-amber-800 dark:text-amber-400 text-sm mb-1 flex items-center gap-2">
+              <div className="mt-12 p-6 bg-amber-50 rounded-3xl border border-amber-100 text-left">
+                <h4 className="font-bold text-amber-800 text-sm mb-1 flex items-center gap-2">
                    <Sparkles className="w-4 h-4" /> Why create a profile?
                 </h4>
-                <ul className="text-xs font-medium text-amber-700/80 dark:text-amber-500/80 space-y-2 mt-3">
+                <ul className="text-xs font-medium text-amber-700/80 space-y-2 mt-3">
                       <li className="flex gap-2"><span>-</span> Save your learning history and streaks</li>
                       <li className="flex gap-2"><span>-</span> Unlock high daily AI study limits</li>
                       <li className="flex gap-2"><span>-</span> Get a personalized study buddy profile</li>
@@ -5839,11 +5839,11 @@ ${explanation.explanation}
               <div className="bg-white border-b border-slate-200 px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 shrink-0 z-10 shadow-sm">
                 <div className="flex flex-wrap items-center gap-3">
                   {studyViewMode === 'guide' ? (
-                    <span className="text-xs font-black bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300 px-2.5 py-1 rounded-full uppercase tracking-wider font-semibold">
+                    <span className="text-xs font-black bg-indigo-100 text-indigo-700 px-2.5 py-1 rounded-full uppercase tracking-wider font-semibold">
                       Page {readerPage + 1} of {totalPages}
                     </span>
                   ) : (
-                    <span className="text-xs font-black bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300 px-2.5 py-1 rounded-full uppercase tracking-wider font-semibold">
+                    <span className="text-xs font-black bg-indigo-100 text-indigo-700 px-2.5 py-1 rounded-full uppercase tracking-wider font-semibold">
                       Page {originalPageIndex + 1} of {extractedOriginalPages.length || 1}
                     </span>
                   )}
@@ -5852,13 +5852,13 @@ ${explanation.explanation}
                     <div className="flex bg-slate-100 p-0.5 rounded-lg text-[10px] font-black select-none border border-slate-200/10 ml-2">
                       <button
                         onClick={() => setStudyViewMode('guide')}
-                        className={`px-2.5 py-1 rounded-md transition-all ${studyViewMode === 'guide' ? 'bg-white dark:bg-slate-700 text-indigo-750 dark:text-indigo-400 shadow-sm font-black' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-600'}`}
+                        className={`px-2.5 py-1 rounded-md transition-all ${studyViewMode === 'guide' ? 'bg-white text-indigo-700 shadow-sm font-black' : 'text-slate-500 hover:text-slate-700'}`}
                       >
                         Study Guide
                       </button>
                       <button
                         onClick={() => setStudyViewMode('original')}
-                        className={`px-2.5 py-1 rounded-md transition-all ${studyViewMode === 'original' ? 'bg-white dark:bg-slate-700 text-indigo-750 dark:text-indigo-400 shadow-sm font-black' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-600'}`}
+                        className={`px-2.5 py-1 rounded-md transition-all ${studyViewMode === 'original' ? 'bg-white text-indigo-700 shadow-sm font-black' : 'text-slate-500 hover:text-slate-700'}`}
                       >
                         Original Book
                       </button>
@@ -5869,13 +5869,13 @@ ${explanation.explanation}
                     <div className="flex bg-slate-100 p-0.5 rounded-lg text-[10px] font-black select-none border border-slate-200/10 ml-2">
                       <button
                         onClick={() => setOriginalViewType('text')}
-                        className={`px-2.5 py-1 rounded-md transition-all ${originalViewType === 'text' ? 'bg-white dark:bg-slate-700 text-indigo-750 dark:text-indigo-400 shadow-sm font-black' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-600'}`}
+                        className={`px-2.5 py-1 rounded-md transition-all ${originalViewType === 'text' ? 'bg-white text-indigo-700 shadow-sm font-black' : 'text-slate-500 hover:text-slate-700'}`}
                       >
                         Text
                       </button>
                       <button
                         onClick={() => setOriginalViewType('pdf')}
-                        className={`px-2.5 py-1 rounded-md transition-all ${originalViewType === 'pdf' ? 'bg-white dark:bg-slate-700 text-indigo-750 dark:text-indigo-400 shadow-sm font-black' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-600'}`}
+                        className={`px-2.5 py-1 rounded-md transition-all ${originalViewType === 'pdf' ? 'bg-white text-indigo-700 shadow-sm font-black' : 'text-slate-500 hover:text-slate-700'}`}
                       >
                         PDF
                       </button>
@@ -5887,7 +5887,7 @@ ${explanation.explanation}
                     onClick={handlePodcastToggle}
                     disabled={podcastLoading}
                     className={`flex items-center gap-2 px-3 py-1.5 rounded-full transition-all text-xs font-black uppercase tracking-wider ${
-                      isPodcastPlaying ? 'bg-indigo-700 text-white shadow-inner animate-pulse' : 'bg-indigo-50 hover:bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300'
+                      isPodcastPlaying ? 'bg-indigo-700 text-white shadow-inner animate-pulse' : 'bg-indigo-50 hover:bg-indigo-100 text-indigo-700'
                     }`}
                   >
                     {podcastLoading ? (
@@ -5903,21 +5903,21 @@ ${explanation.explanation}
                   <div className="flex items-center gap-1.5 border-l border-slate-200 pl-3">
                     <button
                       onClick={() => setFontScale(prev => Math.max(0.8, prev - 0.1))}
-                      className="w-8 h-8 rounded bg-slate-50 border border-slate-200 text-slate-600 dark:text-slate-600 font-bold hover:bg-slate-100 text-xs flex items-center justify-center transition-colors"
+                      className="w-8 h-8 rounded bg-slate-50 border border-slate-200 text-slate-600 font-bold hover:bg-slate-100 text-xs flex items-center justify-center transition-colors"
                       title="Make text smaller"
                     >
                       A-
                     </button>
                     <button
                       onClick={() => setFontScale(prev => Math.min(1.5, prev + 0.1))}
-                      className="w-8 h-8 rounded bg-slate-50 border border-slate-200 text-slate-600 dark:text-slate-600 font-bold hover:bg-slate-100 text-xs flex items-center justify-center transition-colors"
+                      className="w-8 h-8 rounded bg-slate-50 border border-slate-200 text-slate-600 font-bold hover:bg-slate-100 text-xs flex items-center justify-center transition-colors"
                       title="Make text larger"
                     >
                       A+
                     </button>
                     <button
                       onClick={() => setFontFamily(prev => prev === 'sans' ? 'serif' : 'sans')}
-                      className="px-2.5 h-8 rounded bg-slate-50 border border-slate-200 text-slate-600 dark:text-slate-600 font-bold hover:bg-slate-100 text-[10px] uppercase tracking-wider flex items-center justify-center transition-colors font-semibold"
+                      className="px-2.5 h-8 rounded bg-slate-50 border border-slate-200 text-slate-600 font-bold hover:bg-slate-100 text-[10px] uppercase tracking-wider flex items-center justify-center transition-colors font-semibold"
                       title="Change font style"
                     >
                       {fontFamily === 'sans' ? 'Serif' : 'Sans'}
@@ -5932,7 +5932,7 @@ ${explanation.explanation}
                     value={readerSearchTerm}
                     onChange={(e) => setReaderSearchTerm(e.target.value)}
                     placeholder="Search in notes..."
-                    className="w-full bg-slate-50 border border-slate-200 rounded-full px-4 py-1.5 pl-9 outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-xs text-slate-700 dark:text-white placeholder:text-slate-400"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-full px-4 py-1.5 pl-9 outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-xs text-slate-700 placeholder:text-slate-400"
                   />
                   <Sparkles className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
                   {readerSearchTerm && (
@@ -5966,19 +5966,19 @@ ${explanation.explanation}
                         <div className="h-4 bg-slate-100 rounded w-full"></div>
                       </div>
                     ) : explanation ? (
-                      <div className="prose prose-slate prose-lg max-w-none dark:prose-invert">
+                      <div className="prose prose-slate prose-lg max-w-none">
                         {/* Active Study Mission Banner */}
                         {readerPage === 0 && (
-                          <div className="mb-10 rounded-2xl border border-emerald-100 dark:border-emerald-900 bg-emerald-50 dark:bg-emerald-950/20 p-5 not-prose">
+                          <div className="mb-10 rounded-2xl border border-emerald-100 bg-emerald-50 p-5 not-prose">
                             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                               <div>
-                                <p className="text-[9px] font-black uppercase tracking-[0.2em] text-emerald-700 dark:text-emerald-400 mb-1">Active Study Mission</p>
-                                <h3 className="text-base font-black text-slate-900 dark:text-white">Learn actively, unlock your future</h3>
-                                <p className="text-xs font-semibold text-slate-600 dark:text-slate-400 mt-1">Check off the classroom steps to record your progress.</p>
+                                <p className="text-[9px] font-black uppercase tracking-[0.2em] text-emerald-700 mb-1">Active Study Mission</p>
+                                <h3 className="text-base font-black text-slate-900">Learn actively, unlock your future</h3>
+                                <p className="text-xs font-semibold text-slate-600 mt-1">Check off the classroom steps to record your progress.</p>
                               </div>
-                              <div className="rounded-xl bg-white border border-emerald-100 dark:border-emerald-900 px-3.5 py-2 min-w-[80px] text-center">
+                              <div className="rounded-xl bg-white border border-emerald-100 px-3.5 py-2 min-w-[80px] text-center">
                                 <p className="text-[8px] font-black uppercase tracking-widest text-emerald-600">Done</p>
-                                <p className="text-xl font-black text-emerald-800 dark:text-emerald-400">{studyMissionChecks.length}/3</p>
+                                <p className="text-xl font-black text-emerald-800">{studyMissionChecks.length}/3</p>
                               </div>
                             </div>
                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 mt-4">
@@ -5995,7 +5995,7 @@ ${explanation.explanation}
                                       }
                                     }}
                                     className={`px-3 py-2 rounded-xl border text-xs font-black uppercase tracking-wider flex items-center justify-between transition-all ${
-                                      done ? 'bg-emerald-600 border-emerald-600 text-white font-semibold' : 'bg-white border-slate-200 text-slate-600 dark:text-slate-400 hover:border-emerald-400 font-semibold'
+                                      done ? 'bg-emerald-600 border-emerald-600 text-white font-semibold' : 'bg-white border-slate-200 text-slate-600 hover:border-emerald-400 font-semibold'
                                     }`}
                                   >
                                     <span>{lbl}</span>
@@ -6011,18 +6011,18 @@ ${explanation.explanation}
                         {readerPage === 0 && (
                           <div>
                             <div className="flex items-center gap-3.5 mb-8 border-b border-indigo-50 pb-4">
-                              <div className="p-3 bg-indigo-50 dark:bg-indigo-950/50 rounded-2xl">
-                                <BookOpen className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
+                              <div className="p-3 bg-indigo-50 rounded-2xl">
+                                <BookOpen className="w-6 h-6 text-indigo-600" />
                               </div>
                               <div>
-                                <h2 className="text-2xl font-black text-slate-800 dark:text-white m-0">Introduction</h2>
+                                <h2 className="text-2xl font-black text-slate-800 m-0">Introduction</h2>
                                 <p className="text-xs font-medium text-slate-500 m-0 leading-none mt-1.5">Overview of this material</p>
                               </div>
                             </div>
                             
                             <div className="relative group/paragraph flex items-start gap-4">
                               <div className="flex-1">
-                                <p style={{ fontSize: `${fontScale}rem` }} className={`text-slate-700 dark:text-slate-600 leading-relaxed m-0 whitespace-pre-line ${fontFamily === 'serif' ? 'font-serif' : 'font-sans'}`}>
+                                <p style={{ fontSize: `${fontScale}rem` }} className={`text-slate-700 leading-relaxed m-0 whitespace-pre-line ${fontFamily === 'serif' ? 'font-serif' : 'font-sans'}`}>
                                   {renderFormattedText(explanation.explanation, readerSearchTerm, handleGlossaryTrigger)}
                                 </p>
                               </div>
@@ -6052,11 +6052,11 @@ ${explanation.explanation}
                           return (
                             <div>
                               <div className="flex items-center gap-3.5 mb-8 border-b border-indigo-50 pb-4">
-                                <div className="p-3 bg-indigo-50 dark:bg-indigo-950/50 rounded-2xl">
-                                  <FileText className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
+                                <div className="p-3 bg-indigo-50 rounded-2xl">
+                                  <FileText className="w-6 h-6 text-indigo-600" />
                                 </div>
                                 <div>
-                                  <h2 className="text-2xl font-black text-slate-800 dark:text-white m-0 truncate max-w-xl">{sub.title}</h2>
+                                  <h2 className="text-2xl font-black text-slate-800 m-0 truncate max-w-xl">{sub.title}</h2>
                                   <p className="text-xs font-medium text-slate-500 m-0 leading-none mt-1.5">Syllabus Section {readerPage}</p>
                                 </div>
                               </div>
@@ -6068,7 +6068,7 @@ ${explanation.explanation}
                                       {block.type === 'paragraph' && block.text && (
                                         <div className="relative group/paragraph flex items-start gap-4">
                                           <div className="flex-1">
-                                            <p style={{ fontSize: `${fontScale}rem` }} className={`text-slate-700 dark:text-slate-600 leading-relaxed m-0 whitespace-pre-line ${fontFamily === 'serif' ? 'font-serif' : 'font-sans'}`}>
+                                            <p style={{ fontSize: `${fontScale}rem` }} className={`text-slate-700 leading-relaxed m-0 whitespace-pre-line ${fontFamily === 'serif' ? 'font-serif' : 'font-sans'}`}>
                                               {renderFormattedText(block.text, readerSearchTerm, handleGlossaryTrigger)}
                                             </p>
                                           </div>
@@ -6092,7 +6092,7 @@ ${explanation.explanation}
                                       )}
 
                                       {block.type === 'list' && block.items && block.items.length > 0 && (
-                                        <ul className={`list-disc list-outside ml-6 space-y-2 m-0 text-slate-700 dark:text-slate-600 ${fontFamily === 'serif' ? 'font-serif' : 'font-sans'}`} style={{ fontSize: `${fontScale}rem` }}>
+                                        <ul className={`list-disc list-outside ml-6 space-y-2 m-0 text-slate-700 ${fontFamily === 'serif' ? 'font-serif' : 'font-sans'}`} style={{ fontSize: `${fontScale}rem` }}>
                                           {block.items.map((item, iIdx) => (
                                             <li key={iIdx} className="pl-2 leading-relaxed">
                                               {renderFormattedText(item, readerSearchTerm, handleGlossaryTrigger)}
@@ -6116,19 +6116,19 @@ ${explanation.explanation}
                         {readerPage === totalPages - 1 && (
                           <div className="space-y-10">
                             <div className="flex items-center gap-3.5 mb-6 border-b border-slate-150 pb-4">
-                              <div className="p-3 bg-emerald-50 dark:bg-emerald-950/50 rounded-2xl">
-                                <CheckCircle className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
+                              <div className="p-3 bg-emerald-50 rounded-2xl">
+                                <CheckCircle className="w-6 h-6 text-emerald-600" />
                               </div>
                               <div>
-                                <h2 className="text-2xl font-black text-slate-800 dark:text-white m-0">Summary & Standards</h2>
+                                <h2 className="text-2xl font-black text-slate-800 m-0">Summary & Standards</h2>
                                 <p className="text-xs font-medium text-slate-500 m-0 leading-none mt-1.5">Curriculum alignment & Citation builder</p>
                               </div>
                             </div>
 
                             {/* Quick summary points */}
                             <div>
-                              <h3 className="text-base font-black text-slate-800 dark:text-white mb-3 uppercase tracking-wider font-semibold">Key Takeaways</h3>
-                              <ul className="list-disc list-outside ml-6 space-y-2.5 text-slate-700 dark:text-slate-600">
+                              <h3 className="text-base font-black text-slate-800 mb-3 uppercase tracking-wider font-semibold">Key Takeaways</h3>
+                              <ul className="list-disc list-outside ml-6 space-y-2.5 text-slate-700">
                                 {(explanation.summaryPoints || []).map((pt, i) => (
                                   <li key={i} className="text-sm font-semibold leading-relaxed">
                                     {renderFormattedText(pt, readerSearchTerm, handleGlossaryTrigger)}
@@ -6138,27 +6138,27 @@ ${explanation.explanation}
                             </div>
 
                             {/* Syllabus Alignment Card */}
-                            <div className="p-6 bg-gradient-to-br from-indigo-50/50 to-white dark:from-slate-900 dark:to-slate-900 border border-indigo-100 rounded-3xl not-prose">
-                              <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-600 dark:text-indigo-400 mb-2 font-semibold">Kenyan Curriculum Mapping</h4>
+                            <div className="p-6 bg-gradient-to-br from-indigo-50/50 to-white border border-indigo-100 rounded-3xl not-prose">
+                              <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-600 mb-2 font-semibold">Kenyan Curriculum Mapping</h4>
                               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 border-b border-indigo-100/50 pb-4 mb-4">
                                 <div>
                                   <span className="block text-[8px] font-black uppercase tracking-widest text-slate-400">Curriculum</span>
-                                  <span className="text-xs font-bold text-slate-800 dark:text-white">{syllabus.curriculum}</span>
+                                  <span className="text-xs font-bold text-slate-800">{syllabus.curriculum}</span>
                                 </div>
                                 <div>
                                   <span className="block text-[8px] font-black uppercase tracking-widest text-slate-400">Strand</span>
-                                  <span className="text-xs font-bold text-slate-800 dark:text-white">{syllabus.strand}</span>
+                                  <span className="text-xs font-bold text-slate-800">{syllabus.strand}</span>
                                 </div>
                                 <div>
                                   <span className="block text-[8px] font-black uppercase tracking-widest text-slate-400">Sub-Strand</span>
-                                  <span className="text-xs font-bold text-slate-800 dark:text-white">{syllabus.subStrand}</span>
+                                  <span className="text-xs font-bold text-slate-800">{syllabus.subStrand}</span>
                                 </div>
                               </div>
                               <div>
                                 <span className="block text-[8px] font-black uppercase tracking-widest text-slate-400 mb-2">Target Learning Outcomes</span>
                                 <ul className="space-y-1.5">
                                   {syllabus.outcomes.map((out, i) => (
-                                    <li key={i} className="text-xs font-semibold text-slate-700 dark:text-slate-600 flex items-start gap-2">
+                                    <li key={i} className="text-xs font-semibold text-slate-700 flex items-start gap-2">
                                        <span className="text-emerald-500 mt-0.5">Yes</span>
                                       <span>{out}</span>
                                     </li>
@@ -6171,13 +6171,13 @@ ${explanation.explanation}
                             <div className="p-6 bg-slate-50/50 border border-slate-200 rounded-3xl not-prose">
                               <div className="flex items-center justify-between mb-4">
                                 <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Academic Citation Builder</h4>
-                                <div className="flex bg-slate-200 dark:bg-slate-850 p-0.5 rounded-lg text-[9px] font-bold">
+                                <div className="flex bg-slate-200 p-0.5 rounded-lg text-[9px] font-bold">
                                   {(['SOMA', 'APA', 'MLA', 'HARVARD'] as const).map(fmt => (
                                     <button
                                       key={fmt}
                                       onClick={() => setCitationFormat(fmt)}
                                       className={`px-2 py-1 rounded-md uppercase tracking-wider transition-all ${
-                                        citationFormat === fmt ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm' : 'text-slate-500 hover:text-slate-800'
+                                        citationFormat === fmt ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-800'
                                       }`}
                                     >
                                       {fmt}
@@ -6186,7 +6186,7 @@ ${explanation.explanation}
                                 </div>
                               </div>
 
-                              <div className="bg-white border border-slate-200 p-4 rounded-2xl text-xs text-slate-650 dark:text-slate-400 italic font-mono leading-relaxed select-all">
+                              <div className="bg-white border border-slate-200 p-4 rounded-2xl text-xs text-slate-650 italic font-mono leading-relaxed select-all">
                                 {citationFormat === 'APA' && `Soma Smart. (${new Date().getFullYear()}). ${currentDocument.title} [Study Material]. Retrieved from Soma AI Library.`}
                                 {citationFormat === 'MLA' && `Soma Smart. "${currentDocument.title}." Soma AI Library, ${new Date().getFullYear()}.`}
                                 {citationFormat === 'HARVARD' && `Soma Smart, ${new Date().getFullYear()}. ${currentDocument.title}, Soma AI Library. Available at: Soma Smart.`}
@@ -6203,7 +6203,7 @@ ${explanation.explanation}
                                   navigator.clipboard.writeText(textRef);
                                   triggerToast(`Copied ${citationFormat} Reference!`);
                                 }}
-                                className="mt-3 inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-indigo-600 dark:text-indigo-400 hover:underline font-semibold"
+                                className="mt-3 inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-indigo-600 hover:underline font-semibold"
                               >
                                 <FileText className="w-3.5 h-3.5" />
                                 Copy Reference
@@ -6239,13 +6239,13 @@ ${explanation.explanation}
                       </div>
                     ) : (
                       /* Render clean extracted page */
-                      <div className="prose prose-slate prose-lg max-w-none dark:prose-invert">
+                      <div className="prose prose-slate prose-lg max-w-none">
                         <div className="flex items-center gap-3.5 mb-8 border-b border-indigo-50 pb-4">
-                          <div className="p-3 bg-indigo-50 dark:bg-indigo-950/50 rounded-2xl">
-                            <BookOpen className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
+                          <div className="p-3 bg-indigo-50 rounded-2xl">
+                            <BookOpen className="w-6 h-6 text-indigo-600" />
                           </div>
                           <div>
-                            <h2 className="text-2xl font-black text-slate-850 dark:text-white m-0">Original Page Content</h2>
+                            <h2 className="text-2xl font-black text-slate-850 m-0">Original Page Content</h2>
                             <p className="text-xs font-medium text-slate-500 m-0 leading-none mt-1.5">Page {originalPageIndex + 1} of {extractedOriginalPages.length}</p>
                           </div>
                         </div>
@@ -6254,7 +6254,7 @@ ${explanation.explanation}
                           <div className="flex-1">
                             <p 
                               style={{ fontSize: `${fontScale}rem` }} 
-                              className={`text-slate-755 dark:text-slate-350 leading-relaxed m-0 whitespace-pre-line select-text ${fontFamily === 'serif' ? 'font-serif' : 'font-sans'}`}
+                              className={`text-slate-755 leading-relaxed m-0 whitespace-pre-line select-text ${fontFamily === 'serif' ? 'font-serif' : 'font-sans'}`}
                             >
                               {renderFormattedText(extractedOriginalPages[originalPageIndex], readerSearchTerm, handleGlossaryTrigger)}
                             </p>
@@ -6296,7 +6296,7 @@ ${explanation.explanation}
                         handleOriginalPageChange(originalPageIndex - 1);
                       }
                     }}
-                    className="flex items-center gap-2 px-4 py-2 border border-slate-200 rounded-full text-xs font-black uppercase tracking-wider text-slate-650 dark:text-slate-600 hover:bg-slate-50 hover:bg-slate-50 disabled:opacity-50 disabled:hover:bg-transparent transition-all font-semibold"
+                    className="flex items-center gap-2 px-4 py-2 border border-slate-200 rounded-full text-xs font-black uppercase tracking-wider text-slate-650 hover:bg-slate-50 hover:bg-slate-50 disabled:opacity-50 disabled:hover:bg-transparent transition-all font-semibold"
                   >
                      Previous
                   </button>
@@ -6331,7 +6331,7 @@ ${explanation.explanation}
                         handleOriginalPageChange(originalPageIndex + 1);
                       }
                     }}
-                    className="flex items-center gap-2 px-4 py-2 border border-slate-200 rounded-full text-xs font-black uppercase tracking-wider text-slate-650 dark:text-slate-600 hover:bg-slate-50 hover:bg-slate-50 disabled:opacity-50 disabled:hover:bg-transparent transition-all font-semibold"
+                    className="flex items-center gap-2 px-4 py-2 border border-slate-200 rounded-full text-xs font-black uppercase tracking-wider text-slate-650 hover:bg-slate-50 hover:bg-slate-50 disabled:opacity-50 disabled:hover:bg-transparent transition-all font-semibold"
                   >
                      Next
                   </button>
@@ -6343,7 +6343,7 @@ ${explanation.explanation}
             <div className={`w-full lg:w-[450px] shrink-0 flex flex-col h-full bg-white border-l border-slate-250 ${studyTab !== 'LESSON' ? 'flex' : 'hidden lg:flex'}`}>
               
               {/* Desktop Secondary tab header */}
-              <div className="lg:flex hidden bg-slate-50 dark:bg-slate-850 p-2 border-b border-slate-200 gap-1 select-none">
+              <div className="lg:flex hidden bg-slate-50 p-2 border-b border-slate-200 gap-1 select-none">
                 {([
                   { id: 'QNA', label: 'Ask Akili', icon: Sparkles },
                   { id: 'RECAP', label: 'Quick Recap', icon: ListChecks },
@@ -6352,11 +6352,7 @@ ${explanation.explanation}
                   <button
                     key={tab.id}
                     onClick={() => setStudyTab(tab.id)}
-                    className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all font-semibold ${
-                      (studyTab === 'LESSON' ? 'QNA' : studyTab) === tab.id
-                        ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm border border-slate-200 dark:border-slate-600'
-                        : 'text-slate-450 hover:text-slate-700 dark:hover:text-slate-200'
-                    }`}
+                    className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all font-semibold ${(studyTab === 'LESSON' ? 'QNA' : studyTab) === tab.id ? 'bg-white text-indigo-600 shadow-sm border border-slate-200' : 'text-slate-500 hover:text-slate-700'}`}
                   >
                     <tab.icon className="w-3.5 h-3.5" />
                     <span>{tab.label}</span>
@@ -6372,19 +6368,19 @@ ${explanation.explanation}
                   <div className="flex-1 flex flex-col h-full overflow-hidden bg-slate-50/50">
                     {/* Mobile Back to Lesson Button */}
                     <div className="lg:hidden flex items-center justify-between p-4 border-b border-slate-200 bg-white shrink-0">
-                      <button onClick={() => setStudyTab('LESSON')} className="flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-indigo-600 dark:text-indigo-400 font-semibold">
+                      <button onClick={() => setStudyTab('LESSON')} className="flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-indigo-600 font-semibold">
                          Back to Lesson
                       </button>
-                      <span className="text-xs font-black text-slate-800 dark:text-white uppercase tracking-widest">Raise Hand</span>
+                      <span className="text-xs font-black text-slate-800 uppercase tracking-widest">Raise Hand</span>
                     </div>
 
                     <div className="p-4 bg-white border-b border-slate-100 flex items-center justify-between shrink-0">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center border border-indigo-100">
-                          <Sparkles className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                          <Sparkles className="w-5 h-5 text-indigo-600" />
                         </div>
                         <div>
-                          <h4 className="font-bold text-slate-850 dark:text-white text-sm">Teacher Somo</h4>
+                          <h4 className="font-bold text-slate-850 text-sm">Teacher Somo</h4>
                           <span className="text-[9px] font-black text-indigo-500 uppercase tracking-widest flex items-center gap-1 font-semibold">
                             <span className="w-1.5 h-1.5 inline-block rounded-full bg-emerald-500 animate-pulse"></span> Grounded AI Teacher
                           </span>
@@ -6405,13 +6401,13 @@ ${explanation.explanation}
                         studyChat.map((msg, i) => (
                           <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} group`}>
                             {msg.role === 'model' && (
-                              <div className="w-7 h-7 rounded-full bg-indigo-50 dark:bg-indigo-950 flex items-center justify-center mr-2 mt-1 shrink-0 border border-indigo-100 dark:border-indigo-900">
+                              <div className="w-7 h-7 rounded-full bg-indigo-50 flex items-center justify-center mr-2 mt-1 shrink-0 border border-indigo-100">
                                 <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
                               </div>
                             )}
                             <div className="flex flex-col gap-1 max-w-[85%]">
                               <div className={`px-4 py-3 rounded-2xl text-xs leading-relaxed shadow-sm ${
-                                msg.role === 'user' ? 'bg-indigo-600 text-white rounded-tr-none' : 'bg-white border border-slate-200 text-slate-800 dark:text-slate-350 rounded-tl-none font-medium'
+                                msg.role === 'user' ? 'bg-indigo-600 text-white rounded-tr-none' : 'bg-white border border-slate-200 text-slate-800 rounded-tl-none font-medium'
                               }`}>
                                 <MarkdownText content={msg.text} />
                               </div>
@@ -6460,7 +6456,7 @@ ${explanation.explanation}
                       )}
                       {loading && (
                         <div className="flex justify-start">
-                          <div className="w-7 h-7 rounded-full bg-indigo-50 dark:bg-indigo-950 flex items-center justify-center mr-2 mt-1 shrink-0">
+                          <div className="w-7 h-7 rounded-full bg-indigo-50 flex items-center justify-center mr-2 mt-1 shrink-0">
                             <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
                           </div>
                           <div className="bg-white p-4 rounded-2xl rounded-tl-none border border-slate-200 shadow-sm flex items-center gap-1.5">
@@ -6474,9 +6470,9 @@ ${explanation.explanation}
                     </div>
 
                     {/* Chat Input */}
-                    <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-white dark:from-slate-950 via-white dark:via-slate-950 to-transparent shrink-0">
+                    <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-white via-white to-transparent shrink-0">
                       {pendingMedia && (
-                        <div className="mb-2 inline-flex items-center gap-2 p-2 bg-white dark:bg-slate-850 border border-slate-250 rounded-xl shadow-md">
+                        <div className="mb-2 inline-flex items-center gap-2 p-2 bg-white border border-slate-250 rounded-xl shadow-md">
                           <span className="text-[10px] font-black uppercase text-indigo-600 font-semibold">Attached {pendingMedia.type}</span>
                         <button onClick={() => setPendingMedia(null)} className="text-slate-400 hover:text-red-500">Close</button>
                         </div>
@@ -6494,7 +6490,7 @@ ${explanation.explanation}
                           onChange={(e) => setPromptText(e.target.value)}
                           onKeyDown={(e) => e.key === 'Enter' && askStudyBuddy(promptText)}
                           placeholder="Ask a question..."
-                          className="flex-1 bg-transparent px-3 py-2 outline-none text-xs text-slate-700 dark:text-white"
+                          className="flex-1 bg-transparent px-3 py-2 outline-none text-xs text-slate-700"
                         />
                         <button
                           onClick={() => askStudyBuddy(promptText)}
@@ -6516,12 +6512,12 @@ ${explanation.explanation}
                       <button onClick={() => setStudyTab('LESSON')} className="flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-indigo-600 font-semibold">
                          Back to Lesson
                       </button>
-                      <span className="text-xs font-black text-slate-800 dark:text-white uppercase tracking-widest">Quick Recap</span>
+                      <span className="text-xs font-black text-slate-800 uppercase tracking-widest">Quick Recap</span>
                     </div>
 
                     <div className="mb-4">
                       <span className="px-2.5 py-0.5 bg-emerald-100 text-emerald-800 text-[9px] font-black uppercase rounded font-semibold">Memory Review</span>
-                      <h4 className="text-lg font-black text-slate-850 dark:text-white mt-2">Key takeaway summaries</h4>
+                      <h4 className="text-lg font-black text-slate-850 mt-2">Key takeaway summaries</h4>
                     </div>
 
                     {explanation?.recapNodes && explanation.recapNodes.length > 0 ? (
@@ -6535,15 +6531,15 @@ ${explanation.explanation}
                                 setExpandedRecaps(prev => isExpanded ? prev.filter(x => x !== i) : [...prev, i]);
                               }}
                               className={`border rounded-2xl p-4 bg-white transition-all cursor-pointer ${
-                                isExpanded ? 'border-indigo-400 ring-2 ring-indigo-50 dark:ring-indigo-950/20' : 'border-slate-250 hover:border-slate-350'
+                                isExpanded ? 'border-indigo-400 ring-2 ring-indigo-50' : 'border-slate-200 hover:border-slate-300'
                               }`}
                             >
                               <div className="flex items-center justify-between gap-2">
-                                <span className="font-bold text-xs text-slate-800 dark:text-white">{node.point}</span>
+                                <span className="font-bold text-xs text-slate-800">{node.point}</span>
                                 <ChevronRight className={`w-4 h-4 text-slate-400 transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
                               </div>
                               {isExpanded && (
-                                <div className="mt-3 pt-3 border-t border-slate-100 text-xs text-slate-650 dark:text-slate-450 leading-relaxed">
+                                <div className="mt-3 pt-3 border-t border-slate-100 text-xs text-slate-650 leading-relaxed">
                                   <MarkdownText content={node.details} />
                                 </div>
                               )}
@@ -6565,14 +6561,14 @@ ${explanation.explanation}
                       <button onClick={() => setStudyTab('LESSON')} className="flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-indigo-600 font-semibold">
                          Back to Lesson
                       </button>
-                      <span className="text-xs font-black text-slate-850 dark:text-white uppercase tracking-widest font-semibold">Pop Quiz</span>
+                      <span className="text-xs font-black text-slate-850 uppercase tracking-widest font-semibold">Pop Quiz</span>
                     </div>
 
                     <div className="max-w-xs">
-                      <div className="w-16 h-16 bg-emerald-50 dark:bg-emerald-950/20 rounded-full flex items-center justify-center mx-auto mb-4 border border-emerald-100">
+                      <div className="w-16 h-16 bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-emerald-100">
                         <CheckCircle className="w-8 h-8 text-emerald-500" />
                       </div>
-                      <h4 className="text-xl font-black text-slate-800 dark:text-white mb-2 font-semibold">Pop Quiz!</h4>
+                      <h4 className="text-xl font-black text-slate-800 mb-2 font-semibold">Pop Quiz!</h4>
                       <p className="text-xs text-slate-550 leading-relaxed mb-6">Test your recall of the concepts in this study material to cement what you have read.</p>
                       
                       <Button
@@ -6590,40 +6586,40 @@ ${explanation.explanation}
                 {studyTab === 'REFERENCES' && (
                   <div className="flex-1 p-5 space-y-6">
                     {/* Mobile Back */}
-                    <div className="lg:hidden flex items-center justify-between pb-4 border-b border-slate-200 dark:border-slate-850 shrink-0">
+                    <div className="lg:hidden flex items-center justify-between pb-4 border-b border-slate-200 shrink-0">
                       <button onClick={() => setStudyTab('LESSON')} className="flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-indigo-600 font-semibold">
                          Back to Lesson
                       </button>
-                      <span className="text-xs font-black text-slate-800 dark:text-white uppercase tracking-widest font-semibold">References</span>
+                      <span className="text-xs font-black text-slate-800 uppercase tracking-widest font-semibold">References</span>
                     </div>
 
                     <div>
                       <span className="px-2.5 py-0.5 bg-indigo-100 text-indigo-800 text-[9px] font-black uppercase rounded font-semibold">Academic Mapping</span>
-                      <h4 className="text-lg font-black text-slate-850 dark:text-white mt-2">Syllabus & Citations</h4>
+                      <h4 className="text-lg font-black text-slate-850 mt-2">Syllabus & Citations</h4>
                     </div>
 
                     <div className="space-y-4">
                       {/* Syllabus Alignment */}
                       <div className="bg-slate-50 border border-slate-200 p-5 rounded-2xl">
-                        <h5 className="text-[10px] font-black uppercase text-indigo-600 dark:text-indigo-400 mb-3 tracking-wider font-semibold">Curriculum Mapping</h5>
+                        <h5 className="text-[10px] font-black uppercase text-indigo-600 mb-3 tracking-wider font-semibold">Curriculum Mapping</h5>
                         <div className="space-y-3 text-xs">
                           <div>
                             <span className="block text-[8px] font-black uppercase text-slate-400">Curriculum standard</span>
-                            <span className="font-semibold text-slate-800 dark:text-white">{syllabus.curriculum}</span>
+                            <span className="font-semibold text-slate-800">{syllabus.curriculum}</span>
                           </div>
                           <div>
                             <span className="block text-[8px] font-black uppercase text-slate-400 font-semibold">Strand</span>
-                            <span className="font-semibold text-slate-800 dark:text-white">{syllabus.strand}</span>
+                            <span className="font-semibold text-slate-800">{syllabus.strand}</span>
                           </div>
                           <div>
                             <span className="block text-[8px] font-black uppercase text-slate-400 font-semibold">Sub-strand</span>
-                            <span className="font-semibold text-slate-800 dark:text-white">{syllabus.subStrand}</span>
+                            <span className="font-semibold text-slate-800">{syllabus.subStrand}</span>
                           </div>
                           <div>
                             <span className="block text-[8px] font-black uppercase text-slate-400 mb-1 font-semibold">KNEC Learning Objectives</span>
                             <ul className="space-y-1 pl-1">
                               {syllabus.outcomes.map((out, i) => (
-                                <li key={i} className="text-slate-650 dark:text-slate-350 flex items-start gap-1">
+                                <li key={i} className="text-slate-650 flex items-start gap-1">
                                    <span className="text-emerald-500">Yes</span>
                                   <span>{out}</span>
                                 </li>
@@ -6643,7 +6639,7 @@ ${explanation.explanation}
                                 key={fmt}
                                 onClick={() => setCitationFormat(fmt)}
                                 className={`px-1.5 py-0.5 rounded transition-all ${
-                                  citationFormat === fmt ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 font-bold' : 'text-slate-500'
+                                  citationFormat === fmt ? 'bg-white text-indigo-600 font-bold' : 'text-slate-500'
                                 }`}
                               >
                                 {fmt}
@@ -6652,7 +6648,7 @@ ${explanation.explanation}
                           </div>
                         </div>
 
-                        <div className="bg-white p-3 rounded-xl text-xs text-slate-650 dark:text-slate-400 font-mono italic leading-relaxed select-all border border-slate-200">
+                        <div className="bg-white p-3 rounded-xl text-xs text-slate-650 font-mono italic leading-relaxed select-all border border-slate-200">
                           {citationFormat === 'APA' && `Soma Smart. (${new Date().getFullYear()}). ${currentDocument.title} [Study Material]. Retrieved from Soma AI Library.`}
                           {citationFormat === 'MLA' && `Soma Smart. "${currentDocument.title}." Soma AI Library, ${new Date().getFullYear()}.`}
                           {citationFormat === 'HARVARD' && `Soma Smart, ${new Date().getFullYear()}. ${currentDocument.title}, Soma AI Library. Available at: Soma Smart.`}
@@ -6669,7 +6665,7 @@ ${explanation.explanation}
                             navigator.clipboard.writeText(textRef);
                             triggerToast(`Copied ${citationFormat} Reference!`);
                           }}
-                          className="mt-3 inline-flex items-center gap-1.5 text-[9px] font-black uppercase text-indigo-655 dark:text-indigo-400 hover:underline font-semibold"
+                          className="mt-3 inline-flex items-center gap-1.5 text-[9px] font-black uppercase text-indigo-655 hover:underline font-semibold"
                         >
                           <FileText className="w-3.5 h-3.5" />
                           Copy Reference
@@ -6696,22 +6692,22 @@ ${explanation.explanation}
                 <div className="absolute top-0 left-0 right-0 h-2 bg-indigo-500"></div>
                 <button
                   onClick={() => setActiveGlossaryTerm(null)}
-                  className="absolute top-4 right-4 p-2 bg-slate-50 dark:bg-slate-850 hover:bg-red-50 dark:hover:bg-red-950/20 text-slate-400 hover:text-red-500 rounded-full transition-colors"
+                  className="absolute top-4 right-4 p-2 bg-slate-50 hover:bg-red-50 text-slate-400 hover:text-red-500 rounded-full transition-colors"
                 >
                   <X className="w-5 h-5" />
                 </button>
                 <div className="mt-2 flex items-center gap-2">
-                  <h4 className="text-lg font-black text-slate-800 dark:text-white leading-none">{activeGlossaryTerm.term}</h4>
+                  <h4 className="text-lg font-black text-slate-800 leading-none">{activeGlossaryTerm.term}</h4>
                   <span className="text-[10px] text-indigo-500 font-bold bg-indigo-50 px-2 py-0.5 rounded-full">{activeGlossaryTerm.pronunciation}</span>
                 </div>
                 <div className="mt-6 space-y-4">
                   <div>
                     <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1 font-semibold">Definition (English)</p>
-                    <p className="text-xs font-semibold text-slate-700 dark:text-slate-600 leading-relaxed">{activeGlossaryTerm.definition}</p>
+                    <p className="text-xs font-semibold text-slate-700 leading-relaxed">{activeGlossaryTerm.definition}</p>
                   </div>
-                  <div className="border-t border-slate-100 dark:border-slate-855 pt-4">
+                  <div className="border-t border-slate-100 pt-4">
                     <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1 font-semibold">Tafsiri (Kiswahili)</p>
-                    <p className="text-xs font-semibold text-slate-700 dark:text-slate-600 leading-relaxed">{activeGlossaryTerm.translation}</p>
+                    <p className="text-xs font-semibold text-slate-700 leading-relaxed">{activeGlossaryTerm.translation}</p>
                   </div>
                 </div>
                 <div className="mt-8">
@@ -6790,8 +6786,8 @@ ${explanation.explanation}
       const isHomework = sidebarTab === 'HOMEWORK';
       const themeGradient = isHomework ? 'from-amber-400 via-orange-500 to-rose-500' : 'from-indigo-500 via-purple-500 to-pink-500';
       const bgGlow = isHomework ? 'bg-amber-500/10' : 'bg-indigo-500/10';
-      const iconBg = isHomework ? 'bg-amber-50 dark:bg-amber-900/30 border-amber-100 dark:border-amber-800/50' : 'bg-indigo-50 dark:bg-indigo-900/30 border-indigo-100 dark:border-indigo-800/50';
-      const iconColor = isHomework ? 'text-amber-600 dark:text-amber-400' : 'text-indigo-600 dark:text-indigo-400';
+      const iconBg = isHomework ? 'bg-amber-50 border-amber-100' : 'bg-indigo-50 border-indigo-100';
+      const iconColor = isHomework ? 'text-amber-600' : 'text-indigo-600';
 
       return (
         <div className="bg-slate-50 min-h-screen flex flex-col items-center justify-center p-6 w-full animate-in fade-in duration-300">
@@ -6808,14 +6804,14 @@ ${explanation.explanation}
                   <Brain className={`w-10 h-10 ${iconColor}`} />
                 )}
               </div>
-              <h2 className="text-3xl md:text-4xl font-black text-slate-800 dark:text-white mb-4 tracking-tight">
+              <h2 className="text-3xl md:text-4xl font-black text-slate-800 mb-4 tracking-tight">
                 {educationLevel === EducationLevel.JUNIOR
                   ? (isHomework ? 'Fun Tasks' : 'Akili Buddy')
                   : educationLevel === EducationLevel.CAMPUS
                     ? (isHomework ? 'Assignments' : 'Ask Akili')
                     : (isHomework ? 'Homework Help' : 'Ask Akili')}
               </h2>
-              <p className="text-slate-500 dark:text-slate-400 text-lg max-w-md mx-auto">
+              <p className="text-slate-500 text-lg max-w-md mx-auto">
                 {imageData
                   ? (educationLevel === EducationLevel.JUNIOR ? "I see your picture! What should I help with?" : "Image attached! What would you like Akili to explain?")
                   : isHomework
@@ -6879,7 +6875,7 @@ ${explanation.explanation}
                   </button>
                 </div>
               ) : (
-              <div className="bg-slate-50 rounded-[2rem] p-2 flex flex-col md:flex-row items-stretch md:items-center gap-2 border-2 border-slate-200 focus-within:border-indigo-500 focus-within:ring-4 focus-within:ring-indigo-100 dark:focus-within:ring-indigo-900/30 transition-all shadow-inner">
+              <div className="bg-slate-50 rounded-[2rem] p-2 flex flex-col md:flex-row items-stretch md:items-center gap-2 border-2 border-slate-200 focus-within:border-indigo-500 focus-within:ring-4 focus-within:ring-indigo-100 transition-all shadow-inner">
                 <textarea
                   value={promptText}
                   onChange={(e) => setPromptText(e.target.value)}
@@ -6923,7 +6919,7 @@ ${explanation.explanation}
                           "Ask your revision question...")
                   }
                   rows={1}
-                  className="flex-1 bg-transparent border-0 focus:ring-0 text-slate-800 dark:text-slate-100 text-lg font-bold py-4 px-5 min-h-[60px] max-h-[200px] resize-none placeholder:text-slate-400 dark:placeholder:text-slate-500 outline-none"
+                  className="flex-1 bg-transparent border-0 focus:ring-0 text-slate-800 text-lg font-bold py-4 px-5 min-h-[60px] max-h-[200px] resize-none placeholder:text-slate-400 outline-none"
                 />
                 <div className="flex items-center justify-end gap-2 pr-2 pb-2 md:pb-0">
                   {!imageData && (
@@ -6937,14 +6933,14 @@ ${explanation.explanation}
                       </button>
                       <button
                         onClick={isRecording ? stopRecording : startRecording}
-                        className={`p-3 rounded-xl transition-colors ${isRecording ? 'text-red-500 bg-red-100 dark:bg-red-900/30 animate-pulse' : 'text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20'}`}
+                        className={`p-3 rounded-xl transition-colors ${isRecording ? 'text-red-500 bg-red-100 animate-pulse' : 'text-slate-400 hover:text-red-500 hover:bg-red-50'}`}
                         title="Record Audio"
                       >
                         <Mic className="w-6 h-6" />
                       </button>
                       <button
                         onClick={startCamera}
-                        className="p-3 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-xl transition-colors"
+                        className="p-3 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl transition-colors"
                         title="Open Camera"
                       >
                         <Camera className="w-6 h-6" />
@@ -6987,7 +6983,7 @@ ${explanation.explanation}
                 setImageData(null);
                 setMode('MENU');
               }}
-              className="mt-8 mx-auto block text-sm font-bold text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-600 transition-colors"
+              className="mt-8 mx-auto block text-sm font-bold text-slate-400 hover:text-slate-600 transition-colors"
             >
               Cancel and go back
             </button>
@@ -7005,7 +7001,7 @@ ${explanation.explanation}
               <ArrowRight className="w-5 h-5 text-slate-500 rotate-180 group-hover:text-blue-600" />
               <span className="text-xs font-bold text-slate-500 group-hover:text-blue-600">Dashboard</span>
             </button>
-            <h1 className="font-bold text-lg text-slate-900 dark:text-white truncate flex-1">{explanation.topic}</h1>
+            <h1 className="font-bold text-lg text-slate-900 truncate flex-1">{explanation.topic}</h1>
 
             <button
               onClick={handlePodcastToggle}
@@ -7079,12 +7075,12 @@ ${explanation.explanation}
                 className="bg-white p-5 rounded-[2rem] shadow-sm border-2 border-slate-300 animate-in fade-in zoom-in duration-300"
               >
                 <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 rounded-2xl bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-300 flex items-center justify-center shrink-0">
+                  <div className="w-10 h-10 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
                     <Brain className="w-5 h-5" />
                   </div>
                   <div className="min-w-0">
-                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400 mb-1">Your Question</p>
-                    <h3 className="font-bold text-slate-800 dark:text-white text-base leading-snug">{explanation.topic}</h3>
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 mb-1">Your Question</p>
+                    <h3 className="font-bold text-slate-800 text-base leading-snug">{explanation.topic}</h3>
                   </div>
                 </div>
               </motion.div>
@@ -7096,30 +7092,30 @@ ${explanation.explanation}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.06 }}
-                className="bg-white p-6 rounded-3xl border-2 border-indigo-200 dark:border-indigo-900/40 shadow-sm relative overflow-hidden"
+                className="bg-white p-6 rounded-3xl border-2 border-indigo-200 shadow-sm relative overflow-hidden"
               >
                 <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-indigo-500"></div>
                 <div className="flex items-start justify-between gap-3 mb-4">
                   <div className="min-w-0">
-                    <h3 className="font-bold text-slate-900 dark:text-white flex items-center gap-3 text-lg">
-                      <div className="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-950/40 flex items-center justify-center">
+                    <h3 className="font-bold text-slate-900 flex items-center gap-3 text-lg">
+                      <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center">
                         <Lightbulb className="w-5 h-5 text-indigo-600" />
                       </div>
                       Detailed explanation
                     </h3>
-                    <p className="mt-1 text-[11px] font-black uppercase tracking-[0.2em] text-indigo-500 dark:text-indigo-300">Grade-sensitive depth - {getExplanationDepthProfile(studentProfile?.grade || currentDocument?.grade || educationLevel || '', explanation.level).label}</p>
+                    <p className="mt-1 text-[11px] font-black uppercase tracking-[0.2em] text-indigo-500">Grade-sensitive depth - {getExplanationDepthProfile(studentProfile?.grade || currentDocument?.grade || educationLevel || '', explanation.level).label}</p>
                   </div>
                 </div>
-                <div className="prose prose-sm dark:prose-invert max-w-none rounded-2xl border border-indigo-100/60 bg-indigo-50/30 p-4 text-slate-700 dark:text-slate-200 leading-relaxed">
+                <div className="prose prose-sm max-w-none rounded-2xl border border-indigo-100/60 bg-indigo-50/30 p-4 text-slate-700 leading-relaxed">
                   <MarkdownText content={buildDetailedExplanationPreview(explanation.explanation, explanation.topic, studentProfile?.grade || currentDocument?.grade || educationLevel || '', explanation.level)} />
                 </div>
                 {Array.isArray(explanation.subtopics) && explanation.subtopics.length > 0 && (
                   <div className="mt-5 grid gap-3 sm:grid-cols-2">
                     {explanation.subtopics.slice(0, getExplanationDepthProfile(studentProfile?.grade || currentDocument?.grade || educationLevel || '', explanation.level).subtopics).map((subtopic, index) => (
                       <div key={`${subtopic.title}-${index}`} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                        <p className="text-[10px] font-black uppercase tracking-[0.18em] text-indigo-500 dark:text-indigo-300">{index + 1}. {subtopic.title}</p>
+                        <p className="text-[10px] font-black uppercase tracking-[0.18em] text-indigo-500">{index + 1}. {subtopic.title}</p>
                         {subtopic.content && (
-                          <div className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-600 prose prose-sm dark:prose-invert max-w-none">
+                          <div className="mt-2 text-sm leading-6 text-slate-600 prose prose-sm max-w-none">
                             <MarkdownText content={buildDetailedExplanationPreview(subtopic.content, subtopic.title, studentProfile?.grade || currentDocument?.grade || educationLevel || '', explanation.level)} />
                           </div>
                         )}
@@ -7129,12 +7125,12 @@ ${explanation.explanation}
                 )}
                 {Array.isArray(explanation.recapNodes) && explanation.recapNodes.length > 0 && (
                   <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400 mb-3">Step-by-step recap</p>
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 mb-3">Step-by-step recap</p>
                     <div className="grid gap-3 sm:grid-cols-2">
                       {explanation.recapNodes.slice(0, getExplanationDepthProfile(studentProfile?.grade || currentDocument?.grade || educationLevel || '', explanation.level).recapNodes).map((node, index) => (
                         <div key={`${node.point}-${index}`} className="rounded-2xl border border-slate-200 bg-white p-4">
-                          <p className="text-sm font-black text-slate-900 dark:text-white">{node.point}</p>
-                          <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-600">{node.details}</p>
+                          <p className="text-sm font-black text-slate-900">{node.point}</p>
+                          <p className="mt-2 text-sm leading-6 text-slate-600">{node.details}</p>
                         </div>
                       ))}
                     </div>
@@ -7151,18 +7147,18 @@ ${explanation.explanation}
                 className="bg-white p-6 rounded-3xl border-2 border-slate-300 shadow-sm relative overflow-hidden"
               >
                 <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-amber-400"></div>
-                <h3 className="font-bold text-slate-900 dark:text-white mb-6 flex items-center gap-3 text-lg">
-                  <div className="w-8 h-8 rounded-lg bg-amber-50 dark:bg-amber-950/40 flex items-center justify-center">
+                <h3 className="font-bold text-slate-900 mb-6 flex items-center gap-3 text-lg">
+                  <div className="w-8 h-8 rounded-lg bg-amber-50 flex items-center justify-center">
                     <BookOpen className="w-5 h-5 text-amber-600" />
                   </div>
                   Key Takeaways
                 </h3>
-                <div className="text-slate-600 dark:text-slate-600 text-sm md:text-base leading-relaxed mb-6 font-medium bg-amber-50/20 p-4 rounded-2xl border border-amber-100/50 prose prose-sm dark:prose-invert max-w-none">
+                <div className="text-slate-600 text-sm md:text-base leading-relaxed mb-6 font-medium bg-amber-50/20 p-4 rounded-2xl border border-amber-100/50 prose prose-sm max-w-none">
                   <MarkdownText content={getBriefDefinition(explanation.explanation, explanation.topic)} />
                 </div>
                 <ul className="space-y-4">
                   {explanation.summaryPoints.map((point, i) => (
-                    <li key={i} className="flex gap-4 text-slate-600 dark:text-slate-600 leading-relaxed font-medium">
+                    <li key={i} className="flex gap-4 text-slate-600 leading-relaxed font-medium">
                       <div className="w-6 h-6 rounded-full bg-slate-50 text-slate-400 border-2 border-slate-300 flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5">{i + 1}</div>
                       <span className="text-sm md:text-base">{point}</span>
                     </li>
@@ -7286,24 +7282,24 @@ ${explanation.explanation}
             {/* General Akili answer / Grounded by Soma Library notice */}
             <div className={`rounded-3xl border-2 p-4 shadow-sm ${
               explanation.grounding?.used
-                ? 'bg-emerald-50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-900/70'
+                ? 'bg-emerald-50 border-emerald-200'
                 : 'bg-white border-slate-200'
             }`}>
               <div className="flex items-start gap-3">
                 <div className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 ${
                   explanation.grounding?.used
                     ? 'bg-emerald-600 text-white'
-                    : 'bg-slate-100 text-slate-500 dark:text-slate-600'
+                    : 'bg-slate-100 text-slate-500'
                 }`}>
                   <Library className="w-5 h-5" />
                 </div>
                 <div className="min-w-0">
                   <p className={`text-xs font-black uppercase tracking-[0.16em] ${
-                    explanation.grounding?.used ? 'text-emerald-700 dark:text-emerald-700' : 'text-slate-500 dark:text-slate-400'
+                    explanation.grounding?.used ? 'text-emerald-700' : 'text-slate-500'
                   }`}>
                     {explanation.grounding?.used ? 'Grounded by Soma Library' : 'General Akili answer'}
                   </p>
-                  <p className="mt-1 text-sm font-semibold text-slate-700 dark:text-slate-600">
+                  <p className="mt-1 text-sm font-semibold text-slate-700">
                     {explanation.grounding?.used
                       ? 'This answer used indexed Soma notes, curriculum guides, or original papers where relevant.'
                       : groundedAnswerMode
@@ -7313,7 +7309,7 @@ ${explanation.explanation}
                   {explanation.grounding?.sources && explanation.grounding.sources.length > 0 && (
                     <div className="mt-3 flex flex-wrap gap-2">
                       {explanation.grounding.sources.slice(0, 4).map((source) => (
-                        <span key={source} className="rounded-full bg-white border border-emerald-200 dark:border-emerald-900/70 px-3 py-1 text-[11px] font-bold text-emerald-800 dark:text-emerald-200 truncate max-w-full">
+                        <span key={source} className="rounded-full bg-white border border-emerald-200 px-3 py-1 text-[11px] font-bold text-emerald-800 truncate max-w-full">
                           {source}
                         </span>
                       ))}
@@ -7394,15 +7390,15 @@ ${explanation.explanation}
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-rose-50 dark:bg-rose-950/20 p-6 rounded-3xl border-2 border-rose-200 dark:border-rose-900/60 shadow-sm"
+                className="bg-rose-50 p-6 rounded-3xl border-2 border-rose-200 shadow-sm"
               >
                 <div className="flex items-start justify-between gap-4 mb-4">
                   <div>
-                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-rose-700 dark:text-rose-300 mb-1">Repair Your Misses</p>
-                    <h3 className="font-bold text-slate-900 dark:text-white text-lg">
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-rose-700 mb-1">Repair Your Misses</p>
+                    <h3 className="font-bold text-slate-900 text-lg">
                       Fix {lastQuizReview.missedQuestions.length} weak spot{lastQuizReview.missedQuestions.length === 1 ? '' : 's'} from your last quiz
                     </h3>
-                    <p className="text-sm font-semibold text-slate-600 dark:text-slate-600 mt-1">
+                    <p className="text-sm font-semibold text-slate-600 mt-1">
                       Score: {lastQuizReview.score}%. Review the exact questions you missed before moving on.
                     </p>
                   </div>
@@ -7412,12 +7408,12 @@ ${explanation.explanation}
                 </div>
                 <div className="space-y-3">
                   {lastQuizReview.missedQuestions.slice(0, 3).map(({ question, index, selectedAnswer }) => (
-                    <div key={`${question.id}-${index}`} className="rounded-2xl bg-white border border-rose-200 dark:border-rose-900/60 p-4">
+                    <div key={`${question.id}-${index}`} className="rounded-2xl bg-white border border-rose-200 p-4">
                       <p className="text-[10px] font-black uppercase tracking-widest text-rose-600 mb-2">Question {index + 1}</p>
-                      <p className="text-sm font-bold text-slate-900 dark:text-white mb-2">{question.question}</p>
+                      <p className="text-sm font-bold text-slate-900 mb-2">{question.question}</p>
                       <div className="grid gap-1 text-xs font-semibold">
-                        <p className="text-rose-700 dark:text-rose-300">Your answer: {selectedAnswer || 'No answer'}</p>
-                        <p className="text-emerald-700 dark:text-emerald-700">Correct answer: {String(question.correctAnswer)}</p>
+                        <p className="text-rose-700">Your answer: {selectedAnswer || 'No answer'}</p>
+                        <p className="text-emerald-700">Correct answer: {String(question.correctAnswer)}</p>
                       </div>
                     </div>
                   ))}
@@ -7447,7 +7443,7 @@ ${explanation.explanation}
                       });
                       setMode('QUIZ');
                     }}
-                    className="flex-1 rounded-2xl bg-white border border-rose-200 dark:border-rose-900/60 text-rose-700 dark:text-rose-300 px-5 py-3 text-xs font-black uppercase tracking-wider hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors"
+                    className="flex-1 rounded-2xl bg-white border border-rose-200 text-rose-700 px-5 py-3 text-xs font-black uppercase tracking-wider hover:bg-rose-50 transition-colors"
                   >
                     Retry Missed Only
                   </button>
@@ -7460,7 +7456,7 @@ ${explanation.explanation}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.08 }}
-              className="bg-white p-6 rounded-3xl shadow-sm border-2 border-slate-300 prose prose-sm md:prose-base prose-slate dark:prose-invert max-w-none prose-p:text-slate-600 dark:prose-p:text-slate-600 prose-headings:text-slate-800 dark:prose-headings:text-slate-100 prose-strong:text-slate-900 dark:prose-strong:text-white"
+              className="bg-white p-6 rounded-3xl shadow-sm border-2 border-slate-300 prose prose-sm md:prose-base prose-slate max-w-none prose-p:text-slate-600 prose-headings:text-slate-800 prose-strong:text-slate-900"
             >
               <div>
                 <MarkdownText content={explanation.explanation} />
@@ -7484,7 +7480,7 @@ ${explanation.explanation}
                 {studentProfile?.parentPhone && studentProfile?.parentWhatsAppConsentAt && (
                   <button
                     onClick={() => handleShareExplanationToWhatsApp('parent')}
-                    className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-white hover:bg-emerald-50 text-[#087a3e] font-bold text-sm px-4 sm:px-5 py-3 rounded-xl transition-colors border border-emerald-200 hover:bg-emerald-50 dark:text-emerald-700 dark:border-emerald-900"
+                    className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-white hover:bg-emerald-50 text-[#087a3e] font-bold text-sm px-4 sm:px-5 py-3 rounded-xl transition-colors border border-emerald-200 hover:bg-emerald-50"
                   >
                     <Share2 className="w-4 h-4" />
                     Send to parent
@@ -7565,9 +7561,9 @@ ${explanation.explanation}
                         </div>
                         {/* Back */}
                         <div style={{ backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden', position: 'absolute', inset: 0, transform: 'rotateY(180deg)' }}
-                          className="bg-white border-2 border-violet-200 dark:border-violet-800 rounded-3xl flex flex-col items-center justify-center p-6 shadow-lg">
+                          className="bg-white border-2 border-violet-200 rounded-3xl flex flex-col items-center justify-center p-6 shadow-lg">
                           <p className="text-[10px] font-black text-violet-500 uppercase tracking-widest mb-3">Definition</p>
-                          <p className="text-sm font-bold text-slate-700 dark:text-slate-200 text-center leading-relaxed">{card.definition}</p>
+                          <p className="text-sm font-bold text-slate-700 text-center leading-relaxed">{card.definition}</p>
                         </div>
                       </div>
                     </div>
@@ -7775,13 +7771,13 @@ ${explanation.explanation}
                 <div className="p-6">
                   {onboardStep === 1 && (
                     <>
-                      <p className="text-sm font-black text-slate-700 dark:text-slate-200 mb-4">What class are you in?</p>
+                      <p className="text-sm font-black text-slate-700 mb-4">What class are you in?</p>
                       <div className="grid grid-cols-3 gap-2">
                         {['Grade 4','Grade 5','Grade 6','Grade 7','Grade 8','Grade 9','Form 1','Form 2','Form 3','Form 4'].map(g => (
                           <button
                             key={g}
                             onClick={() => setOnboardGrade(g)}
-                            className={`py-3 rounded-xl text-sm font-black transition-all border-2 ${onboardGrade === g ? 'bg-indigo-600 text-white border-indigo-600' : 'border-slate-200 text-slate-600 dark:text-slate-600 hover:border-indigo-300'}`}
+                            className={`py-3 rounded-xl text-sm font-black transition-all border-2 ${onboardGrade === g ? 'bg-indigo-600 text-white border-indigo-600' : 'border-slate-200 text-slate-600 hover:border-indigo-300'}`}
                           >
                             {g}
                           </button>
@@ -7798,8 +7794,8 @@ ${explanation.explanation}
                   )}
                   {onboardStep === 2 && (
                     <>
-                      <p className="text-sm font-black text-slate-700 dark:text-slate-200 mb-2">Class set to <span className="text-indigo-600">{onboardGrade}</span> OK</p>
-                      <p className="text-xs text-slate-500 dark:text-slate-400 mb-5">{"You're ready to explore. Scan a page, ask a question, or browse notes for your class."}</p>
+                      <p className="text-sm font-black text-slate-700 mb-2">Class set to <span className="text-indigo-600">{onboardGrade}</span> OK</p>
+                      <p className="text-xs text-slate-500 mb-5">{"You're ready to explore. Scan a page, ask a question, or browse notes for your class."}</p>
                       <button
                         onClick={async () => {
                           await updateStudentProfile({ grade: onboardGrade });
@@ -7816,7 +7812,7 @@ ${explanation.explanation}
                   )}
                   <button
                     onClick={() => { localStorage.setItem('soma_onboarded', '1'); setShowOnboarding(false); }}
-                    className="mt-1 w-full text-slate-600 dark:text-slate-600 text-xs py-1"
+                    className="mt-1 w-full text-slate-600 text-xs py-1"
                   >
                     Skip
                   </button>
@@ -7830,8 +7826,8 @@ ${explanation.explanation}
             <div className="fixed inset-0 z-[200] bg-white/85 backdrop-blur-sm flex items-end sm:items-center justify-center p-4">
               <div className="bg-white rounded-[2rem] w-full max-w-sm shadow-2xl p-6 text-center">
                 <div className="text-4xl mb-3">Done</div>
-                <h2 className="text-2xl font-black text-slate-900 dark:text-white">{showQuizSharePrompt.score}%!</h2>
-                <p className="text-sm font-bold text-slate-500 dark:text-slate-400 mt-1 mb-5">{showQuizSharePrompt.topic}</p>
+                <h2 className="text-2xl font-black text-slate-900">{showQuizSharePrompt.score}%!</h2>
+                <p className="text-sm font-bold text-slate-500 mt-1 mb-5">{showQuizSharePrompt.topic}</p>
                 <div className="grid gap-2 mb-3">
                   <button
                     type="button"
@@ -7845,7 +7841,7 @@ ${explanation.explanation}
                     <button
                       type="button"
                       onClick={() => handleShareQuizResultToWhatsApp('parent')}
-                      className="flex items-center justify-center gap-2 w-full border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 py-3 rounded-xl font-black transition-colors dark:border-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-700"
+                      className="flex items-center justify-center gap-2 w-full border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 py-3 rounded-xl font-black transition-colors"
                     >
                       <Share2 className="w-5 h-5" />
                       Send result to parent
@@ -8158,7 +8154,7 @@ ${explanation.explanation}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: idx * 0.1 }}
                         onClick={() => startStudySession(material)}
-                        className="bg-white rounded-2xl p-4 shadow-sm border-2 border-slate-300 min-w-[180px] group cursor-pointer hover:border-indigo-200 dark:hover:border-indigo-800 hover:shadow-md transition-all active:scale-95"
+                        className="bg-white rounded-2xl p-4 shadow-sm border-2 border-slate-300 min-w-[180px] group cursor-pointer hover:border-indigo-200 hover:shadow-md transition-all active:scale-95"
                       >
                         <div className="w-8 h-8 bg-indigo-50 rounded-lg flex items-center justify-center mb-3 group-hover:bg-indigo-600 group-hover:text-white transition-colors">
                           <BookOpen className="w-4 h-4" />
@@ -8298,13 +8294,13 @@ ${explanation.explanation}
                     className={`flex items-center gap-1.5 px-4 py-2.5 rounded-2xl font-black text-xs whitespace-nowrap transition-all active:scale-95 shrink-0 ${
                       materialCategory === tab.id
                         ? tab.activeClass
-                        : 'bg-slate-100 text-slate-500 dark:text-slate-400 hover:bg-slate-200 hover:bg-slate-50'
+                        : 'bg-slate-100 text-slate-500 hover:bg-slate-200 hover:bg-slate-50'
                     }`}
                   >
                     <span>{tab.emoji}</span> {tab.label}
                     {tab.id !== 'ALL' && (
                       <span className={`ml-1 text-[8px] px-1.5 py-0.5 rounded-full font-black ${
-                        materialCategory === tab.id ? 'bg-white/20 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-500'
+                        materialCategory === tab.id ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-500'
                       }`}>
                         {unifiedMaterials.filter(m => m.category === tab.id && (getGradeLevel(m.grade || '') === educationLevel)).length}
                       </span>
@@ -8322,7 +8318,7 @@ ${explanation.explanation}
                     setSelectedSource(nextSource);
                     trackFunnelEvent('library_source_changed', { source: nextSource });
                   }}
-                  className="bg-white border-2 border-slate-200 text-slate-700 dark:text-white text-[10px] font-bold uppercase tracking-wider rounded-xl px-3 py-2 outline-none focus:border-indigo-500 transition-all cursor-pointer"
+                  className="bg-white border-2 border-slate-200 text-slate-700 text-[10px] font-bold uppercase tracking-wider rounded-xl px-3 py-2 outline-none focus:border-indigo-500 transition-all cursor-pointer"
                 >
                   <option value="ALL">All Sources</option>
                   <option value="SOMO">Somo Smart</option>
@@ -8332,7 +8328,7 @@ ${explanation.explanation}
                 <select
                   value={selectedGrade}
                   onChange={(e) => setSelectedGrade(e.target.value)}
-                  className="bg-white border-2 border-slate-200 text-slate-700 dark:text-white text-[10px] font-bold uppercase tracking-wider rounded-xl px-3 py-2 outline-none focus:border-indigo-500 transition-all cursor-pointer"
+                  className="bg-white border-2 border-slate-200 text-slate-700 text-[10px] font-bold uppercase tracking-wider rounded-xl px-3 py-2 outline-none focus:border-indigo-500 transition-all cursor-pointer"
                 >
                   <option value="ALL">All Grades</option>
                   {['PP1', 'PP2', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6', 'Grade 7', 'Grade 8', 'Grade 9', 'Form 1', 'Form 2', 'Form 3', 'Form 4']
@@ -8352,7 +8348,7 @@ ${explanation.explanation}
                   <select
                     value={subjectFilter}
                     onChange={(e) => setSubjectFilter(e.target.value)}
-                    className="w-full bg-white border-2 border-slate-200 text-slate-700 dark:text-white text-[10px] font-bold uppercase tracking-wider rounded-xl px-3 py-2 outline-none focus:border-indigo-500 transition-all cursor-pointer"
+                    className="w-full bg-white border-2 border-slate-200 text-slate-700 text-[10px] font-bold uppercase tracking-wider rounded-xl px-3 py-2 outline-none focus:border-indigo-500 transition-all cursor-pointer"
                   >
                     <option value="ALL">All Subjects</option>
                     {subjects.filter(s => s !== 'ALL').map(sub => (
@@ -8768,7 +8764,7 @@ ${explanation.explanation}
                 }}
                 className={`rounded-xl px-3 py-2 text-center transition-all font-black text-xs ${libraryView === 'PRO_VAULT'
                   ? 'bg-white text-amber-600 shadow-sm border border-slate-200/50'
-                  : 'text-slate-500 hover:text-slate-750 dark:hover:text-slate-600'
+                  : 'text-slate-500 hover:text-slate-700'
                 }`}
               >
                 Pro Vault ({proVaultResources.length})
@@ -8804,7 +8800,7 @@ ${explanation.explanation}
                     onClick={() => setActiveLibrarySubject(subj)}
                     className={`px-4 py-2 rounded-full text-xs font-black shrink-0 transition-all ${activeLibrarySubject === subj
                       ? 'bg-indigo-600 text-white shadow-md'
-                      : 'bg-white text-slate-650 dark:text-slate-400 border border-slate-200 hover:border-slate-300'
+                      : 'bg-white text-slate-650 border border-slate-200 hover:border-slate-300'
                     }`}
                   >
                     {subj === 'ALL' ? 'All Subjects' : `${getSubjectEmoji(subj)} ${subj}`}
@@ -9094,7 +9090,7 @@ ${explanation.explanation}
             {/* Header */}
             <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-white relative z-10">
               <div>
-                <h2 className="text-xl font-black text-slate-900 dark:text-white flex items-center gap-2">
+                <h2 className="text-xl font-black text-slate-900 flex items-center gap-2">
                   <ScanLine className="w-6 h-6 text-indigo-600" />
                   Scan Homework
                 </h2>
@@ -9114,7 +9110,7 @@ ${explanation.explanation}
               <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-50 rounded-full blur-3xl opacity-50 -translate-y-1/2 translate-x-1/2 pointer-events-none" />
 
               <div className="relative z-10">
-                <p className="text-slate-600 dark:text-slate-600 font-medium leading-relaxed mb-8 text-center bg-slate-50 p-4 rounded-xl border-2 border-slate-300">
+                <p className="text-slate-600 font-medium leading-relaxed mb-8 text-center bg-slate-50 p-4 rounded-xl border-2 border-slate-300">
                   Snap a clear photo of your question. Somo will explain it simply.
                 </p>
 
@@ -9245,15 +9241,15 @@ ${explanation.explanation}
             initial={{ opacity: 0, y: 18 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 18 }}
-            className="fixed bottom-4 left-4 right-4 md:left-auto md:right-6 md:w-[420px] z-[131] rounded-2xl border border-red-200 bg-white shadow-2xl shadow-slate-900/15 dark:border-red-500/40"
+            className="fixed bottom-4 left-4 right-4 md:left-auto md:right-6 md:w-[420px] z-[131] rounded-2xl border border-red-200 bg-white shadow-2xl shadow-slate-900/15"
           >
             <div className="p-4 flex items-center gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-300">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-100 text-red-700">
                 <Mic className="h-5 w-5 animate-pulse" />
               </div>
               <div className="min-w-0 flex-1">
-                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-red-600 dark:text-red-300">Listening</p>
-                <p className="mt-1 text-sm font-semibold text-slate-700 dark:text-slate-200">Speak your question and Akili will transcribe it for the same learning flow as text.</p>
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-red-600">Listening</p>
+                <p className="mt-1 text-sm font-semibold text-slate-700">Speak your question and Akili will transcribe it for the same learning flow as text.</p>
               </div>
               <button
                 type="button"
@@ -9274,25 +9270,25 @@ ${explanation.explanation}
             initial={{ opacity: 0, y: -16 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -16 }}
-            className="fixed top-4 left-4 right-4 md:left-auto md:right-6 md:w-[430px] z-[130] rounded-2xl border border-amber-200 bg-white shadow-2xl shadow-slate-900/15 dark:border-amber-500/40"
+            className="fixed top-4 left-4 right-4 md:left-auto md:right-6 md:w-[430px] z-[130] rounded-2xl border border-amber-200 bg-white shadow-2xl shadow-slate-900/15"
           >
             <div className="p-4 flex gap-3">
-              <div className="mt-1 h-10 w-10 shrink-0 rounded-xl bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300 flex items-center justify-center">
+              <div className="mt-1 h-10 w-10 shrink-0 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center">
                 <Mic className="h-5 w-5" />
               </div>
               <div className="min-w-0 flex-1">
                 <div className="flex items-start justify-between gap-3">
-                  <h3 className="font-black text-slate-900 dark:text-white">Enable microphone access</h3>
+                  <h3 className="font-black text-slate-900">Enable microphone access</h3>
                   <button
                     type="button"
                     onClick={() => setMicPermissionNotice(false)}
-                    className="rounded-full p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700 hover:bg-slate-50 dark:hover:text-slate-200"
+                    className="rounded-full p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700 hover:bg-slate-50"
                     aria-label="Dismiss microphone notice"
                   >
                     <X className="h-4 w-4" />
                   </button>
                 </div>
-                <p className="mt-1 text-sm leading-relaxed text-slate-600 dark:text-slate-600">
+                <p className="mt-1 text-sm leading-relaxed text-slate-600">
                   Your browser blocked Soma from using the mic. Click the lock icon near the address bar, allow Microphone for this site, then reload or test the mic again.
                 </p>
                 <div className="mt-3 flex flex-wrap gap-2">
@@ -9312,14 +9308,14 @@ ${explanation.explanation}
                         message: "Open the lock icon in your browser address bar, allow Microphone for Soma, then come back and tap the mic again."
                       });
                     }}
-                    className="rounded-xl border border-amber-300 px-4 py-2 text-xs font-black uppercase tracking-wide text-amber-700 hover:bg-amber-50 dark:border-amber-500/40 dark:text-amber-300 dark:hover:bg-amber-500/10"
+                    className="rounded-xl border border-amber-300 px-4 py-2 text-xs font-black uppercase tracking-wide text-amber-700 hover:bg-amber-50"
                   >
                     Show Steps
                   </button>
                   <button
                     type="button"
                     onClick={() => setMicPermissionNotice(false)}
-                    className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-black uppercase tracking-wide text-slate-600 hover:bg-slate-50 dark:text-slate-600 hover:bg-slate-50"
+                    className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-black uppercase tracking-wide text-slate-600 hover:bg-slate-50 hover:bg-slate-50"
                   >
                     Not Now
                   </button>
@@ -9354,7 +9350,7 @@ ${explanation.explanation}
                     <Sparkles className="w-6 h-6 text-white" />
                   </div>
                   <div>
-                    <h2 className="text-xl font-bold font-display text-slate-800 dark:text-slate-100">Full Step-by-Step Logic</h2>
+                    <h2 className="text-xl font-bold font-display text-slate-800">Full Step-by-Step Logic</h2>
                     <p className="text-sm font-medium text-slate-500 line-clamp-1">&quot;{fadedSolutionData.query}&quot;</p>
                   </div>
                 </div>
@@ -9362,7 +9358,7 @@ ${explanation.explanation}
                   onClick={() => setFadedSolutionData(prev => ({ ...prev, show: false }))}
                   className="p-3 hover:bg-slate-100 hover:bg-slate-50 rounded-full transition-colors group"
                 >
-                  <X className="w-6 h-6 text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-600" />
+                  <X className="w-6 h-6 text-slate-400 group-hover:text-slate-600" />
                 </button>
               </div>
 
@@ -9389,7 +9385,7 @@ ${explanation.explanation}
                     </div>
                   </div>
                 ) : (
-                  <div className={`prose dark:prose-invert max-w-none text-slate-700 dark:text-slate-600 ${!isRegistered ? 'pointer-events-none' : ''}`}>
+                  <div className={`prose max-w-none text-slate-700 ${!isRegistered ? 'pointer-events-none' : ''}`}>
                     <MarkdownText content={fadedSolutionData.answer || ''} />
                   </div>
                 )}
@@ -9397,13 +9393,13 @@ ${explanation.explanation}
 
               {/* Paywall CTA absolute overlay - ONLY IF NOT REGISTERED */}
               {!isRegistered && (
-                  <div className="absolute bottom-0 left-0 right-0 p-8 pt-24 bg-gradient-to-t from-white via-white to-transparent dark:from-slate-900 dark:via-slate-900/90 flex flex-col items-center justify-end text-center z-20">
-                    <div className="w-16 h-16 bg-blue-50 dark:bg-blue-900/30 rounded-full flex items-center justify-center mb-4 shadow-inner border border-blue-100 dark:border-blue-800/50">
-                        <Lock className="w-8 h-8 text-blue-600 dark:text-blue-400" />
+                  <div className="absolute bottom-0 left-0 right-0 p-8 pt-24 bg-gradient-to-t from-white via-white to-transparent flex flex-col items-center justify-end text-center z-20">
+                    <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mb-4 shadow-inner border border-blue-100">
+                        <Lock className="w-8 h-8 text-blue-600" />
                     </div>
-                    <h3 className="text-2xl font-bold font-display text-slate-800 dark:text-white mb-2">View Full Solution</h3>
-                    <p className="text-slate-600 dark:text-slate-400 max-w-sm mb-6 font-medium text-base">
-                      Sign up free to unlock the complete step-by-step logic. You get <span className="bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400 px-2 py-0.5 rounded-md font-bold mx-1">5 free answers</span> before KES 20/day premium access!
+                    <h3 className="text-2xl font-bold font-display text-slate-800 mb-2">View Full Solution</h3>
+                    <p className="text-slate-600 max-w-sm mb-6 font-medium text-base">
+                      Sign up free to unlock the complete step-by-step logic. You get <span className="bg-amber-100 text-amber-700 px-2 py-0.5 rounded-md font-bold mx-1">5 free answers</span> before KES 20/day premium access!
                     </p>
                     <div className="flex gap-3 w-full sm:w-auto">
                         <button
@@ -9420,7 +9416,7 @@ ${explanation.explanation}
                                 setFadedSolutionData(prev => ({ ...prev, show: false }));
                                 setShowLogin(true);
                             }}
-                            className="flex-1 sm:flex-none bg-white hover:bg-slate-50 hover:bg-slate-50 text-slate-700 dark:text-slate-200 font-bold py-3.5 px-6 rounded-xl border-2 border-slate-200 transition-all"
+                            className="flex-1 sm:flex-none bg-white hover:bg-slate-50 hover:bg-slate-50 text-slate-700 font-bold py-3.5 px-6 rounded-xl border-2 border-slate-200 transition-all"
                         >
                             Log In
                         </button>
@@ -9776,6 +9772,7 @@ ${explanation.explanation}
     </div>
   );
 };
+
 
 
 
