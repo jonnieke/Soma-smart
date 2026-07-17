@@ -154,6 +154,43 @@ const extractReadablePoints = (value: unknown): string[] => {
   return [];
 };
 
+const formatReadableResponse = (value: unknown, fallback = 'Response unavailable yet.') => {
+  if (typeof value === 'string') {
+    const text = cleanAcademicText(value);
+    return text || fallback;
+  }
+
+  if (Array.isArray(value)) {
+    const points = extractReadablePoints(value);
+    if (points.length > 0) return points.join(' ');
+    return fallback;
+  }
+
+  if (value && typeof value === 'object') {
+    const record = value as Record<string, unknown>;
+    const candidates = [
+      record.text,
+      record.message,
+      record.answer,
+      record.response,
+      record.summary,
+      record.explanation,
+      record.details,
+      record.title,
+    ];
+
+    for (const candidate of candidates) {
+      const lead = takeAcademicLead(candidate, 3);
+      if (lead) return lead;
+    }
+
+    const points = extractReadablePoints(record.points || record.keyPoints || record.items || record.bullets);
+    if (points.length > 0) return points.join(' ');
+  }
+
+  return fallback;
+};
+
 const isSyllabusActivity = (activity?: LearnerActivity) => {
   if (!activity) return false;
 
@@ -4408,7 +4445,7 @@ ${explanation.explanation}
                   <div className="bg-emerald-50 border border-emerald-100 rounded-2xl rounded-bl-md px-4 py-3 max-w-[80%] shadow-sm">
                     <p className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest mb-1">Teacher&apos;s Response</p>
                     {chatReq.responseType === 'TEXT' && (
-                      <p className="text-slate-800 dark:text-slate-200 text-sm leading-relaxed whitespace-pre-wrap">{typeof chatReq.response === 'string' ? chatReq.response : JSON.stringify(chatReq.response, null, 2)}</p>
+                      <p className="text-slate-800 dark:text-slate-200 text-sm leading-relaxed whitespace-pre-wrap">{formatReadableResponse(chatReq.response)}</p>
                     )}
                     {chatReq.responseType === 'VOICE' && typeof chatReq.response === 'string' && chatReq.response && (
                       <audio src={chatReq.response} controls className="w-full" />
@@ -4626,7 +4663,7 @@ ${explanation.explanation}
 
                       {req.responseType === 'TEXT' && (
                         <p className="text-slate-800 dark:text-slate-200 text-sm leading-relaxed whitespace-pre-wrap bg-slate-50 p-4 rounded-xl border-2 border-slate-300">
-                          {typeof req.response === 'string' ? req.response : JSON.stringify(req.response, null, 2)}
+                          {formatReadableResponse(req.response)}
                         </p>
                       )}
 
