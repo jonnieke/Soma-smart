@@ -315,13 +315,13 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.95 }}
                     onClick={(e) => e.stopPropagation()}
-                    className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-md relative flex flex-col max-h-[calc(100vh-2rem)] sm:max-h-[90vh] my-auto overflow-hidden"
+                    className="bg-white rounded-2xl shadow-2xl w-full max-w-md relative flex flex-col max-h-[calc(100vh-2rem)] sm:max-h-[90vh] my-auto overflow-hidden"
                 >
                     {/* --- STICKY HEADER --- */}
-                    <div className="px-6 py-4 border-b border-slate-50 dark:border-slate-800 flex items-center justify-between sticky top-0 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md z-40">
+                    <div className="px-6 py-4 border-b border-slate-50 flex items-center justify-between sticky top-0 bg-white/90 backdrop-blur-md z-40">
                         <button
                             onClick={onSwitchToLogin}
-                            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-[10px] font-black uppercase tracking-widest hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-all border border-blue-100 dark:border-blue-800 group"
+                            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-50 text-blue-600 text-[10px] font-black uppercase tracking-widest hover:bg-blue-100 transition-all border border-blue-100 group"
                         >
                             <User className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
                             Already have an ID? Login
@@ -329,7 +329,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
 
                         <button
                             onClick={onClose}
-                            className="p-2 text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300 transition-colors bg-slate-50 dark:bg-slate-800/50 rounded-full"
+                            className="p-2 text-slate-400 hover:text-slate-600 transition-colors bg-slate-50 rounded-full"
                         >
                             <X className="w-5 h-5" />
                         </button>
@@ -338,12 +338,12 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
                     {step === 'FORM' ? (
                         <div className="p-6 sm:p-8 overflow-y-auto">
                             <div className="text-center mb-6">
-                                <div className={`w-20 h-20 bg-gradient-to-br ${role === 'SCHOOL' ? 'from-blue-800 to-slate-900 text-white' : role === 'TEACHER' ? 'from-emerald-500 to-teal-600 text-white' : 'from-blue-500 to-indigo-600 text-white'} rounded-3xl flex items-center justify-center mx-auto mb-5 shadow-xl shadow-blue-100 dark:shadow-none transition-all rotate-3`}>
+                                <div className={`w-20 h-20 bg-gradient-to-br ${role === 'SCHOOL' ? 'from-blue-800 to-slate-900 text-white' : role === 'TEACHER' ? 'from-emerald-500 to-teal-600 text-white' : 'from-blue-500 to-indigo-600 text-white'} rounded-3xl flex items-center justify-center mx-auto mb-5 shadow-xl shadow-blue-100 transition-all rotate-3`}>
                                     <User className="w-10 h-10" />
                                 </div>
 
                                 {/* Role toggle */}
-                                <div className="flex rounded-xl border border-slate-100 dark:border-slate-800 overflow-hidden mb-4 mx-auto w-fit">
+                                <div className="flex rounded-xl border border-slate-100 overflow-hidden mb-4 mx-auto w-fit">
                                     {(['STUDENT', 'TEACHER', 'SCHOOL'] as const).map(r => (
                                         <button
                                             key={r}
@@ -351,7 +351,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
                                             onClick={() => { setRole(r); setErrorMessage(""); }}
                                             className={`px-4 py-2 text-xs font-black uppercase tracking-widest transition-all ${role === r
                                                 ? r === 'TEACHER' ? 'bg-emerald-500 text-white' : r === 'SCHOOL' ? 'bg-slate-900 text-white' : 'bg-blue-600 text-white'
-                                                : 'text-slate-400 dark:text-slate-500 hover:text-slate-600'
+                                                : 'text-slate-400 hover:text-slate-600'
                                             }`}
                                         >
                                             {r === 'STUDENT' ? 'Student' : r === 'TEACHER' ? 'Teacher' : 'School'}
@@ -359,10 +359,10 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
                                     ))}
                                 </div>
 
-                                <h2 className="text-2xl font-black text-slate-900 dark:text-white mb-2 tracking-tight">
+                                <h2 className="text-2xl font-black text-slate-900 mb-2 tracking-tight">
                                     {role === 'SCHOOL' ? 'Register Your School' : role === 'TEACHER' ? 'Teacher Registration' : 'Create Student Profile'}
                                 </h2>
-                                <p className="text-slate-500 dark:text-slate-400 text-sm font-medium leading-relaxed max-w-xs mx-auto">
+                                <p className="text-slate-500 text-sm font-medium leading-relaxed max-w-xs mx-auto">
                                     {role === 'SCHOOL'
                                         ? 'Join the Somo Smart network and empower your school.'
                                         : role === 'TEACHER'
@@ -375,8 +375,8 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
                                 {role === 'STUDENT' ? (
                                     <>
                                         {/* Education Level Selector */}
-                                        <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-800">
-                                            <label className="block text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-3">I am in...</label>
+                                        <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                                            <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-3">I am in...</label>
                                             <div className="grid grid-cols-3 gap-3">
                                                 {levelCards.map(card => (
                                                     <button
@@ -388,21 +388,21 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
                                                         }}
                                                         className={`relative flex flex-col items-center p-3 rounded-2xl border-2 transition-all duration-300 ${educationLevel === card.level
                                                             ? `${card.border} ring-4 ring-blue-500/10 bg-gradient-to-br ${card.gradient} shadow-lg shadow-blue-900/5 scale-[1.05]`
-                                                            : 'border-slate-100 dark:border-slate-800 hover:border-blue-200 dark:hover:border-blue-900 bg-white dark:bg-slate-900/50'
+                                                            : 'border-slate-100 hover:border-blue-200 bg-white'
                                                         }`}
                                                     >
                                                         <div className={`mb-1.5 transition-transform duration-300 ${educationLevel === card.level ? 'text-blue-600 scale-110' : 'text-slate-400'}`}>
                                                             {card.icon}
                                                         </div>
-                                                        <span className={`text-[11px] font-black uppercase tracking-tight ${educationLevel === card.level ? 'text-slate-900 dark:text-white' : 'text-slate-500 dark:text-slate-500'}`}>
+                                                        <span className={`text-[11px] font-black uppercase tracking-tight ${educationLevel === card.level ? 'text-slate-900' : 'text-slate-500'}`}>
                                                             {card.title}
                                                         </span>
-                                                        <span className="text-[9px] text-slate-400 dark:text-slate-600 mt-0.5 font-bold uppercase tracking-tighter">{card.subtitle}</span>
+                                                        <span className="text-[9px] text-slate-400 mt-0.5 font-bold uppercase tracking-tighter">{card.subtitle}</span>
                                                         {educationLevel === card.level && (
                                                             <motion.div
                                                                 initial={{ scale: 0, rotate: -45 }}
                                                                 animate={{ scale: 1, rotate: 0 }}
-                                                                className="absolute -top-2 -right-2 w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center shadow-lg border-2 border-white dark:border-slate-950"
+                                                                className="absolute -top-2 -right-2 w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center shadow-lg border-2 border-white"
                                                             >
                                                                 <CheckCircle className="w-4 h-4 text-white" />
                                                             </motion.div>
@@ -414,13 +414,13 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
 
                                         <div className="space-y-4">
                                             <div>
-                                                <label className="block text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2 ml-1">Full Name</label>
+                                                <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Full Name</label>
                                                 <input
                                                     type="text"
                                                     required
                                                     value={name}
                                                     onChange={(e) => setName(e.target.value)}
-                                                    className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 dark:bg-slate-800 dark:text-white focus:border-blue-500 outline-none transition-all font-bold"
+                                                    className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 focus:border-blue-500 outline-none transition-all font-bold"
                                                     placeholder="e.g. Jane Wanjiku"
                                                 />
                                             </div>
@@ -432,12 +432,12 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
                                                     animate={{ opacity: 1, height: 'auto' }}
                                                     exit={{ opacity: 0, height: 0 }}
                                                 >
-                                                    <label className="block text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2 ml-1">Institution Name</label>
+                                                    <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Institution Name</label>
                                                     <input
                                                         type="text"
                                                         value={institutionName}
                                                         onChange={(e) => setInstitutionName(e.target.value)}
-                                                        className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 dark:bg-slate-800 dark:text-white focus:border-purple-500 outline-none transition-all font-bold"
+                                                        className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 focus:border-purple-500 outline-none transition-all font-bold"
                                                         placeholder="e.g. University of Nairobi"
                                                     />
                                                 </motion.div>
@@ -445,7 +445,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
 
                                             <div className="grid grid-cols-2 gap-4">
                                                 <div>
-                                                    <label className="block text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2 ml-1">
+                                                    <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">
                                                         {educationLevel === EducationLevel.CAMPUS ? 'Year' : 'Grade / Class'}
                                                     </label>
                                                     <div className="relative">
@@ -454,8 +454,8 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
                                                             value={grade}
                                                             onChange={(e) => setGrade(e.target.value)}
                                                             className={`w-full px-4 py-3.5 rounded-xl border-2 outline-none appearance-none transition-all font-bold ${!educationLevel
-                                                                ? 'bg-slate-50 dark:bg-slate-900 border-slate-100 dark:border-slate-800 text-slate-300 dark:text-slate-600 cursor-not-allowed'
-                                                                : 'bg-white dark:bg-slate-800 border-blue-50 dark:border-slate-700 text-slate-900 dark:text-white focus:border-blue-500 cursor-pointer shadow-sm'}`}
+                                                                ? 'bg-slate-50 border-slate-100 text-slate-300 cursor-not-allowed'
+                                                                : 'bg-white border-blue-50 text-slate-900 focus:border-blue-500 cursor-pointer shadow-sm'}`}
                                                         >
                                                             {!educationLevel ? (
                                                                 <option value="">Choose Level ↑</option>
@@ -474,7 +474,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
                                                     </div>
                                                 </div>
                                                 <div>
-                                                    <label className="block text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2 ml-1">Secret PIN</label>
+                                                    <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Secret PIN</label>
                                                     <input
                                                         type="text"
                                                         inputMode="numeric"
@@ -482,20 +482,20 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
                                                         required
                                                         value={pin}
                                                         onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))}
-                                                        className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 dark:bg-slate-800 dark:text-white focus:border-blue-500 outline-none tracking-widest text-lg font-mono text-center font-bold"
+                                                        className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 focus:border-blue-500 outline-none tracking-widest text-lg font-mono text-center font-bold"
                                                         placeholder="4 digits"
                                                     />
                                                 </div>
                                             </div>
 
                                             <div>
-                                                <label className="block text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2 ml-1">Parent / Guardian Phone</label>
+                                                <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Parent / Guardian Phone</label>
                                                 <input
                                                     type="tel"
                                                     required
                                                     value={parentPhone}
                                                     onChange={(e) => setParentPhone(e.target.value)}
-                                                    className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 dark:bg-slate-800 dark:text-white focus:border-blue-500 outline-none transition-all font-bold"
+                                                    className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 focus:border-blue-500 outline-none transition-all font-bold"
                                                     placeholder="e.g. 0712 345 678"
                                                 />
                                                 <p className="text-[10px] text-slate-400 mt-1 ml-1">Used by parent to monitor your progress</p>
@@ -512,7 +512,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
                                                     required
                                                     value={schoolName}
                                                     onChange={(e) => setSchoolName(e.target.value)}
-                                                    className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 dark:bg-slate-800 dark:text-white focus:border-blue-500 outline-none transition-all font-bold"
+                                                    className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 focus:border-blue-500 outline-none transition-all font-bold"
                                                     placeholder="e.g. Nairobi Primary School"
                                                 />
                                             </div>
@@ -523,7 +523,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
                                                         required
                                                         value={schoolCounty}
                                                         onChange={(e) => setSchoolCounty(e.target.value)}
-                                                        className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 dark:bg-slate-800 dark:text-white focus:border-blue-500 outline-none font-bold appearance-none"
+                                                        className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 focus:border-blue-500 outline-none font-bold appearance-none"
                                                     >
                                                         <option value="">Select county...</option>
                                                         {kenyanCounties.map(c => <option key={c} value={c}>{c}</option>)}
@@ -539,7 +539,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
                                                     type="tel"
                                                     value={schoolPhone}
                                                     onChange={(e) => setSchoolPhone(e.target.value)}
-                                                    className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 dark:bg-slate-800 dark:text-white focus:border-blue-500 outline-none font-bold"
+                                                    className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 focus:border-blue-500 outline-none font-bold"
                                                     placeholder="0712 345 678"
                                                 />
                                             </div>
@@ -550,7 +550,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
                                                     required
                                                     value={schoolContact}
                                                     onChange={(e) => setSchoolContact(e.target.value)}
-                                                    className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 dark:bg-slate-800 dark:text-white focus:border-blue-500 outline-none font-bold"
+                                                    className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 focus:border-blue-500 outline-none font-bold"
                                                     placeholder="e.g. Mr. Kamau (Deputy Head)"
                                                 />
                                             </div>
@@ -561,7 +561,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
                                                     required
                                                     value={schoolEmail}
                                                     onChange={(e) => setSchoolEmail(e.target.value)}
-                                                    className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 dark:bg-slate-800 dark:text-white focus:border-blue-500 outline-none font-bold"
+                                                    className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 focus:border-blue-500 outline-none font-bold"
                                                     placeholder="admin@school.ke"
                                                 />
                                             </div>
@@ -572,7 +572,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
                                                     required
                                                     value={schoolPassword}
                                                     onChange={(e) => setSchoolPassword(e.target.value)}
-                                                    className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 dark:bg-slate-800 dark:text-white focus:border-blue-500 outline-none font-bold"
+                                                    className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 focus:border-blue-500 outline-none font-bold"
                                                     placeholder="Min 6 chars"
                                                 />
                                             </div>
@@ -583,7 +583,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
                                                     required
                                                     value={confirmPassword}
                                                     onChange={(e) => setConfirmPassword(e.target.value)}
-                                                    className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 dark:bg-slate-800 dark:text-white focus:border-blue-500 outline-none font-bold"
+                                                    className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 focus:border-blue-500 outline-none font-bold"
                                                     placeholder="Repeat"
                                                 />
                                             </div>
@@ -591,8 +591,8 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
                                     </div>
                                 ) : ( // TEACHER
                                     <>
-                                        <div className="p-4 bg-emerald-50 dark:bg-emerald-900/10 rounded-2xl border border-emerald-100 dark:border-emerald-800/50">
-                                            <label className="block text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest mb-3">Teaching Details</label>
+                                        <div className="p-4 bg-emerald-50 rounded-2xl border border-emerald-100">
+                                            <label className="block text-[10px] font-black text-emerald-600 uppercase tracking-widest mb-3">Teaching Details</label>
                                             <div className="space-y-4">
                                                 <div>
                                                     <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Classes I Teach</label>
@@ -606,7 +606,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
                                                                 }}
                                                                 className={`px-3 py-2 rounded-lg text-xs font-bold transition-all border-2 ${teacherClasses.includes(c)
                                                                     ? 'bg-emerald-500 border-emerald-500 text-white shadow-md'
-                                                                    : 'bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-800 text-slate-600 dark:text-slate-400'}`}
+                                                                    : 'bg-white border-slate-100 text-slate-600'}`}
                                                             >
                                                                 {c}
                                                             </button>
@@ -616,7 +616,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
                                                 <div>
                                                     <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">My Main Subject</label>
                                                     <select
-                                                        className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 dark:bg-slate-800 dark:text-white focus:border-emerald-500 outline-none font-bold text-sm"
+                                                        className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 focus:border-emerald-500 outline-none font-bold text-sm"
                                                         onChange={(e) => setTeacherSubjects([e.target.value])}
                                                     >
                                                         <option value="">Select Subject...</option>
@@ -634,7 +634,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
                                                     required
                                                     value={teacherName}
                                                     onChange={(e) => setTeacherName(e.target.value)}
-                                                    className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 dark:bg-slate-800 dark:text-white focus:border-emerald-500 outline-none transition-all font-bold"
+                                                    className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 focus:border-emerald-500 outline-none transition-all font-bold"
                                                     placeholder="e.g. Mr. John Kamau"
                                                 />
                                             </div>
@@ -645,7 +645,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
                                                     required
                                                     value={teacherEmail}
                                                     onChange={(e) => setTeacherEmail(e.target.value)}
-                                                    className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 dark:bg-slate-800 dark:text-white focus:border-emerald-500 outline-none transition-all font-bold"
+                                                    className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 focus:border-emerald-500 outline-none transition-all font-bold"
                                                     placeholder="teacher@school.ke"
                                                 />
                                             </div>
@@ -655,7 +655,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
                                                     type="tel"
                                                     value={teacherPhone}
                                                     onChange={(e) => setTeacherPhone(e.target.value)}
-                                                    className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 dark:bg-slate-800 dark:text-white focus:border-emerald-500 outline-none transition-all font-bold"
+                                                    className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 focus:border-emerald-500 outline-none transition-all font-bold"
                                                     placeholder="0712 345 678"
                                                 />
                                                 <p className="text-[10px] text-slate-400 mt-1 ml-1">Used for M-PESA earnings payouts</p>
@@ -668,7 +668,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
                                                         required
                                                         value={teacherPassword}
                                                         onChange={(e) => setTeacherPassword(e.target.value)}
-                                                        className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 dark:bg-slate-800 dark:text-white focus:border-emerald-500 outline-none transition-all font-bold"
+                                                        className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 focus:border-emerald-500 outline-none transition-all font-bold"
                                                         placeholder="Min 6 chars"
                                                     />
                                                 </div>
@@ -679,7 +679,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
                                                         required
                                                         value={teacherConfirmPassword}
                                                         onChange={(e) => setTeacherConfirmPassword(e.target.value)}
-                                                        className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 dark:bg-slate-800 dark:text-white focus:border-emerald-500 outline-none transition-all font-bold"
+                                                        className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 focus:border-emerald-500 outline-none transition-all font-bold"
                                                         placeholder="Repeat"
                                                     />
                                                 </div>
@@ -693,10 +693,10 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
                                     <motion.div
                                         initial={{ opacity: 0, y: -4 }}
                                         animate={{ opacity: 1, y: 0 }}
-                                        className="flex items-start gap-3 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl"
+                                        className="flex items-start gap-3 p-3 bg-red-50 border border-red-200 rounded-xl"
                                     >
                                         <span className="text-red-500 text-lg leading-none mt-0.5">⚠</span>
-                                        <p className="text-red-700 dark:text-red-400 text-sm font-medium leading-snug">{errorMessage}</p>
+                                        <p className="text-red-700 text-sm font-medium leading-snug">{errorMessage}</p>
                                     </motion.div>
                                 )}
 
@@ -720,18 +720,18 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
                     ) : (
                         /* ─── SUCCESS SCREEN ─── */
                         <div className="p-6 sm:p-8 text-center relative overflow-hidden overflow-y-auto">
-                            <div className="absolute inset-0 bg-gradient-to-br from-white via-green-50 to-blue-50 dark:from-slate-900 dark:via-slate-900 dark:to-slate-900 opacity-60 z-0" />
+                            <div className="absolute inset-0 bg-gradient-to-br from-white via-green-50 to-blue-50 opacity-60 z-0" />
 
                             <div className="relative z-10">
-                                <div className="w-20 h-20 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-5 shadow-green-200 shadow-lg">
+                                <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-5 shadow-green-200 shadow-lg">
                                     <CheckCircle className="w-10 h-10 text-green-600" />
                                 </div>
 
                                 {role === 'SCHOOL' ? (
                                     <>
-                                        <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">School Registered!</h2>
-                                        <p className="text-slate-600 dark:text-slate-400 mb-5">Your school dashboard is ready. Our team will contact you to complete setup.</p>
-                                        <div className="text-sm text-blue-800 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 p-4 rounded-xl mb-5 text-left">
+                                        <h2 className="text-2xl font-bold text-slate-900 mb-2">School Registered!</h2>
+                                        <p className="text-slate-600 mb-5">Your school dashboard is ready. Our team will contact you to complete setup.</p>
+                                        <div className="text-sm text-blue-800 bg-blue-50 border border-blue-200 p-4 rounded-xl mb-5 text-left">
                                             <p className="font-bold mb-1">Next steps:</p>
                                             <ul className="space-y-1 text-xs">
                                                 <li>✅ Login with <strong>{schoolEmail}</strong></li>
@@ -742,9 +742,9 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
                                     </>
                                 ) : role === 'TEACHER' ? (
                                     <>
-                                        <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">Welcome, Teacher!</h2>
-                                        <p className="text-slate-600 dark:text-slate-400 mb-5">Your teacher profile is ready. Start creating lessons and growing your class.</p>
-                                        <div className="text-sm text-emerald-800 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 p-4 rounded-xl mb-5 text-left">
+                                        <h2 className="text-2xl font-bold text-slate-900 mb-2">Welcome, Teacher!</h2>
+                                        <p className="text-slate-600 mb-5">Your teacher profile is ready. Start creating lessons and growing your class.</p>
+                                        <div className="text-sm text-emerald-800 bg-emerald-50 border border-emerald-200 p-4 rounded-xl mb-5 text-left">
                                             <p className="font-bold mb-1">Quick start:</p>
                                             <ul className="space-y-1 text-xs">
                                                 <li>✅ Login with <strong>{teacherEmail}</strong></li>
@@ -755,13 +755,13 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
                                     </>
                                 ) : (
                                     <>
-                                        <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-1">You&apos;re in! 🎉</h2>
-                                        <p className="text-slate-500 dark:text-slate-400 mb-4 text-sm">Your unique Student ID is ready. Save it — you&apos;ll need it to log in.</p>
+                                        <h2 className="text-2xl font-bold text-slate-900 mb-1">You&apos;re in! 🎉</h2>
+                                        <p className="text-slate-500 mb-4 text-sm">Your unique Student ID is ready. Save it — you&apos;ll need it to log in.</p>
 
                                         {/* Student ID display */}
-                                        <div className="bg-white dark:bg-slate-800 border-2 border-dashed border-blue-300 dark:border-blue-600 rounded-2xl p-5 mb-4 shadow-sm">
+                                        <div className="bg-white border-2 border-dashed border-blue-300 rounded-2xl p-5 mb-4 shadow-sm">
                                             <p className="text-xs text-slate-400 uppercase font-black tracking-widest mb-2">Your Student ID</p>
-                                            <p className="text-4xl font-mono font-bold text-blue-600 dark:text-blue-400 tracking-widest select-all">{studentCode}</p>
+                                            <p className="text-4xl font-mono font-bold text-blue-600 tracking-widest select-all">{studentCode}</p>
                                         </div>
 
                                         {/* Copy + WhatsApp share */}
@@ -769,8 +769,8 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
                                             <button
                                                 onClick={handleCopyId}
                                                 className={`flex items-center justify-center gap-2 py-3 px-4 rounded-xl border-2 font-bold text-sm transition-all ${copied
-                                                    ? 'bg-green-50 border-green-300 text-green-700 dark:bg-green-900/20 dark:border-green-700 dark:text-green-400'
-                                                    : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-blue-400 hover:text-blue-600'
+                                                    ? 'bg-green-50 border-green-300 text-green-700'
+                                                    : 'bg-white border-slate-200 text-slate-700 hover:border-blue-400 hover:text-blue-600'
                                                 }`}
                                             >
                                                 {copied ? <CheckCircle className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
@@ -778,14 +778,14 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
                                             </button>
                                             <button
                                                 onClick={handleWhatsAppShare}
-                                                className="flex items-center justify-center gap-2 py-3 px-4 rounded-xl border-2 bg-[#25D366]/10 border-[#25D366]/40 text-[#128C7E] dark:text-[#25D366] font-bold text-sm hover:bg-[#25D366]/20 transition-all"
+                                                className="flex items-center justify-center gap-2 py-3 px-4 rounded-xl border-2 bg-[#25D366]/10 border-[#25D366]/40 text-[#128C7E] font-bold text-sm hover:bg-[#25D366]/20 transition-all"
                                             >
                                                 <MessageCircle className="w-4 h-4" />
                                                 Share via WhatsApp
                                             </button>
                                         </div>
 
-                                        <div className="text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 p-3 rounded-xl mb-4 text-left">
+                                        <div className="text-xs text-amber-700 bg-amber-50 border border-amber-200 p-3 rounded-xl mb-4 text-left">
                                             <strong>⚠ Important:</strong> Screenshot or save this ID. Your parent also needs it to monitor your progress.
                                         </div>
                                     </>

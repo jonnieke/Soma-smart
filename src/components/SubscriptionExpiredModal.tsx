@@ -39,7 +39,7 @@ export const SubscriptionExpiredModal: React.FC = () => {
                         initial={{ opacity: 0, scale: 0.95, y: 20 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                        className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl w-full max-w-md overflow-hidden"
+                        className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden"
                     >
                         {/* Header Image/Pattern */}
                         <div className="h-32 bg-gradient-to-br from-amber-500 to-orange-600 relative overflow-hidden flex items-center justify-center">
@@ -55,10 +55,10 @@ export const SubscriptionExpiredModal: React.FC = () => {
                         </button>
 
                         <div className="p-6 text-center">
-                            <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">
+                            <h2 className="text-2xl font-bold text-slate-900 mb-2">
                                 Keep learning
                             </h2>
-                            <p className="text-slate-600 dark:text-slate-300 mb-6">
+                            <p className="text-slate-600 mb-6">
                                 It looks like your Somo Smart Pro access has expired. Choose a learner plan to continue enjoying AI tutoring, exam help, and deep insights.
                             </p>
 
@@ -75,7 +75,7 @@ export const SubscriptionExpiredModal: React.FC = () => {
                                 
                                 <button
                                     onClick={() => setIsOpen(false)}
-                                    className="w-full py-3 px-4 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-medium rounded-xl transition-colors"
+                                    className="w-full py-3 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium rounded-xl transition-colors"
                                 >
                                     Keep using free features
                                 </button>

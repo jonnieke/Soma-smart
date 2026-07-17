@@ -3738,12 +3738,12 @@ ${explanation.explanation}
 
       if (reviewComplete) {
         return (
-          <div className="min-h-screen bg-slate-950 text-white flex flex-col items-center justify-center p-6 select-none relative overflow-hidden">
+          <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col items-center justify-center p-6 select-none relative overflow-hidden">
             {/* Ambient gradients */}
             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[500px] h-[500px] bg-indigo-500/10 rounded-full blur-3xl -z-10"></div>
             <div className="absolute bottom-0 right-0 w-[300px] h-[300px] bg-emerald-500/5 rounded-full blur-3xl -z-10"></div>
 
-            <div className="bg-slate-900/60 backdrop-blur-xl border border-slate-800 p-8 md:p-12 rounded-3xl max-w-xl w-full text-center shadow-2xl relative z-10 animate-fade-in">
+            <div className="bg-white backdrop-blur-xl border border-slate-200 p-8 md:p-12 rounded-3xl max-w-xl w-full text-center shadow-xl relative z-10 animate-fade-in">
               <div className="w-20 h-20 bg-indigo-500/20 border border-indigo-500/30 rounded-full flex items-center justify-center mx-auto mb-6">
                 <Trophy className="w-10 h-10 text-indigo-400" />
               </div>
@@ -3753,7 +3753,7 @@ ${explanation.explanation}
               </p>
 
               <div className="grid grid-cols-2 gap-4 mb-8">
-                <div className="bg-slate-950/40 border border-slate-800/80 rounded-2xl p-4">
+                <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4">
                   <p className="text-[10px] font-black text-slate-500 uppercase tracking-wider mb-1">Reviewed</p>
                   <p className="text-2xl font-black text-white">{flashcardItems.length} Cards</p>
                 </div>
@@ -3780,7 +3780,7 @@ ${explanation.explanation}
                     setIsFlipped(false);
                     setReviewComplete(false);
                   }}
-                  className="px-8 py-3.5 bg-slate-800 hover:bg-slate-700/85 border border-slate-700 text-slate-200 rounded-2xl font-bold text-sm transition-all active:scale-95 duration-200 cursor-pointer text-center"
+                  className="px-8 py-3.5 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 rounded-2xl font-bold text-sm transition-all active:scale-95 duration-200 cursor-pointer text-center"
                 >
                   Review Deck Again
                 </button>
@@ -3794,13 +3794,13 @@ ${explanation.explanation}
       const progressPct = flashcardItems.length > 0 ? (currentCardIndex / flashcardItems.length) * 100 : 0;
 
       return (
-        <div className="min-h-screen bg-slate-950 text-white flex flex-col p-4 md:p-8 select-none relative overflow-hidden">
+        <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col p-4 md:p-8 select-none relative overflow-hidden">
           {/* Decorative gradients */}
           <div className="absolute top-0 left-1/4 w-[400px] h-[400px] bg-indigo-500/5 rounded-full blur-3xl -z-10"></div>
           <div className="absolute bottom-0 right-1/4 w-[400px] h-[400px] bg-purple-500/5 rounded-full blur-3xl -z-10"></div>
 
           {/* HEADER BAR */}
-          <div className="max-w-4xl w-full mx-auto flex flex-col md:flex-row items-center justify-between gap-4 mb-8 bg-slate-900/40 backdrop-blur-xl border border-slate-800/80 p-4 rounded-2xl relative z-20">
+          <div className="max-w-4xl w-full mx-auto flex flex-col md:flex-row items-center justify-between gap-4 mb-8 bg-white/90 backdrop-blur-xl border border-slate-200 p-4 rounded-2xl relative z-20">
             <div className="flex items-center gap-3">
               <button
                 onClick={() => setMode('MENU')}
@@ -3858,7 +3858,7 @@ ${explanation.explanation}
           {/* MAIN BODY AREA */}
           <div className="max-w-4xl w-full mx-auto flex-1 flex flex-col justify-center relative z-10 py-4">
             {flashcardItems.length === 0 ? (
-              <div className="bg-slate-900/60 backdrop-blur-xl border border-slate-800 rounded-3xl p-8 md:p-12 text-center max-w-xl mx-auto shadow-xl">
+              <div className="bg-white backdrop-blur-xl border border-slate-200 rounded-3xl p-8 md:p-12 text-center max-w-xl mx-auto shadow-lg">
                 <div className="w-16 h-16 bg-slate-800 border border-slate-700 rounded-full flex items-center justify-center mx-auto mb-6">
                   <Sparkles className="w-8 h-8 text-indigo-400" />
                 </div>
@@ -4141,7 +4141,7 @@ ${explanation.explanation}
 
     if (showCamera) {
       return (
-        <div className="fixed inset-0 z-[60] bg-slate-900/80 backdrop-blur-md flex flex-col items-center justify-center p-4 md:p-6 animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-[60] bg-white/85 backdrop-blur-md flex flex-col items-center justify-center p-4 md:p-6 animate-in fade-in duration-200">
           <motion.div
             initial={{ scale: 0.95, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
@@ -4191,7 +4191,7 @@ ${explanation.explanation}
             </div>
 
             {/* Bottom Controls */}
-            <div className="bg-black/80 backdrop-blur-xl p-6 md:p-8 flex items-center justify-around gap-6 relative z-20 border-t border-white/10">
+            <div className="bg-white/95 backdrop-blur-xl p-6 md:p-8 flex items-center justify-around gap-6 relative z-20 border-t border-slate-200">
 
               {/* Switch to Audio */}
               <button
@@ -5743,7 +5743,7 @@ ${explanation.explanation}
               </div>
             </div>
 
-            <div className="p-6 border-t border-white/5 bg-slate-900/50 backdrop-blur-md">
+            <div className="p-6 border-t border-slate-200 bg-white/90 backdrop-blur-md">
               <div className="mb-5 rounded-2xl bg-white/5 border border-white/10 p-4">
                 <p className="text-[10px] font-black uppercase tracking-widest text-emerald-300 mb-2">Study Mission</p>
                 <div className="h-2 rounded-full bg-slate-800 overflow-hidden mb-2">
@@ -6706,7 +6706,7 @@ ${explanation.explanation}
           {/* TOAST MESSAGE OVERLAY */}
           {toastMessage && (
             <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50 animate-in fade-in slide-in-from-bottom-5 duration-300">
-              <div className="bg-slate-900/90 text-white px-5 py-3 rounded-2xl shadow-xl backdrop-blur-md flex items-center gap-2 border border-slate-800">
+              <div className="bg-white text-slate-800 px-5 py-3 rounded-2xl shadow-xl backdrop-blur-md flex items-center gap-2 border border-slate-200">
                 <CheckCircle className="w-4 h-4 text-emerald-400" />
                 <span className="text-xs font-bold tracking-wide">{toastMessage}</span>
               </div>
@@ -6725,7 +6725,7 @@ ${explanation.explanation}
 
       return (
         <div className="bg-slate-50 min-h-screen flex flex-col items-center justify-center p-6 w-full animate-in fade-in duration-300">
-          <div className="w-full max-w-2xl bg-white rounded-[2rem] sm:rounded-[3rem] shadow-2xl border-2 border-slate-300 p-6 sm:p-8 md:p-12 relative overflow-hidden">
+          <div className="w-full max-w-2xl bg-white rounded-[2rem] sm:rounded-[3rem] shadow-2xl border-2 border-slate-200 p-6 sm:p-8 md:p-12 relative overflow-hidden">
             {/* Background decorations */}
             <div className={`absolute top-0 left-0 w-full h-2 bg-gradient-to-r ${themeGradient}`}></div>
             <div className={`absolute -top-24 -right-24 w-48 h-48 ${bgGlow} rounded-full blur-3xl pointer-events-none`}></div>

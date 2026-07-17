@@ -62,18 +62,18 @@ export const CreateExamRoomModal: React.FC<CreateExamRoomModalProps> = ({ isOpen
                     initial={{ opacity: 0, scale: 0.95, y: 20 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                    className="bg-white dark:bg-slate-900 w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden border border-slate-200 dark:border-slate-800"
+                    className="bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden border border-slate-200"
                 >
-                    <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-800/50">
+                    <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
                         <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-xl flex items-center justify-center text-blue-600 dark:text-blue-400">
+                            <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center text-blue-600">
                                 <Users className="w-5 h-5" />
                             </div>
-                            <h2 className="text-xl font-bold text-slate-900 dark:text-white">Create New Room</h2>
+                            <h2 className="text-xl font-bold text-slate-900">Create New Room</h2>
                         </div>
                         <button
                             onClick={onClose}
-                            className="p-2 text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg transition-colors"
+                            className="p-2 text-slate-400 hover:bg-slate-200 rounded-lg transition-colors"
                         >
                             <X className="w-5 h-5" />
                         </button>
@@ -81,7 +81,7 @@ export const CreateExamRoomModal: React.FC<CreateExamRoomModalProps> = ({ isOpen
 
                     <form onSubmit={handleSubmit} className="p-6 space-y-6">
                         {error && (
-                            <div className="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 p-4 rounded-xl flex items-start gap-3 text-sm">
+                            <div className="bg-red-50 text-red-600 p-4 rounded-xl flex items-start gap-3 text-sm">
                                 <AlertTriangle className="w-5 h-5 flex-shrink-0" />
                                 <p>{error}</p>
                             </div>
@@ -89,7 +89,7 @@ export const CreateExamRoomModal: React.FC<CreateExamRoomModalProps> = ({ isOpen
 
                         <div className="space-y-4">
                             <div>
-                                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                                <label className="block text-sm font-semibold text-slate-700 mb-1.5">
                                     Room Name *
                                 </label>
                                 <input
@@ -98,12 +98,12 @@ export const CreateExamRoomModal: React.FC<CreateExamRoomModalProps> = ({ isOpen
                                     value={name}
                                     onChange={(e) => setName(e.target.value)}
                                     placeholder="e.g. KCSE Biology Revision 2024"
-                                    className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all text-slate-900 dark:text-white"
+                                    className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all text-slate-900"
                                 />
                             </div>
 
                             <div>
-                                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                                <label className="block text-sm font-semibold text-slate-700 mb-1.5">
                                     Description (Optional)
                                 </label>
                                 <textarea
@@ -111,13 +111,13 @@ export const CreateExamRoomModal: React.FC<CreateExamRoomModalProps> = ({ isOpen
                                     onChange={(e) => setDescription(e.target.value)}
                                     placeholder="What will you study in this room?"
                                     rows={3}
-                                    className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all text-slate-900 dark:text-white resize-none"
+                                    className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all text-slate-900 resize-none"
                                 />
                             </div>
 
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                                    <label className="block text-sm font-semibold text-slate-700 mb-1.5">
                                         Type *
                                     </label>
                                     <div className="grid grid-cols-2 gap-2">
@@ -125,8 +125,8 @@ export const CreateExamRoomModal: React.FC<CreateExamRoomModalProps> = ({ isOpen
                                             type="button"
                                             onClick={() => setRoomType('EXAM_PREP')}
                                             className={`py-2 px-3 rounded-lg border-2 flex items-center justify-center gap-2 text-sm font-bold transition-all ${roomType === 'EXAM_PREP'
-                                                ? 'bg-blue-50 border-blue-500 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
-                                                : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400'
+                                                ? 'bg-blue-50 border-blue-500 text-blue-700'
+                                                : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300'
                                                 }`}
                                         >
                                             <Clock className="w-4 h-4" /> Prep
@@ -135,8 +135,8 @@ export const CreateExamRoomModal: React.FC<CreateExamRoomModalProps> = ({ isOpen
                                             type="button"
                                             onClick={() => setRoomType('SUBJECT_STUDY')}
                                             className={`py-2 px-3 rounded-lg border-2 flex items-center justify-center gap-2 text-sm font-bold transition-all ${roomType === 'SUBJECT_STUDY'
-                                                ? 'bg-blue-50 border-blue-500 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
-                                                : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400'
+                                                ? 'bg-blue-50 border-blue-500 text-blue-700'
+                                                : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300'
                                                 }`}
                                         >
                                             <BookOpen className="w-4 h-4" /> Study
@@ -144,13 +144,13 @@ export const CreateExamRoomModal: React.FC<CreateExamRoomModalProps> = ({ isOpen
                                     </div>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                                    <label className="block text-sm font-semibold text-slate-700 mb-1.5">
                                         Level
                                     </label>
                                     <select
                                         value={level}
                                         onChange={(e) => setLevel(e.target.value as EducationLevel)}
-                                        className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all text-slate-900 dark:text-white"
+                                        className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all text-slate-900"
                                     >
                                         <option value={EducationLevel.JUNIOR}>Junior (PP1 - Gr 6)</option>
                                         <option value={EducationLevel.SENIOR}>Senior (Gr 7 - 12)</option>
@@ -160,7 +160,7 @@ export const CreateExamRoomModal: React.FC<CreateExamRoomModalProps> = ({ isOpen
                             </div>
 
                             <div>
-                                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                                <label className="block text-sm font-semibold text-slate-700 mb-1.5">
                                     Subject (Optional)
                                 </label>
                                 <input
@@ -168,7 +168,7 @@ export const CreateExamRoomModal: React.FC<CreateExamRoomModalProps> = ({ isOpen
                                     value={subject}
                                     onChange={(e) => setSubject(e.target.value)}
                                     placeholder="e.g. Mathematics"
-                                    className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all text-slate-900 dark:text-white"
+                                    className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all text-slate-900"
                                 />
                             </div>
                         </div>
