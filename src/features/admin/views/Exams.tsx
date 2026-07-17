@@ -164,6 +164,10 @@ export const ExamsView: React.FC = () => {
 
   const [jsonImportError, setJsonImportError] = useState<string | null>(null);
 
+  const [attachmentExam, setAttachmentExam] = useState<Exam | null>(null);
+  const [attachmentPaperFile, setAttachmentPaperFile] = useState<File | null>(null);
+  const [attachmentSchemeFile, setAttachmentSchemeFile] = useState<File | null>(null);
+
   const buildStructuredTemplate = () =>
     JSON.stringify(
       {
@@ -255,6 +259,122 @@ export const ExamsView: React.FC = () => {
     setShowAdd(false);
 
     resetForm();
+  };
+
+  const closeAttachmentModal = () => {
+    if (uploading || saving) return;
+
+    setAttachmentExam(null);
+    setAttachmentPaperFile(null);
+    setAttachmentSchemeFile(null);
+  };
+
+  const buildExamStorageMeta = (paperTitle: string, paperExamType: string | null | undefined, paperExamYear: number | null | undefined, paperSubject: string) => {
+    const safeTitle =
+      String(paperTitle)
+        .replace(/[^a-z0-9-_]+/gi, '_')
+        .replace(/^_+|_+$/g, '')
+        .slice(0, 80) || 'past_paper';
+
+    const folder = [paperExamType || 'OTHER', paperExamYear || 'unknown-year', paperSubject]
+      .map((value) => String(value).replace(/[^a-z0-9-_]+/gi, '_'))
+      .join('/');
+
+    return { safeTitle, folder };
+  };
+
+  const attachFilesToExam = async () => {
+    if (!attachmentExam || !attachmentPaperFile || saving || uploading) return;
+
+    setSaving(true);
+    const uploadedPaths: string[] = [];
+
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!session) throw new Error('No active admin session. Please log in again.');
+
+      const { safeTitle, folder } = buildExamStorageMeta(
+        attachmentExam.title,
+        attachmentExam.examType,
+        attachmentExam.examYear,
+        attachmentExam.subject
+      );
+
+      const stamp = Date.now();
+      const existingPaperPath = attachmentExam.filePath || null;
+      const existingSchemePath = attachmentExam.markingSchemePath || null;
+
+      let paperPath: string | null = null;
+      let paperUrl: string | null = attachmentExam.fileUrl || null;
+      let schemePath: string | null = null;
+      let schemeUrl: string | null = attachmentExam.markingSchemeUrl || null;
+
+      const paperExt = attachmentPaperFile.name.split('.').pop() || 'pdf';
+      paperPath = folder + '/' + stamp + '_' + safeTitle + '.' + paperExt;
+
+      const { error: paperUploadError } = await supabase.storage
+        .from('syllabus-docs')
+        .upload(paperPath, attachmentPaperFile, { upsert: false });
+
+      if (paperUploadError) throw paperUploadError;
+
+      uploadedPaths.push(paperPath);
+      paperUrl = supabase.storage.from('syllabus-docs').getPublicUrl(paperPath).data.publicUrl;
+
+      if (attachmentSchemeFile) {
+        const schemeExt = attachmentSchemeFile.name.split('.').pop() || 'pdf';
+        schemePath = folder + '/' + stamp + '_' + safeTitle + '_marking_scheme.' + schemeExt;
+
+        const { error: schemeUploadError } = await supabase.storage
+          .from('syllabus-docs')
+          .upload(schemePath, attachmentSchemeFile, { upsert: false });
+
+        if (schemeUploadError) throw schemeUploadError;
+
+        uploadedPaths.push(schemePath);
+        schemeUrl = supabase.storage.from('syllabus-docs').getPublicUrl(schemePath).data.publicUrl;
+      }
+
+      const { error: updateError } = await supabase
+        .from('knowledge_base')
+        .update({
+          file_url: paperUrl,
+          file_path: paperPath,
+          ...(attachmentSchemeFile
+            ? { marking_scheme_url: schemeUrl, marking_scheme_path: schemePath }
+            : {}),
+        })
+        .eq('id', attachmentExam.id);
+
+      if (updateError) throw updateError;
+
+      if (existingPaperPath && existingPaperPath !== paperPath) {
+        await supabase.storage.from('syllabus-docs').remove([existingPaperPath]).catch(() => null);
+      }
+
+      if (attachmentSchemeFile && existingSchemePath && existingSchemePath !== schemePath) {
+        await supabase.storage.from('syllabus-docs').remove([existingSchemePath]).catch(() => null);
+      }
+
+      setAttachmentExam(null);
+      setAttachmentPaperFile(null);
+      setAttachmentSchemeFile(null);
+      await fetchExams();
+      alert('PDF attached successfully.');
+    } catch (error) {
+      if (uploadedPaths.length > 0) {
+        await supabase.storage.from('syllabus-docs').remove(uploadedPaths).catch(() => null);
+      }
+
+      console.error('Attach PDF failed:', error);
+      const message = error instanceof Error ? error.message : 'Unknown attachment error';
+      alert('Failed to attach PDF. ' + message);
+    } finally {
+      setSaving(false);
+    }
   };
 
   const fetchExams = async () => {
@@ -1099,6 +1219,17 @@ export const ExamsView: React.FC = () => {
                       {exam.homepageFeatured ? 'Remove from carousel' : 'Feature on carousel'}
                     </button>
                   )}
+                  <button
+                    onClick={() => {
+                      setAttachmentExam(exam);
+                      setAttachmentPaperFile(null);
+                      setAttachmentSchemeFile(null);
+                    }}
+                    title={exam.fileUrl ? 'Replace question paper PDF' : 'Attach question paper PDF'}
+                    className="rounded-lg p-2 text-slate-400 hover:bg-amber-50 hover:text-amber-600"
+                  >
+                    <Upload className="h-5 w-5" />
+                  </button>
                   {exam.fileUrl && (
                     <a
                       href={exam.fileUrl}
@@ -1138,6 +1269,64 @@ export const ExamsView: React.FC = () => {
       </div>
 
       <AnimatePresence>
+        {Boolean(attachmentExam) && (
+          <div
+            className="fixed inset-0 z-[101] flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm"
+            onClick={closeAttachmentModal}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.96, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.96, y: 20 }}
+              onClick={(event) => event.stopPropagation()}
+              className="max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-3xl bg-white shadow-2xl"
+            >
+              <div className="p-6 sm:p-8">
+                <h3 className="flex items-center gap-2 text-2xl font-bold text-slate-900">
+                  <Upload className="h-6 w-6 text-indigo-600" /> {attachmentExam.fileUrl ? 'Replace PDF' : 'Attach PDF'}
+                </h3>
+                <p className="mt-2 text-sm text-slate-500">
+                  {attachmentExam.title} ? {attachmentExam.subject} / {attachmentExam.className}
+                </p>
+                <div className="mt-6 grid gap-5">
+                  <FilePicker
+                    id="attach-paper-pdf"
+                    label="Question paper PDF"
+                    required
+                    file={attachmentPaperFile}
+                    onChange={setAttachmentPaperFile}
+                  />
+                  <FilePicker
+                    id="attach-marking-pdf"
+                    label="Marking scheme PDF"
+                    file={attachmentSchemeFile}
+                    onChange={setAttachmentSchemeFile}
+                  />
+                  <div className="rounded-2xl border border-amber-100 bg-amber-50 p-4 text-sm text-amber-900">
+                    The question paper is required. The marking scheme is optional, but attaching it now keeps the paper and answers together for teachers.
+                  </div>
+                </div>
+                <div className="mt-6 flex justify-end gap-3 border-t border-slate-100 pt-5">
+                  <button
+                    disabled={saving || uploading}
+                    onClick={closeAttachmentModal}
+                    className="rounded-xl px-5 py-2 font-bold text-slate-500 hover:bg-slate-50"
+                  >
+                    Cancel
+                  </button>
+                  <Button
+                    onClick={attachFilesToExam}
+                    disabled={!attachmentPaperFile}
+                    isLoading={saving}
+                    className="bg-indigo-600 px-7 text-white"
+                  >
+                    Save PDF links
+                  </Button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
         {showAdd && (
           <div
             className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm"
