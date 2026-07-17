@@ -59,7 +59,9 @@ type Props = {
     exam_type?: string | null;
     homepage_featured?: boolean | null;
     file_url?: string | null;
+    fileUrl?: string | null;
     file_path?: string | null;
+    filePath?: string | null;
   }>;
 };
 
@@ -188,10 +190,10 @@ export const LandingHome: React.FC<Props> = (props) => {
     action();
   };
   const resolvePaperUrl = (paper: NonNullable<Props['latestPapers']>[number]) => {
-    const directUrl = String(paper.file_url || '').trim();
+    const directUrl = String(paper.file_url || paper.fileUrl || '').trim();
     if (directUrl) return directUrl;
 
-    const filePath = String(paper.file_path || '').trim();
+    const filePath = String(paper.file_path || paper.filePath || '').trim();
     if (!filePath) return '';
     if (/^https?:\/\//i.test(filePath)) return filePath;
 
