@@ -146,20 +146,20 @@ export const LearnerNotebook: React.FC<LearnerNotebookProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 pb-24">
-      <header className="sticky top-0 z-30 border-b border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 backdrop-blur">
+    <div className="min-h-screen bg-slate-50 text-slate-900 pb-24">
+      <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-5xl items-center gap-3 px-4">
           <button
             type="button"
             onClick={onBack}
-            className="inline-flex h-10 w-10 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800"
+            className="inline-flex h-10 w-10 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100"
             aria-label="Back to learner dashboard"
           >
             <ArrowLeft className="h-5 w-5" />
           </button>
           <div className="min-w-0 flex-1">
             <h1 className="text-lg font-black">My Notebook</h1>
-            <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+            <p className="text-xs font-semibold text-slate-500">
               Save it, listen to it, then test yourself.
             </p>
           </div>
@@ -175,11 +175,11 @@ export const LearnerNotebook: React.FC<LearnerNotebookProps> = ({
       </header>
 
       {!isRegistered && (
-        <section className="border-b border-amber-200 bg-amber-50 dark:border-amber-900 dark:bg-amber-950/30">
+        <section className="border-b border-amber-200 bg-amber-50">
           <div className="mx-auto flex max-w-5xl flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p className="text-sm font-black text-amber-900 dark:text-amber-100">Saved on this device</p>
-              <p className="text-xs font-semibold text-amber-800/80 dark:text-amber-200/80">
+              <p className="text-sm font-black text-amber-900">Saved on this device</p>
+              <p className="text-xs font-semibold text-amber-800/80">
                 Register when you are ready to protect your Notebook and learning progress.
               </p>
             </div>
@@ -197,13 +197,13 @@ export const LearnerNotebook: React.FC<LearnerNotebookProps> = ({
 
       <main className="mx-auto max-w-5xl px-4 py-6">
         {notes.length > 0 && (
-          <section className="mb-5 flex items-start gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 dark:border-emerald-900 dark:bg-emerald-950/30">
+          <section className="mb-5 flex items-start gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3">
             <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-600 text-white">
               <MessageCircle className="h-5 w-5" />
             </span>
             <div>
-              <h2 className="text-sm font-black text-emerald-950 dark:text-emerald-100">Share learning, not screenshots</h2>
-              <p className="mt-0.5 text-xs font-semibold leading-5 text-emerald-800/80 dark:text-emerald-200/80">
+              <h2 className="text-sm font-black text-emerald-950">Share learning, not screenshots</h2>
+              <p className="mt-0.5 text-xs font-semibold leading-5 text-emerald-800/80">
                 Send a clean study note to a parent or study group. You always choose the recipient and tap Send in WhatsApp.
               </p>
             </div>
@@ -211,22 +211,22 @@ export const LearnerNotebook: React.FC<LearnerNotebookProps> = ({
         )}
 
         {selectedNotes.length > 0 && (
-          <section className="mb-5 flex flex-col gap-3 rounded-xl border border-[#b9e8cb] bg-white px-4 py-3 shadow-sm dark:border-emerald-900 dark:bg-slate-900 sm:flex-row sm:items-center">
+          <section className="mb-5 flex flex-col gap-3 rounded-xl border border-[#b9e8cb] bg-white px-4 py-3 shadow-sm sm:flex-row sm:items-center">
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-black text-slate-900 dark:text-white">
+              <p className="text-sm font-black text-slate-900">
                 {selectedNotes.length} note{selectedNotes.length === 1 ? '' : 's'} in today&apos;s revision pack
               </p>
               <p className="mt-0.5 text-xs font-semibold text-slate-500">Choose up to 8 notes, then send one focused study pack.</p>
             </div>
             <div className="flex flex-wrap gap-2">
-              <button type="button" onClick={() => setSelectedNoteIds(new Set())} className="rounded-lg px-3 py-2 text-xs font-black text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800">
+              <button type="button" onClick={() => setSelectedNoteIds(new Set())} className="rounded-lg px-3 py-2 text-xs font-black text-slate-500 hover:bg-slate-100">
                 Clear
               </button>
               <button type="button" onClick={() => shareStudyPack('contact')} className="inline-flex items-center gap-1.5 rounded-lg bg-[#159447] px-3 py-2 text-xs font-black text-white hover:bg-[#107c3b]">
                 <MessageCircle className="h-4 w-4" /> Share revision pack
               </button>
               {parentPhone && (
-                <button type="button" onClick={() => shareStudyPack('parent')} className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-black text-emerald-800 hover:bg-emerald-100 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-300">
+                <button type="button" onClick={() => shareStudyPack('parent')} className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-black text-emerald-800 hover:bg-emerald-100">
                   Send pack to parent
                 </button>
               )}
@@ -235,7 +235,7 @@ export const LearnerNotebook: React.FC<LearnerNotebookProps> = ({
         )}
 
         {showComposer && (
-          <section className="mb-6 border-y border-indigo-200 bg-white px-4 py-5 dark:border-indigo-900 dark:bg-slate-900 sm:rounded-lg sm:border">
+          <section className="mb-6 border-y border-indigo-200 bg-white px-4 py-5 sm:rounded-lg sm:border">
             <div className="mb-4 flex items-center justify-between">
               <div>
                 <h2 className="font-black">Write a study note</h2>
@@ -244,7 +244,7 @@ export const LearnerNotebook: React.FC<LearnerNotebookProps> = ({
               <button
                 type="button"
                 onClick={() => setShowComposer(false)}
-                className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800"
+                className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100"
                 aria-label="Close note editor"
               >
                 <X className="h-4 w-4" />
@@ -255,13 +255,13 @@ export const LearnerNotebook: React.FC<LearnerNotebookProps> = ({
                 value={draftTitle}
                 onChange={event => setDraftTitle(event.target.value)}
                 placeholder="Note title"
-                className="rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-950"
+                className="rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-indigo-500"
               />
               <input
                 value={draftSubject}
                 onChange={event => setDraftSubject(event.target.value)}
                 placeholder="Subject, e.g. Biology"
-                className="rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-950"
+                className="rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-indigo-500"
               />
             </div>
             <textarea
@@ -269,7 +269,7 @@ export const LearnerNotebook: React.FC<LearnerNotebookProps> = ({
               onChange={event => setDraftContent(event.target.value)}
               placeholder="Write the key idea, example, or correction you want to remember..."
               rows={6}
-              className="mt-3 w-full rounded-lg border border-slate-300 bg-white px-3 py-3 text-sm leading-relaxed outline-none focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-950"
+              className="mt-3 w-full rounded-lg border border-slate-300 bg-white px-3 py-3 text-sm leading-relaxed outline-none focus:border-indigo-500"
             />
             <button
               type="button"
@@ -290,13 +290,13 @@ export const LearnerNotebook: React.FC<LearnerNotebookProps> = ({
               value={query}
               onChange={event => setQuery(event.target.value)}
               placeholder="Search notes or topics"
-              className="w-full rounded-lg border border-slate-300 bg-white py-2.5 pl-10 pr-3 text-sm outline-none focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-900"
+              className="w-full rounded-lg border border-slate-300 bg-white py-2.5 pl-10 pr-3 text-sm outline-none focus:border-indigo-500"
             />
           </label>
           <select
             value={subject}
             onChange={event => setSubject(event.target.value)}
-            className="rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm font-bold outline-none focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-900"
+            className="rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm font-bold outline-none focus:border-indigo-500"
           >
             <option value="ALL">All subjects</option>
             {subjects.map(item => <option key={item} value={item}>{item}</option>)}
@@ -305,23 +305,23 @@ export const LearnerNotebook: React.FC<LearnerNotebookProps> = ({
 
         {filteredNotes.length === 0 ? (
           <section className="py-14 text-center px-4">
-            <div className="w-16 h-16 rounded-2xl bg-indigo-50 dark:bg-indigo-950/40 flex items-center justify-center mx-auto mb-4">
+            <div className="w-16 h-16 rounded-2xl bg-indigo-50 flex items-center justify-center mx-auto mb-4">
               <BookOpen className="h-8 w-8 text-indigo-500" />
             </div>
             <h2 className="text-lg font-black">My Notebook</h2>
-            <p className="mx-auto mt-2 max-w-sm text-sm font-semibold text-slate-500 dark:text-slate-400 leading-relaxed">
+            <p className="mx-auto mt-2 max-w-sm text-sm font-semibold text-slate-500 leading-relaxed">
               Your personal study notebook. Save smart explanations from Ask Akili, or write your own notes — then listen back or quiz yourself on any note.
             </p>
             <div className="mx-auto mt-5 max-w-xs space-y-2 text-left">
-              <div className="flex items-start gap-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 px-3 py-2.5 text-xs font-semibold text-slate-600 dark:text-slate-300">
+              <div className="flex items-start gap-3 rounded-xl bg-white border border-slate-100 px-3 py-2.5 text-xs font-semibold text-slate-600">
                 <span className="text-base shrink-0">💬</span>
                 <span>Ask Akili a question → tap <strong>Save to Notebook</strong> on any answer</span>
               </div>
-              <div className="flex items-start gap-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 px-3 py-2.5 text-xs font-semibold text-slate-600 dark:text-slate-300">
+              <div className="flex items-start gap-3 rounded-xl bg-white border border-slate-100 px-3 py-2.5 text-xs font-semibold text-slate-600">
                 <span className="text-base shrink-0">✏️</span>
                 <span>Or tap <strong>+ New Note</strong> above to write your own revision note</span>
               </div>
-              <div className="flex items-start gap-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 px-3 py-2.5 text-xs font-semibold text-slate-600 dark:text-slate-300">
+              <div className="flex items-start gap-3 rounded-xl bg-white border border-slate-100 px-3 py-2.5 text-xs font-semibold text-slate-600">
                 <span className="text-base shrink-0">🎧</span>
                 <span>Each note can be <strong>listened to</strong> or turned into a <strong>quick quiz</strong></span>
               </div>
@@ -332,10 +332,10 @@ export const LearnerNotebook: React.FC<LearnerNotebookProps> = ({
             {filteredNotes.map(note => (
               <article
                 key={note.id}
-                className={'rounded-lg border bg-white p-4 shadow-sm dark:bg-slate-900 ' + (selectedNoteIds.has(note.id) ? 'border-emerald-400 ring-2 ring-emerald-100 dark:border-emerald-700 dark:ring-emerald-950' : 'border-slate-200 dark:border-slate-800')}
+                className={'rounded-lg border bg-white p-4 shadow-sm ' + (selectedNoteIds.has(note.id) ? 'border-emerald-400 ring-2 ring-emerald-100' : 'border-slate-200')}
               >
                 <div className="flex items-start gap-3">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 dark:bg-indigo-950/50 dark:text-indigo-300">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
                     <BookOpen className="h-5 w-5" />
                   </div>
                   <div className="min-w-0 flex-1">
@@ -347,7 +347,7 @@ export const LearnerNotebook: React.FC<LearnerNotebookProps> = ({
                   <button
                     type="button"
                     onClick={() => toggleNoteSelection(note.id)}
-                    className={'inline-flex h-8 items-center justify-center rounded-lg px-2 text-[10px] font-black transition ' + (selectedNoteIds.has(note.id) ? 'bg-emerald-600 text-white' : 'bg-slate-50 text-slate-500 hover:bg-emerald-50 hover:text-emerald-700 dark:bg-slate-950 dark:text-slate-300')}
+                    className={'inline-flex h-8 items-center justify-center rounded-lg px-2 text-[10px] font-black transition ' + (selectedNoteIds.has(note.id) ? 'bg-emerald-600 text-white' : 'bg-slate-50 text-slate-500 hover:bg-emerald-50 hover:text-emerald-700')}
                     aria-pressed={selectedNoteIds.has(note.id)}
                     aria-label={(selectedNoteIds.has(note.id) ? 'Remove ' : 'Add ') + note.title + ' from revision pack'}
                   >
@@ -356,14 +356,14 @@ export const LearnerNotebook: React.FC<LearnerNotebookProps> = ({
                   <button
                     type="button"
                     onClick={() => deleteStudyNote(ownerKey, note.id)}
-                    className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/30"
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-rose-50 hover:text-rose-600"
                     aria-label={'Delete ' + note.title}
                   >
                     <Trash2 className="h-4 w-4" />
                   </button>
                 </div>
 
-                <p className="mt-3 line-clamp-4 text-sm font-medium leading-relaxed text-slate-600 dark:text-slate-300">
+                <p className="mt-3 line-clamp-4 text-sm font-medium leading-relaxed text-slate-600">
                   {note.content}
                 </p>
 
@@ -371,14 +371,14 @@ export const LearnerNotebook: React.FC<LearnerNotebookProps> = ({
                   <button
                     type="button"
                     onClick={() => onOpenNote(note)}
-                    className="rounded-lg bg-slate-100 px-2 py-2 text-[11px] font-black text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200"
+                    className="rounded-lg bg-slate-100 px-2 py-2 text-[11px] font-black text-slate-700 hover:bg-slate-200"
                   >
                     Open
                   </button>
                   <button
                     type="button"
                     onClick={() => onListenNote(note)}
-                    className="inline-flex items-center justify-center gap-1 rounded-lg bg-indigo-50 px-2 py-2 text-[11px] font-black text-indigo-700 hover:bg-indigo-100 dark:bg-indigo-950/40 dark:text-indigo-300"
+                    className="inline-flex items-center justify-center gap-1 rounded-lg bg-indigo-50 px-2 py-2 text-[11px] font-black text-indigo-700 hover:bg-indigo-100"
                   >
                     <Volume2 className="h-3.5 w-3.5" />
                     Listen
@@ -386,7 +386,7 @@ export const LearnerNotebook: React.FC<LearnerNotebookProps> = ({
                   <button
                     type="button"
                     onClick={() => onQuizNote(note)}
-                    className="inline-flex items-center justify-center gap-1 rounded-lg bg-emerald-50 px-2 py-2 text-[11px] font-black text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:text-emerald-300"
+                    className="inline-flex items-center justify-center gap-1 rounded-lg bg-emerald-50 px-2 py-2 text-[11px] font-black text-emerald-700 hover:bg-emerald-100"
                   >
                     <ClipboardList className="h-3.5 w-3.5" />
                     Test me
@@ -397,7 +397,7 @@ export const LearnerNotebook: React.FC<LearnerNotebookProps> = ({
                   <button
                     type="button"
                     onClick={() => shareNoteToWhatsApp(note, 'contact')}
-                    className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-[#e9f9ef] px-3 py-2.5 text-[11px] font-black text-[#087a3e] transition hover:bg-[#d8f4e3] dark:bg-emerald-950/40 dark:text-emerald-300"
+                    className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-[#e9f9ef] px-3 py-2.5 text-[11px] font-black text-[#087a3e] transition hover:bg-[#d8f4e3]"
                   >
                     <MessageCircle className="h-4 w-4" />
                     Share on WhatsApp
@@ -406,7 +406,7 @@ export const LearnerNotebook: React.FC<LearnerNotebookProps> = ({
                     <button
                       type="button"
                       onClick={() => shareNoteToWhatsApp(note, 'parent')}
-                      className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-emerald-200 bg-white px-3 py-2.5 text-[11px] font-black text-[#087a3e] transition hover:bg-emerald-50 dark:border-emerald-900 dark:bg-slate-900 dark:text-emerald-300"
+                      className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-emerald-200 bg-white px-3 py-2.5 text-[11px] font-black text-[#087a3e] transition hover:bg-emerald-50"
                     >
                       <MessageCircle className="h-4 w-4" />
                       Send to parent
@@ -414,14 +414,14 @@ export const LearnerNotebook: React.FC<LearnerNotebookProps> = ({
                   )}
                 </div>
 
-                <div className="mt-3 flex gap-2 border-t border-slate-100 pt-3 dark:border-slate-800">
+                <div className="mt-3 flex gap-2 border-t border-slate-100 pt-3">
                   <button
                     type="button"
                     onClick={() => setMastery(note, 'understood')}
                     className={'inline-flex flex-1 items-center justify-center gap-1 rounded-lg px-2 py-2 text-[11px] font-black ' + (
                       note.masteryStatus === 'understood'
                         ? 'bg-emerald-600 text-white'
-                        : 'bg-slate-50 text-slate-600 hover:bg-emerald-50 hover:text-emerald-700 dark:bg-slate-950 dark:text-slate-300'
+                        : 'bg-slate-50 text-slate-600 hover:bg-emerald-50 hover:text-emerald-700'
                     )}
                   >
                     <CheckCircle2 className="h-3.5 w-3.5" />
@@ -433,7 +433,7 @@ export const LearnerNotebook: React.FC<LearnerNotebookProps> = ({
                     className={'inline-flex flex-1 items-center justify-center gap-1 rounded-lg px-2 py-2 text-[11px] font-black ' + (
                       note.masteryStatus === 'revise_again'
                         ? 'bg-amber-500 text-white'
-                        : 'bg-slate-50 text-slate-600 hover:bg-amber-50 hover:text-amber-700 dark:bg-slate-950 dark:text-slate-300'
+                        : 'bg-slate-50 text-slate-600 hover:bg-amber-50 hover:text-amber-700'
                     )}
                   >
                     <RotateCcw className="h-3.5 w-3.5" />
