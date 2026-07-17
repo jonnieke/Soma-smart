@@ -110,6 +110,7 @@ export const RevisionHubPage: React.FC<Props> = ({
   const [inlinePdfPage, setInlinePdfPage] = useState(1);
   const [inlinePdfJump, setInlinePdfJump] = useState('1');
   const [inlinePdfSource, setInlinePdfSource] = useState<'paper' | 'marking_scheme'>('paper');
+  const [expandedInsight, setExpandedInsight] = useState<string | null>(null);
   const inlinePdfCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const inlinePdfRenderTaskRef = useRef<any>(null);
   const performance = useMemo(() => loadRevisionPerformance(), [learnerHistory]);
@@ -232,7 +233,7 @@ export const RevisionHubPage: React.FC<Props> = ({
 
     const lowerText = questionText.toLowerCase();
     const commandWord = ['state', 'explain', 'describe', 'compare', 'calculate', 'name', 'draw', 'identify', 'list', 'give', 'match', 'outline', 'define', 'show']
-      .find((word) => new RegExp(`\b${word}\b`, 'i').test(lowerText))
+      .find((word) => new RegExp(String.raw`\b${word}\b`, 'i').test(lowerText))
       || (questionType === 'multiple choice'
         ? 'select the best option'
         : questionType === 'construction'
@@ -274,6 +275,12 @@ export const RevisionHubPage: React.FC<Props> = ({
           ? 'Upload the working clearly and make sure it is readable.'
           : 'Do not skip the working or the final conclusion.');
 
+    const teacherNote = [
+      explanation ? `Teacher note: ${explanation}` : null,
+      modelAnswer ? `Model answer: ${modelAnswer}` : null,
+      commonMistakes.length > 0 ? `Watch for: ${commonMistakes.slice(0, 2).join('; ')}` : null,
+    ].filter(Boolean).join(' ');
+
     return {
       questionNumber,
       questionText,
@@ -285,6 +292,8 @@ export const RevisionHubPage: React.FC<Props> = ({
       expectedAnswerShape,
       earnMarks,
       commonTrap,
+      teacherNote,
+      modelAnswer,
       hasDiagram: Boolean((question as any)?.diagramUrl || (question as any)?.diagram_url),
     };
   }), [inlinePdfQuestions]);
@@ -329,6 +338,7 @@ export const RevisionHubPage: React.FC<Props> = ({
   };
 
   useEffect(() => {
+    setExpandedInsight(null);
     if (!inlinePdfPaper) {
       setInlinePdfDocument(null);
       setInlinePdfPage(1);
@@ -698,7 +708,9 @@ export const RevisionHubPage: React.FC<Props> = ({
                     )}
 
                     <div className="mt-4 space-y-2">
-                      {inlinePdfQuestionInsights.length > 0 ? inlinePdfQuestionInsights.map((question) => (
+                      {inlinePdfQuestionInsights.length > 0 ? inlinePdfQuestionInsights.map((question) => {
+                        const isExpanded = expandedInsight === question.questionNumber;
+                        return (
                         <div key={question.questionNumber} className="rounded-2xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-800 dark:bg-slate-900/60">
                           <div className="flex items-start justify-between gap-3">
                             <div className="min-w-0">
@@ -718,8 +730,16 @@ export const RevisionHubPage: React.FC<Props> = ({
                           </div>
                           <div className="mt-3 space-y-2 rounded-2xl bg-white p-3 dark:bg-slate-950">
                             <div>
+                              <p className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-400">Command word</p>
+                              <p className="mt-1 text-sm font-semibold leading-6 text-slate-700 dark:text-slate-300">{question.commandWord}</p>
+                            </div>
+                            <div>
                               <p className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-400">What this tests</p>
                               <p className="mt-1 text-sm font-semibold leading-6 text-slate-700 dark:text-slate-300">{question.whatItTests}</p>
+                            </div>
+                            <div>
+                              <p className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-400">Expected answer shape</p>
+                              <p className="mt-1 text-sm leading-6 text-slate-600 dark:text-slate-300">{question.expectedAnswerShape}</p>
                             </div>
                             <div>
                               <p className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-400">How to earn marks</p>
@@ -736,9 +756,39 @@ export const RevisionHubPage: React.FC<Props> = ({
                               <p className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-400">Common trap</p>
                               <p className="mt-1 text-sm leading-6 text-amber-700 dark:text-amber-300">{question.commonTrap}</p>
                             </div>
+                            <div className="flex flex-wrap gap-2">
+                              <button
+                                type="button"
+                                onClick={() => setExpandedInsight((current) => (current === question.questionNumber ? null : question.questionNumber))}
+                                className="inline-flex min-h-10 items-center rounded-full border border-indigo-200 bg-indigo-50 px-3 text-xs font-black text-indigo-700 hover:bg-indigo-100 dark:border-indigo-900 dark:bg-indigo-950/40 dark:text-indigo-200"
+                              >
+                                {isExpanded ? 'Hide teacher notes' : 'Show teacher notes'}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setInlinePdfSource('marking_scheme')}
+                                className="inline-flex min-h-10 items-center rounded-full border border-slate-200 bg-white px-3 text-xs font-black text-slate-700 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200"
+                              >
+                                Open marking scheme
+                              </button>
+                            </div>
+                            {isExpanded && (
+                              <div className="rounded-2xl border border-amber-200 bg-amber-50 p-3 dark:border-amber-900/50 dark:bg-amber-950/25">
+                                <p className="text-[10px] font-black uppercase tracking-[0.16em] text-amber-700 dark:text-amber-300">Teacher note</p>
+                                <p className="mt-1 text-sm leading-6 text-amber-900 dark:text-amber-100">
+                                  {question.teacherNote || 'Teacher guidance will appear here once the marking scheme has been structured.'}
+                                </p>
+                                <p className="mt-2 text-xs font-semibold leading-5 text-amber-700/90 dark:text-amber-200/90">
+                                  Use this after the attempt for teacher-level guidance and mark-by-mark clarity.
+                                </p>
+                                <p className="mt-1 text-xs font-semibold leading-5 text-amber-700/90 dark:text-amber-200/90">
+                                  Open the marking scheme when you want the full exam-scheme view.
+                                </p>
+                              </div>
+                            )}
                           </div>
                         </div>
-                      )) : (
+                      );}) : (
                         <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-3 text-sm text-slate-600 dark:border-slate-800 dark:bg-slate-900/50 dark:text-slate-300">
                           No question structure is available yet. Open the marking scheme for answer guidance or start the paper to revise in exam mode.
                         </div>
