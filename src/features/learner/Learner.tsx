@@ -6308,9 +6308,9 @@ ${explanation.explanation}
                       <span className="text-xs font-black text-slate-800 dark:text-white uppercase tracking-widest">Raise Hand</span>
                     </div>
 
-                    <div className="p-4 bg-white/50 border-b border-slate-100 dark:border-slate-850 flex items-center justify-between shrink-0">
+                    <div className="p-4 bg-white border-b border-slate-100 flex items-center justify-between shrink-0">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-indigo-50 dark:bg-indigo-950/50 rounded-xl flex items-center justify-center border border-indigo-100 dark:border-indigo-900">
+                        <div className="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center border border-indigo-100">
                           <Sparkles className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
                         </div>
                         <div>
@@ -6325,10 +6325,10 @@ ${explanation.explanation}
                     <div ref={chatContainerRef} className="flex-1 overflow-y-auto p-4 space-y-4 no-scrollbar pb-32">
                       {studyChat.length === 0 ? (
                         <div className="h-full flex flex-col items-center justify-center text-center max-w-xs mx-auto py-10 opacity-70">
-                          <div className="w-16 h-16 bg-white dark:bg-slate-850 rounded-full flex items-center justify-center mb-4 border-2 border-indigo-50 shadow-md">
+                          <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mb-4 border-2 border-indigo-100 shadow-md">
                             <Sparkles className="w-6 h-6 text-indigo-500" />
                           </div>
-                          <h4 className="text-sm font-black text-slate-850 dark:text-white mb-1 tracking-tight">Need clarification?</h4>
+                          <h4 className="text-sm font-black text-slate-900 mb-1 tracking-tight">Need clarification?</h4>
                           <p className="text-xs text-slate-550 leading-relaxed">Ask anything about the notes, highlight a word/sentence to ask, or request an example.</p>
                         </div>
                       ) : (
@@ -8017,21 +8017,21 @@ ${explanation.explanation}
           <div className="flex-1 overflow-y-auto no-scrollbar">
             {/* Premium Hero - Lean Design */}
             <div className="px-6 pt-6 pb-2">
-              <div className="bg-gradient-to-r from-indigo-900 to-indigo-800 rounded-3xl p-5 text-white shadow-xl shadow-indigo-200/50 flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden">
+              <div className="bg-gradient-to-r from-indigo-50 via-white to-blue-50 rounded-3xl p-5 text-slate-900 shadow-xl shadow-slate-200 flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden border border-slate-200">
                 {/* Background Decor */}
-                <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -mr-20 -mt-20 blur-3xl"></div>
-                <div className="absolute bottom-0 left-0 w-40 h-40 bg-indigo-500/20 rounded-full -ml-10 -mb-10 blur-2xl"></div>
+                <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-100 rounded-full -mr-20 -mt-20 blur-3xl"></div>
+                <div className="absolute bottom-0 left-0 w-40 h-40 bg-indigo-100 rounded-full -ml-10 -mb-10 blur-2xl"></div>
 
                 {/* Left: Text Content */}
                 <div className="relative z-10 flex-1 text-center md:text-left">
                   <div className="flex items-center justify-center md:justify-start gap-2 mb-1.5">
-                    <span className="text-[8px] font-black uppercase tracking-widest text-indigo-200">Official Content</span>
-                    <span className="bg-white px-2 py-0.5 rounded-md text-[8px] font-black uppercase tracking-widest border border-slate-200 flex items-center gap-1">
+                    <span className="text-[8px] font-black uppercase tracking-widest text-indigo-600">Official Content</span>
+                    <span className="bg-white px-2 py-0.5 rounded-md text-[8px] font-black uppercase tracking-widest border border-slate-200 flex items-center gap-1 shadow-sm">
                       <CheckCircle className="w-2 h-2" /> Verified
                     </span>
                   </div>
-                  <h3 className="text-2xl font-black tracking-tight leading-tight mb-1">Official Study Library.</h3>
-                  <p className="opacity-80 text-xs font-medium max-w-[200px] mx-auto md:mx-0 leading-relaxed">
+                  <h3 className="text-2xl font-black tracking-tight leading-tight mb-1 text-slate-900">Official Study Library.</h3>
+                  <p className="text-slate-600 text-xs font-medium max-w-[200px] mx-auto md:mx-0 leading-relaxed">
                     {educationLevel === EducationLevel.CAMPUS
                       ? 'University lecture notes & course materials.'
                       : educationLevel === EducationLevel.JUNIOR
