@@ -230,6 +230,35 @@ export const RevisionHubPage: React.FC<Props> = ({
     const explanation = String((question as any)?.explanation || '').trim();
     const commonMistakes = Array.isArray((question as any)?.commonMistakes) ? (question as any).commonMistakes.map((item: unknown) => String(item).trim()).filter(Boolean) : [];
 
+    const lowerText = questionText.toLowerCase();
+    const commandWord = ['state', 'explain', 'describe', 'compare', 'calculate', 'name', 'draw', 'identify', 'list', 'give', 'match', 'outline', 'define', 'show']
+      .find((word) => new RegExp(`\b${word}\b`, 'i').test(lowerText))
+      || (questionType === 'multiple choice'
+        ? 'select the best option'
+        : questionType === 'construction'
+          ? 'draw neatly and label clearly'
+          : questionType === 'image upload'
+            ? 'upload working or a diagram'
+            : questionMarks === 1
+              ? 'give a short answer'
+              : 'show working and final answer');
+
+    const expectedAnswerShape = questionType === 'multiple choice'
+      ? 'Choose one option only, then move on.'
+      : questionType === 'construction'
+        ? 'Draw accurately, label clearly, and keep the work neat.'
+        : questionType === 'image upload'
+          ? 'Upload a clear image of the working or diagram.'
+          : questionType === 'table'
+            ? 'Fill each row carefully and show any calculations beside the table.'
+            : questionType === 'graph'
+              ? 'Plot accurately, label axes, and include the key points.'
+              : questionMarks <= 1
+                ? 'Write a short direct answer.'
+                : questionMarks <= 3
+                  ? 'Give the answer and the main working point(s).'
+                  : 'Show the method, the working, and the final answer clearly.';
+
     const whatItTests = questionCompetency || questionLevel || questionType || questionTopic || 'core understanding';
     const earnMarks = rawMarkingScheme.length > 0
       ? rawMarkingScheme.slice(0, 3).map((point: unknown) => String(point).trim()).filter(Boolean)
@@ -252,6 +281,8 @@ export const RevisionHubPage: React.FC<Props> = ({
       questionType,
       questionMarks,
       whatItTests,
+      commandWord,
+      expectedAnswerShape,
       earnMarks,
       commonTrap,
       hasDiagram: Boolean((question as any)?.diagramUrl || (question as any)?.diagram_url),
