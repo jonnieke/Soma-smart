@@ -270,7 +270,7 @@ const inferSubjectFromTopic = (topic?: string): string => {
 const DeferredViewLoader = () => (
   <div className="min-h-[60vh] flex flex-col items-center justify-center gap-5 text-slate-400">
     {/* Animated indigo bar */}
-    <div className="w-48 h-1.5 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
+    <div className="w-48 h-1.5 bg-slate-200 rounded-full overflow-hidden">
       <div
         className="h-full bg-gradient-to-r from-indigo-500 via-violet-500 to-indigo-500 rounded-full"
         style={{ animation: 'soma-shimmer 1.6s ease-in-out infinite', backgroundSize: '200% 100%' }}
@@ -4029,7 +4029,7 @@ ${explanation.explanation}
       return (
         <div className="pb-24">
           {/* Sub-tab switcher */}
-          <div className="sticky top-0 z-20 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border-b border-slate-100 dark:border-slate-800 px-6 py-3 flex gap-2">
+          <div className="sticky top-0 z-20 bg-white/90 backdrop-blur-xl border-b border-slate-100 px-6 py-3 flex gap-2">
             {(['MAP', 'PATH'] as const).map(tab => (
               <button
                 key={tab}
@@ -4037,7 +4037,7 @@ ${explanation.explanation}
                 className={`flex-1 py-2 text-sm font-black rounded-xl transition-all ${
                   questSubTabState === tab
                     ? 'bg-indigo-600 text-white shadow-sm'
-                    : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
+                    : 'bg-slate-100 text-slate-500 dark:text-slate-400 hover:bg-slate-200 hover:bg-slate-50'
                 }`}
               >
             {tab === 'MAP' ? 'Quest Map' : 'My Path'}
@@ -4257,9 +4257,9 @@ ${explanation.explanation}
 
     if (mode === 'RECAP_RESULT' && recapData) {
       return (
-        <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-20 font-sans text-slate-800 dark:text-slate-100 w-full">
-          <div className="bg-white dark:bg-slate-900 p-6 sticky top-0 z-10 shadow-sm flex items-center gap-4 border-b border-slate-200 dark:border-slate-800">
-            <button onClick={() => setMode('MENU')} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors"><ArrowRight className="w-6 h-6 rotate-180 dark:text-slate-400" /></button>
+        <div className="min-h-screen bg-slate-50 pb-20 font-sans text-slate-800 dark:text-slate-100 w-full">
+          <div className="bg-white p-6 sticky top-0 z-10 shadow-sm flex items-center gap-4 border-b border-slate-200">
+            <button onClick={() => setMode('MENU')} className="p-2 hover:bg-slate-100 hover:bg-slate-50 rounded-full transition-colors"><ArrowRight className="w-6 h-6 rotate-180 dark:text-slate-400" /></button>
             <h2 className="font-bold text-lg dark:text-white">Lesson Recap</h2>
           </div>
 
@@ -4273,7 +4273,7 @@ ${explanation.explanation}
               <h3 className="font-bold text-slate-900 dark:text-white mb-3 flex items-center gap-2"><Star className="w-5 h-5 text-yellow-500" /> Key Points</h3>
               <ul className="space-y-3">
                 {recapData.keyPoints.map((p: string, i: number) => (
-                  <li key={i} className="bg-white dark:bg-slate-900 p-4 rounded-xl border-2 border-slate-300 dark:border-slate-800 shadow-sm flex gap-3">
+                  <li key={i} className="bg-white p-4 rounded-xl border-2 border-slate-300 shadow-sm flex gap-3">
                     <span className="w-6 h-6 bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 rounded-full flex items-center justify-center font-bold text-xs flex-shrink-0">{i + 1}</span>
                     <span className="text-sm dark:text-slate-300">{p}</span>
                   </li>
@@ -4353,10 +4353,10 @@ ${explanation.explanation}
       if (chatRequestId) {
         const chatReq = activeTutoringRequests.find(r => r.id === chatRequestId);
         return (
-          <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col font-sans text-slate-800 dark:text-slate-100 w-full relative">
+          <div className="min-h-screen bg-slate-50 flex flex-col font-sans text-slate-800 dark:text-slate-100 w-full relative">
             {/* Chat Header */}
-            <div className="sticky top-0 z-40 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border-b border-slate-200 dark:border-slate-800 px-6 py-4 flex items-center gap-4">
-              <button onClick={() => { setChatRequestId(null); setChatInput(''); }} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors"><ArrowRight className="w-5 h-5 rotate-180 dark:text-slate-400" /></button>
+            <div className="sticky top-0 z-40 bg-white/90 backdrop-blur-xl border-b border-slate-200 px-6 py-4 flex items-center gap-4">
+              <button onClick={() => { setChatRequestId(null); setChatInput(''); }} className="p-2 hover:bg-slate-100 hover:bg-slate-50 rounded-full transition-colors"><ArrowRight className="w-5 h-5 rotate-180 dark:text-slate-400" /></button>
               <div className="flex-1">
                 <h2 className="font-bold text-lg dark:text-white leading-tight">{chatReq?.topic || 'Chat'}</h2>
                 <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Continuous study session</p>
@@ -4417,7 +4417,7 @@ ${explanation.explanation}
             </div>
 
             {/* Chat Input Bar */}
-            <div className="sticky bottom-0 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 p-4 space-y-2">
+            <div className="sticky bottom-0 bg-white border-t border-slate-200 p-4 space-y-2">
               {/* Hidden file input for image upload */}
               <input
                 type="file"
@@ -4476,7 +4476,7 @@ ${explanation.explanation}
                   }}
                   className={`p-3 rounded-2xl transition-all flex-shrink-0 ${isRecordingChat
                     ? 'bg-red-500 text-white shadow-lg shadow-red-200 animate-pulse'
-                    : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:text-blue-600 dark:hover:text-blue-400'
+                    : 'bg-slate-100 text-slate-500 dark:text-slate-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:text-blue-600 dark:hover:text-blue-400'
                     }`}
                   title={isRecordingChat ? 'Stop recording' : 'Record voice message'}
                 >
@@ -4486,7 +4486,7 @@ ${explanation.explanation}
                 {/* Image Upload Button */}
                 <button
                   onClick={() => chatImageInputRef.current?.click()}
-                  className="p-3 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:text-blue-600 dark:hover:text-blue-400 transition-all flex-shrink-0"
+                  className="p-3 rounded-2xl bg-slate-100 text-slate-500 dark:text-slate-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:text-blue-600 dark:hover:text-blue-400 transition-all flex-shrink-0"
                   title="Send an image"
                 >
                   <ImageIcon className="w-5 h-5" />
@@ -4511,7 +4511,7 @@ ${explanation.explanation}
                   }}
                   placeholder="Type your follow-up question..."
                   rows={1}
-                  className="flex-1 bg-slate-50 dark:bg-slate-800/50 border-2 border-slate-100 dark:border-slate-700 rounded-2xl px-4 py-3 text-sm font-medium text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 resize-none focus:ring-0 focus:border-blue-300 dark:focus:border-blue-700 focus:bg-white dark:focus:bg-slate-800 transition-all outline-none"
+                  className="flex-1 bg-slate-50 border-2 border-slate-100 rounded-2xl px-4 py-3 text-sm font-medium text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 resize-none focus:ring-0 focus:border-blue-300 dark:focus:border-blue-700 focus:bg-white dark:focus:bg-slate-800 transition-all outline-none"
                 />
 
                 {/* Send Button */}
@@ -4527,7 +4527,7 @@ ${explanation.explanation}
                     }
                   }}
                   disabled={!chatInput.trim() || chatSending}
-                  className={`p-3 rounded-2xl transition-all flex-shrink-0 ${chatInput.trim() ? 'bg-blue-600 text-white shadow-lg shadow-blue-200 hover:bg-blue-700' : 'bg-slate-100 dark:bg-slate-800 text-slate-300 dark:text-slate-600 cursor-not-allowed'
+                  className={`p-3 rounded-2xl transition-all flex-shrink-0 ${chatInput.trim() ? 'bg-blue-600 text-white shadow-lg shadow-blue-200 hover:bg-blue-700' : 'bg-slate-100 text-slate-300 dark:text-slate-600 cursor-not-allowed'
                     }`}
                 >
                   <ArrowRight className="w-5 h-5" />
@@ -4539,9 +4539,9 @@ ${explanation.explanation}
       }
 
       return (
-        <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col font-sans text-slate-800 dark:text-slate-100 w-full relative">
-          <div className="sticky top-0 z-40 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border-b border-slate-200 dark:border-slate-800 px-6 py-4 flex items-center gap-4">
-            <button onClick={() => setMode('MENU')} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors"><ArrowRight className="w-5 h-5 rotate-180 dark:text-slate-400" /></button>
+        <div className="min-h-screen bg-slate-50 flex flex-col font-sans text-slate-800 dark:text-slate-100 w-full relative">
+          <div className="sticky top-0 z-40 bg-white/90 backdrop-blur-xl border-b border-slate-200 px-6 py-4 flex items-center gap-4">
+            <button onClick={() => setMode('MENU')} className="p-2 hover:bg-slate-100 hover:bg-slate-50 rounded-full transition-colors"><ArrowRight className="w-5 h-5 rotate-180 dark:text-slate-400" /></button>
             <h2 className="font-bold text-lg dark:text-white">My Requests</h2>
             <span className="bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full text-xs font-bold">{activeTutoringRequests.length}</span>
           </div>
@@ -4555,7 +4555,7 @@ ${explanation.explanation}
               </div>
             ) : (
               activeTutoringRequests.map(req => (
-                <div key={req.id} className="bg-white dark:bg-slate-900 p-5 rounded-2xl shadow-sm border-2 border-slate-300 dark:border-slate-800 transition-all hover:shadow-md">
+                <div key={req.id} className="bg-white p-5 rounded-2xl shadow-sm border-2 border-slate-300 transition-all hover:shadow-md">
                   <div className="flex justify-between items-start mb-3">
                     <div>
                       <h3 className="font-bold text-slate-900 dark:text-white leading-tight mb-1">{req.topic}</h3>
@@ -4568,7 +4568,7 @@ ${explanation.explanation}
                       {req.status}
                     </span>
                   </div>
-                  <p className="text-slate-600 dark:text-slate-300 text-sm mb-4 bg-slate-50 dark:bg-slate-800/50 p-3 rounded-xl leading-relaxed">{req.description}</p>
+                  <p className="text-slate-600 dark:text-slate-300 text-sm mb-4 bg-slate-50 p-3 rounded-xl leading-relaxed">{req.description}</p>
 
                   {/* Payment Required Card for priced requests */}
                   {req.status === 'ACCEPTED' && req.price > 0 && req.response && (
@@ -4592,7 +4592,7 @@ ${explanation.explanation}
                       <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Teacher Response</p>
 
                       {req.responseType === 'TEXT' && (
-                        <p className="text-slate-800 dark:text-slate-200 text-sm leading-relaxed whitespace-pre-wrap bg-slate-50 dark:bg-slate-800/80 p-4 rounded-xl border-2 border-slate-300 dark:border-slate-800">
+                        <p className="text-slate-800 dark:text-slate-200 text-sm leading-relaxed whitespace-pre-wrap bg-slate-50 p-4 rounded-xl border-2 border-slate-300">
                           {typeof req.response === 'string' ? req.response : JSON.stringify(req.response, null, 2)}
                         </p>
                       )}
@@ -4884,9 +4884,9 @@ ${explanation.explanation}
     // --- HISTORY VIEW ---
     if (mode === 'HISTORY' as any) {
       return (
-        <div className="min-h-screen bg-white dark:bg-slate-950 font-sans text-slate-800 dark:text-slate-100 w-full flex flex-col transition-colors duration-300">
-          <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex items-center gap-3 sticky top-0 bg-white dark:bg-slate-900 z-20">
-            <button onClick={() => setMode('MENU')} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors"><ArrowRight className="w-6 h-6 rotate-180" /></button>
+        <div className="min-h-screen bg-white font-sans text-slate-800 dark:text-slate-100 w-full flex flex-col transition-colors duration-300">
+          <div className="p-4 border-b border-slate-100 flex items-center gap-3 sticky top-0 bg-white z-20">
+            <button onClick={() => setMode('MENU')} className="p-2 hover:bg-slate-100 hover:bg-slate-50 rounded-full transition-colors"><ArrowRight className="w-6 h-6 rotate-180" /></button>
             <h1 className="text-lg font-bold">Learning History</h1>
           </div>
 
@@ -4899,8 +4899,8 @@ ${explanation.explanation}
             ) : (
               <div className="space-y-4">
                 {history.slice().reverse().map((item) => (
-                  <div key={item.id} onClick={() => restoreActivity(item)} className="p-4 rounded-2xl border-2 border-slate-300 dark:border-slate-800 hover:border-blue-200 dark:hover:border-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all cursor-pointer flex items-center gap-4">
-                    <div className="w-10 h-10 bg-white dark:bg-slate-800 rounded-full flex items-center justify-center border-2 border-slate-300 dark:border-slate-800 shadow-sm text-lg">
+                  <div key={item.id} onClick={() => restoreActivity(item)} className="p-4 rounded-2xl border-2 border-slate-300 hover:border-blue-200 dark:hover:border-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all cursor-pointer flex items-center gap-4">
+                    <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center border-2 border-slate-300 shadow-sm text-lg">
                       {item.type === 'QUIZ' ? <FileText className="w-5 h-5 text-indigo-500" /> : <Lightbulb className="w-5 h-5 text-amber-500" />}
                     </div>
                     <div>
@@ -4969,9 +4969,9 @@ ${explanation.explanation}
                 </button>
                 
                 <div className="flex items-center gap-4 my-4">
-                  <div className="h-px flex-1 bg-slate-200 dark:bg-slate-800"></div>
+                  <div className="h-px flex-1 bg-slate-200"></div>
                   <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">or</span>
-                  <div className="h-px flex-1 bg-slate-200 dark:bg-slate-800"></div>
+                  <div className="h-px flex-1 bg-slate-200"></div>
                 </div>
 
                 <button
@@ -5763,10 +5763,10 @@ ${explanation.explanation}
           <div className="flex-1 flex flex-col lg:flex-row bg-slate-100 relative h-[50vh] md:h-screen overflow-hidden">
             
             {/* LEFT PANE: The Document Reader */}
-            <div className={`flex-1 flex flex-col h-full overflow-hidden bg-slate-50 dark:bg-slate-950 ${studyTab === 'LESSON' ? 'flex' : 'hidden lg:flex'}`}>
+            <div className={`flex-1 flex flex-col h-full overflow-hidden bg-slate-50 ${studyTab === 'LESSON' ? 'flex' : 'hidden lg:flex'}`}>
               
               {/* Reader Header / Toolbar */}
-              <div className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 shrink-0 z-10 shadow-sm">
+              <div className="bg-white border-b border-slate-200 px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 shrink-0 z-10 shadow-sm">
                 <div className="flex flex-wrap items-center gap-3">
                   {studyViewMode === 'guide' ? (
                     <span className="text-xs font-black bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300 px-2.5 py-1 rounded-full uppercase tracking-wider font-semibold">
@@ -5779,7 +5779,7 @@ ${explanation.explanation}
                   )}
 
                   {currentDocument.fileUrl && (
-                    <div className="flex bg-slate-100 dark:bg-slate-800 p-0.5 rounded-lg text-[10px] font-black select-none border border-slate-200/10 ml-2">
+                    <div className="flex bg-slate-100 p-0.5 rounded-lg text-[10px] font-black select-none border border-slate-200/10 ml-2">
                       <button
                         onClick={() => setStudyViewMode('guide')}
                         className={`px-2.5 py-1 rounded-md transition-all ${studyViewMode === 'guide' ? 'bg-white dark:bg-slate-700 text-indigo-750 dark:text-indigo-400 shadow-sm font-black' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
@@ -5796,7 +5796,7 @@ ${explanation.explanation}
                   )}
 
                   {studyViewMode === 'original' && extractedOriginalPages.length > 0 && (
-                    <div className="flex bg-slate-100 dark:bg-slate-800 p-0.5 rounded-lg text-[10px] font-black select-none border border-slate-200/10 ml-2">
+                    <div className="flex bg-slate-100 p-0.5 rounded-lg text-[10px] font-black select-none border border-slate-200/10 ml-2">
                       <button
                         onClick={() => setOriginalViewType('text')}
                         className={`px-2.5 py-1 rounded-md transition-all ${originalViewType === 'text' ? 'bg-white dark:bg-slate-700 text-indigo-750 dark:text-indigo-400 shadow-sm font-black' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
@@ -5830,24 +5830,24 @@ ${explanation.explanation}
                     <span>Listen</span>
                   </button>
 
-                  <div className="flex items-center gap-1.5 border-l border-slate-200 dark:border-slate-800 pl-3">
+                  <div className="flex items-center gap-1.5 border-l border-slate-200 pl-3">
                     <button
                       onClick={() => setFontScale(prev => Math.max(0.8, prev - 0.1))}
-                      className="w-8 h-8 rounded bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-bold hover:bg-slate-100 text-xs flex items-center justify-center transition-colors"
+                      className="w-8 h-8 rounded bg-slate-50 border border-slate-200 text-slate-600 dark:text-slate-300 font-bold hover:bg-slate-100 text-xs flex items-center justify-center transition-colors"
                       title="Make text smaller"
                     >
                       A-
                     </button>
                     <button
                       onClick={() => setFontScale(prev => Math.min(1.5, prev + 0.1))}
-                      className="w-8 h-8 rounded bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-bold hover:bg-slate-100 text-xs flex items-center justify-center transition-colors"
+                      className="w-8 h-8 rounded bg-slate-50 border border-slate-200 text-slate-600 dark:text-slate-300 font-bold hover:bg-slate-100 text-xs flex items-center justify-center transition-colors"
                       title="Make text larger"
                     >
                       A+
                     </button>
                     <button
                       onClick={() => setFontFamily(prev => prev === 'sans' ? 'serif' : 'sans')}
-                      className="px-2.5 h-8 rounded bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-bold hover:bg-slate-100 text-[10px] uppercase tracking-wider flex items-center justify-center transition-colors font-semibold"
+                      className="px-2.5 h-8 rounded bg-slate-50 border border-slate-200 text-slate-600 dark:text-slate-300 font-bold hover:bg-slate-100 text-[10px] uppercase tracking-wider flex items-center justify-center transition-colors font-semibold"
                       title="Change font style"
                     >
                       {fontFamily === 'sans' ? 'Serif' : 'Sans'}
@@ -5862,7 +5862,7 @@ ${explanation.explanation}
                     value={readerSearchTerm}
                     onChange={(e) => setReaderSearchTerm(e.target.value)}
                     placeholder="Search in notes..."
-                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-full px-4 py-1.5 pl-9 outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-xs text-slate-700 dark:text-white placeholder:text-slate-400"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-full px-4 py-1.5 pl-9 outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-xs text-slate-700 dark:text-white placeholder:text-slate-400"
                   />
                   <Sparkles className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
                   {readerSearchTerm && (
@@ -5882,18 +5882,18 @@ ${explanation.explanation}
                   setSelectedText('');
                   setSelectionCoords(null);
                 }}
-                className="flex-1 overflow-y-auto p-6 md:p-10 no-scrollbar bg-slate-50 dark:bg-slate-950"
+                className="flex-1 overflow-y-auto p-6 md:p-10 no-scrollbar bg-slate-50"
               >
-                <div className="max-w-3xl mx-auto bg-white dark:bg-slate-900 p-8 md:p-14 rounded-3xl shadow-sm border border-slate-200 dark:border-slate-800 relative">
+                <div className="max-w-3xl mx-auto bg-white p-8 md:p-14 rounded-3xl shadow-sm border border-slate-200 relative">
                   {studyViewMode === 'guide' ? (
                     isSummarizing ? (
                       <div className="space-y-6 animate-pulse">
-                        <div className="h-8 bg-slate-100 dark:bg-slate-800 rounded-lg w-1/3 mb-10"></div>
-                        <div className="h-4 bg-slate-100 dark:bg-slate-800 rounded w-full"></div>
-                        <div className="h-4 bg-slate-100 dark:bg-slate-800 rounded w-11/12"></div>
-                        <div className="h-4 bg-slate-100 dark:bg-slate-800 rounded w-full"></div>
-                        <div className="h-4 bg-slate-100 dark:bg-slate-800 rounded w-5/6 mt-8"></div>
-                        <div className="h-4 bg-slate-100 dark:bg-slate-800 rounded w-full"></div>
+                        <div className="h-8 bg-slate-100 rounded-lg w-1/3 mb-10"></div>
+                        <div className="h-4 bg-slate-100 rounded w-full"></div>
+                        <div className="h-4 bg-slate-100 rounded w-11/12"></div>
+                        <div className="h-4 bg-slate-100 rounded w-full"></div>
+                        <div className="h-4 bg-slate-100 rounded w-5/6 mt-8"></div>
+                        <div className="h-4 bg-slate-100 rounded w-full"></div>
                       </div>
                     ) : explanation ? (
                       <div className="prose prose-slate prose-lg max-w-none dark:prose-invert">
@@ -5906,7 +5906,7 @@ ${explanation.explanation}
                                 <h3 className="text-base font-black text-slate-900 dark:text-white">Learn actively, unlock your future</h3>
                                 <p className="text-xs font-semibold text-slate-600 dark:text-slate-400 mt-1">Check off the classroom steps to record your progress.</p>
                               </div>
-                              <div className="rounded-xl bg-white dark:bg-slate-800 border border-emerald-100 dark:border-emerald-900 px-3.5 py-2 min-w-[80px] text-center">
+                              <div className="rounded-xl bg-white border border-emerald-100 dark:border-emerald-900 px-3.5 py-2 min-w-[80px] text-center">
                                 <p className="text-[8px] font-black uppercase tracking-widest text-emerald-600">Done</p>
                                 <p className="text-xl font-black text-emerald-800 dark:text-emerald-400">{studyMissionChecks.length}/3</p>
                               </div>
@@ -5925,7 +5925,7 @@ ${explanation.explanation}
                                       }
                                     }}
                                     className={`px-3 py-2 rounded-xl border text-xs font-black uppercase tracking-wider flex items-center justify-between transition-all ${
-                                      done ? 'bg-emerald-600 border-emerald-600 text-white font-semibold' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-emerald-400 font-semibold'
+                                      done ? 'bg-emerald-600 border-emerald-600 text-white font-semibold' : 'bg-white border-slate-200 text-slate-600 dark:text-slate-400 hover:border-emerald-400 font-semibold'
                                     }`}
                                   >
                                     <span>{lbl}</span>
@@ -5940,7 +5940,7 @@ ${explanation.explanation}
                         {/* PAGE 0: Overview */}
                         {readerPage === 0 && (
                           <div>
-                            <div className="flex items-center gap-3.5 mb-8 border-b border-indigo-50 dark:border-slate-800 pb-4">
+                            <div className="flex items-center gap-3.5 mb-8 border-b border-indigo-50 pb-4">
                               <div className="p-3 bg-indigo-50 dark:bg-indigo-950/50 rounded-2xl">
                                 <BookOpen className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
                               </div>
@@ -5959,14 +5959,14 @@ ${explanation.explanation}
                               <div className="opacity-0 group-hover/paragraph:opacity-100 flex flex-col gap-1.5 shrink-0 transition-opacity duration-200">
                                 <button
                                   onClick={() => handleParagraphAsk(explanation.explanation)}
-                                  className="p-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-indigo-600 hover:bg-indigo-50 hover:border-indigo-200 rounded-lg shadow-sm"
+                                  className="p-2 bg-slate-50 border border-slate-200 text-indigo-600 hover:bg-indigo-50 hover:border-indigo-200 rounded-lg shadow-sm"
                                   title="Ask Akili about this paragraph"
                                 >
                                   <Sparkles className="w-3.5 h-3.5" />
                                 </button>
                                 <button
                                   onClick={() => handleParagraphCopyCitation(explanation.explanation)}
-                                  className="p-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500 hover:bg-indigo-50 hover:text-indigo-600 rounded-lg shadow-sm"
+                                  className="p-2 bg-slate-50 border border-slate-200 text-slate-500 hover:bg-indigo-50 hover:text-indigo-600 rounded-lg shadow-sm"
                                   title="Copy Citation"
                                 >
                                   <FileText className="w-3.5 h-3.5" />
@@ -5981,7 +5981,7 @@ ${explanation.explanation}
                           const sub = subtopics[readerPage - 1];
                           return (
                             <div>
-                              <div className="flex items-center gap-3.5 mb-8 border-b border-indigo-50 dark:border-slate-800 pb-4">
+                              <div className="flex items-center gap-3.5 mb-8 border-b border-indigo-50 pb-4">
                                 <div className="p-3 bg-indigo-50 dark:bg-indigo-950/50 rounded-2xl">
                                   <FileText className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
                                 </div>
@@ -6005,14 +6005,14 @@ ${explanation.explanation}
                                           <div className="opacity-0 group-hover/paragraph:opacity-100 flex flex-col gap-1.5 shrink-0 transition-opacity duration-200">
                                             <button
                                               onClick={() => handleParagraphAsk(block.text)}
-                                              className="p-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-indigo-600 hover:bg-indigo-50 hover:border-indigo-200 rounded-lg shadow-sm"
+                                              className="p-2 bg-slate-50 border border-slate-200 text-indigo-600 hover:bg-indigo-50 hover:border-indigo-200 rounded-lg shadow-sm"
                                               title="Ask Akili"
                                             >
                                               <Sparkles className="w-3.5 h-3.5" />
                                             </button>
                                             <button
                                               onClick={() => handleParagraphCopyCitation(block.text)}
-                                              className="p-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500 hover:bg-indigo-50 hover:text-indigo-600 rounded-lg shadow-sm"
+                                              className="p-2 bg-slate-50 border border-slate-200 text-slate-500 hover:bg-indigo-50 hover:text-indigo-600 rounded-lg shadow-sm"
                                               title="Copy Citation"
                                             >
                                               <FileText className="w-3.5 h-3.5" />
@@ -6045,7 +6045,7 @@ ${explanation.explanation}
                         {/* LAST PAGE: Summary & References */}
                         {readerPage === totalPages - 1 && (
                           <div className="space-y-10">
-                            <div className="flex items-center gap-3.5 mb-6 border-b border-slate-150 dark:border-slate-800 pb-4">
+                            <div className="flex items-center gap-3.5 mb-6 border-b border-slate-150 pb-4">
                               <div className="p-3 bg-emerald-50 dark:bg-emerald-950/50 rounded-2xl">
                                 <CheckCircle className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
                               </div>
@@ -6068,9 +6068,9 @@ ${explanation.explanation}
                             </div>
 
                             {/* Syllabus Alignment Card */}
-                            <div className="p-6 bg-gradient-to-br from-indigo-50/50 to-white dark:from-slate-900 dark:to-slate-900 border border-indigo-100 dark:border-slate-800 rounded-3xl not-prose">
+                            <div className="p-6 bg-gradient-to-br from-indigo-50/50 to-white dark:from-slate-900 dark:to-slate-900 border border-indigo-100 rounded-3xl not-prose">
                               <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-600 dark:text-indigo-400 mb-2 font-semibold">Kenyan Curriculum Mapping</h4>
-                              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 border-b border-indigo-100/50 dark:border-slate-800 pb-4 mb-4">
+                              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 border-b border-indigo-100/50 pb-4 mb-4">
                                 <div>
                                   <span className="block text-[8px] font-black uppercase tracking-widest text-slate-400">Curriculum</span>
                                   <span className="text-xs font-bold text-slate-800 dark:text-white">{syllabus.curriculum}</span>
@@ -6098,7 +6098,7 @@ ${explanation.explanation}
                             </div>
 
                             {/* Academic Citation Builder */}
-                            <div className="p-6 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-3xl not-prose">
+                            <div className="p-6 bg-slate-50/50 border border-slate-200 rounded-3xl not-prose">
                               <div className="flex items-center justify-between mb-4">
                                 <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Academic Citation Builder</h4>
                                 <div className="flex bg-slate-200 dark:bg-slate-850 p-0.5 rounded-lg text-[9px] font-bold">
@@ -6116,7 +6116,7 @@ ${explanation.explanation}
                                 </div>
                               </div>
 
-                              <div className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 p-4 rounded-2xl text-xs text-slate-650 dark:text-slate-400 italic font-mono leading-relaxed select-all">
+                              <div className="bg-white border border-slate-200 p-4 rounded-2xl text-xs text-slate-650 dark:text-slate-400 italic font-mono leading-relaxed select-all">
                                 {citationFormat === 'APA' && `Soma Smart. (${new Date().getFullYear()}). ${currentDocument.title} [Study Material]. Retrieved from Soma AI Library.`}
                                 {citationFormat === 'MLA' && `Soma Smart. "${currentDocument.title}." Soma AI Library, ${new Date().getFullYear()}.`}
                                 {citationFormat === 'HARVARD' && `Soma Smart, ${new Date().getFullYear()}. ${currentDocument.title}, Soma AI Library. Available at: Soma Smart.`}
@@ -6144,7 +6144,7 @@ ${explanation.explanation}
                       </div>
                     ) : (
                       <div className="text-center py-32 flex flex-col items-center">
-                        <div className="w-20 h-20 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mb-6">
+                        <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mb-6">
                           <BookOpen className="w-10 h-10 text-slate-300 animate-pulse" />
                         </div>
                         <h3 className="text-xl font-black text-slate-400">Loading lesson material...</h3>
@@ -6159,7 +6159,7 @@ ${explanation.explanation}
                       </div>
                     ) : (extractedOriginalPages.length === 0 || originalViewType === 'pdf') ? (
                       /* Fallback to original PDF embed if extraction failed/empty (e.g. scanned image) or user toggles PDF view */
-                      <div className="h-[calc(100vh-280px)] rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-white shadow-sm">
+                      <div className="h-[calc(100vh-280px)] rounded-2xl overflow-hidden border border-slate-200 bg-white shadow-sm">
                         <embed
                           src={currentDocument.fileUrl || currentDocument.file_url}
                           type="application/pdf"
@@ -6170,7 +6170,7 @@ ${explanation.explanation}
                     ) : (
                       /* Render clean extracted page */
                       <div className="prose prose-slate prose-lg max-w-none dark:prose-invert">
-                        <div className="flex items-center gap-3.5 mb-8 border-b border-indigo-50 dark:border-slate-800 pb-4">
+                        <div className="flex items-center gap-3.5 mb-8 border-b border-indigo-50 pb-4">
                           <div className="p-3 bg-indigo-50 dark:bg-indigo-950/50 rounded-2xl">
                             <BookOpen className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
                           </div>
@@ -6192,14 +6192,14 @@ ${explanation.explanation}
                           <div className="opacity-0 group-hover/paragraph:opacity-100 flex flex-col gap-1.5 shrink-0 transition-opacity duration-200">
                             <button
                               onClick={() => handleParagraphAsk(extractedOriginalPages[originalPageIndex])}
-                              className="p-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-indigo-600 hover:bg-indigo-50 hover:border-indigo-200 rounded-lg shadow-sm"
+                              className="p-2 bg-slate-50 border border-slate-200 text-indigo-600 hover:bg-indigo-50 hover:border-indigo-200 rounded-lg shadow-sm"
                               title="Ask Akili about this page"
                             >
                               <Sparkles className="w-3.5 h-3.5" />
                             </button>
                             <button
                               onClick={() => handleParagraphCopyCitation(extractedOriginalPages[originalPageIndex])}
-                              className="p-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500 hover:bg-indigo-50 hover:text-indigo-600 rounded-lg shadow-sm"
+                              className="p-2 bg-slate-50 border border-slate-200 text-slate-500 hover:bg-indigo-50 hover:text-indigo-600 rounded-lg shadow-sm"
                               title="Copy Citation"
                             >
                               <FileText className="w-3.5 h-3.5" />
@@ -6216,7 +6216,7 @@ ${explanation.explanation}
               {/* Reader Footer Page Navigation controls */}
               {((studyViewMode === 'guide' && !isSummarizing && explanation) || 
                 (studyViewMode === 'original' && !isExtractingOriginal && extractedOriginalPages.length > 0 && originalViewType === 'text')) && (
-                <div className="bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 px-6 py-4 flex items-center justify-between shrink-0">
+                <div className="bg-white border-t border-slate-200 px-6 py-4 flex items-center justify-between shrink-0">
                   <button
                     disabled={studyViewMode === 'guide' ? readerPage === 0 : originalPageIndex === 0}
                     onClick={() => {
@@ -6226,7 +6226,7 @@ ${explanation.explanation}
                         handleOriginalPageChange(originalPageIndex - 1);
                       }
                     }}
-                    className="flex items-center gap-2 px-4 py-2 border border-slate-200 dark:border-slate-700 rounded-full text-xs font-black uppercase tracking-wider text-slate-650 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-50 disabled:hover:bg-transparent transition-all font-semibold"
+                    className="flex items-center gap-2 px-4 py-2 border border-slate-200 rounded-full text-xs font-black uppercase tracking-wider text-slate-650 dark:text-slate-300 hover:bg-slate-50 hover:bg-slate-50 disabled:opacity-50 disabled:hover:bg-transparent transition-all font-semibold"
                   >
                      Previous
                   </button>
@@ -6244,7 +6244,7 @@ ${explanation.explanation}
                             }
                           }}
                           className={`w-7 h-7 rounded-full text-xs font-bold transition-all flex items-center justify-center shrink-0 ${
-                            isActive ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
+                            isActive ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-400 hover:bg-slate-50 hover:bg-slate-50'
                           }`}
                         >
                           {i + 1}
@@ -6261,7 +6261,7 @@ ${explanation.explanation}
                         handleOriginalPageChange(originalPageIndex + 1);
                       }
                     }}
-                    className="flex items-center gap-2 px-4 py-2 border border-slate-200 dark:border-slate-700 rounded-full text-xs font-black uppercase tracking-wider text-slate-650 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-50 disabled:hover:bg-transparent transition-all font-semibold"
+                    className="flex items-center gap-2 px-4 py-2 border border-slate-200 rounded-full text-xs font-black uppercase tracking-wider text-slate-650 dark:text-slate-300 hover:bg-slate-50 hover:bg-slate-50 disabled:opacity-50 disabled:hover:bg-transparent transition-all font-semibold"
                   >
                      Next
                   </button>
@@ -6270,10 +6270,10 @@ ${explanation.explanation}
             </div>
 
             {/* RIGHT PANE: Contextual Tools (Chat, Recap, Quiz, References) */}
-            <div className={`w-full lg:w-[450px] shrink-0 flex flex-col h-full bg-white dark:bg-slate-900 border-l border-slate-250 dark:border-slate-800 ${studyTab !== 'LESSON' ? 'flex' : 'hidden lg:flex'}`}>
+            <div className={`w-full lg:w-[450px] shrink-0 flex flex-col h-full bg-white border-l border-slate-250 ${studyTab !== 'LESSON' ? 'flex' : 'hidden lg:flex'}`}>
               
               {/* Desktop Secondary tab header */}
-              <div className="lg:flex hidden bg-slate-50 dark:bg-slate-850 p-2 border-b border-slate-200 dark:border-slate-800 gap-1 select-none">
+              <div className="lg:flex hidden bg-slate-50 dark:bg-slate-850 p-2 border-b border-slate-200 gap-1 select-none">
                 {([
                   { id: 'QNA', label: 'Ask Akili', icon: Sparkles },
                   { id: 'RECAP', label: 'Quick Recap', icon: ListChecks },
@@ -6299,16 +6299,16 @@ ${explanation.explanation}
                 
                 {/* TOOL: QNA (Akili Chat) */}
                 {(studyTab === 'QNA' || studyTab === 'LESSON') && (
-                  <div className="flex-1 flex flex-col h-full overflow-hidden bg-slate-50/50 dark:bg-slate-950/20">
+                  <div className="flex-1 flex flex-col h-full overflow-hidden bg-slate-50/50">
                     {/* Mobile Back to Lesson Button */}
-                    <div className="lg:hidden flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shrink-0">
+                    <div className="lg:hidden flex items-center justify-between p-4 border-b border-slate-200 bg-white shrink-0">
                       <button onClick={() => setStudyTab('LESSON')} className="flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-indigo-600 dark:text-indigo-400 font-semibold">
                          Back to Lesson
                       </button>
                       <span className="text-xs font-black text-slate-800 dark:text-white uppercase tracking-widest">Raise Hand</span>
                     </div>
 
-                    <div className="p-4 bg-white dark:bg-slate-900/50 border-b border-slate-100 dark:border-slate-850 flex items-center justify-between shrink-0">
+                    <div className="p-4 bg-white/50 border-b border-slate-100 dark:border-slate-850 flex items-center justify-between shrink-0">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 bg-indigo-50 dark:bg-indigo-950/50 rounded-xl flex items-center justify-center border border-indigo-100 dark:border-indigo-900">
                           <Sparkles className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
@@ -6325,7 +6325,7 @@ ${explanation.explanation}
                     <div ref={chatContainerRef} className="flex-1 overflow-y-auto p-4 space-y-4 no-scrollbar pb-32">
                       {studyChat.length === 0 ? (
                         <div className="h-full flex flex-col items-center justify-center text-center max-w-xs mx-auto py-10 opacity-70">
-                          <div className="w-16 h-16 bg-white dark:bg-slate-850 rounded-full flex items-center justify-center mb-4 border-2 border-indigo-50 dark:border-slate-700 shadow-md">
+                          <div className="w-16 h-16 bg-white dark:bg-slate-850 rounded-full flex items-center justify-center mb-4 border-2 border-indigo-50 shadow-md">
                             <Sparkles className="w-6 h-6 text-indigo-500" />
                           </div>
                           <h4 className="text-sm font-black text-slate-850 dark:text-white mb-1 tracking-tight">Need clarification?</h4>
@@ -6341,7 +6341,7 @@ ${explanation.explanation}
                             )}
                             <div className="flex flex-col gap-1 max-w-[85%]">
                               <div className={`px-4 py-3 rounded-2xl text-xs leading-relaxed shadow-sm ${
-                                msg.role === 'user' ? 'bg-indigo-600 text-white rounded-tr-none' : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-350 rounded-tl-none font-medium'
+                                msg.role === 'user' ? 'bg-indigo-600 text-white rounded-tr-none' : 'bg-white border border-slate-200 text-slate-800 dark:text-slate-350 rounded-tl-none font-medium'
                               }`}>
                                 <MarkdownText content={msg.text} />
                               </div>
@@ -6393,7 +6393,7 @@ ${explanation.explanation}
                           <div className="w-7 h-7 rounded-full bg-indigo-50 dark:bg-indigo-950 flex items-center justify-center mr-2 mt-1 shrink-0">
                             <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
                           </div>
-                          <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl rounded-tl-none border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-1.5">
+                          <div className="bg-white p-4 rounded-2xl rounded-tl-none border border-slate-200 shadow-sm flex items-center gap-1.5">
                             <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce"></div>
                             <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce delay-100"></div>
                             <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce delay-200"></div>
@@ -6406,12 +6406,12 @@ ${explanation.explanation}
                     {/* Chat Input */}
                     <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-white dark:from-slate-950 via-white dark:via-slate-950 to-transparent shrink-0">
                       {pendingMedia && (
-                        <div className="mb-2 inline-flex items-center gap-2 p-2 bg-white dark:bg-slate-850 border border-slate-250 dark:border-slate-700 rounded-xl shadow-md">
+                        <div className="mb-2 inline-flex items-center gap-2 p-2 bg-white dark:bg-slate-850 border border-slate-250 rounded-xl shadow-md">
                           <span className="text-[10px] font-black uppercase text-indigo-600 font-semibold">Attached {pendingMedia.type}</span>
                         <button onClick={() => setPendingMedia(null)} className="text-slate-400 hover:text-red-500">Close</button>
                         </div>
                       )}
-                      <div className="flex items-center bg-white dark:bg-slate-900 border border-slate-350 dark:border-slate-700 rounded-2xl p-1 shadow-md focus-within:ring-2 focus-within:ring-indigo-500">
+                      <div className="flex items-center bg-white border border-slate-350 rounded-2xl p-1 shadow-md focus-within:ring-2 focus-within:ring-indigo-500">
                         <button type="button" onClick={() => studyFileInputRef.current?.click()} className="p-2 text-slate-400 hover:text-indigo-600 rounded-full">
                           <Upload className="w-4 h-4" />
                         </button>
@@ -6442,7 +6442,7 @@ ${explanation.explanation}
                 {studyTab === 'RECAP' && (
                   <div className="flex-1 p-5 space-y-4">
                     {/* Mobile Back */}
-                    <div className="lg:hidden flex items-center justify-between pb-4 border-b border-slate-200 dark:border-slate-800 shrink-0">
+                    <div className="lg:hidden flex items-center justify-between pb-4 border-b border-slate-200 shrink-0">
                       <button onClick={() => setStudyTab('LESSON')} className="flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-indigo-600 font-semibold">
                          Back to Lesson
                       </button>
@@ -6464,7 +6464,7 @@ ${explanation.explanation}
                               onClick={() => {
                                 setExpandedRecaps(prev => isExpanded ? prev.filter(x => x !== i) : [...prev, i]);
                               }}
-                              className={`border rounded-2xl p-4 bg-white dark:bg-slate-900 transition-all cursor-pointer ${
+                              className={`border rounded-2xl p-4 bg-white transition-all cursor-pointer ${
                                 isExpanded ? 'border-indigo-400 ring-2 ring-indigo-50 dark:ring-indigo-950/20' : 'border-slate-250 hover:border-slate-350'
                               }`}
                             >
@@ -6473,7 +6473,7 @@ ${explanation.explanation}
                                 <ChevronRight className={`w-4 h-4 text-slate-400 transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
                               </div>
                               {isExpanded && (
-                                <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 text-xs text-slate-650 dark:text-slate-450 leading-relaxed">
+                                <div className="mt-3 pt-3 border-t border-slate-100 text-xs text-slate-650 dark:text-slate-450 leading-relaxed">
                                   <MarkdownText content={node.details} />
                                 </div>
                               )}
@@ -6491,7 +6491,7 @@ ${explanation.explanation}
                 {studyTab === 'QUIZ' && (
                   <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
                     {/* Mobile Back */}
-                    <div className="lg:hidden w-full flex items-center justify-between pb-4 border-b border-slate-200 dark:border-slate-800 shrink-0 mb-10">
+                    <div className="lg:hidden w-full flex items-center justify-between pb-4 border-b border-slate-200 shrink-0 mb-10">
                       <button onClick={() => setStudyTab('LESSON')} className="flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-indigo-600 font-semibold">
                          Back to Lesson
                       </button>
@@ -6534,7 +6534,7 @@ ${explanation.explanation}
 
                     <div className="space-y-4">
                       {/* Syllabus Alignment */}
-                      <div className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 rounded-2xl">
+                      <div className="bg-slate-50 border border-slate-200 p-5 rounded-2xl">
                         <h5 className="text-[10px] font-black uppercase text-indigo-600 dark:text-indigo-400 mb-3 tracking-wider font-semibold">Curriculum Mapping</h5>
                         <div className="space-y-3 text-xs">
                           <div>
@@ -6564,10 +6564,10 @@ ${explanation.explanation}
                       </div>
 
                       {/* Citation Builder */}
-                      <div className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 rounded-2xl">
+                      <div className="bg-slate-50 border border-slate-200 p-5 rounded-2xl">
                         <div className="flex items-center justify-between mb-3">
                           <h5 className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Cite Material</h5>
-                          <div className="flex bg-slate-200 dark:bg-slate-800 p-0.5 rounded-md text-[8px] font-black">
+                          <div className="flex bg-slate-200 p-0.5 rounded-md text-[8px] font-black">
                             {(['SOMA', 'APA', 'MLA', 'HARVARD'] as const).map(fmt => (
                               <button
                                 key={fmt}
@@ -6582,7 +6582,7 @@ ${explanation.explanation}
                           </div>
                         </div>
 
-                        <div className="bg-white dark:bg-slate-950 p-3 rounded-xl text-xs text-slate-650 dark:text-slate-400 font-mono italic leading-relaxed select-all border border-slate-200 dark:border-slate-900">
+                        <div className="bg-white p-3 rounded-xl text-xs text-slate-650 dark:text-slate-400 font-mono italic leading-relaxed select-all border border-slate-200">
                           {citationFormat === 'APA' && `Soma Smart. (${new Date().getFullYear()}). ${currentDocument.title} [Study Material]. Retrieved from Soma AI Library.`}
                           {citationFormat === 'MLA' && `Soma Smart. "${currentDocument.title}." Soma AI Library, ${new Date().getFullYear()}.`}
                           {citationFormat === 'HARVARD' && `Soma Smart, ${new Date().getFullYear()}. ${currentDocument.title}, Soma AI Library. Available at: Soma Smart.`}
@@ -6621,7 +6621,7 @@ ${explanation.explanation}
               <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="bg-white dark:bg-slate-900 border-2 border-slate-350 dark:border-slate-800 rounded-[2rem] p-6 max-w-sm w-full shadow-2xl relative overflow-hidden"
+                className="bg-white border-2 border-slate-350 rounded-[2rem] p-6 max-w-sm w-full shadow-2xl relative overflow-hidden"
               >
                 <div className="absolute top-0 left-0 right-0 h-2 bg-indigo-500"></div>
                 <button
@@ -6724,8 +6724,8 @@ ${explanation.explanation}
       const iconColor = isHomework ? 'text-amber-600 dark:text-amber-400' : 'text-indigo-600 dark:text-indigo-400';
 
       return (
-        <div className="bg-slate-50 dark:bg-slate-950 min-h-screen flex flex-col items-center justify-center p-6 w-full animate-in fade-in duration-300">
-          <div className="w-full max-w-2xl bg-white dark:bg-slate-900 rounded-[2rem] sm:rounded-[3rem] shadow-2xl border-2 border-slate-300 dark:border-slate-800 p-6 sm:p-8 md:p-12 relative overflow-hidden">
+        <div className="bg-slate-50 min-h-screen flex flex-col items-center justify-center p-6 w-full animate-in fade-in duration-300">
+          <div className="w-full max-w-2xl bg-white rounded-[2rem] sm:rounded-[3rem] shadow-2xl border-2 border-slate-300 p-6 sm:p-8 md:p-12 relative overflow-hidden">
             {/* Background decorations */}
             <div className={`absolute top-0 left-0 w-full h-2 bg-gradient-to-r ${themeGradient}`}></div>
             <div className={`absolute -top-24 -right-24 w-48 h-48 ${bgGlow} rounded-full blur-3xl pointer-events-none`}></div>
@@ -6755,7 +6755,7 @@ ${explanation.explanation}
             </div>
 
             {imageData && (
-              <div className="relative w-full max-w-sm mx-auto h-48 mb-8 rounded-2xl overflow-hidden bg-slate-100 dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 group shadow-md text-center flex items-center justify-center">
+              <div className="relative w-full max-w-sm mx-auto h-48 mb-8 rounded-2xl overflow-hidden bg-slate-100 border-2 border-slate-200 group shadow-md text-center flex items-center justify-center">
                 <img src={`data:${imageData.mimeType};base64,${imageData.base64}`} alt="Uploaded content" className="max-w-full max-h-full object-contain" />
                 <button
                   onClick={() => setImageData(null)}
@@ -6809,7 +6809,7 @@ ${explanation.explanation}
                   </button>
                 </div>
               ) : (
-              <div className="bg-slate-50 dark:bg-slate-800/80 rounded-[2rem] p-2 flex flex-col md:flex-row items-stretch md:items-center gap-2 border-2 border-slate-200 dark:border-slate-700 focus-within:border-indigo-500 focus-within:ring-4 focus-within:ring-indigo-100 dark:focus-within:ring-indigo-900/30 transition-all shadow-inner">
+              <div className="bg-slate-50 rounded-[2rem] p-2 flex flex-col md:flex-row items-stretch md:items-center gap-2 border-2 border-slate-200 focus-within:border-indigo-500 focus-within:ring-4 focus-within:ring-indigo-100 dark:focus-within:ring-indigo-900/30 transition-all shadow-inner">
                 <textarea
                   value={promptText}
                   onChange={(e) => setPromptText(e.target.value)}
@@ -6860,7 +6860,7 @@ ${explanation.explanation}
                     <>
                       <button
                         onClick={() => fileInputRef.current?.click()}
-                        className="p-3 text-slate-400 hover:text-indigo-600 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl transition-colors"
+                        className="p-3 text-slate-400 hover:text-indigo-600 hover:bg-slate-200 hover:bg-slate-50 rounded-xl transition-colors"
                         title="Upload Image"
                       >
                         <ImageIcon className="w-6 h-6" />
@@ -6928,10 +6928,10 @@ ${explanation.explanation}
 
     if (mode === 'RESULT' && explanation) {
       return (
-        <div className="bg-slate-50 dark:bg-slate-950 min-h-screen pb-32 max-w-4xl mx-auto shadow-2xl border-x border-slate-100 dark:border-slate-800">
+        <div className="bg-slate-50 min-h-screen pb-32 max-w-4xl mx-auto shadow-2xl border-x border-slate-100">
           {/* Sticky Glass Header */}
-          <div className="sticky top-0 z-40 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 px-4 py-3 flex items-center gap-3">
-            <button onClick={() => runWithRecallExitGuard(() => { cancelPodcast(); handleExitResult(); })} className="flex items-center gap-2 px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-all group">
+          <div className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-slate-200 px-4 py-3 flex items-center gap-3">
+            <button onClick={() => runWithRecallExitGuard(() => { cancelPodcast(); handleExitResult(); })} className="flex items-center gap-2 px-3 py-1.5 hover:bg-slate-100 hover:bg-slate-50 rounded-xl transition-all group">
               <ArrowRight className="w-5 h-5 text-slate-500 rotate-180 group-hover:text-blue-600" />
               <span className="text-xs font-bold text-slate-500 group-hover:text-blue-600">Dashboard</span>
             </button>
@@ -6977,7 +6977,7 @@ ${explanation.explanation}
               <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="bg-white dark:bg-slate-900 p-2 rounded-2xl shadow-sm border-2 border-slate-300 dark:border-slate-800 animate-in fade-in zoom-in duration-300"
+                className="bg-white p-2 rounded-2xl shadow-sm border-2 border-slate-300 animate-in fade-in zoom-in duration-300"
               >
                 {imageData && (
                   <div className="relative rounded-xl overflow-hidden bg-slate-100 max-h-60">
@@ -7006,7 +7006,7 @@ ${explanation.explanation}
               <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="bg-white dark:bg-slate-900 p-5 rounded-[2rem] shadow-sm border-2 border-slate-300 dark:border-slate-800 animate-in fade-in zoom-in duration-300"
+                className="bg-white p-5 rounded-[2rem] shadow-sm border-2 border-slate-300 animate-in fade-in zoom-in duration-300"
               >
                 <div className="flex items-start gap-3">
                   <div className="w-10 h-10 rounded-2xl bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-300 flex items-center justify-center shrink-0">
@@ -7026,7 +7026,7 @@ ${explanation.explanation}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.06 }}
-                className="bg-white dark:bg-slate-900 p-6 rounded-3xl border-2 border-indigo-200 dark:border-indigo-900/40 shadow-sm relative overflow-hidden"
+                className="bg-white p-6 rounded-3xl border-2 border-indigo-200 dark:border-indigo-900/40 shadow-sm relative overflow-hidden"
               >
                 <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-indigo-500"></div>
                 <div className="flex items-start justify-between gap-3 mb-4">
@@ -7040,13 +7040,13 @@ ${explanation.explanation}
                     <p className="mt-1 text-[11px] font-black uppercase tracking-[0.2em] text-indigo-500 dark:text-indigo-300">Grade-sensitive depth - {getExplanationDepthProfile(studentProfile?.grade || currentDocument?.grade || educationLevel || '', explanation.level).label}</p>
                   </div>
                 </div>
-                <div className="prose prose-sm dark:prose-invert max-w-none rounded-2xl border border-indigo-100/60 dark:border-slate-800/50 bg-indigo-50/30 dark:bg-slate-800/20 p-4 text-slate-700 dark:text-slate-200 leading-relaxed">
+                <div className="prose prose-sm dark:prose-invert max-w-none rounded-2xl border border-indigo-100/60 bg-indigo-50/30 p-4 text-slate-700 dark:text-slate-200 leading-relaxed">
                   <MarkdownText content={buildDetailedExplanationPreview(explanation.explanation, explanation.topic, studentProfile?.grade || currentDocument?.grade || educationLevel || '', explanation.level)} />
                 </div>
                 {Array.isArray(explanation.subtopics) && explanation.subtopics.length > 0 && (
                   <div className="mt-5 grid gap-3 sm:grid-cols-2">
                     {explanation.subtopics.slice(0, getExplanationDepthProfile(studentProfile?.grade || currentDocument?.grade || educationLevel || '', explanation.level).subtopics).map((subtopic, index) => (
-                      <div key={`${subtopic.title}-${index}`} className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 p-4 shadow-sm">
+                      <div key={`${subtopic.title}-${index}`} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
                         <p className="text-[10px] font-black uppercase tracking-[0.18em] text-indigo-500 dark:text-indigo-300">{index + 1}. {subtopic.title}</p>
                         {subtopic.content && (
                           <div className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300 prose prose-sm dark:prose-invert max-w-none">
@@ -7058,11 +7058,11 @@ ${explanation.explanation}
                   </div>
                 )}
                 {Array.isArray(explanation.recapNodes) && explanation.recapNodes.length > 0 && (
-                  <div className="mt-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 p-4">
+                  <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-4">
                     <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400 mb-3">Step-by-step recap</p>
                     <div className="grid gap-3 sm:grid-cols-2">
                       {explanation.recapNodes.slice(0, getExplanationDepthProfile(studentProfile?.grade || currentDocument?.grade || educationLevel || '', explanation.level).recapNodes).map((node, index) => (
-                        <div key={`${node.point}-${index}`} className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4">
+                        <div key={`${node.point}-${index}`} className="rounded-2xl border border-slate-200 bg-white p-4">
                           <p className="text-sm font-black text-slate-900 dark:text-white">{node.point}</p>
                           <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">{node.details}</p>
                         </div>
@@ -7078,7 +7078,7 @@ ${explanation.explanation}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.1 }}
-                className="bg-white dark:bg-slate-900 p-6 rounded-3xl border-2 border-slate-300 dark:border-slate-800 shadow-sm relative overflow-hidden"
+                className="bg-white p-6 rounded-3xl border-2 border-slate-300 shadow-sm relative overflow-hidden"
               >
                 <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-amber-400"></div>
                 <h3 className="font-bold text-slate-900 dark:text-white mb-6 flex items-center gap-3 text-lg">
@@ -7087,13 +7087,13 @@ ${explanation.explanation}
                   </div>
                   Key Takeaways
                 </h3>
-                <div className="text-slate-600 dark:text-slate-300 text-sm md:text-base leading-relaxed mb-6 font-medium bg-amber-50/20 dark:bg-slate-800/20 p-4 rounded-2xl border border-amber-100/50 dark:border-slate-800/50 prose prose-sm dark:prose-invert max-w-none">
+                <div className="text-slate-600 dark:text-slate-300 text-sm md:text-base leading-relaxed mb-6 font-medium bg-amber-50/20 p-4 rounded-2xl border border-amber-100/50 prose prose-sm dark:prose-invert max-w-none">
                   <MarkdownText content={getBriefDefinition(explanation.explanation, explanation.topic)} />
                 </div>
                 <ul className="space-y-4">
                   {explanation.summaryPoints.map((point, i) => (
                     <li key={i} className="flex gap-4 text-slate-600 dark:text-slate-300 leading-relaxed font-medium">
-                      <div className="w-6 h-6 rounded-full bg-slate-50 dark:bg-slate-800 text-slate-400 border-2 border-slate-300 dark:border-slate-700 flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5">{i + 1}</div>
+                      <div className="w-6 h-6 rounded-full bg-slate-50 text-slate-400 border-2 border-slate-300 flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5">{i + 1}</div>
                       <span className="text-sm md:text-base">{point}</span>
                     </li>
                   ))}
@@ -7217,13 +7217,13 @@ ${explanation.explanation}
             <div className={`rounded-3xl border-2 p-4 shadow-sm ${
               explanation.grounding?.used
                 ? 'bg-emerald-50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-900/70'
-                : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800'
+                : 'bg-white border-slate-200'
             }`}>
               <div className="flex items-start gap-3">
                 <div className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 ${
                   explanation.grounding?.used
                     ? 'bg-emerald-600 text-white'
-                    : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-300'
+                    : 'bg-slate-100 text-slate-500 dark:text-slate-300'
                 }`}>
                   <Library className="w-5 h-5" />
                 </div>
@@ -7243,7 +7243,7 @@ ${explanation.explanation}
                   {explanation.grounding?.sources && explanation.grounding.sources.length > 0 && (
                     <div className="mt-3 flex flex-wrap gap-2">
                       {explanation.grounding.sources.slice(0, 4).map((source) => (
-                        <span key={source} className="rounded-full bg-white dark:bg-slate-900 border border-emerald-200 dark:border-emerald-900/70 px-3 py-1 text-[11px] font-bold text-emerald-800 dark:text-emerald-200 truncate max-w-full">
+                        <span key={source} className="rounded-full bg-white border border-emerald-200 dark:border-emerald-900/70 px-3 py-1 text-[11px] font-bold text-emerald-800 dark:text-emerald-200 truncate max-w-full">
                           {source}
                         </span>
                       ))}
@@ -7254,7 +7254,7 @@ ${explanation.explanation}
             </div>
 
             {/* Level Switcher */}
-            <div className="flex bg-white dark:bg-slate-900 p-1.5 rounded-xl shadow-sm border-2 border-slate-300 dark:border-slate-800">
+            <div className="flex bg-white p-1.5 rounded-xl shadow-sm border-2 border-slate-300">
               {(['Simple', 'Exam'] as const).map((l) => (
                 <button
                   key={l}
@@ -7336,13 +7336,13 @@ ${explanation.explanation}
                       Score: {lastQuizReview.score}%. Review the exact questions you missed before moving on.
                     </p>
                   </div>
-                  <div className="w-10 h-10 rounded-2xl bg-white dark:bg-slate-900 text-rose-600 flex items-center justify-center shrink-0">
+                  <div className="w-10 h-10 rounded-2xl bg-white text-rose-600 flex items-center justify-center shrink-0">
                     <AlertTriangle className="w-5 h-5" />
                   </div>
                 </div>
                 <div className="space-y-3">
                   {lastQuizReview.missedQuestions.slice(0, 3).map(({ question, index, selectedAnswer }) => (
-                    <div key={`${question.id}-${index}`} className="rounded-2xl bg-white dark:bg-slate-900 border border-rose-200 dark:border-rose-900/60 p-4">
+                    <div key={`${question.id}-${index}`} className="rounded-2xl bg-white border border-rose-200 dark:border-rose-900/60 p-4">
                       <p className="text-[10px] font-black uppercase tracking-widest text-rose-600 mb-2">Question {index + 1}</p>
                       <p className="text-sm font-bold text-slate-900 dark:text-white mb-2">{question.question}</p>
                       <div className="grid gap-1 text-xs font-semibold">
@@ -7377,7 +7377,7 @@ ${explanation.explanation}
                       });
                       setMode('QUIZ');
                     }}
-                    className="flex-1 rounded-2xl bg-white dark:bg-slate-900 border border-rose-200 dark:border-rose-900/60 text-rose-700 dark:text-rose-300 px-5 py-3 text-xs font-black uppercase tracking-wider hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors"
+                    className="flex-1 rounded-2xl bg-white border border-rose-200 dark:border-rose-900/60 text-rose-700 dark:text-rose-300 px-5 py-3 text-xs font-black uppercase tracking-wider hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors"
                   >
                     Retry Missed Only
                   </button>
@@ -7390,7 +7390,7 @@ ${explanation.explanation}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.08 }}
-              className="bg-white dark:bg-slate-900 p-6 rounded-3xl shadow-sm border-2 border-slate-300 dark:border-slate-800 prose prose-sm md:prose-base prose-slate dark:prose-invert max-w-none prose-p:text-slate-600 dark:prose-p:text-slate-300 prose-headings:text-slate-800 dark:prose-headings:text-slate-100 prose-strong:text-slate-900 dark:prose-strong:text-white"
+              className="bg-white p-6 rounded-3xl shadow-sm border-2 border-slate-300 prose prose-sm md:prose-base prose-slate dark:prose-invert max-w-none prose-p:text-slate-600 dark:prose-p:text-slate-300 prose-headings:text-slate-800 dark:prose-headings:text-slate-100 prose-strong:text-slate-900 dark:prose-strong:text-white"
             >
               <div>
                 <MarkdownText content={explanation.explanation} />
@@ -7414,7 +7414,7 @@ ${explanation.explanation}
                 {studentProfile?.parentPhone && studentProfile?.parentWhatsAppConsentAt && (
                   <button
                     onClick={() => handleShareExplanationToWhatsApp('parent')}
-                    className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-white hover:bg-emerald-50 text-[#087a3e] font-bold text-sm px-4 sm:px-5 py-3 rounded-xl transition-colors border border-emerald-200 dark:bg-slate-900 dark:hover:bg-emerald-950/30 dark:text-emerald-300 dark:border-emerald-900"
+                    className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-white hover:bg-emerald-50 text-[#087a3e] font-bold text-sm px-4 sm:px-5 py-3 rounded-xl transition-colors border border-emerald-200 hover:bg-emerald-50 dark:text-emerald-300 dark:border-emerald-900"
                   >
                     <Share2 className="w-4 h-4" />
                     Send to parent
@@ -7495,7 +7495,7 @@ ${explanation.explanation}
                         </div>
                         {/* Back */}
                         <div style={{ backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden', position: 'absolute', inset: 0, transform: 'rotateY(180deg)' }}
-                          className="bg-white dark:bg-slate-800 border-2 border-violet-200 dark:border-violet-800 rounded-3xl flex flex-col items-center justify-center p-6 shadow-lg">
+                          className="bg-white border-2 border-violet-200 dark:border-violet-800 rounded-3xl flex flex-col items-center justify-center p-6 shadow-lg">
                           <p className="text-[10px] font-black text-violet-500 uppercase tracking-widest mb-3">Definition</p>
                           <p className="text-sm font-bold text-slate-700 dark:text-slate-200 text-center leading-relaxed">{card.definition}</p>
                         </div>
@@ -7568,7 +7568,7 @@ ${explanation.explanation}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
-              className="bg-slate-50 dark:bg-slate-800/50 p-6 rounded-[2rem] border-2 border-slate-300 dark:border-slate-700 mt-8"
+              className="bg-slate-50 p-6 rounded-[2rem] border-2 border-slate-300 mt-8"
             >
               <div className="flex items-center gap-2 mb-4">
                 <Sparkles className="w-5 h-5 text-indigo-500" />
@@ -7692,7 +7692,7 @@ ${explanation.explanation}
           {/* --- ONBOARDING MODAL --- */}
           {showOnboarding && (
             <div className="fixed inset-0 z-[200] bg-slate-900/80 backdrop-blur-md flex items-end sm:items-center justify-center p-4">
-              <div className="bg-white dark:bg-slate-900 rounded-[2rem] w-full max-w-sm shadow-2xl overflow-hidden">
+              <div className="bg-white rounded-[2rem] w-full max-w-sm shadow-2xl overflow-hidden">
                 <div className="bg-gradient-to-r from-indigo-600 to-purple-600 p-6 text-white text-center">
                   <div className="text-3xl mb-2">Class</div>
                   <h2 className="text-xl font-black">Welcome to Somo Smart!</h2>
@@ -7711,7 +7711,7 @@ ${explanation.explanation}
                           <button
                             key={g}
                             onClick={() => setOnboardGrade(g)}
-                            className={`py-3 rounded-xl text-sm font-black transition-all border-2 ${onboardGrade === g ? 'bg-indigo-600 text-white border-indigo-600' : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-indigo-300'}`}
+                            className={`py-3 rounded-xl text-sm font-black transition-all border-2 ${onboardGrade === g ? 'bg-indigo-600 text-white border-indigo-600' : 'border-slate-200 text-slate-600 dark:text-slate-300 hover:border-indigo-300'}`}
                           >
                             {g}
                           </button>
@@ -7758,7 +7758,7 @@ ${explanation.explanation}
           {/* --- QUIZ WHATSAPP SHARE PROMPT --- */}
           {showQuizSharePrompt && (
             <div className="fixed inset-0 z-[200] bg-slate-900/70 backdrop-blur-sm flex items-end sm:items-center justify-center p-4">
-              <div className="bg-white dark:bg-slate-900 rounded-[2rem] w-full max-w-sm shadow-2xl p-6 text-center">
+              <div className="bg-white rounded-[2rem] w-full max-w-sm shadow-2xl p-6 text-center">
                 <div className="text-4xl mb-3">Done</div>
                 <h2 className="text-2xl font-black text-slate-900 dark:text-white">{showQuizSharePrompt.score}%!</h2>
                 <p className="text-sm font-bold text-slate-500 dark:text-slate-400 mt-1 mb-5">{showQuizSharePrompt.topic}</p>
@@ -7790,7 +7790,7 @@ ${explanation.explanation}
           )}
 
           {/* Global Bottom Nav */}
-          <div className="fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 px-4 py-2.5 pb-safe flex justify-between items-center z-50 max-w-4xl mx-auto shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
+          <div className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t border-slate-200 px-4 py-2.5 pb-safe flex justify-between items-center z-50 max-w-4xl mx-auto shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
             <button onClick={() => runWithRecallExitGuard(() => setMode('MENU'))} className="flex min-h-[52px] min-w-[52px] flex-col items-center justify-center gap-1 text-slate-400 hover:text-slate-600">
               <Home className="w-6 h-6" />
               <span className="text-[11px] font-black uppercase tracking-tight">Home</span>
@@ -7966,7 +7966,7 @@ ${explanation.explanation}
 
     if (mode === 'MARKETPLACE' || mode === 'RESOURCES') {
       return (
-        <div className="bg-slate-50 dark:bg-slate-950 min-h-screen pb-32 max-w-4xl mx-auto shadow-2xl border-x border-slate-100 dark:border-slate-800 flex flex-col">
+        <div className="bg-slate-50 min-h-screen pb-32 max-w-4xl mx-auto shadow-2xl border-x border-slate-100 flex flex-col">
           {/* Download Overage Payment Modal */}
           {showDownloadPayment && (
             <PaymentFlow
@@ -7986,7 +7986,7 @@ ${explanation.explanation}
           )}
 
           {/* Header */}
-          <div className="sticky top-0 z-40 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border-b border-slate-200 dark:border-slate-800 px-6 py-4 flex items-center justify-between">
+          <div className="sticky top-0 z-40 bg-white/90 backdrop-blur-xl border-b border-slate-200 px-6 py-4 flex items-center justify-between">
             <div className="flex items-center gap-4">
               <button onClick={() => setMode('MENU')} className="p-2 hover:bg-slate-100 rounded-full transition-colors"><ArrowRight className="w-5 h-5 rotate-180" /></button>
               <div>
@@ -8088,7 +8088,7 @@ ${explanation.explanation}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: idx * 0.1 }}
                         onClick={() => startStudySession(material)}
-                        className="bg-white dark:bg-slate-900 rounded-2xl p-4 shadow-sm border-2 border-slate-300 dark:border-slate-800 min-w-[180px] group cursor-pointer hover:border-indigo-200 dark:hover:border-indigo-800 hover:shadow-md transition-all active:scale-95"
+                        className="bg-white rounded-2xl p-4 shadow-sm border-2 border-slate-300 min-w-[180px] group cursor-pointer hover:border-indigo-200 dark:hover:border-indigo-800 hover:shadow-md transition-all active:scale-95"
                       >
                         <div className="w-8 h-8 bg-indigo-50 rounded-lg flex items-center justify-center mb-3 group-hover:bg-indigo-600 group-hover:text-white transition-colors">
                           <BookOpen className="w-4 h-4" />
@@ -8228,7 +8228,7 @@ ${explanation.explanation}
                     className={`flex items-center gap-1.5 px-4 py-2.5 rounded-2xl font-black text-xs whitespace-nowrap transition-all active:scale-95 shrink-0 ${
                       materialCategory === tab.id
                         ? tab.activeClass
-                        : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
+                        : 'bg-slate-100 text-slate-500 dark:text-slate-400 hover:bg-slate-200 hover:bg-slate-50'
                     }`}
                   >
                     <span>{tab.emoji}</span> {tab.label}
@@ -8252,7 +8252,7 @@ ${explanation.explanation}
                     setSelectedSource(nextSource);
                     trackFunnelEvent('library_source_changed', { source: nextSource });
                   }}
-                  className="bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-white text-[10px] font-bold uppercase tracking-wider rounded-xl px-3 py-2 outline-none focus:border-indigo-500 transition-all cursor-pointer"
+                  className="bg-white border-2 border-slate-200 text-slate-700 dark:text-white text-[10px] font-bold uppercase tracking-wider rounded-xl px-3 py-2 outline-none focus:border-indigo-500 transition-all cursor-pointer"
                 >
                   <option value="ALL">All Sources</option>
                   <option value="SOMO">Somo Smart</option>
@@ -8262,7 +8262,7 @@ ${explanation.explanation}
                 <select
                   value={selectedGrade}
                   onChange={(e) => setSelectedGrade(e.target.value)}
-                  className="bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-white text-[10px] font-bold uppercase tracking-wider rounded-xl px-3 py-2 outline-none focus:border-indigo-500 transition-all cursor-pointer"
+                  className="bg-white border-2 border-slate-200 text-slate-700 dark:text-white text-[10px] font-bold uppercase tracking-wider rounded-xl px-3 py-2 outline-none focus:border-indigo-500 transition-all cursor-pointer"
                 >
                   <option value="ALL">All Grades</option>
                   {['PP1', 'PP2', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6', 'Grade 7', 'Grade 8', 'Grade 9', 'Form 1', 'Form 2', 'Form 3', 'Form 4']
@@ -8282,7 +8282,7 @@ ${explanation.explanation}
                   <select
                     value={subjectFilter}
                     onChange={(e) => setSubjectFilter(e.target.value)}
-                    className="w-full bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-white text-[10px] font-bold uppercase tracking-wider rounded-xl px-3 py-2 outline-none focus:border-indigo-500 transition-all cursor-pointer"
+                    className="w-full bg-white border-2 border-slate-200 text-slate-700 dark:text-white text-[10px] font-bold uppercase tracking-wider rounded-xl px-3 py-2 outline-none focus:border-indigo-500 transition-all cursor-pointer"
                   >
                     <option value="ALL">All Subjects</option>
                     {subjects.filter(s => s !== 'ALL').map(sub => (
@@ -8300,7 +8300,7 @@ ${explanation.explanation}
                       setSelectedSource('ALL');
                       trackFunnelEvent('library_filters_reset', { source: 'ALL' });
                     }}
-                    className="text-[9px] font-black text-indigo-500 hover:text-indigo-700 uppercase tracking-wider px-3 py-2 rounded-xl hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-all"
+                    className="text-[9px] font-black text-indigo-500 hover:text-indigo-700 uppercase tracking-wider px-3 py-2 rounded-xl hover:bg-indigo-50 hover:bg-indigo-50 transition-all"
                   >
                      Reset
                   </button>
@@ -8337,7 +8337,7 @@ ${explanation.explanation}
                       <motion.div
                         whileHover={{ y: -2 }}
                         key={item.id}
-                        className="bg-white dark:bg-slate-900 border-2 border-slate-300 dark:border-slate-800 rounded-3xl p-5 shadow-sm hover:border-indigo-300 dark:hover:border-indigo-800 hover:shadow-lg hover:shadow-indigo-100/50 dark:hover:shadow-black/30 transition-all flex flex-col justify-between group"
+                        className="bg-white border-2 border-slate-300 rounded-3xl p-5 shadow-sm hover:border-indigo-300 dark:hover:border-indigo-800 hover:shadow-lg hover:shadow-indigo-100/50 dark:hover:shadow-black/30 transition-all flex flex-col justify-between group"
                       >
                         <div>
                           <div className="flex justify-between items-start mb-4">
@@ -8452,7 +8452,7 @@ ${explanation.explanation}
           </div>
 
           {/* Global Bottom Nav */}
-          <div className="fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 px-4 py-2.5 pb-safe flex justify-between items-center z-50 max-w-4xl mx-auto shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
+          <div className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t border-slate-200 px-4 py-2.5 pb-safe flex justify-between items-center z-50 max-w-4xl mx-auto shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
             <button onClick={() => setMode('MENU')} className="flex min-h-[52px] min-w-[52px] flex-col items-center justify-center gap-1 text-slate-400 hover:text-slate-600">
               <Home className="w-6 h-6" />
               <span className="text-[11px] font-black uppercase tracking-tight">Home</span>
@@ -8591,7 +8591,7 @@ ${explanation.explanation}
       };
 
       const libraryCategoryMeta = {
-        ALL: { label: 'All', count: visibleLibraryMaterials.length, pill: 'bg-slate-50 text-slate-600 dark:bg-slate-800 dark:text-slate-200' },
+        ALL: { label: 'All', count: visibleLibraryMaterials.length, pill: 'bg-slate-50 text-slate-600 dark:text-slate-200' },
         PAST_PAPER: { label: 'Exam Papers', count: visibleLibraryMaterials.filter(m => isPublishedPaper(m)).length, pill: 'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-200' },
         NOTES: { label: 'Notes', count: visibleLibraryMaterials.filter(m => normalizeMaterialCategory(m.category) === 'NOTES').length, pill: 'bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-200' },
       } as const;
@@ -8612,9 +8612,9 @@ ${explanation.explanation}
       };
 
       return (
-        <div className="bg-slate-50 dark:bg-slate-950 min-h-screen pb-32 max-w-4xl mx-auto shadow-2xl border-x border-slate-100 dark:border-slate-800 flex flex-col">
+        <div className="bg-slate-50 min-h-screen pb-32 max-w-4xl mx-auto shadow-2xl border-x border-slate-100 flex flex-col">
           {/* Header */}
-          <div className="sticky top-0 z-40 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 px-6 py-4 flex items-center justify-between">
+          <div className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-slate-200 px-6 py-4 flex items-center justify-between">
             <div>
               <h1 className="text-xl font-black text-slate-900 dark:text-white tracking-tight leading-none">My Library</h1>
               <p className="text-[10px] font-black text-indigo-500 uppercase tracking-[0.15em] mt-1.5">Published Papers / Exam Papers</p>
@@ -8663,7 +8663,7 @@ ${explanation.explanation}
             )}
 
             {/* Library Category Tabs */}
-            <div className="grid grid-cols-3 gap-3 mb-6 bg-slate-100 dark:bg-slate-900 p-1 rounded-2xl">
+            <div className="grid grid-cols-3 gap-3 mb-6 bg-slate-100 p-1 rounded-2xl">
               <button
                 onClick={() => {
                   setLibraryView('UNLOCKED');
@@ -8671,7 +8671,7 @@ ${explanation.explanation}
                   trackFunnelEvent('library_view_changed', { view: 'UNLOCKED' });
                 }}
                 className={`rounded-xl px-3 py-2 text-center transition-all font-black text-xs ${libraryView === 'UNLOCKED'
-                  ? 'bg-white dark:bg-slate-800 text-indigo-600 shadow-sm border border-slate-200/50 dark:border-slate-700/50'
+                  ? 'bg-white text-indigo-600 shadow-sm border border-slate-200/50'
                   : 'text-slate-500 hover:text-slate-750 dark:hover:text-slate-300'
                 }`}
               >
@@ -8684,7 +8684,7 @@ ${explanation.explanation}
                   trackFunnelEvent('library_view_changed', { view: 'PURCHASED' });
                 }}
                 className={`rounded-xl px-3 py-2 text-center transition-all font-black text-xs ${libraryView === 'PURCHASED'
-                  ? 'bg-white dark:bg-slate-800 text-indigo-600 shadow-sm border border-slate-200/50 dark:border-slate-700/50'
+                  ? 'bg-white text-indigo-600 shadow-sm border border-slate-200/50'
                   : 'text-slate-500 hover:text-slate-750 dark:hover:text-slate-300'
                 }`}
               >
@@ -8697,7 +8697,7 @@ ${explanation.explanation}
                   trackFunnelEvent('library_view_changed', { view: 'PRO_VAULT' });
                 }}
                 className={`rounded-xl px-3 py-2 text-center transition-all font-black text-xs ${libraryView === 'PRO_VAULT'
-                  ? 'bg-white dark:bg-slate-800 text-amber-600 shadow-sm border border-slate-200/50 dark:border-slate-700/50'
+                  ? 'bg-white text-amber-600 shadow-sm border border-slate-200/50'
                   : 'text-slate-500 hover:text-slate-750 dark:hover:text-slate-300'
                 }`}
               >
@@ -8706,7 +8706,7 @@ ${explanation.explanation}
             </div>
 
             {/* Category Tabs */}
-            <div className="grid grid-cols-3 gap-2 mb-6 bg-slate-100 dark:bg-slate-900 p-1 rounded-2xl">
+            <div className="grid grid-cols-3 gap-2 mb-6 bg-slate-100 p-1 rounded-2xl">
               {(['ALL', 'PAST_PAPER', 'NOTES'] as const).map(tabKey => {
                 const tab = libraryCategoryMeta[tabKey];
                 return (
@@ -8714,7 +8714,7 @@ ${explanation.explanation}
                     key={tabKey}
                     onClick={() => setActiveLibraryCategory(tabKey)}
                     className={`rounded-xl px-3 py-2 text-center transition-all font-black text-[10px] sm:text-xs leading-tight ${activeLibraryCategory === tabKey
-                      ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm border border-slate-200/50 dark:border-slate-700/50'
+                      ? 'bg-white text-slate-900 dark:text-white shadow-sm border border-slate-200/50'
                       : 'text-slate-500 hover:text-slate-750 dark:hover:text-slate-300'
                     }`}
                   >
@@ -8734,7 +8734,7 @@ ${explanation.explanation}
                     onClick={() => setActiveLibrarySubject(subj)}
                     className={`px-4 py-2 rounded-full text-xs font-black shrink-0 transition-all ${activeLibrarySubject === subj
                       ? 'bg-indigo-600 text-white shadow-md'
-                      : 'bg-white dark:bg-slate-900 text-slate-650 dark:text-slate-400 border border-slate-200 dark:border-slate-800 hover:border-slate-300'
+                      : 'bg-white text-slate-650 dark:text-slate-400 border border-slate-200 hover:border-slate-300'
                     }`}
                   >
                     {subj === 'ALL' ? 'All Subjects' : `${getSubjectEmoji(subj)} ${subj}`}
@@ -8745,7 +8745,7 @@ ${explanation.explanation}
 
             {libraryView === 'PRO_VAULT' && !isPro ? (
               /* Premium Paywall Page */
-              <div className="py-16 md:py-24 text-center bg-white dark:bg-slate-900 border-2 border-dashed border-amber-200 dark:border-amber-900/40 rounded-[3rem] mb-6">
+              <div className="py-16 md:py-24 text-center bg-white border-2 border-dashed border-amber-200 dark:border-amber-900/40 rounded-[3rem] mb-6">
                 <div className="w-24 h-24 bg-amber-50 dark:bg-amber-900/20 rounded-[2.5rem] flex items-center justify-center mx-auto mb-6 border-2 border-amber-200 dark:border-amber-800/30">
                   <Lock className="w-10 h-10 text-amber-500 dark:text-amber-400" />
                 </div>
@@ -8757,8 +8757,8 @@ ${explanation.explanation}
               </div>
             ) : categoryLibraryMaterials.length === 0 ? (
               /* Empty Library State */
-              <div className="py-16 md:py-28 text-center bg-white dark:bg-slate-900 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-[3rem]">
-                <div className="w-24 h-24 bg-slate-50 dark:bg-slate-800 rounded-[2.5rem] flex items-center justify-center mx-auto mb-6 border-2 border-slate-300 dark:border-slate-700">
+              <div className="py-16 md:py-28 text-center bg-white border-2 border-dashed border-slate-200 rounded-[3rem]">
+                <div className="w-24 h-24 bg-slate-50 rounded-[2.5rem] flex items-center justify-center mx-auto mb-6 border-2 border-slate-300">
                   <Library className="w-10 h-10 text-slate-300 dark:text-slate-600" />
                 </div>
                 <h4 className="text-xl font-black text-slate-800 dark:text-white mb-2 tracking-tight">Nothing in this section yet</h4>
@@ -8777,7 +8777,7 @@ ${explanation.explanation}
                       <button
                         key={item.id || idx}
                         onClick={() => { setMode('REVISION'); setPendingMaterialId(item.id); }}
-                        className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/70 p-4 transition hover:border-indigo-300 hover:bg-white dark:hover:bg-slate-800"
+                        className="rounded-2xl border border-slate-200 bg-slate-50 p-4 transition hover:border-indigo-300 hover:bg-white hover:bg-slate-50"
                       >
                         <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-500">Ready original</p>
                         <p className="mt-2 text-sm font-bold leading-snug text-slate-800 dark:text-slate-100 line-clamp-2">{item.title}</p>
@@ -8898,7 +8898,7 @@ ${explanation.explanation}
                   initial={{ scale: 0.95, opacity: 0, y: 15 }}
                   animate={{ scale: 1, opacity: 1, y: 0 }}
                   exit={{ scale: 0.95, opacity: 0, y: 15 }}
-                  className="bg-white dark:bg-slate-900 rounded-[2.5rem] p-6 max-w-md w-full shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden"
+                  className="bg-white rounded-[2.5rem] p-6 max-w-md w-full shadow-2xl border border-slate-200 overflow-hidden"
                 >
                   <div className="flex items-start justify-between mb-4">
                     <div>
@@ -8907,14 +8907,14 @@ ${explanation.explanation}
                     </div>
                     <button
                       onClick={() => setLibraryItemPreview(null)}
-                      className="p-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 rounded-full text-slate-500 transition-colors"
+                      className="p-1.5 bg-slate-100 hover:bg-slate-200 hover:bg-slate-50 rounded-full text-slate-500 transition-colors"
                     >
                       <X className="w-4 h-4" />
                     </button>
                   </div>
 
                   {/* Book Preview Detail */}
-                  <div className="flex gap-4 mb-6 bg-slate-50 dark:bg-slate-950 p-4 rounded-3xl border border-slate-100 dark:border-slate-850">
+                  <div className="flex gap-4 mb-6 bg-slate-50 p-4 rounded-3xl border border-slate-100 dark:border-slate-850">
                     <div className={`w-20 aspect-[3/4] rounded-xl shrink-0 bg-gradient-to-br ${getSubjectGradient(libraryItemPreview.subject)} p-2 flex flex-col justify-between overflow-hidden shadow-md relative border border-white/5`}>
                       <div className="absolute top-0 bottom-0 left-0 w-2 bg-black/10" />
                       <span className="text-[7px] font-black bg-black/25 text-white px-1 py-0.5 rounded w-fit leading-none">{libraryItemPreview.grade}</span>
@@ -8965,7 +8965,7 @@ ${explanation.explanation}
                   <div className="flex gap-3">
                     <button
                       onClick={() => setLibraryItemPreview(null)}
-                      className="flex-1 py-3 rounded-2xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-750 text-slate-700 dark:text-slate-300 font-bold transition-all text-xs"
+                      className="flex-1 py-3 rounded-2xl bg-slate-100 hover:bg-slate-200 dark:hover:bg-slate-750 text-slate-700 dark:text-slate-300 font-bold transition-all text-xs"
                     >
                       Go Back
                     </button>
@@ -8986,7 +8986,7 @@ ${explanation.explanation}
           </AnimatePresence>
 
           {/* Global Bottom Nav */}
-          <div className="fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 px-4 py-2.5 pb-safe flex justify-between items-center z-50 max-w-4xl mx-auto shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
+          <div className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t border-slate-200 px-4 py-2.5 pb-safe flex justify-between items-center z-50 max-w-4xl mx-auto shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
             <button onClick={() => setMode('MENU')} className="flex min-h-[52px] min-w-[52px] flex-col items-center justify-center gap-1 text-slate-400 hover:text-slate-600">
               <Home className="w-6 h-6" />
               <span className="text-[11px] font-black uppercase tracking-tight">Home</span>
@@ -9019,10 +9019,10 @@ ${explanation.explanation}
           <motion.div
             initial={{ y: 20, opacity: 0, scale: 0.95 }}
             animate={{ y: 0, opacity: 1, scale: 1 }}
-            className="bg-white dark:bg-slate-900 w-full max-w-lg rounded-[2rem] shadow-2xl overflow-hidden relative"
+            className="bg-white w-full max-w-lg rounded-[2rem] shadow-2xl overflow-hidden relative"
           >
             {/* Header */}
-            <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-white dark:bg-slate-900 relative z-10">
+            <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-white relative z-10">
               <div>
                 <h2 className="text-xl font-black text-slate-900 dark:text-white flex items-center gap-2">
                   <ScanLine className="w-6 h-6 text-indigo-600" />
@@ -9044,7 +9044,7 @@ ${explanation.explanation}
               <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-50 rounded-full blur-3xl opacity-50 -translate-y-1/2 translate-x-1/2 pointer-events-none" />
 
               <div className="relative z-10">
-                <p className="text-slate-600 dark:text-slate-300 font-medium leading-relaxed mb-8 text-center bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border-2 border-slate-300 dark:border-slate-800">
+                <p className="text-slate-600 dark:text-slate-300 font-medium leading-relaxed mb-8 text-center bg-slate-50 p-4 rounded-xl border-2 border-slate-300">
                   Snap a clear photo of your question. Somo will explain it simply.
                 </p>
 
@@ -9150,7 +9150,7 @@ ${explanation.explanation}
   };
 
   return (
-    <div className="relative min-h-screen bg-slate-50 dark:bg-slate-950">
+    <div className="relative min-h-screen bg-slate-50">
       {/* Sidebar */}
       <LearnerSidebar
         isOpen={sidebarOpen}
@@ -9175,7 +9175,7 @@ ${explanation.explanation}
             initial={{ opacity: 0, y: 18 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 18 }}
-            className="fixed bottom-4 left-4 right-4 md:left-auto md:right-6 md:w-[420px] z-[131] rounded-2xl border border-red-200 bg-white shadow-2xl shadow-slate-900/15 dark:border-red-500/40 dark:bg-slate-900"
+            className="fixed bottom-4 left-4 right-4 md:left-auto md:right-6 md:w-[420px] z-[131] rounded-2xl border border-red-200 bg-white shadow-2xl shadow-slate-900/15 dark:border-red-500/40"
           >
             <div className="p-4 flex items-center gap-3">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-300">
@@ -9204,7 +9204,7 @@ ${explanation.explanation}
             initial={{ opacity: 0, y: -16 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -16 }}
-            className="fixed top-4 left-4 right-4 md:left-auto md:right-6 md:w-[430px] z-[130] rounded-2xl border border-amber-200 bg-white shadow-2xl shadow-slate-900/15 dark:border-amber-500/40 dark:bg-slate-900"
+            className="fixed top-4 left-4 right-4 md:left-auto md:right-6 md:w-[430px] z-[130] rounded-2xl border border-amber-200 bg-white shadow-2xl shadow-slate-900/15 dark:border-amber-500/40"
           >
             <div className="p-4 flex gap-3">
               <div className="mt-1 h-10 w-10 shrink-0 rounded-xl bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300 flex items-center justify-center">
@@ -9216,7 +9216,7 @@ ${explanation.explanation}
                   <button
                     type="button"
                     onClick={() => setMicPermissionNotice(false)}
-                    className="rounded-full p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-200"
+                    className="rounded-full p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700 hover:bg-slate-50 dark:hover:text-slate-200"
                     aria-label="Dismiss microphone notice"
                   >
                     <X className="h-4 w-4" />
@@ -9249,7 +9249,7 @@ ${explanation.explanation}
                   <button
                     type="button"
                     onClick={() => setMicPermissionNotice(false)}
-                    className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-black uppercase tracking-wide text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+                    className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-black uppercase tracking-wide text-slate-600 hover:bg-slate-50 dark:text-slate-300 hover:bg-slate-50"
                   >
                     Not Now
                   </button>
@@ -9275,10 +9275,10 @@ ${explanation.explanation}
               initial={{ scale: 0.95, y: 30 }}
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.95, y: 30 }}
-              className="bg-white dark:bg-slate-900 rounded-[2rem] shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[85vh] relative"
+              className="bg-white rounded-[2rem] shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[85vh] relative"
             >
               {/* Header */}
-              <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-white dark:bg-slate-900 sticky top-0 z-10">
+              <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-white sticky top-0 z-10">
                 <div className="flex items-center gap-4">
                   <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/30">
                     <Sparkles className="w-6 h-6 text-white" />
@@ -9290,7 +9290,7 @@ ${explanation.explanation}
                 </div>
                 <button
                   onClick={() => setFadedSolutionData(prev => ({ ...prev, show: false }))}
-                  className="p-3 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors group"
+                  className="p-3 hover:bg-slate-100 hover:bg-slate-50 rounded-full transition-colors group"
                 >
                   <X className="w-6 h-6 text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300" />
                 </button>
@@ -9306,16 +9306,16 @@ ${explanation.explanation}
               >
                 {fadedSolutionData.isGenerating ? (
                   <div className="space-y-6 animate-pulse mt-4">
-                    <div className="h-8 w-2/3 bg-slate-200 dark:bg-slate-800 rounded-xl"></div>
+                    <div className="h-8 w-2/3 bg-slate-200 rounded-xl"></div>
                     <div className="space-y-3">
-                        <div className="h-4 w-full bg-slate-200 dark:bg-slate-800 rounded-lg"></div>
-                        <div className="h-4 w-5/6 bg-slate-200 dark:bg-slate-800 rounded-lg"></div>
-                        <div className="h-4 w-11/12 bg-slate-200 dark:bg-slate-800 rounded-lg"></div>
+                        <div className="h-4 w-full bg-slate-200 rounded-lg"></div>
+                        <div className="h-4 w-5/6 bg-slate-200 rounded-lg"></div>
+                        <div className="h-4 w-11/12 bg-slate-200 rounded-lg"></div>
                     </div>
-                    <div className="h-32 w-full bg-slate-200 dark:bg-slate-800 rounded-2xl mt-8"></div>
+                    <div className="h-32 w-full bg-slate-200 rounded-2xl mt-8"></div>
                     <div className="space-y-3 mt-8">
-                        <div className="h-4 w-full bg-slate-200 dark:bg-slate-800 rounded-lg"></div>
-                        <div className="h-4 w-4/5 bg-slate-200 dark:bg-slate-800 rounded-lg"></div>
+                        <div className="h-4 w-full bg-slate-200 rounded-lg"></div>
+                        <div className="h-4 w-4/5 bg-slate-200 rounded-lg"></div>
                     </div>
                   </div>
                 ) : (
@@ -9350,7 +9350,7 @@ ${explanation.explanation}
                                 setFadedSolutionData(prev => ({ ...prev, show: false }));
                                 setShowLogin(true);
                             }}
-                            className="flex-1 sm:flex-none bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold py-3.5 px-6 rounded-xl border-2 border-slate-200 dark:border-slate-700 transition-all"
+                            className="flex-1 sm:flex-none bg-white hover:bg-slate-50 hover:bg-slate-50 text-slate-700 dark:text-slate-200 font-bold py-3.5 px-6 rounded-xl border-2 border-slate-200 transition-all"
                         >
                             Log In
                         </button>

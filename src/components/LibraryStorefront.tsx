@@ -62,18 +62,18 @@ export const LibraryStorefront: React.FC<LibraryStorefrontProps> = ({ onGetAcces
         .slice(0, 9);
 
     return (
-        <section className="py-16 bg-white dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800 transition-colors">
+        <section className="py-16 bg-white border-t border-slate-200 transition-colors">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
                 {/* Header */}
                 <div className="text-center mb-10">
-                    <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-indigo-100 dark:bg-indigo-900/50 border border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 text-xs font-bold uppercase tracking-widest mb-4">
+                    <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-indigo-100 border border-indigo-200 text-indigo-700 text-xs font-bold uppercase tracking-widest mb-4">
                         📚 Content Library
                     </div>
-                    <h2 className="text-3xl md:text-4xl font-bold text-slate-900 dark:text-white tracking-tight mb-3">
+                    <h2 className="text-3xl md:text-4xl font-bold text-slate-900 tracking-tight mb-3">
                         Official Soma Study Materials, <span className="text-indigo-600 dark:text-indigo-400">All Free.</span>
                     </h2>
-                    <p className="text-slate-500 dark:text-slate-400 max-w-xl mx-auto font-medium">
+                    <p className="text-slate-500 max-w-xl mx-auto font-medium">
                         Browse verified syllabuses, expert notes, and KCSE/KPSEA past papers — free for every Kenyan learner.
                     </p>
                 </div>
@@ -87,7 +87,7 @@ export const LibraryStorefront: React.FC<LibraryStorefrontProps> = ({ onGetAcces
                             className={`px-4 py-2 rounded-full text-sm font-bold border-2 transition-all ${
                                 activeTab === tab.id
                                     ? tab.active
-                                    : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:border-indigo-200'
+                                    : 'bg-white text-slate-600 border-slate-200 hover:border-indigo-200'
                             }`}
                         >
                             {tab.label}
@@ -107,8 +107,8 @@ export const LibraryStorefront: React.FC<LibraryStorefrontProps> = ({ onGetAcces
                                 onClick={() => setActiveSubject(sub)}
                                 className={`px-3 py-1 rounded-full text-xs font-bold border transition-all whitespace-nowrap ${
                                     activeSubject === sub
-                                        ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 border-transparent'
-                                        : 'bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:border-slate-400'
+                                        ? 'bg-slate-900 text-white border-transparent'
+                                        : 'bg-white text-slate-500 border-slate-200 hover:border-slate-400'
                                 }`}
                             >
                                 {sub === 'ALL' ? 'All Subjects' : sub}
@@ -121,7 +121,7 @@ export const LibraryStorefront: React.FC<LibraryStorefrontProps> = ({ onGetAcces
                 {loading ? (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                         {[...Array(6)].map((_, i) => (
-                            <div key={i} className="h-44 bg-slate-100 dark:bg-slate-800 rounded-2xl animate-pulse" />
+                            <div key={i} className="h-44 bg-slate-100 rounded-2xl animate-pulse" />
                         ))}
                     </div>
                 ) : filtered.length === 0 ? (
@@ -146,21 +146,21 @@ export const LibraryStorefront: React.FC<LibraryStorefrontProps> = ({ onGetAcces
                                     <div>
                                         <div className="flex items-center justify-between mb-3">
                                             <span className="text-2xl">{cfg.icon}</span>
-                                            <span className="text-[9px] font-black uppercase tracking-widest bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800/50">
+                                            <span className="text-[9px] font-black uppercase tracking-widest bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800/50">
                                                 {cfg.badge}
                                             </span>
                                         </div>
-                                        <h3 className="font-bold text-slate-900 dark:text-white text-sm leading-snug line-clamp-2 mb-3 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                                        <h3 className="font-bold text-slate-900 text-sm leading-snug line-clamp-2 mb-3 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
                                             {item.title}
                                         </h3>
                                         <div className="flex items-center gap-2 flex-wrap">
                                             {item.grade && (
-                                                <span className="text-[9px] font-black uppercase tracking-wider bg-white/70 dark:bg-slate-800/70 text-slate-600 dark:text-slate-400 px-2 py-0.5 rounded-full border border-white dark:border-slate-700">
+                                                <span className="text-[9px] font-black uppercase tracking-wider bg-white/70 text-slate-600 px-2 py-0.5 rounded-full border border-white">
                                                     {item.grade}
                                                 </span>
                                             )}
                                             {item.subject && (
-                                                <span className="text-[9px] font-black uppercase tracking-wider bg-white/70 dark:bg-slate-800/70 text-slate-600 dark:text-slate-400 px-2 py-0.5 rounded-full border border-white dark:border-slate-700">
+                                                <span className="text-[9px] font-black uppercase tracking-wider bg-white/70 text-slate-600 px-2 py-0.5 rounded-full border border-white">
                                                     {item.subject}
                                                 </span>
                                             )}
@@ -168,7 +168,7 @@ export const LibraryStorefront: React.FC<LibraryStorefrontProps> = ({ onGetAcces
                                     </div>
                                     <button
                                         onClick={onGetAccess}
-                                        className="mt-4 w-full py-2.5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-xl text-xs font-black hover:bg-indigo-600 dark:hover:bg-indigo-50 transition-all active:scale-95 flex items-center justify-center gap-1"
+                                        className="mt-4 w-full py-2.5 bg-slate-900 text-white rounded-xl text-xs font-black hover:bg-indigo-600 hover:bg-indigo-50 transition-all active:scale-95 flex items-center justify-center gap-1"
                                     >
                                         Access Free <ChevronRight className="w-3.5 h-3.5" />
                                     </button>
@@ -182,7 +182,7 @@ export const LibraryStorefront: React.FC<LibraryStorefrontProps> = ({ onGetAcces
                 <div className="mt-12 text-center">
                     <button
                         onClick={onGetAccess}
-                        className="inline-flex items-center gap-2 px-8 py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-2xl shadow-lg shadow-indigo-200 dark:shadow-indigo-900/30 hover:-translate-y-0.5 transition-all"
+                        className="inline-flex items-center gap-2 px-8 py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-2xl shadow-lg shadow-indigo-200  hover:-translate-y-0.5 transition-all"
                     >
                         Browse Full Library <ChevronRight className="w-5 h-5" />
                     </button>
