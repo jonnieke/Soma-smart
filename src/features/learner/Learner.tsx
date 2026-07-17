@@ -4613,7 +4613,7 @@ ${explanation.explanation}
                       )}
 
                       {req.responseType === 'VIDEO' && (
-                        <div className="aspect-video bg-black rounded-xl relative overflow-hidden shadow-lg border-2 border-slate-300">
+                        <div className="aspect-video bg-slate-50 rounded-xl relative overflow-hidden shadow-lg border-2 border-slate-200">
                           {typeof req.response === 'string' && req.response ? (
                             <video src={req.response} controls className="w-full h-full" />
                           ) : (
@@ -6617,7 +6617,7 @@ ${explanation.explanation}
 
           {/* GLOSSARY OVERLAY POPUP */}
           {activeGlossaryTerm && (
-            <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="fixed inset-0 bg-white/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
               <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
@@ -7691,7 +7691,7 @@ ${explanation.explanation}
 
           {/* --- ONBOARDING MODAL --- */}
           {showOnboarding && (
-            <div className="fixed inset-0 z-[200] bg-slate-900/80 backdrop-blur-md flex items-end sm:items-center justify-center p-4">
+            <div className="fixed inset-0 z-[200] bg-white/85 backdrop-blur-md flex items-end sm:items-center justify-center p-4">
               <div className="bg-white rounded-[2rem] w-full max-w-sm shadow-2xl overflow-hidden">
                 <div className="bg-gradient-to-r from-indigo-600 to-purple-600 p-6 text-white text-center">
                   <div className="text-3xl mb-2">Class</div>
@@ -7757,7 +7757,7 @@ ${explanation.explanation}
 
           {/* --- QUIZ WHATSAPP SHARE PROMPT --- */}
           {showQuizSharePrompt && (
-            <div className="fixed inset-0 z-[200] bg-slate-900/70 backdrop-blur-sm flex items-end sm:items-center justify-center p-4">
+            <div className="fixed inset-0 z-[200] bg-white/85 backdrop-blur-sm flex items-end sm:items-center justify-center p-4">
               <div className="bg-white rounded-[2rem] w-full max-w-sm shadow-2xl p-6 text-center">
                 <div className="text-4xl mb-3">Done</div>
                 <h2 className="text-2xl font-black text-slate-900 dark:text-white">{showQuizSharePrompt.score}%!</h2>
@@ -8042,12 +8042,12 @@ ${explanation.explanation}
 
                 {/* Right: Compact Stats */}
                 <div className="relative z-10 flex items-center gap-3 shrink-0">
-                  <div className="flex flex-col items-center justify-center bg-white/10 backdrop-blur-md px-5 py-2.5 rounded-2xl border border-slate-200 min-w-[90px]">
-                    <span className="text-2xl font-black leading-none mb-0.5">{gradeFilteredMaterials.length}</span>
+                  <div className="flex flex-col items-center justify-center bg-white backdrop-blur-md px-5 py-2.5 rounded-2xl border border-slate-200 min-w-[90px] shadow-sm">
+                    <span className="text-2xl font-black leading-none mb-0.5 text-slate-900">{gradeFilteredMaterials.length}</span>
                     <span className="text-[7px] opacity-70 font-black uppercase tracking-widest">Available</span>
                   </div>
-                  <div className="flex flex-col items-center justify-center bg-indigo-500/30 backdrop-blur-md px-5 py-2.5 rounded-2xl border border-slate-200 min-w-[90px]">
-                    <span className="text-2xl font-black leading-none mb-0.5">{purchasedMaterialIds.length}</span>
+                  <div className="flex flex-col items-center justify-center bg-indigo-50 backdrop-blur-md px-5 py-2.5 rounded-2xl border border-slate-200 min-w-[90px] shadow-sm">
+                    <span className="text-2xl font-black leading-none mb-0.5 text-indigo-700">{purchasedMaterialIds.length}</span>
                     <span className="text-[7px] opacity-70 font-black uppercase tracking-widest">Unlocked</span>
                   </div>
                 </div>
@@ -8623,15 +8623,15 @@ ${explanation.explanation}
           </div>
 
           <div className="p-6 flex-1 overflow-y-auto no-scrollbar">
-            <div className="relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-indigo-600 via-slate-950 to-blue-700 p-5 text-white shadow-xl shadow-indigo-500/20 mb-6">
-              <div className="absolute -right-10 -top-10 h-28 w-28 rounded-full bg-white/10 blur-2xl" />
+            <div className="relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-indigo-50 via-white to-blue-50 p-5 text-slate-900 shadow-xl shadow-slate-200 mb-6">
+              <div className="absolute -right-10 -top-10 h-28 w-28 rounded-full bg-indigo-100 blur-2xl" />
               <div className="relative flex items-start justify-between gap-4">
                 <div className="min-w-0">
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-100">Published papers first</p>
-                  <h2 className="mt-2 text-xl font-black leading-tight">Welcome and start learning with a real paper.</h2>
-                  <p className="mt-2 text-sm text-indigo-50/90 max-w-xl">Open a curated original mock, work through it under time, and use the feedback to recover marks fast.</p>
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-600">Published papers first</p>
+                  <h2 className="mt-2 text-xl font-black leading-tight text-slate-900">Welcome and start learning with a real paper.</h2>
+                  <p className="mt-2 text-sm text-slate-600 max-w-xl">Open a curated original mock, work through it under time, and use the feedback to recover marks fast.</p>
                 </div>
-                <div className="hidden sm:flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white border border-slate-200">
+                <div className="hidden sm:flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white border border-slate-200 shadow-sm">
                   <Layers className="h-6 w-6 text-emerald-200" />
                 </div>
               </div>
@@ -8893,7 +8893,7 @@ ${explanation.explanation}
           {/* Premium Setup/Rewrite Modal */}
           <AnimatePresence>
             {libraryItemPreview && (
-              <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-4">
+              <div className="fixed inset-0 z-50 bg-white/85 backdrop-blur-md flex items-center justify-center p-4">
                 <motion.div
                   initial={{ scale: 0.95, opacity: 0, y: 15 }}
                   animate={{ scale: 1, opacity: 1, y: 0 }}
@@ -9015,7 +9015,7 @@ ${explanation.explanation}
 
     if (mode === 'SCAN') {
       return (
-        <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-end md:items-center justify-center p-4 animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-50 bg-white/85 backdrop-blur-sm flex items-end md:items-center justify-center p-4 animate-in fade-in duration-200">
           <motion.div
             initial={{ y: 20, opacity: 0, scale: 0.95 }}
             animate={{ y: 0, opacity: 1, scale: 1 }}
