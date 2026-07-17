@@ -3757,7 +3757,7 @@ ${explanation.explanation}
                   <p className="text-[10px] font-black text-slate-500 uppercase tracking-wider mb-1">Reviewed</p>
                   <p className="text-2xl font-black text-white">{flashcardItems.length} Cards</p>
                 </div>
-                <div className="bg-slate-950/40 border border-slate-800/80 rounded-2xl p-4 flex flex-col justify-center items-center">
+                <div className="bg-white border border-slate-200 rounded-2xl p-4 flex flex-col justify-center items-center">
                   <p className="text-[10px] font-black text-slate-500 uppercase tracking-wider mb-1">Sync Status</p>
                   <p className="text-xs font-bold text-emerald-400 mt-2 flex items-center justify-center gap-1.5">
                     <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
@@ -3820,7 +3820,7 @@ ${explanation.explanation}
             </div>
 
             {totalFlashcards > 0 && (
-              <div className="flex items-center bg-slate-950/80 border border-slate-800 rounded-xl p-1">
+              <div className="flex items-center bg-white border border-slate-200 rounded-xl p-1">
                 <button
                   onClick={() => {
                     setPracticeMode('due');
@@ -3899,7 +3899,7 @@ ${explanation.explanation}
                     <span className="text-[10px] font-black text-indigo-400 tracking-wider">PROGRESS</span>
                     <span>Card {currentCardIndex + 1} of {flashcardItems.length}</span>
                   </div>
-                  <div className="w-full bg-slate-900 border border-slate-800 rounded-full h-2 overflow-hidden p-0.5">
+                  <div className="w-full bg-white border border-slate-200 rounded-full h-2 overflow-hidden p-0.5">
                     <div
                       className="bg-gradient-to-r from-indigo-500 to-purple-600 h-1 rounded-full transition-all duration-300"
                       style={{ width: `${progressPct}%` }}
@@ -3920,7 +3920,7 @@ ${explanation.explanation}
                   >
                     {/* FRONT FACE */}
                     <div
-                      className="absolute inset-0 w-full h-full p-6 md:p-8 rounded-3xl border border-slate-800 bg-slate-900 flex flex-col justify-between overflow-y-auto select-none shadow-2xl"
+                      className="absolute inset-0 w-full h-full p-6 md:p-8 rounded-3xl border border-slate-200 bg-white flex flex-col justify-between overflow-y-auto select-none shadow-2xl"
                       style={{
                         backfaceVisibility: 'hidden',
                         WebkitBackfaceVisibility: 'hidden',
@@ -3950,7 +3950,7 @@ ${explanation.explanation}
 
                     {/* BACK FACE */}
                     <div
-                      className="absolute inset-0 w-full h-full p-6 md:p-8 rounded-3xl border border-indigo-500/30 bg-slate-900 flex flex-col justify-between overflow-y-auto select-none shadow-2xl shadow-indigo-500/5"
+                      className="absolute inset-0 w-full h-full p-6 md:p-8 rounded-3xl border border-indigo-200 bg-white flex flex-col justify-between overflow-y-auto select-none shadow-2xl"
                       style={{
                         backfaceVisibility: 'hidden',
                         WebkitBackfaceVisibility: 'hidden',
@@ -4145,7 +4145,7 @@ ${explanation.explanation}
           <motion.div
             initial={{ scale: 0.95, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            className="w-full max-w-lg bg-black rounded-[2.5rem] overflow-hidden shadow-2xl relative flex flex-col md:aspect-[3/4] h-full md:h-auto max-h-[90vh]"
+            className="w-full max-w-lg bg-white rounded-[2.5rem] overflow-hidden shadow-2xl relative flex flex-col md:aspect-[3/4] h-full md:h-auto max-h-[90vh]"
           >
           {/* TOP BAR */}
             <div className="absolute top-0 left-0 right-0 p-6 z-20 flex justify-between items-start bg-gradient-to-b from-black/60 to-transparent">
@@ -4155,14 +4155,14 @@ ${explanation.explanation}
               </div>
               <button
                 onClick={() => setShowCamera(false)}
-                className="w-10 h-10 bg-black/40 backdrop-blur-md rounded-full flex items-center justify-center text-white border border-white/20 hover:bg-white/20 transition-all"
+                className="w-10 h-10 bg-white/90 backdrop-blur-md rounded-full flex items-center justify-center text-slate-700 border border-slate-200 hover:bg-slate-50 transition-all"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             {/* Camera Viewport */}
-            <div className="flex-1 relative bg-black">
+            <div className="flex-1 relative bg-slate-50">
               <video
                 ref={scanVideoRef}
                 autoPlay
@@ -4201,7 +4201,7 @@ ${explanation.explanation}
                 }}
                 className="flex flex-col items-center gap-1.5 group"
               >
-                <div className="w-12 h-12 rounded-2xl bg-slate-800/80 flex items-center justify-center group-hover:bg-slate-700 transition-colors border border-white/10 group-active:scale-95">
+                <div className="w-12 h-12 rounded-2xl bg-white flex items-center justify-center group-hover:bg-slate-50 transition-colors border border-slate-200 group-active:scale-95">
                   <Mic className="w-5 h-5 text-indigo-400" />
                 </div>
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Audio</span>
@@ -4244,7 +4244,7 @@ ${explanation.explanation}
                 }}
                 className="flex flex-col items-center gap-1.5 group"
               >
-                <div className="w-12 h-12 rounded-2xl bg-slate-800/80 flex items-center justify-center group-hover:bg-slate-700 transition-colors border border-white/10 group-active:scale-95">
+                <div className="w-12 h-12 rounded-2xl bg-white flex items-center justify-center group-hover:bg-slate-50 transition-colors border border-slate-200 group-active:scale-95">
                   <ImageIcon className="w-5 h-5 text-indigo-400" />
                 </div>
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Gallery</span>
@@ -6667,7 +6667,7 @@ ${explanation.explanation}
                 transform: 'translateX(-50%) translateY(-100%)',
                 zIndex: 100
               }}
-              className="bg-slate-900 border border-slate-750 rounded-2xl shadow-xl flex items-center p-1 gap-1 select-none animate-in fade-in zoom-in-95 duration-150"
+              className="bg-white border border-slate-200 rounded-2xl shadow-xl flex items-center p-1 gap-1 select-none animate-in fade-in zoom-in-95 duration-150"
             >
               <button
                 onClick={() => {
@@ -6759,7 +6759,7 @@ ${explanation.explanation}
                 <img src={`data:${imageData.mimeType};base64,${imageData.base64}`} alt="Uploaded content" className="max-w-full max-h-full object-contain" />
                 <button
                   onClick={() => setImageData(null)}
-                  className="absolute top-3 right-3 p-2 bg-black/50 hover:bg-red-500 text-white rounded-full backdrop-blur-md transition-colors shadow-sm"
+                  className="absolute top-3 right-3 p-2 bg-white/90 hover:bg-red-50 text-slate-700 rounded-full backdrop-blur-md transition-colors shadow-sm"
                   title="Remove image"
                 >
                   <X className="w-4 h-4" />
@@ -7111,7 +7111,7 @@ ${explanation.explanation}
                   transition={{ type: 'spring', stiffness: 300, damping: 30 }}
                   className="fixed bottom-20 left-3 right-3 md:left-1/2 md:-translate-x-1/2 md:w-[92%] md:max-w-xl z-[100]"
                 >
-                  <div className="bg-[#0f1117] backdrop-blur-2xl rounded-3xl shadow-2xl border border-white/10 ring-1 ring-black/50 overflow-hidden">
+                  <div className="bg-white backdrop-blur-2xl rounded-3xl shadow-2xl border border-slate-200 overflow-hidden">
                     {/* Progress Bar Track */}
                     {podcastTotalSegments > 0 && (
                       <div className="h-1 bg-white/10 w-full">
@@ -7145,7 +7145,7 @@ ${explanation.explanation}
                       {isPodcastPlaying && podcastScript && currentSegmentIndex >= 0 && (() => {
                         const seg = podcastScript.script[currentSegmentIndex];
                         return (
-                          <div className="bg-white/8 rounded-2xl px-4 py-3 mb-4 border border-white/10">
+                          <div className="bg-slate-50 rounded-2xl px-4 py-3 mb-4 border border-slate-200">
                             <span className={`inline-block text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full mb-2 ${
                               seg.speaker === 'Host'
                                 ? 'bg-indigo-500/40 text-indigo-200'
@@ -7159,7 +7159,7 @@ ${explanation.explanation}
                       })()}
 
                       {podcastLoading && (
-                        <div className="bg-white/8 rounded-2xl px-4 py-3 mb-4 flex items-center gap-3 border border-white/10">
+                        <div className="bg-slate-50 rounded-2xl px-4 py-3 mb-4 flex items-center gap-3 border border-slate-200">
                           <Loader2 className="w-4 h-4 text-indigo-400 animate-spin shrink-0" />
                           <p className="text-slate-300 text-sm font-medium">Scripting your audio episode with AI...</p>
                         </div>
@@ -7170,7 +7170,7 @@ ${explanation.explanation}
                         {/* Re-generate */}
                         <button
                           onClick={handlePodcastRegenerate}
-                          className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-white/10 hover:bg-white/15 text-slate-200 hover:text-white transition-all text-xs font-bold border border-white/10"
+                          className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 hover:text-slate-900 transition-all text-xs font-bold border border-slate-200"
                         >
                           <Sparkles className="w-3.5 h-3.5" />
                           Re-generate
@@ -7180,7 +7180,7 @@ ${explanation.explanation}
                         <button
                           onClick={handlePodcastSkip}
                           disabled={!podcastScript || currentSegmentIndex >= podcastScript.script.length - 1}
-                          className="flex items-center justify-center w-10 h-10 rounded-xl bg-white/10 hover:bg-white/15 text-slate-200 hover:text-white transition-all disabled:opacity-30 disabled:cursor-not-allowed border border-white/10"
+                          className="flex items-center justify-center w-10 h-10 rounded-xl bg-white hover:bg-slate-50 text-slate-700 hover:text-slate-900 transition-all disabled:opacity-30 disabled:cursor-not-allowed border border-slate-200"
                           title="Skip segment"
                         >
                           <ChevronRight className="w-5 h-5" />
@@ -7201,7 +7201,7 @@ ${explanation.explanation}
                         {/* Stop & Close */}
                         <button
                           onClick={() => { cancelPodcast(); setIsPodcastPlaying(false); setCurrentSegmentIndex(-1); }}
-                          className="flex items-center justify-center w-10 h-10 rounded-xl bg-white/10 hover:bg-red-500/25 text-slate-200 hover:text-red-300 transition-all border border-white/10"
+                          className="flex items-center justify-center w-10 h-10 rounded-xl bg-white hover:bg-red-50 text-slate-700 hover:text-red-600 transition-all border border-slate-200"
                           title="Stop playback"
                         >
                           <X className="w-5 h-5" />
@@ -8026,7 +8026,7 @@ ${explanation.explanation}
                 <div className="relative z-10 flex-1 text-center md:text-left">
                   <div className="flex items-center justify-center md:justify-start gap-2 mb-1.5">
                     <span className="text-[8px] font-black uppercase tracking-widest text-indigo-200">Official Content</span>
-                    <span className="bg-white/10 px-2 py-0.5 rounded-md text-[8px] font-black uppercase tracking-widest border border-white/10 flex items-center gap-1">
+                    <span className="bg-white px-2 py-0.5 rounded-md text-[8px] font-black uppercase tracking-widest border border-slate-200 flex items-center gap-1">
                       <CheckCircle className="w-2 h-2" /> Verified
                     </span>
                   </div>
@@ -8631,7 +8631,7 @@ ${explanation.explanation}
                   <h2 className="mt-2 text-xl font-black leading-tight">Welcome and start learning with a real paper.</h2>
                   <p className="mt-2 text-sm text-indigo-50/90 max-w-xl">Open a curated original mock, work through it under time, and use the feedback to recover marks fast.</p>
                 </div>
-                <div className="hidden sm:flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/10 border border-white/10">
+                <div className="hidden sm:flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white border border-slate-200">
                   <Layers className="h-6 w-6 text-emerald-200" />
                 </div>
               </div>
@@ -8641,7 +8641,7 @@ ${explanation.explanation}
                     <button
                       key={item.id || idx}
                       onClick={() => { setMode('REVISION'); setPendingMaterialId(item.id); }}
-                      className="rounded-2xl border border-white/10 bg-white/10 p-4 text-left transition hover:bg-white/15"
+                      className="rounded-2xl border border-slate-200 bg-white p-4 text-left transition hover:bg-slate-50"
                     >
                       <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-200">Featured paper</p>
                       <p className="mt-2 text-sm font-bold leading-snug line-clamp-2">{item.title}</p>
@@ -8650,7 +8650,7 @@ ${explanation.explanation}
                   ))}
                 </div>
               ) : (
-                <div className="relative mt-5 rounded-2xl border border-white/10 bg-white/10 p-4 text-sm text-indigo-50/90">
+                <div className="relative mt-5 rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-700">
                   We&apos;re preparing your published papers. As soon as one is ready, it appears here first.
                 </div>
               )}
@@ -8817,13 +8817,13 @@ ${explanation.explanation}
                           {/* Visual Book Cover */}
                           <div className={`w-full aspect-[3/4] bg-gradient-to-br ${getSubjectGradient(item.subject)} rounded-2xl shadow-lg relative p-4 flex flex-col justify-between overflow-hidden border border-white/10 group-hover:shadow-2xl transition-all ring-1 ring-amber-300/30`}>
                             {/* Book spine simulation */}
-                            <div className="absolute top-0 bottom-0 left-0 w-3 bg-black/10 dark:bg-white/5 border-r border-black/5" />
+                            <div className="absolute top-0 bottom-0 left-0 w-3 bg-white/20 border-r border-white/30" />
                             <div className="absolute right-3 top-3 rounded-full bg-white/15 px-2.5 py-1 text-[8px] font-black uppercase tracking-[0.18em] text-white shadow-sm backdrop-blur">
                               Original
                             </div>
                             
                             <div className="flex items-center justify-between mb-2">
-                              <span className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 bg-black/20 rounded-full">{item.grade}</span>
+                              <span className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 bg-white/25 text-white rounded-full">{item.grade}</span>
                               <span className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 bg-amber-500/30 text-amber-100 rounded-full border border-amber-400/20">SomaAI Original</span>
                             </div>
                             
@@ -8832,7 +8832,7 @@ ${explanation.explanation}
                               <h4 className="font-black text-sm tracking-tight text-white leading-tight line-clamp-3 px-1">{item.title}</h4>
                             </div>
 
-                            <div className="flex items-end justify-between border-t border-white/10 pt-2 text-[9px] font-bold opacity-80">
+                            <div className="flex items-end justify-between border-t border-white/20 pt-2 text-[9px] font-bold opacity-80">
                               <span className="rounded-full bg-white/10 px-2 py-0.5 text-white/90">Timed original</span>
                             </div>
                           </div>
@@ -8861,13 +8861,13 @@ ${explanation.explanation}
                           {/* Visual Book Cover */}
                           <div className={`w-full aspect-[3/4] bg-gradient-to-br ${getSubjectGradient(item.subject)} rounded-2xl shadow-lg relative p-4 flex flex-col justify-between overflow-hidden border border-white/10 group-hover:shadow-2xl transition-all ring-1 ring-blue-300/30`}>
                             {/* Book spine simulation */}
-                            <div className="absolute top-0 bottom-0 left-0 w-3 bg-black/10 dark:bg-white/5 border-r border-black/5" />
+                            <div className="absolute top-0 bottom-0 left-0 w-3 bg-white/20 border-r border-white/30" />
                             <div className="absolute right-3 top-3 rounded-full bg-white/15 px-2.5 py-1 text-[8px] font-black uppercase tracking-[0.18em] text-white shadow-sm backdrop-blur">
                               Notes
                             </div>
                             
                             <div className="flex items-center justify-between mb-2">
-                              <span className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 bg-black/20 rounded-full">{item.grade}</span>
+                              <span className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 bg-white/25 text-white rounded-full">{item.grade}</span>
                               <span className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 bg-blue-500/30 text-blue-100 rounded-full border border-blue-400/20">Study Note</span>
                             </div>
                             
@@ -8876,7 +8876,7 @@ ${explanation.explanation}
                               <h4 className="font-black text-sm tracking-tight text-white leading-tight line-clamp-3 px-1">{item.title}</h4>
                             </div>
 
-                            <div className="flex items-end justify-between border-t border-white/10 pt-2 text-[9px] font-bold opacity-80">
+                            <div className="flex items-end justify-between border-t border-white/20 pt-2 text-[9px] font-bold opacity-80">
                               <span className="rounded-full bg-white/10 px-2 py-0.5 text-white/90">Quick revision</span>
                             </div>
                           </div>
@@ -8916,8 +8916,8 @@ ${explanation.explanation}
                   {/* Book Preview Detail */}
                   <div className="flex gap-4 mb-6 bg-slate-50 p-4 rounded-3xl border border-slate-100 dark:border-slate-850">
                     <div className={`w-20 aspect-[3/4] rounded-xl shrink-0 bg-gradient-to-br ${getSubjectGradient(libraryItemPreview.subject)} p-2 flex flex-col justify-between overflow-hidden shadow-md relative border border-white/5`}>
-                      <div className="absolute top-0 bottom-0 left-0 w-2 bg-black/10" />
-                      <span className="text-[7px] font-black bg-black/25 text-white px-1 py-0.5 rounded w-fit leading-none">{libraryItemPreview.grade}</span>
+                      <div className="absolute top-0 bottom-0 left-0 w-2 bg-white/25" />
+                      <span className="text-[7px] font-black bg-white/80 text-slate-700 px-1 py-0.5 rounded w-fit leading-none">{libraryItemPreview.grade}</span>
                       <span className="text-xl block text-center my-auto filter drop-shadow">{getSubjectEmoji(libraryItemPreview.subject)}</span>
                       <span className="text-[7px] font-black uppercase text-center text-white/90 leading-none truncate">{libraryItemPreview.subject}</span>
                     </div>
@@ -9269,7 +9269,7 @@ ${explanation.explanation}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-md"
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-white/85 backdrop-blur-md"
           >
             <motion.div
               initial={{ scale: 0.95, y: 30 }}
@@ -9397,7 +9397,7 @@ ${explanation.explanation}
       {/* Payment Gate Modal */}
       <AnimatePresence>
         {showPaymentGate && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-white/80 backdrop-blur-sm p-4">
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
@@ -9440,7 +9440,7 @@ ${explanation.explanation}
 
       <AnimatePresence>
         {showLimitModal && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-white/85 backdrop-blur-sm p-4">
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
@@ -9560,7 +9560,7 @@ ${explanation.explanation}
 
       <AnimatePresence>
         {showExpiryModal && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-white/85 backdrop-blur-sm p-4">
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
@@ -9632,7 +9632,7 @@ ${explanation.explanation}
       </AnimatePresence>
 
       {showTutoringModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-6 overflow-y-auto">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-white/85 backdrop-blur-sm p-6 overflow-y-auto">
           <div className="bg-white text-slate-900 rounded-2xl p-8 max-w-md w-full relative">
             <button onClick={() => setShowTutoringModal(false)} className="absolute top-4 right-4 p-2 hover:bg-slate-100 rounded-full"><X className="w-5 h-5" /></button>
             <h2 className="text-xl font-bold mb-4">Ask a Teacher</h2>
