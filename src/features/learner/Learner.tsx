@@ -8407,15 +8407,15 @@ ${explanation.explanation}
                       <motion.div
                         whileHover={{ y: -2 }}
                         key={item.id}
-                        className="bg-white border-2 border-slate-300 rounded-3xl p-5 shadow-sm hover:border-indigo-300 dark:hover:border-indigo-800 hover:shadow-lg hover:shadow-indigo-100/50 dark:hover:shadow-black/30 transition-all flex flex-col justify-between group"
+                        className="bg-white border-2 border-slate-300 rounded-3xl p-5 shadow-sm hover:border-slate-300 hover:shadow-sm transition-all flex flex-col justify-between group"
                       >
                         <div>
                           <div className="flex justify-between items-start mb-4">
                             <div className={`w-10 h-10 rounded-xl flex items-center justify-center shadow-sm ${
-                              isNotes ? 'bg-blue-50 text-blue-600' :
-                              isPastPaper ? 'bg-amber-50 text-amber-600' :
-                              isSyllabus ? 'bg-purple-50 text-purple-600' :
-                              isVerified ? 'bg-indigo-50 text-indigo-600' : 'bg-slate-50 text-slate-600'
+                              isNotes ? 'bg-slate-50 text-slate-600 border border-slate-200' :
+                              isPastPaper ? 'bg-slate-50 text-slate-600 border border-slate-200' :
+                              isSyllabus ? 'bg-slate-50 text-slate-600 border border-slate-200' :
+                              isVerified ? 'bg-slate-50 text-slate-600 border border-slate-200' : 'bg-slate-50 text-slate-600 border border-slate-200'
                             }`}>
                               {isNotes ? <FileText className="w-5 h-5" /> : isPastPaper ? <Layers className="w-5 h-5" /> : isSyllabus ? <Library className="w-5 h-5" /> : <BookOpen className="w-5 h-5" />}
                             </div>
@@ -8423,45 +8423,45 @@ ${explanation.explanation}
                             {/* Price / Status Tag */}
                             <div className="flex flex-col items-end gap-1">
                               {status === 'OWNED' ? (
-                                <span className="px-2 py-0.5 bg-green-50 text-green-700 rounded-md text-[8px] font-black uppercase tracking-widest">Owned</span>
+                                <span className="px-2 py-0.5 bg-slate-50 text-slate-600 rounded-md text-[8px] font-black uppercase tracking-widest border border-slate-200">Owned</span>
                               ) : status === 'FREE' ? (
-                                <span className="px-2 py-0.5 bg-emerald-50 text-emerald-700 rounded-md text-[8px] font-black uppercase tracking-widest">Free</span>
+                                <span className="px-2 py-0.5 bg-slate-50 text-slate-600 rounded-md text-[8px] font-black uppercase tracking-widest border border-slate-200">Free</span>
                               ) : status === 'PRO_INCLUDED' ? (
-                                <span className="px-2 py-0.5 bg-indigo-50 text-indigo-700 rounded-md text-[8px] font-black uppercase tracking-widest">Pro</span>
+                                <span className="px-2 py-0.5 bg-slate-50 text-slate-600 rounded-md text-[8px] font-black uppercase tracking-widest border border-slate-200">Pro</span>
                               ) : status === 'PRO_LOCKED' ? (
-                                <span className="px-2 py-0.5 bg-amber-50 text-amber-700 rounded-md text-[8px] font-black uppercase tracking-widest">Locked</span>
+                                <span className="px-2 py-0.5 bg-slate-50 text-slate-600 rounded-md text-[8px] font-black uppercase tracking-widest border border-slate-200">Locked</span>
                               ) : (
-                                <span className="px-2 py-0.5 bg-slate-100 text-slate-900 rounded-md text-[9px] font-black">KES {item.price}</span>
+                                <span className="px-2 py-0.5 bg-slate-50 text-slate-600 rounded-md text-[9px] font-black border border-slate-200">KES {item.price}</span>
                               )}
                             </div>
                           </div>
 
                           <div className="flex items-center gap-2 mb-1">
                             {isVerified && (
-                              <span className="flex items-center gap-1 text-[8px] font-black text-indigo-600 uppercase tracking-widest bg-indigo-50 px-1.5 py-0.5 rounded-md border border-indigo-100">
+                              <span className="flex items-center gap-1 text-[8px] font-black text-slate-600 uppercase tracking-widest bg-slate-50 px-1.5 py-0.5 rounded-md border border-slate-200">
                                 <CheckCircle className="w-2.5 h-2.5" /> Verified
                               </span>
                             )}
                             <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">{item.grade}</span>
                           </div>
 
-                          <h4 className="font-bold text-slate-900 dark:text-white text-base mb-1 tracking-tight group-hover:text-indigo-600 transition-colors line-clamp-1">{item.title}</h4>
+                          <h4 className="font-bold text-slate-900 text-base mb-1 tracking-tight group-hover:text-indigo-600 transition-colors line-clamp-1">{item.title}</h4>
                           <div className="flex items-center gap-2 mb-4 text-[8px] font-black uppercase tracking-widest">
                             <span className="text-slate-400">{item.subject}</span>
                             <span className="text-slate-200">/</span>
                             <span className="text-slate-400">{isVerified ? "Somo Smart" : item.teacherName}</span>
                           </div>
                           <div className="flex flex-wrap gap-1.5 mb-4">
-                            <span className="px-2 py-0.5 rounded-md text-[8px] font-black uppercase tracking-wider bg-slate-100 text-slate-600">
+                            <span className="px-2 py-0.5 rounded-md text-[8px] font-black uppercase tracking-wider bg-slate-50 text-slate-600 border border-slate-200">
                               {sourceType}
                             </span>
-                            <span className="px-2 py-0.5 rounded-md text-[8px] font-black uppercase tracking-wider bg-indigo-50 text-indigo-700 border border-indigo-100">
+                            <span className="px-2 py-0.5 rounded-md text-[8px] font-black uppercase tracking-wider bg-slate-50 text-slate-600 border border-slate-200">
                               {alignmentTag}
                             </span>
-                            <span className="px-2 py-0.5 rounded-md text-[8px] font-black uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-100">
+                            <span className="px-2 py-0.5 rounded-md text-[8px] font-black uppercase tracking-wider bg-slate-50 text-slate-600 border border-slate-200">
                               {qualityLabel}
                             </span>
-                            <span className="px-2 py-0.5 rounded-md text-[8px] font-black uppercase tracking-wider bg-amber-50 text-amber-700 border border-amber-100">
+                            <span className="px-2 py-0.5 rounded-md text-[8px] font-black uppercase tracking-wider bg-slate-50 text-slate-600 border border-slate-200">
                               {reviewedLabel}
                             </span>
                           </div>
@@ -8661,9 +8661,9 @@ ${explanation.explanation}
       };
 
       const libraryCategoryMeta = {
-        ALL: { label: 'All', count: visibleLibraryMaterials.length, pill: 'bg-slate-50 text-slate-600 dark:text-slate-200' },
-        PAST_PAPER: { label: 'Exam Papers', count: visibleLibraryMaterials.filter(m => isPublishedPaper(m)).length, pill: 'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-200' },
-        NOTES: { label: 'Notes', count: visibleLibraryMaterials.filter(m => normalizeMaterialCategory(m.category) === 'NOTES').length, pill: 'bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-200' },
+        ALL: { label: 'All', count: visibleLibraryMaterials.length, pill: 'bg-slate-50 text-slate-600 border border-slate-200' },
+        PAST_PAPER: { label: 'Exam Papers', count: visibleLibraryMaterials.filter(m => isPublishedPaper(m)).length, pill: 'bg-slate-50 text-slate-600 border border-slate-200' },
+        NOTES: { label: 'Notes', count: visibleLibraryMaterials.filter(m => normalizeMaterialCategory(m.category) === 'NOTES').length, pill: 'bg-slate-50 text-slate-600 border border-slate-200' },
       } as const;
 
       // Helper to get cover illustration emoji
@@ -8686,23 +8686,23 @@ ${explanation.explanation}
           {/* Header */}
           <div className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-slate-200 px-6 py-4 flex items-center justify-between">
             <div>
-              <h1 className="text-xl font-black text-slate-900 dark:text-white tracking-tight leading-none">My Library</h1>
+              <h1 className="text-xl font-black text-slate-900 tracking-tight leading-none">My Library</h1>
               <p className="text-[10px] font-black text-indigo-500 uppercase tracking-[0.15em] mt-1.5">Published Papers / Exam Papers</p>
             </div>
             <button onClick={() => setMode('MENU')} className="p-2 hover:bg-slate-100 rounded-full transition-colors"><X className="w-5 h-5" /></button>
           </div>
 
           <div className="p-6 flex-1 overflow-y-auto no-scrollbar">
-            <div className="relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-indigo-50 via-white to-blue-50 p-5 text-slate-900 shadow-xl shadow-slate-200 mb-6">
-              <div className="absolute -right-10 -top-10 h-28 w-28 rounded-full bg-indigo-100 blur-2xl" />
+            <div className="relative overflow-hidden rounded-[2rem] bg-white p-5 text-slate-900 shadow-sm border border-slate-200 mb-6">
+              <div className="absolute -right-10 -top-10 h-28 w-28 rounded-full bg-slate-100 blur-2xl" />
               <div className="relative flex items-start justify-between gap-4">
                 <div className="min-w-0">
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-600">Published papers first</p>
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Published papers first</p>
                   <h2 className="mt-2 text-xl font-black leading-tight text-slate-900">Welcome and start learning with a real paper.</h2>
                   <p className="mt-2 text-sm text-slate-600 max-w-xl">Open a curated original mock, work through it under time, and use the feedback to recover marks fast.</p>
                 </div>
-                <div className="hidden sm:flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white border border-slate-200 shadow-sm">
-                  <Layers className="h-6 w-6 text-emerald-200" />
+                <div className="hidden sm:flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-slate-50 border border-slate-200 shadow-sm">
+                  <Layers className="h-6 w-6 text-slate-400" />
                 </div>
               </div>
               {starterPaperResources.length > 0 ? (
@@ -8711,11 +8711,11 @@ ${explanation.explanation}
                     <button
                       key={item.id || idx}
                       onClick={() => { setMode('REVISION'); setPendingMaterialId(item.id); }}
-                      className="rounded-2xl border border-slate-200 bg-white p-4 text-left transition hover:bg-slate-50"
+                      className="rounded-2xl border border-slate-200 bg-white p-4 text-left transition hover:border-slate-300 hover:shadow-sm"
                     >
-                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-200">Featured paper</p>
+                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Featured paper</p>
                       <p className="mt-2 text-sm font-bold leading-snug line-clamp-2">{item.title}</p>
-                      <p className="mt-2 text-[11px] text-indigo-100/80">Open this paper now.</p>
+                      <p className="mt-2 text-[11px] text-slate-500">Open this paper now.</p>
                     </button>
                   ))}
                 </div>
@@ -8727,13 +8727,13 @@ ${explanation.explanation}
             </div>
 
             {showingGradeFallback && (
-              <div className="mb-5 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-[11px] font-bold uppercase tracking-[0.18em] text-emerald-700 dark:border-emerald-900/40 dark:bg-emerald-950/40 dark:text-emerald-200">
+              <div className="mb-5 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-[11px] font-bold uppercase tracking-[0.18em] text-emerald-700">
                 Showing Grade {studentProfile?.grade || enrolledGrade || 'ready'} materials while we finish matching exact papers.
               </div>
             )}
 
             {/* Library Category Tabs */}
-            <div className="grid grid-cols-3 gap-3 mb-6 bg-slate-100 p-1 rounded-2xl">
+            <div className="grid grid-cols-3 gap-3 mb-6 bg-white p-1 rounded-2xl border border-slate-200 shadow-sm">
               <button
                 onClick={() => {
                   setLibraryView('UNLOCKED');
@@ -8741,8 +8741,8 @@ ${explanation.explanation}
                   trackFunnelEvent('library_view_changed', { view: 'UNLOCKED' });
                 }}
                 className={`rounded-xl px-3 py-2 text-center transition-all font-black text-xs ${libraryView === 'UNLOCKED'
-                  ? 'bg-white text-indigo-600 shadow-sm border border-slate-200/50'
-                  : 'text-slate-500 hover:text-slate-750 dark:hover:text-slate-600'
+                  ? 'bg-white text-indigo-600 shadow-sm border border-slate-200'
+                  : 'text-slate-500 hover:text-slate-700'
                 }`}
               >
                 Unlocked ({unlockedResources.length})
@@ -8754,8 +8754,8 @@ ${explanation.explanation}
                   trackFunnelEvent('library_view_changed', { view: 'PURCHASED' });
                 }}
                 className={`rounded-xl px-3 py-2 text-center transition-all font-black text-xs ${libraryView === 'PURCHASED'
-                  ? 'bg-white text-indigo-600 shadow-sm border border-slate-200/50'
-                  : 'text-slate-500 hover:text-slate-750 dark:hover:text-slate-600'
+                  ? 'bg-white text-indigo-600 shadow-sm border border-slate-200'
+                  : 'text-slate-500 hover:text-slate-700'
                 }`}
               >
                 Purchased ({purchasedResources.length})
@@ -8776,7 +8776,7 @@ ${explanation.explanation}
             </div>
 
             {/* Category Tabs */}
-            <div className="grid grid-cols-3 gap-2 mb-6 bg-slate-100 p-1 rounded-2xl">
+            <div className="grid grid-cols-3 gap-2 mb-6 bg-white p-1 rounded-2xl border border-slate-200 shadow-sm">
               {(['ALL', 'PAST_PAPER', 'NOTES'] as const).map(tabKey => {
                 const tab = libraryCategoryMeta[tabKey];
                 return (
@@ -8784,8 +8784,8 @@ ${explanation.explanation}
                     key={tabKey}
                     onClick={() => setActiveLibraryCategory(tabKey)}
                     className={`rounded-xl px-3 py-2 text-center transition-all font-black text-[10px] sm:text-xs leading-tight ${activeLibraryCategory === tabKey
-                      ? 'bg-white text-slate-900 dark:text-white shadow-sm border border-slate-200/50'
-                      : 'text-slate-500 hover:text-slate-750 dark:hover:text-slate-600'
+                      ? 'bg-white text-slate-900 shadow-sm border border-slate-200'
+                      : 'text-slate-500 hover:text-slate-700'
                     }`}
                   >
                     <span className={`inline-flex items-center justify-center rounded-full px-2 py-0.5 uppercase tracking-[0.14em] ${tab.pill}`}>{tab.label}</span>
@@ -8815,11 +8815,11 @@ ${explanation.explanation}
 
             {libraryView === 'PRO_VAULT' && !isPro ? (
               /* Premium Paywall Page */
-              <div className="py-16 md:py-24 text-center bg-white border-2 border-dashed border-amber-200 dark:border-amber-900/40 rounded-[3rem] mb-6">
-                <div className="w-24 h-24 bg-amber-50 dark:bg-amber-900/20 rounded-[2.5rem] flex items-center justify-center mx-auto mb-6 border-2 border-amber-200 dark:border-amber-800/30">
-                  <Lock className="w-10 h-10 text-amber-500 dark:text-amber-400" />
+              <div className="py-16 md:py-24 text-center bg-white border-2 border-dashed border-amber-200 rounded-[3rem] mb-6">
+                <div className="w-24 h-24 bg-amber-50 rounded-[2.5rem] flex items-center justify-center mx-auto mb-6 border-2 border-amber-200">
+                  <Lock className="w-10 h-10 text-amber-500" />
                 </div>
-                <h4 className="text-xl font-black text-slate-800 dark:text-white mb-2 tracking-tight">Pro Vault is locked</h4>
+                <h4 className="text-xl font-black text-slate-800 mb-2 tracking-tight">Pro Vault is locked</h4>
                 <p className="text-[10px] text-slate-500 font-black uppercase tracking-[0.2em] mb-8 max-w-sm mx-auto leading-relaxed">Upgrade to unlock premium teacher resources curated for faster exam prep.</p>
                 <Button onClick={() => handlePricingNavigation()} className="px-10 py-4 bg-amber-500 hover:bg-amber-600 text-white rounded-2xl shadow-xl shadow-amber-100 font-black uppercase tracking-widest text-[10px] border-none">
                   Unlock Pro Vault
@@ -8829,9 +8829,9 @@ ${explanation.explanation}
               /* Empty Library State */
               <div className="py-16 md:py-28 text-center bg-white border-2 border-dashed border-slate-200 rounded-[3rem]">
                 <div className="w-24 h-24 bg-slate-50 rounded-[2.5rem] flex items-center justify-center mx-auto mb-6 border-2 border-slate-300">
-                  <Library className="w-10 h-10 text-slate-600 dark:text-slate-600" />
+                  <Library className="w-10 h-10 text-slate-600" />
                 </div>
-                <h4 className="text-xl font-black text-slate-800 dark:text-white mb-2 tracking-tight">Nothing in this section yet</h4>
+                <h4 className="text-xl font-black text-slate-800 mb-2 tracking-tight">Nothing in this section yet</h4>
                 <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.2em] mb-8 max-w-sm mx-auto leading-relaxed">
                   {activeLibraryCategory === 'PAST_PAPER'
                     ? 'Exam papers for your grade will appear here once they are ready.'
@@ -8847,12 +8847,12 @@ ${explanation.explanation}
                       <button
                         key={item.id || idx}
                         onClick={() => { setMode('REVISION'); setPendingMaterialId(item.id); }}
-                        className="rounded-2xl border border-slate-200 bg-slate-50 p-4 transition hover:border-indigo-300 hover:bg-white hover:bg-slate-50"
+                        className="rounded-2xl border border-slate-200 bg-white p-4 transition hover:border-indigo-300 hover:shadow-sm"
                       >
-                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-500">Ready original</p>
-                        <p className="mt-2 text-sm font-bold leading-snug text-slate-800 dark:text-slate-100 line-clamp-2">{item.title}</p>
-                        <p className="mt-2 text-[11px] text-slate-500 dark:text-slate-400">{item.subject} ? {item.grade}</p>
-                        <p className="mt-2 text-[11px] font-black text-indigo-600 dark:text-indigo-400">Open now</p>
+                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Ready original</p>
+                        <p className="mt-2 text-sm font-bold leading-snug text-slate-900 line-clamp-2">{item.title}</p>
+                        <p className="mt-2 text-[11px] text-slate-500">{item.subject} ? {item.grade}</p>
+                        <p className="mt-2 text-[11px] font-black text-indigo-600">Open now</p>
                       </button>
                     ))}
                   </div>
@@ -8873,7 +8873,7 @@ ${explanation.explanation}
                 {originalPapers.length > 0 && (
                   <div>
                     <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
-                      <span className="p-1 rounded bg-amber-100 dark:bg-amber-900/40 text-amber-600">PDF</span>
+                      <span className="p-1 rounded bg-slate-100 text-slate-600">PDF</span>
                       Exam Papers lane ({originalPapers.length})
                     </h3>
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-6">
@@ -8885,28 +8885,28 @@ ${explanation.explanation}
                           className="flex flex-col cursor-pointer group"
                         >
                           {/* Visual Book Cover */}
-                          <div className={`w-full aspect-[3/4] bg-gradient-to-br ${getSubjectGradient(item.subject)} rounded-2xl shadow-lg relative p-4 flex flex-col justify-between overflow-hidden border border-white/10 group-hover:shadow-2xl transition-all ring-1 ring-amber-300/30`}>
+                          <div className={`w-full aspect-[3/4] bg-white rounded-2xl shadow-sm relative p-4 flex flex-col justify-between overflow-hidden border border-slate-200 group-hover:shadow-md transition-all`}>
                             {/* Book spine simulation */}
-                            <div className="absolute top-0 bottom-0 left-0 w-3 bg-white/20 border-r border-white/30" />
-                            <div className="absolute right-3 top-3 rounded-full bg-white/15 px-2.5 py-1 text-[8px] font-black uppercase tracking-[0.18em] text-white shadow-sm backdrop-blur">
+                            <div className="absolute top-0 bottom-0 left-0 w-3 bg-slate-100 border-r border-slate-200" />
+                            <div className="absolute right-3 top-3 rounded-full bg-slate-100 px-2.5 py-1 text-[8px] font-black uppercase tracking-[0.18em] text-slate-600 shadow-sm">
                               Original
                             </div>
                             
                             <div className="flex items-center justify-between mb-2">
-                              <span className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 bg-white/25 text-white rounded-full">{item.grade}</span>
-                              <span className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 bg-amber-500/30 text-amber-100 rounded-full border border-amber-400/20">SomaAI Original</span>
+                              <span className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 bg-slate-100 text-slate-600 rounded-full">{item.grade}</span>
+                              <span className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 bg-slate-100 text-slate-600 rounded-full border border-slate-200">SomaAI Original</span>
                             </div>
                             
                             <div className="my-auto text-center">
                               <span className="text-4xl block mb-2 filter drop-shadow-md">{getSubjectEmoji(item.subject)}</span>
-                              <h4 className="font-black text-sm tracking-tight text-white leading-tight line-clamp-3 px-1">{item.title}</h4>
+                              <h4 className="font-black text-sm tracking-tight text-slate-900 leading-tight line-clamp-3 px-1">{item.title}</h4>
                             </div>
 
                             <div className="flex items-end justify-between border-t border-white/20 pt-2 text-[9px] font-bold opacity-80">
-                              <span className="rounded-full bg-white/10 px-2 py-0.5 text-white/90">Timed original</span>
+                              <span className="rounded-full bg-slate-100 px-2 py-0.5 text-slate-600">Timed original</span>
                             </div>
                           </div>
-                          <span className="mt-2 text-xs font-black text-slate-800 dark:text-slate-200 line-clamp-2 text-center group-hover:text-indigo-600 transition-colors">{item.title}</span>
+                          <span className="mt-2 text-xs font-black text-slate-800 line-clamp-2 text-center group-hover:text-indigo-600 transition-colors">{item.title}</span>
                         </motion.div>
                       ))}
                     </div>
@@ -8917,7 +8917,7 @@ ${explanation.explanation}
                 {studyNotes.length > 0 && (
                   <div>
                     <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
-                      <span className="p-1 rounded bg-blue-100 dark:bg-blue-900/40 text-blue-600">Note</span>
+                      <span className="p-1 rounded bg-slate-100 text-slate-600">Note</span>
                       Notes lane ({studyNotes.length})
                     </h3>
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-6">
@@ -8929,28 +8929,28 @@ ${explanation.explanation}
                           className="flex flex-col cursor-pointer group"
                         >
                           {/* Visual Book Cover */}
-                          <div className={`w-full aspect-[3/4] bg-gradient-to-br ${getSubjectGradient(item.subject)} rounded-2xl shadow-lg relative p-4 flex flex-col justify-between overflow-hidden border border-white/10 group-hover:shadow-2xl transition-all ring-1 ring-blue-300/30`}>
+                          <div className={`w-full aspect-[3/4] bg-white rounded-2xl shadow-sm relative p-4 flex flex-col justify-between overflow-hidden border border-slate-200 group-hover:shadow-md transition-all`}>
                             {/* Book spine simulation */}
-                            <div className="absolute top-0 bottom-0 left-0 w-3 bg-white/20 border-r border-white/30" />
-                            <div className="absolute right-3 top-3 rounded-full bg-white/15 px-2.5 py-1 text-[8px] font-black uppercase tracking-[0.18em] text-white shadow-sm backdrop-blur">
+                            <div className="absolute top-0 bottom-0 left-0 w-3 bg-slate-100 border-r border-slate-200" />
+                            <div className="absolute right-3 top-3 rounded-full bg-slate-100 px-2.5 py-1 text-[8px] font-black uppercase tracking-[0.18em] text-slate-600 shadow-sm">
                               Notes
                             </div>
                             
                             <div className="flex items-center justify-between mb-2">
-                              <span className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 bg-white/25 text-white rounded-full">{item.grade}</span>
-                              <span className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 bg-blue-500/30 text-blue-100 rounded-full border border-blue-400/20">Study Note</span>
+                              <span className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 bg-slate-100 text-slate-600 rounded-full">{item.grade}</span>
+                              <span className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 bg-slate-100 text-slate-600 rounded-full border border-slate-200">Study Note</span>
                             </div>
                             
                             <div className="my-auto text-center">
                               <span className="text-4xl block mb-2 filter drop-shadow-md">{getSubjectEmoji(item.subject)}</span>
-                              <h4 className="font-black text-sm tracking-tight text-white leading-tight line-clamp-3 px-1">{item.title}</h4>
+                              <h4 className="font-black text-sm tracking-tight text-slate-900 leading-tight line-clamp-3 px-1">{item.title}</h4>
                             </div>
 
                             <div className="flex items-end justify-between border-t border-white/20 pt-2 text-[9px] font-bold opacity-80">
-                              <span className="rounded-full bg-white/10 px-2 py-0.5 text-white/90">Quick revision</span>
+                              <span className="rounded-full bg-slate-100 px-2 py-0.5 text-slate-600">Quick revision</span>
                             </div>
                           </div>
-                          <span className="mt-2 text-xs font-black text-slate-800 dark:text-slate-200 line-clamp-2 text-center group-hover:text-indigo-600 transition-colors">{item.title}</span>
+                          <span className="mt-2 text-xs font-black text-slate-800 line-clamp-2 text-center group-hover:text-indigo-600 transition-colors">{item.title}</span>
                         </motion.div>
                       ))}
                     </div>
@@ -8972,61 +8972,61 @@ ${explanation.explanation}
                 >
                   <div className="flex items-start justify-between mb-4">
                     <div>
-                      <span className="text-[9px] font-black text-indigo-650 dark:text-indigo-400 uppercase tracking-widest">Soma Study Setup</span>
-                      <h3 className="text-lg font-black text-slate-900 dark:text-white leading-tight mt-0.5">Read & Rewrite Material</h3>
+                      <span className="text-[9px] font-black text-indigo-600 uppercase tracking-widest">Soma Study Setup</span>
+                      <h3 className="text-lg font-black text-slate-900 leading-tight mt-0.5">Read & Rewrite Material</h3>
                     </div>
                     <button
                       onClick={() => setLibraryItemPreview(null)}
-                      className="p-1.5 bg-slate-100 hover:bg-slate-200 hover:bg-slate-50 rounded-full text-slate-500 transition-colors"
+                      className="p-1.5 bg-slate-100 hover:bg-slate-200 rounded-full text-slate-500 transition-colors"
                     >
                       <X className="w-4 h-4" />
                     </button>
                   </div>
 
                   {/* Book Preview Detail */}
-                  <div className="flex gap-4 mb-6 bg-slate-50 p-4 rounded-3xl border border-slate-100 dark:border-slate-850">
-                    <div className={`w-20 aspect-[3/4] rounded-xl shrink-0 bg-gradient-to-br ${getSubjectGradient(libraryItemPreview.subject)} p-2 flex flex-col justify-between overflow-hidden shadow-md relative border border-slate-200`}>
-                      <div className="absolute top-0 bottom-0 left-0 w-2 bg-white/25" />
-                      <span className="text-[7px] font-black bg-white/80 text-slate-700 px-1 py-0.5 rounded w-fit leading-none">{libraryItemPreview.grade}</span>
-                      <span className="text-xl block text-center my-auto filter drop-shadow">{getSubjectEmoji(libraryItemPreview.subject)}</span>
-                      <span className="text-[7px] font-black uppercase text-center text-white/90 leading-none truncate">{libraryItemPreview.subject}</span>
+                  <div className="flex gap-4 mb-6 bg-slate-50 p-4 rounded-3xl border border-slate-100">
+                    <div className="w-20 aspect-[3/4] rounded-xl shrink-0 bg-white p-2 flex flex-col justify-between overflow-hidden shadow-sm relative border border-slate-200">
+                      <div className="absolute top-0 bottom-0 left-0 w-2 bg-slate-100" />
+                      <span className="text-[7px] font-black bg-slate-50 text-slate-600 px-1 py-0.5 rounded w-fit leading-none border border-slate-200">{libraryItemPreview.grade}</span>
+                      <span className="text-xl block text-center my-auto">{getSubjectEmoji(libraryItemPreview.subject)}</span>
+                      <span className="text-[7px] font-black uppercase text-center text-slate-600 leading-none truncate">{libraryItemPreview.subject}</span>
                     </div>
                     <div className="flex-1 min-w-0 flex flex-col justify-center">
                       <span className="text-[9px] font-black text-indigo-500 uppercase tracking-widest">{libraryItemPreview.subject} - {libraryItemPreview.grade}</span>
-                      <h4 className="font-black text-base text-slate-950 dark:text-white truncate mt-1 leading-tight">{libraryItemPreview.title}</h4>
-                      <p className="text-[11px] font-medium text-slate-550 dark:text-slate-400 leading-snug mt-1.5 line-clamp-2">{libraryItemPreview.description || 'Verified curriculum source notes and resources.'}</p>
+                      <h4 className="font-black text-base text-slate-900 truncate mt-1 leading-tight">{libraryItemPreview.title}</h4>
+                      <p className="text-[11px] font-medium text-slate-500 leading-snug mt-1.5 line-clamp-2">{libraryItemPreview.description || 'Verified curriculum source notes and resources.'}</p>
                     </div>
                   </div>
 
                   {/* Feature Breakdown */}
                   <div className="space-y-4 mb-6">
                     <div className="flex items-start gap-3">
-                      <div className="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0 border border-indigo-100/50 dark:border-slate-850">
+                      <div className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0 border border-indigo-100/50">
                         <BookOpen className="w-4 h-4" />
                       </div>
                       <div>
-                        <h5 className="text-xs font-black text-slate-900 dark:text-white">Book AI Study Guide</h5>
-                        <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400 mt-0.5">Soma reads the PDF and rewrites it into clean, bite-sized lessons with visual emojis, bold highlights, and curriculum-aligned outlines.</p>
+                        <h5 className="text-xs font-black text-slate-900">Book AI Study Guide</h5>
+                        <p className="text-[11px] font-medium text-slate-500 mt-0.5">Soma reads the PDF and rewrites it into clean, bite-sized lessons with visual emojis, bold highlights, and curriculum-aligned outlines.</p>
                       </div>
                     </div>
 
                     <div className="flex items-start gap-3">
-                      <div className="w-8 h-8 rounded-xl bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0 border border-purple-100/50 dark:border-slate-850">
+                      <div className="w-8 h-8 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center shrink-0 border border-purple-100/50">
                         <Headphones className="w-4 h-4" />
                       </div>
                       <div>
-                        <h5 className="text-xs font-black text-slate-900 dark:text-white">Audio Lectures</h5>
-                        <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400 mt-0.5">Generate a narrated audio pod. Sit back and listen to Akili explain the material hands-free.</p>
+                        <h5 className="text-xs font-black text-slate-900">Audio Lectures</h5>
+                        <p className="text-[11px] font-medium text-slate-500 mt-0.5">Generate a narrated audio pod. Sit back and listen to Akili explain the material hands-free.</p>
                       </div>
                     </div>
 
                     <div className="flex items-start gap-3">
-                      <div className="w-8 h-8 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-100/50 dark:border-slate-850">
+                      <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 border border-emerald-100/50">
                         <CheckCircle className="w-4 h-4" />
                       </div>
                       <div>
-                        <h5 className="text-xs font-black text-slate-900 dark:text-white">Pop Quizzes & Flashcards</h5>
-                        <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400 mt-0.5">Turn the material into interactive practice drills instantly to test your memory and lock in grades.</p>
+                        <h5 className="text-xs font-black text-slate-900">Pop Quizzes & Flashcards</h5>
+                        <p className="text-[11px] font-medium text-slate-500 mt-0.5">Turn the material into interactive practice drills instantly to test your memory and lock in grades.</p>
                       </div>
                     </div>
                   </div>
@@ -9035,7 +9035,7 @@ ${explanation.explanation}
                   <div className="flex gap-3">
                     <button
                       onClick={() => setLibraryItemPreview(null)}
-                      className="flex-1 py-3 rounded-2xl bg-slate-100 hover:bg-slate-200 dark:hover:bg-slate-750 text-slate-700 dark:text-slate-600 font-bold transition-all text-xs"
+                      className="flex-1 py-3 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold transition-all text-xs"
                     >
                       Go Back
                     </button>
@@ -9045,7 +9045,7 @@ ${explanation.explanation}
                         setLibraryItemPreview(null);
                         startStudySession(target);
                       }}
-                      className="flex-1 py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-black transition-all text-xs shadow-lg shadow-indigo-200 dark:shadow-none"
+                      className="flex-1 py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-black transition-all text-xs shadow-lg shadow-indigo-200"
                     >
                       Sparkle Read & Rewrite
                     </button>
