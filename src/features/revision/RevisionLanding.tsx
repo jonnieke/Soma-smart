@@ -509,33 +509,33 @@ Use plain text. No markdown headings or symbols.`;
             <main className="max-w-3xl mx-auto px-4 pt-6 pb-28 space-y-8">
 
                 {/* ── ZONE 1: HERO ACTION BAR ── */}
-                <section className="bg-slate-950 text-white rounded-3xl p-4 sm:p-5 overflow-hidden relative shadow-sm">
-                    <div className="absolute -right-12 -top-12 w-36 h-36 bg-indigo-500/20 rounded-full blur-3xl" />
+                <section className="bg-white rounded-3xl p-4 sm:p-5 overflow-hidden relative shadow-sm border border-slate-200">
+                    <div className="absolute -right-12 -top-12 w-36 h-36 bg-indigo-100 rounded-full blur-3xl" />
                     <div className="relative">
                         <div className="flex items-start justify-between gap-3">
                             <div className="max-w-2xl">
-                                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-300 mb-1">Past papers first</p>
-                                <h2 className="text-lg sm:text-xl font-black leading-tight">Open past papers now</h2>
-                                <p className="text-xs text-slate-300 mt-1 font-medium">Choose a real paper, work through it under time, and use the feedback to recover marks fast.</p>
+                                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-500 mb-1">Past papers first</p>
+                                <h2 className="text-lg sm:text-xl font-black leading-tight text-slate-900">Open past papers now</h2>
+                                <p className="text-xs text-slate-500 mt-1 font-medium">Choose a real paper, work through it under time, and use the feedback to recover marks fast.</p>
                             </div>
-                            <div className="w-12 h-12 rounded-2xl bg-white/10 border border-white/10 flex items-center justify-center shrink-0">
-                                <FileText className="w-6 h-6 text-emerald-300" />
+                            <div className="w-12 h-12 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center shrink-0">
+                                <FileText className="w-6 h-6 text-indigo-600" />
                             </div>
                         </div>
 
-                        <p className="mt-4 text-[11px] font-black uppercase tracking-[0.18em] text-slate-400">Choose a lane: syllabus, past papers, or notes.</p>
+                        <p className="mt-4 text-[11px] font-black uppercase tracking-[0.18em] text-slate-500">Choose a lane: syllabus, past papers, or notes.</p>
 
                         {missionResource && (
-                            <div className="mt-4 rounded-2xl border border-white/10 bg-white/5 p-4 sm:p-5">
-                                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-300">Start here</p>
+                            <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:p-5">
+                                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-500">Start here</p>
                                 <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                                     <div className="min-w-0">
-                                        <p className="text-sm font-bold text-white line-clamp-2">{missionResource.title}</p>
-                                        <p className="mt-1 text-[11px] text-slate-300">{studentProfile?.grade || examGoal.targetGrade || 'Your grade'} - {missionResource.subject || 'Past paper'}</p>
+                                        <p className="text-sm font-bold text-slate-900 line-clamp-2">{missionResource.title}</p>
+                                        <p className="mt-1 text-[11px] text-slate-500">{studentProfile?.grade || examGoal.targetGrade || 'Your grade'} - {missionResource.subject || 'Past paper'}</p>
                                     </div>
                                     <button
                                         onClick={() => onStartSession(missionResource, RevisionMode.EXAM)}
-                                        className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl bg-white px-4 py-3 text-sm font-black text-slate-950 transition hover:bg-emerald-50"
+                                        className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl bg-indigo-600 px-4 py-3 text-sm font-black text-white transition hover:bg-indigo-700"
                                     >
                                         Open this paper <ArrowRight className="w-4 h-4" />
                                     </button>
@@ -549,22 +549,22 @@ Use plain text. No markdown headings or symbols.`;
                                     <button
                                         key={item.id || item.title || idx}
                                         onClick={() => onStartSession(item, RevisionMode.EXAM)}
-                                        className="rounded-2xl border border-white/10 bg-white/10 p-4 text-left transition hover:bg-white/15 hover:-translate-y-0.5"
+                                        className="rounded-2xl border border-slate-200 bg-white p-4 text-left transition hover:bg-slate-50 hover:-translate-y-0.5"
                                     >
-                                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-300">Ready paper</p>
+                                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-500">Ready paper</p>
                                         <p className="mt-2 text-sm font-bold leading-snug line-clamp-2">{item.title}</p>
-                                        <p className="mt-2 text-[11px] text-slate-300">Tap to start the paper.</p>
+                                        <p className="mt-2 text-[11px] text-slate-500">Tap to start the paper.</p>
                                     </button>
                                 ))}
                             </div>
                         ) : (
-                            <div className="mt-4 rounded-2xl border border-white/10 bg-white/10 p-4 text-sm text-slate-300 font-medium">
+                            <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600 font-medium">
                                 We&apos;re preparing your papers. As soon as one is ready, it appears here first.
                             </div>
                         )}
 
                         {preparingPaperItems.length > 0 && (
-                            <p className="mt-3 text-[11px] text-slate-400">
+                            <p className="mt-3 text-[11px] text-slate-500">
                                 {preparingPaperItems.length === 1
                                     ? "1 more paper is still being structured and will appear once it's ready."
                                     : `${preparingPaperItems.length} more papers are still being structured and will appear once they're ready.`}
@@ -635,62 +635,62 @@ Use plain text. No markdown headings or symbols.`;
                         <div className="mt-4 rounded-2xl border border-indigo-200 dark:border-indigo-900/60 bg-indigo-50 dark:bg-indigo-950/30 px-4 py-3">
                             <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-600 dark:text-indigo-300 mb-1">Focused revision</p>
                             <p className="text-sm font-bold text-slate-900 dark:text-white">Starting with {initialSubject}</p>
-                            <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 mt-0.5">We&apos;ve preselected the subject from your current lesson so you can jump straight in.</p>
+                            <p className="text-[11px] font-semibold text-slate-500 mt-0.5">We&apos;ve preselected the subject from your current lesson so you can jump straight in.</p>
                         </div>
                     )}
 
                                         <div className="mt-4 grid gap-2 sm:grid-cols-[1.6fr_1fr_1fr]">
                         <button
                             onClick={openAskAkili}
-                            className="flex items-center gap-3 rounded-3xl border border-indigo-200 dark:border-indigo-900/60 bg-indigo-50 dark:bg-indigo-950/30 px-4 py-4 text-left transition hover:-translate-y-0.5 hover:shadow-sm"
+                            className="flex items-center gap-3 rounded-3xl border border-indigo-200 bg-indigo-50 px-4 py-4 text-left transition hover:-translate-y-0.5 hover:shadow-sm"
                         >
-                            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-indigo-600 text-white shadow-lg shadow-indigo-200 dark:shadow-none">
+                            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-indigo-600 text-white shadow-lg shadow-indigo-200">
                                 <Sparkles className="w-5 h-5" />
                             </span>
                             <span className="min-w-0">
-                                <span className="block text-[10px] font-black uppercase tracking-[0.2em] text-indigo-600 dark:text-indigo-300">Ask Akili</span>
-                                <span className="block text-sm font-bold text-slate-900 dark:text-white">Need help choosing today&apos;s mission? Ask Akili.</span>
+                                <span className="block text-[10px] font-black uppercase tracking-[0.2em] text-indigo-600">Ask Akili</span>
+                                <span className="block text-sm font-bold text-slate-900">Need help choosing today&apos;s mission? Ask Akili.</span>
                             </span>
                         </button>
-                        <button onClick={() => openGuru('mark')} className="rounded-3xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white px-4 py-4 transition-all text-left">
+                        <button onClick={() => openGuru('mark')} className="rounded-3xl bg-emerald-50 hover:bg-emerald-100 active:scale-95 text-emerald-700 px-4 py-4 transition-all text-left border border-emerald-100">
                             <ClipboardCheck className="w-5 h-5 mb-2" />
                             <span className="block text-xs font-black leading-tight">Mark<br />My Answer</span>
                         </button>
-                        <button onClick={() => openGuru('practice')} className="rounded-3xl bg-rose-600 hover:bg-rose-700 active:scale-95 text-white px-4 py-4 transition-all text-left">
+                        <button onClick={() => openGuru('practice')} className="rounded-3xl bg-rose-50 hover:bg-rose-100 active:scale-95 text-rose-700 px-4 py-4 transition-all text-left border border-rose-100">
                             <PenLine className="w-5 h-5 mb-2" />
                             <span className="block text-xs font-black leading-tight">Timed<br />Drill</span>
                         </button>
                     </div>
                     <div className="mt-2 flex flex-wrap gap-2">
-                        <button onClick={() => openGuru('predict')} className="rounded-full bg-amber-500 hover:bg-amber-600 active:scale-95 text-white px-4 py-2.5 text-xs font-black transition-all">
+                        <button onClick={() => openGuru('predict')} className="rounded-full bg-amber-50 hover:bg-amber-100 active:scale-95 text-amber-700 px-4 py-2.5 text-xs font-black transition-all border border-amber-100">
                             <TrendingUp className="inline-block w-4 h-4 mr-1.5 -mt-0.5" />Hot Topics
                         </button>
-                        <button onClick={startRecommendedPaper} className="rounded-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 px-4 py-2.5 text-xs font-black text-slate-700 dark:text-slate-200 transition hover:bg-slate-50 dark:hover:bg-slate-900">
+                        <button onClick={startRecommendedPaper} className="rounded-full border border-slate-200 bg-white px-4 py-2.5 text-xs font-black text-slate-700 transition hover:bg-slate-50">
                             Open past papers
                         </button>
                     </div>
                 </section>
 
                 {originalMockItems.length > 0 && (
-                    <section className="bg-gradient-to-br from-slate-950 via-indigo-950 to-slate-950 text-white rounded-3xl p-4 sm:p-5 overflow-hidden relative shadow-sm">
-                        <div className="absolute -right-12 -top-12 w-36 h-36 bg-indigo-500/20 rounded-full blur-3xl" />
+                    <section className="bg-white rounded-3xl p-4 sm:p-5 overflow-hidden relative shadow-sm border border-slate-200">
+                        <div className="absolute -right-12 -top-12 w-36 h-36 bg-indigo-100 rounded-full blur-3xl" />
                         <div className="relative flex flex-col gap-4">
                             <div className="flex items-start justify-between gap-3">
                                 <div>
-                                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-300 mb-1">SomaAI original mocks</p>
-                                    <h2 className="text-lg sm:text-xl font-black leading-tight">Practice with our exam-style mocks</h2>
-                                    <p className="text-xs text-slate-300 mt-1 font-medium">Structured papers, timed practice, and mark-by-mark feedback for KPSEA, KJSEA and KCSE candidates.</p>
+                                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-500 mb-1">SomaAI original mocks</p>
+                                    <h2 className="text-lg sm:text-xl font-black leading-tight text-slate-900">Practice with our exam-style mocks</h2>
+                                    <p className="text-xs text-slate-500 mt-1 font-medium">Structured papers, timed practice, and mark-by-mark feedback for KPSEA, KJSEA and KCSE candidates.</p>
                                 </div>
-                                <div className="hidden sm:flex w-12 h-12 rounded-2xl bg-white/10 text-white items-center justify-center shrink-0">
+                                <div className="hidden sm:flex w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 items-center justify-center shrink-0 border border-indigo-100">
                                     <GraduationCap className="w-6 h-6" />
                                 </div>
                             </div>
                             <div className="grid gap-2 sm:grid-cols-3">
                                 {originalMockItems.map((item: any) => (
-                                    <button key={item.id || item.title} onClick={() => onStartSession(item, RevisionMode.EXAM)} className="rounded-2xl border border-white/10 bg-white/10 p-4 text-left transition hover:bg-white/15">
-                                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-300">Original mock</p>
+                                    <button key={item.id || item.title} onClick={() => onStartSession(item, RevisionMode.EXAM)} className="rounded-2xl border border-slate-200 bg-white p-4 text-left transition hover:bg-slate-50">
+                                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-500">Original mock</p>
                                         <p className="mt-2 text-sm font-bold leading-snug line-clamp-2">{item.title}</p>
-                                        <p className="mt-2 text-[11px] text-slate-300">Tap to start timed practice and mark it like the real exam.</p>
+                                        <p className="mt-2 text-[11px] text-slate-500">Tap to start timed practice and mark it like the real exam.</p>
                                     </button>
                                 ))}
                             </div>
@@ -699,14 +699,14 @@ Use plain text. No markdown headings or symbols.`;
                 )}
 
                 {recommendedStart && (
-                        <div className="rounded-2xl border border-indigo-200 dark:border-indigo-900/60 bg-indigo-50 dark:bg-indigo-950/30 px-4 py-4">
+                        <div className="rounded-2xl border border-indigo-200 bg-indigo-50 px-4 py-4">
                             <div className="flex items-start justify-between gap-3">
                                 <div className="min-w-0">
-                                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-600 dark:text-indigo-300 mb-1">Current focus</p>
-                                    <p className="text-sm font-bold text-slate-900 dark:text-white truncate">
+                                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-600 mb-1">Current focus</p>
+                                    <p className="text-sm font-bold text-slate-900 truncate">
                                         {initialSearchQuery?.trim() ? initialSearchQuery.trim() : focusSubject}
                                     </p>
-                                    <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 mt-0.5">
+                                    <p className="text-[11px] font-semibold text-slate-500 mt-0.5">
                                         We have matched this to your current lesson and pulled the best paper to start with.
                                     </p>
                                 </div>
@@ -760,28 +760,28 @@ Use plain text. No markdown headings or symbols.`;
                 </section>
 
                 {/* ── ZONE 2: FOCUS AREA ── */}
-                <section className="bg-slate-950 text-white rounded-3xl p-4 sm:p-5 overflow-hidden relative">
-                    <div className="absolute -right-10 -top-10 w-32 h-32 bg-indigo-500/20 rounded-full blur-3xl" />
+                <section className="bg-white rounded-3xl p-4 sm:p-5 overflow-hidden relative border border-slate-200">
+                    <div className="absolute -right-10 -top-10 w-32 h-32 bg-indigo-100 rounded-full blur-3xl" />
                     <div className="relative">
                         <div className="flex items-start justify-between gap-3">
                             <div>
-                            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-300 mb-1">Today&apos;s Exam Mission</p>
-                            <h2 className="text-lg sm:text-xl font-black leading-tight">
+                            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-500 mb-1">Today&apos;s Exam Mission</p>
+                            <h2 className="text-lg sm:text-xl font-black leading-tight text-slate-900">
                                 {missionTitle}
                             </h2>
-                                <p className="text-xs text-slate-300 mt-1 font-medium">
+                                <p className="text-xs text-slate-500 mt-1 font-medium">
                                     Target {examGoal.targetGrade} in {examGoal.examType}
                                     {daysToExam !== null ? ` · ${daysToExam} day${daysToExam === 1 ? '' : 's'} left` : ' · add exam date for countdown'}
                                 </p>
                             </div>
-                            <div className="w-12 h-12 rounded-2xl bg-white/10 border border-white/10 flex items-center justify-center shrink-0">
+                            <div className="w-12 h-12 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center shrink-0">
                                 {daysToExam !== null ? <CalendarDays className="w-6 h-6 text-emerald-300" /> : <TimerReset className="w-6 h-6 text-emerald-300" />}
                             </div>
                         </div>
                         <div className="grid sm:grid-cols-3 gap-2 mt-4">
                             <button
                                 onClick={() => openGuru('practice')}
-                                className="rounded-2xl border border-white/10 bg-gradient-to-br from-purple-500/15 to-purple-500/5 p-3 text-left transition-colors hover:bg-white/15 hover:-translate-y-0.5"
+                                className="rounded-2xl border border-slate-200 bg-white p-3 text-left transition-colors hover:bg-slate-50 hover:-translate-y-0.5"
                             >
                                 <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-purple-400/15 text-purple-200"><BookOpen className="w-5 h-5" /></span>
                                 <span className="mt-2 block text-[10px] font-black uppercase tracking-wider text-purple-300">Syllabus lane</span>
@@ -793,7 +793,7 @@ Use plain text. No markdown headings or symbols.`;
                                     if (missionResource) onStartSession(missionResource, RevisionMode.EXAM);
                                     else openGuru('predict');
                                 }}
-                                className="rounded-2xl border border-white/10 bg-gradient-to-br from-amber-500/15 to-amber-500/5 p-3 text-left transition-colors hover:bg-white/15 hover:-translate-y-0.5"
+                                className="rounded-2xl border border-slate-200 bg-white p-3 text-left transition-colors hover:bg-slate-50 hover:-translate-y-0.5"
                             >
                                 <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-amber-400/15 text-amber-200"><FileText className="w-5 h-5" /></span>
                                 <span className="mt-2 block text-[10px] font-black uppercase tracking-wider text-amber-300">Past papers lane</span>
@@ -802,7 +802,7 @@ Use plain text. No markdown headings or symbols.`;
                             </button>
                             <button
                                 onClick={() => openGuru('mark')}
-                                className="rounded-2xl border border-white/10 bg-gradient-to-br from-sky-500/15 to-sky-500/5 p-3 text-left transition-colors hover:bg-white/15 hover:-translate-y-0.5"
+                                className="rounded-2xl border border-slate-200 bg-white p-3 text-left transition-colors hover:bg-slate-50 hover:-translate-y-0.5"
                             >
                                 <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-sky-400/15 text-sky-200"><BookOpen className="w-5 h-5" /></span>
                                 <span className="mt-2 block text-[10px] font-black uppercase tracking-wider text-sky-300">Notes lane</span>
@@ -815,7 +815,7 @@ Use plain text. No markdown headings or symbols.`;
                             <button onClick={startCamera} className="flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-500 rounded-2xl py-3 text-xs font-black transition-colors">
                                 <ScanLine className="w-4 h-4" /> Scan Question
                             </button>
-                            <label className="flex items-center justify-center gap-2 bg-white text-slate-900 hover:bg-slate-100 rounded-2xl py-3 text-xs font-black transition-colors cursor-pointer">
+                            <label className="flex items-center justify-center gap-2 bg-white text-slate-900 hover:bg-slate-50 rounded-2xl py-3 text-xs font-black transition-colors cursor-pointer border border-slate-200">
                                 <Upload className="w-4 h-4" /> Upload Paper
                                 <input
                                     type="file"
@@ -848,7 +848,7 @@ Use plain text. No markdown headings or symbols.`;
                                         <button
                                             key={i}
                                             onClick={() => setSearchQuery(topic)}
-                                            className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-rose-300 dark:hover:border-rose-700 rounded-2xl p-4 text-left transition-all group"
+                                            className="bg-white border border-slate-200 hover:border-rose-300 rounded-2xl p-4 text-left transition-all group shadow-sm"
                                         >
                                             <div className="flex items-center justify-between mb-2">
                                                 <span className="text-xs font-black text-rose-500 bg-rose-50 dark:bg-rose-950/50 px-2 py-0.5 rounded-md">{score}%</span>
@@ -868,15 +868,15 @@ Use plain text. No markdown headings or symbols.`;
                         </div>
                     ) : (
                         /* First-time candidate: explain how to start */
-                        <div className="bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-950/30 dark:to-purple-950/30 border border-indigo-100 dark:border-indigo-900/50 rounded-2xl p-5 flex items-start gap-4">
+                        <div className="bg-gradient-to-br from-indigo-50 to-purple-50 border border-indigo-100 rounded-2xl p-5 flex items-start gap-4">
                             <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center shrink-0">
                                 <Sparkles className="w-5 h-5 text-white" />
                             </div>
                             <div>
-                                <h2 className="font-black text-slate-900 dark:text-white text-sm mb-1">Start from one paper</h2>
-                                <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-                                    <strong className="text-indigo-600 dark:text-indigo-400">Scan</strong> a past paper question for instant AI help, 
-                                    <strong className="text-purple-600 dark:text-purple-400"> use Exam Guru</strong> for exam strategy, 
+                                <h2 className="font-black text-slate-900 text-sm mb-1">Start from one paper</h2>
+                                <p className="text-xs text-slate-600 leading-relaxed">
+                                    <strong className="text-indigo-600">Scan</strong> a past paper question for instant AI help, 
+                                    <strong className="text-purple-600"> use Exam Guru</strong> for exam strategy, 
                                     then practice and mark your answers.
                                 </p>
                             </div>
@@ -894,10 +894,10 @@ Use plain text. No markdown headings or symbols.`;
                             value={searchQuery}
                             onChange={e => setSearchQuery(e.target.value)}
                             placeholder="Search paper title, subject, or keyword..."
-                            className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl pl-10 pr-10 py-3 text-sm font-medium placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-800 focus:border-indigo-300 dark:focus:border-indigo-700 outline-none transition-all"
+                            className="w-full bg-white border border-slate-200 rounded-2xl pl-10 pr-10 py-3 text-sm font-medium placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300 outline-none transition-all"
                         />
                         {searchQuery && (
-                            <button onClick={() => setSearchQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full">
+                            <button onClick={() => setSearchQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:bg-slate-100 rounded-full">
                                 <X className="w-3.5 h-3.5 text-slate-400" />
                             </button>
                         )}
@@ -925,18 +925,18 @@ Use plain text. No markdown headings or symbols.`;
                             initial={{ opacity: 0, height: 0 }}
                             animate={{ opacity: 1, height: 'auto' }}
                             exit={{ opacity: 0, height: 0 }}
-                            className="mb-4 bg-indigo-50 dark:bg-indigo-950/30 border border-indigo-100 dark:border-indigo-900/50 rounded-2xl p-4 space-y-2"
+                            className="mb-4 bg-indigo-50 border border-indigo-100 rounded-2xl p-4 space-y-2"
                         >
                             <div className="flex items-start gap-3">
                                 <Lightbulb className="w-4 h-4 text-indigo-500 shrink-0 mt-0.5" />
                                 <div>
-                                    <p className="text-[11px] font-black text-indigo-700 dark:text-indigo-400 uppercase tracking-wider mb-1">{activeSubject} — KNEC Tip</p>
-                                    <p className="text-xs text-slate-700 dark:text-slate-300 font-medium leading-relaxed">{SUBJECT_TIPS[activeSubject].tip}</p>
+                                    <p className="text-[11px] font-black text-indigo-700 uppercase tracking-wider mb-1">{activeSubject} — KNEC Tip</p>
+                                    <p className="text-xs text-slate-700 font-medium leading-relaxed">{SUBJECT_TIPS[activeSubject].tip}</p>
                                 </div>
                             </div>
-                            <div className="flex items-start gap-3 pt-1 border-t border-indigo-100 dark:border-indigo-900/40">
+                            <div className="flex items-start gap-3 pt-1 border-t border-indigo-100">
                                 <span className="text-rose-500 text-xs shrink-0 font-black mt-0.5">❌</span>
-                                <p className="text-xs text-rose-600 dark:text-rose-400 font-medium leading-relaxed">
+                                <p className="text-xs text-rose-600 font-medium leading-relaxed">
                                     <strong>Paper trap:</strong> {SUBJECT_TIPS[activeSubject].trap}
                                 </p>
                             </div>
@@ -950,10 +950,10 @@ Use plain text. No markdown headings or symbols.`;
                             <p className="text-sm text-slate-400 font-medium">Loading resources...</p>
                         </div>
                     ) : filteredItems.length === 0 ? (
-                        <div className="py-12 text-center bg-white dark:bg-slate-900/50 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800">
-                            <FileText className="w-8 h-8 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
-                            <p className="font-bold text-slate-500 dark:text-slate-400 mb-1">No papers matched this filter</p>
-                            <p className="text-xs text-slate-400 dark:text-slate-500">Try a different subject or reset the filters</p>
+                        <div className="py-12 text-center bg-white rounded-2xl border border-dashed border-slate-200">
+                            <FileText className="w-8 h-8 text-slate-300 mx-auto mb-3" />
+                            <p className="font-bold text-slate-500 mb-1">No papers matched this filter</p>
+                            <p className="text-xs text-slate-400">Try a different subject or reset the filters</p>
                         </div>
                     ) : (
                         <div className="space-y-2">
@@ -970,7 +970,7 @@ Use plain text. No markdown headings or symbols.`;
                                         initial={{ opacity: 0, y: 6 }}
                                         animate={{ opacity: 1, y: 0 }}
                                         transition={{ delay: idx * 0.02 }}
-                                        className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-indigo-300 dark:hover:border-indigo-700 rounded-2xl flex items-center gap-3 px-4 py-3.5 group transition-all hover:shadow-md dark:hover:shadow-none"
+                                        className="bg-white border border-slate-200 hover:border-indigo-300 rounded-2xl flex items-center gap-3 px-4 py-3.5 group transition-all hover:shadow-md shadow-sm"
                                     >
                                         {/* Type icon */}
                                         <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${tc.color}`}>
@@ -982,7 +982,7 @@ Use plain text. No markdown headings or symbols.`;
                                             className="flex-1 text-left min-w-0"
                                             onClick={() => onStartSession(item, RevisionMode.LEARN)}
                                         >
-                                            <p className="font-bold text-slate-800 dark:text-slate-200 text-sm leading-tight truncate group-hover:text-indigo-700 dark:group-hover:text-indigo-400 transition-colors">
+                                            <p className="font-bold text-slate-800 text-sm leading-tight truncate group-hover:text-indigo-700 transition-colors">
                                                 {item.title}
                                             </p>
                                             <div className="flex items-center gap-2 mt-1">
@@ -1012,14 +1012,14 @@ Use plain text. No markdown headings or symbols.`;
                                                 e.stopPropagation();
                                                 openGuru('chat', buildPaperCoachPrompt(item));
                                             }}
-                                            className="hidden sm:inline-flex items-center gap-1.5 rounded-xl bg-purple-50 dark:bg-purple-950/30 text-purple-700 dark:text-purple-300 px-3 py-2 text-[11px] font-black hover:bg-purple-100 dark:hover:bg-purple-900/40 transition-colors shrink-0"
+                                            className="hidden sm:inline-flex items-center gap-1.5 rounded-xl bg-purple-50 text-purple-700 px-3 py-2 text-[11px] font-black hover:bg-purple-100 transition-colors shrink-0"
                                         >
                                             <MessageCircle className="w-3.5 h-3.5" />
                                             Coach
                                         </button>
                                         <button
                                             onClick={(e) => { e.stopPropagation(); setOverflowItem(item); }}
-                                            className="p-2 text-slate-300 dark:text-slate-700 hover:text-slate-500 dark:hover:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl transition-colors shrink-0"
+                                            className="p-2 text-slate-300 hover:text-slate-500 hover:bg-slate-50 rounded-xl transition-colors shrink-0"
                                         >
                                             <MoreHorizontal className="w-4 h-4" />
                                         </button>
@@ -1037,18 +1037,18 @@ Use plain text. No markdown headings or symbols.`;
                     (() => {
                         const groundingBadge = getPaperGroundingBadge(overflowItem);
                         return (
-                    <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm"
+                    <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-4 bg-white/70 backdrop-blur-sm"
                         onClick={() => setOverflowItem(null)}>
                         <motion.div
                             initial={{ opacity: 0, y: 30 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: 30 }}
                             onClick={e => e.stopPropagation()}
-                            className="bg-white dark:bg-slate-900 w-full max-w-sm rounded-3xl overflow-hidden shadow-2xl border border-slate-100 dark:border-slate-800"
+                            className="bg-white w-full max-w-sm rounded-3xl overflow-hidden shadow-2xl border border-slate-100"
                         >
-                            <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                            <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
                                 <div>
-                                    <p className="font-black text-slate-900 dark:text-white text-sm truncate max-w-[240px]">{overflowItem.title}</p>
+                                    <p className="font-black text-slate-900 text-sm truncate max-w-[240px]">{overflowItem.title}</p>
                                     <div className="flex items-center gap-2 mt-1">
                                         <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{overflowItem.subject}</p>
                                         <span
@@ -1059,21 +1059,21 @@ Use plain text. No markdown headings or symbols.`;
                                         </span>
                                     </div>
                                 </div>
-                                <button onClick={() => setOverflowItem(null)} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl text-slate-400">
+                                <button onClick={() => setOverflowItem(null)} className="p-2 hover:bg-slate-100 rounded-xl text-slate-400">
                                     <X className="w-4 h-4" />
                                 </button>
                             </div>
                             <div className="p-4 space-y-2">
                                 <button
                                     onClick={() => { onStartSession(overflowItem, RevisionMode.LEARN); setOverflowItem(null); }}
-                                    className="w-full flex items-center gap-3 p-3.5 rounded-2xl bg-indigo-50 dark:bg-indigo-900/30 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 text-indigo-700 dark:text-indigo-400 font-bold text-sm transition-colors"
+                                    className="w-full flex items-center gap-3 p-3.5 rounded-2xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-sm transition-colors"
                                 >
                                     <BookOpen className="w-5 h-5" /> Learn Guided
                                     <ChevronRight className="w-4 h-4 ml-auto" />
                                 </button>
                                 <button
                                     onClick={() => { onStartSession(overflowItem, RevisionMode.EXAM); setOverflowItem(null); }}
-                                    className="w-full flex items-center gap-3 p-3.5 rounded-2xl bg-amber-50 dark:bg-amber-900/30 hover:bg-amber-100 dark:hover:bg-amber-900/50 text-amber-700 dark:text-amber-400 font-bold text-sm transition-colors"
+                                    className="w-full flex items-center gap-3 p-3.5 rounded-2xl bg-amber-50 hover:bg-amber-100 text-amber-700 font-bold text-sm transition-colors"
                                 >
                                     <Brain className="w-5 h-5" /> Take as Exam
                                     <ChevronRight className="w-4 h-4 ml-auto" />
@@ -1084,7 +1084,7 @@ Use plain text. No markdown headings or symbols.`;
                                         setOverflowItem(null);
                                         openGuru('chat', prompt);
                                     }}
-                                    className="w-full flex items-center gap-3 p-3.5 rounded-2xl bg-purple-50 dark:bg-purple-900/30 hover:bg-purple-100 dark:hover:bg-purple-900/50 text-purple-700 dark:text-purple-400 font-bold text-sm transition-colors"
+                                    className="w-full flex items-center gap-3 p-3.5 rounded-2xl bg-purple-50 hover:bg-purple-100 text-purple-700 font-bold text-sm transition-colors"
                                 >
                                     <MessageCircle className="w-5 h-5" /> Ask Guru About This Paper
                                     <ChevronRight className="w-4 h-4 ml-auto" />
@@ -1095,7 +1095,7 @@ Use plain text. No markdown headings or symbols.`;
                                         setOverflowItem(null);
                                         openGuru('chat', prompt);
                                     }}
-                                    className="w-full flex items-center gap-3 p-3.5 rounded-2xl bg-rose-50 dark:bg-rose-900/30 hover:bg-rose-100 dark:hover:bg-rose-900/50 text-rose-700 dark:text-rose-400 font-bold text-sm transition-colors"
+                                    className="w-full flex items-center gap-3 p-3.5 rounded-2xl bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-sm transition-colors"
                                 >
                                     <TrendingUp className="w-5 h-5" /> High-Yield From This Paper
                                     <ChevronRight className="w-4 h-4 ml-auto" />
