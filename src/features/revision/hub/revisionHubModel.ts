@@ -7,6 +7,12 @@ export type RevisionPaper = Record<string, unknown> & {
   grade?: string;
   type?: string;
   exam_type?: string;
+  fileUrl?: string;
+  file_url?: string;
+  filePath?: string;
+  file_path?: string;
+  markingSchemeUrl?: string;
+  marking_scheme_url?: string;
   duration_minutes?: number;
   total_marks?: number;
   structured_questions?: unknown[];
@@ -121,6 +127,15 @@ export const paperContentType = (paper: RevisionPaper): string => {
   return rawType && rawType.toUpperCase() !== 'PAST PAPER' ? rawType : 'Revision paper';
 };
 
+
+export const paperPdfUrl = (paper: RevisionPaper): string =>
+  String(paper.file_url || paper.fileUrl || '').trim();
+
+export const paperHasDiagrams = (paper: RevisionPaper): boolean =>
+  Array.isArray(paper.structured_questions) &&
+  paper.structured_questions.some((question) =>
+    Boolean(String((question as any)?.diagramUrl || (question as any)?.diagram_url || '').trim())
+  );
 export const paperAttemptStatus = (
   paper: RevisionPaper
 ): 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED' => {

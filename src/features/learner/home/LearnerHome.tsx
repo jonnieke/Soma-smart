@@ -332,7 +332,7 @@ export const LearnerHome: React.FC<LearnerHomeProps> = ({
                 </div>
                 <div className="flex flex-wrap gap-2 text-xs font-bold uppercase tracking-[0.14em] text-violet-50/90">
                   <span className="rounded-full border border-white/15 bg-white/10 px-3 py-2">{grade || 'Grade 7'}</span>
-                  <span className="rounded-full border border-white/15 bg-white/10 px-3 py-2">KCPE � KPSEA � KCSE</span>
+                  <span className="rounded-full border border-white/15 bg-white/10 px-3 py-2">KPSEA / KJSEA / KCSE</span>
                   <span className="rounded-full border border-white/15 bg-white/10 px-3 py-2">Timed practice</span>
                 </div>
               </div>
@@ -341,7 +341,7 @@ export const LearnerHome: React.FC<LearnerHomeProps> = ({
               <div className="rounded-[22px] border border-[#ebe6fb] bg-[#faf8ff] p-5">
                 <p className="text-[11px] font-black uppercase tracking-[0.16em] text-[#7a5bef]">Open past papers now</p>
                 <h3 className="mt-2 text-xl font-bold text-[#18133f]">Start with a real paper, not a blank dashboard.</h3>
-                <p className="mt-2 text-sm leading-6 text-[#5f6684]">We�ll take you to the revision hub where your past papers, timing and feedback live together.</p>
+                <p className="mt-2 text-sm leading-6 text-[#5f6684]">We&apos;ll take you to the revision hub where your papers, timing and feedback live together.</p>
                 <div className="mt-5 flex flex-wrap gap-3">
                   <button type="button" onClick={onOpenRevision} className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[#6938ef] px-5 text-sm font-black text-white shadow-md shadow-violet-200 transition hover:bg-[#5c2fda]">
                     Open past papers now <ArrowRight className="h-4 w-4" />
@@ -359,9 +359,9 @@ export const LearnerHome: React.FC<LearnerHomeProps> = ({
                 <div className="rounded-[18px] border border-[#e7e3f6] bg-white p-4">
                   <p className="text-[11px] font-black uppercase tracking-[0.14em] text-[#7a5bef]">What you get</p>
                   <ul className="mt-2 space-y-2 text-sm text-[#4f5673]">
-                    <li>� Past papers by subject and grade</li>
-                    <li>� Timed exam mode with feedback</li>
-                    <li>� Weak-topic revision after you finish</li>
+                    <li>Published papers by subject and grade</li>
+                    <li>Timed exam mode with feedback</li>
+                    <li>Weak-topic revision after you finish</li>
                   </ul>
                 </div>
               </div>

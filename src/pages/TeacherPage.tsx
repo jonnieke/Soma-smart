@@ -30,7 +30,7 @@ export const TeacherPage: React.FC = () => {
     return (
         <>
             <Helmet>
-                <title>Teacher Dashboard | Somo Smart â€” AI Teaching Tools for Kenyan Educators</title>
+                <title>Teacher Dashboard | Soma AI - Teaching Tools for Kenyan Educators</title>
                 <meta name="description" content="smart-powered teaching studio for Kenyan educators. Create lesson notes, generate quizzes, mark assignments, and manage your classroom with Somo Smart." />
                 <link rel="canonical" href="https://www.somaai.co.ke/teacher" />
                 <meta property="og:title" content="Teacher Dashboard | Somo Smart" />

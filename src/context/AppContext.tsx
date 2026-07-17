@@ -2053,7 +2053,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     try {
       // Past papers are delivered as structured exams. Their private source-file URLs
       // are intentionally excluded from learner queries.
-      let documentQuery = supabase
+      const documentQuery = supabase
         .from('knowledge_base')
         .select('*')
         .neq('type', 'PAST_PAPER')

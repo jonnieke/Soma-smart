@@ -23,6 +23,7 @@ import { TutoringRequest } from '../../types';
 import { classroomService } from '../../services/classroomService';
 
 import { useNavigate, useLocation } from 'react-router-dom';
+import { PublishedExamShelf } from './PublishedExamShelf';
 import { trackAnalyticsEvent } from '../../services/analyticsEventService';
 import logoImg from '../../assets/images/main_logo.png';
 import { safeImport } from '../../utils/safeImport';
@@ -1376,6 +1377,11 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                             </div>
 
                             <div className="p-8 md:p-12">
+
+                                <PublishedExamShelf
+                                    selectedClass={selectedClass}
+                                    selectedSubject={selectedSubject}
+                                />
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     {teacherHistory.filter(item => (!selectedClass || item.className === selectedClass) && (!selectedSubject || item.subject === selectedSubject)).length === 0 ? (

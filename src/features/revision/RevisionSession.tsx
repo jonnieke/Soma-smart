@@ -414,7 +414,7 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
 
         try {
             const result = activeExamId
-                ? await examService.markResponse(activeExamId, question.id, userAnswer, language)
+                ? await examService.markResponse(activeExamId, question.id, userAnswer, learnerId, serverAttemptId, language)
                 : await markStudentAnswer(question, userAnswer, language);
             setCurrentMarking(result);
 
@@ -508,7 +508,7 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
                 }
                 try {
                     const result = activeExamId
-                        ? await examService.markResponse(activeExamId, question.id, learnerAnswer, language)
+                        ? await examService.markResponse(activeExamId, question.id, learnerAnswer, learnerId, serverAttemptId, language)
                         : await markStudentAnswer(question, learnerAnswer, language);
                     timedAttempts.push({ questionId: question.id, questionNumber: question.number, questionText: question.text, learnerAnswer, marksAwarded: result.marksAwarded, marksAvailable: result.marksAvailable, modelAnswer: result.modelAnswer, feedback: result.feedback, examTip: result.examTip, isCorrect: result.isCorrect, topic: question.topic });
                 } catch (error) {
@@ -697,7 +697,7 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
 
                             {sectionOneQuestions.length > 0 && (
                                 <div>
-                                    <p className="text-[10px] font-black uppercase tracking-wider text-slate-500 mb-2">Section I ? compulsory</p>
+                                    <p className="text-[10px] font-black uppercase tracking-wider text-slate-500 mb-2">Section I / compulsory</p>
                                     <div className="flex flex-wrap gap-2">
                                         {sectionOneQuestions.map(question => (
                                             <span key={String(question.id)} className="rounded-xl border border-slate-700 bg-slate-800 px-3 py-1.5 text-xs font-black text-slate-300">
@@ -785,7 +785,7 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
                         </button>
                         <div>
                             <h1 className="text-base font-black text-slate-900 dark:text-white">{analysis.subject}  -  {analysis.grade}</h1>
-                            <p className="text-[10px] text-slate-400 dark:text-slate-500">{analysis.questions.length} questions â€¢ {totalMarks} marks</p>
+                            <p className="text-[10px] text-slate-400 dark:text-slate-500">{analysis.questions.length} questions / {totalMarks} marks</p>
                         </div>
                     </div>
                     {avgScore !== null && (
@@ -812,7 +812,7 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
                                 <span className="rounded-full border border-slate-200 dark:border-slate-800 px-3 py-2">{totalMarks} marks</span>
                             </div>
                             {hasSectionTwo && (
-                                <p className="mt-4 text-sm font-semibold text-slate-600 dark:text-slate-300">Section I is compulsory � Section II: choose any 5 questions.</p>
+                                <p className="mt-4 text-sm font-semibold text-slate-600 dark:text-slate-300">Section I is compulsory. Section II: choose any 5 questions.</p>
                             )}
                             <div className="mt-5 flex flex-wrap gap-3">
                                 <button
@@ -870,7 +870,7 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
                                     >
                                         <FileText className="w-6 h-6 mb-3 opacity-80" />
                                         <p className="font-black text-sm mb-1">Full Paper</p>
-                                        <p className="text-emerald-200 text-[10px]">No time limit � AI marks each answer</p>
+                                        <p className="text-emerald-200 text-[10px]">No time limit / each answer is marked</p>
                                     </motion.button>
                                 </div>
 
@@ -1014,7 +1014,7 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
                                             <div key={p.id} className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
                                                 <div>
                                                     <p className="text-xs font-black text-slate-700 dark:text-slate-200">{p.subject}  -  {p.grade}</p>
-                                                    <p className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">{new Date(p.date).toLocaleDateString()} â€¢ {p.correctAnswers}/{p.totalQuestions} correct</p>
+                                                    <p className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">{new Date(p.date).toLocaleDateString()} / {p.correctAnswers}/{p.totalQuestions} correct</p>
                                                 </div>
                                                 <div className={`text-lg font-black ${p.score >= 70 ? 'text-emerald-600 dark:text-emerald-400' : p.score >= 50 ? 'text-amber-600 dark:text-amber-400' : 'text-red-500 dark:text-red-400'}`}>
                                                     {p.score}%
@@ -1273,7 +1273,7 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
                                         : autosaveStatus === 'offline'
                                             ? 'text-[9px] font-black px-2 py-1 rounded-full uppercase bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'
                                             : 'text-[9px] font-black px-2 py-1 rounded-full uppercase bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300'}>
-                                    {autosaveStatus === 'saving' ? 'Saving?' : autosaveStatus === 'saved' ? 'Saved' : autosaveStatus === 'offline' ? 'Saved offline' : 'Sync required'}
+                                    {autosaveStatus === 'saving' ? 'Saving...' : autosaveStatus === 'saved' ? 'Saved' : autosaveStatus === 'offline' ? 'Saved offline' : 'Sync required'}
                                 </span>
                             )}
                         </div>
@@ -1576,7 +1576,7 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
                                 <p className="text-6xl font-black mb-2 tracking-tighter">{percentage}%</p>
                                 <p className="text-2xl font-black opacity-90 mb-1">Grade {gradeLabel}</p>
                                 <p className="text-sm opacity-80 font-medium">
-                                    {marksObtained}/{totalMarks} marks ? {correctCount}/{attempts.length} correct ? {formatTime(timeSpent)}
+                                    {marksObtained}/{totalMarks} marks / {correctCount}/{attempts.length} correct / {formatTime(timeSpent)}
                                 </p>
                             </div>
                             <div className="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full blur-3xl -mr-20 -mt-20" />
@@ -1628,7 +1628,7 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
                                             <div className="flex items-center justify-between mb-2">
                                                 <div>
                                                     <p className="text-xs font-black text-slate-800 dark:text-slate-200">Section {section}</p>
-                                                    <p className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">{stats.answered} answered ? {stats.available} available marks</p>
+                                                    <p className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">{stats.answered} answered / {stats.available} available marks</p>
                                                 </div>
                                                 <span className={`text-xs font-black ${pct >= 70 ? 'text-emerald-600 dark:text-emerald-400' : pct >= 50 ? 'text-amber-600 dark:text-amber-400' : 'text-red-500 dark:text-red-400'}`}>{pct}%</span>
                                             </div>
@@ -1646,7 +1646,7 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
                             <div className="flex items-start justify-between gap-4">
                                 <div>
                                     <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-100">Recover marks now</p>
-                                    <h3 className="mt-2 text-2xl font-black leading-tight">{weakTopicList.length > 0 ? `Focus on ${weakTopicList[0]}` : "You're close ? keep going"}</h3>
+                                    <h3 className="mt-2 text-2xl font-black leading-tight">{weakTopicList.length > 0 ? `Focus on ${weakTopicList[0]}` : "You're close - keep going"}</h3>
                                     <p className="mt-2 text-sm text-indigo-100/90 max-w-xl">Use the paper feedback to fix the exact topics that cost you marks, then retry the paper under time.</p>
                                 </div>
                                 <div className="rounded-2xl bg-white/10 px-4 py-3 text-right border border-white/10 shrink-0">

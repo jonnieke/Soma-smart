@@ -6,12 +6,14 @@ import {
   Check,
   ChevronDown,
   Clock3,
+  ExternalLink,
   FileSearch,
   FileText,
   Filter,
   Grid2X2,
   Home,
   Search,
+  Share2,
   Target,
   Timer,
   TrendingUp,
@@ -21,6 +23,8 @@ import {
   paperAttemptStatus,
   paperContentType,
   paperDuration,
+  paperHasDiagrams,
+  paperPdfUrl,
   paperQuestionCount,
   RevisionPaper,
   RevisionTerminology,
@@ -173,11 +177,11 @@ export const RevisionHero: React.FC<{
           id="revision-hero-title"
           className="mt-4 text-2xl font-black tracking-tight sm:text-3xl lg:text-[2.15rem]"
         >
-          {hasHistory ? `${greeting}, ${firstName}.` : 'Let’s find your starting point.'}
+          {hasHistory ? `${greeting}, ${firstName}.` : "Let's find your starting point."}
         </h1>
         <p className="mt-1 text-lg font-medium text-violet-100 sm:text-2xl">
           {hasHistory
-            ? `Let’s move you closer to your ${terminology.targetLabel}.`
+            ? `Let's move you closer to your ${terminology.targetLabel}.`
             : `Start with a ${terminology.contentLabel} matched to ${grade || 'your level'}.`}
         </p>
 
@@ -324,10 +328,14 @@ export const QuickRevisionActions: React.FC<{
 export const RevisionPaperCard: React.FC<{
   paper: RevisionPaper;
   onOpen: (paper: RevisionPaper) => void;
-}> = ({ paper, onOpen }) => {
+  onViewPdf: (paper: RevisionPaper) => void;
+  onShare: (paper: RevisionPaper) => void;
+}> = ({ paper, onOpen, onViewPdf, onShare }) => {
   const status = paperAttemptStatus(paper);
   const questions = paperQuestionCount(paper);
   const duration = paperDuration(paper);
+  const pdfUrl = paperPdfUrl(paper);
+  const hasDiagrams = paperHasDiagrams(paper);
   const statusCopy =
     status === 'COMPLETED' ? 'Completed' : status === 'IN_PROGRESS' ? 'In progress' : 'Not started';
   const cta = status === 'COMPLETED' ? 'Review' : status === 'IN_PROGRESS' ? 'Continue' : 'Start';
@@ -358,6 +366,16 @@ export const RevisionPaperCard: React.FC<{
         <span>{paperContentType(paper)}</span>
         {paper.grade && <span>• {String(paper.grade)}</span>}
       </div>
+      <div className="mt-3 flex flex-wrap items-center gap-2 text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400">
+        {pdfUrl ? (
+          <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-emerald-700">PDF ready</span>
+        ) : (
+          <span className="rounded-full bg-slate-100 px-2.5 py-1 text-slate-500">PDF coming soon</span>
+        )}
+        {hasDiagrams && (
+          <span className="rounded-full bg-blue-50 px-2.5 py-1 text-blue-700">Diagrams included</span>
+        )}
+      </div>
       <div className="mt-4 flex items-center gap-4 border-t border-slate-100 pt-3 text-xs text-slate-500 dark:border-slate-800">
         {duration > 0 && (
           <span className="flex items-center gap-1.5">
@@ -370,14 +388,33 @@ export const RevisionPaperCard: React.FC<{
           <span className="ml-auto font-black text-emerald-600">{Number(paper.score)}%</span>
         )}
       </div>
-      <button
-        type="button"
-        onClick={() => onOpen(paper)}
-        className={`mt-4 inline-flex min-h-11 w-full items-center justify-between rounded-xl ${status === 'IN_PROGRESS' ? 'bg-indigo-600 text-white' : 'border border-indigo-300 text-indigo-700 dark:text-indigo-300'} px-4 text-sm font-black hover:bg-indigo-600 hover:text-white ${focusRing}`}
-      >
-        {cta}
-        <ArrowRight className="h-4 w-4" />
-      </button>
+      <div className="mt-4 grid grid-cols-3 gap-2">
+        <button
+          type="button"
+          onClick={() => onOpen(paper)}
+          className={`inline-flex min-h-11 items-center justify-center rounded-xl ${status === 'IN_PROGRESS' ? 'bg-indigo-600 text-white' : 'border border-indigo-300 text-indigo-700 dark:text-indigo-300'} px-3 text-sm font-black hover:bg-indigo-600 hover:text-white ${focusRing}`}
+        >
+          {cta}
+        </button>
+        <button
+          type="button"
+          onClick={() => onViewPdf(paper)}
+          disabled={!pdfUrl}
+          className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border px-3 text-sm font-black ${pdfUrl ? 'border-slate-200 text-slate-700 hover:bg-slate-50' : 'cursor-not-allowed border-slate-200 text-slate-300'} ${focusRing}`}
+        >
+          <ExternalLink className="h-4 w-4" />
+          PDF
+        </button>
+        <button
+          type="button"
+          onClick={() => onShare(paper)}
+          disabled={!pdfUrl}
+          className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border px-3 text-sm font-black ${pdfUrl ? 'border-slate-200 text-slate-700 hover:bg-slate-50' : 'cursor-not-allowed border-slate-200 text-slate-300'} ${focusRing}`}
+        >
+          <Share2 className="h-4 w-4" />
+          Share
+        </button>
+      </div>
     </article>
   );
 };
@@ -397,6 +434,8 @@ export const RevisionPaperLibrary: React.FC<{
   onStatus: (value: string) => void;
   onClear: () => void;
   onOpen: (paper: RevisionPaper) => void;
+  onViewPdf: (paper: RevisionPaper) => void;
+  onShare: (paper: RevisionPaper) => void;
 }> = ({
   papers,
   totalPapers,
@@ -412,6 +451,8 @@ export const RevisionPaperLibrary: React.FC<{
   onStatus,
   onClear,
   onOpen,
+  onViewPdf,
+  onShare,
 }) => (
   <section
     id="papers"
@@ -518,7 +559,13 @@ export const RevisionPaperLibrary: React.FC<{
     ) : papers.length ? (
       <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
         {papers.map((paper) => (
-          <RevisionPaperCard key={String(paper.id || paper.title)} paper={paper} onOpen={onOpen} />
+          <RevisionPaperCard
+            key={String(paper.id || paper.title)}
+            paper={paper}
+            onOpen={onOpen}
+            onViewPdf={onViewPdf}
+            onShare={onShare}
+          />
         ))}
       </div>
     ) : (
@@ -613,7 +660,7 @@ export const ImprovementAndReadiness: React.FC<{
         <div className="pr-3">
           <p className="text-[11px] font-semibold text-slate-500">Current score</p>
           <p className="mt-1 text-2xl font-black text-indigo-600">
-            {readiness.score === null ? '—' : `${readiness.score}%`}
+            {readiness.score === null ? '-' : `${readiness.score}%`}
           </p>
         </div>
         <div className="px-3">

@@ -17,6 +17,14 @@ export interface ExamResponsePayload {
   timeSpentSeconds?: number;
 }
 
+const getLearnerPin = (): string | null => {
+  try {
+    return localStorage.getItem('soma_active_student_pin') || null;
+  } catch {
+    return null;
+  }
+};
+
 export const examService = {
   async listPublishedExams(grade?: string, subject?: string) {
     const { data, error } = await supabase.rpc('list_published_exams', {
@@ -42,7 +50,8 @@ export const examService = {
       p_exam_id: payload.examId,
       p_learner_id: payload.learnerId,
       p_mode: payload.mode,
-      p_selected_questions: payload.selectedQuestions || []
+      p_selected_questions: payload.selectedQuestions || [],
+      p_pin: getLearnerPin()
     });
 
     if (error) throw error;
@@ -56,7 +65,8 @@ export const examService = {
       p_answer_text: payload.answerText || null,
       p_answer_data: payload.answerData || null,
       p_working_image_path: payload.workingImagePath || null,
-      p_time_spent_seconds: payload.timeSpentSeconds || 0
+      p_time_spent_seconds: payload.timeSpentSeconds || 0,
+      p_pin: getLearnerPin()
     });
 
     if (error) throw error;
@@ -66,7 +76,8 @@ export const examService = {
   async submitAttempt(attemptId: string, durationSeconds?: number) {
     const { data, error } = await supabase.rpc('submit_exam_attempt_secure', {
       p_attempt_id: attemptId,
-      p_duration_seconds: durationSeconds ?? null
+      p_duration_seconds: durationSeconds ?? null,
+      p_pin: getLearnerPin()
     });
 
     if (error) throw error;
@@ -75,20 +86,24 @@ export const examService = {
 
   async getAttemptResults(attemptId: string) {
     const { data, error } = await supabase.rpc('get_exam_attempt_secure', {
-      p_attempt_id: attemptId
+      p_attempt_id: attemptId,
+      p_pin: getLearnerPin()
     });
 
     if (error) throw error;
     return (Array.isArray(data) ? data[0] : data) || null;
   },
 
-  async markResponse(examId: string | number, questionId: string | number, learnerAnswer: string, language: 'EN' | 'SW' = 'EN'): Promise<MarkingResult> {
+  async markResponse(examId: string | number, questionId: string | number, learnerAnswer: string, learnerId: string, attemptId: string | null, language: 'EN' | 'SW' = 'EN'): Promise<MarkingResult> {
     const { data, error } = await supabase.functions.invoke('mark-exam-response', {
       body: {
         examId,
         questionId,
         learnerAnswer,
-        language
+        language,
+        learnerId,
+        learnerPin: getLearnerPin(),
+        attemptId
       }
     });
 

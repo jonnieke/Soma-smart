@@ -1,5 +1,5 @@
 import React, { Suspense } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
 import { BookOpen, GraduationCap, Home, Shield, Users } from 'lucide-react';
 import { ConnectivityBanner } from './components/ConnectivityBanner';
@@ -50,7 +50,7 @@ const PageLoader = () => (
     <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
         <div className="flex flex-col items-center gap-4">
             <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-            <p className="text-slate-500 font-medium animate-pulse">Loading Somo Smart...</p>
+            <p className="text-slate-500 font-medium animate-pulse">Loading Soma AI...</p>
         </div>
     </div>
 );

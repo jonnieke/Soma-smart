@@ -29,12 +29,79 @@ serve(async (req) => {
     const questionId = String(body.questionId ?? '');
     const learnerAnswer = String(body.learnerAnswer ?? '').trim();
     const language = body.language === 'SW' ? 'SW' : 'EN';
+    const learnerId = String(body.learnerId ?? '').trim();
+    const learnerPin = String(body.learnerPin ?? '');
+    const attemptId = String(body.attemptId ?? '').trim();
 
-    if (!examId || !questionId || !learnerAnswer) {
-      return new Response(JSON.stringify({ error: 'Missing examId, questionId, or learnerAnswer' }), {
-        status: 400,
+    if (!examId || !questionId || !learnerAnswer || !attemptId) {
+      return new Response(
+        JSON.stringify({ error: 'Missing exam, attempt, question, or learner answer' }),
+        {
+          status: 400,
+          headers: { 'Content-Type': 'application/json', ...corsHeaders },
+        }
+      );
+    }
+    if (!learnerId) {
+      return new Response(JSON.stringify({ error: 'A verified learner session is required' }), {
+        status: 401,
         headers: { 'Content-Type': 'application/json', ...corsHeaders },
       });
+    }
+
+    let learnerVerified = false;
+    const authToken = (req.headers.get('Authorization') || '').replace(/^Bearer\s+/i, '').trim();
+
+    if (authToken) {
+      const { data: authData } = await supabase.auth.getUser(authToken);
+      if (authData.user) {
+        const { data: authProfile } = await supabase
+          .from('profiles')
+          .select('id, student_id')
+          .eq('id', authData.user.id)
+          .maybeSingle();
+        learnerVerified = Boolean(
+          authProfile &&
+          (String(authProfile.id) === learnerId ||
+            String(authProfile.student_id || '') === learnerId)
+        );
+      }
+    }
+
+    if (!learnerVerified && learnerPin) {
+      const { data: pinProfile } = await supabase
+        .from('profiles')
+        .select('student_id, recovery_pin')
+        .eq('student_id', learnerId)
+        .maybeSingle();
+      learnerVerified = Boolean(
+        pinProfile?.recovery_pin && String(pinProfile.recovery_pin) === learnerPin
+      );
+    }
+
+    if (!learnerVerified) {
+      return new Response(JSON.stringify({ error: 'Learner verification failed' }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders },
+      });
+    }
+
+    const { data: attempt } = await supabase
+      .from('exam_attempts')
+      .select('id, status')
+      .eq('id', attemptId)
+      .eq('exam_id', examId)
+      .eq('learner_id', learnerId)
+      .maybeSingle();
+
+    if (!attempt || attempt.status !== 'IN_PROGRESS') {
+      return new Response(
+        JSON.stringify({ error: 'This exam attempt is not available for marking' }),
+        {
+          status: 403,
+          headers: { 'Content-Type': 'application/json', ...corsHeaders },
+        }
+      );
     }
 
     const { data: exam, error: examError } = await supabase
@@ -52,7 +119,10 @@ serve(async (req) => {
     }
 
     const questions = Array.isArray(exam.structured_questions) ? exam.structured_questions : [];
-    const question = questions.find((item: any) => String(item?.id ?? '') === questionId || String(item?.number ?? '') === questionId);
+    const question = questions.find(
+      (item: any) =>
+        String(item?.id ?? '') === questionId || String(item?.number ?? '') === questionId
+    );
 
     if (!question) {
       return new Response(JSON.stringify({ error: 'Question not found' }), {
@@ -78,28 +148,35 @@ serve(async (req) => {
       `Topic: ${topic}`,
       `Marks available: ${marksAvailable}`,
       'Private marking guide:',
-      markingGuide.length ? markingGuide.map((point: string, index: number) => `${index + 1}. ${point}`).join('\n') : 'No marking guide supplied.',
+      markingGuide.length
+        ? markingGuide.map((point: string, index: number) => `${index + 1}. ${point}`).join('\n')
+        : 'No marking guide supplied.',
       modelAnswer ? `Reference model answer: ${modelAnswer}` : '',
       `Candidate answer: ${learnerAnswer}`,
       `Respond entirely in ${responseLanguage}.`,
       'Return JSON with marksAwarded, marksAvailable, isCorrect, modelAnswer, feedback, and examTip.',
-      'Keep feedback specific, concise, and exam-focused.'
-    ].filter(Boolean).join('\n');
+      'Keep feedback specific, concise, and exam-focused.',
+    ]
+      .filter(Boolean)
+      .join('\n');
 
-    const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:generateContent?key=${GEMINI_API_KEY}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        contents: [{ role: 'user', parts: [{ text: prompt }] }],
-        generationConfig: {
-          responseMimeType: 'application/json',
-          temperature: 0.2,
-          maxOutputTokens: 1024
-        }
-      })
-    });
+    const geminiResponse = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:generateContent?key=${GEMINI_API_KEY}`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          contents: [{ role: 'user', parts: [{ text: prompt }] }],
+          generationConfig: {
+            responseMimeType: 'application/json',
+            temperature: 0.2,
+            maxOutputTokens: 1024,
+          },
+        }),
+      }
+    );
 
     const responseText = await geminiResponse.text();
     if (!geminiResponse.ok) {
@@ -109,16 +186,36 @@ serve(async (req) => {
     const parsed = JSON.parse(responseText);
     const text = parsed?.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
     const result = JSON.parse(text);
-
-    return new Response(JSON.stringify({
-      marksAwarded: Number(result.marksAwarded ?? 0),
-      marksAvailable: Number(result.marksAvailable ?? marksAvailable),
+    const marksAwarded = Math.min(
+      marksAvailable,
+      Math.max(0, Number(result.marksAwarded ?? 0) || 0)
+    );
+    const safeResult = {
+      marksAwarded,
+      marksAvailable,
       isCorrect: Boolean(result.isCorrect),
       modelAnswer: String(result.modelAnswer ?? modelAnswer ?? ''),
       feedback: String(result.feedback ?? ''),
-      examTip: String(result.examTip ?? '')
-    }), {
-      headers: { 'Content-Type': 'application/json', ...corsHeaders }
+      examTip: String(result.examTip ?? ''),
+    };
+
+    const { error: saveError } = await supabase.from('exam_responses').upsert(
+      {
+        attempt_id: attemptId,
+        question_id: questionId,
+        answer_text: learnerAnswer,
+        marks_awarded: marksAwarded,
+        marks_available: marksAvailable,
+        marking_breakdown: safeResult,
+        marking_status: 'MARKED',
+        marked_by: 'HYBRID_AI',
+      },
+      { onConflict: 'attempt_id,question_id' }
+    );
+    if (saveError) throw saveError;
+
+    return new Response(JSON.stringify(safeResult), {
+      headers: { 'Content-Type': 'application/json', ...corsHeaders },
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);

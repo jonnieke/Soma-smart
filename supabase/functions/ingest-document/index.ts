@@ -148,8 +148,6 @@ const structuredExamToText = (record: any) => {
   ].filter(line => !line.endsWith(": ")).join("\n");
 
   const questionText = questions.map((question: any, index: number) => {
-    const markingPoints = asStringList(question?.markingScheme);
-    const commonMistakes = asStringList(question?.commonMistakes);
     return [
       "QUESTION " + (question?.number || index + 1),
       String(question?.text || "").trim(),
@@ -159,10 +157,7 @@ const structuredExamToText = (record: any) => {
       "Sub-strand: " + (question?.subStrand || ""),
       "Competency: " + (question?.competency || ""),
       "Cognitive level: " + (question?.cognitiveLevel || ""),
-      ...markingPoints.map((point, pointIndex) => "Marking point " + (pointIndex + 1) + ": " + point),
-      question?.modelAnswer ? "Model answer: " + question.modelAnswer : "",
-      question?.explanation ? "How to earn marks: " + question.explanation : "",
-      ...commonMistakes.map(mistake => "Common mistake: " + mistake),
+      question?.diagramUrl || question?.diagram_url ? "Diagram: attached" : "",
     ].filter(Boolean).filter(line => !line.endsWith(": ")).join("\n");
   }).join("\n\n");
 

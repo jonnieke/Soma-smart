@@ -59,6 +59,20 @@ serve(async (req) => {
         }
 
         const isAdmin = adminEmails.includes(data.user.email.toLowerCase());
+        if (isAdmin) {
+            const { error: roleError } = await supabase
+                .from('profiles')
+                .update({ role: 'ADMIN' })
+                .eq('id', data.user.id);
+
+            if (roleError) {
+                console.error('Could not synchronize the admin database role:', roleError.message);
+                return new Response(JSON.stringify({ error: 'Admin role synchronization failed', isAdmin: false }), {
+                    status: 500,
+                    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+                });
+            }
+        }
         return new Response(JSON.stringify({ isAdmin }), {
             status: isAdmin ? 200 : 403,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }

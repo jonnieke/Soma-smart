@@ -1759,7 +1759,7 @@ Stay anchored to this context unless I ask for something broader.`;
       grade: r.grade,
       subject: r.subject,
       category: normalizeMaterialCategory(r.type),
-      fileUrl: normalizeMaterialCategory(r.type) === 'PAST_PAPER' ? undefined : r.file_url,
+      fileUrl: r.file_url,
       structured_questions: r.structured_questions,
       exam_instructions: r.exam_instructions,
       exam_type: r.exam_type,
@@ -8483,6 +8483,7 @@ ${explanation.explanation}
     if (mode === 'LIBRARY') {
       const libraryGradeScope = selectedGrade !== 'ALL' ? selectedGrade : (studentProfile?.grade || enrolledGrade);
       const learnerGradeKey = normalizeGrade(libraryGradeScope || '');
+      const isPublishedPaper = (material: any) => normalizeMaterialCategory(material?.category) === 'PAST_PAPER';
       const isSomaOriginalPaper = (material: any) => {
         const normalizedCategory = normalizeMaterialCategory(material?.category);
         const source = String(material?.source || material?.marking_scheme_source || '').toUpperCase();
@@ -8522,7 +8523,7 @@ ${explanation.explanation}
         return normalizeGrade(m.grade || '') === normalizeGrade(libraryGradeScope);
       });
       const featuredPaperResources = (preferredStarterResources.length > 0 ? preferredStarterResources : freeStarterResources)
-        .filter(m => isSomaOriginalPaper(m))
+        .filter(m => isPublishedPaper(m))
         .sort((a, b) => compareGradeProximity(a.grade || '', b.grade || ''))
         .slice(0, 3);
       const proVaultResources = unifiedMaterials.filter(m => getMaterialAccessStatus(m) === 'PRO_INCLUDED' || getMaterialAccessStatus(m) === 'PRO_LOCKED');
@@ -8535,7 +8536,7 @@ ${explanation.explanation}
       const starterPaperResources = featuredPaperResources.length > 0
         ? featuredPaperResources
         : unlockedResources
-            .filter(m => isSomaOriginalPaper(m))
+            .filter(m => isPublishedPaper(m))
             .sort((a, b) => compareGradeProximity(a.grade || '', b.grade || ''))
             .slice(0, 3);
 
@@ -8575,7 +8576,7 @@ ${explanation.explanation}
 
       // Group filtered books by category
       const syllabuses = categoryLibraryMaterials.filter(m => normalizeMaterialCategory(m.category) === 'SYLLABUS');
-      const originalPapers = categoryLibraryMaterials.filter(m => isSomaOriginalPaper(m));
+      const originalPapers = categoryLibraryMaterials.filter(m => isPublishedPaper(m));
       const studyNotes = categoryLibraryMaterials.filter(m => normalizeMaterialCategory(m.category) === 'NOTES');
 
       // Helper to generate a gradient background class based on the subject name
@@ -8592,7 +8593,7 @@ ${explanation.explanation}
       const libraryCategoryMeta = {
         ALL: { label: 'All', count: visibleLibraryMaterials.length, pill: 'bg-slate-50 text-slate-600 dark:bg-slate-800 dark:text-slate-200' },
         SYLLABUS: { label: 'Syllabus', count: visibleLibraryMaterials.filter(m => normalizeMaterialCategory(m.category) === 'SYLLABUS').length, pill: 'bg-purple-50 text-purple-700 dark:bg-purple-950/40 dark:text-purple-200' },
-        PAST_PAPER: { label: 'Exam Papers', count: visibleLibraryMaterials.filter(m => isSomaOriginalPaper(m)).length, pill: 'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-200' },
+        PAST_PAPER: { label: 'Exam Papers', count: visibleLibraryMaterials.filter(m => isPublishedPaper(m)).length, pill: 'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-200' },
         NOTES: { label: 'Notes', count: visibleLibraryMaterials.filter(m => normalizeMaterialCategory(m.category) === 'NOTES').length, pill: 'bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-200' },
       } as const;
 
@@ -8617,7 +8618,7 @@ ${explanation.explanation}
           <div className="sticky top-0 z-40 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 px-6 py-4 flex items-center justify-between">
             <div>
               <h1 className="text-xl font-black text-slate-900 dark:text-white tracking-tight leading-none">My Library</h1>
-              <p className="text-[10px] font-black text-indigo-500 uppercase tracking-[0.15em] mt-1.5">SomaAI Originals / Exam Papers</p>
+              <p className="text-[10px] font-black text-indigo-500 uppercase tracking-[0.15em] mt-1.5">Published Papers / Exam Papers</p>
             </div>
             <button onClick={() => setMode('MENU')} className="p-2 hover:bg-slate-100 rounded-full transition-colors"><X className="w-5 h-5" /></button>
           </div>
@@ -8627,8 +8628,8 @@ ${explanation.explanation}
               <div className="absolute -right-10 -top-10 h-28 w-28 rounded-full bg-white/10 blur-2xl" />
               <div className="relative flex items-start justify-between gap-4">
                 <div className="min-w-0">
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-100">SomaAI Originals first</p>
-                  <h2 className="mt-2 text-xl font-black leading-tight">Welcome and start learning with a real SomaAI paper.</h2>
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-100">Published papers first</p>
+                  <h2 className="mt-2 text-xl font-black leading-tight">Welcome and start learning with a real paper.</h2>
                   <p className="mt-2 text-sm text-indigo-50/90 max-w-xl">Open a curated original mock, work through it under time, and use the feedback to recover marks fast.</p>
                 </div>
                 <div className="hidden sm:flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/10 border border-white/10">
@@ -8643,22 +8644,22 @@ ${explanation.explanation}
                       onClick={() => { setMode('REVISION'); setPendingMaterialId(item.id); }}
                       className="rounded-2xl border border-white/10 bg-white/10 p-4 text-left transition hover:bg-white/15"
                     >
-                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-200">Featured original</p>
+                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-200">Featured paper</p>
                       <p className="mt-2 text-sm font-bold leading-snug line-clamp-2">{item.title}</p>
-                      <p className="mt-2 text-[11px] text-indigo-100/80">Open this original mock.</p>
+                      <p className="mt-2 text-[11px] text-indigo-100/80">Open this paper now.</p>
                     </button>
                   ))}
                 </div>
               ) : (
                 <div className="relative mt-5 rounded-2xl border border-white/10 bg-white/10 p-4 text-sm text-indigo-50/90">
-                  We're preparing your SomaAI Originals. As soon as one is ready, it appears here first.
+                  We&apos;re preparing your published papers. As soon as one is ready, it appears here first.
                 </div>
               )}
             </div>
 
             {showingGradeFallback && (
               <div className="mb-5 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-[11px] font-bold uppercase tracking-[0.18em] text-emerald-700 dark:border-emerald-900/40 dark:bg-emerald-950/40 dark:text-emerald-200">
-                Showing Grade {studentProfile?.grade || enrolledGrade || 'ready'} materials while we finish matching exact originals.
+                Showing Grade {studentProfile?.grade || enrolledGrade || 'ready'} materials while we finish matching exact papers.
               </div>
             )}
 

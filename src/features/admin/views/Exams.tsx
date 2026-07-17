@@ -809,7 +809,7 @@ export const ExamsView: React.FC = () => {
   };
 
   const toggleHomepageFeatured = async (exam: Exam) => {
-    const nextFeatured = !Boolean(exam.homepageFeatured);
+    const nextFeatured = !exam.homepageFeatured;
 
     const { error } = await supabase
 
@@ -1184,7 +1184,7 @@ export const ExamsView: React.FC = () => {
                       <div className="space-y-3">
                         <div className="rounded-2xl border border-indigo-100 bg-indigo-50 p-4 text-sm text-indigo-900">
                           Use this for a Soma-created mock or any paper you have already structured.
-                          Upload the JSON file or paste its contents, and we'll validate it before
+                          Upload the JSON file or paste its contents, and we&apos;ll validate it before
                           saving.
                         </div>
 
