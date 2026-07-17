@@ -154,6 +154,31 @@ const extractReadablePoints = (value: unknown): string[] => {
   return [];
 };
 
+const isSyllabusActivity = (activity?: LearnerActivity) => {
+  if (!activity) return false;
+
+  const topic = cleanAcademicText(activity.topic).toLowerCase();
+  if (topic.includes('syllabus')) return true;
+
+  let parsed: Record<string, unknown> | null = null;
+  if (typeof activity.details === 'string' && activity.details.trim()) {
+    try {
+      const decoded = JSON.parse(activity.details);
+      if (decoded && typeof decoded === 'object') {
+        parsed = decoded as Record<string, unknown>;
+      }
+    } catch {
+      parsed = null;
+    }
+  }
+
+  const rawDetails = typeof activity.details === 'string' ? activity.details.toLowerCase() : '';
+  const category = cleanAcademicText(parsed?.category || parsed?.materialCategory || parsed?.type).toUpperCase();
+  const title = cleanAcademicText(parsed?.title || parsed?.subject || parsed?.name).toLowerCase();
+
+  return category.includes('SYLLABUS') || title.includes('syllabus') || rawDetails.includes('"category":"syllabus"') || (rawDetails.includes('category') && rawDetails.includes('syllabus'));
+};
+
 const buildContinueLearningSnapshot = (activity?: LearnerActivity, fallbackTopic = "Photosynthesis"): ContinueLearningSnapshot => {
   const topic = cleanAcademicText(activity?.topic) || fallbackTopic;
   const fallbackDescription = "You were learning about " + topic.toLowerCase() + ".";
@@ -170,6 +195,15 @@ const buildContinueLearningSnapshot = (activity?: LearnerActivity, fallbackTopic
     }
   }
 
+  if (isSyllabusActivity(activity)) {
+    return {
+      topic: fallbackTopic,
+      description: 'Open a lesson or past paper to continue learning.',
+      summaryPoints: [],
+      progress: typeof activity?.score === 'number' ? Math.max(10, Math.min(100, activity.score)) : 35,
+    };
+  }
+
   const explanationRecord = parsed?.explanation && typeof parsed.explanation === "object"
     ? parsed.explanation as Record<string, unknown>
     : null;
@@ -180,7 +214,6 @@ const buildContinueLearningSnapshot = (activity?: LearnerActivity, fallbackTopic
     parsed?.description,
     parsed?.summaryText,
     parsed?.text,
-    activity?.details,
   ];
 
   let description = "";
@@ -4730,7 +4763,7 @@ ${explanation.explanation}
     }
 
     if (mode === 'MENU') {
-      const latestLearningActivity = history.find((item: LearnerActivity) => item.type === 'EXPLANATION' || item.type === 'STUDY');
+      const latestLearningActivity = history.find((item: LearnerActivity) => (item.type === 'EXPLANATION' || item.type === 'STUDY') && !isSyllabusActivity(item));
       const latestQuizActivity = history.find((item: LearnerActivity) => item.type === 'QUIZ');
       const latestLearningSnapshot = buildContinueLearningSnapshot(latestLearningActivity, latestQuizActivity?.topic || 'Photosynthesis');
       const featuredSubject = inferSubjectFromTopic(latestLearningSnapshot.topic || latestQuizActivity?.topic || latestLearningActivity?.topic);
