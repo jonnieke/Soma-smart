@@ -474,6 +474,20 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
         navigate(`/revision/dashboard?paper=${encodeURIComponent(id)}`);
     };
 
+    const handlePreviewPaperFromHome = (paperId: string | number) => {
+        if (!isRegistered && role === UserRole.NONE) {
+            startGuestSession();
+        }
+        setRole(UserRole.LEARNER);
+        const id = String(paperId);
+        try {
+            sessionStorage.setItem('soma_pending_exam_id', id);
+        } catch (_) {
+            // Ignore storage issues and still navigate.
+        }
+        navigate(`/revision/dashboard?paper=${encodeURIComponent(id)}&preview=1`);
+    };
+
     const handleGetStarted = () => {
         setRole(UserRole.LEARNER); // Default to learner
         setShowRegistration(true);

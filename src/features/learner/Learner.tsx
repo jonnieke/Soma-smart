@@ -8702,16 +8702,17 @@ ${explanation.explanation}
                 </div>
               </div>
               {starterPaperResources.length > 0 ? (
-                <div className="relative mt-5 grid gap-3 sm:grid-cols-3">
-                  {starterPaperResources.map((item, idx) => (
+                <div className="relative mt-5 -mx-1 flex gap-3 overflow-x-auto pb-2 pr-2 scrollbar-none no-scrollbar">
+                  {starterPaperResources.slice(0, 6).map((item, idx) => (
                     <button
                       key={item.id || idx}
                       onClick={() => { setMode('REVISION'); setPendingMaterialId(item.id); }}
-                      className="rounded-2xl border border-slate-200 bg-white p-4 text-left transition hover:border-slate-300 hover:shadow-sm"
+                      className="min-w-[230px] flex-1 snap-start rounded-2xl border border-slate-200 bg-white p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-indigo-200 hover:shadow-md"
                     >
-                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Featured paper</p>
-                      <p className="mt-2 text-sm font-bold leading-snug line-clamp-2">{item.title}</p>
-                      <p className="mt-2 text-[11px] text-slate-500">Open this paper now.</p>
+                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-500">Latest paper</p>
+                      <p className="mt-2 text-sm font-bold leading-snug line-clamp-2 text-slate-900">{item.title}</p>
+                      <p className="mt-2 text-[11px] text-slate-500">{item.subject} ? {item.grade}</p>
+                      <p className="mt-3 text-[11px] font-black text-indigo-600">Open paper</p>
                     </button>
                   ))}
                 </div>
@@ -8872,38 +8873,27 @@ ${explanation.explanation}
                       <span className="p-1 rounded bg-slate-100 text-slate-600">PDF</span>
                       Exam Papers lane ({originalPapers.length})
                     </h3>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-6">
-                      {originalPapers.map(item => (
-                        <motion.div
+                    <div className="-mx-1 flex gap-4 overflow-x-auto pb-2 pr-2 scrollbar-none no-scrollbar">
+                      {originalPapers.slice(0, 6).map(item => (
+                        <motion.button
                           key={item.id}
-                          whileHover={{ y: -6 }}
+                          whileHover={{ y: -4 }}
                           onClick={() => setLibraryItemPreview(item)}
-                          className="flex flex-col cursor-pointer group"
+                          className="min-w-[235px] flex-none snap-start rounded-2xl border border-slate-200 bg-white p-4 text-left shadow-sm transition hover:border-indigo-200 hover:shadow-md"
                         >
-                          {/* Visual Book Cover */}
-                          <div className={`w-full aspect-[3/4] bg-white rounded-2xl shadow-sm relative p-4 flex flex-col justify-between overflow-hidden border border-slate-200 group-hover:shadow-md transition-all`}>
-                            {/* Book spine simulation */}
-                            <div className="absolute top-0 bottom-0 left-0 w-3 bg-slate-100 border-r border-slate-200" />
-                            <div className="absolute right-3 top-3 rounded-full bg-slate-100 px-2.5 py-1 text-[8px] font-black uppercase tracking-[0.18em] text-slate-600 shadow-sm">
-                              Original
+                          <div className="flex items-start justify-between gap-3">
+                            <div>
+                              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-500">Exam paper</p>
+                              <p className="mt-1 text-[11px] font-semibold text-slate-500">{item.subject} ? {item.grade}</p>
                             </div>
-                            
-                            <div className="flex items-center justify-between mb-2">
-                              <span className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 bg-slate-100 text-slate-600 rounded-full">{item.grade}</span>
-                              <span className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 bg-slate-100 text-slate-600 rounded-full border border-slate-200">SomaAI Original</span>
-                            </div>
-                            
-                            <div className="my-auto text-center">
-                              <span className="text-4xl block mb-2 filter drop-shadow-md">{getSubjectEmoji(item.subject)}</span>
-                              <h4 className="font-black text-sm tracking-tight text-slate-900 leading-tight line-clamp-3 px-1">{item.title}</h4>
-                            </div>
-
-                            <div className="flex items-end justify-between border-t border-white/20 pt-2 text-[9px] font-bold opacity-80">
-                              <span className="rounded-full bg-slate-100 px-2 py-0.5 text-slate-600">Timed original</span>
-                            </div>
+                            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-indigo-50 text-sm font-black text-indigo-600">{getSubjectEmoji(item.subject).slice(0, 2)}</span>
                           </div>
-                          <span className="mt-2 text-xs font-black text-slate-800 line-clamp-2 text-center group-hover:text-indigo-600 transition-colors">{item.title}</span>
-                        </motion.div>
+                          <h4 className="mt-4 line-clamp-3 text-sm font-bold leading-snug text-slate-900">{item.title}</h4>
+                          <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3 text-[10px] font-black uppercase tracking-[0.14em] text-slate-500">
+                            <span>Open paper</span>
+                            <span className="text-indigo-600">Preview</span>
+                          </div>
+                        </motion.button>
                       ))}
                     </div>
                   </div>
@@ -8916,38 +8906,27 @@ ${explanation.explanation}
                       <span className="p-1 rounded bg-slate-100 text-slate-600">Note</span>
                       Notes lane ({studyNotes.length})
                     </h3>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-6">
-                      {studyNotes.map(item => (
-                        <motion.div
+                    <div className="-mx-1 flex gap-4 overflow-x-auto pb-2 pr-2 scrollbar-none no-scrollbar">
+                      {studyNotes.slice(0, 6).map(item => (
+                        <motion.button
                           key={item.id}
-                          whileHover={{ y: -6 }}
+                          whileHover={{ y: -4 }}
                           onClick={() => setLibraryItemPreview(item)}
-                          className="flex flex-col cursor-pointer group"
+                          className="min-w-[235px] flex-none snap-start rounded-2xl border border-slate-200 bg-white p-4 text-left shadow-sm transition hover:border-indigo-200 hover:shadow-md"
                         >
-                          {/* Visual Book Cover */}
-                          <div className={`w-full aspect-[3/4] bg-white rounded-2xl shadow-sm relative p-4 flex flex-col justify-between overflow-hidden border border-slate-200 group-hover:shadow-md transition-all`}>
-                            {/* Book spine simulation */}
-                            <div className="absolute top-0 bottom-0 left-0 w-3 bg-slate-100 border-r border-slate-200" />
-                            <div className="absolute right-3 top-3 rounded-full bg-slate-100 px-2.5 py-1 text-[8px] font-black uppercase tracking-[0.18em] text-slate-600 shadow-sm">
-                              Notes
+                          <div className="flex items-start justify-between gap-3">
+                            <div>
+                              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-500">Study note</p>
+                              <p className="mt-1 text-[11px] font-semibold text-slate-500">{item.subject} ? {item.grade}</p>
                             </div>
-                            
-                            <div className="flex items-center justify-between mb-2">
-                              <span className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 bg-slate-100 text-slate-600 rounded-full">{item.grade}</span>
-                              <span className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 bg-slate-100 text-slate-600 rounded-full border border-slate-200">Study Note</span>
-                            </div>
-                            
-                            <div className="my-auto text-center">
-                              <span className="text-4xl block mb-2 filter drop-shadow-md">{getSubjectEmoji(item.subject)}</span>
-                              <h4 className="font-black text-sm tracking-tight text-slate-900 leading-tight line-clamp-3 px-1">{item.title}</h4>
-                            </div>
-
-                            <div className="flex items-end justify-between border-t border-white/20 pt-2 text-[9px] font-bold opacity-80">
-                              <span className="rounded-full bg-slate-100 px-2 py-0.5 text-slate-600">Quick revision</span>
-                            </div>
+                            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-indigo-50 text-sm font-black text-indigo-600">{getSubjectEmoji(item.subject).slice(0, 2)}</span>
                           </div>
-                          <span className="mt-2 text-xs font-black text-slate-800 line-clamp-2 text-center group-hover:text-indigo-600 transition-colors">{item.title}</span>
-                        </motion.div>
+                          <h4 className="mt-4 line-clamp-3 text-sm font-bold leading-snug text-slate-900">{item.title}</h4>
+                          <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3 text-[10px] font-black uppercase tracking-[0.14em] text-slate-500">
+                            <span>Quick revision</span>
+                            <span className="text-indigo-600">Preview</span>
+                          </div>
+                        </motion.button>
                       ))}
                     </div>
                   </div>
