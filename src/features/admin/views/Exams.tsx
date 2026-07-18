@@ -412,7 +412,7 @@ export const ExamsView: React.FC = () => {
         supabase
           .from('knowledge_base')
           .select(
-            'id, title, subject, grade, file_url, file_path, marking_scheme_url, marking_scheme_path, exam_type, exam_year, paper_number, review_status, structured_questions, indexing_status, last_index_error, source, is_official, homepage_featured, created_at'
+            'id, title, subject, grade, file_url, file_path, exam_type, exam_year, paper_number, review_status, structured_questions, indexing_status, last_index_error, source, is_official, created_at'
           )
           .eq('type', 'PAST_PAPER')
           .order('created_at', { ascending: false }),
@@ -422,22 +422,30 @@ export const ExamsView: React.FC = () => {
       if (tableError) console.warn('Admin exam table query failed:', tableError);
 
       const combined = [
-        ...(Array.isArray(rpcData) ? rpcData : []),
         ...(Array.isArray(tableData) ? tableData : []),
+        ...(Array.isArray(rpcData) ? rpcData : []),
       ];
 
       const deduped = Array.from(
         new Map(combined.map((row: any) => [String(row.id), row])).values()
       );
 
-      setExams(deduped.map(normalizeRow));
+      const sorted = deduped
+        .map(normalizeRow)
+        .sort((a, b) => {
+          if (a.reviewStatus !== b.reviewStatus) {
+            return a.reviewStatus === 'PUBLISHED' ? -1 : 1;
+          }
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        });
+
+      setExams(sorted);
     } catch (error) {
       console.error('Failed to fetch exams:', error);
     } finally {
       setLoading(false);
     }
   };
-
   const handleAnalyze = async () => {
     if (uploading) return;
 
@@ -1767,3 +1775,4 @@ const SelectField: React.FC<{
     </select>
   </label>
 );
+

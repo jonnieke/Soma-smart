@@ -230,12 +230,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
             try {
                 const { data, error } = await supabase
                     .from('knowledge_base')
-                    .select('id, title, subject, grade, duration_minutes, total_marks, source, exam_type, created_at, review_status, type, file_url, file_path')
+                    .select('id, title, subject, grade, duration_minutes, total_marks, source, exam_type, created_at, review_status, type, file_url, file_path, homepage_featured')
                     .eq('type', 'PAST_PAPER')
                     .eq('review_status', 'PUBLISHED')
-                    .order('homepage_featured', { ascending: false })
                     .order('created_at', { ascending: false });
-
                 if (error) throw error;
                 if (!active) return;
                 setLatestPapers(sortLatest((data || []) as Array<Record<string, any>>) as any);
@@ -2613,3 +2611,4 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
         </div>
     );
 };
+
