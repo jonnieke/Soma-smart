@@ -359,6 +359,19 @@ export const RevisionHubPage: React.FC<Props> = ({
       setInlinePdfDocument(null);
       setInlinePdfPage(1);
       setInlinePdfJump('1');
+
+      if (!url) {
+        if (!cancelled) {
+          setInlinePdfLoading(false);
+          setInlinePdfError(
+            inlinePdfSource === 'marking_scheme'
+              ? 'The marking scheme is not available for this paper yet.'
+              : 'This paper preview is not available right now.'
+          );
+        }
+        return;
+      }
+
       try {
         const pdfjs = await import('pdfjs-dist');
         const workerModule = await import('pdfjs-dist/build/pdf.worker.min.mjs?url');
