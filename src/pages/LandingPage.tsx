@@ -228,15 +228,41 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
             }
 
             try {
-                const { data, error } = await supabase
-                    .from('knowledge_base')
-                    .select('id, title, subject, grade, duration_minutes, total_marks, source, exam_type, created_at, review_status, type, file_url, file_path, homepage_featured, marking_scheme_url, marking_scheme_path')
-                    .eq('type', 'PAST_PAPER')
-                    .eq('review_status', 'PUBLISHED')
-                    .order('created_at', { ascending: false });
-                if (error) throw error;
+                const [{ data: tableData, error: tableError }, { data: rpcData, error: rpcError }] = await Promise.all([
+                    supabase
+                        .from('knowledge_base')
+                        .select('id, title, subject, grade, duration_minutes, total_marks, source, exam_type, created_at, published_at, review_status, type, file_url, file_path, homepage_featured, marking_scheme_url, marking_scheme_path')
+                        .eq('type', 'PAST_PAPER')
+                        .eq('review_status', 'PUBLISHED')
+                        .order('created_at', { ascending: false }),
+                    examService.listPublishedExams(),
+                ]);
+                if (tableError) throw tableError;
                 if (!active) return;
-                setLatestPapers(sortLatest((data || []) as Array<Record<string, any>>) as any);
+
+                const normalize = (paper: Record<string, any>) => ({
+                    ...paper,
+                    file_url: paper.file_url || paper.fileUrl || null,
+                    file_path: paper.file_path || paper.filePath || null,
+                    marking_scheme_url: paper.marking_scheme_url || paper.markingSchemeUrl || null,
+                    marking_scheme_path: paper.marking_scheme_path || paper.markingSchemePath || null,
+                    homepage_featured: Boolean(paper.homepage_featured ?? paper.homepageFeatured),
+                });
+
+                const merged = new Map<string, Record<string, any>>();
+                for (const paper of Array.isArray(rpcData) ? rpcData : []) {
+                    merged.set(String((paper as any).id), normalize(paper as Record<string, any>));
+                }
+                for (const paper of Array.isArray(tableData) ? tableData : []) {
+                    const id = String((paper as any).id);
+                    merged.set(id, {
+                        ...(merged.get(id) || {}),
+                        ...normalize(paper as Record<string, any>),
+                    });
+                }
+
+                const latest = sortLatest(Array.from(merged.values()));
+                setLatestPapers(latest as any);
             } catch (error) {
                 console.warn('Homepage paper fallback fetch failed.', error);
                 if (active) setLatestPapers([]);
