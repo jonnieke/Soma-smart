@@ -381,59 +381,56 @@ export const ExamsView: React.FC = () => {
     try {
       setLoading(true);
 
-      const { data, error } = await supabase
+      const normalizeRow = (row: any) => ({
+        id: String(row.id),
+        title: row.title,
+        subject: row.subject || 'General',
+        className: row.grade || 'Any',
+        created_at: row.created_at,
+        fileUrl: row.file_url,
+        filePath: row.file_path,
+        markingSchemeUrl: row.marking_scheme_url,
+        markingSchemePath: row.marking_scheme_path,
+        examType: row.exam_type,
+        examYear: row.exam_year,
+        paperNumber: row.paper_number,
+        reviewStatus: row.review_status === 'DRAFT' ? 'DRAFT' : 'PUBLISHED',
+        indexingStatus: ['PROCESSING', 'READY', 'FAILED'].includes(row.indexing_status)
+          ? row.indexing_status
+          : 'PENDING',
+        lastIndexError: row.last_index_error,
+        questionCount: Array.isArray(row.structured_questions)
+          ? row.structured_questions.length
+          : 0,
+        source: row.source,
+        isOfficial: row.is_official,
+        homepageFeatured: row.homepage_featured,
+      });
 
-        .from('knowledge_base')
+      const [{ data: rpcData, error: rpcError }, { data: tableData, error: tableError }] = await Promise.all([
+        supabase.rpc('list_published_exams', { p_grade: null, p_subject: null }),
+        supabase
+          .from('knowledge_base')
+          .select(
+            'id, title, subject, grade, file_url, file_path, marking_scheme_url, marking_scheme_path, exam_type, exam_year, paper_number, review_status, structured_questions, indexing_status, last_index_error, source, is_official, homepage_featured, created_at'
+          )
+          .eq('type', 'PAST_PAPER')
+          .order('created_at', { ascending: false }),
+      ]);
 
-        .select(
-          'id, title, subject, grade, file_url, file_path, marking_scheme_url, marking_scheme_path, exam_type, exam_year, paper_number, review_status, structured_questions, indexing_status, last_index_error, source, is_official, homepage_featured, created_at'
-        )
+      if (rpcError) console.warn('Published exam RPC failed:', rpcError);
+      if (tableError) console.warn('Admin exam table query failed:', tableError);
 
-        .eq('type', 'PAST_PAPER')
+      const combined = [
+        ...(Array.isArray(rpcData) ? rpcData : []),
+        ...(Array.isArray(tableData) ? tableData : []),
+      ];
 
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-
-      setExams(
-        (data || []).map((row: any) => ({
-          id: String(row.id),
-
-          title: row.title,
-
-          subject: row.subject || 'General',
-
-          className: row.grade || 'Any',
-
-          created_at: row.created_at,
-
-          fileUrl: row.file_url,
-
-          filePath: row.file_path,
-
-          markingSchemeUrl: row.marking_scheme_url,
-
-          markingSchemePath: row.marking_scheme_path,
-
-          examType: row.exam_type,
-
-          examYear: row.exam_year,
-
-          paperNumber: row.paper_number,
-
-          reviewStatus: row.review_status === 'DRAFT' ? 'DRAFT' : 'PUBLISHED',
-
-          indexingStatus: ['PROCESSING', 'READY', 'FAILED'].includes(row.indexing_status)
-            ? row.indexing_status
-            : 'PENDING',
-
-          lastIndexError: row.last_index_error,
-
-          questionCount: Array.isArray(row.structured_questions)
-            ? row.structured_questions.length
-            : 0,
-        }))
+      const deduped = Array.from(
+        new Map(combined.map((row: any) => [String(row.id), row])).values()
       );
+
+      setExams(deduped.map(normalizeRow));
     } catch (error) {
       console.error('Failed to fetch exams:', error);
     } finally {
