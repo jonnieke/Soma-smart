@@ -13,6 +13,8 @@ export type RevisionPaper = Record<string, unknown> & {
   file_path?: string;
   markingSchemeUrl?: string;
   marking_scheme_url?: string;
+  markingSchemePath?: string;
+  marking_scheme_path?: string;
   duration_minutes?: number;
   total_marks?: number;
   structured_questions?: unknown[];
@@ -149,7 +151,18 @@ export const paperPdfUrl = (paper: RevisionPaper): string => {
 export const paperMarkingSchemeUrl = (paper: RevisionPaper): string => {
   const directUrl = String(paper.marking_scheme_url || paper.markingSchemeUrl || '').trim();
   if (directUrl) return directUrl;
-  return '';
+
+  const filePath = String(paper.marking_scheme_path || paper.markingSchemePath || '').trim();
+  if (!filePath) return '';
+  if (/^https?:\/\//i.test(filePath)) return filePath;
+
+  const encodedPath = filePath
+    .split('/')
+    .filter(Boolean)
+    .map((segment) => encodeURIComponent(segment))
+    .join('/');
+
+  return `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/syllabus-docs/${encodedPath}`;
 };
 
 export const paperHasDiagrams = (paper: RevisionPaper): boolean =>
