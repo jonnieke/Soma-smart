@@ -230,7 +230,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
             try {
                 const { data, error } = await supabase
                     .from('knowledge_base')
-                    .select('id, title, subject, grade, duration_minutes, total_marks, source, exam_type, created_at, review_status, type, file_url, file_path, homepage_featured')
+                    .select('id, title, subject, grade, duration_minutes, total_marks, source, exam_type, created_at, review_status, type, file_url, file_path, homepage_featured, marking_scheme_url, marking_scheme_path')
                     .eq('type', 'PAST_PAPER')
                     .eq('review_status', 'PUBLISHED')
                     .order('created_at', { ascending: false });
@@ -470,6 +470,20 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
             // Ignore storage issues and still navigate.
         }
         navigate(`/revision/dashboard?paper=${encodeURIComponent(id)}`);
+    };
+
+    const handlePreviewMarkingSchemeFromHome = (paperId: string | number) => {
+        if (!isRegistered && role === UserRole.NONE) {
+            startGuestSession();
+        }
+        setRole(UserRole.LEARNER);
+        const id = String(paperId);
+        try {
+            sessionStorage.setItem('soma_pending_exam_id', id);
+        } catch (_) {
+            // Ignore storage issues and still navigate.
+        }
+        navigate(`/revision/dashboard?paper=${encodeURIComponent(id)}&preview=1&previewSource=marking_scheme`);
     };
 
     const handlePreviewPaperFromHome = (paperId: string | number) => {
@@ -833,6 +847,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                 onRevision={() => navigate('/revision')}
                 onStartPaper={handleStartPaperFromHome}
                 onPreviewPaper={handlePreviewPaperFromHome}
+                onPreviewMarkingScheme={handlePreviewMarkingSchemeFromHome}
                 onPricing={() => navigate('/pricing')}
                 latestPapers={latestPapers}
                 onSignIn={() => { setLoginTab('STUDENT'); setShowLogin(true); }}

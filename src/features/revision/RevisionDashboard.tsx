@@ -37,6 +37,7 @@ export const RevisionDashboard: React.FC = () => {
 
         const params = new URLSearchParams(location.search);
         const previewPaperId = params.get('preview') === '1' ? params.get('paper') : null;
+        const previewSource = params.get('previewSource') === 'marking_scheme' ? 'marking_scheme' : 'paper';
         const paperId = params.get('paper') || sessionStorage.getItem('soma_pending_exam_id');
         const rawPaper = sessionStorage.getItem('soma_pending_exam');
 
@@ -181,7 +182,8 @@ export const RevisionDashboard: React.FC = () => {
 
     return (
         <RevisionHubPage
-            initialPreviewPaperId={new URLSearchParams(location.search).get('preview') === '1' ? new URLSearchParams(location.search).get('paper') : null}
+            initialPreviewPaperId={previewPaperId}
+            initialPreviewSource={previewSource}
             onStartSession={(data, mode) => {
                 const itemType = getItemType(data);
 

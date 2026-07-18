@@ -45,6 +45,7 @@ type Props = {
   onRevision: () => void;
   onStartPaper: (paperId: string | number) => void;
   onPreviewPaper: (paperId: string | number) => void;
+  onPreviewMarkingScheme?: (paperId: string | number) => void;
   onPricing: () => void;
   onSignIn: () => void;
   onDashboard: () => void;
@@ -63,6 +64,10 @@ type Props = {
     fileUrl?: string | null;
     file_path?: string | null;
     filePath?: string | null;
+    marking_scheme_url?: string | null;
+    marking_scheme_path?: string | null;
+    markingSchemeUrl?: string | null;
+    markingSchemePath?: string | null;
   }>;
 };
 
@@ -207,9 +212,34 @@ export const LandingHome: React.FC<Props> = (props) => {
     return `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/syllabus-docs/${encodedPath}`;
   };
 
+  const resolveMarkingSchemeUrl = (paper: NonNullable<Props['latestPapers']>[number]) => {
+    const directUrl = String(paper.marking_scheme_url || paper.markingSchemeUrl || '').trim();
+    if (directUrl) return directUrl;
+
+    const filePath = String(paper.marking_scheme_path || paper.markingSchemePath || '').trim();
+    if (!filePath) return '';
+    if (/^https?:\/\//i.test(filePath)) return filePath;
+
+    const encodedPath = filePath
+      .split('/')
+      .filter(Boolean)
+      .map((segment) => encodeURIComponent(segment))
+      .join('/');
+
+    return `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/syllabus-docs/${encodedPath}`;
+  };
+
   const buildPaperAttemptUrl = (paper: NonNullable<Props['latestPapers']>[number]) => {
     const paperId = encodeURIComponent(String(paper.id));
     return `${window.location.origin}/revision/dashboard?paper=${paperId}`;
+  };
+
+  const previewMarkingScheme = (paper: NonNullable<Props['latestPapers']>[number]) => {
+    if (resolveMarkingSchemeUrl(paper)) {
+      props.onPreviewMarkingScheme?.(paper.id);
+      return;
+    }
+    props.onPreviewPaper(paper.id);
   };
 
   const sharePaper = async (paper: NonNullable<Props['latestPapers']>[number]) => {
@@ -516,13 +546,36 @@ export const LandingHome: React.FC<Props> = (props) => {
                               Exam paper pending
                             </button>
                           )}
+                          {resolveMarkingSchemeUrl(paper) ? (
+                            <button
+                              type="button"
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                previewMarkingScheme(paper);
+                              }}
+                              className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-violet-200 bg-violet-50 px-3 py-2 text-[10px] font-black uppercase tracking-[0.14em] text-violet-700"
+                            >
+                              <FileText className="h-3.5 w-3.5" />
+                              Open Marking Scheme
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              disabled
+                              onClick={(event) => event.stopPropagation()}
+                              className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-[10px] font-black uppercase tracking-[0.14em] text-slate-300"
+                            >
+                              <FileText className="h-3.5 w-3.5" />
+                              Scheme pending
+                            </button>
+                          )}
                           <button
                             type="button"
                             onClick={(event) => {
                               event.stopPropagation();
                               void sharePaper(paper);
                             }}
-                            className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-[10px] font-black uppercase tracking-[0.14em] text-slate-700"
+                            className="col-span-2 inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-[10px] font-black uppercase tracking-[0.14em] text-slate-700"
                           >
                             <Share2 className="h-3.5 w-3.5" />
                             Share
@@ -943,3 +996,4 @@ const TrustStrip = () => (
     </div>
   </section>
 );
+

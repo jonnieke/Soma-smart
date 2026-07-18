@@ -35,6 +35,7 @@ interface Props {
   initialSubject?: string;
   initialSearchQuery?: string;
   initialPreviewPaperId?: string | number | null;
+  initialPreviewSource?: 'paper' | 'marking_scheme';
 }
 
 const normalizeGrade = (value: unknown): string =>
@@ -83,6 +84,7 @@ export const RevisionHubPage: React.FC<Props> = ({
   initialSubject,
   initialSearchQuery,
   initialPreviewPaperId,
+  initialPreviewSource = 'paper',
 }) => {
   const {
     availableQuizzes,
@@ -303,7 +305,7 @@ export const RevisionHubPage: React.FC<Props> = ({
     const targetId = String(initialPreviewPaperId);
     const match = allPapers.find((paper) => String(paper.id) === targetId);
     if (match) {
-      setInlinePdfSource('paper');
+      setInlinePdfSource(initialPreviewSource);
       setInlinePdfPaper(match);
     }
   }, [allPapers, initialPreviewPaperId]);
