@@ -1241,22 +1241,37 @@ export const ExamsView: React.FC = () => {
                       target="_blank"
                       rel="noreferrer"
                       title="Open question paper"
-                      className="rounded-lg p-2 text-slate-400 hover:bg-indigo-50 hover:text-indigo-600"
+                      className="inline-flex items-center gap-2 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-xs font-bold text-indigo-700 hover:bg-indigo-100"
                     >
-                      <ExternalLink className="h-5 w-5" />
+                      <ExternalLink className="h-4 w-4" />
+                      Open Exam Paper
                     </a>
                   )}
 
-                  {exam.markingSchemeUrl && (
+                  {exam.markingSchemeUrl ? (
                     <a
                       href={exam.markingSchemeUrl}
                       target="_blank"
                       rel="noreferrer"
                       title="Open marking scheme"
-                      className="rounded-lg p-2 text-emerald-600 hover:bg-emerald-50"
+                      className="inline-flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-700 hover:bg-emerald-100"
                     >
-                      <FileCheck2 className="h-5 w-5" />
+                      <FileCheck2 className="h-4 w-4" />
+                      Open Marking Scheme
                     </a>
+                  ) : (
+                    <button
+                      onClick={() => {
+                        setAttachmentExam(exam);
+                        setAttachmentPaperFile(null);
+                        setAttachmentSchemeFile(null);
+                      }}
+                      title="Attach marking scheme"
+                      className="inline-flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-bold text-amber-700 hover:bg-amber-100"
+                    >
+                      <FileCheck2 className="h-4 w-4" />
+                      Attach Marking Scheme
+                    </button>
                   )}
 
                   <button
