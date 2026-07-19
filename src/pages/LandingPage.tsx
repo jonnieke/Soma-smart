@@ -90,9 +90,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
     const [detailedUsesLeft, setDetailedUsesLeft] = useState<number>(() => {
         try {
             const count = parseInt(localStorage.getItem('soma_hero_detailed_uses') || '0', 10);
-            return Math.max(0, 3 - count);
+            return Math.max(0, 5 - count);
         } catch {
-            return 3;
+            return 5;
         }
     });
     const [showMobileStickyCta, setShowMobileStickyCta] = useState(false);
@@ -305,46 +305,55 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
         }
     };
 
-    const handleOpenDetailedView = async () => {
-        if (!questionInput.trim()) return;
+    const handleOpenDetailedView = async (questionOverride?: string) => {
+        const activeQuestion = (questionOverride || questionInput).trim();
+        const previousQuestion = questionInput.trim();
+        if (!activeQuestion) return;
+        setQuestionInput(activeQuestion);
         trackFunnelEvent('detailed_view_clicked', { source: 'landing_hero', is_registered: isRegistered });
+        setDetailedLimitReached(false);
 
-        // Registered users go straight to the learner workspace — they have full access
-        if (isRegistered || role !== UserRole.NONE) {
+        // Registered users go straight to the learner workspace. Guests stay in the homepage demo preview.
+        if (isRegistered) {
             setRole(UserRole.LEARNER);
-            navigate('/learner', { state: { pendingHeroQuestion: questionInput } });
+            navigate('/learner', { state: { pendingHeroQuestion: activeQuestion } });
             return;
         }
 
-        // Unregistered visitors: show the teaser modal with login gate
+        // Unregistered visitors: show the teaser modal with login gate, without dashboard looping.
         let count = 0;
         try { count = parseInt(localStorage.getItem('soma_hero_detailed_uses') || '0', 10); } catch { /* ignore */ }
         setShowDetailedView(true);
-        if (count >= 5) return;
+        if (isGeneratingDetailed) return;
+        if (detailedAnswer && previousQuestion === activeQuestion) return;
+        if (count >= 5) {
+            setDetailedLimitReached(true);
+            return;
+        }
         try {
             localStorage.setItem('soma_hero_detailed_uses', String(count + 1));
             setDetailedUsesLeft(Math.max(0, 5 - (count + 1)));
         } catch { /* ignore */ }
-        if (detailedAnswer || isGeneratingDetailed) return;
+        setDetailedAnswer(null);
         setIsGeneratingDetailed(true);
         try {
             const text = await callGeminiProxy(
-                `Provide a structured academic explanation for the following question, aligned to the Kenyan KCSE/CBC curriculum. Start with the final answer in one short line, then give the steps. Number each step clearly. Show working where needed. Use precise academic language. Question: ${questionInput}`
+                `Provide a learner-friendly point-form answer guide for the following question, aligned to the Kenyan CBC/KPSEA/KCSE curriculum. Avoid a paragraph block. Use short headings and bullet points only: Direct answer, Key points, Working or reason, Example, Exam tip. Be detailed enough for a learner to revise from, but keep each bullet clear and short. Do not use markdown bold. Question: ${activeQuestion}`
             );
             const cleaned = (text || '')
-                .replace(/\*\*(.*?)\*\*/g, '$1')    // **bold** → plain (no s: don't cross lines)
-                .replace(/^[*-]\s/gm, '• ')         // line-start * / - bullets → • (before italic strip)
-                .replace(/^#{1,6}\s*/gm, '')          // ## headers → plain
-                .replace(/\*(.*?)\*/g, '$1')          // *italic* → plain (no s: don't cross lines)
-                .replace(/\*/g, '');                  // any remaining *
+                .replace(/\*\*(.*?)\*\*/g, '$1')
+                .replace(/^[*-]\s/gm, '� ')
+                .replace(/^#{1,6}\s*/gm, '')
+                .replace(/\*(.*?)\*/g, '$1')
+                .replace(/\*/g, '');
             setDetailedAnswer(cleaned || 'Unable to generate explanation.');
-            trackFunnelEvent('detailed_view_opened', { source: 'landing_hero', uses_left: Math.max(0, 2 - count) });
+            trackFunnelEvent('detailed_view_opened', { source: 'landing_hero', uses_left: Math.max(0, 5 - (count + 1)) });
         } catch (err: any) {
             const code = err?.message ?? '';
             if (code === 'GUEST_LIMIT_REACHED' || code === 'PLAN_LIMIT_REACHED' || code === 'FEATURE_LIMIT_REACHED') {
                 setDetailedLimitReached(true);
             } else if (code === 'RATE_LIMIT') {
-                setDetailedAnswer('High demand right now — please close and try again in a few seconds.');
+                setDetailedAnswer('High demand right now � please close and try again in a few seconds.');
             } else if (err instanceof TypeError) {
                 setDetailedAnswer('No connection. Please check your internet and try again.');
             } else {
@@ -864,7 +873,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                 isRegistered={isRegistered}
                 userName={studentProfile?.name || teacherProfile?.name}
                 onStartLearning={() => handleRoleSelect(UserRole.LEARNER)}
-                onAskQuestion={(question) => handleLearnerQuickStart('SMART_TUTOR', 'ask_akili', question)}
+                onAskQuestion={(question) => { void handleOpenDetailedView(question); }}
                 onLearnerShortcut={handleLearnerQuickStart}
                 onTeacher={() => handleRoleSelect(UserRole.TEACHER)}
                 onParent={() => handleRoleSelect(UserRole.PARENT)}
@@ -1159,7 +1168,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                                                 onClick={handleOpenDetailedView}
                                                                 className="mt-2 text-[11px] font-bold text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-200 transition-colors flex items-center gap-1"
                                                             >
-                                                                To earn more marks? Open step-by-step notes <ArrowRight className="w-3 h-3" />
+                                                                To earn more marks? Open point-form guide <ArrowRight className="w-3 h-3" />
                                                             </button>
                                                         </div>
                                                     )}
@@ -2284,7 +2293,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                             {/* Header */}
                             <div className="flex items-start justify-between gap-4 border-b border-slate-100 p-5 dark:border-slate-800 shrink-0">
                                 <div className="min-w-0">
-                                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-600 dark:text-indigo-300">Step-by-step notes</p>
+                                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-600 dark:text-indigo-300">Point-form answer guide</p>
                                     <h2 className="mt-1 text-base font-black text-slate-950 dark:text-white truncate">{questionInput}</h2>
                                 </div>
                                 <button
@@ -2296,7 +2305,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                             </div>
 
                             {/* Body */}
-                            {false ? (
+                            {detailedLimitReached ? (
                                 /* Full gate — guest preview limit OR registered user daily limit reached */
                                 <div className="flex flex-col items-center justify-center gap-5 p-8 text-center flex-1">
                                     <div className="w-14 h-14 rounded-2xl bg-indigo-50 dark:bg-indigo-950/50 flex items-center justify-center">
@@ -2315,7 +2324,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                             <p className="text-xs font-black uppercase tracking-widest text-slate-400 mb-2">5 free previews used</p>
                                             <h3 className="text-xl font-black text-slate-900 dark:text-white">Create a free account to keep learning</h3>
                                             <p className="mt-2 text-sm text-slate-600 dark:text-slate-300 leading-relaxed max-w-xs mx-auto">
-                                                Unlock full step-by-step notes for any question, practice drills, and progress tracking — free to start.
+                                                Unlock full point-form answer guides, practice drills, and progress tracking — free to start.
                                             </p>
                                         </div>
                                     )}
@@ -2344,8 +2353,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                         ) : detailedAnswer ? (
                                             <div className="space-y-4 text-sm leading-relaxed text-slate-700 dark:text-slate-300">
                                                 <div className="rounded-2xl border border-indigo-100 bg-indigo-50/80 p-4 text-indigo-950 dark:border-indigo-900/40 dark:bg-indigo-950/30 dark:text-indigo-100">
-                                                    <p className="text-[10px] font-black uppercase tracking-[0.18em] text-indigo-600 dark:text-indigo-300">Step-by-step solution</p>
-                                                    <p className="mt-2 text-sm font-medium">We keep the answer open here, and the dashboard will pick up this exact question after login.</p>
+                                                    <p className="text-[10px] font-black uppercase tracking-[0.18em] text-indigo-600 dark:text-indigo-300">Point-form answer guide</p>
+                                                    <p className="mt-2 text-sm font-medium">We keep the answer open here so guests can see how Akili explains before signing up.</p>
                                                 </div>
                                                 <div className="whitespace-pre-wrap font-medium">{detailedAnswer}</div>
                                             </div>
@@ -2392,7 +2401,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                                     <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
                                                         {detailedUsesLeft > 0
                                                             ? `${detailedUsesLeft} free preview${detailedUsesLeft !== 1 ? 's' : ''} remaining — no payment needed`
-                                                            : 'Free account unlocks unlimited step-by-step notes'}
+                                                            : 'Free account unlocks full point-form answer guides'}
                                                     </p>
                                                 </div>
                                             </div>
