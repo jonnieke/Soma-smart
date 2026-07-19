@@ -430,11 +430,20 @@ export const ExamsView: React.FC = () => {
       }
       const result = await ingestPastPaper(paperFile, markingSchemeFile);
       setAnalyzedData(result);
-      setTitle(paperFile.name.replace(/\.[^/.]+$/, '').replace(/[_-]+/g, ' '));
-      setSubject(result.subject || 'Mathematics');
-      setGrade(result.grade || (result.examType === 'KPSEA' ? 'Grade 6' : 'Form 4'));
-      setExamBody(result.examBody || examBody || 'SomaAI');
-      setExamType(result.examType || 'OTHER');
+      const inferredTitle = paperFile.name.replace(/\.[^/.]+$/, '').replace(/[_-]+/g, ' ');
+      setTitle((current) => current.trim() || inferredTitle);
+      setSubject((current) =>
+        current.trim() && current !== 'Mathematics' ? current : result.subject || current || 'Mathematics'
+      );
+      setGrade((current) =>
+        current.trim() && current !== 'Form 4'
+          ? current
+          : result.grade || (result.examType === 'KPSEA' ? 'Grade 6' : current || 'Form 4')
+      );
+      setExamBody((current) => current.trim() || result.examBody || 'SomaAI');
+      setExamType((current) =>
+        current && current !== 'KCSE' ? current : result.examType || current || 'OTHER'
+      );
       setExamYear(result.year ? String(result.year) : String(currentYear));
       setPaperCode(result.paperCode || '');
       setPaperNumber(result.paperNumber || '');
@@ -807,7 +816,7 @@ export const ExamsView: React.FC = () => {
                         exam.paperNumber && 'Paper ' + exam.paperNumber,
                       ]
                         .filter(Boolean)
-                        .join(' · ')}
+                        .join(' - ')}
                     </p>
                     <div className="mt-2 flex flex-wrap gap-2">
                       <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-bold text-slate-600">
@@ -1060,6 +1069,54 @@ export const ExamsView: React.FC = () => {
                 </div>
                 {!analyzedData ? (
                   <div className="mt-6 space-y-5">
+                    <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                      <div className="mb-4 flex flex-col gap-1">
+                        <p className="text-sm font-black text-slate-900">Paper details</p>
+                        <p className="text-xs font-semibold text-slate-500">
+                          These labels control how the paper appears in the public Exam Paper Bank.
+                        </p>
+                      </div>
+                      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                        <Field
+                          label="Exam title"
+                          value={title}
+                          onChange={setTitle}
+                          placeholder="e.g. SomaAI Grade 6 English Mock 4"
+                          className="lg:col-span-2"
+                        />
+                        <Field
+                          label="Grade / level"
+                          value={grade}
+                          onChange={setGrade}
+                          placeholder="e.g. Grade 6"
+                        />
+                        <SelectField
+                          label="Exam body (optional)"
+                          value={examBody}
+                          onChange={setExamBody}
+                          options={EXAM_BODIES}
+                        />
+                        <SelectField
+                          label="Exam level"
+                          value={examType}
+                          onChange={(value) => setExamType(value as typeof examType)}
+                          options={['KCSE', 'KPSEA', 'KJSEA', 'OTHER']}
+                        />
+                        <SelectField
+                          label="Subject"
+                          value={subject}
+                          onChange={setSubject}
+                          options={SUBJECTS}
+                        />
+                        <Field label="Year" value={examYear} onChange={setExamYear} type="number" />
+                        <Field
+                          label="Paper number"
+                          value={paperNumber}
+                          onChange={setPaperNumber}
+                          placeholder="e.g. 1"
+                        />
+                      </div>
+                    </div>
                     {inputMode === 'STRUCTURED_JSON' && (
                       <div className="space-y-3">
                         <div className="rounded-2xl border border-indigo-100 bg-indigo-50 p-4 text-sm text-indigo-900">
@@ -1159,7 +1216,7 @@ export const ExamsView: React.FC = () => {
                         <div>
                           <p className="font-bold text-emerald-900">Exam structured successfully</p>
                           <p className="text-xs text-emerald-700">
-                            {analyzedData.questions.length} questions ·{' '}
+                            {analyzedData.questions.length} questions - {' '}
                             {analyzedData.markingSchemeSource === 'OFFICIAL'
                               ? 'official marking scheme paired'
                               : 'AI draft marking guide'}
@@ -1243,7 +1300,7 @@ export const ExamsView: React.FC = () => {
                             <div className="flex items-start justify-between gap-3">
                               <div>
                                 <p className="text-sm font-bold text-slate-800">
-                                  Q{question.number} · {question.marks || 0} marks
+                                  Q{question.number} - {question.marks || 0} marks
                                 </p>
                                 <p className="mt-1 text-sm text-slate-600">{question.text}</p>
                               </div>
