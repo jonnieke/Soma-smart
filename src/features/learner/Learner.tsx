@@ -2054,28 +2054,35 @@ Stay anchored to this context unless I ask for something broader.`;
     }
 
     const query = fadedSolutionData.query || 'your question';
-    const normalizedQuery = query.toLowerCase();
+    const normalizedQuery = query.toLowerCase().replace(/[?.!]+$/g, '').trim();
+    const defineTerm = query
+      .replace(/^what is\s+/i, '')
+      .replace(/^define\s+/i, '')
+      .replace(/^meaning of\s+/i, '')
+      .replace(/[?.!]+$/g, '')
+      .trim();
 
-    if (normalizedQuery.includes('photosynthesis')) {
-      return 'Photosynthesis is the process by which green plants make their own food using sunlight, water and carbon dioxide. The products are glucose and oxygen.';
+    const directAnswerBank: Array<[RegExp, string]> = [
+      [/photosynthesis/i, 'Photosynthesis is the process by which green plants make their own food using sunlight, water and carbon dioxide. The products are glucose and oxygen.'],
+      [/\bloam(?:y)? soil\b/i, 'Loam soil is a fertile soil made of a balanced mixture of sand, silt, clay and humus. It holds enough water for plants, drains well, and allows air to pass through.'],
+      [/\bsandy soil\b/i, 'Sandy soil is a light soil with large particles of sand. It drains water quickly, is easy to dig, and is usually less fertile because it does not hold much water or nutrients.'],
+      [/\bclay soil\b/i, 'Clay soil is a heavy soil with very small particles. It holds a lot of water, becomes sticky when wet, and can become hard when dry.'],
+      [/\bsilt soil\b/i, 'Silt soil is a smooth soil with fine particles. It holds more water than sandy soil and is usually fertile for growing crops.'],
+      [/\bsoil\b/i, 'Soil is the top layer of the earth where plants grow. It is made from small rock particles, humus, air, water and living organisms.'],
+      [/\bevaporation\b/i, 'Evaporation is the change of a liquid into vapour or gas when it is heated.'],
+      [/\bcondensation\b/i, 'Condensation is the change of water vapour into liquid water when it cools.'],
+      [/\btranspiration\b/i, 'Transpiration is the loss of water vapour from plant leaves into the air.']
+    ];
+
+    const directMatch = directAnswerBank.find(([pattern]) => pattern.test(normalizedQuery));
+    if (directMatch) return directMatch[1];
+
+    if (defineTerm) {
+      const cleanTopic = defineTerm.charAt(0).toUpperCase() + defineTerm.slice(1);
+      return cleanTopic + ': Akili will give a direct definition first, then examples and exam points after sign up. Try asking a specific topic such as sandy soil, photosynthesis, evaporation or fractions.';
     }
 
-    if (normalizedQuery.includes('loam soil') || normalizedQuery.includes('loamy soil')) {
-      return 'Loam soil is a fertile soil made of a balanced mixture of sand, silt, clay and humus. It holds enough water for plants, drains well, and allows air to pass through.';
-    }
-
-    if (normalizedQuery.startsWith('what is ') || normalizedQuery.startsWith('define ') || normalizedQuery.startsWith('meaning of ')) {
-      const topic = query
-        .replace(/^what is\s+/i, '')
-        .replace(/^define\s+/i, '')
-        .replace(/^meaning of\s+/i, '')
-        .replace(/[?.!]+$/g, '')
-        .trim();
-      const cleanTopic = topic || 'This';
-      return cleanTopic.charAt(0).toUpperCase() + cleanTopic.slice(1) + ' is the direct answer to this question. Sign up to see the complete learner-friendly answer with examples, key points and exam marks guidance.';
-    }
-
-    return 'Direct answer: ' + query.replace(/[?.!]+$/g, '') + '. Sign up to see the complete answer, examples and exam marks guidance.';
+    return 'Akili will answer this directly first, then show examples and exam marks guidance after sign up.';
   }, [fadedSolutionData.answer, fadedSolutionData.query]);
 
   // Check for subscription intent & Auto-open material intent
