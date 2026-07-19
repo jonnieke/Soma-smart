@@ -2054,11 +2054,28 @@ Stay anchored to this context unless I ask for something broader.`;
     }
 
     const query = fadedSolutionData.query || 'your question';
-    if (/photosynthesis/i.test(query)) {
-      return 'Photosynthesis is the process green plants use to make their own food. Leaves trap sunlight using chlorophyll, take in carbon dioxide from the air, and use water from the roots to produce glucose and oxygen. The full solution will explain each step, the word equation, and how to earn marks in an exam answer.';
+    const normalizedQuery = query.toLowerCase();
+
+    if (normalizedQuery.includes('photosynthesis')) {
+      return 'Photosynthesis is the process by which green plants make their own food using sunlight, water and carbon dioxide. The products are glucose and oxygen.';
     }
 
-    return `Akili starts by identifying what the question is asking, then breaks the answer into small curriculum steps. The full solution will show the key idea, the worked explanation, and the exact points a learner should write to earn marks for: "${query}".`;
+    if (normalizedQuery.includes('loam soil') || normalizedQuery.includes('loamy soil')) {
+      return 'Loam soil is a fertile soil made of a balanced mixture of sand, silt, clay and humus. It holds enough water for plants, drains well, and allows air to pass through.';
+    }
+
+    if (normalizedQuery.startsWith('what is ') || normalizedQuery.startsWith('define ') || normalizedQuery.startsWith('meaning of ')) {
+      const topic = query
+        .replace(/^what is\s+/i, '')
+        .replace(/^define\s+/i, '')
+        .replace(/^meaning of\s+/i, '')
+        .replace(/[?.!]+$/g, '')
+        .trim();
+      const cleanTopic = topic || 'This';
+      return cleanTopic.charAt(0).toUpperCase() + cleanTopic.slice(1) + ' is the direct answer to this question. Sign up to see the complete learner-friendly answer with examples, key points and exam marks guidance.';
+    }
+
+    return 'Direct answer: ' + query.replace(/[?.!]+$/g, '') + '. Sign up to see the complete answer, examples and exam marks guidance.';
   }, [fadedSolutionData.answer, fadedSolutionData.query]);
 
   // Check for subscription intent & Auto-open material intent
@@ -9432,7 +9449,7 @@ ${explanation.explanation}
                     <Sparkles className="w-6 h-6 text-white" />
                   </div>
                   <div>
-                    <h2 className="text-xl font-bold font-display text-slate-800">Full Step-by-Step Logic</h2>
+                    <h2 className="text-xl font-bold font-display text-slate-800">Direct Answer</h2>
                     <p className="text-sm font-medium text-slate-500 line-clamp-1">&quot;{fadedSolutionData.query}&quot;</p>
                   </div>
                 </div>
@@ -9451,7 +9468,7 @@ ${explanation.explanation}
                     <div className="rounded-3xl border border-emerald-200 bg-emerald-50 p-5 shadow-sm">
                       <div className="flex items-center gap-2 text-emerald-700">
                         <Sparkles className="h-4 w-4" />
-                        <p className="text-xs font-black uppercase tracking-[0.18em]">Visible answer preview</p>
+                        <p className="text-xs font-black uppercase tracking-[0.18em]">Visible direct answer</p>
                       </div>
                       <p className="mt-3 whitespace-pre-wrap text-base font-semibold leading-8 text-slate-900">
                         {fadedSolutionPreview}
@@ -9501,9 +9518,9 @@ ${explanation.explanation}
                     <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mb-4 shadow-inner border border-blue-100">
                         <Lock className="w-8 h-8 text-blue-600" />
                     </div>
-                    <h3 className="text-2xl font-bold font-display text-slate-800 mb-2">View Full Solution</h3>
+                    <h3 className="text-2xl font-bold font-display text-slate-800 mb-2">View Full Answer</h3>
                     <p className="text-slate-600 max-w-sm mb-6 font-medium text-base">
-                      Sign up free to unlock the complete step-by-step logic. You get <span className="bg-amber-100 text-amber-700 px-2 py-0.5 rounded-md font-bold mx-1">5 free answers</span> before KES 20/day premium access!
+                      Sign up free to unlock the complete answer, examples and revision support. You get <span className="bg-amber-100 text-amber-700 px-2 py-0.5 rounded-md font-bold mx-1">5 free answers</span> before KES 20/day premium access!
                     </p>
                     <div className="flex gap-3 w-full sm:w-auto">
                         <button
