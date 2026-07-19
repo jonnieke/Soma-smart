@@ -34,6 +34,7 @@ export const ExamPaperBankPage: React.FC = () => {
   const [query, setQuery] = React.useState('');
   const [subject, setSubject] = React.useState('All subjects');
   const [grade, setGrade] = React.useState('All grades');
+  const [examBody, setExamBody] = React.useState('All exam bodies');
   const [selected, setSelected] = React.useState<ExamPaperBankItem | null>(null);
   const [checkoutOpen, setCheckoutOpen] = React.useState(false);
   const [checkoutUrl, setCheckoutUrl] = React.useState('');
@@ -115,11 +116,16 @@ export const ExamPaperBankPage: React.FC = () => {
     () => ['All grades', ...Array.from(new Set(papers.map((paper) => normalise(paper.grade)).filter(Boolean))).sort()],
     [papers],
   );
+  const examBodies = React.useMemo(
+    () => ['All exam bodies', ...Array.from(new Set(papers.map((paper) => normalise(paper.exam_body)).filter(Boolean))).sort()],
+    [papers],
+  );
   const filtered = papers.filter((paper) => {
-    const haystack = `${paper.title} ${paper.subject} ${paper.grade} ${paper.exam_type || ''}`.toLowerCase();
+    const haystack = `${paper.title} ${paper.subject} ${paper.grade} ${paper.exam_body || ''} ${paper.exam_type || ''}`.toLowerCase();
     return (!query.trim() || haystack.includes(query.toLowerCase()))
       && (subject === 'All subjects' || paper.subject === subject)
-      && (grade === 'All grades' || paper.grade === grade);
+      && (grade === 'All grades' || paper.grade === grade)
+      && (examBody === 'All exam bodies' || paper.exam_body === examBody);
   });
 
   const beginPurchase = async (event: React.FormEvent) => {
@@ -199,7 +205,7 @@ export const ExamPaperBankPage: React.FC = () => {
 
         <section className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
           <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-            <div className="grid gap-3 md:grid-cols-[1fr_220px_220px]">
+            <div className="grid gap-3 md:grid-cols-[1fr_190px_190px_190px]">
               <label className="relative">
                 <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
                 <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search Mathematics, English, KCSE..." className="h-12 w-full rounded-xl border border-slate-200 bg-white pl-12 pr-4 text-sm font-semibold outline-none focus:border-indigo-400" />
@@ -209,6 +215,7 @@ export const ExamPaperBankPage: React.FC = () => {
                 <select value={grade} onChange={(event) => setGrade(event.target.value)} className="h-12 w-full appearance-none rounded-xl border border-slate-200 bg-white pl-11 pr-4 text-sm font-bold outline-none focus:border-indigo-400">{grades.map((item) => <option key={item}>{item}</option>)}</select>
               </label>
               <select value={subject} onChange={(event) => setSubject(event.target.value)} className="h-12 rounded-xl border border-slate-200 bg-white px-4 text-sm font-bold outline-none focus:border-indigo-400">{subjects.map((item) => <option key={item}>{item}</option>)}</select>
+              <select value={examBody} onChange={(event) => setExamBody(event.target.value)} className="h-12 rounded-xl border border-slate-200 bg-white px-4 text-sm font-bold outline-none focus:border-indigo-400">{examBodies.map((item) => <option key={item}>{item}</option>)}</select>
             </div>
           </div>
 
@@ -223,7 +230,7 @@ export const ExamPaperBankPage: React.FC = () => {
                   </div>
                   <h2 className="mt-4 text-lg font-black leading-snug text-[#07133f]">{paper.title}</h2>
                   <div className="mt-3 flex flex-wrap gap-2 text-xs font-bold text-slate-500">
-                    <span>{paper.subject}</span><span>·</span><span>{paper.grade}</span>
+                    <span>{paper.subject}</span><span>·</span><span>{paper.grade}</span>{paper.exam_body ? <><span>·</span><span>{paper.exam_body}</span></> : null}
                     {paper.duration_minutes ? <><span>·</span><span className="inline-flex items-center gap-1"><Clock className="h-3.5 w-3.5" /> {paper.duration_minutes} min</span></> : null}
                   </div>
                   <div className="mt-5 space-y-2 border-t border-slate-100 pt-4 text-sm font-semibold text-slate-600">

@@ -288,6 +288,7 @@ export interface ExamQuestion {
 export interface ExamAnalysis {
   subject: string;
   grade: string;
+  examBody?: string;
   examType?: 'KCSE' | 'KPSEA' | 'KJSEA' | 'OTHER';
   year?: number;
   paperCode?: string;

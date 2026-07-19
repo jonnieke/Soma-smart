@@ -56,6 +56,7 @@ type Props = {
     title: string;
     subject: string;
     grade: string;
+    exam_body?: string | null;
     duration_minutes?: number | null;
     total_marks?: number | null;
     source?: string | null;
@@ -514,6 +515,9 @@ export const LandingHome: React.FC<Props> = (props) => {
                       <div className="mt-4 flex flex-wrap gap-2 text-[10px] font-bold text-slate-500">
                         <span className="rounded-full bg-white px-2 py-1">{paper.subject}</span>
                         <span className="rounded-full bg-white px-2 py-1">{paper.grade}</span>
+                        {paper.exam_body ? (
+                          <span className="rounded-full bg-white px-2 py-1">{paper.exam_body}</span>
+                        ) : null}
                         {paper.duration_minutes ? (
                           <span className="inline-flex items-center gap-1 rounded-full bg-white px-2 py-1">
                             <Clock className="h-3 w-3" /> {paper.duration_minutes} min

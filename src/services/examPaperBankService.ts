@@ -7,6 +7,7 @@ export type ExamPaperBankItem = {
   title: string;
   subject: string;
   grade: string;
+  exam_body?: string | null;
   exam_type?: string | null;
   exam_year?: string | number | null;
   paper_number?: string | number | null;
@@ -52,6 +53,7 @@ export const examPaperBankService = {
     const { data, error } = await supabase.rpc('list_exam_paper_bank', {
       p_grade: null,
       p_subject: null,
+      p_exam_body: null,
     });
 
     if (!error) return (data || []) as ExamPaperBankItem[];
@@ -60,6 +62,7 @@ export const examPaperBankService = {
     const { data: exams, error: examError } = await supabase.rpc('list_published_exams', {
       p_grade: null,
       p_subject: null,
+      p_exam_body: null,
     });
     if (examError) throw examError;
     return ((exams || []) as Array<Record<string, unknown>>).map((paper) => ({
@@ -92,4 +95,3 @@ export const examPaperBankService = {
     return data as PaperAccess;
   },
 };
-

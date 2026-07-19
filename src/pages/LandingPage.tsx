@@ -97,7 +97,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
         }
     });
     const [showMobileStickyCta, setShowMobileStickyCta] = useState(false);
-    const [latestPapers, setLatestPapers] = useState<Array<{ id: string | number; title: string; subject: string; grade: string; duration_minutes?: number | null; total_marks?: number | null; source?: string | null; exam_type?: string | null; created_at?: string | null; published_at?: string | null; homepage_featured?: boolean | null; file_url?: string | null; file_path?: string | null }>>([]);
+    const [latestPapers, setLatestPapers] = useState<Array<{ id: string | number; title: string; subject: string; grade: string; exam_body?: string | null; duration_minutes?: number | null; total_marks?: number | null; source?: string | null; exam_type?: string | null; created_at?: string | null; published_at?: string | null; homepage_featured?: boolean | null; file_url?: string | null; file_path?: string | null }>>([]);
 
     const trackFunnelEvent = (eventName: string, params: Record<string, unknown> = {}) => {
         try {
@@ -232,7 +232,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                 const [{ data: tableData, error: tableError }, rpcData] = await Promise.all([
                     supabase
                         .from('knowledge_base')
-                        .select('id, title, subject, grade, duration_minutes, total_marks, source, exam_type, created_at, review_status, type, file_url, file_path, homepage_featured, marking_scheme_url, marking_scheme_path')
+                        .select('id, title, subject, grade, exam_body, duration_minutes, total_marks, source, exam_type, created_at, review_status, type, file_url, file_path, homepage_featured, marking_scheme_url, marking_scheme_path')
                         .eq('type', 'PAST_PAPER')
                         .eq('review_status', 'PUBLISHED')
                         .order('created_at', { ascending: false }),
@@ -2688,5 +2688,4 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
         </div>
     );
 };
-
 

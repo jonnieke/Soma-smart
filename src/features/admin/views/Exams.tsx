@@ -28,6 +28,7 @@ interface Exam {
   filePath?: string | null;
   markingSchemeUrl?: string | null;
   markingSchemePath?: string | null;
+  examBody?: string | null;
   examType?: string | null;
   examYear?: number | null;
   paperNumber?: string | null;
@@ -66,6 +67,7 @@ const SUBJECTS = [
   'Indigenous Language',
 ];
 const currentYear = new Date().getFullYear();
+const EXAM_BODIES = ['SomaAI', 'KNEC', 'Cambridge', 'School Mock', 'County Mock', 'Other'];
 const normalizeExamType = (value: unknown): 'KCSE' | 'KPSEA' | 'KJSEA' | 'OTHER' => {
   const normalized = String(value ?? '')
     .trim()
@@ -95,6 +97,7 @@ export const ExamsView: React.FC = () => {
   const [title, setTitle] = useState('');
   const [subject, setSubject] = useState('Mathematics');
   const [grade, setGrade] = useState('Form 4');
+  const [examBody, setExamBody] = useState('SomaAI');
   const [examType, setExamType] = useState<'KCSE' | 'KPSEA' | 'KJSEA' | 'OTHER'>('KCSE');
   const [examYear, setExamYear] = useState(String(currentYear));
   const [paperCode, setPaperCode] = useState('');
@@ -115,6 +118,7 @@ export const ExamsView: React.FC = () => {
       {
         exam: {
           title,
+          examBody,
           examType,
           grade,
           subject,
@@ -162,6 +166,7 @@ export const ExamsView: React.FC = () => {
     setTitle('');
     setSubject('Mathematics');
     setGrade('Form 4');
+    setExamBody('SomaAI');
     setExamType('KCSE');
     setExamYear(String(currentYear));
     setPaperCode('');
@@ -283,6 +288,7 @@ export const ExamsView: React.FC = () => {
         filePath: row.file_path || row.filePath || null,
         markingSchemeUrl: row.marking_scheme_url || row.markingSchemeUrl || null,
         markingSchemePath: row.marking_scheme_path || row.markingSchemePath || null,
+        examBody: row.exam_body || row.examBody || null,
         examType: row.exam_type,
         examYear: row.exam_year,
         paperNumber: row.paper_number,
@@ -303,7 +309,7 @@ export const ExamsView: React.FC = () => {
         supabase
           .from('knowledge_base')
           .select(
-            'id, title, subject, grade, file_url, file_path, marking_scheme_url, marking_scheme_path, exam_type, exam_year, paper_number, review_status, structured_questions, indexing_status, last_index_error, source, is_official, homepage_featured, created_at'
+            'id, title, subject, grade, file_url, file_path, marking_scheme_url, marking_scheme_path, exam_body, exam_type, exam_year, paper_number, review_status, structured_questions, indexing_status, last_index_error, source, is_official, homepage_featured, created_at'
           )
           .eq('type', 'PAST_PAPER')
           .order('created_at', { ascending: false }),
@@ -380,9 +386,13 @@ export const ExamsView: React.FC = () => {
         const resolvedExamType = normalizeExamType(
           examPayload.examType ?? examPayload.exam_type ?? examType
         );
+        const resolvedExamBody = String(
+          examPayload.examBody ?? examPayload.exam_body ?? examBody ?? 'SomaAI'
+        ).trim();
         setAnalyzedData({
           subject: String(examPayload.subject ?? subject ?? 'General'),
           grade: String(examPayload.grade ?? grade ?? 'Form 4'),
+          examBody: resolvedExamBody,
           examType: resolvedExamType,
           year: Number(examPayload.year ?? examPayload.examYear ?? examYear) || currentYear,
           paperCode: String(examPayload.paperCode ?? examPayload.paper_code ?? paperCode ?? ''),
@@ -402,6 +412,7 @@ export const ExamsView: React.FC = () => {
         setTitle(String(examPayload.title ?? 'Structured exam').trim());
         setSubject(String(examPayload.subject ?? subject ?? 'General'));
         setGrade(String(examPayload.grade ?? grade ?? 'Form 4'));
+        setExamBody(resolvedExamBody);
         setExamType(resolvedExamType);
         setExamYear(String(examPayload.year ?? examPayload.examYear ?? currentYear));
         setPaperCode(String(examPayload.paperCode ?? examPayload.paper_code ?? ''));
@@ -422,6 +433,7 @@ export const ExamsView: React.FC = () => {
       setTitle(paperFile.name.replace(/\.[^/.]+$/, '').replace(/[_-]+/g, ' '));
       setSubject(result.subject || 'Mathematics');
       setGrade(result.grade || (result.examType === 'KPSEA' ? 'Grade 6' : 'Form 4'));
+      setExamBody(result.examBody || examBody || 'SomaAI');
       setExamType(result.examType || 'OTHER');
       setExamYear(result.year ? String(result.year) : String(currentYear));
       setPaperCode(result.paperCode || '');
@@ -582,6 +594,7 @@ export const ExamsView: React.FC = () => {
           grade: grade.trim(),
           subject: subject.trim(),
           type: 'PAST_PAPER',
+          exam_body: examBody.trim() || null,
           file_url: paperUrl,
           file_path: paperPath,
           marking_scheme_url: schemeUrl,
@@ -726,6 +739,7 @@ export const ExamsView: React.FC = () => {
     return (
       exam.title.toLowerCase().includes(query) ||
       exam.subject.toLowerCase().includes(query) ||
+      String(exam.examBody || '').toLowerCase().includes(query) ||
       String(exam.examYear || '').includes(query)
     );
   });
@@ -787,6 +801,7 @@ export const ExamsView: React.FC = () => {
                     <p className="mt-1 text-xs text-slate-400">
                       {[
                         exam.examType,
+                        exam.examBody,
                         exam.examYear,
                         exam.subject,
                         exam.paperNumber && 'Paper ' + exam.paperNumber,
@@ -1160,13 +1175,19 @@ export const ExamsView: React.FC = () => {
                     </div>
                     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                       <Field
-                        label="Paper title"
+                        label="Exam title"
                         value={title}
                         onChange={setTitle}
                         className="lg:col-span-2"
                       />
                       <SelectField
-                        label="Exam"
+                        label="Exam body (optional)"
+                        value={examBody}
+                        onChange={setExamBody}
+                        options={EXAM_BODIES}
+                      />
+                      <SelectField
+                        label="Exam level"
                         value={examType}
                         onChange={(value) => setExamType(value as typeof examType)}
                         options={['KCSE', 'KPSEA', 'KJSEA', 'OTHER']}
@@ -1388,5 +1409,4 @@ const SelectField: React.FC<{
     </select>
   </label>
 );
-
 
