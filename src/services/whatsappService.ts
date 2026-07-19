@@ -9,6 +9,43 @@ const compactText = (value: string) => value
   .replace(/\n{3,}/g, '\n\n')
   .trim();
 
+const cleanShareText = (value?: string | null) => compactText(String(value || '')
+  .replace(/\[(.*?)\]\((.*?)\)/g, '$1')
+  .replace(/\*\*(.*?)\*\*/g, '$1')
+  .replace(/\*(.*?)\*/g, '$1')
+  .replace(/^#{1,6}\s*/gm, '')
+  .replace(/[`_~]/g, '')
+  .replace(/\*/g, ''));
+
+const trimToReadableLength = (value: string, maxChars: number) => {
+  const text = cleanShareText(value);
+  if (text.length <= maxChars) return text;
+  const sliced = text.slice(0, Math.max(0, maxChars - 3)).trimEnd();
+  const sentenceEnd = Math.max(sliced.lastIndexOf('. '), sliced.lastIndexOf('? '), sliced.lastIndexOf('! '));
+  return `${(sentenceEnd > 220 ? sliced.slice(0, sentenceEnd + 1) : sliced).trimEnd()}...`;
+};
+
+const stripFinalPunctuation = (value: string) => value.replace(/[.!?]+$/g, '').trim();
+
+const buildLearnerLevelFallbackExplanation = (topic: string, points: string[], grade?: string) => {
+  const topicLower = topic.toLowerCase();
+  const gradeLabel = grade ? cleanShareText(grade) : 'a learner';
+
+  if (topicLower.includes('erosion')) {
+    return `Erosion prevention means protecting soil so it is not carried away by water, wind, animals or human activity. For ${gradeLabel}, the key idea is that topsoil is valuable because crops and natural plants need it to grow well. When erosion is prevented, farms keep fertile soil, rivers and wells stay cleaner because less soil is washed into them, and habitats remain safer for plants, insects, birds and animals. A strong answer should connect erosion prevention to food production, clean water and environmental conservation.`;
+  }
+
+  if (points.length > 0) {
+    const joinedPoints = points
+      .slice(0, 3)
+      .map(point => stripFinalPunctuation(cleanShareText(point)).toLowerCase())
+      .join('; ');
+    return `The main idea in ${topic} is that ${joinedPoints}. A learner should understand not only the points, but also why they matter in real life. A strong answer should state the idea clearly, explain its importance, and give one simple example from school, home or the community.`;
+  }
+
+  return `${topic} should be answered by giving the clear meaning, explaining the main idea in simple language, and adding one example that shows understanding.`;
+};
+
 export const normalizeWhatsAppPhone = (phone?: string | null) => {
   const digits = String(phone || '').replace(/\D/g, '');
   if (!digits) return '';
@@ -56,31 +93,54 @@ export const formatAkiliAnswerForWhatsApp = (answer: {
   subject?: string;
   grade?: string;
 }) => {
-  const topic = compactText(answer.topic).slice(0, 120);
+  const topic = cleanShareText(answer.topic).slice(0, 120);
   const context = [answer.subject, answer.grade]
     .filter(Boolean)
-    .map(value => compactText(String(value)).slice(0, 60))
+    .map(value => cleanShareText(String(value)).slice(0, 60))
     .join(' | ');
-  const summaryPoints = (answer.summaryPoints || [])
+  const rawSummaryPoints = (answer.summaryPoints || [])
     .filter(Boolean)
     .slice(0, 5)
-    .map(point => `- ${compactText(point).slice(0, 160)}`);
-  const beforeExplanation = [
-    '*Akili explained it*',
-    `*${topic}*`,
+    .map(point => cleanShareText(point).slice(0, 180));
+  const summaryPoints = rawSummaryPoints.map(point => `- ${point}`);
+  const footer = `Learn, listen and practise on Somo Smart: ${SOMO_LEARNER_URL}`;
+  const cleanedExplanation = cleanShareText(answer.explanation);
+  const baseExplanation = cleanedExplanation.length >= 180
+    ? cleanedExplanation
+    : buildLearnerLevelFallbackExplanation(topic, rawSummaryPoints, answer.grade);
+  const practicePrompt = `Practice: Explain ${topic.toLowerCase()} in your own words and give one example from your class, home or community.`;
+  const fixedLines = [
+    'Akili explained it',
+    topic,
     context,
     '',
-    ...(summaryPoints.length > 0 ? ['*Key points*', ...summaryPoints, ''] : []),
+    'Learner explanation',
+    '',
+    ...(summaryPoints.length > 0 ? ['Key points', ...summaryPoints, ''] : []),
+    practicePrompt,
+    '',
+    footer,
   ].filter((line, index, lines) => line || (index > 0 && lines[index - 1]));
-  const footer = `Learn, listen and practise on Somo Smart: ${SOMO_LEARNER_URL}`;
-  const fixedMessage = [...beforeExplanation, '', footer].join('\n');
-  const explanationLimit = Math.max(0, WHATSAPP_MESSAGE_LIMIT - fixedMessage.length);
-  const explanation = compactText(answer.explanation);
-  const shortenedExplanation = explanation.length > explanationLimit
-    ? `${explanation.slice(0, Math.max(0, explanationLimit - 3)).trimEnd()}...`
-    : explanation;
+  const explanationLimit = Math.max(420, WHATSAPP_MESSAGE_LIMIT - fixedLines.join('\n').length - 12);
+  const learnerExplanation = trimToReadableLength(baseExplanation, explanationLimit);
 
-  return [...beforeExplanation, shortenedExplanation, '', footer].join('\n').trim();
+  return [
+    'Akili explained it',
+    topic,
+    context,
+    '',
+    'Learner explanation',
+    learnerExplanation,
+    '',
+    ...(summaryPoints.length > 0 ? ['Key points', ...summaryPoints, ''] : []),
+    practicePrompt,
+    '',
+    footer,
+  ]
+    .filter((line, index, lines) => line || (index > 0 && lines[index - 1]))
+    .join('\n')
+    .replace(/\*/g, '')
+    .trim();
 };
 
 export const formatWeeklyProgressForWhatsApp = (progress: {
@@ -169,3 +229,4 @@ export const formatStudyPackForWhatsApp = (notes: StudyNote[], grade?: string) =
     'Open Somo Smart to listen, practise and test yourself: ' + SOMO_LEARNER_URL,
   ].join('\n').trim();
 };
+
