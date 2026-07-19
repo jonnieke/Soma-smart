@@ -52,6 +52,20 @@ const getClientIp = (req: Request) => (
     'unknown'
 );
 
+const studentCodeVariants = (raw?: string | null): string[] => {
+    const cleaned = String(raw || '').trim().toUpperCase().replace(/\s+/g, '');
+    if (!cleaned) return [];
+    const digits = cleaned.match(/\d+/)?.[0];
+    const variants = new Set<string>([cleaned]);
+    if (digits) {
+        variants.add(`SOMA-${digits}`);
+        variants.add(`SOM-${digits}`);
+        variants.add(`SOMA${digits}`);
+        variants.add(`SOM${digits}`);
+    }
+    return Array.from(variants);
+};
+
 const effectivePlanForProfile = (profile: any) => {
     const tier = String(profile?.subscription_tier || profile?.subscription_status || 'FREE').toUpperCase();
     if (!tier || tier === 'TRIAL') return 'FREE';
@@ -92,18 +106,19 @@ const resolveRequester = async (req: Request, supabase: any) => {
     }
 
     const studentCode = req.headers.get('x-student-code')?.trim();
-    if (studentCode && studentCode.startsWith('SOMA-')) {
+    const codeVariants = studentCodeVariants(studentCode);
+    if (codeVariants.length > 0) {
         const { data: profile } = await supabase
             .from('profiles')
             .select('id, role, subscription_tier, subscription_status, subscription_expiry, expiry, student_id')
-            .eq('student_id', studentCode)
+            .in('student_id', codeVariants)
             .maybeSingle();
         if (profile) {
             return {
                 userId: profile.id,
-                studentCode,
+                studentCode: profile.student_id || codeVariants[0],
                 plan: effectivePlanForProfile(profile),
-                identifier: `student:${studentCode}`,
+                identifier: `student:${profile.student_id || codeVariants[0]}`,
             };
         }
     }

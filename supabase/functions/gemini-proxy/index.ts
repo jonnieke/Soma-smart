@@ -184,6 +184,20 @@ const getRequestStudentCode = (req: Request) => {
     return headerCode || queryCode;
 };
 
+const studentCodeVariants = (raw?: string | null): string[] => {
+    const cleaned = String(raw || '').trim().toUpperCase().replace(/\s+/g, '');
+    if (!cleaned) return [];
+    const digits = cleaned.match(/\d+/)?.[0];
+    const variants = new Set<string>([cleaned]);
+    if (digits) {
+        variants.add(`SOMA-${digits}`);
+        variants.add(`SOM-${digits}`);
+        variants.add(`SOMA${digits}`);
+        variants.add(`SOM${digits}`);
+    }
+    return Array.from(variants);
+};
+
 const getClientIp = (req: Request) => {
     return (
         req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
@@ -336,13 +350,14 @@ const enforceUsageLimit = async (req: Request) => {
         }
     }
 
-    // No valid Supabase JWT â€” check for SOMA-XXXX learner code (custom session system)
+    // No valid Supabase JWT — check for learner code (custom session system)
     const studentCode = getRequestStudentCode(req);
-    if (studentCode && studentCode.startsWith('SOMA-')) {
+    const codeVariants = studentCodeVariants(studentCode);
+    if (codeVariants.length > 0) {
         const { data: profile } = await supabase
             .from('profiles')
             .select('id, role, subscription_tier, subscription_status, subscription_expiry, expiry')
-            .eq('student_id', studentCode)
+            .in('student_id', codeVariants)
             .maybeSingle();
 
         if (profile) {
@@ -430,11 +445,12 @@ const resolveRequester = async (req: Request, supabase: any) => {
     }
 
     const studentCode = getRequestStudentCode(req);
-    if (studentCode && studentCode.startsWith('SOMA-')) {
+    const codeVariants = studentCodeVariants(studentCode);
+    if (codeVariants.length > 0) {
         const { data: profile } = await supabase
             .from('profiles')
             .select('id, role, subscription_tier, subscription_status, subscription_expiry, expiry, student_id')
-            .eq('student_id', studentCode)
+            .in('student_id', codeVariants)
             .maybeSingle();
         if (profile) {
             const { data: creditBal } = await supabase
@@ -444,9 +460,9 @@ const resolveRequester = async (req: Request, supabase: any) => {
                 .maybeSingle();
             return {
                 userId: profile.id,
-                studentCode,
+                studentCode: profile.student_id || codeVariants[0],
                 plan: effectivePlanForProfile(profile),
-                identifier: `student:${studentCode}`,
+                identifier: `student:${profile.student_id || codeVariants[0]}`,
                 profile,
                 hasCredits: (creditBal?.credits || 0) > 0,
                 isAdmin: false,

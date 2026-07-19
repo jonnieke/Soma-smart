@@ -473,6 +473,19 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const isPro = Boolean(tier !== 'FREE' && expiry && new Date(expiry) > new Date());
     return { isPro, tier: isPro ? tier : 'FREE', expiry: isPro ? expiry : expiry };
   };
+  const studentCodeVariants = (raw?: string | null): string[] => {
+    const cleaned = String(raw || '').trim().toUpperCase().replace(/\s+/g, '');
+    if (!cleaned) return [];
+    const digits = cleaned.match(/\d+/)?.[0];
+    const variants = new Set<string>([cleaned]);
+    if (digits) {
+      variants.add(`SOMA-${digits}`);
+      variants.add(`SOM-${digits}`);
+      variants.add(`SOMA${digits}`);
+      variants.add(`SOM${digits}`);
+    }
+    return Array.from(variants);
+  };
 
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     const saved = localStorage.getItem('soma_theme') as 'light' | 'dark';
@@ -619,7 +632,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         const { data: profile } = await supabase
           .from('profiles')
           .select('id')
-          .eq('student_id', savedStudentCode)
+          .in('student_id', studentCodeVariants(savedStudentCode))
           .maybeSingle();
         if (profile) currentUserId = profile.id;
       }
@@ -955,7 +968,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           const { data: profile } = await supabase
             .from('profiles')
             .select('*')
-            .eq('student_id', savedStudentCode)
+            .in('student_id', studentCodeVariants(savedStudentCode))
             .maybeSingle();
 
           if (profile) {
@@ -2264,7 +2277,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       const { data: profile, error } = await supabase
         .from('profiles')
         .select('*')
-        .eq('student_id', sanitizedCode)
+        .in('student_id', studentCodeVariants(sanitizedCode))
         .eq('parent_phone', sanitizedPhone)
         .maybeSingle();
 
@@ -2334,7 +2347,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       const { data: profile, error } = await supabase
         .from('profiles')
         .select('*')
-        .eq('student_id', sanitizedCode)
+        .in('student_id', studentCodeVariants(sanitizedCode))
         .maybeSingle(); // Use maybeSingle to avoid 406 error if not found
 
       if (error || !profile) return false;
@@ -3333,7 +3346,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         const { data: profile } = await supabase
           .from('profiles')
           .select('id')
-          .eq('student_id', savedStudentCode)
+          .in('student_id', studentCodeVariants(savedStudentCode))
           .maybeSingle();
         if (profile?.id) {
           resolvedUserId = profile.id;
@@ -3449,7 +3462,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           const { data: profile } = await supabase
             .from('profiles')
             .select('id')
-            .eq('student_id', normalizedCode)
+            .in('student_id', studentCodeVariants(normalizedCode))
             .maybeSingle();
           if (profile?.id) {
             targetUserIds.push(profile.id);
