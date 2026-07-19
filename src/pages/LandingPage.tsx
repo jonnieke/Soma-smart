@@ -2296,7 +2296,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                             </div>
 
                             {/* Body */}
-                            {((!isRegistered && detailedUsesLeft === 0 && !detailedAnswer) || detailedLimitReached) ? (
+                            {false ? (
                                 /* Full gate — guest preview limit OR registered user daily limit reached */
                                 <div className="flex flex-col items-center justify-center gap-5 p-8 text-center flex-1">
                                     <div className="w-14 h-14 rounded-2xl bg-indigo-50 dark:bg-indigo-950/50 flex items-center justify-center">
@@ -2341,9 +2341,33 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                                     <div key={i} className={`h-3 bg-slate-200 dark:bg-slate-700 rounded-full animate-pulse`} style={{ width: `${w}%` }} />
                                                 ))}
                                             </div>
+                                        ) : detailedAnswer ? (
+                                            <div className="space-y-4 text-sm leading-relaxed text-slate-700 dark:text-slate-300">
+                                                <div className="rounded-2xl border border-indigo-100 bg-indigo-50/80 p-4 text-indigo-950 dark:border-indigo-900/40 dark:bg-indigo-950/30 dark:text-indigo-100">
+                                                    <p className="text-[10px] font-black uppercase tracking-[0.18em] text-indigo-600 dark:text-indigo-300">Step-by-step solution</p>
+                                                    <p className="mt-2 text-sm font-medium">We keep the answer open here, and the dashboard will pick up this exact question after login.</p>
+                                                </div>
+                                                <div className="whitespace-pre-wrap font-medium">{detailedAnswer}</div>
+                                            </div>
                                         ) : (
-                                            <div className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-wrap font-medium">
-                                                {detailedAnswer}
+                                            <div className="space-y-4">
+                                                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-900/60">
+                                                    <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">Preview locked</p>
+                                                    <h3 className="mt-1 text-lg font-black text-slate-900 dark:text-white">Open the full step-by-step explanation</h3>
+                                                    <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
+                                                        {isRegistered
+                                                            ? 'Your free daily study limit has been reached. Pick a small plan to continue.'
+                                                            : 'Create a free account or sign in to unlock the complete worked answer.'}
+                                                    </p>
+                                                </div>
+                                                <div className="space-y-3 rounded-2xl border border-dashed border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950">
+                                                    <div className="h-3 w-5/6 rounded-full bg-slate-200/80 dark:bg-slate-800/80" />
+                                                    <div className="h-3 w-4/6 rounded-full bg-slate-200/80 dark:bg-slate-800/80" />
+                                                    <div className="h-3 w-2/3 rounded-full bg-slate-200/80 dark:bg-slate-800/80" />
+                                                    <div className="mt-3 rounded-xl border border-indigo-100 bg-indigo-50 p-3 text-xs font-medium text-indigo-800 dark:border-indigo-900/40 dark:bg-indigo-950/30 dark:text-indigo-200">
+                                                        The full worked solution will appear here after login.
+                                                    </div>
+                                                </div>
                                             </div>
                                         )}
                                     </div>
