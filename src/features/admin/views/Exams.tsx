@@ -17,6 +17,7 @@ import {
 import { supabase } from '../../../lib/supabase';
 import { Button } from '../../../components/Shared';
 import { ingestPastPaper } from '../../../services/geminiService';
+import { contentNotificationService } from '../../../services/contentNotificationService';
 import { ExamAnalysis } from '../../../types';
 interface Exam {
   id: string;
@@ -641,6 +642,14 @@ export const ExamsView: React.FC = () => {
           body: JSON.stringify({ record: insertedPaper }),
         }).catch((error) => console.error('Past paper indexing trigger failed:', error));
       }
+      if (publishDraftState && insertedPaper) {
+        contentNotificationService.notifyExamPaperPublished({
+          id: insertedPaper.id,
+          title: insertedPaper.title || title.trim(),
+          grade: insertedPaper.grade || grade.trim(),
+          subject: insertedPaper.subject || subject.trim(),
+        }).catch((error) => console.warn('Exam paper notification failed:', error));
+      }
       setShowAdd(false);
       resetForm();
       await fetchExams();
@@ -672,6 +681,12 @@ export const ExamsView: React.FC = () => {
       alert('Could not publish this paper: ' + error.message);
       return;
     }
+    contentNotificationService.notifyExamPaperPublished({
+      id: exam.id,
+      title: exam.title,
+      grade: exam.className,
+      subject: exam.subject,
+    }).catch((notifyError) => console.warn('Exam paper notification failed:', notifyError));
     setExams((current) =>
       current.map((item) => (item.id === exam.id ? { ...item, reviewStatus: 'PUBLISHED' } : item))
     );

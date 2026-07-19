@@ -5,6 +5,7 @@ import { Upload, FileText, Trash2, CheckCircle, Search, Filter, BookOpen, AlertT
 import { supabase } from '../../lib/supabase';
 import { Button, Card } from '../../components/Shared';
 import { AdminLayout } from './layout/AdminLayout';
+import { contentNotificationService } from '../../services/contentNotificationService';
 
 interface Document {
     id: number;
@@ -185,6 +186,15 @@ export const AdminKnowledgeBase: React.FC<AdminKnowledgeBaseProps> = ({ authStat
                     },
                     body: JSON.stringify({ record: newRecord })
                 }).catch(err => console.error("Ingestion trigger failed:", err));
+
+                if (newDocType === 'NOTES') {
+                    contentNotificationService.notifyLearningNotesPublished({
+                        id: newRecord.id,
+                        title: newRecord.title || newDocTitle,
+                        grade: newRecord.grade || newDocGrade,
+                        subject: newRecord.subject || newDocSubject,
+                    }).catch(error => console.warn('Learning notes notification failed:', error));
+                }
             }
 
             // 5. Reset Form & Refresh

@@ -21,6 +21,7 @@ import { TeacherRequestModal } from '../../components/TeacherRequestModal';
 import { GA_MEASUREMENT_ID } from '../../config/analytics';
 import { TutoringRequest } from '../../types';
 import { classroomService } from '../../services/classroomService';
+import { contentNotificationService } from '../../services/contentNotificationService';
 
 import { useNavigate, useLocation } from 'react-router-dom';
 import { PublishedExamShelf } from './PublishedExamShelf';
@@ -603,7 +604,16 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
             const body = type === 'QUIZ'
                 ? `Quiz Assigned: ${title}\nSubject: ${selectedSubject}\nClass: ${selectedClass}\nQuestions: ${Array.isArray(content?.questions) ? content.questions.length : 0}`
                 : `Lesson Notes Shared: ${title}\nSubject: ${selectedSubject}\nClass: ${selectedClass}`;
-            await classroomService.createPost(cls.id, teacherProfile.id, type === 'QUIZ' ? 'ASSIGNMENT' : 'ANNOUNCEMENT', body);
+            const post = await classroomService.createPost(cls.id, teacherProfile.id, type === 'QUIZ' ? 'ASSIGNMENT' : 'ANNOUNCEMENT', body);
+            contentNotificationService.notifyClassPostPublished({
+                id: post.id,
+                classId: cls.id,
+                title,
+                subject: selectedSubject,
+                className: selectedClass,
+                type,
+                teacherId: teacherProfile.id,
+            }).catch(error => console.warn('Class notification failed:', error));
             markWorkflowStepCompleted(
                 'PUBLISH_STREAM',
                 type === 'QUIZ' ? 'Step 3 complete: Assessment published to stream.' : 'Step 3 complete: Lesson shared to stream.',
