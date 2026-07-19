@@ -1408,6 +1408,20 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
     }
   }, [reviewComplete]);
 
+  const studentCodeLookupVariants = (raw?: string | null): string[] => {
+    const cleaned = String(raw || '').trim().toUpperCase().replace(/\s+/g, '');
+    if (!cleaned) return [];
+    const digits = cleaned.match(/\d+/)?.[0];
+    const variants = new Set<string>([cleaned]);
+    if (digits) {
+      variants.add(`SOMA-`);
+      variants.add(`SOM-`);
+      variants.add(`SOMA`);
+      variants.add(`SOM`);
+    }
+    return Array.from(variants);
+  };
+
   const restoreMissingCreditWallet = React.useCallback(async () => {
     if (learningCredits > 0) return false;
 
@@ -1421,7 +1435,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
       const { data: profile } = await supabase
         .from('profiles')
         .select('id')
-        .eq('student_id', savedStudentCode)
+        .in('student_id', studentCodeLookupVariants(savedStudentCode))
         .maybeSingle();
 
       return profile?.id || null;

@@ -40,6 +40,20 @@ export const PaymentFlow: React.FC<Props> = ({ plan, materialId, onSuccess, onCa
     const isCreditPackCheckout = Boolean(plan?.isCreditPack || String(plan?.id || '').startsWith('credit_'));
     const isSubscriptionCheckout = Boolean(plan?.segment === 'STUDENT' || plan?.segment === 'TEACHER') && plan?.id !== 'download_pack_5' && !materialId && !isCreditPackCheckout;
     
+    const studentCodeVariants = (raw?: string | null): string[] => {
+        const cleaned = String(raw || '').trim().toUpperCase().replace(/\s+/g, '');
+        if (!cleaned) return [];
+        const digits = cleaned.match(/\d+/)?.[0];
+        const variants = new Set<string>([cleaned]);
+        if (digits) {
+            variants.add(`SOMA-`);
+            variants.add(`SOM-`);
+            variants.add(`SOMA`);
+            variants.add(`SOM`);
+        }
+        return Array.from(variants);
+    };
+
     const getPlanLabel = (tier?: string | null) => {
         const t = String(tier || '').toUpperCase();
         if (t === 'DAILY') return 'Daily Plan';
@@ -278,7 +292,7 @@ export const PaymentFlow: React.FC<Props> = ({ plan, materialId, onSuccess, onCa
             const { data, error: lookupError } = await supabase
                 .from('profiles')
                 .select('id, full_name, email, parent_phone, student_id')
-                .eq('student_id', code)
+                .in('student_id', studentCodeVariants(code))
                 .maybeSingle();
 
             if (lookupError) throw lookupError;
