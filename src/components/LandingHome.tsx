@@ -675,8 +675,22 @@ export const LandingHome: React.FC<Props> = (props) => {
 
 const AskAkiliDemo: React.FC<Props> = (props) => {
   const [question, setQuestion] = React.useState('');
-  const openQuestion = () => {
-    const cleaned = question.trim();
+  const [demoView, setDemoView] = React.useState<'answer' | 'steps' | 'audio' | 'quiz' | 'note'>('answer');
+  const sampleQuestion = 'What is photosynthesis?';
+  const sampleAnswer = 'Photosynthesis is the process used by green plants to make their own food. They use sunlight, water, and carbon dioxide to produce glucose (food) and oxygen.';
+  const sampleSteps = [
+    'Plants trap sunlight using chlorophyll in the leaves.',
+    'They take in water from the roots and carbon dioxide from the air.',
+    'They make glucose for food and release oxygen.',
+  ];
+  const sampleQuiz = [
+    { q: 'What gas do plants take in for photosynthesis?', a: 'Carbon dioxide' },
+    { q: 'What part of the plant captures sunlight?', a: 'Chlorophyll in the leaves' },
+    { q: 'What is the main food made?', a: 'Glucose' },
+  ];
+
+  const openQuestion = (override?: string) => {
+    const cleaned = (override || question).trim();
     if (!cleaned) return;
     props.onTrack('ask_akili_home_question_submitted', {
       source: 'landing_hero',
@@ -684,6 +698,13 @@ const AskAkiliDemo: React.FC<Props> = (props) => {
     });
     props.onAskQuestion(cleaned);
     setQuestion('');
+  };
+
+  const showSampleQuestion = (view: 'answer' | 'steps' | 'audio' | 'quiz' | 'note') => {
+    setDemoView(view);
+    if (!question.trim()) {
+      setQuestion(sampleQuestion);
+    }
   };
 
   return (
@@ -720,7 +741,7 @@ const AskAkiliDemo: React.FC<Props> = (props) => {
           />
           <button
             type="button"
-            onClick={openQuestion}
+            onClick={() => openQuestion()}
             disabled={!question.trim()}
             className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-blue-600 text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
             aria-label="Send question"
@@ -728,23 +749,66 @@ const AskAkiliDemo: React.FC<Props> = (props) => {
             <ArrowRight className="h-4 w-4" />
           </button>
         </div>
+
         <div className="rounded-lg border border-blue-200 bg-blue-50/50 px-3 py-2.5 text-sm font-bold text-slate-800">
-          What is photosynthesis?
+          {sampleQuestion}
         </div>
-        <div className="rounded-lg border border-emerald-200 bg-emerald-50/60 p-3">
-          <p className="text-sm font-semibold leading-6 text-[#15214d]">
-            Photosynthesis is the process used by green plants to make their own food. They use
-            sunlight, water, and carbon dioxide to produce glucose (food) and oxygen.
-          </p>
+
+        <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+          {demoView === 'answer' && (
+            <p className="text-sm font-semibold leading-6 text-[#15214d]">
+              {sampleAnswer}
+            </p>
+          )}
+          {demoView === 'steps' && (
+            <ol className="space-y-2 text-sm font-medium leading-6 text-[#15214d]">
+              {sampleSteps.map((step, index) => (
+                <li key={step} className="flex gap-2">
+                  <span className="font-black text-blue-600">{index + 1}.</span>
+                  <span>{step}</span>
+                </li>
+              ))}
+            </ol>
+          )}
+          {demoView === 'audio' && (
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-emerald-700 font-black text-xs uppercase tracking-[0.18em]">
+                <Volume2 className="h-4 w-4" /> Akili reading
+              </div>
+              <p className="text-sm font-semibold leading-6 text-[#15214d]">
+                Today we are learning about photosynthesis. Plants use sunlight, water and carbon dioxide to make food and release oxygen.
+              </p>
+            </div>
+          )}
+          {demoView === 'quiz' && (
+            <div className="space-y-2">
+              <p className="text-xs font-black uppercase tracking-[0.18em] text-violet-600">Quick check</p>
+              <div className="space-y-2">
+                {sampleQuiz.map((item, index) => (
+                  <div key={item.q} className="rounded-md border border-violet-100 bg-white px-3 py-2">
+                    <p className="text-xs font-bold text-slate-900">{index + 1}. {item.q}</p>
+                    <p className="text-[11px] text-slate-500">Answer: {item.a}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          {demoView === 'note' && (
+            <div className="space-y-2">
+              <p className="text-xs font-black uppercase tracking-[0.18em] text-blue-600">Saved note preview</p>
+              <p className="text-sm font-semibold leading-6 text-[#15214d]">
+                Saved to your notebook: Photosynthesis - summary points, step-by-step guide, and full explanation.
+              </p>
+            </div>
+          )}
         </div>
+
         <div className="grid grid-cols-2 gap-2">
           <button
             onClick={() => {
-              if (question.trim()) {
-                openQuestion();
-              } else {
-                props.onLearnerShortcut('SMART_TUTOR', 'ask_akili');
-              }
+              setDemoView('steps');
+              openQuestion(sampleQuestion);
+              props.onLearnerShortcut('SMART_TUTOR', 'ask_akili');
             }}
             className="flex min-h-11 items-center justify-center gap-2 rounded-lg border border-slate-200 px-2 text-xs font-bold text-slate-800 hover:bg-slate-50"
           >
@@ -752,6 +816,7 @@ const AskAkiliDemo: React.FC<Props> = (props) => {
           </button>
           <button
             onClick={() => {
+              setDemoView('audio');
               props.onTrack('listen_demo_clicked', { source: 'ask_akili_demo' });
               props.onLearnerShortcut('TALKBACK', 'listen_and_learn');
             }}
@@ -760,13 +825,18 @@ const AskAkiliDemo: React.FC<Props> = (props) => {
             <Volume2 className="h-4 w-4 text-emerald-600" /> Hear Akili Read
           </button>
           <button
-            onClick={() => props.onLearnerShortcut('SUBJECTS', 'exam_prep_papers')}
+            onClick={() => {
+              setDemoView('quiz');
+              props.onTrack('ask_akili_demo_quiz_clicked', { source: 'ask_akili_demo' });
+              props.onLearnerShortcut('SUBJECTS', 'exam_prep_papers');
+            }}
             className="flex min-h-11 items-center justify-center gap-2 rounded-lg border border-slate-200 px-2 text-xs font-bold text-slate-800 hover:bg-slate-50"
           >
             <CircleHelp className="h-4 w-4 text-violet-600" /> Test Me
           </button>
           <button
             onClick={() => {
+              setDemoView('note');
               props.onTrack('save_to_notebook_demo_clicked', { source: 'ask_akili_demo' });
               props.onLearnerShortcut('NOTEBOOK');
             }}
@@ -778,9 +848,7 @@ const AskAkiliDemo: React.FC<Props> = (props) => {
       </div>
     </div>
   );
-};
-
-const ToolsSection: React.FC<{
+};const ToolsSection: React.FC<{
   onTeacher: () => void;
   onLibrary: () => void;
   onLearnerShortcut: (
@@ -996,5 +1064,6 @@ const TrustStrip = () => (
     </div>
   </section>
 );
+
 
 
