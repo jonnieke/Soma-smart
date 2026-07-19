@@ -2151,24 +2151,24 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
             )}
 
             {/* --- FINAL DECISION CTA --- */}
-            <section className="bg-white py-14 dark:bg-slate-950">
+                        <section className="bg-white py-14">
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                    <div className="rounded-[2rem] border border-slate-200 bg-slate-950 p-6 text-white shadow-2xl shadow-slate-300/40 dark:border-slate-800 dark:bg-slate-900 dark:shadow-black/30 sm:p-8 lg:p-10">
+                    <div className="rounded-[2rem] border border-slate-200 bg-slate-50 p-6 text-slate-900 shadow-lg shadow-slate-200/60 sm:p-8 lg:p-10">
                         <div className="flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between">
                             <div className="max-w-2xl">
-                                <p className="text-[11px] font-black uppercase tracking-[0.24em] text-emerald-300">No sign-up required to start</p>
+                                <p className="text-[11px] font-black uppercase tracking-[0.24em] text-indigo-600">No sign-up required to start</p>
                                 <h2 className="mt-3 text-3xl font-black tracking-tight sm:text-4xl">
                                     Open the app. Solve a real problem in the next 2 minutes.
                                 </h2>
-                                <p className="mt-4 text-base font-medium leading-relaxed text-slate-300">
-                                    A learner can solve one hard question, a teacher can prepare one lesson, and a parent can check whether study is actually happening â€” right now, for free.
+                                <p className="mt-4 text-base font-medium leading-relaxed text-slate-600">
+                                    A learner can solve one hard question, a teacher can prepare one lesson, and a parent can check whether study is actually happening — right now, for free.
                                 </p>
                             </div>
 
                             <div className="grid gap-3 sm:grid-cols-3 lg:min-w-[520px]">
                                 <button
                                     onClick={() => handleFeatureLaunch('final_cta_learner', () => handleLearnerQuickStart('SMART_TUTOR', 'ask_akili'))}
-                                    className="rounded-2xl bg-white p-4 text-left text-slate-950 transition-all hover:-translate-y-0.5 hover:bg-indigo-50"
+                                    className="rounded-2xl border border-slate-200 bg-white p-4 text-left text-slate-950 shadow-sm transition-all hover:-translate-y-0.5 hover:border-indigo-300 hover:bg-indigo-50"
                                 >
                                     <GraduationCap className="h-6 w-6 text-indigo-600" />
                                     <span className="mt-3 block text-sm font-black">Learner</span>
@@ -2176,7 +2176,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                 </button>
                                 <button
                                     onClick={() => handleFeatureLaunch('final_cta_teacher', () => handleRoleSelect(UserRole.TEACHER))}
-                                    className="rounded-2xl bg-white p-4 text-left text-slate-950 transition-all hover:-translate-y-0.5 hover:bg-emerald-50"
+                                    className="rounded-2xl border border-slate-200 bg-white p-4 text-left text-slate-950 shadow-sm transition-all hover:-translate-y-0.5 hover:border-emerald-300 hover:bg-emerald-50"
                                 >
                                     <School className="h-6 w-6 text-emerald-600" />
                                     <span className="mt-3 block text-sm font-black">Teacher</span>
@@ -2184,7 +2184,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                 </button>
                                 <button
                                     onClick={() => handleFeatureLaunch('final_cta_parent', () => navigate('/parent'))}
-                                    className="rounded-2xl bg-white p-4 text-left text-slate-950 transition-all hover:-translate-y-0.5 hover:bg-purple-50"
+                                    className="rounded-2xl border border-slate-200 bg-white p-4 text-left text-slate-950 shadow-sm transition-all hover:-translate-y-0.5 hover:border-purple-300 hover:bg-purple-50"
                                 >
                                     <Users className="h-6 w-6 text-purple-600" />
                                     <span className="mt-3 block text-sm font-black">Parent</span>
@@ -2677,4 +2677,5 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
         </div>
     );
 };
+
 
