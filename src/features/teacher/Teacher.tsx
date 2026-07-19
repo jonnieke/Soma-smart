@@ -13,6 +13,7 @@ import { LoginModal } from '../../components/LoginModal';
 import { LogoutModal } from '../../components/LogoutModal';
 import { RegistrationModal } from '../../components/RegistrationModal';
 import { TeacherLanding } from '../../components/TeacherLanding';
+import { NotificationBell } from '../../components/NotificationBell';
 import { useApp } from '../../context/AppContext';
 import { ViewState, TeacherNote, QuizData, TeacherActivity, SubscriptionPlan, ChatMessage } from '../../types';
 import { PaymentFlow } from '../subscription/PaymentFlow';
@@ -1090,14 +1091,17 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
 
                     {/* Right: Actions Menu */}
                     <div className="flex items-center gap-6">
-                        {/* Notification Bell */}
-                        <div className="relative cursor-pointer text-slate-500 hover:text-slate-900 transition-colors">
-                            <Bell className="w-5 h-5" />
-                            {launchFeatures.tutoring && activeTutoringRequests.filter(r => r.status === 'PENDING').length > 0 && (
-                                <span className="absolute top-0 right-0 w-2 h-2 bg-amber-500 rounded-full border border-white"></span>
-                            )}
-                        </div>
+                        <NotificationBell variant="teacher" />
 
+                        {launchFeatures.tutoring && activeTutoringRequests.filter(r => r.status === 'PENDING').length > 0 && (
+                            <button
+                                type="button"
+                                onClick={() => setActiveTab('DASHBOARD')}
+                                className="rounded-full border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] font-black uppercase tracking-wider text-amber-700 hover:bg-amber-100"
+                            >
+                                New request
+                            </button>
+                        )}
 
 
                         {/* Wallet - De-emphasized */}

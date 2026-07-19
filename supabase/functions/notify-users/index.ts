@@ -21,14 +21,10 @@ const cleanArray = (value: unknown, fallback: string[]) => {
 type DeliveryJob = {
   id: string;
   channel: string;
-  recipient_email: string | null;
-  recipient_phone: string | null;
-  payload: {
-    title?: string;
-    body?: string;
-    actionUrl?: string;
-    itemType?: string;
-  } | null;
+  recipient: string;
+  title: string;
+  body: string;
+  action_url: string | null;
   attempts: number | null;
 };
 
@@ -43,7 +39,7 @@ const providerMissing = (provider: string) => ({
 const sendResendEmail = async (job: DeliveryJob) => {
   const apiKey = Deno.env.get('RESEND_API_KEY');
   const from = Deno.env.get('NOTIFICATION_EMAIL_FROM') || 'SomaAI <noreply@somaai.co.ke>';
-  if (!apiKey || !job.recipient_email) return providerMissing('resend');
+  if (!apiKey || !job.recipient) return providerMissing('resend');
 
   const response = await fetch('https://api.resend.com/emails', {
     method: 'POST',
@@ -53,13 +49,13 @@ const sendResendEmail = async (job: DeliveryJob) => {
     },
     body: JSON.stringify({
       from,
-      to: [job.recipient_email],
-      subject: job.payload?.title || 'New SomaAI learning update',
+      to: [job.recipient],
+      subject: job.title || 'New SomaAI learning update',
       html: `
         <div style="font-family:Arial,sans-serif;line-height:1.6;color:#172033">
-          <h2>${job.payload?.title || 'New SomaAI learning update'}</h2>
-          <p>${job.payload?.body || ''}</p>
-          ${job.payload?.actionUrl ? `<p><a href="${job.payload.actionUrl}">Open in SomaAI</a></p>` : ''}
+          <h2>${job.title || 'New SomaAI learning update'}</h2>
+          <p>${job.body || ''}</p>
+          ${job.action_url ? `<p><a href="${job.action_url}">Open in SomaAI</a></p>` : ''}
         </div>
       `,
     }),
@@ -74,14 +70,14 @@ const sendAfricasTalkingSms = async (job: DeliveryJob) => {
   const username = Deno.env.get('AFRICASTALKING_USERNAME');
   const apiKey = Deno.env.get('AFRICASTALKING_API_KEY');
   const from = Deno.env.get('AFRICASTALKING_SENDER_ID') || undefined;
-  if (!username || !apiKey || !job.recipient_phone) return providerMissing('africastalking');
+  if (!username || !apiKey || !job.recipient) return providerMissing('africastalking');
 
-  const message = `${job.payload?.title || 'SomaAI update'}\n${job.payload?.body || ''}${
-    job.payload?.actionUrl ? `\n${job.payload.actionUrl}` : ''
+  const message = `${job.title || 'SomaAI update'}\n${job.body || ''}${
+    job.action_url ? `\n${job.action_url}` : ''
   }`;
   const form = new URLSearchParams();
   form.set('username', username);
-  form.set('to', job.recipient_phone);
+  form.set('to', job.recipient);
   form.set('message', message.slice(0, 640));
   if (from) form.set('from', from);
 
@@ -109,10 +105,10 @@ const sendAfricasTalkingSms = async (job: DeliveryJob) => {
 const sendWhatsAppCloud = async (job: DeliveryJob) => {
   const token = Deno.env.get('WHATSAPP_CLOUD_TOKEN');
   const phoneNumberId = Deno.env.get('WHATSAPP_PHONE_NUMBER_ID');
-  if (!token || !phoneNumberId || !job.recipient_phone) return providerMissing('whatsapp_cloud');
+  if (!token || !phoneNumberId || !job.recipient) return providerMissing('whatsapp_cloud');
 
-  const text = `${job.payload?.title || 'SomaAI update'}\n${job.payload?.body || ''}${
-    job.payload?.actionUrl ? `\n${job.payload.actionUrl}` : ''
+  const text = `${job.title || 'SomaAI update'}\n${job.body || ''}${
+    job.action_url ? `\n${job.action_url}` : ''
   }`;
 
   const response = await fetch(`https://graph.facebook.com/v20.0/${phoneNumberId}/messages`, {
@@ -123,7 +119,7 @@ const sendWhatsAppCloud = async (job: DeliveryJob) => {
     },
     body: JSON.stringify({
       messaging_product: 'whatsapp',
-      to: job.recipient_phone,
+      to: job.recipient,
       type: 'text',
       text: { preview_url: true, body: text.slice(0, 1000) },
     }),
@@ -143,7 +139,7 @@ const sendWhatsAppCloud = async (job: DeliveryJob) => {
 const dispatchDeliveryJobs = async (supabase: any, eventId: string) => {
   const { data: jobs, error } = await supabase
     .from('notification_delivery_jobs')
-    .select('id, channel, recipient_email, recipient_phone, payload, attempts')
+    .select('id, channel, recipient, title, body, action_url, attempts')
     .eq('event_id', eventId)
     .eq('status', 'PENDING')
     .limit(50);
@@ -176,7 +172,7 @@ const dispatchDeliveryJobs = async (supabase: any, eventId: string) => {
             provider_message_id: result.providerMessageId,
             attempts: (job.attempts || 0) + 1,
             sent_at: new Date().toISOString(),
-            last_error: null,
+            error: null,
           })
           .eq('id', job.id);
       }
@@ -187,7 +183,7 @@ const dispatchDeliveryJobs = async (supabase: any, eventId: string) => {
         .update({
           status: 'FAILED',
           attempts: (job.attempts || 0) + 1,
-          last_error: error instanceof Error ? error.message : 'Delivery failed',
+          error: error instanceof Error ? error.message : 'Delivery failed',
         })
         .eq('id', job.id);
     }

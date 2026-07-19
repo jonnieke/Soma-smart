@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import mascotImage from '../../../assets/images/somo_mascot.png';
 import scienceImage from '../../../assets/images/hero_science_lab.webp';
+import { NotificationBell } from '../../../components/NotificationBell';
 
 export type LearnerHomeSubject = {
   name: string;
@@ -251,6 +252,7 @@ export const LearnerHome: React.FC<LearnerHomeProps> = ({
           </button>
           <div className="hidden lg:block" />
           <div className="flex items-center gap-2 sm:gap-3">
+            <NotificationBell />
             <button type="button" onClick={onProfile} className="flex h-11 items-center gap-2 rounded-2xl border border-[#dcd7f8] bg-white px-3 text-sm font-semibold sm:px-5">
               <span>{grade || 'Grade 7'}</span>
               <ChevronDown className="h-4 w-4" />
