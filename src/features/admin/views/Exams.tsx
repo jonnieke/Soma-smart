@@ -8,6 +8,7 @@ import {
   FileCheck2,
   FileText,
   Loader2,
+  Pencil,
   Plus,
   Search,
   Sparkles,
@@ -32,7 +33,10 @@ interface Exam {
   examBody?: string | null;
   examType?: string | null;
   examYear?: number | null;
+  paperCode?: string | null;
   paperNumber?: string | null;
+  durationMinutes?: number | null;
+  totalMarks?: number | null;
   reviewStatus: 'DRAFT' | 'PUBLISHED';
   indexingStatus: 'PENDING' | 'PROCESSING' | 'READY' | 'FAILED';
   lastIndexError?: string | null;
@@ -114,6 +118,19 @@ export const ExamsView: React.FC = () => {
   const [attachmentExam, setAttachmentExam] = useState<Exam | null>(null);
   const [attachmentPaperFile, setAttachmentPaperFile] = useState<File | null>(null);
   const [attachmentSchemeFile, setAttachmentSchemeFile] = useState<File | null>(null);
+  const [editingExam, setEditingExam] = useState<Exam | null>(null);
+  const [editTitle, setEditTitle] = useState('');
+  const [editSubject, setEditSubject] = useState('Mathematics');
+  const [editGrade, setEditGrade] = useState('Form 4');
+  const [editExamBody, setEditExamBody] = useState('SomaAI');
+  const [editExamType, setEditExamType] = useState<'KCSE' | 'KPSEA' | 'KJSEA' | 'OTHER'>('OTHER');
+  const [editExamYear, setEditExamYear] = useState(String(currentYear));
+  const [editPaperCode, setEditPaperCode] = useState('');
+  const [editPaperNumber, setEditPaperNumber] = useState('');
+  const [editDurationMinutes, setEditDurationMinutes] = useState('');
+  const [editTotalMarks, setEditTotalMarks] = useState('');
+  const [editReviewStatus, setEditReviewStatus] = useState<'DRAFT' | 'PUBLISHED'>('DRAFT');
+  const [editHomepageFeatured, setEditHomepageFeatured] = useState(false);
   const buildStructuredTemplate = () =>
     JSON.stringify(
       {
@@ -191,6 +208,73 @@ export const ExamsView: React.FC = () => {
     setAttachmentExam(null);
     setAttachmentPaperFile(null);
     setAttachmentSchemeFile(null);
+  };
+  const openEditModal = (exam: Exam) => {
+    setEditingExam(exam);
+    setEditTitle(exam.title || '');
+    setEditSubject(exam.subject || 'Mathematics');
+    setEditGrade(exam.className || 'Form 4');
+    setEditExamBody(exam.examBody || 'SomaAI');
+    setEditExamType(normalizeExamType(exam.examType));
+    setEditExamYear(exam.examYear ? String(exam.examYear) : String(currentYear));
+    setEditPaperCode(exam.paperCode || '');
+    setEditPaperNumber(exam.paperNumber || '');
+    setEditDurationMinutes(exam.durationMinutes ? String(exam.durationMinutes) : '');
+    setEditTotalMarks(exam.totalMarks ? String(exam.totalMarks) : '');
+    setEditReviewStatus(exam.reviewStatus);
+    setEditHomepageFeatured(Boolean(exam.homepageFeatured));
+  };
+  const closeEditModal = () => {
+    if (saving) return;
+    setEditingExam(null);
+  };
+  const saveExamMetadata = async () => {
+    if (!editingExam || saving) return;
+    if (!editTitle.trim() || !editSubject.trim() || !editGrade.trim()) {
+      alert('Title, subject, and grade are required.');
+      return;
+    }
+    setSaving(true);
+    try {
+      const resolvedYear = Number(editExamYear);
+      const resolvedDuration = Number(editDurationMinutes);
+      const resolvedMarks = Number(editTotalMarks);
+      const updates = {
+        title: editTitle.trim(),
+        grade: editGrade.trim(),
+        subject: editSubject.trim(),
+        exam_body: editExamBody.trim() || null,
+        exam_type: editExamType,
+        exam_year: Number.isFinite(resolvedYear) ? resolvedYear : null,
+        paper_code: editPaperCode.trim() || null,
+        paper_number: editPaperNumber.trim() || null,
+        duration_minutes: Number.isFinite(resolvedDuration) && resolvedDuration > 0 ? resolvedDuration : null,
+        total_marks: Number.isFinite(resolvedMarks) && resolvedMarks >= 0 ? resolvedMarks : null,
+        review_status: editReviewStatus,
+        homepage_featured: editReviewStatus === 'PUBLISHED' && editHomepageFeatured,
+      };
+      const { error } = await supabase
+        .from('knowledge_base')
+        .update(updates)
+        .eq('id', editingExam.id);
+      if (error) throw error;
+      if (editReviewStatus === 'PUBLISHED' && editingExam.reviewStatus !== 'PUBLISHED') {
+        contentNotificationService.notifyExamPaperPublished({
+          id: editingExam.id,
+          title: updates.title,
+          grade: updates.grade,
+          subject: updates.subject,
+        }).catch((notifyError) => console.warn('Exam paper notification failed:', notifyError));
+      }
+      setEditingExam(null);
+      await fetchExams();
+    } catch (error) {
+      console.error('Update exam metadata failed:', error);
+      const message = error instanceof Error ? error.message : 'Unknown update error';
+      alert('Failed to update exam package. ' + message);
+    } finally {
+      setSaving(false);
+    }
   };
   const buildExamStorageMeta = (paperTitle: string, paperExamType: string | null | undefined, paperExamYear: number | null | undefined, paperSubject: string) => {
     const safeTitle =
@@ -292,7 +376,10 @@ export const ExamsView: React.FC = () => {
         examBody: row.exam_body || row.examBody || null,
         examType: row.exam_type,
         examYear: row.exam_year,
+        paperCode: row.paper_code,
         paperNumber: row.paper_number,
+        durationMinutes: row.duration_minutes,
+        totalMarks: row.total_marks,
         reviewStatus: (row.review_status === 'DRAFT' ? 'DRAFT' : 'PUBLISHED') as Exam['reviewStatus'],
         indexingStatus: ['PROCESSING', 'READY', 'FAILED'].includes(row.indexing_status)
           ? row.indexing_status
@@ -310,7 +397,7 @@ export const ExamsView: React.FC = () => {
         supabase
           .from('knowledge_base')
           .select(
-            'id, title, subject, grade, file_url, file_path, marking_scheme_url, marking_scheme_path, exam_body, exam_type, exam_year, paper_number, review_status, structured_questions, indexing_status, last_index_error, source, is_official, homepage_featured, created_at'
+            'id, title, subject, grade, file_url, file_path, marking_scheme_url, marking_scheme_path, exam_body, exam_type, exam_year, paper_code, paper_number, duration_minutes, total_marks, review_status, structured_questions, indexing_status, last_index_error, source, is_official, homepage_featured, created_at'
           )
           .eq('type', 'PAST_PAPER')
           .order('created_at', { ascending: false }),
@@ -927,6 +1014,14 @@ export const ExamsView: React.FC = () => {
                     </button>
                   )}
                   <button
+                    onClick={() => openEditModal(exam)}
+                    title="Edit paper details"
+                    className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-100"
+                  >
+                    <Pencil className="h-4 w-4" />
+                    Edit
+                  </button>
+                  <button
                     onClick={() => {
                       setAttachmentExam(exam);
                       setAttachmentPaperFile(null);
@@ -988,6 +1083,122 @@ export const ExamsView: React.FC = () => {
         )}
       </div>
       <AnimatePresence>
+        {Boolean(editingExam) && (
+          <div
+            className="fixed inset-0 z-[102] flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm"
+            onClick={closeEditModal}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.96, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.96, y: 20 }}
+              onClick={(event) => event.stopPropagation()}
+              className="max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-3xl bg-white shadow-2xl"
+            >
+              <div className="p-6 sm:p-8">
+                <h3 className="flex items-center gap-2 text-2xl font-bold text-slate-900">
+                  <Pencil className="h-6 w-6 text-indigo-600" /> Edit Exam Package
+                </h3>
+                <p className="mt-2 text-sm text-slate-500">
+                  Update the public paper labels and revision metadata. This does not replace the uploaded PDF or marking scheme.
+                </p>
+
+                <div className="mt-6 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                  <Field
+                    label="Exam title"
+                    value={editTitle}
+                    onChange={setEditTitle}
+                    className="lg:col-span-2"
+                  />
+                  <Field label="Grade / level" value={editGrade} onChange={setEditGrade} />
+                  <SelectField
+                    label="Exam body (optional)"
+                    value={editExamBody}
+                    onChange={setEditExamBody}
+                    options={EXAM_BODIES}
+                  />
+                  <SelectField
+                    label="Exam level"
+                    value={editExamType}
+                    onChange={(value) => setEditExamType(value as typeof editExamType)}
+                    options={['KCSE', 'KPSEA', 'KJSEA', 'OTHER']}
+                  />
+                  <SelectField label="Subject" value={editSubject} onChange={setEditSubject} options={SUBJECTS} />
+                  <Field label="Year" value={editExamYear} onChange={setEditExamYear} type="number" />
+                  <Field
+                    label="Paper code"
+                    value={editPaperCode}
+                    onChange={setEditPaperCode}
+                    placeholder="e.g. 121/1"
+                  />
+                  <Field
+                    label="Paper number"
+                    value={editPaperNumber}
+                    onChange={setEditPaperNumber}
+                    placeholder="e.g. 1"
+                  />
+                  <Field
+                    label="Duration (minutes)"
+                    value={editDurationMinutes}
+                    onChange={setEditDurationMinutes}
+                    type="number"
+                  />
+                  <Field
+                    label="Total marks"
+                    value={editTotalMarks}
+                    onChange={setEditTotalMarks}
+                    type="number"
+                  />
+                  <SelectField
+                    label="Publish state"
+                    value={editReviewStatus}
+                    onChange={(value) => setEditReviewStatus(value as typeof editReviewStatus)}
+                    options={['DRAFT', 'PUBLISHED']}
+                  />
+                </div>
+
+                <label className="mt-5 flex cursor-pointer items-start gap-3 rounded-2xl border border-indigo-200 bg-indigo-50/50 p-4">
+                  <input
+                    type="checkbox"
+                    checked={editHomepageFeatured}
+                    disabled={editReviewStatus !== 'PUBLISHED'}
+                    onChange={(event) => setEditHomepageFeatured(event.target.checked)}
+                    className="mt-1 h-4 w-4"
+                  />
+                  <span>
+                    <span className="block text-sm font-bold text-slate-800">
+                      Feature on homepage carousel
+                    </span>
+                    <span className="block text-xs text-slate-500">
+                      Only published papers can appear on the customer-facing homepage.
+                    </span>
+                  </span>
+                </label>
+
+                <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
+                  Need to change the actual document? Use Replace Exam Paper or Attach Marking Scheme on the card after saving these details.
+                </div>
+
+                <div className="mt-6 flex justify-end gap-3 border-t border-slate-100 pt-5">
+                  <button
+                    disabled={saving}
+                    onClick={closeEditModal}
+                    className="rounded-xl px-5 py-2 font-bold text-slate-500 hover:bg-slate-50"
+                  >
+                    Cancel
+                  </button>
+                  <Button
+                    onClick={saveExamMetadata}
+                    isLoading={saving}
+                    className="bg-indigo-600 px-7 text-white"
+                  >
+                    Save changes
+                  </Button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
         {Boolean(attachmentExam) && (
           <div
             className="fixed inset-0 z-[101] flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm"
