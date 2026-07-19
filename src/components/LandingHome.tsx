@@ -676,8 +676,11 @@ export const LandingHome: React.FC<Props> = (props) => {
 const AskAkiliDemo: React.FC<Props> = (props) => {
   const [question, setQuestion] = React.useState('');
   const [demoView, setDemoView] = React.useState<'answer' | 'steps' | 'audio' | 'quiz' | 'note'>('answer');
+  const [isSampleAudioPlaying, setIsSampleAudioPlaying] = React.useState(false);
+  const [sampleAudioMessage, setSampleAudioMessage] = React.useState('Tap Hear it to play a short spoken preview.');
   const sampleQuestion = 'What is photosynthesis?';
   const sampleAnswer = 'Photosynthesis is the process used by green plants to make their own food. They use sunlight, water, and carbon dioxide to produce glucose (food) and oxygen.';
+  const sampleAudioText = 'Akili says: Photosynthesis is how green plants make their own food. They use sunlight, water and carbon dioxide to make glucose, which is food for the plant. Oxygen is released into the air.';
   const sampleSteps = [
     'Plants trap sunlight using chlorophyll in the leaves.',
     'They take in water from the roots and carbon dioxide from the air.',
@@ -706,6 +709,42 @@ const AskAkiliDemo: React.FC<Props> = (props) => {
       setQuestion(sampleQuestion);
     }
   };
+
+  const playSampleAudio = React.useCallback(() => {
+    showSampleQuestion('audio');
+    props.onTrack('listen_demo_clicked', { source: 'ask_akili_demo' });
+
+    if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
+      setSampleAudioMessage('Audio preview is not supported in this browser. The written answer is still shown below.');
+      setIsSampleAudioPlaying(false);
+      return;
+    }
+
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(sampleAudioText);
+    utterance.lang = 'en-KE';
+    utterance.rate = 0.92;
+    utterance.pitch = 1;
+    utterance.onstart = () => {
+      setIsSampleAudioPlaying(true);
+      setSampleAudioMessage('Playing Akili audio preview...');
+    };
+    utterance.onend = () => {
+      setIsSampleAudioPlaying(false);
+      setSampleAudioMessage('Preview complete. Tap Hear it to listen again.');
+    };
+    utterance.onerror = () => {
+      setIsSampleAudioPlaying(false);
+      setSampleAudioMessage('We could not play the audio preview. The written answer is still shown below.');
+    };
+    window.speechSynthesis.speak(utterance);
+  }, [props, question, sampleAudioText]);
+
+  React.useEffect(() => () => {
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+    }
+  }, []);
 
   return (
     <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl shadow-slate-300/60">
@@ -778,6 +817,9 @@ const AskAkiliDemo: React.FC<Props> = (props) => {
               <p className="text-sm font-semibold leading-6 text-[#15214d]">
                 Today we are learning about photosynthesis. Plants use sunlight, water and carbon dioxide to make food and release oxygen.
               </p>
+              <p className={`rounded-lg px-3 py-2 text-xs font-bold ${isSampleAudioPlaying ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-600'}` }>
+                {sampleAudioMessage}
+              </p>
             </div>
           )}
           {demoView === 'quiz' && (
@@ -818,10 +860,7 @@ const AskAkiliDemo: React.FC<Props> = (props) => {
             <span className="text-[11px] font-semibold leading-4 text-slate-500">Show 3 photosynthesis steps</span>
           </button>
           <button
-            onClick={() => {
-              showSampleQuestion('audio');
-              props.onTrack('listen_demo_clicked', { source: 'ask_akili_demo' });
-            }}
+            onClick={playSampleAudio}
             aria-pressed={demoView === 'audio'}
             className={`flex min-h-16 flex-col items-start justify-center gap-1 rounded-lg border px-3 py-2 text-left transition ${demoView === 'audio' ? 'border-emerald-300 bg-emerald-50 text-emerald-800 shadow-sm' : 'border-slate-200 text-slate-800 hover:bg-slate-50'}`}
           >
