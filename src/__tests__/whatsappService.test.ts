@@ -44,10 +44,11 @@ describe('WhatsApp learning shares', () => {
       grade: 'Grade 7',
     });
 
-    expect(message).toContain('*Akili explained it*');
-    expect(message).toContain('*Why leaves are green*');
+    expect(message).toContain('Akili explained it');
+    expect(message).toContain('Why leaves are green');
+    expect(message).not.toContain('*');
     expect(message).toContain('Biology | Grade 7');
-    expect(message).toContain('*Key points*');
+    expect(message).toContain('Key points');
     expect(message.length).toBeLessThanOrEqual(1800);
   });
   it('formats a weekly progress update without private account identifiers', () => {

@@ -41,6 +41,7 @@ type Props = {
   onTeacher: () => void;
   onParent: () => void;
   onLibrary: () => void;
+  onExamPapers: (paperId?: string | number) => void;
   onSomaGuide: () => void;
   onRevision: () => void;
   onStartPaper: (paperId: string | number) => void;
@@ -68,6 +69,8 @@ type Props = {
     marking_scheme_path?: string | null;
     markingSchemeUrl?: string | null;
     markingSchemePath?: string | null;
+    has_exam_paper?: boolean;
+    has_marking_scheme?: boolean;
   }>;
 };
 
@@ -176,6 +179,13 @@ export const LandingHome: React.FC<Props> = (props) => {
     ['Teachers', props.onTeacher],
     ['Parents', props.onParent],
     [
+      'Exam Papers',
+      () => {
+        props.onTrack('exam_paper_bank_clicked', { source: 'landing_header' });
+        props.onExamPapers();
+      },
+    ],
+    [
       'Library',
       () => {
         props.onTrack('library_nav_clicked', { source: 'landing_header' });
@@ -198,6 +208,7 @@ export const LandingHome: React.FC<Props> = (props) => {
   const resolvePaperUrl = (paper: NonNullable<Props['latestPapers']>[number]) => {
     const directUrl = String(paper.file_url || paper.fileUrl || '').trim();
     if (directUrl) return directUrl;
+    if (paper.has_exam_paper) return 'available';
 
     const filePath = String(paper.file_path || paper.filePath || '').trim();
     if (!filePath) return '';
@@ -215,6 +226,7 @@ export const LandingHome: React.FC<Props> = (props) => {
   const resolveMarkingSchemeUrl = (paper: NonNullable<Props['latestPapers']>[number]) => {
     const directUrl = String(paper.marking_scheme_url || paper.markingSchemeUrl || '').trim();
     if (directUrl) return directUrl;
+    if (paper.has_marking_scheme) return 'available';
 
     const filePath = String(paper.marking_scheme_path || paper.markingSchemePath || '').trim();
     if (!filePath) return '';
@@ -231,7 +243,7 @@ export const LandingHome: React.FC<Props> = (props) => {
 
   const buildPaperAttemptUrl = (paper: NonNullable<Props['latestPapers']>[number]) => {
     const paperId = encodeURIComponent(String(paper.id));
-    return `${window.location.origin}/revision/dashboard?paper=${paperId}`;
+    return `${window.location.origin}/exam-papers?paper=${paperId}`;
   };
 
   const previewMarkingScheme = (paper: NonNullable<Props['latestPapers']>[number]) => {
@@ -249,8 +261,8 @@ export const LandingHome: React.FC<Props> = (props) => {
     const payload = {
       title: String(paper.title || 'SomaAI paper'),
       text: pdfUrl
-        ? `${paper.title || 'SomaAI paper'} - open the exam paper in Soma AI revision`
-        : `${paper.title || 'SomaAI paper'} - open this paper in Soma AI revision`,
+        ? `${paper.title || 'SomaAI paper'} - get the exam paper and marking scheme from Soma AI`
+        : `${paper.title || 'SomaAI paper'} - view this paper in the Soma AI Exam Paper Bank`,
       url,
     };
 
@@ -431,10 +443,10 @@ export const LandingHome: React.FC<Props> = (props) => {
             </div>
             <div className="flex flex-wrap gap-2">
               <button
-                onClick={props.onLibrary}
+                onClick={() => props.onExamPapers()}
                 className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 shadow-sm transition hover:-translate-y-0.5 hover:border-blue-300 hover:text-blue-600"
               >
-                Open Library
+                Exam Paper Bank
               </button>
               <button
                 onClick={props.onRevision}
@@ -477,11 +489,11 @@ export const LandingHome: React.FC<Props> = (props) => {
                       data-paper-card
                       role="button"
                       tabIndex={0}
-                      onClick={() => props.onStartPaper(paper.id)}
+                      onClick={() => props.onExamPapers(paper.id)}
                       onKeyDown={(event) => {
                         if (event.key === 'Enter' || event.key === ' ') {
                           event.preventDefault();
-                          props.onStartPaper(paper.id);
+                          props.onExamPapers(paper.id);
                         }
                       }}
                       className={`snap-start rounded-3xl border p-5 text-left shadow-sm transition hover:-translate-y-1 hover:border-emerald-300 hover:bg-white hover:shadow-lg focus-visible:ring-2 focus-visible:ring-blue-500 ${featuredCard ? 'w-[320px] md:w-[340px] bg-white border-emerald-300 shadow-lg shadow-emerald-100/60' : 'w-[280px] bg-slate-50 border-slate-200'}`}
@@ -528,12 +540,12 @@ export const LandingHome: React.FC<Props> = (props) => {
                               type="button"
                               onClick={(event) => {
                                 event.stopPropagation();
-                                props.onPreviewPaper(paper.id);
+                                props.onExamPapers(paper.id);
                               }}
                               className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-[10px] font-black uppercase tracking-[0.14em] text-blue-700"
                             >
                               <ExternalLink className="h-3.5 w-3.5" />
-                              Open Exam Paper
+                              Get Exam Paper
                             </button>
                           ) : (
                             <button
@@ -551,12 +563,12 @@ export const LandingHome: React.FC<Props> = (props) => {
                               type="button"
                               onClick={(event) => {
                                 event.stopPropagation();
-                                previewMarkingScheme(paper);
+                                props.onExamPapers(paper.id);
                               }}
                               className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-violet-200 bg-violet-50 px-3 py-2 text-[10px] font-black uppercase tracking-[0.14em] text-violet-700"
                             >
                               <FileText className="h-3.5 w-3.5" />
-                              Open Marking Scheme
+                              Paper + Scheme
                             </button>
                           ) : (
                             <button
@@ -582,7 +594,7 @@ export const LandingHome: React.FC<Props> = (props) => {
                           </button>
                         </div>
                         <p className="text-[10px] font-medium leading-4 text-slate-400">
-                          Tap anywhere on the card to start the paper under time. Use the exam paper when you want to read the original first.
+                          Get the paper and marking scheme here. Choose Revision Mode when you want timed practice and explanations.
                         </p>
                       </div>
                     </div>

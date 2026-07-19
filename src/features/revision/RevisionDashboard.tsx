@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Lock, Sparkles, TrendingUp, ShieldCheck } from 'lucide-react';
@@ -27,6 +27,9 @@ export const RevisionDashboard: React.FC = () => {
 
     const [activeView, setActiveView] = useState<ActiveView>({ type: 'landing' });
     const [showRevisionPaywall, setShowRevisionPaywall] = useState(false);
+    const queryParams = new URLSearchParams(location.search);
+    const previewPaperId = queryParams.get('preview') === '1' ? queryParams.get('paper') : null;
+    const previewSource = queryParams.get('previewSource') === 'marking_scheme' ? 'marking_scheme' : 'paper';
 
     useEffect(() => {
         // Keep the session on the dashboard so candidates can open ready papers directly.
@@ -35,10 +38,7 @@ export const RevisionDashboard: React.FC = () => {
     useEffect(() => {
         if (activeView.type !== 'landing') return;
 
-        const params = new URLSearchParams(location.search);
-        const previewPaperId = params.get('preview') === '1' ? params.get('paper') : null;
-        const previewSource = params.get('previewSource') === 'marking_scheme' ? 'marking_scheme' : 'paper';
-        const paperId = params.get('paper') || sessionStorage.getItem('soma_pending_exam_id');
+        const paperId = queryParams.get('paper') || sessionStorage.getItem('soma_pending_exam_id');
         const rawPaper = sessionStorage.getItem('soma_pending_exam');
 
         if (previewPaperId) {

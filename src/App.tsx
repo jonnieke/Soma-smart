@@ -1,7 +1,7 @@
 import React, { Suspense } from 'react';
 import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
-import { BookOpen, GraduationCap, Home, Shield, Users } from 'lucide-react';
+import { BookOpen, FileText, GraduationCap, Home, Shield, Users } from 'lucide-react';
 import { ConnectivityBanner } from './components/ConnectivityBanner';
 import { SessionConflictModal } from './components/SessionConflictModal';
 import { SubscriptionExpiredModal } from './components/SubscriptionExpiredModal';
@@ -26,6 +26,8 @@ const AdminDashboard = React.lazy(() => safeImport(() => import('./features/admi
 const AdminKnowledgeBase = React.lazy(() => safeImport(() => import('./features/admin/KnowledgeBase').then(module => ({ default: module.AdminKnowledgeBase }))));
 const RevisionPortal = React.lazy(() => safeImport(() => import('./features/revision/RevisionPortal').then(module => ({ default: module.RevisionPortal }))));
 const RevisionDashboard = React.lazy(() => safeImport(() => import('./features/revision/RevisionDashboard').then(module => ({ default: module.RevisionDashboard }))));
+const ExamPaperBankPage = React.lazy(() => safeImport(() => import('./pages/ExamPaperBankPage').then(module => ({ default: module.ExamPaperBankPage }))));
+const ExamPaperReaderPage = React.lazy(() => safeImport(() => import('./pages/ExamPaperReaderPage').then(module => ({ default: module.ExamPaperReaderPage }))));
 const SomaGuidePage = React.lazy(() => safeImport(() => import('./pages/SomaGuidePage').then(module => ({ default: module.SomaGuidePage }))));
 const ResetPassword = React.lazy(() => safeImport(() => import('./pages/ResetPassword').then(module => ({ default: module.ResetPassword }))));
 const PricingPage = React.lazy(() => safeImport(() => import('./pages/PricingPage').then(module => ({ default: module.PricingPage }))));
@@ -63,13 +65,14 @@ const GlobalNavigation: React.FC = () => {
     const items = [
         { label: 'Home', icon: Home, to: '/', active: pathname === '/' },
         { label: 'Learner', icon: GraduationCap, to: '/learner', active: pathname.startsWith('/learner') },
+        { label: 'Exam Papers', icon: FileText, to: '/exam-papers', active: pathname.startsWith('/exam-papers') },
         { label: 'Revision', icon: BookOpen, to: '/revision', active: pathname.startsWith('/revision') },
         { label: 'Soma Guide', icon: BookOpen, to: '/guide', active: pathname.startsWith('/guide') },
         { label: 'Teacher', icon: Users, to: '/teacher', active: pathname.startsWith('/teacher') },
         { label: 'Admin', icon: Shield, to: '/admin', active: pathname.startsWith('/admin') },
     ];
 
-    if (pathname === '/' || pathname.startsWith('/revision')) return null;
+    if (pathname === '/' || pathname.startsWith('/revision') || pathname.startsWith('/exam-papers')) return null;
 
     return (
         <div className="sticky top-0 z-[90] border-b border-slate-200/80 bg-white/95 backdrop-blur dark:border-slate-800/80 dark:bg-slate-950/95">
@@ -224,6 +227,8 @@ const App: React.FC = () => {
                             <Route path="/admin" element={<AdminGuard onNavigateBack={() => navigate('/')}><AdminDashboard onNavigate={() => navigate('/')} /></AdminGuard>} />
                             <Route path="/admin/knowledge" element={<AdminGuard onNavigateBack={() => navigate('/')}><AdminKnowledgeBase /></AdminGuard>} />
                             <Route path="/revision" element={<RevisionPortal />} />
+                            <Route path="/exam-papers" element={<ExamPaperBankPage />} />
+                            <Route path="/exam-papers/:id/read" element={<ExamPaperReaderPage />} />
                             <Route path="/guide" element={<SomaGuidePage />} />
                             <Route path="/revision/dashboard" element={<RevisionDashboard />} />
                             <Route path="/exam-rooms" element={launchFeatures.examRooms ? <ExamRoomsListPage /> : <Navigate to="/learner" replace />} />

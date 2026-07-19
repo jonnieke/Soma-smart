@@ -286,7 +286,7 @@ export const ExamsView: React.FC = () => {
         examType: row.exam_type,
         examYear: row.exam_year,
         paperNumber: row.paper_number,
-        reviewStatus: row.review_status === 'DRAFT' ? 'DRAFT' : 'PUBLISHED',
+        reviewStatus: (row.review_status === 'DRAFT' ? 'DRAFT' : 'PUBLISHED') as Exam['reviewStatus'],
         indexingStatus: ['PROCESSING', 'READY', 'FAILED'].includes(row.indexing_status)
           ? row.indexing_status
           : 'PENDING',

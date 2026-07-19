@@ -42,6 +42,7 @@ import { translations } from '../data/translations';
 import { ThemeToggle } from '../components/ThemeToggle';
 import { LandingHome } from '../components/LandingHome';
 import { examService } from '../services/examService';
+import { examPaperBankService } from '../services/examPaperBankService';
 import { safeImport } from '../utils/safeImport';
 import { trackAnalyticsEvent } from '../services/analyticsEventService';
 
@@ -216,7 +217,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
 
         const fetchHomepagePapers = async () => {
             try {
-                const exams = await examService.listPublishedExams();
+                const exams = await examPaperBankService.listPapers();
                 const latest = sortLatest(Array.isArray(exams) ? exams.map(item => ({ ...item })) : []);
                 if (!active) return;
                 if (latest.length > 0) {
@@ -228,10 +229,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
             }
 
             try {
-                const [{ data: tableData, error: tableError }, { data: rpcData, error: rpcError }] = await Promise.all([
+                const [{ data: tableData, error: tableError }, rpcData] = await Promise.all([
                     supabase
                         .from('knowledge_base')
-                        .select('id, title, subject, grade, duration_minutes, total_marks, source, exam_type, created_at, published_at, review_status, type, file_url, file_path, homepage_featured, marking_scheme_url, marking_scheme_path')
+                        .select('id, title, subject, grade, duration_minutes, total_marks, source, exam_type, created_at, review_status, type, file_url, file_path, homepage_featured, marking_scheme_url, marking_scheme_path')
                         .eq('type', 'PAST_PAPER')
                         .eq('review_status', 'PUBLISHED')
                         .order('created_at', { ascending: false }),
@@ -878,6 +879,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                 onTeacher={() => handleRoleSelect(UserRole.TEACHER)}
                 onParent={() => handleRoleSelect(UserRole.PARENT)}
                 onLibrary={handleLibraryAccess}
+                onExamPapers={(paperId) => navigate(paperId ? `/exam-papers?paper=${encodeURIComponent(String(paperId))}` : '/exam-papers')}
                 onSomaGuide={() => navigate('/guide')}
                 onRevision={() => navigate('/revision')}
                 onStartPaper={handleStartPaperFromHome}
@@ -1165,7 +1167,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                                             </button>
 
                                                             <button
-                                                                onClick={handleOpenDetailedView}
+                                                                onClick={() => { void handleOpenDetailedView(); }}
                                                                 className="mt-2 text-[11px] font-bold text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-200 transition-colors flex items-center gap-1"
                                                             >
                                                                 To earn more marks? Open point-form guide <ArrowRight className="w-3 h-3" />

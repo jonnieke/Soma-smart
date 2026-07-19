@@ -15,3 +15,6 @@ verify_jwt = false
 
 [functions.search-knowledge]
 verify_jwt = false
+
+[functions.exam-paper-bank]
+verify_jwt = false

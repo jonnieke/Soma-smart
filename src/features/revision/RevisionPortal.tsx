@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Helmet } from 'react-helmet-async';
 import { ArrowRight, Award, BookOpen, Brain, CheckCircle, Clock, FileText, Loader2, LogOut, ShieldCheck, Sparkles, Star, Target, Zap } from 'lucide-react';
@@ -28,6 +28,8 @@ const subjectVisual = (index: number) => [
 
 export const RevisionPortal: React.FC = () => {
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
+    const requestedPaperId = searchParams.get('paper');
     const { isRegistered, studentCode, setRole, logout, studentProfile } = useApp();
     const [showLogin, setShowLogin] = useState(false);
     const [showRegister, setShowRegister] = useState(false);
@@ -71,6 +73,15 @@ export const RevisionPortal: React.FC = () => {
         }
         navigate('/revision/dashboard');
     };
+
+    useEffect(() => {
+        if (!requestedPaperId || loadingExams) return;
+        if (!isRegistered) {
+            setShowLogin(true);
+            return;
+        }
+        startRevision(requestedPaperId);
+    }, [requestedPaperId, loadingExams, isRegistered]);
 
     const openExamLibrary = () => {
         if (!isRegistered) {
@@ -150,8 +161,8 @@ export const RevisionPortal: React.FC = () => {
 
             {!isRegistered && <div className="fixed inset-x-0 bottom-0 z-50 flex items-center justify-between border-t border-slate-200 bg-white/95 p-4 backdrop-blur-xl md:hidden"><div><p className="text-sm font-black text-slate-900">Start your exam prep</p><p className="text-[10px] font-bold text-indigo-600">Browse real exams first</p></div><button onClick={() => setShowRegister(true)} className="rounded-xl bg-indigo-600 px-6 py-3 text-sm font-black text-white">Start free</button></div>}
 
-            <LoginModal isOpen={showLogin} onClose={() => setShowLogin(false)} onSuccess={startRevision} onSwitchToRegister={() => { setShowLogin(false); setShowRegister(true); }} />
-            <RegistrationModal isOpen={showRegister} onClose={() => setShowRegister(false)} onSuccess={startRevision} onSwitchToLogin={() => { setShowRegister(false); setShowLogin(true); }} initialRole="STUDENT" />
+            <LoginModal isOpen={showLogin} onClose={() => setShowLogin(false)} onSuccess={() => startRevision(requestedPaperId || undefined)} onSwitchToRegister={() => { setShowLogin(false); setShowRegister(true); }} />
+            <RegistrationModal isOpen={showRegister} onClose={() => setShowRegister(false)} onSuccess={() => startRevision(requestedPaperId || undefined)} onSwitchToLogin={() => { setShowRegister(false); setShowLogin(true); }} initialRole="STUDENT" />
             <LogoutModal isOpen={showLogoutModal} onClose={() => setShowLogoutModal(false)} onConfirm={() => { logout(); navigate('/'); }} title="Leaving Exam Prep?" message="Your saved attempts will be here when you return." />
         </div>
     );
