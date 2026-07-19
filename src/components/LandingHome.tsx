@@ -699,7 +699,7 @@ const AskAkiliDemo: React.FC<Props> = (props) => {
           />
           <h2 className="text-lg font-black">Ask Akili</h2>
         </div>
-        <span className="text-sm font-bold text-blue-100">Study helper</span>
+        <span className="text-sm font-bold text-blue-100">Step-by-step answer</span>
       </div>
       <div className="space-y-3 p-4">
         <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-400 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100">
@@ -757,13 +757,13 @@ const AskAkiliDemo: React.FC<Props> = (props) => {
             }}
             className="flex min-h-11 items-center justify-center gap-2 rounded-lg border border-slate-200 px-2 text-xs font-bold text-slate-800 hover:bg-slate-50"
           >
-            <Volume2 className="h-4 w-4 text-emerald-600" /> Listen
+            <Volume2 className="h-4 w-4 text-emerald-600" /> Hear Akili Read
           </button>
           <button
             onClick={() => props.onLearnerShortcut('SUBJECTS', 'exam_prep_papers')}
             className="flex min-h-11 items-center justify-center gap-2 rounded-lg border border-slate-200 px-2 text-xs font-bold text-slate-800 hover:bg-slate-50"
           >
-            <CircleHelp className="h-4 w-4 text-violet-600" /> Test me
+            <CircleHelp className="h-4 w-4 text-violet-600" /> Test Me
           </button>
           <button
             onClick={() => {
@@ -772,7 +772,7 @@ const AskAkiliDemo: React.FC<Props> = (props) => {
             }}
             className="flex min-h-11 items-center justify-center gap-2 rounded-lg border border-slate-200 px-2 text-xs font-bold text-slate-800 hover:bg-slate-50"
           >
-            <Notebook className="h-4 w-4 text-blue-600" /> Save to Notebook
+            <Notebook className="h-4 w-4 text-blue-600" /> Save to My Notebook
           </button>
         </div>
       </div>
@@ -996,4 +996,5 @@ const TrustStrip = () => (
     </div>
   </section>
 );
+
 

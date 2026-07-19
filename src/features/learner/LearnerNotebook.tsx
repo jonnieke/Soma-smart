@@ -19,6 +19,7 @@ import {
   deleteStudyNote,
   loadStudyNotes,
   saveStudyNote,
+  syncNotebookFromCloud,
   updateStudyNoteMastery,
 } from '../../services/notebookService';
 import { formatStudyNoteForWhatsApp, formatStudyPackForWhatsApp, openWhatsAppShare } from '../../services/whatsappService';
@@ -28,6 +29,7 @@ interface LearnerNotebookProps {
   grade?: string;
   parentPhone?: string;
   isRegistered: boolean;
+  userId?: string;
   onBack: () => void;
   onOpenNote: (note: StudyNote) => void;
   onListenNote: (note: StudyNote) => void;
@@ -50,6 +52,7 @@ export const LearnerNotebook: React.FC<LearnerNotebookProps> = ({
   grade,
   parentPhone,
   isRegistered,
+  userId,
   onBack,
   onOpenNote,
   onListenNote,
@@ -74,9 +77,10 @@ export const LearnerNotebook: React.FC<LearnerNotebookProps> = ({
 
   React.useEffect(() => {
     refresh();
+    void syncNotebookFromCloud(ownerKey, userId).then(notes => setNotes(notes));
     window.addEventListener(NOTEBOOK_CHANGED_EVENT, refresh);
     return () => window.removeEventListener(NOTEBOOK_CHANGED_EVENT, refresh);
-  }, [refresh]);
+  }, [refresh, ownerKey, userId]);
 
   const subjects = React.useMemo(
     () => [...new Set(notes.map(note => note.subject).filter(Boolean))].sort(),
@@ -106,6 +110,7 @@ export const LearnerNotebook: React.FC<LearnerNotebookProps> = ({
       grade,
       source: 'manual',
       masteryStatus: 'new',
+      userId,
     });
     setDraftTitle('');
     setDraftSubject('');
@@ -448,3 +453,6 @@ export const LearnerNotebook: React.FC<LearnerNotebookProps> = ({
     </div>
   );
 };
+
+
+
