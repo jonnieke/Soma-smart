@@ -2037,6 +2037,29 @@ Stay anchored to this context unless I ask for something broader.`;
     if (isVerified && !isPro) return 'PRO_LOCKED' as const;
     return 'PURCHASE' as const;
   }, [purchasedMaterialIds, isPro]);
+  const fadedSolutionPreview = React.useMemo(() => {
+    const cleanedAnswer = (fadedSolutionData.answer || '')
+      .replace(/\*\*(.*?)\*\*/g, '$1')
+      .replace(/^#{1,6}\s*/gm, '')
+      .replace(/[*_`]/g, '')
+      .trim();
+
+    if (cleanedAnswer && !cleanedAnswer.includes('Connection Interrupted')) {
+      const sentences = cleanedAnswer
+        .split(/(?<=[.!?])\s+/)
+        .filter(Boolean)
+        .slice(0, 4)
+        .join(' ');
+      return sentences || cleanedAnswer.slice(0, 520);
+    }
+
+    const query = fadedSolutionData.query || 'your question';
+    if (/photosynthesis/i.test(query)) {
+      return 'Photosynthesis is the process green plants use to make their own food. Leaves trap sunlight using chlorophyll, take in carbon dioxide from the air, and use water from the roots to produce glucose and oxygen. The full solution will explain each step, the word equation, and how to earn marks in an exam answer.';
+    }
+
+    return `Akili starts by identifying what the question is asking, then breaks the answer into small curriculum steps. The full solution will show the key idea, the worked explanation, and the exact points a learner should write to earn marks for: "${query}".`;
+  }, [fadedSolutionData.answer, fadedSolutionData.query]);
 
   // Check for subscription intent & Auto-open material intent
   React.useEffect(() => {
@@ -9421,15 +9444,41 @@ ${explanation.explanation}
                 </button>
               </div>
 
-              {/* Content Area - Faded ONLY if NOT registered and ONLY if NOT short error */}
-              <div 
-                className={`relative p-8 overflow-y-auto flex-1 ${!isRegistered ? 'pb-32 overflow-hidden' : ''}`}
-                style={!isRegistered && !fadedSolutionData.answer?.includes('Connection Interrupted') ? { 
-                    maskImage: 'linear-gradient(to bottom, black 30%, transparent 95%)', 
-                    WebkitMaskImage: 'linear-gradient(to bottom, black 30%, transparent 95%)' 
-                } : {}}
-              >
-                {fadedSolutionData.isGenerating ? (
+              {/* Content Area */}
+              <div className={`relative p-6 sm:p-8 overflow-y-auto flex-1 ${!isRegistered ? 'pb-72 sm:pb-64' : ''}`}>
+                {!isRegistered ? (
+                  <div className="space-y-5">
+                    <div className="rounded-3xl border border-emerald-200 bg-emerald-50 p-5 shadow-sm">
+                      <div className="flex items-center gap-2 text-emerald-700">
+                        <Sparkles className="h-4 w-4" />
+                        <p className="text-xs font-black uppercase tracking-[0.18em]">Visible answer preview</p>
+                      </div>
+                      <p className="mt-3 whitespace-pre-wrap text-base font-semibold leading-8 text-slate-900">
+                        {fadedSolutionPreview}
+                      </p>
+                    </div>
+                    <div className="rounded-3xl border border-blue-100 bg-white p-5 shadow-sm">
+                      <p className="text-sm font-black text-slate-900">What unlocks after sign up</p>
+                      <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                        {[
+                          'Full step-by-step explanation',
+                          'Audio reading by Akili',
+                          'Short test from this answer',
+                          'Save to learner notebook'
+                        ].map((item) => (
+                          <div key={item} className="rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-700">
+                            {item}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    {fadedSolutionData.isGenerating && (
+                      <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4 text-sm font-semibold text-slate-500">
+                        Akili is preparing the deeper version in the background...
+                      </div>
+                    )}
+                  </div>
+                ) : fadedSolutionData.isGenerating ? (
                   <div className="space-y-6 animate-pulse mt-4">
                     <div className="h-8 w-2/3 bg-slate-200 rounded-xl"></div>
                     <div className="space-y-3">
@@ -9438,14 +9487,10 @@ ${explanation.explanation}
                         <div className="h-4 w-11/12 bg-slate-200 rounded-lg"></div>
                     </div>
                     <div className="h-32 w-full bg-slate-200 rounded-2xl mt-8"></div>
-                    <div className="space-y-3 mt-8">
-                        <div className="h-4 w-full bg-slate-200 rounded-lg"></div>
-                        <div className="h-4 w-4/5 bg-slate-200 rounded-lg"></div>
-                    </div>
                   </div>
                 ) : (
-                  <div className={`prose max-w-none text-slate-700 ${!isRegistered ? 'pointer-events-none' : ''}`}>
-                    <MarkdownText content={fadedSolutionData.answer || ''} />
+                  <div className="prose max-w-none text-slate-700">
+                    <MarkdownText content={fadedSolutionData.answer || fadedSolutionPreview} />
                   </div>
                 )}
               </div>
