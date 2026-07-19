@@ -751,7 +751,7 @@ const AskAkiliDemo: React.FC<Props> = (props) => {
         </div>
 
         <div className="rounded-lg border border-blue-200 bg-blue-50/50 px-3 py-2.5 text-sm font-bold text-slate-800">
-          {sampleQuestion}
+          Photosynthesis: how green plants make food
         </div>
 
         <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
@@ -806,49 +806,70 @@ const AskAkiliDemo: React.FC<Props> = (props) => {
         <div className="grid grid-cols-2 gap-2">
           <button
             onClick={() => {
-              setDemoView('steps');
-              openQuestion(sampleQuestion);
-              props.onLearnerShortcut('SMART_TUTOR', 'ask_akili');
+              showSampleQuestion('steps');
+              props.onTrack('ask_akili_demo_steps_clicked', { source: 'ask_akili_demo' });
             }}
-            className="flex min-h-11 items-center justify-center gap-2 rounded-lg border border-slate-200 px-2 text-xs font-bold text-slate-800 hover:bg-slate-50"
+            aria-pressed={demoView === 'steps'}
+            className={`flex min-h-16 flex-col items-start justify-center gap-1 rounded-lg border px-3 py-2 text-left transition ${demoView === 'steps' ? 'border-blue-300 bg-blue-50 text-blue-800 shadow-sm' : 'border-slate-200 text-slate-800 hover:bg-slate-50'}`}
           >
-            <ListChecks className="h-4 w-4 text-blue-600" /> Explain step by step
+            <span className="flex items-center gap-2 text-xs font-black">
+              <ListChecks className="h-4 w-4 text-blue-600" /> Explain it
+            </span>
+            <span className="text-[11px] font-semibold leading-4 text-slate-500">Show 3 photosynthesis steps</span>
           </button>
           <button
             onClick={() => {
-              setDemoView('audio');
+              showSampleQuestion('audio');
               props.onTrack('listen_demo_clicked', { source: 'ask_akili_demo' });
-              props.onLearnerShortcut('TALKBACK', 'listen_and_learn');
             }}
-            className="flex min-h-11 items-center justify-center gap-2 rounded-lg border border-slate-200 px-2 text-xs font-bold text-slate-800 hover:bg-slate-50"
+            aria-pressed={demoView === 'audio'}
+            className={`flex min-h-16 flex-col items-start justify-center gap-1 rounded-lg border px-3 py-2 text-left transition ${demoView === 'audio' ? 'border-emerald-300 bg-emerald-50 text-emerald-800 shadow-sm' : 'border-slate-200 text-slate-800 hover:bg-slate-50'}`}
           >
-            <Volume2 className="h-4 w-4 text-emerald-600" /> Hear Akili Read
+            <span className="flex items-center gap-2 text-xs font-black">
+              <Volume2 className="h-4 w-4 text-emerald-600" /> Hear it
+            </span>
+            <span className="text-[11px] font-semibold leading-4 text-slate-500">Preview the spoken answer</span>
           </button>
           <button
             onClick={() => {
-              setDemoView('quiz');
+              showSampleQuestion('quiz');
               props.onTrack('ask_akili_demo_quiz_clicked', { source: 'ask_akili_demo' });
-              props.onLearnerShortcut('SUBJECTS', 'exam_prep_papers');
             }}
-            className="flex min-h-11 items-center justify-center gap-2 rounded-lg border border-slate-200 px-2 text-xs font-bold text-slate-800 hover:bg-slate-50"
+            aria-pressed={demoView === 'quiz'}
+            className={`flex min-h-16 flex-col items-start justify-center gap-1 rounded-lg border px-3 py-2 text-left transition ${demoView === 'quiz' ? 'border-violet-300 bg-violet-50 text-violet-800 shadow-sm' : 'border-slate-200 text-slate-800 hover:bg-slate-50'}`}
           >
-            <CircleHelp className="h-4 w-4 text-violet-600" /> Test Me
+            <span className="flex items-center gap-2 text-xs font-black">
+              <CircleHelp className="h-4 w-4 text-violet-600" /> Test me
+            </span>
+            <span className="text-[11px] font-semibold leading-4 text-slate-500">Show a short photosynthesis quiz</span>
           </button>
           <button
             onClick={() => {
-              setDemoView('note');
+              showSampleQuestion('note');
               props.onTrack('save_to_notebook_demo_clicked', { source: 'ask_akili_demo' });
-              props.onLearnerShortcut('NOTEBOOK');
             }}
-            className="flex min-h-11 items-center justify-center gap-2 rounded-lg border border-slate-200 px-2 text-xs font-bold text-slate-800 hover:bg-slate-50"
+            aria-pressed={demoView === 'note'}
+            className={`flex min-h-16 flex-col items-start justify-center gap-1 rounded-lg border px-3 py-2 text-left transition ${demoView === 'note' ? 'border-blue-300 bg-blue-50 text-blue-800 shadow-sm' : 'border-slate-200 text-slate-800 hover:bg-slate-50'}`}
           >
-            <Notebook className="h-4 w-4 text-blue-600" /> Save to My Notebook
+            <span className="flex items-center gap-2 text-xs font-black">
+              <Notebook className="h-4 w-4 text-blue-600" /> Save it
+            </span>
+            <span className="text-[11px] font-semibold leading-4 text-slate-500">Preview the notebook entry</span>
           </button>
         </div>
+        <button
+          type="button"
+          onClick={() => openQuestion(sampleQuestion)}
+          className="flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-3 text-sm font-black text-white transition hover:bg-blue-700"
+        >
+          Open this full answer in Ask Akili <ArrowRight className="h-4 w-4" />
+        </button>
       </div>
     </div>
   );
-};const ToolsSection: React.FC<{
+};
+
+const ToolsSection: React.FC<{
   onTeacher: () => void;
   onLibrary: () => void;
   onLearnerShortcut: (
@@ -1064,6 +1085,4 @@ const TrustStrip = () => (
     </div>
   </section>
 );
-
-
 
