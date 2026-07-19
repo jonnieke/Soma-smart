@@ -2494,8 +2494,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                 initialTab={loginTab}
                 onSuccess={(tab) => {
                     if (pendingRoute) {
-                        navigate(pendingRoute);
+                        navigate(pendingRoute, pendingRouteState ? { state: pendingRouteState } : undefined);
                         setPendingRoute(null);
+                        setPendingRouteState(null);
                     } else {
                         const target = tab === 'TEACHER' ? '/teacher' : (tab === 'SCHOOL' ? '/school' : '/learner');
                         navigate(target);
