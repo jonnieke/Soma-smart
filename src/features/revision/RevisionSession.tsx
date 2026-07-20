@@ -87,9 +87,11 @@ const buildMultipleChoiceOptions = (question: ExamQuestion): { questionText: str
             ? answerFormatOptions.map(String)
             : [];
 
+    const parsedInline = parseInlineMultipleChoice(String(question.text || ''));
+
     if (rawOptions.length > 0) {
         return {
-            questionText: String(question.text || '').trim(),
+            questionText: parsedInline.options.length > 0 ? parsedInline.questionText : String(question.text || '').trim(),
             options: rawOptions.map((option, index) => {
                 const optionText = normalizeChoiceText(option);
                 const embeddedLabel = optionText.match(/^([A-D])[.)]\s*(.+)$/i);
@@ -100,7 +102,7 @@ const buildMultipleChoiceOptions = (question: ExamQuestion): { questionText: str
         };
     }
 
-    return parseInlineMultipleChoice(String(question.text || ''));
+    return parsedInline;
 };
 
 const shuffleQuestions = <T,>(items: T[]) => {
@@ -1415,7 +1417,7 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
                                 </div>
                                 <span className="text-xs font-black text-slate-500">{question.marks || 2} marks</span>
                             </div>
-                            <p className="text-slate-800 text-sm leading-relaxed font-black">{question.text}</p>
+                            <p className="text-slate-800 text-sm leading-relaxed font-black">{displayQuestionText}</p>
                             {question.diagramUrl && <img src={question.diagramUrl} alt={`Diagram for question ${question.number}`} className="mt-4 max-h-80 w-full rounded-2xl border border-slate-200 object-contain" />}
                         </motion.div>
 
