@@ -453,8 +453,25 @@ export const ExamsView: React.FC = () => {
               ? 'multiple_choice'
               : (question.questionType ?? question.type ?? 'structured_text'),
           options: Array.isArray(question.options) ? question.options.map(String) : [],
-          diagramUrl: question.diagramUrl ?? question.diagram_url ?? null,
-          answerFormat: question.answerFormat ?? question.answer_format ?? {},
+          diagramUrl:
+            question.diagramUrl ??
+            question.diagram_url ??
+            question.imageUrl ??
+            question.image_url ??
+            question.figureUrl ??
+            question.figure_url ??
+            question.illustrationUrl ??
+            question.illustration_url ??
+            null,
+          answerFormat: {
+            ...(question.answerFormat ?? question.answer_format ?? {}),
+            ...(question.diagramPage || question.diagram_page
+              ? { diagramPage: question.diagramPage ?? question.diagram_page }
+              : {}),
+            ...(question.diagramDescription || question.diagram_description
+              ? { diagramDescription: question.diagramDescription ?? question.diagram_description }
+              : {}),
+          },
           marks: Number(question.marks ?? 0),
           markingScheme: Array.isArray(question.markingScheme)
             ? question.markingScheme

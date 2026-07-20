@@ -3,7 +3,7 @@ import { useApp } from '../../context/AppContext';
 import {
     ArrowLeft, ArrowRight, Clock, CheckCircle, XCircle, Sparkles, Target,
     Trophy, TrendingUp, ChevronRight, AlertTriangle, BarChart3, Zap,
-    FileText, Brain, Timer, Star, ChevronDown, ChevronUp, Loader2
+    FileText, Brain, Timer, Star, ChevronDown, ChevronUp, Loader2, ExternalLink
 } from 'lucide-react';
 import {
     RevisionMode, ExamAnalysis, ExamQuestion, TeacherActivity,
@@ -105,6 +105,75 @@ const buildMultipleChoiceOptions = (question: ExamQuestion): { questionText: str
     return parsedInline;
 };
 
+
+const getQuestionDiagramUrl = (question: ExamQuestion): string => {
+    const rawQuestion = question as any;
+    const answerFormat = (question.answerFormat || {}) as any;
+    const candidates = [
+        question.diagramUrl,
+        rawQuestion.diagram_url,
+        rawQuestion.diagramURL,
+        rawQuestion.imageUrl,
+        rawQuestion.image_url,
+        rawQuestion.figureUrl,
+        rawQuestion.figure_url,
+        rawQuestion.illustrationUrl,
+        rawQuestion.illustration_url,
+        answerFormat.diagramUrl,
+        answerFormat.diagram_url,
+        answerFormat.imageUrl,
+        answerFormat.image_url,
+    ];
+    return String(candidates.find((value) => String(value || '').trim()) || '').trim();
+};
+
+const questionLikelyNeedsOriginalDiagram = (question: ExamQuestion): boolean => {
+    const text = `${question.text || ''} ${(question as any).questionType || ''} ${(question as any).type || ''}`.toLowerCase();
+    return /\b(diagram|figure|picture|image|map|graph|chart|table|drawing|illustration|below|above|shown|label|observe)\b/.test(text);
+};
+
+const QuestionDiagramSupport: React.FC<{ question: ExamQuestion; sourcePaperUrl?: string }> = ({ question, sourcePaperUrl }) => {
+    const diagramUrl = getQuestionDiagramUrl(question);
+    const answerFormat = (question.answerFormat || {}) as any;
+    const diagramPage = answerFormat.diagramPage || answerFormat.diagram_page || (question as any).diagramPage || (question as any).diagram_page;
+    const diagramDescription = String(answerFormat.diagramDescription || answerFormat.diagram_description || (question as any).diagramDescription || (question as any).diagram_description || '').trim();
+    if (diagramUrl) {
+        return (
+            <img
+                src={diagramUrl}
+                alt={`Diagram for question ${question.number}`}
+                className="mt-4 max-h-80 w-full rounded-2xl border border-slate-200 object-contain"
+            />
+        );
+    }
+
+    if (!sourcePaperUrl || !questionLikelyNeedsOriginalDiagram(question)) return null;
+
+    return (
+        <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-amber-900">
+            <p className="text-sm font-black">This question may use a diagram from the original exam paper.</p>
+            <p className="mt-1 text-xs font-semibold leading-5 text-amber-800">
+                Open the original paper inside Soma AI to view diagrams, maps, pictures, tables, or graph details exactly as they appear on the paper.
+                {diagramPage ? ` Check page ${diagramPage}.` : ''}
+            </p>
+            {diagramDescription && (
+                <p className="mt-2 rounded-xl bg-white/70 p-3 text-xs font-semibold leading-5 text-amber-900">
+                    Diagram note: {diagramDescription}
+                </p>
+            )}
+            <a
+                href={sourcePaperUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-3 inline-flex min-h-10 items-center gap-2 rounded-xl bg-white px-4 text-xs font-black uppercase tracking-wider text-amber-800 shadow-sm transition hover:bg-amber-100"
+            >
+                <ExternalLink className="h-4 w-4" />
+                Open original exam paper
+            </a>
+        </div>
+    );
+};
+
 const shuffleQuestions = <T,>(items: T[]) => {
     const copy = [...items];
     for (let i = copy.length - 1; i > 0; i -= 1) {
@@ -185,6 +254,12 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
         if (!Array.isArray(payload?.structured_questions)) return null;
         return payload?.id ? String(payload.id) : null;
     }, [data]);
+    const sourcePaperUrl = React.useMemo(() => {
+        if (data instanceof File) return '';
+        if (activeExamId) return `/revision/dashboard?paper=${encodeURIComponent(activeExamId)}&preview=1`;
+        const payload = data as any;
+        return String(payload?.file_url || payload?.fileUrl || payload?.paperUrl || payload?.publicUrl || '').trim();
+    }, [activeExamId, data]);
     const learnerId = studentCode || studentProfile?.id || userId || 'guest';
 
     // ==================== INITIAL LOAD ====================
@@ -1138,7 +1213,7 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
                                 <span className="text-xs font-black text-slate-500">{question.marks || 2} marks</span>
                             </div>
                             <p className="text-slate-800 text-sm leading-relaxed font-black">{displayQuestionText}</p>
-                            {question.diagramUrl && <img src={question.diagramUrl} alt={`Diagram for question ${question.number}`} className="mt-4 max-h-80 w-full rounded-2xl border border-slate-200 object-contain" />}
+                            <QuestionDiagramSupport question={question} sourcePaperUrl={sourcePaperUrl} />
                         </motion.div>
 
                         {/* Loading Explanation */}
@@ -1418,7 +1493,7 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
                                 <span className="text-xs font-black text-slate-500">{question.marks || 2} marks</span>
                             </div>
                             <p className="text-slate-800 text-sm leading-relaxed font-black">{displayQuestionText}</p>
-                            {question.diagramUrl && <img src={question.diagramUrl} alt={`Diagram for question ${question.number}`} className="mt-4 max-h-80 w-full rounded-2xl border border-slate-200 object-contain" />}
+                            <QuestionDiagramSupport question={question} sourcePaperUrl={sourcePaperUrl} />
                         </motion.div>
 
                         {/* Answer Input */}

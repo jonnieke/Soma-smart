@@ -1624,6 +1624,16 @@ export const ingestPastPaper = async (file: File, markingSchemeFile?: File | nul
       competency: String(question.competency || 'General').trim(),
       cognitiveLevel: question.cognitiveLevel ? String(question.cognitiveLevel).trim() : undefined,
       marks: Number.isFinite(Number(question.marks)) ? Number(question.marks) : 0,
+      diagramUrl: (question as any).diagramUrl || (question as any).diagram_url || undefined,
+      answerFormat: {
+        ...(((question as any).answerFormat || (question as any).answer_format || {}) as Record<string, unknown>),
+        ...((question as any).diagramPage || (question as any).diagram_page
+          ? { diagramPage: (question as any).diagramPage || (question as any).diagram_page }
+          : {}),
+        ...((question as any).diagramDescription || (question as any).diagram_description
+          ? { diagramDescription: (question as any).diagramDescription || (question as any).diagram_description }
+          : {}),
+      },
       markingScheme: parseStringArray(question.markingScheme),
       modelAnswer: question.modelAnswer ? String(question.modelAnswer).trim() : undefined,
       explanation: question.explanation ? String(question.explanation).trim() : undefined,
@@ -1685,6 +1695,9 @@ export const ingestPastPaper = async (file: File, markingSchemeFile?: File | nul
                 competency: { type: SchemaType.STRING },
                 cognitiveLevel: { type: SchemaType.STRING },
                 marks: { type: SchemaType.INTEGER },
+                diagramUrl: { type: SchemaType.STRING },
+                diagramPage: { type: SchemaType.INTEGER },
+                diagramDescription: { type: SchemaType.STRING },
                 markingScheme: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
                 modelAnswer: { type: SchemaType.STRING },
                 explanation: { type: SchemaType.STRING },
@@ -1711,6 +1724,7 @@ export const ingestPastPaper = async (file: File, markingSchemeFile?: File | nul
     'The first document is the QUESTION PAPER. A second document, when supplied, is its OFFICIAL MARKING SCHEME.',
     'Extract the exact paper metadata: exam type, year, subject, grade, paper code, paper number, duration, total marks, and candidate instructions.',
     'Extract EVERY question and sub-question in the original order. Preserve question wording and section labels.',
+    'If a question depends on a diagram, map, picture, table, graph, or figure, set diagramPage to the PDF page number and add a concise diagramDescription so the learner knows to refer to the original paper.',
     'For every question provide topic, sub-strand, competency, cognitive level, marks, mark-by-mark markingScheme points, a modelAnswer, a concise explanation of how to earn the marks, and common candidate mistakes.',
     'When an official marking scheme is supplied, pair its points to the matching question number and treat it as authoritative.',
     'When no official marking scheme is supplied, create a cautious AI draft marking guide and set markingSchemeSource to AI_DRAFT.',
