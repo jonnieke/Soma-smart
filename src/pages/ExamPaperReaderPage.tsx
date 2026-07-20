@@ -2,10 +2,12 @@ import React from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, BookOpen, FileCheck2, FileText, Loader2, Share2 } from 'lucide-react';
 import { PaperAccess, examPaperBankService } from '../services/examPaperBankService';
+import { useApp } from '../context/AppContext';
 
 export const ExamPaperReaderPage: React.FC = () => {
   const { id = '' } = useParams();
   const navigate = useNavigate();
+  const { isPro } = useApp();
   const [access, setAccess] = React.useState<PaperAccess | null>(null);
   const [activeDocument, setActiveDocument] = React.useState<'paper' | 'scheme'>('paper');
   const [loading, setLoading] = React.useState(true);
@@ -43,7 +45,7 @@ export const ExamPaperReaderPage: React.FC = () => {
             <button onClick={() => setActiveDocument('paper')} className={`inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-black ${activeDocument === 'paper' ? 'bg-indigo-600 text-white' : 'border border-slate-200 bg-white text-slate-700'}`}><FileText className="h-4 w-4" /> Exam paper</button>
             <button disabled={!access.markingSchemeUrl} onClick={() => setActiveDocument('scheme')} className={`inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-black disabled:opacity-40 ${activeDocument === 'scheme' ? 'bg-emerald-600 text-white' : 'border border-slate-200 bg-white text-slate-700'}`}><FileCheck2 className="h-4 w-4" /> Marking scheme</button>
             <button onClick={() => void share()} className="rounded-xl border border-slate-200 bg-white p-2.5 text-slate-700" aria-label="Share paper"><Share2 className="h-5 w-5" /></button>
-            <button onClick={() => navigate(`/revision?paper=${encodeURIComponent(id)}`)} className="inline-flex items-center gap-2 rounded-xl bg-violet-600 px-4 py-2 text-sm font-black text-white"><BookOpen className="h-4 w-4" /> Revision Mode</button>
+            <button onClick={() => navigate(`/revision?paper=${encodeURIComponent(id)}`)} className="inline-flex items-center gap-2 rounded-xl bg-violet-600 px-4 py-2 text-sm font-black text-white"><BookOpen className="h-4 w-4" /> {isPro ? 'Revision Mode' : 'Revision Mode unlocked'}</button>
           </div>
         </div>
       </header>

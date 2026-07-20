@@ -68,20 +68,23 @@ export const RevisionPortal: React.FC = () => {
     const startRevision = (openExamId?: string | number) => {
         setRole(UserRole.REVISION);
         if (openExamId) {
-            const paper = pathwayExams.find(exam => String(exam.id) === String(openExamId)) || pathwayExams[0];
-            if (paper) sessionStorage.setItem('soma_pending_exam', JSON.stringify(paper));
+            const paper = publishedExams.find(exam => String(exam.id) === String(openExamId)) || pathwayExams[0];
+            if (paper) {
+                sessionStorage.setItem('soma_pending_exam', JSON.stringify(paper));
+                sessionStorage.setItem('soma_pending_exam_id', String(paper.id));
+            } else {
+                sessionStorage.setItem('soma_pending_exam_id', String(openExamId));
+            }
         }
         navigate('/revision/dashboard');
     };
 
     useEffect(() => {
         if (!requestedPaperId || loadingExams) return;
-        if (!isRegistered) {
-            setShowLogin(true);
-            return;
-        }
+        // A purchased paper can unlock Revision Mode for that paper without forcing account login.
+        // The revision dashboard performs the actual subscription-or-purchase access check.
         startRevision(requestedPaperId);
-    }, [requestedPaperId, loadingExams, isRegistered]);
+    }, [requestedPaperId, loadingExams]);
 
     const openExamLibrary = () => {
         if (!isRegistered) {

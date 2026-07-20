@@ -8,6 +8,7 @@ import { RevisionSession } from './RevisionSession';
 import { SyllabusViewer } from './SyllabusViewer';
 import { NotesViewer } from './NotesViewer';
 import { examService } from '../../services/examService';
+import { examPaperBankService } from '../../services/examPaperBankService';
 import { RevisionMode, TeacherActivity, ViewState, UserRole, ExamAnalysis } from '../../types';
 import { Button } from '../../components/Shared';
 
@@ -27,9 +28,44 @@ export const RevisionDashboard: React.FC = () => {
 
     const [activeView, setActiveView] = useState<ActiveView>({ type: 'landing' });
     const [showRevisionPaywall, setShowRevisionPaywall] = useState(false);
+    const [lockedPaperId, setLockedPaperId] = useState<string | number | null>(null);
+    const [checkingPaperAccess, setCheckingPaperAccess] = useState(false);
     const queryParams = new URLSearchParams(location.search);
     const previewPaperId = queryParams.get('preview') === '1' ? queryParams.get('paper') : null;
     const previewSource = queryParams.get('previewSource') === 'marking_scheme' ? 'marking_scheme' : 'paper';
+
+    const getPaperId = (data: File | TeacherActivity): string | number | null => {
+        if (data instanceof File) return null;
+        const payload = data as any;
+        return payload?.id ?? payload?.exam_id ?? payload?.examId ?? null;
+    };
+
+    const openPaperRevision = async (paperId: string | number, fallbackPaper?: File | TeacherActivity, mode: RevisionMode = RevisionMode.EXAM) => {
+        setCheckingPaperAccess(true);
+        try {
+            if (!isPro) {
+                const access = await examPaperBankService.getAccess(paperId);
+                if (!access.paid) {
+                    setLockedPaperId(paperId);
+                    setShowRevisionPaywall(true);
+                    return;
+                }
+            }
+
+            const paper = fallbackPaper || await examService.getExamForAttempt(paperId);
+            if (!paper) return;
+            incrementRevisionUsage();
+            setActiveView({ type: 'exam', data: paper as any, mode });
+        } catch (error) {
+            console.error('Could not verify revision access for paper:', error);
+            setLockedPaperId(paperId);
+            setShowRevisionPaywall(true);
+        } finally {
+            setCheckingPaperAccess(false);
+            sessionStorage.removeItem('soma_pending_exam');
+            sessionStorage.removeItem('soma_pending_exam_id');
+        }
+    };
 
     useEffect(() => {
         // Keep the session on the dashboard so candidates can open ready papers directly.
@@ -48,12 +84,12 @@ export const RevisionDashboard: React.FC = () => {
         if (rawPaper) {
             try {
                 const paper = JSON.parse(rawPaper);
-                if (paper) {
-                    setActiveView({ type: 'exam', data: paper as any, mode: RevisionMode.EXAM });
+                const rawPaperId = getPaperId(paper as any) || paperId;
+                if (paper && rawPaperId) {
+                    void openPaperRevision(rawPaperId, paper as any, RevisionMode.EXAM);
                 }
             } catch (error) {
                 console.error('Could not open pending paper:', error);
-            } finally {
                 sessionStorage.removeItem('soma_pending_exam');
                 sessionStorage.removeItem('soma_pending_exam_id');
             }
@@ -61,23 +97,9 @@ export const RevisionDashboard: React.FC = () => {
         }
 
         if (!paperId) return;
+        void openPaperRevision(paperId, undefined, RevisionMode.EXAM);
 
-        let cancelled = false;
-        const openPaper = async () => {
-            try {
-                const paper = await examService.getExamForAttempt(paperId);
-                if (cancelled || !paper) return;
-                setActiveView({ type: 'exam', data: paper as any, mode: RevisionMode.EXAM });
-            } catch (error) {
-                console.error('Could not load pending paper by id:', error);
-            } finally {
-                sessionStorage.removeItem('soma_pending_exam_id');
-            }
-        };
-
-        void openPaper();
-        return () => { cancelled = true; };
-    }, [activeView.type, location.search]);
+    }, [activeView.type, location.search, isPro]);
 
     // Helper to determine item type
     const getItemType = (data: File | TeacherActivity): 'syllabus' | 'notes' | 'paper' => {
@@ -102,9 +124,9 @@ export const RevisionDashboard: React.FC = () => {
                         <Lock className="w-10 h-10" />
                     </div>
 
-                    <h2 className="text-3xl font-black text-slate-900 mb-3 tracking-tight">Success Limit Reached</h2>
+                    <h2 className="text-3xl font-black text-slate-900 mb-3 tracking-tight">Revision Mode is locked</h2>
                     <p className="text-slate-600 font-medium mb-8 leading-relaxed">
-                        You&apos;ve completed your 5 free paper analysis sessions. Your journey to being a <span className="text-indigo-600 font-bold">Top Candidate</span> represents an investment in your future.
+                        Exam paper revision is included in a normal SomaAI subscription. If you only need this one paper, buy the exam paper package and Revision Mode unlocks for that paper.
                     </p>
 
                     <div className="space-y-4 mb-8">
@@ -128,11 +150,20 @@ export const RevisionDashboard: React.FC = () => {
                                 Upgrade to Somo Pro <ShieldCheck className="w-5 h-5 group-hover:scale-110 transition-transform" />
                             </span>
                         </Button>
+                        {lockedPaperId && (
+                            <Button
+                                fullWidth
+                                onClick={() => navigate(`/exam-papers?paper=${encodeURIComponent(String(lockedPaperId))}`)}
+                                className="py-4 bg-white text-indigo-700 border border-indigo-200 hover:bg-indigo-50"
+                            >
+                                Buy this paper for Revision Mode
+                            </Button>
+                        )}
                         <button
                             onClick={() => setShowRevisionPaywall(false)}
                             className="text-slate-400 text-xs font-black uppercase tracking-widest hover:text-slate-600 transition-colors pt-4"
                         >
-                            Return to Dashboard
+                            Return to Revision Hub
                         </button>
                     </div>
 
@@ -184,7 +215,8 @@ export const RevisionDashboard: React.FC = () => {
         <RevisionHubPage
             initialPreviewPaperId={previewPaperId}
             initialPreviewSource={previewSource}
-            onStartSession={(data, mode) => {
+            onStartSession={async (data, mode) => {
+                if (checkingPaperAccess) return;
                 const itemType = getItemType(data);
 
                 // Syllabus items are always free â€” no paywall, straight to viewer
@@ -208,12 +240,15 @@ export const RevisionDashboard: React.FC = () => {
                     return;
                 }
 
-                // Past papers â€” standard paywall
-                if (role === UserRole.GUEST && revisionUsageCount >= 1) {
-                    setShowRevisionPaywall(true);
+                // Exam papers: subscription unlocks all; a purchased paper unlocks revision for that paper only.
+                const paperId = getPaperId(data);
+                if (paperId) {
+                    await openPaperRevision(paperId, data, mode);
                     return;
                 }
-                if (!isPro && role !== UserRole.GUEST && revisionUsageCount >= 3) {
+
+                if (!isPro) {
+                    setLockedPaperId(null);
                     setShowRevisionPaywall(true);
                     return;
                 }

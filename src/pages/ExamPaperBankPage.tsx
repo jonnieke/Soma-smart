@@ -17,6 +17,7 @@ import {
   X,
 } from 'lucide-react';
 import logoImg from '../assets/images/main_logo.png';
+import { useApp } from '../context/AppContext';
 import {
   EXAM_PAPER_PRICE_KES,
   ExamPaperBankItem,
@@ -27,6 +28,7 @@ const normalise = (value?: string | null) => String(value || '').trim();
 
 export const ExamPaperBankPage: React.FC = () => {
   const navigate = useNavigate();
+  const { isPro } = useApp();
   const [searchParams, setSearchParams] = useSearchParams();
   const [papers, setPapers] = React.useState<ExamPaperBankItem[]>([]);
   const [loading, setLoading] = React.useState(true);
@@ -164,6 +166,25 @@ export const ExamPaperBankPage: React.FC = () => {
     setCheckoutOpen(true);
   };
 
+  const openRevisionMode = async (paper: ExamPaperBankItem) => {
+    setSelected(paper);
+    setSearchParams({ paper: String(paper.id) });
+    if (isPro) {
+      navigate(`/revision?paper=${encodeURIComponent(String(paper.id))}`);
+      return;
+    }
+    try {
+      const access = await examPaperBankService.getAccess(paper.id);
+      if (access.paid) {
+        navigate(`/revision?paper=${encodeURIComponent(String(paper.id))}`);
+        return;
+      }
+    } catch {
+      // Unpaid or unverified buyers should go through the paper checkout.
+    }
+    setCheckoutOpen(true);
+  };
+
   return (
     <div className="min-h-screen bg-[#f7f8fc] text-slate-950">
       <Helmet>
@@ -239,7 +260,7 @@ export const ExamPaperBankPage: React.FC = () => {
                   </div>
                   <div className="mt-auto grid grid-cols-[1fr_auto] gap-2 pt-6">
                     <button onClick={() => void openPaper(paper)} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 text-sm font-black text-white hover:bg-indigo-700">Get paper <ArrowRight className="h-4 w-4" /></button>
-                    <button onClick={() => navigate(`/revision?paper=${encodeURIComponent(String(paper.id))}`)} title="Open in Revision Mode" className="inline-flex min-h-11 items-center justify-center rounded-xl border border-slate-200 px-4 text-sm font-black text-slate-700 hover:border-indigo-300 hover:text-indigo-700"><BookOpen className="h-4 w-4" /></button>
+                    <button onClick={() => void openRevisionMode(paper)} title="Open in Revision Mode" className="inline-flex min-h-11 items-center justify-center rounded-xl border border-slate-200 px-4 text-sm font-black text-slate-700 hover:border-indigo-300 hover:text-indigo-700"><BookOpen className="h-4 w-4" /></button>
                   </div>
                 </article>
               ))}
