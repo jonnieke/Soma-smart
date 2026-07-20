@@ -43,6 +43,66 @@ const savePerformanceRecord = (record: PerformanceRecord) => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
 };
 
+
+type MultipleChoiceOption = {
+    label: string;
+    text: string;
+    value: string;
+};
+
+const normalizeChoiceText = (value: unknown) => String(value ?? '').replace(/\s+/g, ' ').trim();
+
+const stripChoiceLabel = (value: string) => normalizeChoiceText(value).replace(/^[A-D][.)]\s*/i, '').trim();
+
+const parseInlineMultipleChoice = (text: string): { questionText: string; options: MultipleChoiceOption[] } => {
+    const source = String(text || '');
+    const pattern = /(?:^|\s)([A-D])[.)]\s+([\s\S]*?)(?=\s+[A-D][.)]\s+|$)/gi;
+    const matches = Array.from(source.matchAll(pattern));
+    if (matches.length < 2) return { questionText: source.trim(), options: [] };
+
+    const firstIndex = matches[0].index ?? 0;
+    const stem = source.slice(0, firstIndex).trim();
+    const seen = new Set<string>();
+    const options = matches
+        .map((match) => {
+            const label = String(match[1] || '').toUpperCase();
+            const optionText = stripChoiceLabel(match[2] || '');
+            return { label, text: optionText, value: `${label}. ${optionText}` };
+        })
+        .filter((option) => {
+            if (!option.label || !option.text || seen.has(option.label)) return false;
+            seen.add(option.label);
+            return true;
+        })
+        .sort((a, b) => a.label.localeCompare(b.label));
+
+    return options.length >= 2 ? { questionText: stem, options } : { questionText: source.trim(), options: [] };
+};
+
+const buildMultipleChoiceOptions = (question: ExamQuestion): { questionText: string; options: MultipleChoiceOption[] } => {
+    const answerFormatOptions = (question.answerFormat as any)?.options;
+    const rawOptions = Array.isArray(question.options)
+        ? question.options
+        : Array.isArray(answerFormatOptions)
+            ? answerFormatOptions.map(String)
+            : [];
+
+    if (rawOptions.length > 0) {
+        return {
+            questionText: String(question.text || '').trim(),
+            options: rawOptions.map((option, index) => {
+                const optionText = normalizeChoiceText(option);
+                const embeddedLabel = optionText.match(/^([A-D])[.)]\s*(.+)$/i);
+                const label = embeddedLabel ? embeddedLabel[1].toUpperCase() : String.fromCharCode(65 + index);
+                const text = embeddedLabel ? normalizeChoiceText(embeddedLabel[2]) : optionText;
+                return { label, text, value: `${label}. ${text}` };
+            }).filter(option => option.text),
+        };
+    }
+
+    return parseInlineMultipleChoice(String(question.text || ''));
+};
+
 const shuffleQuestions = <T,>(items: T[]) => {
     const copy = [...items];
     for (let i = copy.length - 1; i > 0; i -= 1) {
@@ -1034,6 +1094,7 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
     // --- EXPLAINING PHASE ---
     if (phase === 'EXPLAINING' && quizQuestions.length > 0) {
         const question = quizQuestions[currentQuestionIdx];
+        const displayQuestionText = buildMultipleChoiceOptions(question).questionText || question.text;
         const progress = (currentQuestionIdx / quizQuestions.length) * 100;
 
         return (
@@ -1074,7 +1135,7 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
                                 </div>
                                 <span className="text-xs font-black text-slate-500">{question.marks || 2} marks</span>
                             </div>
-                            <p className="text-slate-800 text-sm leading-relaxed font-black">{question.text}</p>
+                            <p className="text-slate-800 text-sm leading-relaxed font-black">{displayQuestionText}</p>
                             {question.diagramUrl && <img src={question.diagramUrl} alt={`Diagram for question ${question.number}`} className="mt-4 max-h-80 w-full rounded-2xl border border-slate-200 object-contain" />}
                         </motion.div>
 
@@ -1221,8 +1282,9 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
     if ((phase === 'QUIZ_ACTIVE' || phase === 'MARKING') && quizQuestions.length > 0) {
         const question = quizQuestions[currentQuestionIdx];
         const progress = ((currentQuestionIdx + (showModelAnswer ? 1 : 0)) / quizQuestions.length) * 100;
-        const answerFormatOptions = (question.answerFormat as any)?.options;
-        const questionOptions = Array.isArray(question.options) ? question.options : Array.isArray(answerFormatOptions) ? answerFormatOptions.map(String) : [];
+        const multipleChoice = buildMultipleChoiceOptions(question);
+        const questionOptions = multipleChoice.options;
+        const displayQuestionText = multipleChoice.questionText || question.text;
         const isMultipleChoice = question.questionType === 'multiple_choice' || questionOptions.length > 0;
 
         return (
@@ -1363,12 +1425,15 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
                                 <div className="relative">
                                     {isMultipleChoice ? (
                                         <div className="grid gap-3">
-                                            {questionOptions.map((option, index) => (
-                                                <button key={`${question.id}-${index}`} type="button" onClick={() => updateAnswer(option)} disabled={isMarking} className={`flex items-start gap-3 rounded-2xl border-2 p-4 text-left transition ${userAnswer === option ? 'border-indigo-600 bg-indigo-50 text-indigo-950' : 'border-slate-200 bg-white text-slate-700 hover:border-indigo-300'}`}>
-                                                    <span className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-[10px] font-black ${userAnswer === option ? 'border-indigo-600 bg-indigo-600 text-slate-900' : 'border-slate-300 text-slate-500'}`}>{String.fromCharCode(65 + index)}</span>
-                                                    <span className="text-sm font-bold leading-relaxed">{option}</span>
-                                                </button>
-                                            ))}
+                                            {questionOptions.map((option, index) => {
+                                                const selected = userAnswer === option.value || userAnswer === option.text;
+                                                return (
+                                                    <button key={`${question.id}-${option.label}-${index}`} type="button" onClick={() => updateAnswer(option.value)} disabled={isMarking} className={`flex items-start gap-3 rounded-2xl border-2 p-4 text-left transition ${selected ? 'border-indigo-600 bg-indigo-50 text-indigo-950' : 'border-slate-200 bg-white text-slate-700 hover:border-indigo-300'}`}>
+                                                        <span className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-[10px] font-black ${selected ? 'border-indigo-600 bg-indigo-600 text-white' : 'border-slate-300 text-slate-500'}`}>{selected ? '\u2713' : option.label}</span>
+                                                        <span className="text-sm font-bold leading-relaxed">{option.text}</span>
+                                                    </button>
+                                                );
+                                            })}
                                         </div>
                                     ) : (
                                         <textarea
