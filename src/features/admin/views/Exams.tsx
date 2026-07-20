@@ -564,13 +564,15 @@ export const ExamsView: React.FC = () => {
       };
     });
   };
-  const validateExamPackage = () => {
-    const issues: string[] = [];
-    const questions = analyzedData?.questions || [];
-    const totalQuestionMarks = questions.reduce(
+  const getAnalyzedQuestionMarks = () =>
+    (analyzedData?.questions || []).reduce(
       (sum, question) => sum + Number(question.marks || 0),
       0
     );
+  const validateExamPackage = () => {
+    const issues: string[] = [];
+    const questions = analyzedData?.questions || [];
+    const totalQuestionMarks = getAnalyzedQuestionMarks();
     const sectionValues = Array.from(
       new Set(
         questions
@@ -1508,6 +1510,45 @@ export const ExamsView: React.FC = () => {
                         type="number"
                       />
                     </div>
+                    {(() => {
+                      const detectedMarks = getAnalyzedQuestionMarks();
+                      const configuredMarks = Number(totalMarks);
+                      const hasMismatch =
+                        detectedMarks > 0 &&
+                        Number.isFinite(configuredMarks) &&
+                        configuredMarks > 0 &&
+                        Math.abs(detectedMarks - configuredMarks) > 5;
+                      return (
+                        <div
+                          className={`rounded-2xl border p-4 ${
+                            hasMismatch
+                              ? 'border-amber-200 bg-amber-50 text-amber-900'
+                              : 'border-emerald-100 bg-emerald-50 text-emerald-900'
+                          }`}
+                        >
+                          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                            <div>
+                              <p className="text-sm font-black">
+                                Structured questions add up to {detectedMarks} marks.
+                              </p>
+                              <p className="mt-1 text-xs font-semibold opacity-80">
+                                The learner scorecard and publish checks use the Total marks field.
+                                If the extracted paper total is wrong, update it here before publishing.
+                              </p>
+                            </div>
+                            {hasMismatch && (
+                              <button
+                                type="button"
+                                onClick={() => setTotalMarks(String(detectedMarks))}
+                                className="shrink-0 rounded-xl bg-white px-4 py-2 text-xs font-black uppercase tracking-wider text-amber-700 shadow-sm transition hover:bg-amber-100"
+                              >
+                                Use {detectedMarks} marks
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })()}
                     <div className="overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
                       <div className="flex items-center justify-between border-b border-slate-200 bg-slate-100/70 px-4 py-3">
                         <span className="text-xs font-bold uppercase tracking-wider text-slate-600">
