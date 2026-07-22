@@ -10,10 +10,12 @@ import {
   FileCheck2,
   FileText,
   Loader2,
+  Lock,
   Search,
   ShieldCheck,
   SlidersHorizontal,
   Smartphone,
+  Unlock,
   X,
 } from 'lucide-react';
 import logoImg from '../assets/images/main_logo.png';
@@ -43,6 +45,16 @@ export const ExamPaperBankPage: React.FC = () => {
   const [checkoutReference, setCheckoutReference] = React.useState('');
   const [buying, setBuying] = React.useState(false);
   const [buyer, setBuyer] = React.useState({ name: '', phone: '', email: '' });
+
+  const [unlockedPaperIds, setUnlockedPaperIds] = React.useState<Set<string>>(new Set());
+
+  const markPaperUnlocked = React.useCallback((id: string | number) => {
+    setUnlockedPaperIds((prev) => new Set([...prev, String(id)]));
+  }, []);
+
+  const isPaperUnlocked = React.useCallback((id: string | number) => {
+    return Boolean(isPro || unlockedPaperIds.has(String(id)));
+  }, [isPro, unlockedPaperIds]);
 
   React.useEffect(() => {
     let active = true;
@@ -80,6 +92,7 @@ export const ExamPaperBankPage: React.FC = () => {
       try {
         const access = await examPaperBankService.getAccess(examId, reference);
         if (!cancelled && access.paid) {
+          markPaperUnlocked(examId);
           navigate(`/exam-papers/${encodeURIComponent(String(examId))}/read`, { replace: true });
           return;
         }
@@ -91,7 +104,7 @@ export const ExamPaperBankPage: React.FC = () => {
     };
     void check();
     return () => { cancelled = true; };
-  }, [navigate, searchParams]);
+  }, [markPaperUnlocked, navigate, searchParams]);
 
   React.useEffect(() => {
     if (!checkoutReference || !selected) return;
@@ -100,6 +113,7 @@ export const ExamPaperBankPage: React.FC = () => {
       try {
         const access = await examPaperBankService.getAccess(selected.id, checkoutReference);
         if (!cancelled && access.paid) {
+          markPaperUnlocked(selected.id);
           window.clearInterval(interval);
           navigate(`/exam-papers/${encodeURIComponent(String(selected.id))}/read`);
         }
@@ -108,7 +122,7 @@ export const ExamPaperBankPage: React.FC = () => {
       }
     }, 3000);
     return () => { cancelled = true; window.clearInterval(interval); };
-  }, [checkoutReference, navigate, selected]);
+  }, [checkoutReference, markPaperUnlocked, navigate, selected]);
 
   const subjects = React.useMemo(
     () => ['All subjects', ...Array.from(new Set(papers.map((paper) => normalise(paper.subject)).filter(Boolean))).sort()],
@@ -138,6 +152,7 @@ export const ExamPaperBankPage: React.FC = () => {
     try {
       const result = await examPaperBankService.initiatePurchase(selected.id, buyer);
       if (result.already_paid) {
+        markPaperUnlocked(selected.id);
         navigate(`/exam-papers/${encodeURIComponent(String(selected.id))}/read`);
         return;
       }
@@ -154,9 +169,14 @@ export const ExamPaperBankPage: React.FC = () => {
   const openPaper = async (paper: ExamPaperBankItem) => {
     setSelected(paper);
     setSearchParams({ paper: String(paper.id) });
+    if (isPaperUnlocked(paper.id)) {
+      navigate(`/exam-papers/${encodeURIComponent(String(paper.id))}/read`);
+      return;
+    }
     try {
       const access = await examPaperBankService.getAccess(paper.id);
       if (access.paid) {
+        markPaperUnlocked(paper.id);
         navigate(`/exam-papers/${encodeURIComponent(String(paper.id))}/read`);
         return;
       }
@@ -169,13 +189,14 @@ export const ExamPaperBankPage: React.FC = () => {
   const openRevisionMode = async (paper: ExamPaperBankItem) => {
     setSelected(paper);
     setSearchParams({ paper: String(paper.id) });
-    if (isPro) {
+    if (isPaperUnlocked(paper.id)) {
       navigate(`/revision?paper=${encodeURIComponent(String(paper.id))}`);
       return;
     }
     try {
       const access = await examPaperBankService.getAccess(paper.id);
       if (access.paid) {
+        markPaperUnlocked(paper.id);
         navigate(`/revision?paper=${encodeURIComponent(String(paper.id))}`);
         return;
       }
@@ -243,27 +264,85 @@ export const ExamPaperBankPage: React.FC = () => {
           {loading ? <div className="flex min-h-72 items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-indigo-600" /></div> : null}
           {!loading && filtered.length > 0 ? (
             <div className="mt-7 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {filtered.map((paper) => (
-                <article key={paper.id} className="flex flex-col rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-indigo-200 hover:shadow-md">
-                  <div className="flex items-start justify-between gap-4">
-                    <span className="rounded-full bg-indigo-50 px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-indigo-700">SomaAI Original</span>
-                    <span className="text-lg font-black text-slate-950">KES {EXAM_PAPER_PRICE_KES}</span>
-                  </div>
-                  <h2 className="mt-4 text-lg font-black leading-snug text-[#07133f]">{paper.title}</h2>
-                  <div className="mt-3 flex flex-wrap gap-2 text-xs font-bold text-slate-500">
-                    <span>{paper.subject}</span><span>·</span><span>{paper.grade}</span>{paper.exam_body ? <><span>·</span><span>{paper.exam_body}</span></> : null}
-                    {paper.duration_minutes ? <><span>·</span><span className="inline-flex items-center gap-1"><Clock className="h-3.5 w-3.5" /> {paper.duration_minutes} min</span></> : null}
-                  </div>
-                  <div className="mt-5 space-y-2 border-t border-slate-100 pt-4 text-sm font-semibold text-slate-600">
-                    <p className="flex items-center gap-2"><FileText className="h-4 w-4 text-indigo-600" /> Complete exam paper</p>
-                    <p className="flex items-center gap-2"><FileCheck2 className="h-4 w-4 text-emerald-600" /> {paper.has_marking_scheme ? 'Marking scheme included' : 'Marking scheme being prepared'}</p>
-                  </div>
-                  <div className="mt-auto grid grid-cols-[1fr_auto] gap-2 pt-6">
-                    <button onClick={() => void openPaper(paper)} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 text-sm font-black text-white hover:bg-indigo-700">Get paper <ArrowRight className="h-4 w-4" /></button>
-                    <button onClick={() => void openRevisionMode(paper)} title="Open in Revision Mode" className="inline-flex min-h-11 items-center justify-center rounded-xl border border-slate-200 px-4 text-sm font-black text-slate-700 hover:border-indigo-300 hover:text-indigo-700"><BookOpen className="h-4 w-4" /></button>
-                  </div>
-                </article>
-              ))}
+              {filtered.map((paper) => {
+                const unlocked = isPaperUnlocked(paper.id);
+
+                return (
+                  <article
+                    key={paper.id}
+                    className={`flex flex-col rounded-2xl border p-5 shadow-sm transition hover:shadow-md ${
+                      unlocked
+                        ? 'border-emerald-300/80 bg-gradient-to-b from-emerald-50/20 via-white to-white'
+                        : 'border-slate-200 bg-white hover:border-indigo-200'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      {unlocked ? (
+                        <span className="inline-flex items-center gap-1 rounded-full border border-emerald-300/60 bg-emerald-100 px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-emerald-800">
+                          <CheckCircle2 className="h-3 w-3 text-emerald-600" />
+                          {isPro ? 'Unlocked with Pro' : 'Purchased'}
+                        </span>
+                      ) : (
+                        <span className="rounded-full bg-indigo-50 px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-indigo-700">
+                          SomaAI Original
+                        </span>
+                      )}
+
+                      {unlocked ? (
+                        <span className="inline-flex items-center gap-1 rounded-lg bg-emerald-50 px-2.5 py-1 text-xs font-black text-emerald-700">
+                          <Unlock className="h-3.5 w-3.5 text-emerald-600" /> Unlocked
+                        </span>
+                      ) : (
+                        <span className="text-lg font-black text-slate-950">
+                          KES {EXAM_PAPER_PRICE_KES}
+                        </span>
+                      )}
+                    </div>
+
+                    <h2 className="mt-4 text-lg font-black leading-snug text-[#07133f]">{paper.title}</h2>
+                    <div className="mt-3 flex flex-wrap gap-2 text-xs font-bold text-slate-500">
+                      <span>{paper.subject}</span><span>·</span><span>{paper.grade}</span>{paper.exam_body ? <><span>·</span><span>{paper.exam_body}</span></> : null}
+                      {paper.duration_minutes ? <><span>·</span><span className="inline-flex items-center gap-1"><Clock className="h-3.5 w-3.5" /> {paper.duration_minutes} min</span></> : null}
+                    </div>
+
+                    <div className="mt-5 space-y-2 border-t border-slate-100 pt-4 text-sm font-semibold text-slate-600">
+                      <p className="flex items-center gap-2"><FileText className="h-4 w-4 text-indigo-600" /> Complete exam paper</p>
+                      <p className="flex items-center gap-2"><FileCheck2 className="h-4 w-4 text-emerald-600" /> {paper.has_marking_scheme ? 'Marking scheme included' : 'Marking scheme being prepared'}</p>
+                    </div>
+
+                    <div className="mt-auto grid grid-cols-2 gap-2 pt-6">
+                      <button
+                        onClick={() => void openPaper(paper)}
+                        className={`inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl px-3 text-xs font-black transition-all ${
+                          unlocked
+                            ? 'bg-slate-900 text-white hover:bg-slate-800'
+                            : 'bg-indigo-600 text-white hover:bg-indigo-700'
+                        }`}
+                      >
+                        <span>{unlocked ? 'Read Paper' : 'Get Paper'}</span>
+                        <ArrowRight className="h-3.5 w-3.5" />
+                      </button>
+
+                      <button
+                        onClick={() => void openRevisionMode(paper)}
+                        title={unlocked ? 'Open in Revision Mode (Unlocked)' : 'Unlock Revision Mode (KES 20 or Pro)'}
+                        className={`inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl border px-3 text-xs font-black transition-all ${
+                          unlocked
+                            ? 'border-emerald-300 bg-emerald-50 text-emerald-800 hover:bg-emerald-100'
+                            : 'border-slate-200 bg-slate-50 text-slate-700 hover:border-indigo-300 hover:text-indigo-700'
+                        }`}
+                      >
+                        {unlocked ? (
+                          <BookOpen className="h-3.5 w-3.5 text-emerald-600" />
+                        ) : (
+                          <Lock className="h-3.5 w-3.5 text-slate-400" />
+                        )}
+                        <span>Revision</span>
+                      </button>
+                    </div>
+                  </article>
+                );
+              })}
             </div>
           ) : null}
           {!loading && filtered.length === 0 ? <div className="mt-7 rounded-2xl border border-slate-200 bg-white p-12 text-center"><FileText className="mx-auto h-10 w-10 text-slate-300" /><h2 className="mt-4 text-lg font-black">No matching papers</h2><p className="mt-2 text-sm text-slate-500">Try another grade, subject, or search term.</p></div> : null}

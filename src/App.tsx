@@ -6,6 +6,7 @@ import { ConnectivityBanner } from './components/ConnectivityBanner';
 import { SessionConflictModal } from './components/SessionConflictModal';
 import { SubscriptionExpiredModal } from './components/SubscriptionExpiredModal';
 import { UpgradeModal } from './components/UpgradeModal';
+import { WhatsAppFloatingWidget } from './components/WhatsAppFloatingWidget';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { supabase } from './lib/supabase';
 import { AdminGuard } from './components/AdminGuard';
@@ -46,6 +47,7 @@ const CampusPage = React.lazy(() => safeImport(() => import('./pages/CampusPage'
 // Blog Pages
 const BlogIndex = React.lazy(() => safeImport(() => import('./pages/Blog/BlogIndex').then(module => ({ default: module.BlogIndex }))));
 const BlogPost = React.lazy(() => safeImport(() => import('./pages/Blog/BlogPost').then(module => ({ default: module.BlogPost }))));
+const ContactUsPage = React.lazy(() => safeImport(() => import('./pages/ContactUsPage').then(module => ({ default: module.ContactUsPage }))));
 const AskSomo = React.lazy(() => safeImport(() => import('./components/AskSomo').then(module => ({ default: module.AskSomo }))));
 
 // Loading Fallback Component
@@ -213,6 +215,7 @@ const App: React.FC = () => {
                 <SessionConflictModal />
                 <SubscriptionExpiredModal />
                 <UpgradeModal onUpgrade={(_planId) => navigate('/pricing')} />
+                <WhatsAppFloatingWidget />
                 <Suspense fallback={<PageLoader />}>
                     <main id="main-content">
                         <Routes>
@@ -245,6 +248,8 @@ const App: React.FC = () => {
                             <Route path="/class/:classId" element={<ClassJoinPage />} />
                             <Route path="/blog" element={<BlogIndex />} />
                             <Route path="/blog/:slug" element={<BlogPost />} />
+                            <Route path="/contact" element={<ContactUsPage />} />
+                            <Route path="/contact-us" element={<ContactUsPage />} />
                             <Route path="*" element={<Navigate to="/" replace />} />
                         </Routes>
                     </main>
