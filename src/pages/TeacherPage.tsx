@@ -1,31 +1,47 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { TeacherDashboard } from '../features/teacher/Teacher';
 import { TeacherDashboardTab } from '../features/teacher/teacherNavigation';
-import { ViewState } from '../types';
+import { ViewState, UserRole } from '../types';
+import { useApp } from '../context/AppContext';
+import { TeacherLanding } from '../components/TeacherLanding';
+import { LoginModal } from '../components/LoginModal';
+import { RegistrationModal } from '../components/RegistrationModal';
 
 type TeacherInitialTab = 'DASHBOARD' | 'CREATION_HUB' | TeacherDashboardTab | 'EARNINGS' | 'HOME' | 'VOICE' | 'MARKETPLACE' | 'PROFILE' | 'REPORTS';
 
 export const TeacherPage: React.FC = () => {
     const navigate = useNavigate();
     const location = useLocation();
+    const { isRegistered, role, studentProfile, teacherProfile } = useApp();
     const state = location.state as { initialTab?: TeacherInitialTab } | null;
+
+    const [showLoginModal, setShowLoginModal] = useState(false);
+    const [showRegisterModal, setShowRegisterModal] = useState(false);
+    const [previewTabOverride, setPreviewTabOverride] = useState<TeacherInitialTab | null>(null);
 
     // Determine initial tab based on route
     let initialTab: TeacherInitialTab = 'DASHBOARD';
+    const isSubRoute = location.pathname !== '/teacher';
+
     if (location.pathname === '/teacher/notes') initialTab = 'HOME';
     if (location.pathname === '/teacher/homework') initialTab = 'HOME';
     if (location.pathname === '/teacher/marking') initialTab = 'MARKING';
     if (location.pathname === '/teacher/darasa') initialTab = 'DARASA_MODE';
     if (location.pathname === '/teacher/syllabus') initialTab = 'SYLLABUS_TRACKER';
     if (state?.initialTab) initialTab = state.initialTab;
+    if (previewTabOverride) initialTab = previewTabOverride;
 
     const handleNavigate = (view: ViewState) => {
         if (view === ViewState.DASHBOARD) {
             navigate('/');
         }
     };
+
+    // An unauthenticated visitor on /teacher gets the high-converting Teacher Studio Showcase
+    const isTeacherUser = role === UserRole.TEACHER || Boolean(teacherProfile?.id);
+    const showLandingShowcase = !isTeacherUser && !isRegistered && !isSubRoute && !previewTabOverride;
 
     return (
         <>
@@ -73,10 +89,40 @@ export const TeacherPage: React.FC = () => {
                     })}
                 </script>
             </Helmet>
-            <TeacherDashboard
-                onNavigate={handleNavigate}
-                initialTab={initialTab}
-            />
+
+            {showLandingShowcase ? (
+                <>
+                    <TeacherLanding
+                        onLogin={() => setShowLoginModal(true)}
+                        onRegister={() => setShowRegisterModal(true)}
+                        onExploreTool={(tab) => setPreviewTabOverride(tab as TeacherInitialTab)}
+                    />
+                    <LoginModal
+                        isOpen={showLoginModal}
+                        onClose={() => setShowLoginModal(false)}
+                        onSuccess={() => setShowLoginModal(false)}
+                        onSwitchToRegister={() => {
+                            setShowLoginModal(false);
+                            setShowRegisterModal(true);
+                        }}
+                    />
+                    <RegistrationModal
+                        isOpen={showRegisterModal}
+                        onClose={() => setShowRegisterModal(false)}
+                        onSuccess={() => setShowRegisterModal(false)}
+                        onSwitchToLogin={() => {
+                            setShowRegisterModal(false);
+                            setShowLoginModal(true);
+                        }}
+                        initialRole="TEACHER"
+                    />
+                </>
+            ) : (
+                <TeacherDashboard
+                    onNavigate={handleNavigate}
+                    initialTab={initialTab}
+                />
+            )}
         </>
     );
 };
