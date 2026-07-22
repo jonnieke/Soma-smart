@@ -1,201 +1,424 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useNavigate } from 'react-router-dom';
-import { CalendarDays, BellRing, BookOpen, CheckCircle2, ExternalLink, Lightbulb, ClipboardList, ShieldAlert, ArrowLeft } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+    CalendarDays, BellRing, BookOpen, CheckCircle2, ExternalLink, Lightbulb,
+    ClipboardList, ShieldAlert, ArrowLeft, Clock, Target, Sparkles, MessageCircle,
+    Flame, ArrowRight, Zap, CheckCircle, HelpCircle, FileText, Bot, Trophy, Compass
+} from 'lucide-react';
 import { SchoolCalendar } from '../components/SchoolCalendar';
+import logoImg from '../assets/images/main_logo.png';
 
-const newsItems = [
-  {
-    title: 'Revision season is here',
-    body: 'Start with one paper a day and review the mistakes immediately after each attempt.',
-    badge: 'New',
-  },
-  {
-    title: 'Original papers first',
-    body: 'The library now prioritizes SomaAI originals so learners revise with rights-safe papers.',
-    badge: 'Library',
-  },
-  {
-    title: 'Ask Akili stays available',
-    body: 'When a topic feels hard, use Ask Akili for quick explanations, examples, and follow-up practice.',
-    badge: 'Support',
-  },
+interface GuideNewsItem {
+    id: string;
+    title: string;
+    body: string;
+    category: 'KCSE' | 'KPSEA' | 'CBC' | 'LIBRARY';
+    actionText: string;
+    actionTarget: string;
+    badge: string;
+}
+
+const NEWS_UPDATES: GuideNewsItem[] = [
+    {
+        id: 'news-1',
+        title: 'KCSE 2026 Preparation Window Open',
+        body: 'Official KNEC past papers and SomaAI Originals are updated in the Exam Paper Bank with full step-by-step marking schemes.',
+        category: 'KCSE',
+        actionText: 'Attempt KCSE Papers',
+        actionTarget: '/revision',
+        badge: 'KCSE Focus',
+    },
+    {
+        id: 'news-2',
+        title: 'KPSEA Grade 6 Assessment Guidelines',
+        body: 'Grade 6 national assessment preparation includes science experiments, Kiswahili Inshaa, and mathematics speed drills.',
+        category: 'KPSEA',
+        actionText: 'Open KPSEA Hub',
+        actionTarget: '/revision?pathway=KPSEA',
+        badge: 'KPSEA Grade 6',
+    },
+    {
+        id: 'news-3',
+        title: 'CBC Grade 8 & 9 Junior Secondary Notes',
+        body: 'Official syllabus-aligned CBC notes for Agriculture, Computer Studies, Creative Arts, and Integrated Science are in the library.',
+        category: 'CBC',
+        actionText: 'Browse CBC Notes',
+        actionTarget: '/learner',
+        badge: 'CBC JSS',
+    },
+    {
+        id: 'news-4',
+        title: 'Ask Akili Step-by-Step Problem Solver',
+        body: 'When stuck on complex math or science questions, use Ask Akili to get step-by-step working and method marks guidance.',
+        category: 'LIBRARY',
+        actionText: 'Ask Akili AI',
+        actionTarget: '/learner',
+        badge: 'AI Tutor',
+    },
 ];
 
-const syllabusItems = [
-  {
-    title: 'Official curriculum guides',
-    body: 'Use the syllabus to see exactly what is covered, what is examinable, and what needs extra practice.',
-  },
-  {
-    title: 'Grade and subject clarity',
-    body: 'Check the right grade path before studying so the learner stays focused on the right learning area.',
-  },
-  {
-    title: 'Move from guide to practice',
-    body: 'Read the syllabus here, then jump into revision papers to test the same topics under exam conditions.',
-  },
-];
-
-const dosDonts = [
-  { type: 'Do', title: 'Read the instructions first', body: 'Know the marks, timing, and compulsory sections before answering.' },
-  { type: 'Do', title: 'Show working clearly', body: 'Even when the final answer is wrong, working can earn method marks.' },
-  { type: 'Don\'t', title: 'Skip the question wording', body: 'Words like explain, state, or give reasons change the type of answer expected.' },
-  { type: 'Don\'t', title: 'Leave out units', body: 'A correct number with the wrong unit can still lose marks.' },
-];
-
-const studyTips = [
-  'Attempt one paper under time before looking at the solution.',
-  'Mark mistakes immediately and make a short repair note.',
-  'Return to weak topics the same day while the memory is fresh.',
-  'Use the syllabus to check the exact topic before a revision session.',
-];
-
-const notices = [
-  'Exam dates may change. Always confirm with your school or official notices.',
-  'Syllabus updates and exam guidance will appear here first for learners.',
-  'Keep your revision focused on the grade you are currently enrolled in.',
+const KNEC_MARKING_STRATEGIES = [
+    {
+        subject: 'Mathematics',
+        doTip: 'Show all working steps — KNEC awards method marks (M marks) even if the final calculation has an arithmetic error.',
+        dontTip: 'Writing only the final answer without steps loses all method marks if the number is wrong.',
+        badgeBg: 'bg-blue-500/10 text-blue-700 border-blue-200',
+    },
+    {
+        subject: 'Biology',
+        doTip: 'Label diagrams completely using clear straight lines. Use correct scientific terms (e.g., osmosis, transpiration).',
+        dontTip: 'Vague descriptions like "it absorbs water" instead of "water enters by osmosis" score zero.',
+        badgeBg: 'bg-emerald-500/10 text-emerald-700 border-emerald-200',
+    },
+    {
+        subject: 'Chemistry',
+        doTip: 'Include state symbols (s, l, g, aq) in chemical equations and record exact color changes in Paper 3 practicals.',
+        dontTip: 'Omitting state symbols or skipping observation units in practical questions loses easy marks.',
+        badgeBg: 'bg-purple-500/10 text-purple-700 border-purple-200',
+    },
+    {
+        subject: 'English & Kiswahili',
+        doTip: 'Follow standard essay structure: introduction (2 marks), 3 developed body paragraphs (12 marks), and conclusion.',
+        dontTip: 'Writing single-word answers in comprehension without full context loses half the marks.',
+        badgeBg: 'bg-amber-500/10 text-amber-800 border-amber-200',
+    },
 ];
 
 export const SomaGuidePage: React.FC = () => {
-  const navigate = useNavigate();
+    const navigate = useNavigate();
+    const [selectedCategory, setSelectedCategory] = useState<'ALL' | 'KCSE' | 'KPSEA' | 'CBC'>('ALL');
+    const [activeCandidate, setActiveCandidate] = useState<'KCSE' | 'KPSEA'>('KCSE');
 
-  return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(79,70,229,0.12),_transparent_34%),linear-gradient(180deg,#f8f9ff_0%,#ffffff_30%,#f8fafc_100%)] text-slate-900">
-      <Helmet>
-        <title>Soma Guide | Soma AI</title>
-        <meta name="description" content="Educational news, syllabus updates, examination dates, study guidance and official learner notices." />
-      </Helmet>
+    // Calculate dynamic countdown days
+    const candidateCountdownDays = useMemo(() => {
+        const targetDate = activeCandidate === 'KCSE' ? new Date('2026-11-02') : new Date('2026-10-26');
+        const today = new Date();
+        const diffTime = targetDate.getTime() - today.getTime();
+        return Math.max(0, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
+    }, [activeCandidate]);
 
-      <header className="sticky top-0 z-40 border-b border-slate-200/80 bg-white/90 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
-          <button type="button" onClick={() => navigate('/')} className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 hover:border-indigo-200 hover:text-indigo-700">
-            <ArrowLeft className="h-4 w-4" /> Home
-          </button>
-          <div className="text-right">
-            <p className="text-[10px] font-black uppercase tracking-[0.22em] text-indigo-600">Menu label: Soma Guide</p>
-            <h1 className="text-lg font-black text-slate-950 sm:text-xl">Your Guide to School and Exams</h1>
-          </div>
-        </div>
-      </header>
+    const filteredNews = useMemo(() => {
+        if (selectedCategory === 'ALL') return NEWS_UPDATES;
+        return NEWS_UPDATES.filter(item => item.category === selectedCategory || item.category === 'LIBRARY');
+    }, [selectedCategory]);
 
-      <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
-        <section className="overflow-hidden rounded-[2rem] border border-indigo-100 bg-gradient-to-br from-indigo-700 via-slate-900 to-blue-700 px-6 py-8 text-white shadow-2xl shadow-indigo-200/50 sm:px-8">
-          <div className="max-w-3xl">
-            <p className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.22em] text-indigo-100">
-              <BookOpen className="h-3.5 w-3.5" /> Soma Guide
-            </p>
-            <h2 className="mt-4 text-3xl font-black tracking-tight sm:text-4xl">Your Guide to School and Exams</h2>
-            <p className="mt-3 text-base leading-7 text-indigo-50/90 sm:text-lg">Educational news, syllabus updates, examination dates, study guidance and official learner notices.</p>
-          </div>
-        </section>
+    return (
+        <div className="min-h-screen bg-slate-50 text-slate-900 font-sans selection:bg-indigo-100 selection:text-indigo-900">
+            <Helmet>
+                <html lang="en" />
+                <title>Soma Guide | KCSE, KPSEA &amp; CBC Academic Calendar &amp; Exam Updates Kenya</title>
+                <meta name="description" content="Official Kenyan educational guide for KCSE, KPSEA, and CBC students. Access school term calendars, KNEC exam dates, study strategy tips, and direct revision tools." />
+                <meta name="keywords" content="Soma Guide, KCSE 2026 calendar, KPSEA exam dates Kenya, KNEC timetable, CBC syllabus notes, KCSE revision strategy, Kenyan school calendar" />
 
-        <div className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          {newsItems.map((item) => (
-            <article key={item.title} className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
-              <div className="flex items-center justify-between gap-3">
-                <p className="text-[10px] font-black uppercase tracking-[0.22em] text-emerald-600">News & Updates</p>
-                <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-emerald-700">{item.badge}</span>
-              </div>
-              <h3 className="mt-3 text-lg font-black text-slate-950">{item.title}</h3>
-              <p className="mt-2 text-sm leading-6 text-slate-600">{item.body}</p>
-            </article>
-          ))}
-        </div>
+                {/* AIO & Search Engine Optimization */}
+                <meta name="smart-search-index" content="index" />
+                <meta name="ai-knowledge-base" content="official-guide" />
+                <meta name="educational-framework" content="KCSE, KPSEA, CBC, KNEC" />
+                <meta name="target-audience" content="Learners, Candidates, Teachers, Parents" />
+                <meta name="robots" content="index, follow, max-image-preview:large" />
 
-        <section id="syllabus" className="mt-10 rounded-[2rem] border border-purple-100 bg-white p-6 shadow-sm sm:p-8">
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <p className="text-[10px] font-black uppercase tracking-[0.22em] text-purple-600">Syllabus</p>
-              <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950">Stay on the right learning path</h2>
-            </div>
-            <button type="button" onClick={() => navigate('/revision')} className="inline-flex items-center gap-2 rounded-xl border border-purple-200 bg-purple-50 px-4 py-2 text-sm font-black text-purple-700 hover:bg-purple-100">
-              Open revision <ExternalLink className="h-4 w-4" />
-            </button>
-          </div>
-          <div className="mt-5 grid gap-4 md:grid-cols-3">
-            {syllabusItems.map((item) => (
-              <div key={item.title} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                <h3 className="text-sm font-black text-slate-950">{item.title}</h3>
-                <p className="mt-2 text-sm leading-6 text-slate-600">{item.body}</p>
-              </div>
-            ))}
-          </div>
-        </section>
+                {/* OpenGraph */}
+                <meta property="og:site_name" content="Somo Smart" />
+                <meta property="og:type" content="website" />
+                <meta property="og:title" content="Soma Guide | KCSE, KPSEA &amp; CBC Academic Calendar &amp; Exam Updates Kenya" />
+                <meta property="og:description" content="School term dates, KNEC exam countdowns, study strategy guides, and direct revision tools for Kenya." />
+                <meta property="og:image" content="https://www.somaai.co.ke/hero_option_a.png" />
+                <meta property="og:url" content="https://www.somaai.co.ke/guide" />
 
-        <section id="exam-calendar" className="mt-10 rounded-[2rem] border border-amber-100 bg-white p-6 shadow-sm sm:p-8">
-          <div className="flex items-center gap-2">
-            <CalendarDays className="h-5 w-5 text-amber-600" />
-            <p className="text-[10px] font-black uppercase tracking-[0.22em] text-amber-600">Exam Calendar</p>
-          </div>
-          <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950">Know the dates before the rush begins</h2>
-          <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">Use the calendar to plan revision blocks, mark the exam window, and keep the learner focused on what is next.</p>
-          <div className="mt-6 overflow-hidden rounded-[1.5rem] border border-slate-200">
-            <SchoolCalendar />
-          </div>
-        </section>
+                <link rel="canonical" href="https://www.somaai.co.ke/guide" />
 
-        <section id="dos-donts" className="mt-10 rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
-          <div className="flex items-center gap-2">
-            <ClipboardList className="h-5 w-5 text-indigo-600" />
-            <p className="text-[10px] font-black uppercase tracking-[0.22em] text-indigo-600">Exam Dos &amp; Don&apos;ts</p>
-          </div>
-          <div className="mt-5 grid gap-4 md:grid-cols-2">
-            {dosDonts.map((item) => (
-              <div key={item.title} className="rounded-2xl border border-slate-200 p-4">
-                <p className={`text-[10px] font-black uppercase tracking-[0.22em] ${item.type === 'Do' ? 'text-emerald-600' : 'text-rose-600'}`}>{item.type}</p>
-                <h3 className="mt-2 text-sm font-black text-slate-950">{item.title}</h3>
-                <p className="mt-2 text-sm leading-6 text-slate-600">{item.body}</p>
-              </div>
-            ))}
-          </div>
-        </section>
+                <script type="application/ld+json">
+                    {JSON.stringify({
+                        "@context": "https://schema.org",
+                        "@type": "EducationalOrganization",
+                        "name": "Somo Smart Academic Guide",
+                        "url": "https://www.somaai.co.ke/guide",
+                        "description": "Official academic guide, school calendars, and exam strategy for Kenyan learners.",
+                        "educationalLevel": ["Primary", "Junior Secondary", "Senior Secondary"]
+                    })}
+                </script>
+            </Helmet>
 
-        <section id="study-tips" className="mt-10 grid gap-4 lg:grid-cols-[1.05fr_0.95fr]">
-          <div className="rounded-[2rem] border border-emerald-100 bg-white p-6 shadow-sm sm:p-8">
-            <div className="flex items-center gap-2">
-              <Lightbulb className="h-5 w-5 text-emerald-600" />
-              <p className="text-[10px] font-black uppercase tracking-[0.22em] text-emerald-600">Study Tips</p>
-            </div>
-            <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950">Small habits that recover marks fast</h2>
-            <ul className="mt-5 space-y-3">
-              {studyTips.map((tip) => (
-                <li key={tip} className="flex items-start gap-3 rounded-2xl bg-emerald-50/70 px-4 py-3 text-sm leading-6 text-slate-700">
-                  <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
-                  <span>{tip}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
+            {/* Functional Header Navbar */}
+            <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur">
+                <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+                    <button onClick={() => navigate('/')} className="flex items-center gap-2.5" aria-label="Somo Smart homepage">
+                        <img src={logoImg} alt="Somo Smart Logo" className="h-9 w-9 object-contain" />
+                        <span className="text-xl font-black text-[#07133f]">Somo Smart</span>
+                        <span className="inline-flex rounded-full bg-indigo-50 border border-indigo-100 px-2.5 py-0.5 text-[10px] font-black uppercase text-indigo-700">
+                            Academic Guide
+                        </span>
+                    </button>
 
-          <div className="rounded-[2rem] border border-rose-100 bg-white p-6 shadow-sm sm:p-8">
-            <div className="flex items-center gap-2">
-              <ShieldAlert className="h-5 w-5 text-rose-600" />
-              <p className="text-[10px] font-black uppercase tracking-[0.22em] text-rose-600">Important Notices</p>
-            </div>
-            <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950">Please check these before each exam session</h2>
-            <div className="mt-5 space-y-3">
-              {notices.map((notice) => (
-                <div key={notice} className="rounded-2xl border border-rose-100 bg-rose-50/60 px-4 py-3 text-sm leading-6 text-slate-700">
-                  {notice}
+                    <div className="flex items-center gap-2 sm:gap-3">
+                        <button onClick={() => navigate('/')} className="hidden rounded-xl border border-slate-200 px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 sm:inline-flex">
+                            Home
+                        </button>
+                        <button onClick={() => navigate('/learner')} className="hidden rounded-xl border border-slate-200 px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 md:inline-flex">
+                            Learner Tools
+                        </button>
+                        <button onClick={() => navigate('/exam-papers')} className="hidden rounded-xl border border-slate-200 px-4 py-2 text-xs font-bold text-slate-700 lg:inline-flex">
+                            Exam Paper Bank
+                        </button>
+                        <button onClick={() => navigate('/revision')} className="rounded-xl bg-indigo-600 px-4 py-2 text-xs font-black text-white hover:bg-indigo-700 transition-colors shadow-sm">
+                            Candidates Hub
+                        </button>
+                    </div>
                 </div>
-              ))}
-            </div>
-          </div>
-        </section>
+            </header>
 
-        <section className="mt-10 rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
-          <div className="flex items-center gap-2">
-            <BellRing className="h-5 w-5 text-slate-700" />
-            <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-700">Quick links</p>
-          </div>
-          <div className="mt-4 flex flex-wrap gap-3">
-            <button type="button" onClick={() => navigate('/revision')} className="rounded-xl bg-slate-950 px-4 py-2 text-sm font-black text-white">Open Revision</button>
-            <button type="button" onClick={() => navigate('/learner')} className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700">Learner page</button>
-            <button type="button" onClick={() => navigate('/')} className="rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-2 text-sm font-black text-indigo-700">Back home</button>
-          </div>
-        </section>
-      </main>
-    </div>
-  );
+            <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 space-y-10">
+
+                {/* Hero Section */}
+                <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-900 via-slate-900 to-purple-950 p-6 sm:p-10 text-white shadow-xl border border-indigo-800/40">
+                    <div className="absolute top-0 right-0 w-80 h-80 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
+                    <div className="relative z-10 max-w-3xl space-y-4">
+                        <div className="inline-flex items-center gap-2 rounded-full bg-indigo-500/20 px-3.5 py-1 text-xs font-extrabold text-indigo-200 border border-indigo-400/20">
+                            <BookOpen className="w-3.5 h-3.5 text-indigo-300" /> Somo Smart Guide &amp; Calendar
+                        </div>
+                        <h1 className="text-3xl sm:text-5xl font-black tracking-tight text-white leading-tight">
+                            Your Practical Guide to <span className="text-indigo-300">Kenyan Exams</span>
+                        </h1>
+                        <p className="text-slate-300 text-sm sm:text-base font-medium leading-relaxed">
+                            Track Ministry of Education term dates, monitor national candidate countdowns, master KNEC marking strategies, and launch immediate revision tools.
+                        </p>
+                    </div>
+                </div>
+
+                {/* Interactive National Candidate Countdown Banner */}
+                <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/80 shadow-sm space-y-6">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-2xl bg-amber-500/10 text-amber-600 flex items-center justify-center font-bold">
+                                <Clock className="w-5 h-5" />
+                            </div>
+                            <div>
+                                <h2 className="text-xl font-black text-slate-900">National Exam Countdown</h2>
+                                <p className="text-xs text-slate-500 font-medium">Days remaining to national candidate examinations</p>
+                            </div>
+                        </div>
+
+                        {/* Candidate Selector */}
+                        <div className="flex items-center gap-2 bg-slate-100 p-1.5 rounded-2xl">
+                            <button
+                                onClick={() => setActiveCandidate('KCSE')}
+                                className={`px-4 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                                    activeCandidate === 'KCSE'
+                                        ? 'bg-slate-900 text-white shadow-sm'
+                                        : 'text-slate-600 hover:text-slate-900'
+                                }`}
+                            >
+                                KCSE 2026 (Form 4)
+                            </button>
+                            <button
+                                onClick={() => setActiveCandidate('KPSEA')}
+                                className={`px-4 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                                    activeCandidate === 'KPSEA'
+                                        ? 'bg-slate-900 text-white shadow-sm'
+                                        : 'text-slate-600 hover:text-slate-900'
+                                }`}
+                            >
+                                KPSEA 2026 (Grade 6)
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
+                        <div className="md:col-span-7 bg-gradient-to-r from-amber-500/10 via-amber-50 to-indigo-50 border border-amber-200/80 rounded-2xl p-6 flex items-center gap-6">
+                            <div className="text-center shrink-0">
+                                <span className="text-4xl sm:text-5xl font-black text-slate-900 block leading-none">{candidateCountdownDays}</span>
+                                <span className="text-[10px] font-black uppercase text-amber-800 tracking-wider">Days Left</span>
+                            </div>
+                            <div className="space-y-1">
+                                <span className="text-xs font-black uppercase tracking-wider text-amber-800 block">
+                                    {activeCandidate} National Assessment
+                                </span>
+                                <h3 className="text-base font-black text-slate-900">
+                                    {activeCandidate === 'KCSE' ? 'KCSE National Examinations 2026' : 'KPSEA Grade 6 National Assessment 2026'}
+                                </h3>
+                                <p className="text-xs text-slate-600">
+                                    {activeCandidate === 'KCSE'
+                                        ? 'Scheduled for November 2026 across all secondary examination centres.'
+                                        : 'Scheduled for October 2026 across primary assessment centres.'}
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="md:col-span-5 flex flex-col gap-3">
+                            <button
+                                onClick={() => navigate(`/revision?pathway=${activeCandidate}`)}
+                                className="w-full py-3.5 px-6 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-black text-sm transition-all shadow-lg shadow-indigo-200 flex items-center justify-center gap-2 group"
+                            >
+                                <span>Start {activeCandidate} Revision Drills</span>
+                                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                            </button>
+                            <button
+                                onClick={() => navigate('/exam-papers')}
+                                className="w-full py-3.5 px-6 rounded-2xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs transition-all flex items-center justify-center gap-2"
+                            >
+                                <FileText className="w-4 h-4 text-indigo-600" />
+                                <span>Browse {activeCandidate} Past Papers Bank</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                {/* News & Syllabus Updates Section with Interactive Triggers */}
+                <div className="space-y-6">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-3 border-b border-slate-200">
+                        <div>
+                            <h2 className="text-xl font-black text-slate-900 flex items-center gap-2">
+                                <Sparkles className="w-5 h-5 text-indigo-600" /> News &amp; Curriculum Guidance
+                            </h2>
+                            <p className="text-xs text-slate-500 font-medium">Stay informed on syllabus updates and revision strategies.</p>
+                        </div>
+
+                        {/* Filter Tabs */}
+                        <div className="flex items-center gap-2">
+                            {(['ALL', 'KCSE', 'KPSEA', 'CBC'] as const).map(cat => (
+                                <button
+                                    key={cat}
+                                    onClick={() => setSelectedCategory(cat)}
+                                    className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                                        selectedCategory === cat
+                                            ? 'bg-slate-900 text-white shadow-sm'
+                                            : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
+                                    }`}
+                                >
+                                    {cat}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        {filteredNews.map(item => (
+                            <motion.div
+                                key={item.id}
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm flex flex-col justify-between hover:shadow-md transition-all"
+                            >
+                                <div>
+                                    <div className="flex items-center justify-between gap-2 mb-3">
+                                        <span className="text-[9px] font-black uppercase tracking-wider text-indigo-700 bg-indigo-50 border border-indigo-100 px-2.5 py-0.5 rounded-full">
+                                            {item.badge}
+                                        </span>
+                                    </div>
+                                    <h3 className="text-sm font-black text-slate-900 mb-2 leading-snug">
+                                        {item.title}
+                                    </h3>
+                                    <p className="text-xs text-slate-600 leading-relaxed font-medium">
+                                        {item.body}
+                                    </p>
+                                </div>
+
+                                <button
+                                    onClick={() => navigate(item.actionTarget)}
+                                    className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-indigo-600 hover:text-indigo-800 transition-colors"
+                                >
+                                    <span>{item.actionText}</span>
+                                    <ArrowRight className="w-3.5 h-3.5" />
+                                </button>
+                            </motion.div>
+                        ))}
+                    </div>
+                </div>
+
+                {/* KNEC Exam Strategy: Do's and Don'ts */}
+                <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/80 shadow-sm space-y-6">
+                    <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                        <div>
+                            <h2 className="text-xl font-black text-slate-900 flex items-center gap-2">
+                                <ClipboardList className="w-5 h-5 text-emerald-600" /> KNEC Marking Scheme Strategy Tips
+                            </h2>
+                            <p className="text-xs text-slate-500 font-medium">Subject-specific rules to protect marks during exams.</p>
+                        </div>
+                        <button
+                            onClick={() => navigate('/learner')}
+                            className="hidden sm:inline-flex items-center gap-1.5 text-xs font-bold text-indigo-600 hover:underline"
+                        >
+                            <span>Test with Ask Akili AI</span>
+                            <ArrowRight className="w-3.5 h-3.5" />
+                        </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {KNEC_MARKING_STRATEGIES.map(item => (
+                            <div key={item.subject} className="rounded-2xl p-5 border border-slate-200/80 bg-slate-50/60 space-y-3">
+                                <span className={`inline-block text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-md border ${item.badgeBg}`}>
+                                    {item.subject} Strategy
+                                </span>
+
+                                <div className="space-y-2 text-xs">
+                                    <div className="flex items-start gap-2 bg-emerald-50/80 border border-emerald-200/80 rounded-xl p-3 text-emerald-900">
+                                        <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                                        <div>
+                                            <span className="font-bold text-emerald-800 block mb-0.5">Do:</span>
+                                            <span className="font-medium text-slate-700">{item.doTip}</span>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-start gap-2 bg-rose-50/80 border border-rose-200/80 rounded-xl p-3 text-rose-900">
+                                        <ShieldAlert className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" />
+                                        <div>
+                                            <span className="font-bold text-rose-800 block mb-0.5">Don&apos;t:</span>
+                                            <span className="font-medium text-slate-700">{item.dontTip}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Ministry School Term Calendar Component */}
+                <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/80 shadow-sm space-y-4">
+                    <div className="flex items-center gap-3 pb-3 border-b border-slate-100">
+                        <div className="w-10 h-10 rounded-2xl bg-indigo-500/10 text-indigo-600 flex items-center justify-center font-bold">
+                            <CalendarDays className="w-5 h-5" />
+                        </div>
+                        <div>
+                            <h2 className="text-xl font-black text-slate-900">Kenyan School Term Calendar</h2>
+                            <p className="text-xs text-slate-500 font-medium">Official term dates, mid-term breaks, and exam windows</p>
+                        </div>
+                    </div>
+
+                    <div className="overflow-hidden rounded-2xl border border-slate-200">
+                        <SchoolCalendar />
+                    </div>
+                </div>
+
+                {/* WhatsApp Support & Notice Card */}
+                <div className="rounded-3xl bg-gradient-to-r from-emerald-900 via-slate-900 to-indigo-950 p-6 sm:p-8 text-white shadow-xl flex flex-col sm:flex-row items-center justify-between gap-6 border border-emerald-800/40">
+                    <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold shrink-0">
+                            <MessageCircle className="w-6 h-6" />
+                        </div>
+                        <div className="space-y-1">
+                            <h3 className="text-lg font-black text-white">Have Questions About Exam Guidance?</h3>
+                            <p className="text-xs text-slate-300 font-medium">
+                                Chat with our Somo Smart academic support team directly on WhatsApp <span className="text-emerald-400 font-bold">+254 722 763 760</span>.
+                            </p>
+                        </div>
+                    </div>
+
+                    <a
+                        href="https://wa.me/254722763760?text=Hi%20Somo%20Smart%20Support%2C%20I%20have%20a%20question%20about%20the%20academic%20guide%20and%20exam%20calendar."
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="shrink-0 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs px-6 py-3.5 rounded-2xl transition-all shadow-lg shadow-emerald-950/40 inline-flex items-center gap-2"
+                    >
+                        <MessageCircle className="w-4 h-4" />
+                        <span>Chat Support (0722763760)</span>
+                    </a>
+                </div>
+
+            </main>
+        </div>
+    );
 };
+
+export default SomaGuidePage;
