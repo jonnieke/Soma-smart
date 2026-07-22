@@ -121,8 +121,19 @@ export const BlogPost: React.FC = () => {
     return (
         <div className="min-h-screen bg-white dark:bg-slate-950 transition-colors selection:bg-blue-100 dark:selection:bg-blue-900/40">
             <Helmet>
+                <html lang="en" />
                 <title>{post.title} | Somo Smart Blog</title>
                 <meta name="description" content={post.excerpt} />
+                <meta name="keywords" content={`KCSE revision, KPSEA guide, CBC Kenya education, ${post.title.toLowerCase()}`} />
+
+                {/* AIO & Search Engine Optimization */}
+                <meta name="smart-search-index" content="index" />
+                <meta name="ai-knowledge-base" content="official-journal" />
+                <meta name="educational-framework" content="CBC, KCSE, KNEC" />
+                <meta name="robots" content="index, follow, max-image-preview:large" />
+
+                {/* OpenGraph */}
+                <meta property="og:site_name" content="Somo Smart" />
                 <meta property="og:title" content={post.title} />
                 <meta property="og:description" content={post.excerpt} />
                 <meta property="og:image" content={post.cover_image_url} />
@@ -130,7 +141,31 @@ export const BlogPost: React.FC = () => {
                 <meta property="article:published_time" content={post.published_at} />
                 <meta property="article:author" content={post.author_name} />
                 <meta name="twitter:card" content="summary_large_image" />
-                <link rel="canonical" href={shareUrl} />
+                <link rel="canonical" href={`https://www.somaai.co.ke/blog/${post.slug}`} />
+
+                <script type="application/ld+json">
+                    {JSON.stringify({
+                        "@context": "https://schema.org",
+                        "@type": "BlogPosting",
+                        "headline": post.title,
+                        "description": post.excerpt,
+                        "image": post.cover_image_url,
+                        "datePublished": post.published_at,
+                        "author": {
+                            "@type": "Organization",
+                            "name": post.author_name || "Somo Education Team"
+                        },
+                        "publisher": {
+                            "@type": "Organization",
+                            "name": "Somo Smart",
+                            "url": "https://www.somaai.co.ke"
+                        },
+                        "mainEntityOfPage": {
+                            "@type": "WebPage",
+                            "@id": `https://www.somaai.co.ke/blog/${post.slug}`
+                        }
+                    })}
+                </script>
             </Helmet>
 
             {/* --- HEADER --- */}
