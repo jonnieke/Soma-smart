@@ -15,6 +15,7 @@ import { LoginModal } from '../../components/LoginModal';
 import { RegistrationModal } from '../../components/RegistrationModal';
 import { LogoutModal } from '../../components/LogoutModal';
 import { examService } from '../../services/examService';
+import { TelegramBanner } from '../../components/TelegramBanner';
 import logoImg from '../../assets/images/main_logo.png';
 
 type CandidatePathway = 'KCSE' | 'KJSEA' | 'KPSEA';
@@ -463,6 +464,12 @@ export const RevisionPortal: React.FC = () => {
                         </div>
                     )}
                 </div>
+
+                {/* Telegram Revision Channel & Bot Launcher Banner */}
+                <TelegramBanner
+                    title="Join 20,000+ Candidates on Telegram"
+                    description="Get daily KCSE, KPSEA & CBC revision quizzes, past paper alerts, and AI study tips directly in your Telegram app."
+                />
 
                 {/* Direct WhatsApp Support Banner for Candidates */}
                 <div className="rounded-3xl bg-gradient-to-r from-emerald-900/50 via-slate-900 to-indigo-950 p-6 border border-emerald-700/30 flex flex-col sm:flex-row items-center justify-between gap-4">
