@@ -17,6 +17,7 @@ import { safeImport } from './utils/safeImport';
 import { trackAnalyticsEvent } from './services/analyticsEventService';
 import { launchFeatures } from './config/launchFeatures';
 import { GA_MEASUREMENT_ID } from './config/analytics';
+import { TelegramService } from './services/telegramService';
 
 // Lazy Load Pages for Performance
 const LandingPage = React.lazy(() => safeImport(() => import('./pages/LandingPage').then(module => ({ default: module.LandingPage }))));
@@ -198,6 +199,10 @@ const App: React.FC = () => {
         };
         window.addEventListener('online', handleOnline);
         if (navigator.onLine) flushMasterySyncQueue();
+
+        // Initialize Telegram WebApp SDK if running inside Telegram (TWA)
+        TelegramService.init();
+
         return () => window.removeEventListener('online', handleOnline);
     }, []);
 
