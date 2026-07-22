@@ -209,18 +209,114 @@ export const ExamPaperBankPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#f7f8fc] text-slate-950">
       <Helmet>
-        <title>Exam Paper Bank | Soma AI</title>
-        <meta name="description" content="Buy SomaAI original exam papers with marking schemes for KES 20. Browse by grade and subject without signing in." />
+        <html lang="en" />
+        <title>KCSE, KPSEA &amp; CBC Exam Paper Bank Kenya | Somo Smart Past Papers</title>
+        <meta name="description" content="Download and attempt KCSE, KPSEA, and CBC past papers with official marking schemes for Kenya. Practice online with timed exam revision, step-by-step answers, and instant marking." />
+        <meta name="keywords" content="KCSE past papers, KPSEA past papers, CBC exam papers Kenya, KNEC revision papers, KCSE marking schemes, Form 4 revision papers, Grade 6 7 8 9 exam papers, Kenyan mock papers, Somo Smart exam paper bank" />
+
+        {/* AIO & Search Engine Optimization */}
+        <meta name="smart-search-index" content="index" />
+        <meta name="ai-knowledge-base" content="official-exams" />
+        <meta name="educational-framework" content="KCSE, KPSEA, CBC, KNEC, 8-4-4" />
+        <meta name="target-audience" content="Kenyan KCSE Candidates, KPSEA Grade 6, CBC JSS Grade 7-9, Teachers &amp; Parents" />
+        <meta name="robots" content="index, follow, max-image-preview:large" />
+
+        {/* OpenGraph / Facebook */}
+        <meta property="og:site_name" content="Somo Smart" />
+        <meta property="og:type" content="website" />
+        <meta property="og:title" content="KCSE, KPSEA &amp; CBC Exam Paper Bank Kenya | Somo Smart" />
+        <meta property="og:description" content="Access official KCSE, KPSEA &amp; CBC revision papers with complete marking schemes and timed online practice." />
+        <meta property="og:image" content="https://www.somaai.co.ke/hero_option_a.png" />
+        <meta property="og:url" content="https://www.somaai.co.ke/exam-papers" />
+
+        {/* Twitter */}
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:site" content="@somasmart" />
+        <meta name="twitter:title" content="KCSE, KPSEA &amp; CBC Exam Paper Bank Kenya" />
+        <meta name="twitter:description" content="Official KCSE, KPSEA &amp; CBC revision papers with marking schemes for Kenyan learners." />
+
+        <link rel="canonical" href="https://www.somaai.co.ke/exam-papers" />
+
+        {/* Structured Data (JSON-LD) for Search Engines & LLMs */}
+        <script type="application/ld+json">
+          {JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "ItemList",
+            "name": "Somo Smart KCSE, KPSEA & CBC Exam Paper Bank",
+            "description": "Comprehensive collection of Kenyan KCSE, KPSEA, and CBC past examination papers with marking schemes.",
+            "url": "https://www.somaai.co.ke/exam-papers",
+            "itemListElement": [
+              {
+                "@type": "ListItem",
+                "position": 1,
+                "name": "KCSE Mathematics Past Papers & Marking Schemes",
+                "url": "https://www.somaai.co.ke/exam-papers?subject=Mathematics"
+              },
+              {
+                "@type": "ListItem",
+                "position": 2,
+                "name": "KCSE English & Kiswahili Past Papers",
+                "url": "https://www.somaai.co.ke/exam-papers?subject=English"
+              },
+              {
+                "@type": "ListItem",
+                "position": 3,
+                "name": "KPSEA Grade 6 National Assessment Papers",
+                "url": "https://www.somaai.co.ke/exam-papers?grade=Grade%206"
+              },
+              {
+                "@type": "ListItem",
+                "position": 4,
+                "name": "CBC Grade 7, 8 & 9 Junior Secondary Revision Papers",
+                "url": "https://www.somaai.co.ke/exam-papers?grade=Grade%208"
+              }
+            ]
+          })}
+        </script>
+        <script type="application/ld+json">
+          {JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "FAQPage",
+            "mainEntity": [
+              {
+                "@type": "Question",
+                "name": "Where can I get official KCSE past papers with marking schemes in Kenya?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Somo Smart Exam Paper Bank provides official KCSE past papers with complete marking schemes for revision online or download."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Can I practice KPSEA and CBC past papers online?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Yes. Somo Smart allows learners to attempt timed KPSEA and CBC papers online with instant AI marking and step-by-step explanations."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "How much do exam papers cost on Somo Smart?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Exam papers start from KES 20 per paper or are accessible via Somo Smart Pro subscription plans."
+                }
+              }
+            ]
+          })}
+        </script>
       </Helmet>
 
       <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
-          <button onClick={() => navigate('/')} className="flex items-center gap-2" aria-label="Soma AI homepage">
-            <img src={logoImg} alt="" className="h-10 w-10 object-contain" />
-            <span className="text-xl font-black text-[#07133f]">Soma AI</span>
+          <button onClick={() => navigate('/')} className="flex items-center gap-2" aria-label="Somo Smart homepage">
+            <img src={logoImg} alt="Somo Smart Logo" className="h-10 w-10 object-contain" />
+            <span className="text-xl font-black text-[#07133f]">Somo Smart</span>
           </button>
           <div className="flex items-center gap-2">
             <button onClick={() => navigate('/')} className="hidden rounded-xl border border-slate-200 px-4 py-2 text-sm font-bold text-slate-700 sm:inline-flex">Home</button>
+            <button onClick={() => navigate('/contact')} className="hidden rounded-xl border border-slate-200 px-4 py-2 text-sm font-bold text-slate-700 md:inline-flex">Contact Us</button>
+            <button onClick={() => navigate('/pricing')} className="hidden rounded-xl border border-slate-200 px-4 py-2 text-sm font-bold text-slate-700 md:inline-flex">Pricing</button>
             <button onClick={() => navigate('/revision')} className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-black text-white">Revision Mode</button>
           </div>
         </div>
@@ -232,9 +328,9 @@ export const ExamPaperBankPage: React.FC = () => {
             <button onClick={() => navigate('/')} className="mb-7 inline-flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-indigo-600"><ArrowLeft className="h-4 w-4" /> Back home</button>
             <div className="grid gap-8 lg:grid-cols-[1fr_360px] lg:items-end">
               <div>
-                <span className="inline-flex rounded-full bg-indigo-50 px-3 py-1 text-xs font-black uppercase tracking-[0.16em] text-indigo-700">Open to everyone · No login required</span>
-                <h1 className="mt-4 max-w-3xl text-4xl font-black tracking-tight text-[#07133f] sm:text-5xl">Exam papers, ready when you are.</h1>
-                <p className="mt-4 max-w-2xl text-base font-medium leading-7 text-slate-600 sm:text-lg">Find a SomaAI Original paper by grade and subject. Get the exam paper and its marking scheme together for KES {EXAM_PAPER_PRICE_KES}.</p>
+                <span className="inline-flex rounded-full bg-indigo-50 px-3 py-1 text-xs font-black uppercase tracking-[0.16em] text-indigo-700">Open to everyone · KCSE, KPSEA &amp; CBC</span>
+                <h1 className="mt-4 max-w-3xl text-4xl font-black tracking-tight text-[#07133f] sm:text-5xl">KCSE, KPSEA &amp; CBC Exam Paper Bank Kenya</h1>
+                <p className="mt-4 max-w-2xl text-base font-medium leading-7 text-slate-600 sm:text-lg">Access official KCSE past papers, KPSEA exams, and CBC assessment papers with complete marking schemes. Attempt online in Revision Mode or read directly on any device.</p>
               </div>
               <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5">
                 <p className="text-xs font-black uppercase tracking-[0.15em] text-emerald-700">One clear price</p>
