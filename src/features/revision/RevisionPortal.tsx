@@ -1,30 +1,30 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Helmet } from 'react-helmet-async';
-import { ArrowRight, Award, BookOpen, Brain, CheckCircle, Clock, FileText, Loader2, LogOut, ShieldCheck, Sparkles, Star, Target, Zap } from 'lucide-react';
+import {
+    ArrowRight, Award, BookOpen, Brain, CheckCircle, Clock, FileText,
+    Loader2, LogOut, ShieldCheck, Sparkles, Star, Target, Zap,
+    Headphones, Volume2, Mic, Flame, CheckCircle2, MessageCircle,
+    Trophy, Calendar, Play, Bot, Notebook, ArrowUpRight, Compass,
+    SlidersHorizontal, Search
+} from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { UserRole } from '../../types';
 import { LoginModal } from '../../components/LoginModal';
 import { RegistrationModal } from '../../components/RegistrationModal';
 import { LogoutModal } from '../../components/LogoutModal';
 import { examService } from '../../services/examService';
+import logoImg from '../../assets/images/main_logo.png';
 
-type CandidatePathway = 'KPSEA' | 'KJSEA' | 'KCSE';
+type CandidatePathway = 'KCSE' | 'KJSEA' | 'KPSEA';
 type PublishedExam = Record<string, any> & { id: string | number; title: string; subject: string; grade: string };
 
-const PATHWAYS: Array<{ id: CandidatePathway; grade: string; label: string }> = [
-    { id: 'KPSEA', grade: 'Grade 6', label: 'Grade 6' },
-    { id: 'KJSEA', grade: 'Grade 9', label: 'Grade 9' },
-    { id: 'KCSE', grade: 'Form 4', label: 'Form 4' },
+const PATHWAYS: Array<{ id: CandidatePathway; grade: string; label: string; sub: string; badge: string }> = [
+    { id: 'KCSE', grade: 'Form 4', label: 'KCSE Candidate Hub', sub: 'Senior Secondary Form 4 Exams', badge: 'National Exam' },
+    { id: 'KJSEA', grade: 'Grade 9', label: 'KJSEA Grade 9 Hub', sub: 'Junior Secondary Assessment', badge: 'CBC JSS' },
+    { id: 'KPSEA', grade: 'Grade 6', label: 'KPSEA Grade 6 Hub', sub: 'Primary National Assessment', badge: 'Primary CBC' },
 ];
-
-const subjectVisual = (index: number) => [
-    { icon: <Brain className="h-6 w-6" />, style: 'bg-slate-100 text-slate-600 border border-slate-200' },
-    { icon: <BookOpen className="h-6 w-6" />, style: 'bg-slate-100 text-slate-600 border border-slate-200' },
-    { icon: <Star className="h-6 w-6" />, style: 'bg-slate-100 text-slate-600 border border-slate-200' },
-    { icon: <Zap className="h-6 w-6" />, style: 'bg-slate-100 text-slate-600 border border-slate-200' },
-][index % 4];
 
 export const RevisionPortal: React.FC = () => {
     const navigate = useNavigate();
@@ -34,9 +34,11 @@ export const RevisionPortal: React.FC = () => {
     const [showLogin, setShowLogin] = useState(false);
     const [showRegister, setShowRegister] = useState(false);
     const [showLogoutModal, setShowLogoutModal] = useState(false);
-    const [pathway, setPathway] = useState<CandidatePathway>('KPSEA');
+    const [pathway, setPathway] = useState<CandidatePathway>('KCSE');
     const [publishedExams, setPublishedExams] = useState<PublishedExam[]>([]);
     const [loadingExams, setLoadingExams] = useState(true);
+    const [activeSolutionTab, setActiveSolutionTab] = useState<'ALL' | 'AUDIO' | 'PAPERS' | 'AI_TUTOR' | 'REPAIR'>('ALL');
+    const [searchQuery, setSearchQuery] = useState('');
 
     useEffect(() => {
         let active = true;
@@ -48,24 +50,15 @@ export const RevisionPortal: React.FC = () => {
     }, []);
 
     const pathwayConfig = PATHWAYS.find(item => item.id === pathway) || PATHWAYS[0];
-    const isSomaOriginalExam = (exam: PublishedExam) => {
-        const source = String(exam.source || '').toUpperCase();
-        const title = String(exam.title || '').toLowerCase();
-        return source.includes('STRUCTURED_IMPORT') || /somaai\s+original|original mock|originals/.test(title);
-    };
 
     const pathwayExams = useMemo(() => publishedExams.filter(exam => {
         const examType = String(exam.exam_type || exam.examType || '').toUpperCase().replace(/[_ -]?STYLE$/, '');
-        return examType === pathway || String(exam.grade || '').toLowerCase() === pathwayConfig.grade.toLowerCase();
-    }), [pathway, pathwayConfig.grade, publishedExams]);
+        const gradeMatch = String(exam.grade || '').toLowerCase().includes(pathwayConfig.grade.toLowerCase());
+        const searchMatch = !searchQuery || String(exam.title || '').toLowerCase().includes(searchQuery.toLowerCase()) || String(exam.subject || '').toLowerCase().includes(searchQuery.toLowerCase());
+        return (examType === pathway || gradeMatch) && searchMatch;
+    }), [pathway, pathwayConfig.grade, publishedExams, searchQuery]);
 
-    const subjectCounts = useMemo(() => Array.from(pathwayExams.reduce((counts, exam) => {
-        const subject = exam.subject || 'General';
-        counts.set(subject, (counts.get(subject) || 0) + 1);
-        return counts;
-    }, new Map<string, number>()).entries()).map(([name, count], index) => ({ name, count, ...subjectVisual(index) })), [pathwayExams]);
-
-    const startRevision = (openExamId?: string | number) => {
+    const startRevision = (openExamId?: string | number, modeOverride?: string) => {
         setRole(UserRole.REVISION);
         if (openExamId) {
             const paper = publishedExams.find(exam => String(exam.id) === String(openExamId)) || pathwayExams[0];
@@ -76,99 +69,449 @@ export const RevisionPortal: React.FC = () => {
                 sessionStorage.setItem('soma_pending_exam_id', String(openExamId));
             }
         }
+        if (modeOverride) {
+            sessionStorage.setItem('soma_revision_intent', modeOverride);
+        }
         navigate('/revision/dashboard');
     };
 
     useEffect(() => {
         if (!requestedPaperId || loadingExams) return;
-        // A purchased paper can unlock Revision Mode for that paper without forcing account login.
-        // The revision dashboard performs the actual subscription-or-purchase access check.
         startRevision(requestedPaperId);
     }, [requestedPaperId, loadingExams]);
 
-    const openExamLibrary = () => {
+    const openAudioRevision = () => {
         if (!isRegistered) {
             setShowRegister(true);
             return;
         }
-        startRevision(pathwayExams[0]?.id);
+        setRole(UserRole.LEARNER);
+        navigate('/learner', { state: { targetTab: 'TALKBACK', intent: 'listen_and_learn' } });
+    };
+
+    const openAskAkili = () => {
+        if (!isRegistered) {
+            setShowRegister(true);
+            return;
+        }
+        setRole(UserRole.LEARNER);
+        navigate('/learner', { state: { targetTab: 'SMART_TUTOR', intent: 'ask_akili' } });
+    };
+
+    const openNotebook = () => {
+        if (!isRegistered) {
+            setShowRegister(true);
+            return;
+        }
+        setRole(UserRole.LEARNER);
+        navigate('/learner', { state: { targetTab: 'NOTEBOOK' } });
     };
 
     return (
-        <div className="min-h-screen bg-slate-50 pb-24 font-sans text-slate-900 md:pb-0">
+        <div className="min-h-screen bg-slate-900 text-slate-100 font-sans selection:bg-indigo-500 selection:text-white">
             <Helmet>
-                <title>SomaAI Exam Prep | KPSEA, KJSEA &amp; KCSE</title>
-                <meta name="description" content="Attempt realistic mock examinations, discover where you lose marks, and follow a personal recovery plan for KPSEA, KJSEA and KCSE." />
+                <html lang="en" />
+                <title>Candidates Exam Hub | KCSE, KPSEA &amp; KJSEA Revision — Somo Smart</title>
+                <meta name="description" content="The dedicated candidates hub for Kenyan KCSE, KPSEA &amp; CBC students. Listen to audio notes, practice past papers under exam conditions, and get instant AI exam coaching." />
+                <meta name="keywords" content="KCSE candidate revision, KPSEA candidates hub, CBC Grade 9 revision, listen and learn Kenya, KCSE past papers online, Somo Smart exam prep" />
+
+                {/* AIO & Search Engine Optimization */}
+                <meta name="smart-search-index" content="index" />
+                <meta name="ai-knowledge-base" content="candidates-hub" />
+                <meta name="educational-framework" content="KCSE, KPSEA, KJSEA, CBC, KNEC" />
+                <meta name="target-audience" content="KCSE Candidates, KPSEA Grade 6, KJSEA Grade 9, Parents &amp; Teachers" />
+                <meta name="robots" content="index, follow, max-image-preview:large" />
+
+                {/* OpenGraph */}
+                <meta property="og:site_name" content="Somo Smart" />
+                <meta property="og:type" content="website" />
+                <meta property="og:title" content="Candidates Exam Hub | KCSE, KPSEA &amp; KJSEA Revision — Somo Smart" />
+                <meta property="og:description" content="The dedicated candidates hub for Kenyan students. Listen to audio revision, attempt past papers, and fix weak topics." />
+                <meta property="og:image" content="https://www.somaai.co.ke/hero_option_a.png" />
+                <meta property="og:url" content="https://www.somaai.co.ke/revision" />
+
+                <link rel="canonical" href="https://www.somaai.co.ke/revision" />
+
+                <script type="application/ld+json">
+                    {JSON.stringify({
+                        "@context": "https://schema.org",
+                        "@type": "Course",
+                        "name": "Somo Smart Candidates Revision Hub",
+                        "description": "Comprehensive revision hub for KCSE, KPSEA and KJSEA candidates in Kenya.",
+                        "provider": {
+                            "@type": "Organization",
+                            "name": "Somo Smart",
+                            "url": "https://www.somaai.co.ke"
+                        },
+                        "educationalLevel": ["Form 4 KCSE", "Grade 9 KJSEA", "Grade 6 KPSEA"],
+                        "offers": {
+                            "@type": "Offer",
+                            "price": "20",
+                            "priceCurrency": "KES"
+                        }
+                    })}
+                </script>
             </Helmet>
 
-            <header className="sticky top-0 z-50 flex items-center justify-between border-b border-slate-200 bg-white/90 px-4 py-4 backdrop-blur-xl sm:px-8">
-                <button onClick={() => navigate('/')} className="flex items-center gap-2 font-black"><ArrowRight className="h-5 w-5 rotate-180 text-slate-400" /> SomaAI <span className="rounded-lg bg-slate-100 px-2 py-1 text-xs text-slate-600">Exam Prep</span></button>
-                {isRegistered ? (
+            {/* Header Navbar */}
+            <header className="sticky top-0 z-50 border-b border-slate-800 bg-slate-900/90 backdrop-blur-xl px-4 py-3.5 sm:px-8">
+                <div className="mx-auto flex max-w-7xl items-center justify-between">
+                    <button
+                        onClick={() => navigate('/')}
+                        className="flex items-center gap-2.5 transition hover:opacity-90"
+                    >
+                        <img src={logoImg} alt="Somo Smart Logo" className="h-9 w-9 object-contain" />
+                        <span className="text-xl font-black text-white">Somo Smart</span>
+                        <span className="inline-flex items-center gap-1 rounded-full bg-indigo-500/20 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-indigo-300 border border-indigo-500/30">
+                            <Flame className="w-3 h-3 text-amber-400 fill-amber-400" /> Candidates Hub
+                        </span>
+                    </button>
+
                     <div className="flex items-center gap-3">
-                        <div className="hidden text-right sm:block"><p className="text-sm font-black">{studentProfile?.name?.split(' ')[0] || 'Candidate'}</p><p className="text-[10px] font-bold text-slate-400">{studentCode}</p></div>
-                        <button onClick={() => startRevision()} className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-black text-white">My Exam Prep</button>
-                        <button onClick={() => setShowLogoutModal(true)} className="rounded-xl p-2 text-slate-400 hover:bg-rose-50 hover:text-rose-500"><LogOut className="h-5 w-5" /></button>
+                        <button
+                            onClick={() => navigate('/contact')}
+                            className="hidden text-xs font-bold text-slate-300 hover:text-white sm:inline-block"
+                        >
+                            Help (0722763760)
+                        </button>
+
+                        {isRegistered ? (
+                            <div className="flex items-center gap-3">
+                                <div className="hidden text-right sm:block">
+                                    <p className="text-xs font-black text-white">{studentProfile?.name?.split(' ')[0] || 'Candidate'}</p>
+                                    <p className="text-[10px] font-bold text-indigo-300">{studentCode}</p>
+                                </div>
+                                <button
+                                    onClick={() => startRevision()}
+                                    className="rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 px-4 py-2 text-xs font-black text-white shadow-lg shadow-indigo-500/20 hover:from-indigo-500 hover:to-purple-500 transition-all"
+                                >
+                                    My Exam Space
+                                </button>
+                                <button
+                                    onClick={() => setShowLogoutModal(true)}
+                                    className="rounded-xl p-2 text-slate-400 hover:bg-slate-800 hover:text-rose-400 transition-colors"
+                                    aria-label="Logout"
+                                >
+                                    <LogOut className="h-4 w-4" />
+                                </button>
+                            </div>
+                        ) : (
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={() => setShowLogin(true)}
+                                    className="px-3.5 py-2 text-xs font-black text-slate-300 hover:text-white"
+                                >
+                                    Sign In
+                                </button>
+                                <button
+                                    onClick={() => setShowRegister(true)}
+                                    className="rounded-xl bg-indigo-600 px-4 py-2 text-xs font-black text-white hover:bg-indigo-500 transition-colors"
+                                >
+                                    Start Free
+                                </button>
+                            </div>
+                        )}
                     </div>
-                ) : (
-                    <div className="flex items-center gap-2"><button onClick={() => setShowLogin(true)} className="px-3 py-2 text-sm font-black text-slate-600">Login</button><button onClick={() => setShowRegister(true)} className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-black text-white">Start free</button></div>
-                )}
+                </div>
             </header>
 
-            <main className="mx-auto max-w-6xl space-y-20 px-4 py-10 sm:px-8 sm:py-16">
-                <section className="text-center">
-                    <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="mx-auto max-w-4xl space-y-6">
-                        <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-black uppercase tracking-[0.2em] text-slate-600"><Award className="h-4 w-4 text-indigo-500" /> Your candidate success space</div>
-                        <h1 className="text-5xl font-black leading-[1.05] tracking-tight text-slate-900 sm:text-7xl">Published papers first.<br /><span className="text-indigo-600">Open one and start improving.</span></h1>
-                        <p className="mx-auto max-w-2xl text-lg font-medium leading-relaxed text-slate-600 -slate-300">Choose a real paper, open it fast, and use marks and feedback to recover weak areas before exam day.</p>
-                        <div className="flex flex-wrap justify-center gap-3 pt-3">
-                            {PATHWAYS.map(item => <button key={item.id} onClick={() => setPathway(item.id)} className={`rounded-2xl border px-6 py-3 text-left transition ${pathway === item.id ? 'border-indigo-600 bg-indigo-600 text-white shadow-lg' : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50'}`}><span className="block text-sm font-black">{item.id}</span><span className={`block text-[10px] font-bold ${pathway === item.id ? 'text-indigo-100' : 'text-slate-400'}`}>{item.label}</span></button>)}
-                        </div>
-                        <button onClick={openExamLibrary} className="inline-flex items-center gap-3 rounded-2xl bg-indigo-600 px-8 py-4 text-lg font-black text-white shadow-lg shadow-indigo-600/20 hover:bg-indigo-700">{isRegistered ? 'Start paper' : 'Start free'} <ArrowRight className="h-5 w-5" /></button>
-                        {pathwayExams.length > 0 && <div className="grid gap-3 pt-2 sm:grid-cols-3">{pathwayExams.slice(0, 3).map(exam => <button key={exam.id} onClick={() => startRevision(exam.id)} className="rounded-2xl border border-slate-200 bg-white px-4 py-4 text-left transition hover:-translate-y-0.5 hover:border-indigo-200 hover:shadow-md"><span className="inline-flex rounded-full bg-slate-100 px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-slate-600">Paper ready</span><span className="mt-3 block text-sm font-black leading-snug text-slate-900">{exam.title}</span><span className="mt-2 block text-[11px] font-bold text-slate-400">{exam.subject} / {exam.grade}</span></button>)}</div>}
-                        <div className="flex flex-wrap justify-center gap-5 text-xs font-bold text-slate-500"><span className="flex items-center gap-2"><ShieldCheck className="h-4 w-4 text-indigo-500" /> Papers first</span><span className="flex items-center gap-2"><BookOpen className="h-4 w-4 text-indigo-500" /> {publishedExams.length} published exam{publishedExams.length === 1 ? '' : 's'}</span></div>
-                    </motion.div>
-                </section>
+            <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 space-y-10">
 
-                <section className="rounded-[2.5rem] border border-slate-200 bg-white p-6 -slate-800 -slate-900 sm:p-10">
-                    <div className="mb-8 flex items-end justify-between gap-4"><div><p className="text-xs font-black uppercase tracking-[0.2em] text-indigo-600">Paper library</p><h2 className="mt-2 text-3xl font-black">{pathway} papers ready to open</h2><p className="mt-2 text-sm text-slate-500">Start with one paper, then move through the rest at your pace.</p></div><button onClick={openExamLibrary} className="hidden items-center gap-2 text-sm font-black text-indigo-600 sm:flex">View all <ArrowRight className="h-4 w-4" /></button></div>
-                    {loadingExams ? <div className="flex justify-center gap-2 py-12 text-sm font-bold text-slate-400"><Loader2 className="h-5 w-5 animate-spin" /> Loading published papers...</div> : pathwayExams.length ? <div className="space-y-6">
-                        <div className="grid gap-4 md:grid-cols-3">
-                            {pathwayExams.slice(0, 3).map(exam => (
-                                <button key={exam.id} onClick={() => startRevision(exam.id)} className="group rounded-2xl border border-slate-200 bg-slate-50 p-5 text-left transition hover:-translate-y-0.5 hover:border-indigo-200 hover:bg-white -slate-800 -slate-950">
-                                    <span className="inline-flex rounded-full bg-slate-100 px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-slate-600">Paper ready</span>
-                                    <span className="mt-3 block text-base font-black leading-snug">{exam.title}</span>
-                                    <span className="mt-2 block text-[11px] font-bold text-slate-400">{exam.subject} / {exam.grade}</span>
-                                    <span className="mt-3 flex flex-wrap gap-2 text-[10px] font-bold text-slate-500">
-                                        {exam.duration_minutes && <span className="rounded-full bg-slate-100 px-2 py-1 -slate-800">{exam.duration_minutes} min</span>}
-                                        {Array.isArray(exam.structured_questions) && <span className="rounded-full bg-slate-100 px-2 py-1 -slate-800">{exam.structured_questions.length} questions</span>}
-                                        {exam.total_marks && <span className="rounded-full bg-slate-100 px-2 py-1 -slate-800">{exam.total_marks} marks</span>}
-                                    </span>
-                                    <span className="mt-4 inline-flex items-center gap-2 text-xs font-black text-indigo-600 group-hover:translate-x-0.5 transition-transform">Start paper <ArrowRight className="h-3.5 w-3.5" /></span>
+                {/* Hero Banner: Inspiring Candidate Focus */}
+                <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-indigo-950 via-slate-900 to-purple-950 p-6 sm:p-10 border border-indigo-800/40 shadow-2xl">
+                    <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
+                    <div className="absolute bottom-0 left-1/3 w-64 h-64 bg-purple-500/10 rounded-full blur-3xl pointer-events-none" />
+
+                    <div className="relative z-10 max-w-3xl space-y-4">
+                        <div className="inline-flex items-center gap-2 rounded-full bg-amber-400/10 px-3.5 py-1 text-xs font-extrabold text-amber-300 border border-amber-400/20">
+                            <Trophy className="w-3.5 h-3.5 text-amber-400" /> Exam Success Accelerator
+                        </div>
+
+                        <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black text-white tracking-tight leading-[1.08]">
+                            Kenyan Candidates <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-sky-300 to-emerald-300">Exam Hub</span>
+                        </h1>
+
+                        <p className="text-slate-300 text-sm sm:text-base font-medium leading-relaxed max-w-2xl">
+                            Everything you need to master your national exams. Listen to audio notes on the go, attempt timed past papers, and get instant step-by-step AI coaching for lost marks.
+                        </p>
+
+                        {/* Pathway Switcher */}
+                        <div className="pt-2 flex flex-wrap gap-2 sm:gap-3">
+                            {PATHWAYS.map(item => (
+                                <button
+                                    key={item.id}
+                                    onClick={() => setPathway(item.id)}
+                                    className={`px-5 py-3 rounded-2xl text-left transition-all flex items-center gap-3 ${
+                                        pathway === item.id
+                                            ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg shadow-indigo-600/30 border border-indigo-400/40 scale-[1.02]'
+                                            : 'bg-slate-800/80 hover:bg-slate-800 text-slate-300 border border-slate-700/80'
+                                    }`}
+                                >
+                                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center font-black text-xs ${
+                                        pathway === item.id ? 'bg-white/20 text-white' : 'bg-slate-700 text-indigo-400'
+                                    }`}>
+                                        {item.id.slice(0, 2)}
+                                    </div>
+                                    <div>
+                                        <span className="block text-xs font-black">{item.label}</span>
+                                        <span className={`block text-[10px] font-bold ${pathway === item.id ? 'text-indigo-100' : 'text-slate-400'}`}>
+                                            {item.sub}
+                                        </span>
+                                    </div>
                                 </button>
                             ))}
                         </div>
-                        <div className="grid grid-cols-2 gap-4 md:grid-cols-4">{subjectCounts.map(subject => <button key={subject.name} onClick={openExamLibrary} className="rounded-2xl border border-slate-100 bg-slate-50 p-5 text-left transition hover:-translate-y-0.5 hover:border-indigo-200 hover:bg-white -slate-800 -slate-950"><span className={`flex h-12 w-12 items-center justify-center rounded-xl ${subject.style}`}>{subject.icon}</span><span className="mt-4 block text-lg font-black text-slate-900">{subject.name}</span><span className="mt-1 block text-xs font-bold text-slate-400">{subject.count} published paper{subject.count === 1 ? '' : 's'}</span></button>)}</div>
-                    </div> : <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center"><p className="font-black text-slate-900">More {pathway} papers are coming soon.</p><p className="mt-1 text-sm text-slate-500">Switch pathways or open another paper that is already ready.</p></div>}
-                </section>
+                    </div>
+                </div>
 
-                {pathwayExams.length > 0 && <section><div className="mb-7 text-center"><p className="text-xs font-black uppercase tracking-[0.2em] text-emerald-600">Ready to attempt</p><h2 className="mt-2 text-3xl font-black">Published {pathway} papers</h2></div><div className="grid gap-4 md:grid-cols-2">{pathwayExams.slice(0, 6).map(exam => <button key={exam.id} onClick={() => startRevision(exam.id)} className="group flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-5 text-left hover:border-indigo-300 hover:shadow-sm"><span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600"><FileText className="h-6 w-6" /></span><span className="min-w-0 flex-1">{isSomaOriginalExam(exam) && <span className="mb-1 inline-block rounded-full bg-emerald-50 px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-emerald-700">Published paper</span>}<span className="block font-black leading-snug text-slate-900">{exam.title}</span><span className="mt-2 flex flex-wrap gap-2 text-[10px] font-bold text-slate-400"><span>{exam.subject}</span><span>{exam.grade}</span>{exam.duration_minutes && <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> {exam.duration_minutes} min</span>}{Array.isArray(exam.structured_questions) && <span>{exam.structured_questions.length} questions</span>}{exam.total_marks && <span>{exam.total_marks} marks</span>}</span></span><ArrowRight className="h-5 w-5 text-slate-300 group-hover:text-indigo-500" /></button>)}</div></section>}
+                {/* Candidate Solution Launchpad Grid (Direct Actions: Audio, Past Papers, AI Tutor, Flashcards) */}
+                <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <h2 className="text-xl sm:text-2xl font-black text-white flex items-center gap-2">
+                                <Zap className="w-6 h-6 text-amber-400 fill-amber-400" /> Candidate Revision Launchpads
+                            </h2>
+                            <p className="text-xs text-slate-400 font-medium">Choose how you want to revise right now.</p>
+                        </div>
+                    </div>
 
-                <section><div className="mb-10 text-center"><h2 className="text-3xl font-black">Attempt → Mark → Diagnose → Recover → Retest</h2><p className="mt-2 text-slate-500">Every paper should tell the learner what to do next.</p></div><div className="grid gap-5 md:grid-cols-3">{[
-                    { icon: <Target className="h-8 w-8" />, title: 'Attempt honestly', text: 'Use Timed Exam for real exam conditions or Practice Mode for guided learning.' },
-                    { icon: <Sparkles className="h-8 w-8" />, title: 'Find lost marks', text: 'See weak topics and question-level feedback after the original is submitted.' },
-                    { icon: <CheckCircle className="h-8 w-8" />, title: 'Recover and retest', text: 'Practise the priority skills, then return to prove the improvement.' },
-                ].map(step => <div key={step.title} className="rounded-3xl border border-slate-200 bg-white p-7"><span className="text-indigo-600">{step.icon}</span><h3 className="mt-5 text-xl font-black text-slate-900">{step.title}</h3><p className="mt-2 text-sm leading-relaxed text-slate-500">{step.text}</p></div>)}</div></section>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
 
-                <section className="rounded-[2.5rem] border border-slate-200 bg-white p-9 text-center sm:p-14"><h2 className="text-3xl font-black text-slate-900 sm:text-5xl">Your next paper is ready.</h2><p className="mx-auto mt-4 max-w-xl text-slate-500">Start with one paper, see where marks are lost, and keep moving at your pace.</p><button onClick={openExamLibrary} className="mt-8 rounded-2xl bg-indigo-600 px-8 py-4 font-black text-white">{isRegistered ? 'Continue my exam prep' : 'Create free learner account'}</button></section>
+                        {/* 1. Listen & Learn (Audio Revision) */}
+                        <div
+                            onClick={openAudioRevision}
+                            className="group cursor-pointer rounded-3xl bg-gradient-to-br from-emerald-950/80 to-slate-900 p-6 border border-emerald-800/40 hover:border-emerald-500/80 transition-all hover:-translate-y-1 shadow-lg shadow-emerald-950/20 relative overflow-hidden"
+                        >
+                            <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center mb-4 font-bold group-hover:scale-110 transition-transform border border-emerald-500/30">
+                                <Headphones className="w-6 h-6" />
+                            </div>
+                            <span className="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-wider text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20 mb-2">
+                                <Volume2 className="w-3 h-3" /> Audio Lessons
+                            </span>
+                            <h3 className="text-lg font-black text-white group-hover:text-emerald-300 transition-colors">
+                                Listen &amp; Learn
+                            </h3>
+                            <p className="text-xs text-slate-400 font-medium mt-1 leading-relaxed">
+                                Listen to clear audio notes and formula recaps without staring at a screen.
+                            </p>
+                            <div className="mt-4 flex items-center gap-1.5 text-xs font-black text-emerald-400">
+                                <span>Start Listening</span>
+                                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                            </div>
+                        </div>
+
+                        {/* 2. Timed Exam Past Papers */}
+                        <div
+                            onClick={() => startRevision(pathwayExams[0]?.id)}
+                            className="group cursor-pointer rounded-3xl bg-gradient-to-br from-indigo-950/80 to-slate-900 p-6 border border-indigo-800/40 hover:border-indigo-500/80 transition-all hover:-translate-y-1 shadow-lg shadow-indigo-950/20 relative overflow-hidden"
+                        >
+                            <div className="w-12 h-12 rounded-2xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center mb-4 font-bold group-hover:scale-110 transition-transform border border-indigo-500/30">
+                                <Clock className="w-6 h-6" />
+                            </div>
+                            <span className="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-wider text-indigo-300 bg-indigo-500/10 px-2 py-0.5 rounded-full border border-indigo-500/20 mb-2">
+                                <FileText className="w-3 h-3" /> Timed Practice
+                            </span>
+                            <h3 className="text-lg font-black text-white group-hover:text-indigo-300 transition-colors">
+                                Timed Past Papers
+                            </h3>
+                            <p className="text-xs text-slate-400 font-medium mt-1 leading-relaxed">
+                                Practice real KCSE, KPSEA &amp; CBC exam papers under realistic exam timing.
+                            </p>
+                            <div className="mt-4 flex items-center gap-1.5 text-xs font-black text-indigo-400">
+                                <span>Attempt Paper</span>
+                                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                            </div>
+                        </div>
+
+                        {/* 3. Ask Akili AI Exam Coach */}
+                        <div
+                            onClick={openAskAkili}
+                            className="group cursor-pointer rounded-3xl bg-gradient-to-br from-sky-950/80 to-slate-900 p-6 border border-sky-800/40 hover:border-sky-500/80 transition-all hover:-translate-y-1 shadow-lg shadow-sky-950/20 relative overflow-hidden"
+                        >
+                            <div className="w-12 h-12 rounded-2xl bg-sky-500/20 text-sky-400 flex items-center justify-center mb-4 font-bold group-hover:scale-110 transition-transform border border-sky-500/30">
+                                <Bot className="w-6 h-6" />
+                            </div>
+                            <span className="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-wider text-sky-300 bg-sky-500/10 px-2 py-0.5 rounded-full border border-sky-500/20 mb-2">
+                                <Sparkles className="w-3 h-3 text-sky-400" /> AI Explainer
+                            </span>
+                            <h3 className="text-lg font-black text-white group-hover:text-sky-300 transition-colors">
+                                Ask Akili AI Coach
+                            </h3>
+                            <p className="text-xs text-slate-400 font-medium mt-1 leading-relaxed">
+                                Stuck on a question? Get instant step-by-step explanations and working.
+                            </p>
+                            <div className="mt-4 flex items-center gap-1.5 text-xs font-black text-sky-400">
+                                <span>Ask Question</span>
+                                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                            </div>
+                        </div>
+
+                        {/* 4. Candidate Notebook & Flashcards */}
+                        <div
+                            onClick={openNotebook}
+                            className="group cursor-pointer rounded-3xl bg-gradient-to-br from-purple-950/80 to-slate-900 p-6 border border-purple-800/40 hover:border-purple-500/80 transition-all hover:-translate-y-1 shadow-lg shadow-purple-950/20 relative overflow-hidden"
+                        >
+                            <div className="w-12 h-12 rounded-2xl bg-purple-500/20 text-purple-400 flex items-center justify-center mb-4 font-bold group-hover:scale-110 transition-transform border border-purple-500/30">
+                                <Notebook className="w-6 h-6" />
+                            </div>
+                            <span className="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-wider text-purple-300 bg-purple-500/10 px-2 py-0.5 rounded-full border border-purple-500/20 mb-2">
+                                <BookOpen className="w-3 h-3" /> Saved Review
+                            </span>
+                            <h3 className="text-lg font-black text-white group-hover:text-purple-300 transition-colors">
+                                Candidate Notebook
+                            </h3>
+                            <p className="text-xs text-slate-400 font-medium mt-1 leading-relaxed">
+                                Review saved formulas, notes, and weak topic flashcards before the test.
+                            </p>
+                            <div className="mt-4 flex items-center gap-1.5 text-xs font-black text-purple-400">
+                                <span>Open Notebook</span>
+                                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                {/* Published Candidate Exam Library */}
+                <div className="space-y-6 pt-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-800">
+                        <div>
+                            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-xs font-extrabold uppercase tracking-wider mb-1">
+                                <FileText className="w-3.5 h-3.5 text-indigo-400" /> {pathwayConfig.label}
+                            </div>
+                            <h2 className="text-2xl font-black text-white">
+                                Published Exam Papers ({pathwayExams.length})
+                            </h2>
+                            <p className="text-xs text-slate-400 font-medium">
+                                Official papers with complete marking schemes ready to attempt.
+                            </p>
+                        </div>
+
+                        {/* Search Input & Bank Link */}
+                        <div className="flex items-center gap-3">
+                            <div className="relative">
+                                <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                                <input
+                                    type="text"
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    placeholder="Search subject or topic..."
+                                    className="bg-slate-800 border border-slate-700 rounded-xl pl-9 pr-4 py-2 text-xs font-semibold text-white placeholder:text-slate-500 outline-none focus:border-indigo-500 transition-colors w-48 sm:w-64"
+                                />
+                            </div>
+                            <button
+                                onClick={() => navigate('/exam-papers')}
+                                className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-bold transition-all shrink-0"
+                            >
+                                Full Paper Bank &rarr;
+                            </button>
+                        </div>
+                    </div>
+
+                    {loadingExams ? (
+                        <div className="flex justify-center items-center py-16 gap-3 text-slate-400 text-sm font-bold">
+                            <Loader2 className="w-6 h-6 animate-spin text-indigo-500" />
+                            Loading candidate papers...
+                        </div>
+                    ) : pathwayExams.length > 0 ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {pathwayExams.map(exam => (
+                                <motion.div
+                                    key={exam.id}
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    onClick={() => startRevision(exam.id)}
+                                    className="group cursor-pointer rounded-2xl bg-slate-800/80 hover:bg-slate-800 p-5 border border-slate-700/80 hover:border-indigo-500/80 transition-all flex flex-col justify-between"
+                                >
+                                    <div>
+                                        <div className="flex items-start justify-between gap-2 mb-2">
+                                            <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[9px] font-black uppercase text-emerald-400">
+                                                Ready to attempt
+                                            </span>
+                                            {exam.duration_minutes && (
+                                                <span className="text-[10px] font-bold text-slate-400 flex items-center gap-1">
+                                                    <Clock className="w-3 h-3 text-indigo-400" /> {exam.duration_minutes} min
+                                                </span>
+                                            )}
+                                        </div>
+
+                                        <h3 className="text-base font-black text-white group-hover:text-indigo-300 transition-colors leading-snug line-clamp-2">
+                                            {exam.title}
+                                        </h3>
+
+                                        <div className="mt-3 flex flex-wrap gap-2 text-[10px] font-bold text-slate-400">
+                                            <span className="bg-slate-900/80 px-2.5 py-1 rounded-md border border-slate-700">{exam.subject}</span>
+                                            <span className="bg-slate-900/80 px-2.5 py-1 rounded-md border border-slate-700">{exam.grade}</span>
+                                            {exam.total_marks && (
+                                                <span className="bg-slate-900/80 px-2.5 py-1 rounded-md border border-slate-700">{exam.total_marks} marks</span>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    <div className="mt-5 pt-3 border-t border-slate-700/60 flex items-center justify-between text-xs font-black text-indigo-400 group-hover:text-indigo-300">
+                                        <span>Attempt Paper Online</span>
+                                        <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                                    </div>
+                                </motion.div>
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="text-center py-14 bg-slate-800/40 rounded-3xl border border-dashed border-slate-700 p-6">
+                            <Target className="w-10 h-10 text-slate-500 mx-auto mb-3" />
+                            <h3 className="text-base font-bold text-white">No papers matching search</h3>
+                            <p className="text-xs text-slate-400 mt-1">Try clearing your search query or selecting a different candidate pathway.</p>
+                        </div>
+                    )}
+                </div>
+
+                {/* Direct WhatsApp Support Banner for Candidates */}
+                <div className="rounded-3xl bg-gradient-to-r from-emerald-900/50 via-slate-900 to-indigo-950 p-6 border border-emerald-700/30 flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold shrink-0">
+                            <MessageCircle className="w-6 h-6" />
+                        </div>
+                        <div>
+                            <h3 className="text-base font-black text-white">Need Candidate Study Help or Special Papers?</h3>
+                            <p className="text-xs text-slate-300 mt-0.5">
+                                Chat directly with our education team on WhatsApp <span className="text-emerald-400 font-bold">0722763760</span> for instant past paper requests or study guidance.
+                            </p>
+                        </div>
+                    </div>
+                    <a
+                        href="https://wa.me/254722763760?text=Hi%20Somo%20Smart%20Support%2C%20I%20am%20a%20candidate%20and%20need%20assistance%20with%20revision%20papers."
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="shrink-0 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs px-5 py-3 rounded-2xl transition-all inline-flex items-center gap-2 shadow-lg shadow-emerald-950/40"
+                    >
+                        <MessageCircle className="w-4 h-4" /> Chat on WhatsApp
+                    </a>
+                </div>
+
             </main>
 
-            {!isRegistered && <div className="fixed inset-x-0 bottom-0 z-50 flex items-center justify-between border-t border-slate-200 bg-white/95 p-4 backdrop-blur-xl md:hidden"><div><p className="text-sm font-black text-slate-900">Start your exam prep</p><p className="text-[10px] font-bold text-indigo-600">Browse real exams first</p></div><button onClick={() => setShowRegister(true)} className="rounded-xl bg-indigo-600 px-6 py-3 text-sm font-black text-white">Start free</button></div>}
-
-            <LoginModal isOpen={showLogin} onClose={() => setShowLogin(false)} onSuccess={() => startRevision(requestedPaperId || undefined)} onSwitchToRegister={() => { setShowLogin(false); setShowRegister(true); }} />
-            <RegistrationModal isOpen={showRegister} onClose={() => setShowRegister(false)} onSuccess={() => startRevision(requestedPaperId || undefined)} onSwitchToLogin={() => { setShowRegister(false); setShowLogin(true); }} initialRole="STUDENT" />
-            <LogoutModal isOpen={showLogoutModal} onClose={() => setShowLogoutModal(false)} onConfirm={() => { logout(); navigate('/'); }} title="Leaving Exam Prep?" message="Your saved attempts will be here when you return." />
+            {/* Login & Register Modals */}
+            <LoginModal
+                isOpen={showLogin}
+                onClose={() => setShowLogin(false)}
+                onSuccess={() => startRevision(requestedPaperId || undefined)}
+                onSwitchToRegister={() => { setShowLogin(false); setShowRegister(true); }}
+            />
+            <RegistrationModal
+                isOpen={showRegister}
+                onClose={() => setShowRegister(false)}
+                onSuccess={() => startRevision(requestedPaperId || undefined)}
+                onSwitchToLogin={() => { setShowRegister(false); setShowLogin(true); }}
+                initialRole="STUDENT"
+            />
+            <LogoutModal
+                isOpen={showLogoutModal}
+                onClose={() => setShowLogoutModal(false)}
+                onConfirm={() => { logout(); navigate('/'); }}
+                title="Leaving Candidates Hub?"
+                message="Your saved attempts and revision progress will be here when you return."
+            />
         </div>
     );
 };
 
-
+export default RevisionPortal;
