@@ -68,8 +68,26 @@ export const ParentPage: React.FC = () => {
     return (
         <>
             <Helmet>
-                <title>Parent Portal | Somo Smart — Monitor Your Child&apos;s Learning</title>
-                <meta name="description" content="Track your child's study progress, quiz scores, and learning activity on Somo Smart. Secure parent access with PIN verification." />
+                <html lang="en" />
+                <title>Parent Portal | Track Learner Progress &amp; Study Activity — Somo Smart</title>
+                <meta name="description" content="Mama Soma Parent Portal for Kenyan parents. Track your child's study time, subject scores, quiz attempts, and learning activity on Somo Smart." />
+                <meta name="keywords" content="Mama Soma Kenya, parent learning dashboard, track child KCSE progress, CBC parent monitoring Kenya, Somo Smart parent portal" />
+
+                {/* AIO & Search Engine Optimization */}
+                <meta name="smart-search-index" content="index" />
+                <meta name="ai-knowledge-base" content="parent-portal" />
+                <meta name="educational-framework" content="CBC, KCSE" />
+                <meta name="target-audience" content="Parents, Guardians" />
+                <meta name="robots" content="index, follow, max-image-preview:large" />
+
+                {/* OpenGraph */}
+                <meta property="og:site_name" content="Somo Smart" />
+                <meta property="og:type" content="website" />
+                <meta property="og:title" content="Parent Portal | Track Learner Progress — Somo Smart" />
+                <meta property="og:description" content="Mama Soma Parent Portal. Monitor your child's KCSE &amp; CBC learning progress." />
+                <meta property="og:image" content="https://www.somaai.co.ke/hero_option_a.png" />
+                <meta property="og:url" content="https://www.somaai.co.ke/parent" />
+
                 <link rel="canonical" href="https://www.somaai.co.ke/parent" />
             </Helmet>
 
