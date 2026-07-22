@@ -110,10 +110,12 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({ isOpen, on
                                 </div>
                                 <p className={`text-xs font-bold uppercase tracking-wider mb-1 ${selectedPlan === 'MONTHLY' ? 'text-indigo-100' : 'text-slate-500'}`}>Monthly</p>
                                 <div className="flex items-baseline gap-1">
-                                    <span className={`text-2xl font-black ${selectedPlan === 'MONTHLY' ? 'text-white' : 'text-slate-800'}`}>100</span>
+                                    <span className={`text-2xl font-black ${selectedPlan === 'MONTHLY' ? 'text-white' : 'text-slate-800'}`}>
+                                        {STUDENT_PLANS.find(p => p.duration === 'MONTHLY')?.price || 300}
+                                    </span>
                                     <span className={`text-xs font-bold ${selectedPlan === 'MONTHLY' ? 'text-indigo-200' : 'text-slate-400'}`}>KES</span>
                                 </div>
-                                <p className={`text-[10px] mt-1 ${selectedPlan === 'MONTHLY' ? 'text-indigo-100' : 'text-slate-400'}`}>Save 83%</p>
+                                <p className={`text-[10px] mt-1 ${selectedPlan === 'MONTHLY' ? 'text-indigo-100' : 'text-slate-400'}`}>Save 50%</p>
                             </button>
                         </div>
 

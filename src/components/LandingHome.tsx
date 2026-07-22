@@ -44,6 +44,7 @@ type Props = {
   onExamPapers: (paperId?: string | number) => void;
   onSomaGuide: () => void;
   onRevision: () => void;
+  onContact?: () => void;
   onStartPaper: (paperId: string | number) => void;
   onPreviewPaper: (paperId: string | number) => void;
   onPreviewMarkingScheme?: (paperId: string | number) => void;
@@ -199,6 +200,17 @@ export const LandingHome: React.FC<Props> = (props) => {
       () => {
         props.onTrack('pricing_nav_clicked', { source: 'landing_header' });
         props.onPricing();
+      },
+    ],
+    [
+      'Contact Us',
+      () => {
+        props.onTrack('contact_nav_clicked', { source: 'landing_header' });
+        if (props.onContact) {
+          props.onContact();
+        } else {
+          window.location.assign('/contact');
+        }
       },
     ],
   ] as const;
@@ -685,9 +697,87 @@ export const LandingHome: React.FC<Props> = (props) => {
       />
       <ParentPricing onParent={props.onParent} onPricing={props.onPricing} />
       <TrustStrip />
+      <LandingFooter
+        onStartLearning={props.onStartLearning}
+        onTeacher={props.onTeacher}
+        onParent={props.onParent}
+        onExamPapers={() => props.onExamPapers()}
+        onLibrary={props.onLibrary}
+        onSomaGuide={props.onSomaGuide}
+        onPricing={props.onPricing}
+        onContact={props.onContact}
+      />
     </main>
   );
 };
+
+const LandingFooter: React.FC<{
+  onStartLearning: () => void;
+  onTeacher: () => void;
+  onParent: () => void;
+  onExamPapers: () => void;
+  onLibrary: () => void;
+  onSomaGuide: () => void;
+  onPricing: () => void;
+  onContact?: () => void;
+}> = (props) => (
+  <footer className="border-t border-slate-800 bg-[#07133f] text-slate-300 print:hidden">
+    <div className="mx-auto max-w-[1440px] px-4 py-12 sm:px-6 lg:px-10">
+      <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-5">
+        <div className="lg:col-span-2 space-y-4">
+          <div className="flex items-center gap-2">
+            <img src={logoImg} alt="Somo Smart Logo" width={36} height={36} className="h-9 w-9 object-contain" />
+            <span className="text-xl font-black text-white">Somo Smart</span>
+          </div>
+          <p className="max-w-sm text-xs leading-relaxed text-slate-400">
+            Kenyan study assistant for CBC, KPSEA, and KCSE. Helping learners understand homework, revise past papers, and build academic confidence.
+          </p>
+          <div className="flex items-center gap-3 pt-2 text-xs font-bold text-emerald-400">
+            <span className="inline-block h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+            WhatsApp Support: +254 722 763 760
+          </div>
+        </div>
+
+        <div>
+          <h4 className="text-xs font-black uppercase tracking-wider text-white">Learners &amp; Revision</h4>
+          <ul className="mt-3 space-y-2 text-xs">
+            <li><button onClick={props.onStartLearning} className="hover:text-white transition-colors">Start Learning Free</button></li>
+            <li><button onClick={props.onExamPapers} className="hover:text-white transition-colors">Exam Paper Bank</button></li>
+            <li><button onClick={props.onLibrary} className="hover:text-white transition-colors">Official Library</button></li>
+            <li><button onClick={props.onSomaGuide} className="hover:text-white transition-colors">Soma Guide &amp; Calendar</button></li>
+          </ul>
+        </div>
+
+        <div>
+          <h4 className="text-xs font-black uppercase tracking-wider text-white">Teachers &amp; Parents</h4>
+          <ul className="mt-3 space-y-2 text-xs">
+            <li><button onClick={props.onTeacher} className="hover:text-white transition-colors">Teacher Workspace</button></li>
+            <li><button onClick={props.onParent} className="hover:text-white transition-colors">Parent Progress Portal</button></li>
+            <li><button onClick={props.onPricing} className="hover:text-white transition-colors">Pricing &amp; M-Pesa Plans</button></li>
+          </ul>
+        </div>
+
+        <div>
+          <h4 className="text-xs font-black uppercase tracking-wider text-white">Contact &amp; Support</h4>
+          <ul className="mt-3 space-y-2 text-xs">
+            <li><a href="/contact" className="hover:text-white transition-colors">Contact Us (0722763760)</a></li>
+            <li><a href="/blog" className="hover:text-white transition-colors">Blog &amp; Updates</a></li>
+            <li><span className="text-slate-500">Nairobi, Kenya</span></li>
+          </ul>
+        </div>
+      </div>
+
+      <div className="mt-10 border-t border-slate-800/80 pt-6 text-center text-xs text-slate-500 flex flex-col sm:flex-row items-center justify-between gap-3">
+        <p>© {new Date().getFullYear()} Somo Smart. Built with pride for Kenyan Education.</p>
+        <p className="flex items-center gap-4">
+          <a href="/contact" className="hover:text-slate-400 transition-colors">Contact Support</a>
+          <span>·</span>
+          <a href="/pricing" className="hover:text-slate-400 transition-colors">M-Pesa Pricing</a>
+        </p>
+      </div>
+    </div>
+  </footer>
+);
 
 const AskAkiliDemo: React.FC<Props> = (props) => {
   const [question, setQuestion] = React.useState('');

@@ -343,7 +343,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
             );
             const cleaned = (text || '')
                 .replace(/\*\*(.*?)\*\*/g, '$1')
-                .replace(/^[*-]\s/gm, '• ')
+                .replace(/^[*-]\s/gm, 'ï¿½ ')
                 .replace(/^#{1,6}\s*/gm, '')
                 .replace(/\*(.*?)\*/g, '$1')
                 .replace(/\*/g, '');
@@ -354,7 +354,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
             if (code === 'GUEST_LIMIT_REACHED' || code === 'PLAN_LIMIT_REACHED' || code === 'FEATURE_LIMIT_REACHED') {
                 setDetailedLimitReached(true);
             } else if (code === 'RATE_LIMIT') {
-                setDetailedAnswer('High demand right now — please close and try again in a few seconds.');
+                setDetailedAnswer('High demand right now ï¿½ please close and try again in a few seconds.');
             } else if (err instanceof TypeError) {
                 setDetailedAnswer('No connection. Please check your internet and try again.');
             } else {
@@ -882,6 +882,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                 onExamPapers={(paperId) => navigate(paperId ? `/exam-papers?paper=${encodeURIComponent(String(paperId))}` : '/exam-papers')}
                 onSomaGuide={() => navigate('/guide')}
                 onRevision={() => navigate('/revision')}
+                onContact={() => navigate('/contact')}
                 onStartPaper={handleStartPaperFromHome}
                 onPreviewPaper={handlePreviewPaperFromHome}
                 onPreviewMarkingScheme={handlePreviewMarkingSchemeFromHome}
@@ -2172,7 +2173,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                     Open the app. Solve a real problem in the next 2 minutes.
                                 </h2>
                                 <p className="mt-4 text-base font-medium leading-relaxed text-slate-600">
-                                    A learner can solve one hard question, a teacher can prepare one lesson, and a parent can check whether study is actually happening — right now, for free.
+                                    A learner can solve one hard question, a teacher can prepare one lesson, and a parent can check whether study is actually happening ï¿½ right now, for free.
                                 </p>
                             </div>
 

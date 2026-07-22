@@ -6,13 +6,17 @@ Allow: /revision$
 Allow: /pricing$
 Allow: /parent$
 Allow: /school$
+Allow: /contact$
+Allow: /contact-us$
+Allow: /exam-papers$
+Allow: /guide$
 Disallow: /admin
 Disallow: /revision/dashboard
 Disallow: /api/
 
 Sitemap: https://www.somaai.co.ke/sitemap.xml
 
-# AI Crawlers
+# AI Crawlers & Search Engine Agents (AIO)
 User-agent: GPTBot
 Allow: /
 User-agent: ChatGPT-User

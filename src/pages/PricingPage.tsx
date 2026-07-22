@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { PricingPage as PricingComponent } from '../features/subscription/PricingPage';
 import { Button } from '../components/Shared';
-import { ArrowLeft, Loader2, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, Loader2, CheckCircle2, MessageCircle } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { pesapalService } from '../services/pesapalService';
 import { supabase } from '../lib/supabase';
@@ -171,6 +171,14 @@ export const PricingPage: React.FC = () => {
                                 >
                                     View Pricing Plans
                                 </Button>
+                                <a
+                                    href={`https://wa.me/254722763760?text=${encodeURIComponent(`Hi Somo Smart Support, I need assistance with payment verification. Reference: ${pendingRef || 'N/A'}`)}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="w-full mt-2 inline-flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl py-3 text-sm transition-all shadow-sm"
+                                >
+                                    <MessageCircle className="w-4 h-4" /> Need Help? Chat on WhatsApp
+                                </a>
                             </>
                         )}
                     </div>
