@@ -5,7 +5,7 @@ import {
     Upload, BookOpen, Brain, ArrowRight, ScanLine, X,
     CheckCircle, LogOut, Search, FileText, ChevronRight, GraduationCap,
     Sparkles, MessageCircle, MoreHorizontal, Target, Lightbulb,
-    CalendarDays, ClipboardCheck, TimerReset, TrendingUp, PenLine
+    CalendarDays, ClipboardCheck, TimerReset, TrendingUp, PenLine, HelpCircle
 } from 'lucide-react';
 import { ViewState, RevisionMode, TeacherActivity } from '../../types';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -507,6 +507,40 @@ Use plain text. No markdown headings or symbols.`;
             </header>
 
             <main className="max-w-3xl mx-auto px-4 pt-6 pb-28 space-y-8">
+
+                {/* ── 3-STEP EXAM PREP GUIDE CARD ── */}
+                <section className="bg-gradient-to-r from-indigo-950 via-slate-900 to-purple-950 rounded-3xl p-5 text-white border border-indigo-800/50 shadow-md space-y-4">
+                    <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-amber-300">
+                        <HelpCircle className="w-4 h-4 text-amber-400" />
+                        How SomaAI Exam Prep Works (In 3 Simple Steps)
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div className="bg-white/10 rounded-2xl p-3 border border-white/10">
+                            <div className="flex items-center gap-2 mb-1.5">
+                                <span className="w-5 h-5 rounded-full bg-indigo-500 text-white font-black text-xs flex items-center justify-center">1</span>
+                                <h4 className="text-xs font-black text-white">Choose Exam Paper</h4>
+                            </div>
+                            <p className="text-[11px] text-slate-300 font-medium leading-relaxed">Select a real KCSE, KPSEA, or CBC paper from your subject library below.</p>
+                        </div>
+
+                        <div className="bg-white/10 rounded-2xl p-3 border border-white/10">
+                            <div className="flex items-center gap-2 mb-1.5">
+                                <span className="w-5 h-5 rounded-full bg-indigo-500 text-white font-black text-xs flex items-center justify-center">2</span>
+                                <h4 className="text-xs font-black text-white">Attempt &amp; Submit</h4>
+                            </div>
+                            <p className="text-[11px] text-slate-300 font-medium leading-relaxed">Answer under timed exam conditions or practice mode for instant hints.</p>
+                        </div>
+
+                        <div className="bg-white/10 rounded-2xl p-3 border border-white/10">
+                            <div className="flex items-center gap-2 mb-1.5">
+                                <span className="w-5 h-5 rounded-full bg-indigo-500 text-white font-black text-xs flex items-center justify-center">3</span>
+                                <h4 className="text-xs font-black text-white">Fix Weak Topics</h4>
+                                <p className="text-[11px] text-slate-300 font-medium leading-relaxed">Review step-by-step AI marking scheme feedback to recover lost marks.</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
 
                 {/* ── ZONE 1: HERO ACTION BAR ── */}
                 <section className="bg-white rounded-3xl p-4 sm:p-5 overflow-hidden relative shadow-sm border border-slate-200">
