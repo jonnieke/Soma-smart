@@ -16,6 +16,7 @@ import { RegistrationModal } from '../../components/RegistrationModal';
 import { LogoutModal } from '../../components/LogoutModal';
 import { examService } from '../../services/examService';
 import { TelegramBanner } from '../../components/TelegramBanner';
+import { ExamPaperTickerBelt } from '../../components/ExamPaperTickerBelt';
 import logoImg from '../../assets/images/main_logo.png';
 
 type CandidatePathway = 'KCSE' | 'KJSEA' | 'KPSEA';
@@ -215,6 +216,12 @@ export const RevisionPortal: React.FC = () => {
                     </div>
                 </div>
             </header>
+
+            {/* Latest Exam Paper Ticker Belt */}
+            <ExamPaperTickerBelt
+                papers={publishedExams}
+                onPaperClick={(paperId) => startRevision(paperId)}
+            />
 
             <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 space-y-10">
 

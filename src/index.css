@@ -141,3 +141,23 @@ body {
 @keyframes waveBar3 {
   from { height: 40%; } to { height: 60%; }
 }
+
+/* Continuous Exam Paper Ticker Belt Animation */
+@keyframes tickerScroll {
+  0% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-ticker {
+  display: flex;
+  width: max-content;
+  animation: tickerScroll 40s linear infinite;
+}
+
+.animate-ticker:hover {
+  animation-play-state: paused;
+}

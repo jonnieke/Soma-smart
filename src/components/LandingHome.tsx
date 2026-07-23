@@ -25,6 +25,7 @@ import {
   X,
 } from 'lucide-react';
 import logoImg from '../assets/images/main_logo.png';
+import { ExamPaperTickerBelt } from './ExamPaperTickerBelt';
 import learnerImg from '../assets/images/hero_learner_emotional.png';
 import parentImg from '../assets/images/parent.png';
 import mascotImg from '../assets/images/somo_buddy_avatar.png';
@@ -367,6 +368,12 @@ export const LandingHome: React.FC<Props> = (props) => {
           </nav>
         )}
       </header>
+
+      {/* Latest Exam Paper Ticker Belt - Positioned directly below the navigation menu & above hero section */}
+      <ExamPaperTickerBelt
+        papers={props.latestPapers}
+        onPaperClick={(paperId) => props.onPreviewPaper(paperId)}
+      />
 
       <section className="border-b border-blue-100 bg-[linear-gradient(90deg,#fff_0%,#f8fbff_48%,#fff_100%)]">
         <div className="mx-auto grid max-w-[1440px] gap-7 px-4 py-8 sm:px-6 lg:grid-cols-[1.02fr_0.88fr_0.94fr] lg:items-center lg:px-10 lg:py-10">
