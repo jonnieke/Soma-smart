@@ -23,6 +23,7 @@ import {
 import { ExamPaper, PaperStudioMetrics } from '../../../types/paperStudio';
 import { paperStudioService } from '../../../services/paperStudioService';
 import { launchFeatures } from '../../../config/launchFeatures';
+import { UploadPaperModal } from './UploadPaperModal';
 
 interface WorkspaceProps {
   onNavigateToWizard: () => void;
@@ -38,6 +39,7 @@ export const PaperStudioWorkspace: React.FC<WorkspaceProps> = ({
   onOpenUploadModal,
 }) => {
   const navigate = useNavigate();
+  const [showUploadModal, setShowUploadModal] = useState(false);
   const [metrics, setMetrics] = useState<PaperStudioMetrics>({
     draftCount: 0,
     completedCount: 0,
@@ -122,7 +124,7 @@ export const PaperStudioWorkspace: React.FC<WorkspaceProps> = ({
 
             {launchFeatures.uploadBlueprintEnabled && (
               <button
-                onClick={onOpenUploadModal || onNavigateToWizard}
+                onClick={() => (onOpenUploadModal ? onOpenUploadModal() : setShowUploadModal(true))}
                 className="inline-flex items-center gap-2 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/15 px-5 py-3 text-sm font-bold text-white transition backdrop-blur"
               >
                 <Upload className="w-4 h-4 text-indigo-300" />
@@ -333,6 +335,13 @@ export const PaperStudioWorkspace: React.FC<WorkspaceProps> = ({
           </div>
         )}
       </section>
+
+      {/* Upload Paper Modal */}
+      <UploadPaperModal
+        isOpen={showUploadModal}
+        onClose={() => setShowUploadModal(false)}
+        onPaperCreated={(id) => onOpenPaperEditor(id)}
+      />
     </div>
   );
 };
