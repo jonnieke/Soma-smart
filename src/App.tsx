@@ -227,6 +227,10 @@ const App: React.FC = () => {
                             <Route path="/" element={<LandingPage />} />
                             <Route path="/learner" element={<LearnerPage />} />
                             <Route path="/teacher" element={<TeacherPage />} />
+                            <Route path="/teacher/paper-studio" element={<TeacherPage />} />
+                            <Route path="/teacher/paper-studio/create" element={<TeacherPage />} />
+                            <Route path="/teacher/paper-studio/questions" element={<TeacherPage />} />
+                            <Route path="/teacher/paper-studio/editor/:id" element={<TeacherPage />} />
                             <Route path="/teacher/notes" element={<TeacherPage />} />
                             <Route path="/teacher/homework" element={<TeacherPage />} />
                             <Route path="/teacher/marking" element={<TeacherPage />} />

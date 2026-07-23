@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { TeacherDashboard } from '../features/teacher/Teacher';
 import { TeacherDashboardTab } from '../features/teacher/teacherNavigation';
@@ -8,18 +8,32 @@ import { useApp } from '../context/AppContext';
 import { TeacherLanding } from '../components/TeacherLanding';
 import { LoginModal } from '../components/LoginModal';
 import { RegistrationModal } from '../components/RegistrationModal';
+import { PaperStudioWorkspace } from '../features/teacher/paperStudio/PaperStudioWorkspace';
+import { CreatePaperWizard } from '../features/teacher/paperStudio/CreatePaperWizard';
+import { ExaminationEditor } from '../features/teacher/paperStudio/ExaminationEditor';
+import { QuestionBankBrowser } from '../features/teacher/paperStudio/QuestionBankBrowser';
 
 type TeacherInitialTab = 'DASHBOARD' | 'CREATION_HUB' | TeacherDashboardTab | 'EARNINGS' | 'HOME' | 'VOICE' | 'MARKETPLACE' | 'PROFILE' | 'REPORTS';
 
 export const TeacherPage: React.FC = () => {
     const navigate = useNavigate();
     const location = useLocation();
-    const { isRegistered, role, studentProfile, teacherProfile } = useApp();
+    const { isRegistered, role, teacherProfile } = useApp();
     const state = location.state as { initialTab?: TeacherInitialTab } | null;
 
     const [showLoginModal, setShowLoginModal] = useState(false);
     const [showRegisterModal, setShowRegisterModal] = useState(false);
     const [previewTabOverride, setPreviewTabOverride] = useState<TeacherInitialTab | null>(null);
+    const [editingPaperId, setEditingPaperId] = useState<string | null>(null);
+
+    // Determine sub-route views for Paper Studio
+    const isPaperStudioBase = location.pathname === '/teacher/paper-studio';
+    const isPaperStudioCreate = location.pathname === '/teacher/paper-studio/create';
+    const isPaperStudioQuestions = location.pathname === '/teacher/paper-studio/questions';
+    const isPaperStudioEditor = location.pathname.startsWith('/teacher/paper-studio/editor');
+
+    // Extract paper ID if on editor route
+    const paperIdFromUrl = isPaperStudioEditor ? location.pathname.split('/editor/')[1] : editingPaperId;
 
     // Determine initial tab based on route
     let initialTab: TeacherInitialTab = 'DASHBOARD';
@@ -47,22 +61,22 @@ export const TeacherPage: React.FC = () => {
         <>
             <Helmet>
                 <html lang="en" />
-                <title>Teacher Studio | CBC &amp; KCSE Teaching Tools Kenya — Somo Smart</title>
-                <meta name="description" content="AI-powered teaching studio for Kenyan educators. Create CBC lesson plans, schemes of work, topical quizzes, automated assignment marking, and Darasa classroom recaps." />
-                <meta name="keywords" content="Kenyan teacher studio, CBC schemes of work generator, KCSE lesson plans, automated quiz marker Kenya, Darasa classroom recap, Somo Smart teacher" />
+                <title>Teacher Studio &amp; Paper Studio | CBC &amp; KCSE Teaching Tools Kenya — Somo Smart</title>
+                <meta name="description" content="AI-powered teaching studio for Kenyan educators. Create CBC lesson plans, schemes of work, CATs, topical quizzes, automated assignment marking, and professional examination papers." />
+                <meta name="keywords" content="Kenyan teacher studio, Soma Paper Studio, CBC schemes of work generator, KCSE lesson plans, automated quiz marker Kenya, Darasa classroom recap, Somo Smart teacher" />
 
                 {/* AIO & Search Engine Optimization */}
                 <meta name="smart-search-index" content="index" />
                 <meta name="ai-knowledge-base" content="teacher-portal" />
-                <meta name="educational-framework" content="CBC, KCSE, KNEC" />
+                <meta name="educational-framework" content="CBC, KCSE, KNEC, KPSEA" />
                 <meta name="target-audience" content="Primary Teachers, JSS Teachers, Secondary Teachers, Tutors" />
                 <meta name="robots" content="index, follow, max-image-preview:large" />
 
                 {/* OpenGraph */}
                 <meta property="og:site_name" content="Somo Smart" />
                 <meta property="og:type" content="website" />
-                <meta property="og:title" content="Teacher Studio | CBC &amp; KCSE Teaching Tools Kenya — Somo Smart" />
-                <meta property="og:description" content="Create schemes of work, lesson plans, quizzes, and automated assignment marking for CBC and KCSE." />
+                <meta property="og:title" content="Teacher Studio &amp; Paper Studio — Somo Smart" />
+                <meta property="og:description" content="Create schemes of work, lesson plans, quizzes, and professional examination papers for CBC and KCSE." />
                 <meta property="og:image" content="https://www.somaai.co.ke/hero_option_a.png" />
                 <meta property="og:url" content="https://www.somaai.co.ke/teacher" />
 
@@ -117,6 +131,26 @@ export const TeacherPage: React.FC = () => {
                         initialRole="TEACHER"
                     />
                 </>
+            ) : isPaperStudioCreate ? (
+                <CreatePaperWizard
+                    onCancel={() => navigate('/teacher/paper-studio')}
+                    onPaperCreated={(id) => navigate(`/teacher/paper-studio/editor/${id}`)}
+                />
+            ) : isPaperStudioQuestions ? (
+                <QuestionBankBrowser
+                    onBack={() => navigate('/teacher/paper-studio')}
+                />
+            ) : isPaperStudioEditor && paperIdFromUrl ? (
+                <ExaminationEditor
+                    paperId={paperIdFromUrl}
+                    onBackToWorkspace={() => navigate('/teacher/paper-studio')}
+                />
+            ) : isPaperStudioBase ? (
+                <PaperStudioWorkspace
+                    onNavigateToWizard={() => navigate('/teacher/paper-studio/create')}
+                    onOpenPaperEditor={(id) => navigate(`/teacher/paper-studio/editor/${id}`)}
+                    onOpenQuestionBank={() => navigate('/teacher/paper-studio/questions')}
+                />
             ) : (
                 <TeacherDashboard
                     onNavigate={handleNavigate}

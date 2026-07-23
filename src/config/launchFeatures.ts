@@ -14,4 +14,10 @@ export const launchFeatures = {
   talkAndLearn: enabled(import.meta.env.VITE_ENABLE_TALK_AND_LEARN, true),
   notebook: enabled(import.meta.env.VITE_ENABLE_NOTEBOOK, true),
   teacherClasses: enabled(import.meta.env.VITE_ENABLE_TEACHER_CLASSES, true),
+  // Soma Paper Studio & Assessment Engine Flags
+  paperStudioEnabled: enabled(import.meta.env.VITE_ENABLE_PAPER_STUDIO, true),
+  uploadBlueprintEnabled: enabled(import.meta.env.VITE_ENABLE_UPLOAD_BLUEPRINT, true),
+  schoolWorkspaceEnabled: enabled(import.meta.env.VITE_ENABLE_SCHOOL_WORKSPACE, false),
+  sellerEarningsEnabled: enabled(import.meta.env.VITE_ENABLE_SELLER_EARNINGS, false),
+  docxExportEnabled: enabled(import.meta.env.VITE_ENABLE_DOCX_EXPORT, true),
 } as const;
