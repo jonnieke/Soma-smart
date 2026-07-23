@@ -6,7 +6,7 @@ const enabled = (value: string | boolean | undefined, fallback: boolean) => {
 
 export const launchFeatures = {
   campus: enabled(import.meta.env.VITE_ENABLE_CAMPUS, false),
-  marketplace: enabled(import.meta.env.VITE_ENABLE_MARKETPLACE, false),
+  marketplace: enabled(import.meta.env.VITE_ENABLE_MARKETPLACE, true),
   examRooms: enabled(import.meta.env.VITE_ENABLE_EXAM_ROOMS, false),
   tutoring: enabled(import.meta.env.VITE_ENABLE_TUTORING, false),
   community: enabled(import.meta.env.VITE_ENABLE_COMMUNITY, false),
@@ -17,7 +17,7 @@ export const launchFeatures = {
   // Soma Paper Studio & Assessment Engine Flags
   paperStudioEnabled: enabled(import.meta.env.VITE_ENABLE_PAPER_STUDIO, true),
   uploadBlueprintEnabled: enabled(import.meta.env.VITE_ENABLE_UPLOAD_BLUEPRINT, true),
-  schoolWorkspaceEnabled: enabled(import.meta.env.VITE_ENABLE_SCHOOL_WORKSPACE, false),
-  sellerEarningsEnabled: enabled(import.meta.env.VITE_ENABLE_SELLER_EARNINGS, false),
+  schoolWorkspaceEnabled: enabled(import.meta.env.VITE_ENABLE_SCHOOL_WORKSPACE, true),
+  sellerEarningsEnabled: enabled(import.meta.env.VITE_ENABLE_SELLER_EARNINGS, true),
   docxExportEnabled: enabled(import.meta.env.VITE_ENABLE_DOCX_EXPORT, true),
 } as const;

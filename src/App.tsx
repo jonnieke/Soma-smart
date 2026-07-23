@@ -26,6 +26,7 @@ const TeacherPage = React.lazy(() => safeImport(() => import('./pages/TeacherPag
 const ParentPage = React.lazy(() => safeImport(() => import('./pages/ParentPage').then(module => ({ default: module.ParentPage }))));
 const AdminDashboard = React.lazy(() => safeImport(() => import('./features/admin/Admin').then(module => ({ default: module.AdminDashboard }))));
 const AdminKnowledgeBase = React.lazy(() => safeImport(() => import('./features/admin/KnowledgeBase').then(module => ({ default: module.AdminKnowledgeBase }))));
+const AdminAssessmentEngine = React.lazy(() => safeImport(() => import('./features/admin/AdminAssessmentEngine').then(module => ({ default: module.AdminAssessmentEngine }))));
 const RevisionPortal = React.lazy(() => safeImport(() => import('./features/revision/RevisionPortal').then(module => ({ default: module.RevisionPortal }))));
 const RevisionDashboard = React.lazy(() => safeImport(() => import('./features/revision/RevisionDashboard').then(module => ({ default: module.RevisionDashboard }))));
 const ExamPaperBankPage = React.lazy(() => safeImport(() => import('./pages/ExamPaperBankPage').then(module => ({ default: module.ExamPaperBankPage }))));
@@ -231,6 +232,9 @@ const App: React.FC = () => {
                             <Route path="/teacher/paper-studio/create" element={<TeacherPage />} />
                             <Route path="/teacher/paper-studio/questions" element={<TeacherPage />} />
                             <Route path="/teacher/paper-studio/editor/:id" element={<TeacherPage />} />
+                            <Route path="/teacher/school-library" element={<TeacherPage />} />
+                            <Route path="/teacher/paper-bank" element={<TeacherPage />} />
+                            <Route path="/teacher/earnings" element={<TeacherPage />} />
                             <Route path="/teacher/notes" element={<TeacherPage />} />
                             <Route path="/teacher/homework" element={<TeacherPage />} />
                             <Route path="/teacher/marking" element={<TeacherPage />} />
@@ -238,6 +242,7 @@ const App: React.FC = () => {
                             <Route path="/parent" element={<ParentPage />} />
                             <Route path="/admin" element={<AdminGuard onNavigateBack={() => navigate('/')}><AdminDashboard onNavigate={() => navigate('/')} /></AdminGuard>} />
                             <Route path="/admin/knowledge" element={<AdminGuard onNavigateBack={() => navigate('/')}><AdminKnowledgeBase /></AdminGuard>} />
+                            <Route path="/admin/assessment-engine" element={<AdminGuard onNavigateBack={() => navigate('/')}><AdminAssessmentEngine /></AdminGuard>} />
                             <Route path="/revision" element={<RevisionPortal />} />
                             <Route path="/exam-papers" element={<ExamPaperBankPage />} />
                             <Route path="/exam-papers/:id/read" element={<ExamPaperReaderPage />} />
