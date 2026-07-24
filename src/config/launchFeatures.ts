@@ -116,4 +116,28 @@ export const launchFeatures = {
   publicResourceDiscoveryEnabled: enabled(import.meta.env.VITE_ENABLE_PUBLIC_RESOURCE_DISCOVERY, true),
   affiliateProgrammeEnabled: enabled(import.meta.env.VITE_ENABLE_AFFILIATE_PROGRAMME, false),
   institutionLeadManagementEnabled: enabled(import.meta.env.VITE_ENABLE_INSTITUTION_LEAD_MANAGEMENT, false),
+
+  // Phase 10 — Soma Platform Reliability, Governance and International Expansion Flags
+  platformReliabilityEnabled: enabled(import.meta.env.VITE_ENABLE_PLATFORM_RELIABILITY, true),
+  securityOperationsEnabled: enabled(import.meta.env.VITE_ENABLE_SECURITY_OPERATIONS, true),
+  privacyOperationsEnabled: enabled(import.meta.env.VITE_ENABLE_PRIVACY_OPERATIONS, true),
+  incidentManagementEnabled: enabled(import.meta.env.VITE_ENABLE_INCIDENT_MANAGEMENT, true),
+  disasterRecoveryEnabled: enabled(import.meta.env.VITE_ENABLE_DISASTER_RECOVERY, true),
+  aiGovernanceEnabled: enabled(import.meta.env.VITE_ENABLE_AI_GOVERNANCE, true),
+  modelRegistryEnabled: enabled(import.meta.env.VITE_ENABLE_MODEL_REGISTRY, true),
+  modelEvaluationsEnabled: enabled(import.meta.env.VITE_ENABLE_MODEL_EVALUATIONS, true),
+  apiPlatformEnabled: enabled(import.meta.env.VITE_ENABLE_API_PLATFORM, true),
+  webhooksEnabled: enabled(import.meta.env.VITE_ENABLE_WEBHOOKS, true),
+  countryManagementEnabled: enabled(import.meta.env.VITE_ENABLE_COUNTRY_MANAGEMENT, true),
+  complianceEvidenceEnabled: enabled(import.meta.env.VITE_ENABLE_COMPLIANCE_EVIDENCE, true),
+  abuseOperationsEnabled: enabled(import.meta.env.VITE_ENABLE_ABUSE_OPERATIONS, true),
+
+  // Defaulted to disabled until production-ready (Section 5 requirement)
+  developerPortalEnabled: enabled(import.meta.env.VITE_ENABLE_DEVELOPER_PORTAL, false),
+  enterpriseSSOEnabled: enabled(import.meta.env.VITE_ENABLE_ENTERPRISE_SSO, false),
+  enterpriseProvisioningEnabled: enabled(import.meta.env.VITE_ENABLE_ENTERPRISE_PROVISIONING, false),
+  multiCurrencyEnabled: enabled(import.meta.env.VITE_ENABLE_MULTI_CURRENCY, false),
+  dataResidencyControlsEnabled: enabled(import.meta.env.VITE_ENABLE_DATA_RESIDENCY_CONTROLS, false),
+  enterpriseSLAEnabled: enabled(import.meta.env.VITE_ENABLE_ENTERPRISE_SLA, false),
+  publicStatusPageEnabled: enabled(import.meta.env.VITE_ENABLE_PUBLIC_STATUS_PAGE, false),
 } as const;

@@ -101,6 +101,13 @@ const SchoolGrowthPortalView = React.lazy(() => safeImport(() => import('./featu
 const PartnerPortalView = React.lazy(() => safeImport(() => import('./features/partner/PartnerPortalView').then(module => ({ default: module.PartnerPortalView }))));
 const AdminGrowthOSView = React.lazy(() => safeImport(() => import('./features/admin/AdminGrowthOSView').then(module => ({ default: module.AdminGrowthOSView }))));
 
+// Phase 10 — Soma Platform Core & Governance
+const AdminPlatformCoreView = React.lazy(() => safeImport(() => import('./features/admin/AdminPlatformCoreView').then(module => ({ default: module.AdminPlatformCoreView }))));
+const OrganizationEnterpriseView = React.lazy(() => safeImport(() => import('./features/organization/OrganizationEnterpriseView').then(module => ({ default: module.OrganizationEnterpriseView }))));
+const DeveloperPortalView = React.lazy(() => safeImport(() => import('./features/developer/DeveloperPortalView').then(module => ({ default: module.DeveloperPortalView }))));
+const PublicStatusTrustView = React.lazy(() => safeImport(() => import('./features/public/PublicStatusTrustView').then(module => ({ default: module.PublicStatusTrustView }))));
+
+
 
 
 
@@ -435,6 +442,40 @@ const App: React.FC = () => {
                             {/* Phase 9 — Admin Growth OS Routes */}
                             <Route path="/admin/growth" element={<AdminGuard onNavigateBack={() => navigate('/')}><AdminGrowthOSView /></AdminGuard>} />
                             <Route path="/admin/growth/*" element={<AdminGuard onNavigateBack={() => navigate('/')}><AdminGrowthOSView /></AdminGuard>} />
+
+                            {/* Phase 10 — Platform Administration Routes */}
+                            <Route path="/admin/platform" element={<AdminGuard onNavigateBack={() => navigate('/')}><AdminPlatformCoreView /></AdminGuard>} />
+                            <Route path="/admin/platform/*" element={<AdminGuard onNavigateBack={() => navigate('/')}><AdminPlatformCoreView /></AdminGuard>} />
+
+                            {/* Phase 10 — Enterprise Organization Routes */}
+                            <Route path="/organization/settings" element={<OrganizationEnterpriseView />} />
+                            <Route path="/organization/security" element={<OrganizationEnterpriseView />} />
+                            <Route path="/organization/identity" element={<OrganizationEnterpriseView />} />
+                            <Route path="/organization/audit" element={<OrganizationEnterpriseView />} />
+                            <Route path="/organization/api-access" element={<OrganizationEnterpriseView />} />
+                            <Route path="/organization/integrations" element={<OrganizationEnterpriseView />} />
+                            <Route path="/organization/data-governance" element={<OrganizationEnterpriseView />} />
+                            <Route path="/organization/service-status" element={<OrganizationEnterpriseView />} />
+                            <Route path="/organization/support" element={<OrganizationEnterpriseView />} />
+                            <Route path="/organization/*" element={<OrganizationEnterpriseView />} />
+
+                            {/* Phase 10 — Developer Portal Routes */}
+                            <Route path="/developers" element={<DeveloperPortalView />} />
+                            <Route path="/developers/apps" element={<DeveloperPortalView />} />
+                            <Route path="/developers/api-keys" element={<DeveloperPortalView />} />
+                            <Route path="/developers/webhooks" element={<DeveloperPortalView />} />
+                            <Route path="/developers/usage" element={<DeveloperPortalView />} />
+                            <Route path="/developers/logs" element={<DeveloperPortalView />} />
+                            <Route path="/developers/docs" element={<DeveloperPortalView />} />
+                            <Route path="/developers/sandbox" element={<DeveloperPortalView />} />
+                            <Route path="/developers/*" element={<DeveloperPortalView />} />
+
+                            {/* Phase 10 — Public Operational & Trust Routes */}
+                            <Route path="/status" element={<PublicStatusTrustView />} />
+                            <Route path="/security" element={<PublicStatusTrustView />} />
+                            <Route path="/trust" element={<PublicStatusTrustView />} />
+                            <Route path="/api/docs" element={<PublicStatusTrustView />} />
+
 
 
 
