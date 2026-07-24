@@ -86,7 +86,7 @@ export const TeacherLanding: React.FC<TeacherLandingProps> = ({ onLogin, onRegis
             <header className="sticky top-0 z-50 border-b border-slate-800 bg-slate-900/90 backdrop-blur-xl px-4 py-3.5 sm:px-8">
                 <div className="mx-auto flex max-w-7xl items-center justify-between">
                     <button
-                        onClick={() => navigate('/')}
+                        onClick={() => navigate('/teacher')}
                         className="flex items-center gap-2.5 transition hover:opacity-90"
                     >
                         <img src={logoImg} alt="Somo Smart Logo" className="h-9 w-9 object-contain" />

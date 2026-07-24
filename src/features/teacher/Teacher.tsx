@@ -1059,7 +1059,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
             <div className="bg-white sticky top-0 z-50 shadow-sm border-b border-slate-100">
                 <div className="max-w-[1440px] mx-auto px-4 md:px-8 h-[72px] flex items-center justify-between">
                     {/* Left: Logo - clickable to go home */}
-                    <div className="flex items-center gap-3 cursor-pointer group" onClick={() => navigate('/')}>
+                    <div className="flex items-center gap-3 cursor-pointer group" onClick={() => { setActiveTab('DASHBOARD'); navigate('/teacher'); }}>
                         <img src={logoImg} alt="Somo Smart Logo" className="h-10 w-auto object-contain group-hover:scale-105 transition-transform" />
                     </div>
 
@@ -1123,7 +1123,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                 </div>
             </div>
 
-            <div className="max-w-5xl mx-auto px-4 sm:px-6 pt-5 sm:pt-8 pb-28 md:pb-24">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-5 sm:pt-8 pb-28 md:pb-24">
             {teacherNotice && (
                 <div className={`mb-6 flex items-start gap-3 rounded-2xl border px-4 py-3 ${teacherNotice.type === 'success'
                     ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
@@ -1142,7 +1142,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                 </div>
             )}
 
-            <div className="mb-6 rounded-[2rem] border border-emerald-100 bg-gradient-to-br from-emerald-50 via-white to-sky-50 p-5 shadow-sm">
+            <div className="mb-6 rounded-[2rem] border border-emerald-100 bg-gradient-to-br from-emerald-50 via-white to-sky-50 p-5 shadow-sm relative" style={{ display: setupComplete || setupNudgeDismissed ? 'none' : 'block' }}><button onClick={() => dismissSetupNudge()} className="absolute top-3 right-3 text-xs font-bold text-slate-400 hover:text-slate-600 px-2 py-1 bg-white/80 rounded-lg border border-slate-200">Dismiss</button>
                 <div className="flex flex-col lg:flex-row lg:items-center gap-4">
                     <div className="flex-1 min-w-0">
                         <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-600 mb-2">Start here</p>

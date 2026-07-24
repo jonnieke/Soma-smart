@@ -54,7 +54,7 @@ export const TeacherPage: React.FC = () => {
 
     const handleNavigate = (view: ViewState) => {
         if (view === ViewState.DASHBOARD) {
-            navigate('/');
+            navigate('/teacher');
         }
     };
 
