@@ -107,6 +107,14 @@ const OrganizationEnterpriseView = React.lazy(() => safeImport(() => import('./f
 const DeveloperPortalView = React.lazy(() => safeImport(() => import('./features/developer/DeveloperPortalView').then(module => ({ default: module.DeveloperPortalView }))));
 const PublicStatusTrustView = React.lazy(() => safeImport(() => import('./features/public/PublicStatusTrustView').then(module => ({ default: module.PublicStatusTrustView }))));
 
+// Phase 11 — Soma Strategic Intelligence Layer
+const TeacherEvidenceView = React.lazy(() => safeImport(() => import('./features/teacher/TeacherEvidenceView').then(module => ({ default: module.TeacherEvidenceView }))));
+const SchoolEvidenceView = React.lazy(() => safeImport(() => import('./features/school/SchoolEvidenceView').then(module => ({ default: module.SchoolEvidenceView }))));
+const CreatorEvidenceView = React.lazy(() => safeImport(() => import('./features/creator/CreatorEvidenceView').then(module => ({ default: module.CreatorEvidenceView }))));
+const ResearchPartnerPortalView = React.lazy(() => safeImport(() => import('./features/research/ResearchPartnerPortalView').then(module => ({ default: module.ResearchPartnerPortalView }))));
+const AdminStrategicIntelligenceView = React.lazy(() => safeImport(() => import('./features/admin/AdminStrategicIntelligenceView').then(module => ({ default: module.AdminStrategicIntelligenceView }))));
+
+
 
 
 
@@ -475,6 +483,45 @@ const App: React.FC = () => {
                             <Route path="/security" element={<PublicStatusTrustView />} />
                             <Route path="/trust" element={<PublicStatusTrustView />} />
                             <Route path="/api/docs" element={<PublicStatusTrustView />} />
+
+                            {/* Phase 11 — Teacher Evidence Routes */}
+                            <Route path="/teacher/evidence" element={<TeacherEvidenceView />} />
+                            <Route path="/teacher/evidence/questions" element={<TeacherEvidenceView />} />
+                            <Route path="/teacher/evidence/resources" element={<TeacherEvidenceView />} />
+                            <Route path="/teacher/evidence/curriculum" element={<TeacherEvidenceView />} />
+                            <Route path="/teacher/evidence/contributions" element={<TeacherEvidenceView />} />
+                            <Route path="/teacher/evidence/*" element={<TeacherEvidenceView />} />
+
+                            {/* Phase 11 — School Evidence Routes */}
+                            <Route path="/school/evidence" element={<SchoolEvidenceView />} />
+                            <Route path="/school/evidence/assessment-quality" element={<SchoolEvidenceView />} />
+                            <Route path="/school/evidence/curriculum" element={<SchoolEvidenceView />} />
+                            <Route path="/school/evidence/interventions" element={<SchoolEvidenceView />} />
+                            <Route path="/school/evidence/resources" element={<SchoolEvidenceView />} />
+                            <Route path="/school/evidence/value-report" element={<SchoolEvidenceView />} />
+                            <Route path="/school/evidence/*" element={<SchoolEvidenceView />} />
+
+                            {/* Phase 11 — Creator Evidence Routes */}
+                            <Route path="/creator/evidence" element={<CreatorEvidenceView />} />
+                            <Route path="/creator/evidence/content" element={<CreatorEvidenceView />} />
+                            <Route path="/creator/evidence/questions" element={<CreatorEvidenceView />} />
+                            <Route path="/creator/evidence/reputation" element={<CreatorEvidenceView />} />
+                            <Route path="/creator/evidence/earnings" element={<CreatorEvidenceView />} />
+                            <Route path="/creator/evidence/*" element={<CreatorEvidenceView />} />
+
+                            {/* Phase 11 — Research Partner Routes */}
+                            <Route path="/research" element={<ResearchPartnerPortalView />} />
+                            <Route path="/research/projects" element={<ResearchPartnerPortalView />} />
+                            <Route path="/research/datasets" element={<ResearchPartnerPortalView />} />
+                            <Route path="/research/approvals" element={<ResearchPartnerPortalView />} />
+                            <Route path="/research/results" element={<ResearchPartnerPortalView />} />
+                            <Route path="/research/governance" element={<ResearchPartnerPortalView />} />
+                            <Route path="/research/*" element={<ResearchPartnerPortalView />} />
+
+                            {/* Phase 11 — Admin Strategic Intelligence Routes */}
+                            <Route path="/admin/strategy" element={<AdminGuard onNavigateBack={() => navigate('/')}><AdminStrategicIntelligenceView /></AdminGuard>} />
+                            <Route path="/admin/strategy/*" element={<AdminGuard onNavigateBack={() => navigate('/')}><AdminStrategicIntelligenceView /></AdminGuard>} />
+
 
 
 

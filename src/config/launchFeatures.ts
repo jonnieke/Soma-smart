@@ -140,4 +140,23 @@ export const launchFeatures = {
   dataResidencyControlsEnabled: enabled(import.meta.env.VITE_ENABLE_DATA_RESIDENCY_CONTROLS, false),
   enterpriseSLAEnabled: enabled(import.meta.env.VITE_ENABLE_ENTERPRISE_SLA, false),
   publicStatusPageEnabled: enabled(import.meta.env.VITE_ENABLE_PUBLIC_STATUS_PAGE, false),
+
+  // Phase 11 — Soma Strategic Intelligence Layer Flags
+  strategicIntelligenceEnabled: enabled(import.meta.env.VITE_ENABLE_STRATEGIC_INTELLIGENCE, true),
+  curriculumKnowledgeGraphEnabled: enabled(import.meta.env.VITE_ENABLE_CURRICULUM_KNOWLEDGE_GRAPH, true),
+  assessmentEvidenceNetworkEnabled: enabled(import.meta.env.VITE_ENABLE_ASSESSMENT_EVIDENCE_NETWORK, true),
+  questionQualityNetworkEnabled: enabled(import.meta.env.VITE_ENABLE_QUESTION_QUALITY_NETWORK, true),
+  misconceptionLibraryEnabled: enabled(import.meta.env.VITE_ENABLE_MISCONCEPTION_LIBRARY, true),
+  contentImpactNetworkEnabled: enabled(import.meta.env.VITE_ENABLE_CONTENT_IMPACT_NETWORK, true),
+  contributorReputationEnabled: enabled(import.meta.env.VITE_ENABLE_CONTRIBUTOR_REPUTATION, true),
+  royaltyIntelligenceEnabled: enabled(import.meta.env.VITE_ENABLE_ROYALTY_INTELLIGENCE, true),
+  strategicAssetDashboardEnabled: enabled(import.meta.env.VITE_ENABLE_STRATEGIC_ASSET_DASHBOARD, true),
+  marginIntelligenceEnabled: enabled(import.meta.env.VITE_ENABLE_MARGIN_INTELLIGENCE, true),
+  platformEconomicsEnabled: enabled(import.meta.env.VITE_ENABLE_PLATFORM_ECONOMICS, true),
+
+  // Defaulted to disabled until validated (Phase 11 Section 5 requirement)
+  privacyPreservingResearchEnabled: enabled(import.meta.env.VITE_ENABLE_PRIVACY_PRESERVING_RESEARCH, false),
+  researchPartnershipsEnabled: enabled(import.meta.env.VITE_ENABLE_RESEARCH_PARTNERSHIPS, false),
+  pricingIntelligenceEnabled: enabled(import.meta.env.VITE_ENABLE_PRICING_INTELLIGENCE, false),
+  developerEcosystemEnabled: enabled(import.meta.env.VITE_ENABLE_DEVELOPER_ECOSYSTEM, false),
 } as const;
