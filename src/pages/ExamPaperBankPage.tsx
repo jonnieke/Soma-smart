@@ -82,7 +82,12 @@ export const ExamPaperBankPage: React.FC = () => {
     if (paper) {
       setSelected(paper);
       if (isPaperUnlocked(paper.id)) {
+        // Paper already paid — jump straight to the reader.
         navigate(`/exam-papers/${encodeURIComponent(String(paper.id))}/read`, { replace: true });
+      } else {
+        // Paper not yet purchased — open the checkout modal immediately so the
+        // user sees the purchase flow rather than a bare dashboard.
+        setCheckoutOpen(true);
       }
     }
   }, [isPaperUnlocked, navigate, papers, searchParams]);
