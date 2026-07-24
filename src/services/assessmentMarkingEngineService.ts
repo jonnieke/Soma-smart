@@ -33,7 +33,7 @@ export const assessmentMarkingEngineService = {
 
     // Helper to parse numbers, fractions, and percentages
     const parseNumber = (val: string): number | null => {
-      let v = val.trim();
+      const v = val.trim();
       if (v.endsWith('%')) {
         const num = parseFloat(v.replace('%', ''));
         return isNaN(num) ? null : num / 100;

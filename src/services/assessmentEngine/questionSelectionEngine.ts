@@ -58,7 +58,7 @@ export const questionSelectionEngine = {
       const sectionRuleType = rule.questionType;
 
       // Filter questions suitable for this section
-      let candidates = subjectBank.filter((q) => {
+      const candidates = subjectBank.filter((q) => {
         if (usedIds.has(q.id)) return false;
         if (sectionRuleType && q.questionType !== sectionRuleType) return false;
         return true;
