@@ -79,7 +79,8 @@ export const TeacherDashboardOverview: React.FC<TeacherDashboardOverviewProps> =
     };
   }, [teacherId]);
 
-  const actions: Array<{ title: string; body: string; tab: TeacherDashboardTab; icon: React.ReactNode }> = [
+  const actions: Array<{ title: string; body: string; tab?: TeacherDashboardTab; route?: string; icon: React.ReactNode }> = [
+    { title: 'Paper Studio (Exam Generator)', body: 'Generate full CBC / KCSE exam papers, blueprints, and marking schemes.', route: '/teacher/paper-studio', icon: <FileText className="w-5 h-5" /> },
     { title: 'Open Lesson Maker', body: 'Start where teachers actually work: notes, plans, quizzes, and live teaching.', tab: 'CREATION_HUB', icon: <Sparkles className="w-5 h-5" /> },
     { title: 'I need a lesson fast', body: 'Turn a topic, file, or voice note into class notes.', tab: 'CONVERT', icon: <FileText className="w-5 h-5" /> },
     { title: 'I need a lesson plan', body: 'Create a structured lesson flow the class can follow.', tab: 'LESSON_PLAN_GENERATOR', icon: <BookOpen className="w-5 h-5" /> },
@@ -121,7 +122,17 @@ export const TeacherDashboardOverview: React.FC<TeacherDashboardOverviewProps> =
     };
   }, [completedResponses, contextHistory, hasContext, requests, selectedSubject]);
 
-  const nav = (tab: TeacherDashboardTab) => { onTrackEvent?.('teacher_dashboard_quick_action', { tab }); onNavigate(tab); };
+  const navigate = useNavigate();
+  const nav = (tab?: TeacherDashboardTab, route?: string) => { 
+    if (route) {
+      navigate(route);
+      return;
+    }
+    if (tab) {
+      onTrackEvent?.('teacher_dashboard_quick_action', { tab }); 
+      onNavigate(tab); 
+    }
+  };
   const sharePlan = async () => {
     const text = ['Somo Smart Teacher Intervention Plan', `Class: ${hasContext ? selectedClass : 'Not selected'}`, `Subject: ${hasContext ? selectedSubject : 'Not selected'}`, `Focus: ${intervention.title}`, intervention.body, '', 'Actions:', ...intervention.actions.map((a, i) => `${i + 1}. ${a.label} - ${a.helper}`), '', 'Evidence:', ...intervention.evidence.map(x => `- ${x}`), 'https://somaai.co.ke'].join('\n');
     try { if (navigator.share) { await navigator.share({ title: 'Somo Smart teacher intervention plan', text }); setShareState('shared'); } else if (navigator.clipboard?.writeText) { await navigator.clipboard.writeText(text); setShareState('copied'); } } catch { if (navigator.clipboard?.writeText) { await navigator.clipboard.writeText(text); setShareState('copied'); } }
@@ -156,7 +167,7 @@ export const TeacherDashboardOverview: React.FC<TeacherDashboardOverviewProps> =
         <label className="block"><span className="mb-2 block text-[10px] font-black uppercase tracking-[0.2em] text-emerald-200">Subject</span><select value={selectedSubject} onChange={e => onSubjectChange(e.target.value)} className="w-full rounded-2xl border border-emerald-700 bg-emerald-900/40 px-4 py-3 text-sm font-semibold text-white focus:outline-none focus:ring-2 focus:ring-white/20"><option value="">Choose subject</option>{availableSubjects.map(item => <option key={item} value={item}>{item}</option>)}</select></label>
       </div>
       {!hasContext ? <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm font-semibold text-emerald-50">Select a class and subject first. That unlocks syllabus tracking, lesson history, marking, and the teaching loop.</div> : null}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">{actions.map(action => <button key={action.title} type="button" onClick={() => nav(action.tab)} className="group text-left rounded-2xl border border-white/10 bg-white/5 p-4 hover:bg-white/10 hover:border-white/20 transition-colors"><div className="flex items-center justify-between gap-3"><div className="flex items-center gap-3 min-w-0"><span className="rounded-2xl border border-white/10 bg-white/10 p-2 text-emerald-100">{action.icon}</span><span className="text-sm font-black text-white">{action.title}</span></div><ChevronRight className="w-4 h-4 text-emerald-200 group-hover:text-white transition-colors shrink-0" /></div><p className="mt-3 text-xs font-semibold text-emerald-100/90">{action.body}</p></button>)}</div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">{actions.map(action => <button key={action.title} type="button" onClick={() => nav(action.tab, action.route)} className="group text-left rounded-2xl border border-white/10 bg-white/5 p-4 hover:bg-white/10 hover:border-white/20 transition-colors"><div className="flex items-center justify-between gap-3"><div className="flex items-center gap-3 min-w-0"><span className="rounded-2xl border border-white/10 bg-white/10 p-2 text-emerald-100">{action.icon}</span><span className="text-sm font-black text-white">{action.title}</span></div><ChevronRight className="w-4 h-4 text-emerald-200 group-hover:text-white transition-colors shrink-0" /></div><p className="mt-3 text-xs font-semibold text-emerald-100/90">{action.body}</p></button>)}</div>
     </section>
 
     <div className="grid gap-6 lg:grid-cols-3">
