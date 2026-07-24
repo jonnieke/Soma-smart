@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { AlertCircle, ArrowRight, BookOpen, Brain, CheckCircle2, ChevronRight, ClipboardList, FileText, Library, Sparkles, Target, Users } from 'lucide-react';
 import { TeacherProfile, TutoringRequest, TeacherActivity, TeacherWallet } from '../../types';
 import { fetchTeacherWorkflowAnalytics, type TeacherWorkflowAnalyticsSummary } from '../../services/analyticsEventService';
