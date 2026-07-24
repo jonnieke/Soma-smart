@@ -143,22 +143,22 @@ export const RevisionDashboard: React.FC = () => {
                     <div className="space-y-3">
                         <Button
                             fullWidth
+                            variant="primary"
                             onClick={() => navigate('/pricing')}
-                            className="py-5 text-lg bg-indigo-600 hover:bg-indigo-700 shadow-xl shadow-indigo-100 border-none group"
+                            className="py-5 text-lg bg-indigo-600 hover:bg-indigo-700 text-white shadow-xl shadow-indigo-100 border-none group"
                         >
                             <span className="flex items-center justify-center gap-2">
                                 Upgrade to Somo Pro <ShieldCheck className="w-5 h-5 group-hover:scale-110 transition-transform" />
                             </span>
                         </Button>
-                        {lockedPaperId && (
-                            <Button
-                                fullWidth
-                                onClick={() => navigate(`/exam-papers?paper=${encodeURIComponent(String(lockedPaperId))}`)}
-                                className="py-4 bg-white text-indigo-700 border border-indigo-200 hover:bg-indigo-50"
-                            >
-                                Buy this paper for Revision Mode
-                            </Button>
-                        )}
+                        <Button
+                            fullWidth
+                            variant="outline"
+                            onClick={() => navigate(lockedPaperId ? `/exam-papers?paper=${encodeURIComponent(String(lockedPaperId))}` : '/exam-papers')}
+                            className="py-4 font-bold text-indigo-700 dark:text-indigo-300 border-2 border-indigo-200 hover:bg-indigo-50 dark:border-indigo-800 dark:hover:bg-indigo-950/40"
+                        >
+                            {lockedPaperId ? 'Buy this paper for Revision Mode' : 'Browse Exam Paper Bank'}
+                        </Button>
                         <button
                             onClick={() => setShowRevisionPaywall(false)}
                             className="text-slate-400 text-xs font-black uppercase tracking-widest hover:text-slate-600 transition-colors pt-4"
@@ -166,6 +166,7 @@ export const RevisionDashboard: React.FC = () => {
                             Return to Revision Hub
                         </button>
                     </div>
+
 
                     <div className="absolute -bottom-12 -right-12 w-32 h-32 bg-indigo-100 rounded-full blur-2xl opacity-60" />
                 </motion.div>
