@@ -325,14 +325,11 @@ export const RevisionHubPage: React.FC<Props> = ({
   };
 
   const openPaperPdf = (paper?: RevisionPaper, source: 'paper' | 'marking_scheme' = 'paper') => {
-    const url = source === 'marking_scheme' ? paperMarkingSchemeUrl(paper || {}) : paperPdfUrl(paper || {});
-    if (!url) {
-      if (paper) startPaper(paper);
-      return;
-    }
+    if (!paper) return;
     setInlinePdfSource(source);
-    setInlinePdfPaper(paper || null);
+    setInlinePdfPaper(paper);
   };
+
 
   const closeInlinePdf = () => {
     setInlinePdfPaper(null);
@@ -750,14 +747,17 @@ export const RevisionHubPage: React.FC<Props> = ({
                 <aside className="flex min-h-0 flex-col gap-4 overflow-y-auto bg-slate-50 px-4 py-4 dark:bg-slate-900 sm:px-5">
                   <div className="rounded-[1.25rem] border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950">
                     <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-600">
-                      What to do next
+                      {inlinePdfSource === 'marking_scheme' ? 'Answer guidance & criteria' : 'What to do next'}
                     </p>
                     <h3 className="mt-2 text-lg font-black text-slate-950 dark:text-white">
-                      Read first, then attempt.
+                      {inlinePdfSource === 'marking_scheme' ? 'Marking guide & model answers' : 'Read first, then attempt.'}
                     </h3>
                     <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
-                      Scan the paper, check the diagrams, and only then start the timed attempt so the learner feels guided rather than dropped into a dashboard.
+                      {inlinePdfSource === 'marking_scheme'
+                        ? 'Review step-by-step model answers, mark distributions, and common examiner traps before or after your attempt.'
+                        : 'Scan the paper, check the diagrams, and only then start the timed attempt so the learner feels guided rather than dropped into a dashboard.'}
                     </p>
+
                     <div className="mt-4 space-y-2 text-sm text-slate-600 dark:text-slate-300">
                       <div className="flex items-start gap-2">
                         <BookOpen className="mt-0.5 h-4 w-4 text-indigo-600" />
@@ -922,11 +922,11 @@ export const RevisionHubPage: React.FC<Props> = ({
                     <button
                       type="button"
                       onClick={() => setInlinePdfSource((current) => (current === 'paper' ? 'marking_scheme' : 'paper'))}
-                      disabled={!paperMarkingSchemeUrl(inlinePdfPaper)}
-                      className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-slate-200 px-4 text-sm font-black text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-slate-800 dark:text-slate-200 dark:hover:bg-slate-900"
+                      className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-slate-200 px-4 text-sm font-black text-slate-700 hover:bg-slate-50 dark:border-slate-800 dark:text-slate-200 dark:hover:bg-slate-900"
                     >
                       {inlinePdfSource === 'paper' ? 'Open marking scheme' : 'Open question paper'}
                     </button>
+
                     <button
                       type="button"
                       onClick={() => void sharePaper(inlinePdfPaper)}

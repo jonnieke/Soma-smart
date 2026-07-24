@@ -22,7 +22,8 @@ export const ExamPaperReaderPage: React.FC = () => {
       .finally(() => setLoading(false));
   }, [id, navigate]);
 
-  const currentUrl = activeDocument === 'scheme' ? (access?.markingSchemeUrl || access?.paperUrl) : access?.paperUrl;
+  const currentUrl = activeDocument === 'scheme' ? access?.markingSchemeUrl : access?.paperUrl;
+
   const share = async () => {
     const url = `${window.location.origin}/exam-papers?paper=${encodeURIComponent(id)}`;
     const payload = { title: access?.title || 'SomaAI Exam Paper', text: 'Open this SomaAI Original exam paper and marking scheme.', url };

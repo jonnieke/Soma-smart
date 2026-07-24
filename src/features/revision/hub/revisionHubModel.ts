@@ -148,6 +148,13 @@ export const paperPdfUrl = (paper: RevisionPaper): string => {
 };
 
 
+export const hasSeparateMarkingScheme = (paper?: RevisionPaper | null): boolean => {
+  if (!paper) return false;
+  const directUrl = String(paper.marking_scheme_url || paper.markingSchemeUrl || '').trim();
+  const filePath = String(paper.marking_scheme_path || paper.markingSchemePath || '').trim();
+  return Boolean(directUrl || filePath);
+};
+
 export const paperMarkingSchemeUrl = (paper: RevisionPaper): string => {
   const directUrl = String(paper.marking_scheme_url || paper.markingSchemeUrl || '').trim();
   if (directUrl) return directUrl;
@@ -165,9 +172,10 @@ export const paperMarkingSchemeUrl = (paper: RevisionPaper): string => {
     return `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/syllabus-docs/${encodedPath}`;
   }
 
-  // Fall back to paper URL if separate marking scheme URL is missing
-  return paperPdfUrl(paper);
+  // Do not fall back to paper URL so that question paper does not open in place of marking scheme
+  return '';
 };
+
 
 
 export const paperHasDiagrams = (paper: RevisionPaper): boolean =>
