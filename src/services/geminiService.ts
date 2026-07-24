@@ -521,11 +521,13 @@ export const processDarasaRecording = async (audioBlob: Blob, mimeType: string, 
   const langInstruction = isSwahiliSubject(subject)
     ? "LANGUAGE RULE: You MUST respond ENTIRELY in rich, grammatical Kiswahili Sanifu."
     : "LANGUAGE RULE: You MUST respond exclusively in clear academic English.";
-  const prompt = `You are a senior Kenyan teacher processing a live classroom voice recording.
-Build one polished classroom lesson note for ${grade} ${subject} and one classroom quiz from the same audio.
+  const prompt = `You are a senior curriculum specialist processing a live classroom voice recording for ${grade} ${subject}.
+CRITICAL RULE: Generate DIRECT TEACHING NOTES AND STUDENT REVISION CONTENT ONLY. Do NOT output newbie teacher guides, pedagogical hints, or meta-filler (do NOT write "Teacher Guide:", "Instructions for teacher:", "Before teaching this...", "Remind learners...", etc.).
 If the audio is unclear, return topic "Unclear Audio", structuredNotes "Audio was unclear.", and simplifiedNotes "I couldn't hear any clear speech. Please try recording again closer to the microphone.".
-If the speech is clear, return a complete note with sections for Topic, Learning Outcomes, Prior Knowledge, Core Explanation, Worked Example, Class Activity, Common Mistakes, Quick Recap, and Check Your Understanding.
-Create 5 to 8 quiz questions with type, question, correctAnswer, explanation, and markingScheme. Use MCQ where helpful, otherwise SHORT.
+If the speech is clear:
+1. "structuredNotes": Complete, in-depth markdown classroom notes with: # Topic Name, ## 1. Key Concepts & Definitions, ## 2. Core Content Explanation, ## 3. Worked Examples, ## 4. Key Takeaways & Exam Tips, ## 5. Self-Check Review Questions.
+2. "simplifiedNotes": Clean, direct student revision notes ready to share with learners.
+3. "quiz": Create 5 to 8 exam-style questions with type, question, correctAnswer, explanation, and markingScheme.
 ${langInstruction}
 Return only JSON in this shape: { "note": { "topic": "...", "structuredNotes": "...", "simplifiedNotes": "..." }, "quiz": { "topic": "...", "questions": [] } }`;
   try {
@@ -1181,13 +1183,21 @@ export const convertNotes = async (base64Data: string, mimeType: string, subject
     : "LANGUAGE RULE: You MUST respond exclusively in English. For all academic concepts, notes, and explanations, use clear, precise academic English. Do NOT respond in Swahili, even if the student language setting is Swahili.";
 
   const prompt = `
-    Analyze this document. 
-    1. CONTEXT: The teacher has indicated this is for ${subject || 'a school subject'} and the students are in ${className || 'a Kenyan classroom'}.
-2. ${langInstruction}
-3. Create structured lesson notes(headings, key concepts, examples) targeted at the appropriate academic level for ${className || 'this grade'}.
-4. Create a simplified version suitable for students to study from directly.
-    
-    Output JSON.
+    Analyze this document and generate official, high-quality classroom notes.
+    CRITICAL RULE: Generate DIRECT TEACHING AND STUDENT STUDY CONTENT. Do NOT write newbie teacher guides, pedagogical commentary, or meta instructions (e.g. NEVER write "Teacher Guide:", "Instructions for the teacher:", "Before teaching this...", "Remind learners...", or "In this lesson you will teach...").
+
+    1. CONTEXT: Subject = ${subject || 'General Academic Subject'}, Level/Grade = ${className || 'Kenyan Classroom'}.
+    2. ${langInstruction}
+    3. "structuredNotes": Comprehensive, structured markdown lesson notes formatted for direct classroom board teaching & presentation. Include:
+       # [Topic Name]
+       ## 1. Key Concepts & Definitions (exact, high-scoring terms and definitions)
+       ## 2. Core Subject Content (detailed academic explanations, formulas, diagrams/rules)
+       ## 3. Worked Examples & Practical Application (step-by-step solved problems/case studies)
+       ## 4. Key Takeaways & Exam Tips (bullet point revision summary)
+       ## 5. Self-Check Review Questions (3-5 revision questions with hints)
+    4. "simplifiedNotes": Clean, direct, student-ready revision notes formatted for direct sharing on WhatsApp/Telegram with students and parents.
+
+    Output valid JSON only with keys: "topic", "structuredNotes", "simplifiedNotes".
   `;
 
   try {
@@ -1277,12 +1287,13 @@ export const processVoiceNote = async (audioBase64: string, mimeType: string = "
   const langInstruction = isSwahiliSubject(subject)
     ? "LANGUAGE RULE: You MUST respond ENTIRELY in rich, immersive, grammatical Swahili (Kiswahili Sanifu). Use comprehensive educational vocabulary in Swahili."
     : "LANGUAGE RULE: You MUST respond exclusively in English. For all academic concepts, notes, and explanations, use clear, precise academic English. Do NOT respond in Swahili, even if the student language setting is Swahili.";
-  const prompt = `You are a senior Kenyan teacher turning a voice lesson into polished classroom notes.
+  const prompt = `You are a senior curriculum expert turning a voice recording into official classroom notes for ${className || 'this class'} in ${subject || 'the subject'}.
+CRITICAL RULE: Output DIRECT CLASSROOM TEACHING AND REVISION NOTES ONLY. Absolutely NO newbie teacher guides, pedagogical commentary, or meta-filler (e.g. NEVER write "Teacher Guide:", "Instructions for teacher:", "Before teaching...", "Remind learners...", etc.).
 If the audio is silent, background noise, or unclear, return topic "Unclear Audio", structuredNotes "Audio was unclear.", and simplifiedNotes "I couldn't hear any clear speech. Please try recording again closer to the microphone.".
-If speech is clear, produce final classroom material for ${className || 'this class'} in ${subject || 'the subject'}.
+If speech is clear:
+1. "structuredNotes": Complete, in-depth markdown classroom notes with: # Topic Name, ## 1. Key Concepts & Definitions, ## 2. Core Subject Content, ## 3. Worked Examples, ## 4. Key Takeaways & Exam Tips, ## 5. Self-Check Review Questions.
+2. "simplifiedNotes": Clean, direct student revision notes ready to share with learners.
 Use ${langInstruction}.
-structuredNotes must use sections for Topic, Learning Outcomes, Prior Knowledge / Link to Previous Lesson, Core Explanation, Worked Example, Class Activity, Common Mistakes, Quick Recap, and Check Your Understanding.
-simplifiedNotes must stay student-friendly and useful.
 Return only JSON.`;
   try {
     const result = await callGeminiProxy(MODEL_NAME, [{ role: 'user', parts: [{ text: prompt }, { inlineData: { data: audioBase64, mimeType } }] }], { temperature: 0.2, maxOutputTokens: 1800, responseMimeType: 'application/json' });
@@ -1539,13 +1550,13 @@ export const repairNoteForClassroom = async (
   const langInstruction = isSwahiliSubject(subject)
     ? "LANGUAGE RULE: You MUST respond ENTIRELY in rich, immersive, grammatical Swahili (Kiswahili Sanifu). Use comprehensive educational vocabulary in Swahili."
     : "LANGUAGE RULE: You MUST respond exclusively in English. For all academic concepts, notes, and explanations, use clear, precise academic English. Do NOT respond in Swahili, even if the student language setting is Swahili.";
-  const prompt = `You are a senior Kenyan teacher improving a lesson note before classroom publishing.
+  const prompt = `You are a senior curriculum specialist improving a lesson note for ${grade} ${subject}.
+CRITICAL RULE: Strip out all newbie teacher guides, pedagogical commentary, meta-filler, and instructions (e.g. remove "Teacher Guide:", "Instructions for teacher:", "Before teaching...", "Remind learners...").
+Output DIRECT, IN-DEPTH CLASSROOM TEACHING AND STUDENT REVISION NOTES that a teacher can directly present on the board and share with students.
 ${langInstruction}
-Subject: ${subject}
-Grade/Class: ${grade}
 Current note JSON:
 ${JSON.stringify(note)}
-Keep the same topic intent, expand it into a real classroom lesson file, include concrete Kenyan examples, and return only JSON with topic, structuredNotes, and simplifiedNotes.`;
+Return JSON with topic, structuredNotes, and simplifiedNotes.`;
   const result = await callGeminiProxy(MODEL_NAME, [{ role: 'user', parts: [{ text: prompt }] }], { temperature: 0.2, maxOutputTokens: 2000, responseMimeType: 'application/json' });
   const text = result.response.text();
   if (!text) throw new Error('No response from AI');

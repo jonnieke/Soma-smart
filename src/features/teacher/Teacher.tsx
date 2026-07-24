@@ -29,6 +29,7 @@ import { PublishedExamShelf } from './PublishedExamShelf';
 import { trackAnalyticsEvent } from '../../services/analyticsEventService';
 import logoImg from '../../assets/images/main_logo.png';
 import { safeImport } from '../../utils/safeImport';
+import { shareToWhatsApp, shareToTelegram } from '../../utils/shareUtils';
 import { TeacherDashboardTab } from './teacherNavigation';
 import { launchFeatures } from '../../config/launchFeatures';
 
@@ -1942,6 +1943,8 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                                 <Button variant="outline" onClick={() => window.print()} className="rounded-xl border-2 font-black uppercase tracking-widest text-xs">
                                     <Download className="w-4 h-4 mr-2" /> {t.teacher.results.exportPdf}
                                 </Button>
+                                <Button variant="outline" onClick={() => { if (generatedNote) { shareToWhatsApp(generatedNote.topic, generatedNote.structuredNotes || generatedNote.simplifiedNotes); } else if (generatedQuiz) { shareToWhatsApp(generatedQuiz.topic, generatedQuiz.questions.map((q, i) => `${i + 1}. ${q.question}`).join('\n')); } }} className="rounded-xl border-2 font-black uppercase tracking-widest text-xs bg-emerald-600 text-white border-emerald-600 hover:bg-emerald-700"><Share2 className="w-4 h-4 mr-2" /> WhatsApp Share</Button>
+                                <Button variant="outline" onClick={() => { if (generatedNote) { shareToTelegram(generatedNote.topic, generatedNote.structuredNotes || generatedNote.simplifiedNotes); } else if (generatedQuiz) { shareToTelegram(generatedQuiz.topic, generatedQuiz.questions.map((q, i) => `${i + 1}. ${q.question}`).join('\n')); } }} className="rounded-xl border-2 font-black uppercase tracking-widest text-xs bg-sky-600 text-white border-sky-600 hover:bg-sky-700"><Share2 className="w-4 h-4 mr-2" /> Telegram Share</Button>
                             </div>
                         </div>
 
