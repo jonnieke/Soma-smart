@@ -3,8 +3,8 @@ import { schoolWorkspaceService } from '../services/schoolWorkspaceService';
 import { paperBankMarketplaceService } from '../services/paperBankMarketplaceService';
 
 describe('School Workspace & Paper Bank Marketplace Services', () => {
-  it('loads school departments and branding', () => {
-    const depts = schoolWorkspaceService.getDepartments();
+  it('loads school departments and branding', async () => {
+    const depts = await schoolWorkspaceService.getDepartments();
     expect(depts.length).toBeGreaterThan(0);
     expect(depts[0].name).toContain('Mathematics');
 

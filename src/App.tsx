@@ -35,6 +35,7 @@ const SomaGuidePage = React.lazy(() => safeImport(() => import('./pages/SomaGuid
 const ResetPassword = React.lazy(() => safeImport(() => import('./pages/ResetPassword').then(module => ({ default: module.ResetPassword }))));
 const PricingPage = React.lazy(() => safeImport(() => import('./pages/PricingPage').then(module => ({ default: module.PricingPage }))));
 const SchoolDashboard = React.lazy(() => safeImport(() => import('./features/school/SchoolDashboard').then(module => ({ default: module.SchoolDashboard }))));
+const SchoolWorkspaceLayout = React.lazy(() => safeImport(() => import('./features/school/workspace/SchoolWorkspaceLayout').then(module => ({ default: module.SchoolWorkspaceLayout }))));
 const OfflinePage = React.lazy(() => safeImport(() => import('./pages/OfflinePage').then(module => ({ default: module.OfflinePage }))));
 const GuestQuiz = React.lazy(() => safeImport(() => import('./pages/GuestQuiz').then(module => ({ default: module.GuestQuiz }))));
 const ClassJoinPage = React.lazy(() => safeImport(() => import('./pages/ClassJoinPage').then(module => ({ default: module.ClassJoinPage }))));
@@ -51,6 +52,60 @@ const BlogIndex = React.lazy(() => safeImport(() => import('./pages/Blog/BlogInd
 const BlogPost = React.lazy(() => safeImport(() => import('./pages/Blog/BlogPost').then(module => ({ default: module.BlogPost }))));
 const ContactUsPage = React.lazy(() => safeImport(() => import('./pages/ContactUsPage').then(module => ({ default: module.ContactUsPage }))));
 const AskSomo = React.lazy(() => safeImport(() => import('./components/AskSomo').then(module => ({ default: module.AskSomo }))));
+
+// Phase 4 — Marketplace & District
+const MarketplacePage = React.lazy(() => safeImport(() => import('./features/marketplace/MarketplacePage').then(module => ({ default: module.MarketplacePage }))));
+const SellerDashboard = React.lazy(() => safeImport(() => import('./features/marketplace/SellerDashboard').then(module => ({ default: module.SellerDashboard }))));
+const DistrictDashboard = React.lazy(() => safeImport(() => import('./features/district/DistrictDashboard').then(module => ({ default: module.DistrictDashboard }))));
+const SellerOnboardingView = React.lazy(() => safeImport(() => import('./features/marketplace/SellerOnboardingView').then(module => ({ default: module.SellerOnboardingView }))));
+const PurchasedLibraryView = React.lazy(() => safeImport(() => import('./features/marketplace/PurchasedLibraryView').then(module => ({ default: module.PurchasedLibraryView }))));
+
+
+// Phase 5 — Assessment Delivery, Marking & Intelligence
+const TeacherAssessmentsView = React.lazy(() => safeImport(() => import('./features/teacher/TeacherAssessmentsView').then(module => ({ default: module.TeacherAssessmentsView }))));
+const TeacherMarkingCentreView = React.lazy(() => safeImport(() => import('./features/teacher/TeacherMarkingCentreView').then(module => ({ default: module.TeacherMarkingCentreView }))));
+const TeacherMarkingInterface = React.lazy(() => safeImport(() => import('./features/teacher/TeacherMarkingInterface').then(module => ({ default: module.TeacherMarkingInterface }))));
+const TeacherResultsAnalyticsView = React.lazy(() => safeImport(() => import('./features/teacher/TeacherResultsAnalyticsView').then(module => ({ default: module.TeacherResultsAnalyticsView }))));
+const TeacherReportsView = React.lazy(() => safeImport(() => import('./features/teacher/TeacherReportsView').then(module => ({ default: module.TeacherReportsView }))));
+
+const LearnerAssessmentsView = React.lazy(() => safeImport(() => import('./features/learner/LearnerAssessmentsView').then(module => ({ default: module.LearnerAssessmentsView }))));
+const LearnerAssessmentTakeView = React.lazy(() => safeImport(() => import('./features/learner/LearnerAssessmentTakeView').then(module => ({ default: module.LearnerAssessmentTakeView }))));
+const LearnerAssessmentResultView = React.lazy(() => safeImport(() => import('./features/learner/LearnerAssessmentResultView').then(module => ({ default: module.LearnerAssessmentResultView }))));
+const LearnerCorrectionsView = React.lazy(() => safeImport(() => import('./features/learner/LearnerCorrectionsView').then(module => ({ default: module.LearnerCorrectionsView }))));
+const LearnerWeakAreasView = React.lazy(() => safeImport(() => import('./features/learner/LearnerWeakAreasView').then(module => ({ default: module.LearnerWeakAreasView }))));
+const LearnerRevisionPlanView = React.lazy(() => safeImport(() => import('./features/learner/LearnerRevisionPlanView').then(module => ({ default: module.LearnerRevisionPlanView }))));
+
+const SchoolAssessmentPerformanceView = React.lazy(() => safeImport(() => import('./features/school/SchoolAssessmentPerformanceView').then(module => ({ default: module.SchoolAssessmentPerformanceView }))));
+const AdminAssessmentDeliveryView = React.lazy(() => safeImport(() => import('./features/admin/AdminAssessmentDeliveryView').then(module => ({ default: module.AdminAssessmentDeliveryView }))));
+
+// Phase 6 — Soma Education Intelligence
+const TeacherIntelligenceDashboardView = React.lazy(() => safeImport(() => import('./features/teacher/TeacherIntelligenceDashboardView').then(module => ({ default: module.TeacherIntelligenceDashboardView }))));
+const LearnerProgressView = React.lazy(() => safeImport(() => import('./features/learner/LearnerProgressView').then(module => ({ default: module.LearnerProgressView }))));
+const SchoolIntelligenceView = React.lazy(() => safeImport(() => import('./features/school/SchoolIntelligenceView').then(module => ({ default: module.SchoolIntelligenceView }))));
+const AdminEducationIntelligenceView = React.lazy(() => safeImport(() => import('./features/admin/AdminEducationIntelligenceView').then(module => ({ default: module.AdminEducationIntelligenceView }))));
+
+// Phase 7 — Soma Content OS
+const TeacherContentOSView = React.lazy(() => safeImport(() => import('./features/teacher/TeacherContentOSView').then(module => ({ default: module.TeacherContentOSView }))));
+const SchoolContentLibraryView = React.lazy(() => safeImport(() => import('./features/school/SchoolContentLibraryView').then(module => ({ default: module.SchoolContentLibraryView }))));
+const PublisherPortalView = React.lazy(() => safeImport(() => import('./features/publisher/PublisherPortalView').then(module => ({ default: module.PublisherPortalView }))));
+const AdminContentOSView = React.lazy(() => safeImport(() => import('./features/admin/AdminContentOSView').then(module => ({ default: module.AdminContentOSView }))));
+
+// Phase 8 — Soma School OS
+const SchoolOSDashboardView = React.lazy(() => safeImport(() => import('./features/school/SchoolOSDashboardView').then(module => ({ default: module.SchoolOSDashboardView }))));
+const InstitutionDashboardView = React.lazy(() => safeImport(() => import('./features/institution/InstitutionDashboardView').then(module => ({ default: module.InstitutionDashboardView }))));
+const AdminInstitutionsView = React.lazy(() => safeImport(() => import('./features/admin/AdminInstitutionsView').then(module => ({ default: module.AdminInstitutionsView }))));
+
+// Phase 9 — Soma Growth OS
+const TeacherGettingStartedView = React.lazy(() => safeImport(() => import('./features/teacher/TeacherGettingStartedView').then(module => ({ default: module.TeacherGettingStartedView }))));
+const SchoolGrowthPortalView = React.lazy(() => safeImport(() => import('./features/school/SchoolGrowthPortalView').then(module => ({ default: module.SchoolGrowthPortalView }))));
+const PartnerPortalView = React.lazy(() => safeImport(() => import('./features/partner/PartnerPortalView').then(module => ({ default: module.PartnerPortalView }))));
+const AdminGrowthOSView = React.lazy(() => safeImport(() => import('./features/admin/AdminGrowthOSView').then(module => ({ default: module.AdminGrowthOSView }))));
+
+
+
+
+
+
 
 // Loading Fallback Component
 const PageLoader = () => (
@@ -255,6 +310,136 @@ const App: React.FC = () => {
                             <Route path="/reset-password" element={<ResetPassword />} />
                             <Route path="/pricing" element={<PricingPage />} />
                             <Route path="/school" element={<SchoolDashboard />} />
+                            <Route path="/school/assessment" element={<SchoolWorkspaceLayout />} />
+                            <Route path="/school/assessment/*" element={<SchoolWorkspaceLayout />} />
+                            <Route path="/marketplace" element={<MarketplacePage />} />
+                            <Route path="/marketplace/sell" element={<SellerDashboard />} />
+                            <Route path="/teacher/paper-bank" element={<MarketplacePage />} />
+                            <Route path="/teacher/paper-bank/search" element={<MarketplacePage />} />
+                            <Route path="/teacher/paper-bank/purchases" element={<PurchasedLibraryView />} />
+                            <Route path="/teacher/paper-bank/library" element={<PurchasedLibraryView />} />
+                            <Route path="/teacher/seller" element={<SellerDashboard />} />
+                            <Route path="/teacher/seller/onboarding" element={<SellerOnboardingView />} />
+                            <Route path="/teacher/seller/listings" element={<SellerDashboard />} />
+                            <Route path="/teacher/seller/earnings" element={<SellerDashboard />} />
+                            <Route path="/teacher/seller/withdrawals" element={<SellerDashboard />} />
+                            <Route path="/district" element={<DistrictDashboard />} />
+                            <Route path="/district/:districtId" element={<DistrictDashboard />} />
+
+                            {/* Phase 5 — Teacher Routes */}
+                            <Route path="/teacher/assessments" element={<TeacherAssessmentsView />} />
+                            <Route path="/teacher/assessments/create" element={<TeacherAssessmentsView />} />
+                            <Route path="/teacher/assessments/:assessmentId" element={<TeacherAssessmentsView />} />
+                            <Route path="/teacher/assessments/:assessmentId/assign" element={<TeacherAssessmentsView />} />
+                            <Route path="/teacher/assessments/:assessmentId/submissions" element={<TeacherMarkingCentreView />} />
+                            <Route path="/teacher/marking" element={<TeacherMarkingCentreView />} />
+                            <Route path="/teacher/marking/:attemptId" element={<TeacherMarkingInterface />} />
+                            <Route path="/teacher/results" element={<TeacherResultsAnalyticsView />} />
+                            <Route path="/teacher/results/:assessmentId" element={<TeacherResultsAnalyticsView />} />
+                            <Route path="/teacher/insights" element={<TeacherResultsAnalyticsView />} />
+                            <Route path="/teacher/reports" element={<TeacherReportsView />} />
+
+                            {/* Phase 5 — Learner Routes */}
+                            <Route path="/learner/assessments" element={<LearnerAssessmentsView />} />
+                            <Route path="/learner/assessments/:assignmentId" element={<LearnerAssessmentsView />} />
+                            <Route path="/learner/assessments/:assignmentId/start" element={<LearnerAssessmentTakeView />} />
+                            <Route path="/learner/assessments/:assignmentId/result" element={<LearnerAssessmentResultView />} />
+                            <Route path="/learner/corrections" element={<LearnerCorrectionsView />} />
+                            <Route path="/learner/weak-areas" element={<LearnerWeakAreasView />} />
+                            <Route path="/learner/revision-plan" element={<LearnerRevisionPlanView />} />
+
+                            {/* Phase 5 — School Routes */}
+                            <Route path="/school/assessment-performance" element={<SchoolAssessmentPerformanceView />} />
+                            <Route path="/school/assessment-performance/*" element={<SchoolAssessmentPerformanceView />} />
+
+                            {/* Phase 5 — Admin Routes */}
+                            <Route path="/admin/assessment-delivery" element={<AdminGuard onNavigateBack={() => navigate('/')}><AdminAssessmentDeliveryView /></AdminGuard>} />
+                            <Route path="/admin/assessment-jobs" element={<AdminGuard onNavigateBack={() => navigate('/')}><AdminAssessmentDeliveryView /></AdminGuard>} />
+                            <Route path="/admin/scanning" element={<AdminGuard onNavigateBack={() => navigate('/')}><AdminAssessmentDeliveryView /></AdminGuard>} />
+                            <Route path="/admin/assessment-costs" element={<AdminGuard onNavigateBack={() => navigate('/')}><AdminAssessmentDeliveryView /></AdminGuard>} />
+
+                            {/* Phase 6 — Teacher Intelligence Routes */}
+                            <Route path="/teacher/intelligence" element={<TeacherIntelligenceDashboardView />} />
+                            <Route path="/teacher/intelligence/*" element={<TeacherIntelligenceDashboardView />} />
+
+                            {/* Phase 6 — Learner Progress Routes */}
+                            <Route path="/learner/progress" element={<LearnerProgressView />} />
+                            <Route path="/learner/progress/*" element={<LearnerProgressView />} />
+
+                            {/* Phase 6 — School Intelligence Routes */}
+                            <Route path="/school/intelligence" element={<SchoolIntelligenceView />} />
+                            <Route path="/school/intelligence/*" element={<SchoolIntelligenceView />} />
+
+                            {/* Phase 6 — Admin Intelligence Routes */}
+                            <Route path="/admin/education-intelligence" element={<AdminGuard onNavigateBack={() => navigate('/')}><AdminEducationIntelligenceView /></AdminGuard>} />
+                            <Route path="/admin/education-intelligence/*" element={<AdminGuard onNavigateBack={() => navigate('/')}><AdminEducationIntelligenceView /></AdminGuard>} />
+
+                            {/* Phase 7 — Teacher Content OS Routes */}
+                            <Route path="/teacher/content" element={<TeacherContentOSView />} />
+                            <Route path="/teacher/content/*" element={<TeacherContentOSView />} />
+
+                            {/* Phase 7 — School Content OS Routes */}
+                            <Route path="/school/content" element={<SchoolContentLibraryView />} />
+                            <Route path="/school/content/*" element={<SchoolContentLibraryView />} />
+
+                            {/* Phase 7 — Publisher Portal Routes */}
+                            <Route path="/publisher" element={<PublisherPortalView />} />
+                            <Route path="/publisher/*" element={<PublisherPortalView />} />
+
+                            {/* Phase 7 — Admin Content OS Routes */}
+                            <Route path="/admin/content-os" element={<AdminGuard onNavigateBack={() => navigate('/')}><AdminContentOSView /></AdminGuard>} />
+                            <Route path="/admin/content-os/*" element={<AdminGuard onNavigateBack={() => navigate('/')}><AdminContentOSView /></AdminGuard>} />
+
+                            {/* Phase 8 — School OS Routes */}
+                            <Route path="/school" element={<SchoolOSDashboardView />} />
+                            <Route path="/school/setup" element={<SchoolOSDashboardView />} />
+                            <Route path="/school/people" element={<SchoolOSDashboardView />} />
+                            <Route path="/school/classes" element={<SchoolOSDashboardView />} />
+                            <Route path="/school/calendar" element={<SchoolOSDashboardView />} />
+                            <Route path="/school/billing" element={<SchoolOSDashboardView />} />
+                            <Route path="/school/*" element={<SchoolOSDashboardView />} />
+
+                            {/* Phase 8 — Multi-Campus Institution Routes */}
+                            <Route path="/institution" element={<InstitutionDashboardView />} />
+                            <Route path="/institution/*" element={<InstitutionDashboardView />} />
+
+                            {/* Phase 8 — Admin Institution & Platform Health Routes */}
+                            <Route path="/admin/institutions" element={<AdminGuard onNavigateBack={() => navigate('/')}><AdminInstitutionsView /></AdminGuard>} />
+                            <Route path="/admin/institutions/*" element={<AdminGuard onNavigateBack={() => navigate('/')}><AdminInstitutionsView /></AdminGuard>} />
+
+                            {/* Phase 9 — Teacher Growth Routes */}
+                            <Route path="/teacher/getting-started" element={<TeacherGettingStartedView />} />
+                            <Route path="/teacher/referrals" element={<TeacherGettingStartedView />} />
+                            <Route path="/teacher/ambassador" element={<TeacherGettingStartedView />} />
+                            <Route path="/teacher/creator-programme" element={<TeacherGettingStartedView />} />
+                            <Route path="/teacher/upgrade" element={<TeacherGettingStartedView />} />
+                            <Route path="/teacher/benefits" element={<TeacherGettingStartedView />} />
+
+                            {/* Phase 9 — School Growth Routes */}
+                            <Route path="/school/trial" element={<SchoolGrowthPortalView />} />
+                            <Route path="/school/demo" element={<SchoolGrowthPortalView />} />
+                            <Route path="/school/pilot" element={<SchoolGrowthPortalView />} />
+                            <Route path="/school/referrals" element={<SchoolGrowthPortalView />} />
+                            <Route path="/school/success" element={<SchoolGrowthPortalView />} />
+                            <Route path="/school/renewal" element={<SchoolGrowthPortalView />} />
+
+                            {/* Phase 9 — Partner Routes */}
+                            <Route path="/partner" element={<PartnerPortalView />} />
+                            <Route path="/partner/referrals" element={<PartnerPortalView />} />
+                            <Route path="/partner/schools" element={<PartnerPortalView />} />
+                            <Route path="/partner/campaigns" element={<PartnerPortalView />} />
+                            <Route path="/partner/earnings" element={<PartnerPortalView />} />
+                            <Route path="/partner/deployments" element={<PartnerPortalView />} />
+                            <Route path="/partner/reports" element={<PartnerPortalView />} />
+
+                            {/* Phase 9 — Admin Growth OS Routes */}
+                            <Route path="/admin/growth" element={<AdminGuard onNavigateBack={() => navigate('/')}><AdminGrowthOSView /></AdminGuard>} />
+                            <Route path="/admin/growth/*" element={<AdminGuard onNavigateBack={() => navigate('/')}><AdminGrowthOSView /></AdminGuard>} />
+
+
+
+
+
                             <Route path="/offline" element={<OfflinePage />} />
                             <Route path="/quiz/:id" element={<GuestQuiz />} />
                             <Route path="/join" element={<ClassJoinPage />} />

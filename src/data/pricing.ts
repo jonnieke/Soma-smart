@@ -58,8 +58,75 @@ export const LEARNING_CREDIT_PACKS: SubscriptionPlan[] = [
 ];
 
 export const SCHOOL_PLANS: SubscriptionPlan[] = [
-    { id: 'sch_small', segment: 'SCHOOL', name: 'Small School', price: 10000, duration: 'TERMLY', teacherLimit: 3, studentLimit: 50 },
-    { id: 'sch_medium', segment: 'SCHOOL', name: 'Medium School', price: 20000, duration: 'TERMLY', teacherLimit: 10, studentLimit: 100 },
-    { id: 'sch_large', segment: 'SCHOOL', name: 'Large School', price: 36000, duration: 'TERMLY', teacherLimit: 50, studentLimit: 500 },
+    {
+        id: 'sch_basic',
+        segment: 'SCHOOL',
+        name: 'School Basic',
+        price: 4999,
+        duration: 'TERMLY',
+        schoolTier: 'SCHOOL_BASIC',
+        isSchoolWorkspacePlan: true,
+        teacherSeatLimit: 5,
+        aiCredits: 500,
+        studentLimit: 200,
+        features: [
+            'Up to 5 teacher seats',
+            '500 shared AI credits per term',
+            'School question bank',
+            'Review & approval workflow',
+            'School-branded exam templates',
+            'Examination paper locking & versioning',
+            'Basic audit trail',
+        ],
+    },
+    {
+        id: 'sch_pro',
+        segment: 'SCHOOL',
+        name: 'School Pro',
+        price: 12999,
+        duration: 'TERMLY',
+        schoolTier: 'SCHOOL_PRO',
+        isSchoolWorkspacePlan: true,
+        teacherSeatLimit: 20,
+        aiCredits: 2000,
+        studentLimit: 600,
+        savings: 'Most popular',
+        features: [
+            'Up to 20 teacher seats',
+            '2,000 shared AI credits per term',
+            'Full department management & HOD roles',
+            'Multi-stage review & approval pipeline',
+            'School-branded exam templates',
+            'Paper versioning & version history',
+            'Full audit trail & activity logs',
+            'Marketplace submissions enabled',
+        ],
+    },
+    {
+        id: 'sch_enterprise',
+        segment: 'SCHOOL',
+        name: 'School Enterprise',
+        price: 29999,
+        duration: 'TERMLY',
+        schoolTier: 'SCHOOL_ENTERPRISE',
+        isSchoolWorkspacePlan: true,
+        teacherSeatLimit: 0, // 0 = unlimited
+        aiCredits: 10000,
+        studentLimit: 0, // 0 = unlimited
+        savings: 'Best value',
+        features: [
+            'Unlimited teacher seats',
+            '10,000 shared AI credits per term',
+            'Full department, HOD & coordinator roles',
+            'Multi-stage review & approval pipeline',
+            'Custom school branding & watermarks',
+            'Full paper versioning & history',
+            'Full audit trail & compliance reports',
+            'Marketplace submissions enabled',
+            'District analytics access',
+            'Priority platform support',
+        ],
+    },
 ];
+
 

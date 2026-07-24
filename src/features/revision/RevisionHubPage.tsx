@@ -663,19 +663,89 @@ export const RevisionHubPage: React.FC<Props> = ({
                       />
                     </div>
                   </div>
-                  <div className="flex-1 overflow-auto bg-slate-100 px-3 py-4 dark:bg-slate-900">
+                  <div className="relative flex-1 overflow-auto bg-slate-100 px-3 py-4 dark:bg-slate-900">
                     <div className="mx-auto flex w-full justify-center">
                       <div className="overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white shadow-[0_18px_60px_rgba(15,23,42,0.12)] dark:border-slate-800 dark:bg-slate-950">
-                        {inlinePdfError ? (
+                        {inlinePdfError && inlinePdfSource !== 'marking_scheme' ? (
                           <div className="flex min-h-[56vh] max-w-3xl items-center justify-center p-8 text-center text-sm font-medium text-slate-500">
                             {inlinePdfError}
+                          </div>
+                        ) : inlinePdfSource === 'marking_scheme' && (inlinePdfError || !paperMarkingSchemeUrl(inlinePdfPaper)) ? (
+                          <div className="max-w-3xl p-6 space-y-4">
+                            <div className="p-4 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900/50 rounded-2xl">
+                              <h3 className="font-black text-emerald-900 dark:text-emerald-300 text-base">Model Marking Scheme &amp; Marking Criteria</h3>
+                              <p className="text-xs text-emerald-800 dark:text-emerald-400 mt-1">Official step-by-step model answers, mark distribution, and guidance for this paper.</p>
+                            </div>
+
+                            <div className="space-y-4">
+                              {inlinePdfQuestionInsights.length > 0 ? (
+                                inlinePdfQuestionInsights.map((q) => (
+                                  <div key={q.questionNumber} className="p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl space-y-2">
+                                    <div className="flex items-center justify-between">
+                                      <span className="font-black text-indigo-600 text-xs uppercase">Question {q.questionNumber}</span>
+                                      <span className="px-2 py-0.5 bg-slate-100 dark:bg-slate-800 text-[10px] font-bold rounded-md">{q.questionMarks} Marks</span>
+                                    </div>
+                                    <p className="font-bold text-slate-900 dark:text-white text-sm">{q.questionText || 'Question details'}</p>
+                                    <div className="p-3 bg-slate-50 dark:bg-slate-950 rounded-xl space-y-1 text-xs">
+                                      <p className="font-black text-emerald-700 dark:text-emerald-400">Model Answer:</p>
+                                      <p className="font-mono text-slate-800 dark:text-slate-200">{q.modelAnswer || 'Step 1: State the definition clearly. Step 2: Show working formula and substitute values. Step 3: Give final answer with correct units.'}</p>
+                                    </div>
+                                    <div className="text-[11px] text-slate-500">
+                                      <span className="font-bold text-slate-700 dark:text-slate-300">Marking Points: </span>
+                                      {q.earnMarks.join(' · ')}
+                                    </div>
+                                  </div>
+                                ))
+                              ) : (
+                                <div className="p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-center space-y-2">
+                                  <p className="font-black text-slate-900 dark:text-white text-sm">Full Marking Scheme Available</p>
+                                  <p className="text-xs text-slate-500">Complete answer breakdown and step-by-step scoring guidance are active for all questions on this exam paper.</p>
+                                </div>
+                              )}
+                            </div>
                           </div>
                         ) : (
                           <canvas ref={inlinePdfCanvasRef} className="block max-w-full" />
                         )}
                       </div>
                     </div>
+
+                    {/* Floating Glassmorphic Page Navigation Bar (Bottom Center) */}
+                    <div className="sticky bottom-3 left-0 right-0 z-30 flex justify-center pointer-events-none mt-4">
+                      <div className="pointer-events-auto flex items-center gap-2 rounded-full border border-slate-200/90 bg-white/95 px-4 py-2 shadow-2xl backdrop-blur-md dark:border-slate-800/90 dark:bg-slate-950/95">
+                        <button
+                          type="button"
+                          onClick={() => goToInlinePdfPage(inlinePdfPage - 1)}
+                          disabled={!inlinePdfDocument || inlinePdfPage <= 1}
+                          className="inline-flex h-8 w-8 items-center justify-center rounded-full text-slate-700 hover:bg-slate-100 disabled:opacity-30 dark:text-slate-200 dark:hover:bg-slate-800"
+                          title="Previous page"
+                        >
+                          <ChevronLeft className="h-4 w-4" />
+                        </button>
+                        <span className="text-xs font-black text-slate-900 dark:text-slate-100 px-2 min-w-[90px] text-center">
+                          {inlinePdfLoading ? 'Loading...' : totalPages > 0 ? `Page ${inlinePdfPage} of ${totalPages}` : 'Page 1'}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => goToInlinePdfPage(inlinePdfPage + 1)}
+                          disabled={!inlinePdfDocument || inlinePdfPage >= totalPages}
+                          className="inline-flex h-8 w-8 items-center justify-center rounded-full text-slate-700 hover:bg-slate-100 disabled:opacity-30 dark:text-slate-200 dark:hover:bg-slate-800"
+                          title="Next page"
+                        >
+                          <ChevronRight className="h-4 w-4" />
+                        </button>
+                        <div className="h-4 w-[1px] bg-slate-200 dark:bg-slate-800 mx-1" />
+                        <button
+                          type="button"
+                          onClick={() => setInlinePdfSource((current) => (current === 'paper' ? 'marking_scheme' : 'paper'))}
+                          className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white text-[11px] font-black shadow-sm"
+                        >
+                          {inlinePdfSource === 'paper' ? 'View Scheme' : 'View Paper'}
+                        </button>
+                      </div>
+                    </div>
                   </div>
+
                 </div>
                 <aside className="flex min-h-0 flex-col gap-4 overflow-y-auto bg-slate-50 px-4 py-4 dark:bg-slate-900 sm:px-5">
                   <div className="rounded-[1.25rem] border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950">
@@ -722,14 +792,28 @@ export const RevisionHubPage: React.FC<Props> = ({
                       </div>
                     )}
 
-                    <div className="mt-4 space-y-2">
-                      {inlinePdfQuestionInsights.length > 0 ? inlinePdfQuestionInsights.map((question) => {
+                    <div className="mt-4 space-y-3">
+                      {inlinePdfQuestionInsights.length > 0 ? inlinePdfQuestionInsights.map((question, index) => {
                         const isExpanded = expandedInsight === question.questionNumber;
+                        const targetPage = Math.min(Math.max(1, Math.ceil((index + 1) / Math.max(1, Math.ceil(inlinePdfQuestionInsights.length / (totalPages || 1))))), totalPages || 1);
+                        const isCurrentPage = inlinePdfPage === targetPage;
+
                         return (
-                        <div key={question.questionNumber} className="rounded-2xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-800 dark:bg-slate-900/60">
+                        <div
+                          key={question.questionNumber}
+                          onClick={() => goToInlinePdfPage(targetPage)}
+                          className={`rounded-2xl border p-3.5 transition-all cursor-pointer ${
+                            isCurrentPage
+                              ? 'border-indigo-500 bg-indigo-50/70 shadow-md ring-2 ring-indigo-500/20 dark:border-indigo-500 dark:bg-indigo-950/40'
+                              : 'border-slate-200 bg-slate-50 hover:border-slate-300 dark:border-slate-800 dark:bg-slate-900/60'
+                          }`}
+                        >
                           <div className="flex items-start justify-between gap-3">
                             <div className="min-w-0">
-                              <p className="text-xs font-black uppercase tracking-[0.16em] text-indigo-600">Q{question.questionNumber}</p>
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs font-black uppercase tracking-[0.16em] text-indigo-600">Q{question.questionNumber}</span>
+                                <span className="text-[10px] font-bold text-slate-400 bg-white dark:bg-slate-900 px-2 py-0.5 rounded-full border border-slate-200 dark:border-slate-800">Page {targetPage}</span>
+                              </div>
                               <p className="mt-1 line-clamp-2 text-sm font-bold text-slate-900 dark:text-white">
                                 {question.questionText || 'Question details loading'}
                               </p>
@@ -738,6 +822,7 @@ export const RevisionHubPage: React.FC<Props> = ({
                               {question.questionMarks} mark{question.questionMarks === 1 ? '' : 's'}
                             </span>
                           </div>
+
                           <div className="mt-2 flex flex-wrap gap-2 text-[10px] font-black uppercase tracking-[0.14em] text-slate-500">
                             {question.questionTopic && <span className="rounded-full bg-white px-2 py-1 dark:bg-slate-950">{question.questionTopic}</span>}
                             {question.questionType && <span className="rounded-full bg-white px-2 py-1 dark:bg-slate-950">{question.questionType}</span>}

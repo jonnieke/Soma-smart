@@ -21,7 +21,8 @@ interface ExamPaperTickerBeltProps {
     onPaperClick?: (paperId: string | number) => void;
 }
 
-const FALLBACK_LATEST_PAPERS: TickerPaperItem[] = [
+export const FALLBACK_LATEST_PAPERS: TickerPaperItem[] = [
+
     {
         id: 'kcse-math-2026-p1',
         title: '2026 KCSE Mathematics Paper 1 National Mock',

@@ -464,7 +464,13 @@ export interface SubscriptionPlan {
   features?: string[];
   credits?: number;
   isCreditPack?: boolean;
+  // School workspace billing
+  aiCredits?: number;
+  teacherSeatLimit?: number;
+  isSchoolWorkspacePlan?: boolean;
+  schoolTier?: 'SCHOOL_BASIC' | 'SCHOOL_PRO' | 'SCHOOL_ENTERPRISE';
 }
+
 
 // --- MONETIZATION TYPES ---
 

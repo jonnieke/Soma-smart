@@ -1,4 +1,5 @@
 import { fireEvent, render, screen } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi, beforeEach } from 'vitest';
 import { LandingHome } from '../components/LandingHome';
 
@@ -32,7 +33,11 @@ describe('LandingHome', () => {
   });
 
   it('routes learner shortcut cards to the right tool', () => {
-    render(<LandingHome {...baseProps} />);
+    render(
+      <MemoryRouter>
+        <LandingHome {...baseProps} />
+      </MemoryRouter>
+    );
 
     fireEvent.click(screen.getAllByRole('button', { name: /listen & learn/i })[0]);
 
@@ -40,7 +45,11 @@ describe('LandingHome', () => {
   });
 
   it('opens the library from the learner tools section', () => {
-    render(<LandingHome {...baseProps} />);
+    render(
+      <MemoryRouter>
+        <LandingHome {...baseProps} />
+      </MemoryRouter>
+    );
 
     fireEvent.click(screen.getAllByRole('button', { name: /library/i })[0]);
 
@@ -48,7 +57,11 @@ describe('LandingHome', () => {
   });
 
   it('submits an Ask Akili question from the hero demo', () => {
-    render(<LandingHome {...baseProps} />);
+    render(
+      <MemoryRouter>
+        <LandingHome {...baseProps} />
+      </MemoryRouter>
+    );
 
     fireEvent.change(screen.getByLabelText(/ask a homework question/i), {
       target: { value: 'What is photosynthesis?' },

@@ -134,14 +134,26 @@ export interface ExamPaperSection {
   totalMarks: number;
 }
 
+export type PaperVisibility = 'PRIVATE' | 'DEPARTMENT' | 'SCHOOL' | 'MARKETPLACE';
+
 export interface ExamPaper {
   id: string;
   ownerId: string;
   schoolId?: string;
+  departmentIds?: string[];
   blueprintId?: string;
   title: string;
   status: 'DRAFT' | 'REVIEWED' | 'APPROVED' | 'PUBLISHED';
-  visibility: 'PRIVATE' | 'SCHOOL' | 'MARKETPLACE';
+  workflowStatus?: 'DRAFT' | 'IN_PROGRESS' | 'SUBMITTED_FOR_REVIEW' | 'UNDER_REVIEW' | 'CHANGES_REQUESTED' | 'RESUBMITTED' | 'APPROVED' | 'LOCKED' | 'PRINTED' | 'ARCHIVED' | 'REJECTED';
+  visibility: PaperVisibility;
+  assignedReviewerIds?: string[];
+  approvedByIds?: string[];
+  approvedAt?: string;
+  lockedAt?: string;
+  lockedBy?: string;
+  currentVersionId?: string;
+  templateId?: string;
+  assessmentDeadlineId?: string;
   grade: string;
   subject: string;
   examType: ExamType;

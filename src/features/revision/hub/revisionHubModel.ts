@@ -153,17 +153,22 @@ export const paperMarkingSchemeUrl = (paper: RevisionPaper): string => {
   if (directUrl) return directUrl;
 
   const filePath = String(paper.marking_scheme_path || paper.markingSchemePath || '').trim();
-  if (!filePath) return '';
-  if (/^https?:\/\//i.test(filePath)) return filePath;
+  if (filePath) {
+    if (/^https?:\/\//i.test(filePath)) return filePath;
 
-  const encodedPath = filePath
-    .split('/')
-    .filter(Boolean)
-    .map((segment) => encodeURIComponent(segment))
-    .join('/');
+    const encodedPath = filePath
+      .split('/')
+      .filter(Boolean)
+      .map((segment) => encodeURIComponent(segment))
+      .join('/');
 
-  return `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/syllabus-docs/${encodedPath}`;
+    return `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/syllabus-docs/${encodedPath}`;
+  }
+
+  // Fall back to paper URL if separate marking scheme URL is missing
+  return paperPdfUrl(paper);
 };
+
 
 export const paperHasDiagrams = (paper: RevisionPaper): boolean =>
   Array.isArray(paper.structured_questions) &&

@@ -22,7 +22,7 @@ export const ExamPaperReaderPage: React.FC = () => {
       .finally(() => setLoading(false));
   }, [id, navigate]);
 
-  const currentUrl = activeDocument === 'scheme' ? access?.markingSchemeUrl : access?.paperUrl;
+  const currentUrl = activeDocument === 'scheme' ? (access?.markingSchemeUrl || access?.paperUrl) : access?.paperUrl;
   const share = async () => {
     const url = `${window.location.origin}/exam-papers?paper=${encodeURIComponent(id)}`;
     const payload = { title: access?.title || 'SomaAI Exam Paper', text: 'Open this SomaAI Original exam paper and marking scheme.', url };
@@ -43,12 +43,13 @@ export const ExamPaperReaderPage: React.FC = () => {
           </div>
           <div className="flex flex-wrap gap-2">
             <button onClick={() => setActiveDocument('paper')} className={`inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-black ${activeDocument === 'paper' ? 'bg-indigo-600 text-white' : 'border border-slate-200 bg-white text-slate-700'}`}><FileText className="h-4 w-4" /> Exam paper</button>
-            <button disabled={!access.markingSchemeUrl} onClick={() => setActiveDocument('scheme')} className={`inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-black disabled:opacity-40 ${activeDocument === 'scheme' ? 'bg-emerald-600 text-white' : 'border border-slate-200 bg-white text-slate-700'}`}><FileCheck2 className="h-4 w-4" /> Marking scheme</button>
+            <button onClick={() => setActiveDocument('scheme')} className={`inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-black ${activeDocument === 'scheme' ? 'bg-emerald-600 text-white' : 'border border-slate-200 bg-white text-slate-700'}`}><FileCheck2 className="h-4 w-4" /> Marking scheme</button>
             <button onClick={() => void share()} className="rounded-xl border border-slate-200 bg-white p-2.5 text-slate-700" aria-label="Share paper"><Share2 className="h-5 w-5" /></button>
             <button onClick={() => navigate(`/revision?paper=${encodeURIComponent(id)}`)} className="inline-flex items-center gap-2 rounded-xl bg-violet-600 px-4 py-2 text-sm font-black text-white"><BookOpen className="h-4 w-4" /> {isPro ? 'Revision Mode' : 'Revision Mode unlocked'}</button>
           </div>
         </div>
       </header>
+
       <main className="mx-auto flex w-full max-w-[1500px] flex-1 p-3 sm:p-5">
         {currentUrl ? <iframe title={activeDocument === 'paper' ? 'Exam paper' : 'Marking scheme'} src={currentUrl} className="min-h-[calc(100vh-112px)] w-full rounded-xl border border-slate-200 bg-white shadow-sm" /> : <div className="flex min-h-[60vh] w-full items-center justify-center rounded-xl border border-slate-200 bg-white p-8 text-center"><div><FileCheck2 className="mx-auto h-10 w-10 text-slate-300" /><h2 className="mt-4 font-black">Marking scheme is being prepared</h2><p className="mt-2 text-sm text-slate-500">The exam paper remains available while the scheme is verified.</p></div></div>}
       </main>

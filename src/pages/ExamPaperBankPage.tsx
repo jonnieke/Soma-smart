@@ -25,6 +25,8 @@ import {
   ExamPaperBankItem,
   examPaperBankService,
 } from '../services/examPaperBankService';
+import { FALLBACK_LATEST_PAPERS } from '../components/ExamPaperTickerBelt';
+
 
 const normalise = (value?: string | null) => String(value || '').trim();
 
@@ -74,10 +76,12 @@ export const ExamPaperBankPage: React.FC = () => {
 
   React.useEffect(() => {
     const paperId = searchParams.get('paper');
-    if (!paperId || papers.length === 0) return;
-    const paper = papers.find((item) => String(item.id) === paperId);
+    if (!paperId) return;
+    const paper = papers.find((item) => String(item.id) === paperId) ||
+      (FALLBACK_LATEST_PAPERS.find((item) => String(item.id) === paperId) as unknown as ExamPaperBankItem);
     if (paper) setSelected(paper);
   }, [papers, searchParams]);
+
 
   React.useEffect(() => {
     if (searchParams.get('status') !== 'verifying') return;
