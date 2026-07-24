@@ -79,8 +79,13 @@ export const ExamPaperBankPage: React.FC = () => {
     if (!paperId) return;
     const paper = papers.find((item) => String(item.id) === paperId) ||
       (FALLBACK_LATEST_PAPERS.find((item) => String(item.id) === paperId) as unknown as ExamPaperBankItem);
-    if (paper) setSelected(paper);
-  }, [papers, searchParams]);
+    if (paper) {
+      setSelected(paper);
+      if (isPaperUnlocked(paper.id)) {
+        navigate(`/exam-papers/${encodeURIComponent(String(paper.id))}/read`, { replace: true });
+      }
+    }
+  }, [isPaperUnlocked, navigate, papers, searchParams]);
 
 
   React.useEffect(() => {

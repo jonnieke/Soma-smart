@@ -127,7 +127,7 @@ export const ExamPaperTickerBelt: React.FC<ExamPaperTickerBeltProps> = ({
         if (onPaperClick) {
             onPaperClick(paper.id);
         } else {
-            navigate(`/exam-papers?paper=${encodeURIComponent(String(paper.id))}`);
+            navigate(`/exam-papers/${encodeURIComponent(String(paper.id))}/read`);
         }
     };
 

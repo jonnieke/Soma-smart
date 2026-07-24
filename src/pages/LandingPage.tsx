@@ -505,7 +505,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
         } catch (_) {
             // Ignore storage issues and still navigate.
         }
-        navigate(`/exam-papers?paper=${encodeURIComponent(id)}`);
+        navigate(`/exam-papers/${encodeURIComponent(id)}/read`);
     };
 
     const handlePreviewMarkingSchemeFromHome = (paperId: string | number) => {
@@ -519,7 +519,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
         } catch (_) {
             // Ignore storage issues and still navigate.
         }
-        navigate(`/exam-papers?paper=${encodeURIComponent(id)}&view=scheme`);
+        navigate(`/exam-papers/${encodeURIComponent(id)}/read`);
     };
 
     const handlePreviewPaperFromHome = (paperId: string | number) => {
@@ -533,7 +533,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
         } catch (_) {
             // Ignore storage issues and still navigate.
         }
-        navigate(`/exam-papers?paper=${encodeURIComponent(id)}`);
+        navigate(`/exam-papers/${encodeURIComponent(id)}/read`);
     };
 
     const handleGetStarted = () => {
