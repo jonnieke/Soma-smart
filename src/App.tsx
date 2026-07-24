@@ -146,7 +146,7 @@ const GlobalNavigation: React.FC = () => {
         { label: 'Admin', icon: Shield, to: '/admin', active: pathname.startsWith('/admin') },
     ];
 
-    if (pathname === '/' || pathname.startsWith('/revision') || pathname.startsWith('/exam-papers')) return null;
+    if (pathname === '/' || pathname.startsWith('/teacher') || pathname.startsWith('/revision') || pathname.startsWith('/exam-papers')) return null;
 
     return (
         <div className="sticky top-0 z-[90] border-b border-slate-200/80 bg-white/95 backdrop-blur dark:border-slate-800/80 dark:bg-slate-950/95">

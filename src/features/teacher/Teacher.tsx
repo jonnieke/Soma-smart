@@ -955,6 +955,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
     const primaryTeacherNav = [
         { tab: 'DASHBOARD', label: 'Home' },
         { tab: 'CREATION_HUB', label: 'Create Content' },
+        { tab: 'PAPER_STUDIO', label: 'Exam Generator' },
         { tab: 'STUDENTS', label: 'Classroom' },
         { tab: 'MARKING', label: 'Marking' },
         { tab: 'LIBRARY', label: 'Library' },
@@ -975,6 +976,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
     const setupComplete = setupCompletedSteps >= 3;
     const isTeacherNavActive = (tab: typeof primaryTeacherNav[number]['tab']) => {
         if (tab === 'CREATION_HUB') return creationTabs.includes(activeTab as any);
+        if ((tab as string) === 'PAPER_STUDIO') return location.pathname.startsWith('/teacher/paper-studio');
         if (tab === 'STUDENTS') return activeTab === 'STUDENTS';
         if (tab === 'MARKING') return ['MARKING', 'BLACKBOARD'].includes(activeTab);
         return activeTab === tab;
@@ -1068,7 +1070,13 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                         {primaryTeacherNav.map(item => (
                             <button
                                 key={item.tab}
-                                onClick={() => setActiveTab(item.tab === 'CREATION_HUB' ? 'CONVERT' : item.tab)}
+                                onClick={() => {
+                                    if ((item.tab as string) === 'PAPER_STUDIO') {
+                                        navigate('/teacher/paper-studio');
+                                    } else {
+                                        setActiveTab(item.tab === 'CREATION_HUB' ? 'CONVERT' : item.tab as any);
+                                    }
+                                }}
                                 className={`pb-1 text-base tracking-wide font-black transition-all ${isTeacherNavActive(item.tab) ? 'text-emerald-600 border-b-2 border-emerald-600' : 'text-slate-500 hover:text-slate-900'}`}
                             >
                                 {item.label}
