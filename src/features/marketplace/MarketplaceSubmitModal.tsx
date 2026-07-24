@@ -117,7 +117,7 @@ export const MarketplaceSubmitModal: React.FC<Props> = ({ onClose, onSubmitted }
             {copyrightAccepted && <CheckSquare className="w-3.5 h-3.5" />}
           </button>
           <span className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-            I declare that this paper is my original work, I hold the rights to distribute it, it does not infringe any copyright, and I accept Soma's{' '}
+            I declare that this paper is my original work, I hold the rights to distribute it, it does not infringe any copyright, and I accept Soma&apos;s{' '}
             <a href="#" className="text-indigo-600 underline">Seller Terms & Conditions</a>.
           </span>
         </label>

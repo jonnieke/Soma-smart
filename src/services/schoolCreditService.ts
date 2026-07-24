@@ -15,7 +15,7 @@ export const schoolCreditService = {
         const match = parsed.find((c) => c.schoolId === schoolId);
         if (match) return match;
       }
-    } catch (_) {}
+    } catch (_) { /* intentional – storage unavailable */ }
 
     const defaultAllocation: SchoolCreditAllocation = {
       id: `alloc_${schoolId}`,
@@ -32,7 +32,7 @@ export const schoolCreditService = {
 
     try {
       localStorage.setItem(SCHOOL_CREDITS_STORAGE_KEY, JSON.stringify([defaultAllocation]));
-    } catch (_) {}
+    } catch (_) { /* intentional – storage unavailable */ }
 
     return defaultAllocation;
   },
@@ -94,12 +94,12 @@ export const schoolCreditService = {
 
         try {
           const raw = localStorage.getItem(SCHOOL_CREDITS_STORAGE_KEY);
-          let list: SchoolCreditAllocation[] = raw ? JSON.parse(raw) : [];
+          const list: SchoolCreditAllocation[] = raw ? JSON.parse(raw) : [];
           const idx = list.findIndex((c) => c.schoolId === schoolId);
           if (idx >= 0) list[idx] = alloc;
           else list.push(alloc);
           localStorage.setItem(SCHOOL_CREDITS_STORAGE_KEY, JSON.stringify(list));
-        } catch (_) {}
+        } catch (_) { /* intentional – storage unavailable */ }
 
         return {
           success: true,
@@ -146,12 +146,12 @@ export const schoolCreditService = {
 
     try {
       const raw = localStorage.getItem(SCHOOL_CREDITS_STORAGE_KEY);
-      let list: SchoolCreditAllocation[] = raw ? JSON.parse(raw) : [];
+      const list: SchoolCreditAllocation[] = raw ? JSON.parse(raw) : [];
       const idx = list.findIndex((c) => c.schoolId === schoolId);
       if (idx >= 0) list[idx] = updated;
       else list.push(updated);
       localStorage.setItem(SCHOOL_CREDITS_STORAGE_KEY, JSON.stringify(list));
-    } catch (_) {}
+    } catch (_) { /* intentional – storage unavailable */ }
 
     return updated;
   },

@@ -119,7 +119,7 @@ export const SchoolTemplatesView: React.FC = () => {
               </div>
               {tpl.headerConfiguration.mottoText && (
                 <div className="text-[10px] text-slate-500 italic">
-                  "{tpl.headerConfiguration.mottoText}"
+                  &ldquo;{tpl.headerConfiguration.mottoText}&rdquo;
                 </div>
               )}
               <div className="pt-2 flex justify-center gap-2 text-[9px] font-bold text-slate-400 uppercase">

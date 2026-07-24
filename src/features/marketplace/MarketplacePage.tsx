@@ -235,7 +235,7 @@ export const MarketplacePage: React.FC = () => {
             <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur px-4 py-2 rounded-full text-xs font-bold uppercase tracking-widest">
               <BookOpen className="w-3.5 h-3.5 text-indigo-300" /> Soma Paper Bank
             </div>
-            <h1 className="text-4xl font-black leading-tight">Kenya's Largest Exam Paper Marketplace</h1>
+            <h1 className="text-4xl font-black leading-tight">Kenya&apos;s Largest Exam Paper Marketplace</h1>
             <p className="text-slate-300 text-lg max-w-xl mx-auto">
               KCSE, KPSEA &amp; CBC-aligned papers by verified educators. Instant download after M-Pesa payment.
             </p>

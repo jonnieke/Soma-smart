@@ -39,7 +39,7 @@ export const PurchasedLibraryView: React.FC = () => {
       {purchases.length === 0 ? (
         <div className="text-center py-16 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 space-y-3">
           <BookOpen className="w-10 h-10 text-slate-300 mx-auto" />
-          <p className="font-bold text-slate-700 dark:text-slate-300 text-sm">You haven't purchased any marketplace papers yet.</p>
+          <p className="font-bold text-slate-700 dark:text-slate-300 text-sm">You haven&apos;t purchased any marketplace papers yet.</p>
           <button onClick={() => navigate('/marketplace')} className="px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs font-bold hover:bg-indigo-700">
             Browse Soma Paper Bank
           </button>

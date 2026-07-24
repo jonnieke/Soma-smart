@@ -164,7 +164,7 @@ export const paperUploadExtractor = {
 
     lines.forEach((line, idx) => {
       const trimmed = line.trim();
-      if (/^\d+[\.\)]/i.test(trimmed)) {
+      if (/^\d+[.)]/i.test(trimmed)) {
         if (currentQText) {
           questions.push({
             id: `ext_q_${idx}`,

@@ -324,7 +324,6 @@ const App: React.FC = () => {
                             <Route path="/teacher/darasa" element={<TeacherPage />} />
                             <Route path="/reset-password" element={<ResetPassword />} />
                             <Route path="/pricing" element={<PricingPage />} />
-                            <Route path="/school" element={<SchoolDashboard />} />
                             <Route path="/school/assessment" element={<SchoolWorkspaceLayout />} />
                             <Route path="/school/assessment/*" element={<SchoolWorkspaceLayout />} />
                             <Route path="/marketplace" element={<MarketplacePage />} />

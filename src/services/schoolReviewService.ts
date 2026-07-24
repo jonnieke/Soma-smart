@@ -316,7 +316,7 @@ export const schoolReviewService = {
           updatedAt: d.updated_at,
         }));
       }
-    } catch (_) {}
+    } catch (_) { /* intentional – storage unavailable */ }
 
     try {
       const raw = localStorage.getItem(REVIEW_COMMENTS_STORAGE_KEY);
@@ -324,7 +324,7 @@ export const schoolReviewService = {
         const parsed: ReviewComment[] = JSON.parse(raw);
         return parsed.filter((c) => c.paperId === paperId);
       }
-    } catch (_) {}
+    } catch (_) { /* intentional – storage unavailable */ }
 
     return [];
   },
@@ -361,7 +361,7 @@ export const schoolReviewService = {
       const existing: ReviewComment[] = raw ? JSON.parse(raw) : [];
       existing.push(newComment);
       localStorage.setItem(REVIEW_COMMENTS_STORAGE_KEY, JSON.stringify(existing));
-    } catch (_) {}
+    } catch (_) { /* intentional – storage unavailable */ }
 
     try {
       void supabase.from('review_comments').insert({
@@ -378,7 +378,7 @@ export const schoolReviewService = {
         parent_id: newComment.parentId,
         created_at: newComment.createdAt,
       });
-    } catch (_) {}
+    } catch (_) { /* intentional – storage unavailable */ }
 
     return newComment;
   },
@@ -397,7 +397,7 @@ export const schoolReviewService = {
           localStorage.setItem(REVIEW_COMMENTS_STORAGE_KEY, JSON.stringify(comments));
         }
       }
-    } catch (_) {}
+    } catch (_) { /* intentional – storage unavailable */ }
     return true;
   },
 
@@ -434,7 +434,7 @@ export const schoolReviewService = {
       const list: PaperVersion[] = raw ? JSON.parse(raw) : [];
       list.unshift(versionRecord);
       localStorage.setItem(PAPER_VERSIONS_STORAGE_KEY, JSON.stringify(list));
-    } catch (_) {}
+    } catch (_) { /* intentional – storage unavailable */ }
 
     return versionRecord;
   },
@@ -446,7 +446,7 @@ export const schoolReviewService = {
         const parsed: PaperVersion[] = JSON.parse(raw);
         return parsed.filter((v) => v.paperId === paperId);
       }
-    } catch (_) {}
+    } catch (_) { /* intentional – storage unavailable */ }
     return [];
   },
 };

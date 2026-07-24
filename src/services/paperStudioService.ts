@@ -149,7 +149,7 @@ export const paperStudioService = {
       if (storedCredits !== null) {
         credits = parseInt(storedCredits, 10);
       }
-    } catch (_) {}
+    } catch (_) { /* intentional – storage unavailable */ }
 
     return {
       draftCount,
@@ -170,7 +170,7 @@ export const paperStudioService = {
         const parsed = JSON.parse(raw);
         if (Array.isArray(parsed) && parsed.length > 0) return parsed;
       }
-    } catch (_) {}
+    } catch (_) { /* intentional – storage unavailable */ }
 
     // Fallback default sample draft paper
     const samplePaper: ExamPaper = {
@@ -222,7 +222,7 @@ export const paperStudioService = {
     const initialList = [samplePaper];
     try {
       localStorage.setItem(PAPERS_STORAGE_KEY, JSON.stringify(initialList));
-    } catch (_) {}
+    } catch (_) { /* intentional – storage unavailable */ }
 
     return initialList;
   },
@@ -254,7 +254,7 @@ export const paperStudioService = {
 
     try {
       localStorage.setItem(PAPERS_STORAGE_KEY, JSON.stringify(papers));
-    } catch (_) {}
+    } catch (_) { /* intentional – storage unavailable */ }
 
     // Async background sync to Supabase if table exists
     try {
@@ -270,7 +270,7 @@ export const paperStudioService = {
         branding: updatedPaper.schoolBranding,
         updated_at: updatedPaper.updatedAt,
       });
-    } catch (_) {}
+    } catch (_) { /* intentional – storage unavailable */ }
 
     return updatedPaper;
   },
@@ -303,7 +303,7 @@ export const paperStudioService = {
     const filtered = papers.filter((p) => p.id !== id);
     try {
       localStorage.setItem(PAPERS_STORAGE_KEY, JSON.stringify(filtered));
-    } catch (_) {}
+    } catch (_) { /* intentional – storage unavailable */ }
     return true;
   },
 
@@ -315,7 +315,7 @@ export const paperStudioService = {
     try {
       const raw = localStorage.getItem(QUESTION_BANK_STORAGE_KEY);
       if (raw) customQuestions = JSON.parse(raw);
-    } catch (_) {}
+    } catch (_) { /* intentional – storage unavailable */ }
 
     const combined = [...customQuestions, ...SEED_QUESTIONS];
 
@@ -334,7 +334,7 @@ export const paperStudioService = {
     try {
       const raw = localStorage.getItem(QUESTION_BANK_STORAGE_KEY);
       if (raw) customQuestions = JSON.parse(raw);
-    } catch (_) {}
+    } catch (_) { /* intentional – storage unavailable */ }
 
     const index = customQuestions.findIndex((q) => q.id === question.id);
     if (index >= 0) {
@@ -345,7 +345,7 @@ export const paperStudioService = {
 
     try {
       localStorage.setItem(QUESTION_BANK_STORAGE_KEY, JSON.stringify(customQuestions));
-    } catch (_) {}
+    } catch (_) { /* intentional – storage unavailable */ }
 
     return question;
   },

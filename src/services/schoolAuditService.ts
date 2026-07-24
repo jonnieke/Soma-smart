@@ -42,7 +42,7 @@ export const schoolAuditService = {
       existing.unshift(newLog);
       // Keep recent 200 logs locally
       localStorage.setItem(AUDIT_LOGS_STORAGE_KEY, JSON.stringify(existing.slice(0, 200)));
-    } catch (_) {}
+    } catch (_) { /* intentional – storage unavailable */ }
 
     // Async sync to Supabase
     try {
@@ -60,7 +60,7 @@ export const schoolAuditService = {
         metadata: newLog.metadata,
         timestamp: newLog.timestamp,
       });
-    } catch (_) {}
+    } catch (_) { /* intentional – storage unavailable */ }
 
     return newLog;
   },
@@ -93,7 +93,7 @@ export const schoolAuditService = {
           timestamp: d.timestamp,
         }));
       }
-    } catch (_) {}
+    } catch (_) { /* intentional – storage unavailable */ }
 
     // Fallback to local storage
     try {
@@ -102,7 +102,7 @@ export const schoolAuditService = {
         const parsed: SchoolActivityLog[] = JSON.parse(raw);
         return parsed.filter((l) => l.schoolId === schoolId);
       }
-    } catch (_) {}
+    } catch (_) { /* intentional – storage unavailable */ }
 
     return [];
   },

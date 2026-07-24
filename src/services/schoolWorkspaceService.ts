@@ -64,7 +64,7 @@ export const schoolWorkspaceService = {
         const parsed: SchoolSettings = JSON.parse(raw);
         if (parsed.schoolId === schoolId) return parsed;
       }
-    } catch (_) {}
+    } catch (_) { /* intentional – storage unavailable */ }
 
     const defaultSettings: SchoolSettings = {
       schoolId,
@@ -88,7 +88,7 @@ export const schoolWorkspaceService = {
 
     try {
       localStorage.setItem(SCHOOL_SETTINGS_KEY, JSON.stringify(defaultSettings));
-    } catch (_) {}
+    } catch (_) { /* intentional – storage unavailable */ }
 
     return defaultSettings;
   },
@@ -97,7 +97,7 @@ export const schoolWorkspaceService = {
     const updated = { ...settings, updatedAt: new Date().toISOString() };
     try {
       localStorage.setItem(SCHOOL_SETTINGS_KEY, JSON.stringify(updated));
-    } catch (_) {}
+    } catch (_) { /* intentional – storage unavailable */ }
 
     await schoolAuditService.logEvent({
       schoolId: settings.schoolId,
@@ -123,7 +123,7 @@ export const schoolWorkspaceService = {
         const parsed: SchoolDepartment[] = JSON.parse(raw);
         if (Array.isArray(parsed) && parsed.length > 0) return parsed;
       }
-    } catch (_) {}
+    } catch (_) { /* intentional – storage unavailable */ }
 
     const defaultDepts: SchoolDepartment[] = [
       {
@@ -195,7 +195,7 @@ export const schoolWorkspaceService = {
 
     try {
       localStorage.setItem(SCHOOL_DEPARTMENTS_KEY, JSON.stringify(defaultDepts));
-    } catch (_) {}
+    } catch (_) { /* intentional – storage unavailable */ }
 
     return defaultDepts;
   },
@@ -210,7 +210,7 @@ export const schoolWorkspaceService = {
 
     try {
       localStorage.setItem(SCHOOL_DEPARTMENTS_KEY, JSON.stringify(depts));
-    } catch (_) {}
+    } catch (_) { /* intentional – storage unavailable */ }
 
     await schoolAuditService.logEvent({
       schoolId: dept.schoolId,
@@ -236,7 +236,7 @@ export const schoolWorkspaceService = {
         const parsed: SchoolMembership[] = JSON.parse(raw);
         if (Array.isArray(parsed) && parsed.length > 0) return parsed;
       }
-    } catch (_) {}
+    } catch (_) { /* intentional – storage unavailable */ }
 
     const defaultMembers: SchoolMembership[] = [
       {
@@ -287,7 +287,7 @@ export const schoolWorkspaceService = {
 
     try {
       localStorage.setItem(SCHOOL_MEMBERSHIPS_KEY, JSON.stringify(defaultMembers));
-    } catch (_) {}
+    } catch (_) { /* intentional – storage unavailable */ }
 
     return defaultMembers;
   },
@@ -330,7 +330,7 @@ export const schoolWorkspaceService = {
       const list: SchoolInvitation[] = raw ? JSON.parse(raw) : [];
       list.unshift(newInvite);
       localStorage.setItem(SCHOOL_INVITATIONS_KEY, JSON.stringify(list));
-    } catch (_) {}
+    } catch (_) { /* intentional – storage unavailable */ }
 
     await schoolAuditService.logEvent({
       schoolId: params.schoolId,
@@ -354,7 +354,7 @@ export const schoolWorkspaceService = {
         const parsed: SchoolInvitation[] = JSON.parse(raw);
         return parsed.filter((i) => i.schoolId === schoolId);
       }
-    } catch (_) {}
+    } catch (_) { /* intentional – storage unavailable */ }
     return [];
   },
 
@@ -421,7 +421,7 @@ export const schoolWorkspaceService = {
         const parsed: SchoolTemplate[] = JSON.parse(raw);
         if (Array.isArray(parsed) && parsed.length > 0) return parsed;
       }
-    } catch (_) {}
+    } catch (_) { /* intentional – storage unavailable */ }
 
     const defaultTemplate: SchoolTemplate = {
       id: 'tpl_std_exam',
@@ -468,7 +468,7 @@ export const schoolWorkspaceService = {
 
     try {
       localStorage.setItem(SCHOOL_TEMPLATES_KEY, JSON.stringify([defaultTemplate]));
-    } catch (_) {}
+    } catch (_) { /* intentional – storage unavailable */ }
 
     return [defaultTemplate];
   },
@@ -483,7 +483,7 @@ export const schoolWorkspaceService = {
 
     try {
       localStorage.setItem(SCHOOL_TEMPLATES_KEY, JSON.stringify(templates));
-    } catch (_) {}
+    } catch (_) { /* intentional – storage unavailable */ }
 
     await schoolAuditService.logEvent({
       schoolId: template.schoolId,
@@ -509,7 +509,7 @@ export const schoolWorkspaceService = {
         const parsed: AssessmentDeadline[] = JSON.parse(raw);
         if (Array.isArray(parsed) && parsed.length > 0) return parsed;
       }
-    } catch (_) {}
+    } catch (_) { /* intentional – storage unavailable */ }
 
     const sampleDeadlines: AssessmentDeadline[] = [
       {
@@ -535,7 +535,7 @@ export const schoolWorkspaceService = {
 
     try {
       localStorage.setItem(SCHOOL_DEADLINES_KEY, JSON.stringify(sampleDeadlines));
-    } catch (_) {}
+    } catch (_) { /* intentional – storage unavailable */ }
 
     return sampleDeadlines;
   },
@@ -547,7 +547,7 @@ export const schoolWorkspaceService = {
     try {
       const raw = localStorage.getItem(SCHOOL_BRANDING_KEY);
       if (raw) return JSON.parse(raw);
-    } catch (_) {}
+    } catch (_) { /* intentional – storage unavailable */ }
 
     return {
       schoolName: 'Nairobi Academy High School',
@@ -561,7 +561,7 @@ export const schoolWorkspaceService = {
   saveSchoolBranding(branding: SchoolBranding): SchoolBranding {
     try {
       localStorage.setItem(SCHOOL_BRANDING_KEY, JSON.stringify(branding));
-    } catch (_) {}
+    } catch (_) { /* intentional – storage unavailable */ }
     return branding;
   },
 };
