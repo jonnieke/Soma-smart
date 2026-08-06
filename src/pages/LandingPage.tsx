@@ -1328,43 +1328,43 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-left">
                             {/* Learner */}
-                            <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-lg hover:border-indigo-300 dark:hover:border-indigo-600 transition-all group flex items-center gap-5">
-                                <div className="w-12 h-12 bg-indigo-50 dark:bg-indigo-900/40 rounded-xl flex items-center justify-center shrink-0 group-hover:bg-indigo-600 transition-colors">
-                                    <GraduationCap className="w-6 h-6 text-indigo-600 dark:text-indigo-400 group-hover:text-white transition-colors" />
+                            <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md hover:border-slate-300 dark:hover:border-slate-700 transition-all group flex items-center gap-4">
+                                <div className="w-11 h-11 bg-indigo-50 dark:bg-indigo-900/30 rounded-xl flex items-center justify-center shrink-0 group-hover:bg-indigo-100 dark:group-hover:bg-indigo-900/50 transition-colors">
+                                    <GraduationCap className="w-5 h-5 text-indigo-600 dark:text-indigo-300 transition-colors" />
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                    <div className="font-bold text-slate-900 dark:text-white">Learner</div>
-                                    <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Direct answers & quizzes</div>
+                                    <div className="font-black text-slate-900 dark:text-white">Learner</div>
+                                    <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Direct answers and quizzes</div>
                                 </div>
-                                <button onClick={() => handleLearnerQuickStart('SMART_TUTOR', 'ask_akili')} className="shrink-0 p-2 rounded-lg bg-slate-100 dark:bg-slate-700 hover:bg-indigo-600 hover:text-white dark:hover:bg-indigo-500 text-slate-600 dark:text-slate-300 transition-colors">
+                                <button onClick={() => handleLearnerQuickStart('SMART_TUTOR', 'ask_akili')} className="shrink-0 p-2 rounded-lg border border-slate-200 bg-white text-slate-500 transition-colors hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 dark:hover:border-indigo-600 dark:hover:bg-slate-800 dark:hover:text-indigo-300">
                                     <ArrowRight className="w-4 h-4" />
                                 </button>
                             </div>
 
                             {/* Teacher */}
-                            <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-lg hover:border-emerald-300 dark:hover:border-emerald-600 transition-all group flex items-center gap-5">
-                                <div className="w-12 h-12 bg-emerald-50 dark:bg-emerald-900/40 rounded-xl flex items-center justify-center shrink-0 group-hover:bg-emerald-600 transition-colors">
-                                    <BookOpen className="w-6 h-6 text-emerald-600 dark:text-emerald-400 group-hover:text-white transition-colors" />
+                            <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md hover:border-slate-300 dark:hover:border-slate-700 transition-all group flex items-center gap-4">
+                                <div className="w-11 h-11 bg-emerald-50 dark:bg-emerald-900/30 rounded-xl flex items-center justify-center shrink-0 group-hover:bg-emerald-100 dark:group-hover:bg-emerald-900/50 transition-colors">
+                                    <BookOpen className="w-5 h-5 text-emerald-600 dark:text-emerald-300 transition-colors" />
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                    <div className="font-bold text-slate-900 dark:text-white">Teacher</div>
-                                    <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Plan, mark, assign, and follow up faster</div>
+                                    <div className="font-black text-slate-900 dark:text-white">Teacher</div>
+                                    <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Plan, mark, assign, and follow up</div>
                                 </div>
-                                <button onClick={() => handleRoleSelect(UserRole.TEACHER)} className="shrink-0 p-2 rounded-lg bg-slate-100 dark:bg-slate-700 hover:bg-emerald-600 hover:text-white dark:hover:bg-emerald-500 text-slate-600 dark:text-slate-300 transition-colors">
+                                <button onClick={() => handleRoleSelect(UserRole.TEACHER)} className="shrink-0 p-2 rounded-lg border border-slate-200 bg-white text-slate-500 transition-colors hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 dark:hover:border-emerald-600 dark:hover:bg-slate-800 dark:hover:text-emerald-300">
                                     <ArrowRight className="w-4 h-4" />
                                 </button>
                             </div>
 
                             {/* Parent */}
-                            <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-lg hover:border-purple-300 dark:hover:border-purple-600 transition-all group flex items-center gap-5">
-                                <div className="w-12 h-12 bg-purple-50 dark:bg-purple-900/40 rounded-xl flex items-center justify-center shrink-0 group-hover:bg-purple-600 transition-colors">
-                                    <Users className="w-6 h-6 text-purple-600 dark:text-purple-400 group-hover:text-white transition-colors" />
+                            <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md hover:border-slate-300 dark:hover:border-slate-700 transition-all group flex items-center gap-4">
+                                <div className="w-11 h-11 bg-purple-50 dark:bg-purple-900/30 rounded-xl flex items-center justify-center shrink-0 group-hover:bg-purple-100 dark:group-hover:bg-purple-900/50 transition-colors">
+                                    <Users className="w-5 h-5 text-purple-600 dark:text-purple-300 transition-colors" />
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                    <div className="font-bold text-slate-900 dark:text-white">Parent</div>
-                                    <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Track progress & manage plans</div>
+                                    <div className="font-black text-slate-900 dark:text-white">Parent</div>
+                                    <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Track progress and plans</div>
                                 </div>
-                                <button onClick={() => handleRoleSelect(UserRole.PARENT)} className="shrink-0 p-2 rounded-lg bg-slate-100 dark:bg-slate-700 hover:bg-purple-600 hover:text-white dark:hover:bg-purple-500 text-slate-600 dark:text-slate-300 transition-colors">
+                                <button onClick={() => handleRoleSelect(UserRole.PARENT)} className="shrink-0 p-2 rounded-lg border border-slate-200 bg-white text-slate-500 transition-colors hover:border-purple-300 hover:bg-purple-50 hover:text-purple-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 dark:hover:border-purple-600 dark:hover:bg-slate-800 dark:hover:text-purple-300">
                                     <ArrowRight className="w-4 h-4" />
                                 </button>
                             </div>
