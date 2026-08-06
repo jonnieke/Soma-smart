@@ -1953,62 +1953,46 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                 </div>
             </section>
 
-            {/* --- PUBLIC LIBRARY ACCESS CARD --- */}
-            <section id="library" className="py-16 bg-slate-50 dark:bg-slate-950 border-y border-slate-200 dark:border-slate-900 transition-colors">
+                        {/* --- PUBLIC LIBRARY ACCESS CARD --- */}
+            <section id="library" className="py-16 bg-white dark:bg-slate-950 border-y border-slate-200 dark:border-slate-900 transition-colors">
                 <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true }}
                         transition={{ duration: 0.5 }}
-                        className="bg-white dark:bg-slate-900 rounded-[2rem] border border-slate-200 dark:border-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-black/20 overflow-hidden"
+                        className="rounded-[2rem] border border-slate-200 bg-white shadow-sm overflow-hidden dark:border-slate-800 dark:bg-slate-900"
                     >
-                        <div className="grid md:grid-cols-[1.25fr_0.75fr] gap-0">
-                            <div className="p-6 sm:p-8 lg:p-10">
-                                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 text-xs font-black uppercase tracking-widest mb-5">
-                                    <BookOpen className="w-4 h-4" /> Content Library
-                                </div>
-                                <h2 className="text-3xl md:text-4xl font-black text-slate-950 dark:text-white tracking-tight mb-4">
-                                    Official Notes &amp; Past Papers — Free Inside the App.
-                                </h2>
-                                <p className="text-lg text-slate-600 dark:text-slate-300 leading-relaxed max-w-2xl mb-8">
-                                    Open notes, papers, and syllabus guides with simple grade and subject filters.
-                                </p>
-                                <div className="flex flex-wrap gap-3 mb-8">
-                                    {['Verified syllabuses', 'Expert notes', 'KCSE/KPSEA past papers'].map((item) => (
-                                        <span key={item} className="inline-flex items-center gap-2 rounded-full border border-slate-200 dark:border-slate-700 px-4 py-2 text-sm font-bold text-slate-700 dark:text-slate-200">
-                                            <CheckCircle className="w-4 h-4 text-emerald-500" /> {item}
-                                        </span>
-                                    ))}
-                                </div>
+                        <div className="p-6 sm:p-8 lg:p-10">
+                            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 text-xs font-black uppercase tracking-widest mb-5">
+                                <BookOpen className="w-4 h-4" /> Library
+                            </div>
+                            <h2 className="text-3xl md:text-4xl font-black text-slate-950 dark:text-white tracking-tight mb-4">
+                                Notes, papers, and syllabus guides.
+                            </h2>
+                            <p className="text-base sm:text-lg text-slate-600 dark:text-slate-300 leading-relaxed max-w-2xl mb-8">
+                                Open the learning shelf in the app and filter by grade, subject, and resource type.
+                            </p>
+                            <div className="flex flex-wrap gap-3 mb-8">
+                                {['Notes', 'Past papers', 'Syllabus guides'].map((item) => (
+                                    <span key={item} className="inline-flex items-center gap-2 rounded-full border border-slate-200 dark:border-slate-700 px-4 py-2 text-sm font-bold text-slate-700 dark:text-slate-200 bg-slate-50 dark:bg-slate-900/60">
+                                        <CheckCircle className="w-4 h-4 text-emerald-500" /> {item}
+                                    </span>
+                                ))}
+                            </div>
+                            <div className="flex flex-col sm:flex-row gap-3">
                                 <button
                                     onClick={handleLibraryAccess}
-                                    className="inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-950 dark:bg-white px-6 py-3 text-white dark:text-slate-950 font-black shadow-lg shadow-slate-300/60 dark:shadow-black/30 hover:-translate-y-0.5 transition-all"
+                                    className="inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-950 dark:bg-white px-6 py-3 text-white dark:text-slate-950 font-black shadow-sm hover:-translate-y-0.5 transition-all"
                                 >
                                     Open Library <ArrowRight className="w-5 h-5" />
                                 </button>
-                            </div>
-                            <div className="bg-emerald-50 dark:bg-emerald-950/30 p-6 sm:p-8 lg:p-10 flex flex-col justify-center border-t md:border-t-0 md:border-l border-emerald-100 dark:border-emerald-900/50">
-                                <div className="space-y-5">
-                                    {[
-                                        { icon: ShieldCheck, title: 'Official guides', body: 'Syllabuses stay as guides and stay separate from learner study notes.' },
-                                        { icon: FileText, title: 'Learning resources', body: 'Notes and papers open inside the app library with filters that actually work.' },
-                                        { icon: Award, title: 'For both users', body: 'Learners browse resources; teachers reach their workspace.' }
-                                    ].map((item) => {
-                                        const Icon = item.icon;
-                                        return (
-                                            <div key={item.title} className="flex gap-4">
-                                                <div className="w-11 h-11 rounded-2xl bg-white dark:bg-slate-900 flex items-center justify-center text-emerald-600 dark:text-emerald-300 shadow-sm shrink-0">
-                                                    <Icon className="w-5 h-5" />
-                                                </div>
-                                                <div>
-                                                    <h3 className="font-black text-slate-900 dark:text-white">{item.title}</h3>
-                                                    <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">{item.body}</p>
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
+                                <button
+                                    onClick={() => navigate('/revision')}
+                                    className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-6 py-3 text-slate-900 font-black shadow-sm hover:border-indigo-300 hover:bg-indigo-50 transition-all dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:hover:border-indigo-700 dark:hover:bg-slate-800"
+                                >
+                                    Go to Revision
+                                </button>
                             </div>
                         </div>
                     </motion.div>
