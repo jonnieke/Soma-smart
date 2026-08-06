@@ -1431,7 +1431,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                 Pick one task. Somo opens the right tool.
                             </h2>
                             <p className="mt-3 max-w-2xl text-base font-medium leading-relaxed text-slate-600 dark:text-slate-300">
-                                From a stuck learner to a busy teacher or a parent checking progress, every path leads to a working feature.
+                                From a stuck learner to a busy teacher or a parent checking progress, every path leads to one clear next step.
                             </p>
                         </div>
                         <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-800 dark:bg-slate-900">
@@ -1452,13 +1452,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                         </button>
                     </div>
 
-                    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-2">
                         {learnerFeatureLaunchers.map((feature) => {
                             const Icon = feature.icon;
                             return (
                                 <article
                                     key={feature.title}
-                                    className="group flex min-h-[260px] flex-col rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:-translate-y-1 hover:shadow-xl dark:border-slate-800 dark:bg-slate-900"
+                                    className="group flex min-h-[220px] flex-col rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:-translate-y-1 hover:shadow-xl dark:border-slate-800 dark:bg-slate-900"
                                 >
                                     <div className={`mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl border ${feature.accent}`}>
                                         <Icon className="h-6 w-6" />
@@ -2689,6 +2689,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
         </div>
     );
 };
+
 
 
 

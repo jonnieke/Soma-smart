@@ -668,7 +668,7 @@ export const LandingHome: React.FC<Props> = (props) => {
           <h2 id="helps-heading" className="text-center text-2xl font-black text-[#07133f]">
             What Somo Smart helps with
           </h2>
-          <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-2">
             {helps.map(({ title, text, Icon, tone, action }) => (
               <button
                 type="button"
@@ -679,7 +679,7 @@ export const LandingHome: React.FC<Props> = (props) => {
                     'intent' in action ? action.intent : undefined
                   )
                 }
-                className="flex items-center gap-4 rounded-lg border border-slate-200 bg-white p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-blue-300 hover:shadow-md focus-visible:ring-2 focus-visible:ring-blue-500"
+                className="flex min-h-[108px] items-center gap-4 rounded-2xl border border-slate-200 bg-white p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-blue-300 hover:shadow-md focus-visible:ring-2 focus-visible:ring-blue-500"
               >
                 <div
                   className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-lg ${tone}`}
@@ -1187,5 +1187,6 @@ const TrustStrip = () => (
     </div>
   </section>
 );
+
 
 
