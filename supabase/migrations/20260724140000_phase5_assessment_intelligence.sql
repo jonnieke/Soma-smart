@@ -123,6 +123,58 @@ CREATE TABLE IF NOT EXISTS learner_mastery (
   UNIQUE(learner_id, subject, topic)
 );
 
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1
+    FROM information_schema.tables
+    WHERE table_schema = 'public'
+      AND table_name = 'learner_mastery'
+  ) THEN
+    IF EXISTS (
+      SELECT 1
+      FROM information_schema.columns
+      WHERE table_schema = 'public'
+        AND table_name = 'learner_mastery'
+        AND column_name = 'student_id'
+    ) AND NOT EXISTS (
+      SELECT 1
+      FROM information_schema.columns
+      WHERE table_schema = 'public'
+        AND table_name = 'learner_mastery'
+        AND column_name = 'learner_id'
+    ) THEN
+      ALTER TABLE public.learner_mastery RENAME COLUMN student_id TO learner_id;
+    ELSIF NOT EXISTS (
+      SELECT 1
+      FROM information_schema.columns
+      WHERE table_schema = 'public'
+        AND table_name = 'learner_mastery'
+        AND column_name = 'learner_id'
+    ) THEN
+      ALTER TABLE public.learner_mastery ADD COLUMN learner_id TEXT;
+    END IF;
+
+    IF EXISTS (
+      SELECT 1
+      FROM information_schema.columns
+      WHERE table_schema = 'public'
+        AND table_name = 'learner_mastery'
+        AND column_name = 'student_id'
+    ) AND EXISTS (
+      SELECT 1
+      FROM information_schema.columns
+      WHERE table_schema = 'public'
+        AND table_name = 'learner_mastery'
+        AND column_name = 'learner_id'
+    ) THEN
+      UPDATE public.learner_mastery
+         SET learner_id = COALESCE(learner_id, student_id)
+       WHERE learner_id IS NULL;
+    END IF;
+  END IF;
+END $$;
+
 CREATE INDEX IF NOT EXISTS idx_mastery_learner_subject ON learner_mastery(learner_id, subject);
 
 -- 5. Assessment Moderations Table
@@ -152,3 +204,4 @@ CREATE POLICY "learners_view_own_mastery" ON learner_mastery FOR SELECT USING (a
 -- Teacher policies
 CREATE POLICY "teachers_manage_own_assignments" ON assessment_assignments FOR ALL USING (auth.uid()::text = teacher_id OR public.is_active_school_member(assessment_assignments.school_id));
 CREATE POLICY "teachers_manage_assigned_attempts" ON assessment_attempts FOR ALL USING (TRUE);
+
