@@ -1390,30 +1390,24 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                 </div>
             </section>
 
-            {/* --- CONVERSION PROOF STRIP --- */}
+                        {/* --- CONVERSION PROOF STRIP --- */}
             <section className="bg-white dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                     <div className="grid gap-4 md:grid-cols-3">
-                        <div className="rounded-2xl border border-indigo-100 bg-indigo-50/70 p-5 dark:border-indigo-900 dark:bg-indigo-950/30">
-                            <GraduationCap className="h-7 w-7 text-indigo-700 dark:text-indigo-300" />
-                            <h2 className="mt-3 text-lg font-black text-slate-950 dark:text-white">For learners</h2>
-                            <p className="mt-2 text-sm font-semibold leading-relaxed text-slate-600 dark:text-slate-300">
-                                Get unstuck, practise the method, and build confidence before homework, CATs, KPSEA, KCSE, or end-term exams.
-                            </p>
+                        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                            <GraduationCap className="h-7 w-7 text-indigo-600 dark:text-indigo-300" />
+                            <h2 className="mt-3 text-lg font-black text-slate-950 dark:text-white">Learners</h2>
+                            <p className="mt-2 text-sm font-medium leading-relaxed text-slate-600 dark:text-slate-300">Start with one question, one paper, or one topic and keep moving.</p>
                         </div>
-                        <div className="rounded-2xl border border-purple-100 bg-purple-50/70 p-5 dark:border-purple-900 dark:bg-purple-950/30">
-                            <ShieldCheck className="h-7 w-7 text-purple-700 dark:text-purple-300" />
-                            <h2 className="mt-3 text-lg font-black text-slate-950 dark:text-white">For parents</h2>
-                            <p className="mt-2 text-sm font-semibold leading-relaxed text-slate-600 dark:text-slate-300">
-                                See effort, weak topics, practice history, plan use, and whether learning is actually happening after payment.
-                            </p>
+                        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                            <ShieldCheck className="h-7 w-7 text-purple-600 dark:text-purple-300" />
+                            <h2 className="mt-3 text-lg font-black text-slate-950 dark:text-white">Parents</h2>
+                            <p className="mt-2 text-sm font-medium leading-relaxed text-slate-600 dark:text-slate-300">Check effort, weak areas, and whether learning is happening after payment.</p>
                         </div>
-                        <div className="rounded-2xl border border-emerald-100 bg-emerald-50/70 p-5 dark:border-emerald-900 dark:bg-emerald-950/30">
-                            <BookOpen className="h-7 w-7 text-emerald-700 dark:text-emerald-300" />
-                            <h2 className="mt-3 text-lg font-black text-slate-950 dark:text-white">For teachers</h2>
-                            <p className="mt-2 text-sm font-semibold leading-relaxed text-slate-600 dark:text-slate-300">
-                                Create lessons, schemes, quizzes, Darasa recaps, and marking feedback faster. The teacher stays in control.
-                            </p>
+                        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                            <BookOpen className="h-7 w-7 text-emerald-600 dark:text-emerald-300" />
+                            <h2 className="mt-3 text-lg font-black text-slate-950 dark:text-white">Teachers</h2>
+                            <p className="mt-2 text-sm font-medium leading-relaxed text-slate-600 dark:text-slate-300">Prepare lessons, mark work, and follow up faster without losing control.</p>
                         </div>
                     </div>
                 </div>
@@ -1422,24 +1416,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
             {/* --- FEATURE LAUNCHER --- */}
             <section id="feature-launcher" className="py-16 bg-white dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 transition-colors scroll-mt-24">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6 mb-10">
-                        <div>
-                            <div className="inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.2em] text-indigo-700 dark:border-indigo-800 dark:bg-indigo-950/50 dark:text-indigo-200">
-                                <Sparkles className="h-3.5 w-3.5" /> Window shop the platform
-                            </div>
-                            <h2 className="mt-4 text-3xl md:text-4xl font-black tracking-tight text-slate-950 dark:text-white">
-                                Pick one task. Somo opens the right tool.
-                            </h2>
-                            <p className="mt-3 max-w-2xl text-base font-medium leading-relaxed text-slate-600 dark:text-slate-300">
-                                From a stuck learner to a busy teacher or a parent checking progress, every path leads to one clear next step.
-                            </p>
+                    <div className="mb-8 max-w-3xl">
+                        <div className="inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.2em] text-indigo-700 dark:border-indigo-800 dark:bg-indigo-950/50 dark:text-indigo-200">
+                            <Sparkles className="h-3.5 w-3.5" /> Start here
                         </div>
-                        <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-800 dark:bg-slate-900">
-                            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">Fast learner path</p>
-                            <p className="mt-1 text-sm font-bold text-slate-800 dark:text-slate-100">
-                                Notes &rarr; Ask Akili &rarr; Drill &rarr; Listen &rarr; Progress proof
-                            </p>
-                        </div>
+                        <h2 className="mt-4 text-3xl md:text-4xl font-black tracking-tight text-slate-950 dark:text-white">Pick one path and continue.</h2>
+                        <p className="mt-3 max-w-2xl text-base font-medium leading-relaxed text-slate-600 dark:text-slate-300">The homepage should send each visitor to the next useful thing without making them hunt around.</p>
                     </div>
 
                     <div className="mb-4 flex items-center justify-between gap-3">
@@ -1458,13 +1440,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                             return (
                                 <article
                                     key={feature.title}
-                                    className="group flex min-h-[220px] flex-col rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:-translate-y-1 hover:shadow-xl dark:border-slate-800 dark:bg-slate-900"
+                                    className="group flex min-h-[200px] flex-col rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-lg dark:border-slate-800 dark:bg-slate-900"
                                 >
                                     <div className={`mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl border ${feature.accent}`}>
                                         <Icon className="h-6 w-6" />
                                     </div>
-                                    <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">{feature.kicker}</p>
-                                    <h4 className="mt-2 text-xl font-black text-slate-950 dark:text-white">{feature.title}</h4>
+                                    <h4 className="text-xl font-black text-slate-950 dark:text-white">{feature.title}</h4>
                                     <p className="mt-3 flex-1 text-sm font-medium leading-relaxed text-slate-600 dark:text-slate-300">{feature.description}</p>
                                     <button
                                         onClick={() => handleFeatureLaunch(feature.title, feature.action)}
@@ -1477,21 +1458,19 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                         })}
                     </div>
 
-                    <div className="mt-10 grid gap-5 lg:grid-cols-[1.5fr_1fr]">
-                        <div className="rounded-3xl border border-emerald-200 bg-emerald-50/70 p-5 dark:border-emerald-800 dark:bg-emerald-950/25">
+                    <div className="mt-10 grid gap-5 lg:grid-cols-[1.2fr_0.8fr]">
+                        <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5 dark:border-slate-800 dark:bg-slate-900">
                             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                                 <div>
-                                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-700 dark:text-emerald-300">Teacher productivity</p>
-                                    <h3 className="mt-2 text-2xl font-black text-slate-950 dark:text-white">Plan, teach, mark, and follow up faster.</h3>
-                                    <p className="mt-2 max-w-2xl text-sm font-medium leading-relaxed text-slate-700 dark:text-slate-300">
-                                        Teachers can start from the work they need today: create a lesson, run Darasa mode, or mark learner work with useful feedback.
-                                    </p>
+                                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-700 dark:text-emerald-300">Teacher workspace</p>
+                                    <h3 className="mt-2 text-2xl font-black text-slate-950 dark:text-white">Plan, teach, mark, and follow up.</h3>
+                                    <p className="mt-2 max-w-2xl text-sm font-medium leading-relaxed text-slate-700 dark:text-slate-300">Teachers can create lessons, run Darasa mode, or mark learner work from one cleaner entry point.</p>
                                 </div>
                                 <button
                                     onClick={() => handleFeatureLaunch('teacher_workspace', () => handleRoleSelect(UserRole.TEACHER))}
                                     className="min-h-[44px] rounded-xl bg-emerald-700 px-5 text-sm font-black text-white transition-colors hover:bg-emerald-800"
                                 >
-                                    Teacher workspace
+                                    Open workspace
                                 </button>
                             </div>
                             <div className="mt-5 grid gap-3 md:grid-cols-3">
@@ -1506,9 +1485,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                             <Icon className="h-6 w-6 text-emerald-700 dark:text-emerald-300" />
                                             <h4 className="mt-3 text-sm font-black text-slate-950 dark:text-white">{feature.title}</h4>
                                             <p className="mt-2 min-h-[60px] text-xs font-medium leading-relaxed text-slate-600 dark:text-slate-300">{feature.description}</p>
-                                            <span className="mt-3 inline-flex items-center gap-1 text-xs font-black text-emerald-700 dark:text-emerald-300">
-                                                {feature.cta} <ArrowRight className="h-3.5 w-3.5" />
-                                            </span>
                                         </button>
                                     );
                                 })}
@@ -1516,30 +1492,26 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                         </div>
 
                         <div className="grid gap-5">
-                            <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5 dark:border-slate-800 dark:bg-slate-900">
+                            <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
                                 <ShieldCheck className="h-7 w-7 text-slate-700 dark:text-slate-200" />
-                                <h3 className="mt-3 text-xl font-black text-slate-950 dark:text-white">Parent proof</h3>
-                                <p className="mt-2 text-sm font-medium leading-relaxed text-slate-600 dark:text-slate-300">
-                                    Parents can see effort, practice, weak areas, and whether the paid plan is being used for real study.
-                                </p>
+                                <h3 className="mt-3 text-xl font-black text-slate-950 dark:text-white">Parent view</h3>
+                                <p className="mt-2 text-sm font-medium leading-relaxed text-slate-600 dark:text-slate-300">Parents can see effort, practice, weak areas, and whether the plan is being used for real study.</p>
                                 <button
                                     onClick={() => handleFeatureLaunch('parent_dashboard', () => navigate('/parent'))}
-                                    className="mt-4 inline-flex min-h-[42px] items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 text-sm font-black text-white hover:bg-slate-800 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-100"
+                                    className="mt-4 inline-flex min-h-[42px] items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-black text-slate-900 hover:border-purple-300 hover:bg-purple-50 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:hover:border-purple-700 dark:hover:bg-slate-900"
                                 >
-                                    View parent dashboard <ArrowRight className="h-4 w-4" />
+                                    View parent dashboard
                                 </button>
                             </div>
-                            <div className="rounded-3xl border border-indigo-200 bg-indigo-50 p-5 dark:border-indigo-800 dark:bg-indigo-950/30">
+                            <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
                                 <CreditCard className="h-7 w-7 text-indigo-700 dark:text-indigo-300" />
-                                <h3 className="mt-3 text-xl font-black text-slate-950 dark:text-white">Simple plans and credits</h3>
-                                <p className="mt-2 text-sm font-medium leading-relaxed text-slate-600 dark:text-slate-300">
-                                    Start small, add credits when needed, and block duplicate payments when a plan is already active.
-                                </p>
+                                <h3 className="mt-3 text-xl font-black text-slate-950 dark:text-white">Simple plans</h3>
+                                <p className="mt-2 text-sm font-medium leading-relaxed text-slate-600 dark:text-slate-300">Start small, add credits when needed, and block duplicate payments when a plan is already active.</p>
                                 <button
                                     onClick={() => handleFeatureLaunch('pricing', () => navigate('/pricing'))}
-                                    className="mt-4 inline-flex min-h-[42px] items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 text-sm font-black text-white hover:bg-indigo-700"
+                                    className="mt-4 inline-flex min-h-[42px] items-center justify-center gap-2 rounded-xl border border-indigo-200 bg-indigo-50 px-4 text-sm font-black text-indigo-700 hover:bg-indigo-100 dark:border-indigo-800 dark:bg-indigo-950/30 dark:text-indigo-200 dark:hover:bg-indigo-950/50"
                                 >
-                                    See pricing <ArrowRight className="h-4 w-4" />
+                                    See pricing
                                 </button>
                             </div>
                         </div>
