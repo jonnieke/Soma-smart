@@ -516,43 +516,43 @@ export const LandingHome: React.FC<Props> = (props) => {
                           props.onExamPapers(paper.id);
                         }
                       }}
-                      className={`snap-start rounded-3xl border p-5 text-left shadow-sm transition hover:-translate-y-1 hover:border-emerald-300 hover:bg-white hover:shadow-lg focus-visible:ring-2 focus-visible:ring-blue-500 ${featuredCard ? 'w-[320px] md:w-[340px] bg-white border-emerald-300 shadow-lg shadow-emerald-100/60' : 'w-[280px] bg-slate-50 border-slate-200'}`}
+                      className={`snap-start rounded-2xl border border-slate-200 bg-white p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md focus-visible:ring-2 focus-visible:ring-blue-500 ${featuredCard ? 'w-[320px] md:w-[340px]' : 'w-[280px]'}` }
                     >
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
-                          <span className="inline-flex rounded-full bg-emerald-50 px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-emerald-700">
+                          <span className="inline-flex rounded-full bg-slate-100 px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-slate-600">
                             {featuredCard ? 'Spotlight paper' : 'Latest paper'}
                           </span>
-                          <h3 className="mt-3 line-clamp-2 text-base font-black leading-snug text-slate-900">
+                          <h3 className="mt-3 line-clamp-2 text-base font-bold leading-snug text-slate-900">
                             {paper.title}
                           </h3>
                         </div>
-                        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-600">
+                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-slate-100 text-slate-600">
                           <BookOpen className="h-6 w-6" />
                         </div>
                       </div>
                       <div className="mt-4 flex flex-wrap gap-2 text-[10px] font-bold text-slate-500">
-                        <span className="rounded-full bg-white px-2 py-1">{paper.subject}</span>
-                        <span className="rounded-full bg-white px-2 py-1">{paper.grade}</span>
+                        <span className="rounded-full border border-slate-200 bg-slate-50 px-2 py-1">{paper.subject}</span>
+                        <span className="rounded-full border border-slate-200 bg-slate-50 px-2 py-1">{paper.grade}</span>
                         {paper.exam_body ? (
-                          <span className="rounded-full bg-white px-2 py-1">{paper.exam_body}</span>
+                          <span className="rounded-full border border-slate-200 bg-slate-50 px-2 py-1">{paper.exam_body}</span>
                         ) : null}
                         {paper.duration_minutes ? (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-white px-2 py-1">
+                          <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-2 py-1">
                             <Clock className="h-3 w-3" /> {paper.duration_minutes} min
                           </span>
                         ) : null}
                         {paper.total_marks ? (
-                          <span className="rounded-full bg-white px-2 py-1">
+                          <span className="rounded-full border border-slate-200 bg-slate-50 px-2 py-1">
                             {paper.total_marks} marks
                           </span>
                         ) : null}
                       </div>
-                      <div className="mt-5 flex items-center justify-between gap-3">
+                      <div className="mt-5 flex items-center justify-between gap-3 border-t border-slate-100 pt-4">
                         <span className="text-xs font-black uppercase tracking-[0.16em] text-slate-400">
                           {isOriginal ? 'SomaAI Original' : 'Published exam'}
                         </span>
-                        <span className="inline-flex items-center gap-1 text-xs font-black text-blue-600">
+                        <span className="inline-flex items-center gap-1 text-xs font-black text-slate-700">
                           Open paper <ArrowRight className="h-4 w-4" />
                         </span>
                       </div>
@@ -565,7 +565,7 @@ export const LandingHome: React.FC<Props> = (props) => {
                                 event.stopPropagation();
                                 props.onExamPapers(paper.id);
                               }}
-                              className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-[10px] font-black uppercase tracking-[0.14em] text-blue-700"
+                              className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-[10px] font-black uppercase tracking-[0.14em] text-slate-700"
                             >
                               <ExternalLink className="h-3.5 w-3.5" />
                               Get Exam Paper
@@ -575,7 +575,7 @@ export const LandingHome: React.FC<Props> = (props) => {
                               type="button"
                               disabled
                               onClick={(event) => event.stopPropagation()}
-                              className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-[10px] font-black uppercase tracking-[0.14em] text-slate-300"
+                              className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-[10px] font-black uppercase tracking-[0.14em] text-slate-400"
                             >
                               <ExternalLink className="h-3.5 w-3.5" />
                               Exam paper pending
@@ -588,7 +588,7 @@ export const LandingHome: React.FC<Props> = (props) => {
                                 event.stopPropagation();
                                 previewMarkingScheme(paper);
                               }}
-                              className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-violet-200 bg-violet-50 px-3 py-2 text-[10px] font-black uppercase tracking-[0.14em] text-violet-700"
+                              className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-[10px] font-black uppercase tracking-[0.14em] text-slate-700"
                             >
                               <FileText className="h-3.5 w-3.5" />
                               Paper + Scheme
@@ -598,7 +598,7 @@ export const LandingHome: React.FC<Props> = (props) => {
                               type="button"
                               disabled
                               onClick={(event) => event.stopPropagation()}
-                              className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-[10px] font-black uppercase tracking-[0.14em] text-slate-300"
+                              className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-[10px] font-black uppercase tracking-[0.14em] text-slate-400"
                             >
                               <FileText className="h-3.5 w-3.5" />
                               Scheme pending
@@ -616,7 +616,7 @@ export const LandingHome: React.FC<Props> = (props) => {
                             Share
                           </button>
                         </div>
-                        <p className="text-[10px] font-medium leading-4 text-slate-400">
+                        <p className="text-[10px] font-medium leading-5 text-slate-500">
                           Get the paper and marking scheme here. Choose Revision Mode when you want timed practice and marking help.
                         </p>
                       </div>
@@ -625,7 +625,7 @@ export const LandingHome: React.FC<Props> = (props) => {
                 })}
 
                 {carouselPapers.length === 0 && (
-                  <div className="flex w-full min-w-0 max-w-[920px] items-center justify-between gap-4 rounded-3xl border border-dashed border-slate-300 bg-slate-50 p-6 text-left">
+                  <div className="flex w-full min-w-0 max-w-[920px] items-center justify-between gap-4 rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-5 text-left">
                     <div className="max-w-2xl">
                       <p className="text-xs font-black uppercase tracking-[0.18em] text-slate-400">
                         Preparing the shelf
