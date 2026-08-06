@@ -1998,7 +1998,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                     Official Notes &amp; Past Papers — Free Inside the App.
                                 </h2>
                                 <p className="text-lg text-slate-600 dark:text-slate-300 leading-relaxed max-w-2xl mb-8">
-                                    Browse syllabus guides, expert notes, and KCSE/KPSEA past papers inside the learner library with grade and subject filters.
+                                    Open notes, papers, and syllabus guides with simple grade and subject filters.
                                 </p>
                                 <div className="flex flex-wrap gap-3 mb-8">
                                     {['Verified syllabuses', 'Expert notes', 'KCSE/KPSEA past papers'].map((item) => (
@@ -2017,9 +2017,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                             <div className="bg-emerald-50 dark:bg-emerald-950/30 p-6 sm:p-8 lg:p-10 flex flex-col justify-center border-t md:border-t-0 md:border-l border-emerald-100 dark:border-emerald-900/50">
                                 <div className="space-y-5">
                                     {[
-                                        { icon: ShieldCheck, title: 'Official guides', body: 'Syllabuses stay as guides, separated from learner study notes.' },
-                                        { icon: FileText, title: 'Learning resources', body: 'Notes and past papers open inside the app library where filters work properly.' },
-                                        { icon: Award, title: 'For both users', body: 'Learners browse resources; teachers reach their library workspace.' }
+                                        { icon: ShieldCheck, title: 'Official guides', body: 'Syllabuses stay as guides and stay separate from learner study notes.' },
+                                        { icon: FileText, title: 'Learning resources', body: 'Notes and papers open inside the app library with filters that actually work.' },
+                                        { icon: Award, title: 'For both users', body: 'Learners browse resources; teachers reach their workspace.' }
                                     ].map((item) => {
                                         const Icon = item.icon;
                                         return (
@@ -2689,6 +2689,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
         </div>
     );
 };
+
 
 
 
