@@ -27,6 +27,14 @@ const PATHWAYS: Array<{ id: CandidatePathway; grade: string; label: string; sub:
     { id: 'KJSEA', grade: 'Grade 9', label: 'KJSEA Grade 9 Hub', sub: 'Junior Secondary Assessment', badge: 'CBC JSS' },
     { id: 'KPSEA', grade: 'Grade 6', label: 'KPSEA Grade 6 Hub', sub: 'Primary National Assessment', badge: 'Primary CBC' },
 ];
+const inferPathwayFromGrade = (grade?: string): CandidatePathway | null => {
+    const normalized = String(grade || '').toLowerCase().replace(/\s+/g, ' ').trim();
+    if (!normalized) return null;
+    if (normalized.includes('grade 6') || normalized === '6') return 'KPSEA';
+    if (normalized.includes('grade 9') || normalized === '9') return 'KJSEA';
+    if (normalized.includes('form 4') || normalized === '4' || normalized.includes('kcse')) return 'KCSE';
+    return null;
+};
 
 export const RevisionPortal: React.FC = () => {
     const navigate = useNavigate();
@@ -59,6 +67,34 @@ export const RevisionPortal: React.FC = () => {
         const searchMatch = !searchQuery || String(exam.title || '').toLowerCase().includes(searchQuery.toLowerCase()) || String(exam.subject || '').toLowerCase().includes(searchQuery.toLowerCase());
         return (examType === pathway || gradeMatch) && searchMatch;
     }), [pathway, pathwayConfig.grade, publishedExams, searchQuery]);
+
+    const pathwayCounts = useMemo(() => {
+        return PATHWAYS.reduce((acc, item) => {
+            acc[item.id] = publishedExams.filter(exam => {
+                const examType = String(exam.exam_type || exam.examType || '').toUpperCase().replace(/[_ -]?STYLE$/, '');
+                const gradeMatch = String(exam.grade || '').toLowerCase().includes(item.grade.toLowerCase());
+                return examType === item.id || gradeMatch;
+            }).length;
+            return acc;
+        }, {} as Record<CandidatePathway, number>);
+    }, [publishedExams]);
+
+    useEffect(() => {
+        if (loadingExams || publishedExams.length === 0) return;
+
+        const gradePathway = inferPathwayFromGrade(studentProfile?.grade);
+        if (gradePathway && gradePathway !== pathway && pathwayCounts[gradePathway] > 0) {
+            setPathway(gradePathway);
+            return;
+        }
+
+        if (pathwayExams.length === 0) {
+            const bestPathway = PATHWAYS.find(item => pathwayCounts[item.id] > 0);
+            if (bestPathway && bestPathway.id !== pathway) {
+                setPathway(bestPathway.id);
+            }
+        }
+    }, [loadingExams, pathway, pathwayCounts, pathwayExams.length, publishedExams.length, studentProfile?.grade]);
 
     const startRevision = (openExamId?: string | number, modeOverride?: string) => {
         setRole(UserRole.REVISION);
@@ -529,3 +565,4 @@ export const RevisionPortal: React.FC = () => {
 };
 
 export default RevisionPortal;
+
