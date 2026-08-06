@@ -80,7 +80,7 @@ type Props = {
 const helps = [
   {
     title: 'Understand homework',
-    text: 'Get step-by-step explanations for any school question.',
+    text: 'Get direct answers for any school question.',
     Icon: BookOpen,
     tone: 'bg-blue-50 text-blue-600',
     action: { tab: 'SMART_TUTOR' as const, intent: 'ask_akili' },
@@ -118,7 +118,7 @@ const learnerTools = [
   ],
   [
     'Listen & Learn',
-    'Listen to notes and explanations anytime, anywhere.',
+    'Listen to notes and answers anytime, anywhere.',
     Headphones,
     'bg-emerald-50 text-emerald-600',
     { tab: 'TALKBACK' as const, intent: 'listen_and_learn' },
@@ -617,7 +617,7 @@ export const LandingHome: React.FC<Props> = (props) => {
                           </button>
                         </div>
                         <p className="text-[10px] font-medium leading-4 text-slate-400">
-                          Get the paper and marking scheme here. Choose Revision Mode when you want timed practice and explanations.
+                          Get the paper and marking scheme here. Choose Revision Mode when you want timed practice and marking help.
                         </p>
                       </div>
                     </div>
@@ -900,7 +900,7 @@ const AskAkiliDemo: React.FC<Props> = (props) => {
             <div className="space-y-2">
               <p className="text-xs font-black uppercase tracking-[0.18em] text-blue-600">Saved note preview</p>
               <p className="text-sm font-semibold leading-6 text-[#15214d]">
-                Saved to your notebook: Photosynthesis - summary points, step-by-step guide, and full explanation.
+                Saved to your notebook: Photosynthesis - summary points, direct answer, and revision notes.
               </p>
             </div>
           )}
@@ -1187,4 +1187,5 @@ const TrustStrip = () => (
     </div>
   </section>
 );
+
 

@@ -339,11 +339,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
         setIsGeneratingDetailed(true);
         try {
             const text = await callGeminiProxy(
-                `Provide a learner-friendly direct answer in point form for the following question, aligned to the Kenyan CBC/KPSEA/KCSE curriculum. Avoid a paragraph block. Use short headings and bullet points only: Direct answer, Key points, Working or reason, Example, Exam tip. Be detailed enough for a learner to revise from, but keep each bullet clear and short. Do not use markdown bold. Question: ${activeQuestion}`
+                `Provide a learner-friendly direct answer in short bullet points for the following question, aligned to the Kenyan CBC/KPSEA/KCSE curriculum. Lead with the direct answer first. Then add only the key points a learner needs to revise. Avoid step-by-step explanation and avoid paragraph blocks. Use these sections only if helpful: Direct answer, Key points, Example, Exam tip. Keep every bullet clear, short, and learner-ready. Do not use markdown bold. Question: ${activeQuestion}`
             );
             const cleaned = (text || '')
                 .replace(/\*\*(.*?)\*\*/g, '$1')
-                .replace(/^[*-]\s/gm, 'ï¿½ ')
+                .replace(/^[*-]\s/gm, '• ')
                 .replace(/^#{1,6}\s*/gm, '')
                 .replace(/\*(.*?)\*/g, '$1')
                 .replace(/\*/g, '');
@@ -358,7 +358,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
             } else if (err instanceof TypeError) {
                 setDetailedAnswer('No connection. Please check your internet and try again.');
             } else {
-                setDetailedAnswer('Could not load the explanation. Please try again.');
+                setDetailedAnswer('Could not load the answer. Please try again.');
             }
         } finally {
             setIsGeneratingDetailed(false);
@@ -603,7 +603,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
         {
             title: 'Ask Akili',
             kicker: 'Instant Doubt Solver',
-            description: 'For the "I am stuck" moment: quick explanation, step-by-step help, and follow-up practice.',
+            description: 'For the "I am stuck" moment: quick answer, learner-friendly notes, and follow-up practice.',
             icon: MessageCircle,
             cta: 'Ask now',
             accent: 'bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-950/40 dark:text-indigo-200 dark:border-indigo-800',
@@ -777,7 +777,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
             <Helmet>
                 <html lang="en" />
                 <title>Somo Smart | KCSE, KPSEA and CBC Study Support for Kenya</title>
-                <meta name="description" content="Somo Smart helps Kenyan learners, teachers and parents with step-by-step answers, exam prep, official notes, past papers, audio learning and progress tracking." />
+                <meta name="description" content="Somo Smart helps Kenyan learners, teachers and parents with direct answers, exam prep, official notes, past papers, audio learning and progress tracking." />
                 <meta name="keywords" content="Somo Smart, KCSE revision, KPSEA past papers, CBC notes, Kenyan learner app, teacher lesson notes, parent progress tracking" />
 
                 {/* AIO/SEO specific meta tags */}
@@ -792,7 +792,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                 <meta name="author" content="Somo Smart" />
                 <meta property="og:site_name" content="Somo Smart" />
                 <meta property="og:title" content="Somo Smart | KCSE, KPSEA and CBC Study Support for Kenya" />
-                <meta property="og:description" content="Step-by-step answers, exam prep, official notes, past papers, audio learning and progress tracking for Kenyan learners, parents and teachers." />
+                <meta property="og:description" content="Direct answers, exam prep, official notes, past papers, audio learning and progress tracking for Kenyan learners, parents and teachers." />
                 <meta property="og:image" content="https://www.somaai.co.ke/hero_option_a.png" />
                 <meta property="og:type" content="website" />
                 <meta property="og:url" content="https://www.somaai.co.ke/" />
@@ -801,7 +801,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                 <meta name="twitter:card" content="summary_large_image" />
                 <meta name="twitter:site" content="@somasmart" />
                 <meta name="twitter:title" content="Somo Smart | KCSE, KPSEA and CBC Study Support for Kenya" />
-                <meta name="twitter:description" content="Step-by-step answers, exam prep, official notes, past papers, audio learning and progress tracking." />
+                <meta name="twitter:description" content="Direct answers, exam prep, official notes, past papers, audio learning and progress tracking." />
 
                 <link rel="canonical" href="https://www.somaai.co.ke/" />
                 <link rel="preload" as="image" href={heroScienceLabAvif} type="image/avif" />
@@ -833,7 +833,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                             "price": "20",
                             "priceCurrency": "KES"
                         },
-                        "description": "Step-by-step answers, exam prep, official notes, past papers, audio learning and progress tracking."
+                        "description": "Direct answers, exam prep, official notes, past papers, audio learning and progress tracking."
                     })}
                 </script>
                 <script type="application/ld+json">
@@ -846,7 +846,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                 "name": "What does Somo Smart do?",
                                 "acceptedAnswer": {
                                     "@type": "Answer",
-                                    "text": "It helps Kenyan learners, teachers and parents with step-by-step answers, exam prep, official notes, past papers, audio learning and progress tracking."
+                                    "text": "It helps Kenyan learners, teachers and parents with direct answers, exam prep, official notes, past papers, audio learning and progress tracking."
                                 }
                             },
                             {
@@ -1062,7 +1062,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                 <span className="block text-indigo-600 dark:text-indigo-400 mt-2">CBC, KPSEA &amp; KCSE learners.</span>
                             </h1>
                             <p className="text-base sm:text-lg text-slate-600 dark:text-slate-400 font-medium leading-relaxed mb-6 sm:mb-8 max-w-lg">
-                                Ask any question, get step-by-step explanations, listen to notes aloud, and show parents real weekly progress â€” built for Kenyan learners.
+                                Ask any question, get direct answers, listen to notes aloud, and show parents real weekly progress — built for Kenyan learners.
                             </p>
 
                             {/* Solve It chat window */}
@@ -1287,7 +1287,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                     <div className="w-7 h-7 bg-indigo-600 rounded-full flex items-center justify-center shrink-0">
                                         <Sparkles className="w-3.5 h-3.5 text-white" />
                                     </div>
-                                    <span className="text-xs font-bold text-slate-800 dark:text-slate-200">Step-by-step answers for every KCSE &amp; KPSEA subject</span>
+                                    <span className="text-xs font-bold text-slate-800 dark:text-slate-200">Direct answers for every KCSE &amp; KPSEA subject</span>
                                 </div>
                             </div>
                             <div className="hidden">
@@ -1334,7 +1334,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                 </div>
                                 <div className="flex-1 min-w-0">
                                     <div className="font-bold text-slate-900 dark:text-white">Learner</div>
-                                    <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Step-by-step answers & quizzes</div>
+                                    <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Direct answers & quizzes</div>
                                 </div>
                                 <button onClick={() => handleLearnerQuickStart('SMART_TUTOR', 'ask_akili')} className="shrink-0 p-2 rounded-lg bg-slate-100 dark:bg-slate-700 hover:bg-indigo-600 hover:text-white dark:hover:bg-indigo-500 text-slate-600 dark:text-slate-300 transition-colors">
                                     <ArrowRight className="w-4 h-4" />
@@ -1790,7 +1790,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                 <BookOpen className="w-6 h-6" />
                             </div>
                             <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">Powerful Examination Assistant</h3>
-                            <p className="text-slate-600 dark:text-slate-400 text-sm font-medium">Generate CBE-aligned lesson plans, access verified KCSE and KPSEA past papers, and get auto-generated step-by-step solutions instantly.</p>
+                            <p className="text-slate-600 dark:text-slate-400 text-sm font-medium">Generate CBE-aligned lesson plans, access verified KCSE and KPSEA past papers, and get direct answers and learner-friendly revision support instantly.</p>
                         </div>
 
                         {/* 4. Horizontal Feature 2: Analytics Span 2 */}
@@ -2135,7 +2135,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                             <div className="p-6">
                                 <div className="text-xs font-bold text-slate-400 mb-2">ANNOUNCEMENT â€¢ APRIL 2024</div>
                                 <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-3 transition-colors">Introducing the AI Personal Tutor: A New Era of Learning</h3>
-                                <p className="text-sm text-slate-600 dark:text-slate-400 line-clamp-2 font-medium">We are excited to unveil our new smart-powered personal tutor, designed to provide instant explanations and personalized feedback to every student.</p>
+                                <p className="text-sm text-slate-600 dark:text-slate-400 line-clamp-2 font-medium">We are excited to unveil our new smart-powered personal tutor, designed to provide instant answers and personalized feedback to every student.</p>
                             </div>
                         </motion.div>
 
@@ -2173,7 +2173,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                     Open the app. Solve a real problem in the next 2 minutes.
                                 </h2>
                                 <p className="mt-4 text-base font-medium leading-relaxed text-slate-600">
-                                    A learner can solve one hard question, a teacher can prepare one lesson, and a parent can check whether study is actually happening ï¿½ right now, for free.
+                                    A learner can solve one hard question, a teacher can prepare one lesson, and a parent can check whether study is actually happening • right now, for free.
                                 </p>
                             </div>
 
@@ -2296,7 +2296,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                             {/* Header */}
                             <div className="flex items-start justify-between gap-4 border-b border-slate-100 p-5 dark:border-slate-800 shrink-0">
                                 <div className="min-w-0">
-                                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-600 dark:text-indigo-300">Point-form answer guide</p>
+                                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-600 dark:text-indigo-300">Direct answer guide</p>
                                     <h2 className="mt-1 text-base font-black text-slate-950 dark:text-white truncate">{questionInput}</h2>
                                 </div>
                                 <button
@@ -2319,7 +2319,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                             <p className="text-xs font-black uppercase tracking-widest text-slate-400 mb-2">Learning limit reached</p>
                                             <h3 className="text-xl font-black text-slate-900 dark:text-white">You&apos;ve used today&apos;s free daily study limits</h3>
                                             <p className="mt-2 text-sm text-slate-600 dark:text-slate-300 leading-relaxed max-w-xs mx-auto">
-                                                Choose a small learner plan to keep going with step-by-step notes, exam prep, and audio lessons.
+                                                Choose a small learner plan to keep going with direct answers, revision notes, exam prep, and audio lessons.
                                             </p>
                                         </div>
                                     ) : (
@@ -2356,8 +2356,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                         ) : detailedAnswer ? (
                                             <div className="space-y-4 text-sm leading-relaxed text-slate-700 dark:text-slate-300">
                                                 <div className="rounded-2xl border border-indigo-100 bg-indigo-50/80 p-4 text-indigo-950 dark:border-indigo-900/40 dark:bg-indigo-950/30 dark:text-indigo-100">
-                                                    <p className="text-[10px] font-black uppercase tracking-[0.18em] text-indigo-600 dark:text-indigo-300">Point-form answer guide</p>
-                                                    <p className="mt-2 text-sm font-medium">We keep the answer open here so guests can see how Akili explains before signing up.</p>
+                                                    <p className="text-[10px] font-black uppercase tracking-[0.18em] text-indigo-600 dark:text-indigo-300">Direct answer guide</p>
+                                                    <p className="mt-2 text-sm font-medium">We keep the answer open here so guests can see the direct answer first before signing up.</p>
                                                 </div>
                                                 <div className="whitespace-pre-wrap font-medium">{detailedAnswer}</div>
                                             </div>
@@ -2365,11 +2365,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                             <div className="space-y-4">
                                                 <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-900/60">
                                                     <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">Preview locked</p>
-                                                    <h3 className="mt-1 text-lg font-black text-slate-900 dark:text-white">Open the full step-by-step explanation</h3>
+                                                    <h3 className="mt-1 text-lg font-black text-slate-900 dark:text-white">Open the full direct answer</h3>
                                                     <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
                                                         {isRegistered
-                                                            ? 'Your free daily study limit has been reached. Pick a small plan to continue.'
-                                                            : 'Create a free account or sign in to unlock the complete worked answer.'}
+                                                            ? 'Your free daily study limit has been reached. Pick a small plan to continue with direct answers, revision notes, and audio lessons.'
+                                                            : 'Create a free account or sign in to unlock the complete direct answer and revision support.'}
                                                     </p>
                                                 </div>
                                                 <div className="space-y-3 rounded-2xl border border-dashed border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950">
@@ -2377,7 +2377,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                                     <div className="h-3 w-4/6 rounded-full bg-slate-200/80 dark:bg-slate-800/80" />
                                                     <div className="h-3 w-2/3 rounded-full bg-slate-200/80 dark:bg-slate-800/80" />
                                                     <div className="mt-3 rounded-xl border border-indigo-100 bg-indigo-50 p-3 text-xs font-medium text-indigo-800 dark:border-indigo-900/40 dark:bg-indigo-950/30 dark:text-indigo-200">
-                                                        The full worked solution will appear here after login.
+                                                        The full direct answer will appear here after login.
                                                     </div>
                                                 </div>
                                             </div>
@@ -2400,7 +2400,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                                     <BookOpen className="w-4 h-4 text-indigo-600 dark:text-indigo-300" />
                                                 </div>
                                                 <div className="min-w-0">
-                                                    <p className="text-sm font-black text-slate-900 dark:text-white leading-tight">Sign in to see the full explanation</p>
+                                                    <p className="text-sm font-black text-slate-900 dark:text-white leading-tight">Sign in to see the full answer</p>
                                                     <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
                                                         {detailedUsesLeft > 0
                                                             ? `${detailedUsesLeft} free preview${detailedUsesLeft !== 1 ? 's' : ''} remaining â€” no payment needed`
@@ -2689,4 +2689,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
         </div>
     );
 };
+
+
+
+
+
+
+
 
