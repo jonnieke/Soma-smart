@@ -679,15 +679,15 @@ export const LandingHome: React.FC<Props> = (props) => {
                     'intent' in action ? action.intent : undefined
                   )
                 }
-                className="flex min-h-[108px] items-center gap-4 rounded-2xl border border-slate-200 bg-white p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-sm focus-visible:ring-2 focus-visible:ring-blue-500"
+                className="flex min-h-[108px] items-center gap-4 rounded-2xl border border-slate-200 bg-white p-4 text-left shadow-[0_10px_30px_rgba(15,23,42,0.04)] transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-[0_12px_34px_rgba(15,23,42,0.06)] focus-visible:ring-2 focus-visible:ring-blue-500"
               >
                 <div
-                  className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 ${tone}`}
+                  className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-slate-50/90 ${tone}`}
                 >
                   <Icon className="h-7 w-7" />
                 </div>
                 <div>
-                  <h3 className="font-black text-[#111943]">{title}</h3>
+                  <h3 className="font-black text-slate-900">{title}</h3>
                   <p className="mt-1 text-sm leading-5 text-slate-600">{text}</p>
                   <p className="mt-2 text-xs font-bold text-slate-500">Open tool</p>
                 </div>
@@ -1079,7 +1079,7 @@ const ParentPricing: React.FC<{ onParent: () => void; onPricing: () => void }> =
         </div>
         <div className="m-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
           <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-            <h3 className="font-black text-[#111943]">Weekly Progress Report</h3>
+            <h3 className="font-black text-slate-900">Weekly Progress Report</h3>
             <span className="text-xs text-slate-500">13 - 19 May 2024</span>
           </div>
           <div className="mt-3 grid grid-cols-2 gap-3 text-center sm:grid-cols-4">
