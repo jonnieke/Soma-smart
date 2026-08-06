@@ -418,9 +418,9 @@ export const LandingHome: React.FC<Props> = (props) => {
                 <span className="w-1/3 bg-emerald-600" />
               </span>
               <span>Built for Kenyan learners</span>
-              <span>·</span>
+              <span>Â·</span>
               <span>Low-data friendly</span>
-              <span>·</span>
+              <span>Â·</span>
               <span>Parent progress reports</span>
             </div>
           </div>
@@ -662,10 +662,10 @@ export const LandingHome: React.FC<Props> = (props) => {
 
       <section
         aria-labelledby="helps-heading"
-        className="border-b border-slate-200 bg-[#f8fbff] py-8"
+        className="border-b border-slate-200 bg-white py-8"
       >
         <div className="mx-auto max-w-[1440px] px-4 sm:px-6 lg:px-10">
-          <h2 id="helps-heading" className="text-center text-2xl font-black text-[#07133f]">
+          <h2 id="helps-heading" className="text-center text-2xl font-black text-slate-900">
             What Somo Smart helps with
           </h2>
           <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-2">
@@ -679,17 +679,17 @@ export const LandingHome: React.FC<Props> = (props) => {
                     'intent' in action ? action.intent : undefined
                   )
                 }
-                className="flex min-h-[108px] items-center gap-4 rounded-2xl border border-slate-200 bg-white p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-blue-300 hover:shadow-md focus-visible:ring-2 focus-visible:ring-blue-500"
+                className="flex min-h-[108px] items-center gap-4 rounded-2xl border border-slate-200 bg-white p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-sm focus-visible:ring-2 focus-visible:ring-blue-500"
               >
                 <div
-                  className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-lg ${tone}`}
+                  className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 ${tone}`}
                 >
                   <Icon className="h-7 w-7" />
                 </div>
                 <div>
                   <h3 className="font-black text-[#111943]">{title}</h3>
                   <p className="mt-1 text-sm leading-5 text-slate-600">{text}</p>
-                  <p className="mt-2 text-xs font-bold text-blue-600">Open tool</p>
+                  <p className="mt-2 text-xs font-bold text-slate-500">Open tool</p>
                 </div>
               </button>
             ))}
@@ -775,10 +775,10 @@ const LandingFooter: React.FC<{
       </div>
 
       <div className="mt-10 border-t border-slate-800/80 pt-6 text-center text-xs text-slate-500 flex flex-col sm:flex-row items-center justify-between gap-3">
-        <p>© {new Date().getFullYear()} Somo Smart. Built with pride for Kenyan Education.</p>
+        <p>Â© {new Date().getFullYear()} Somo Smart. Built with pride for Kenyan Education.</p>
         <p className="flex items-center gap-4">
           <a href="/contact" className="hover:text-slate-400 transition-colors">Contact Support</a>
-          <span>·</span>
+          <span>Â·</span>
           <a href="/pricing" className="hover:text-slate-400 transition-colors">M-Pesa Pricing</a>
         </p>
       </div>
