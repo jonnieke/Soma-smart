@@ -519,7 +519,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
         } catch (_) {
             // Ignore storage issues and still navigate.
         }
-        navigate(`/exam-papers/${encodeURIComponent(id)}/read`);
+        navigate(`/exam-papers/${encodeURIComponent(id)}/read?source=scheme`);
     };
 
     const handlePreviewPaperFromHome = (paperId: string | number) => {

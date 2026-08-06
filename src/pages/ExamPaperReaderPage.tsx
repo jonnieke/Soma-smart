@@ -1,5 +1,5 @@
 import React from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, BookOpen, FileCheck2, FileText, Loader2, Share2 } from 'lucide-react';
 import { PaperAccess, examPaperBankService } from '../services/examPaperBankService';
 import { useApp } from '../context/AppContext';
@@ -7,10 +7,16 @@ import { useApp } from '../context/AppContext';
 export const ExamPaperReaderPage: React.FC = () => {
   const { id = '' } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const { isPro } = useApp();
   const [access, setAccess] = React.useState<PaperAccess | null>(null);
-  const [activeDocument, setActiveDocument] = React.useState<'paper' | 'scheme'>('paper');
+  const initialDocument = React.useMemo(() => new URLSearchParams(location.search).get('source') === 'scheme' ? 'scheme' : 'paper', [location.search]);
+  const [activeDocument, setActiveDocument] = React.useState<'paper' | 'scheme'>(initialDocument);
   const [loading, setLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    setActiveDocument(initialDocument);
+  }, [initialDocument]);
 
   React.useEffect(() => {
     examPaperBankService.getAccess(id)

@@ -586,7 +586,7 @@ export const LandingHome: React.FC<Props> = (props) => {
                               type="button"
                               onClick={(event) => {
                                 event.stopPropagation();
-                                props.onExamPapers(paper.id);
+                                previewMarkingScheme(paper);
                               }}
                               className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-violet-200 bg-violet-50 px-3 py-2 text-[10px] font-black uppercase tracking-[0.14em] text-violet-700"
                             >
