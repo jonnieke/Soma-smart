@@ -1184,7 +1184,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
 
                             {/* Quick-prompt chips */}
                             <div className="flex flex-wrap gap-2 mt-3">
-                                {['Photosynthesis explained simply', 'How do I find the gradient?', "Kenya's major rivers", 'Expand (x+2)(x-3)'].map((q, i) => (
+                                {['Photosynthesis explained simply', 'How do I find the gradient?', 'Expand (x+2)(x-3)'].map((q, i) => (
                                     <button key={i} onClick={() => { setQuestionInput(q); setShowMockAnswer(false); }}
                                         className="px-3 py-1.5 rounded-full text-xs font-bold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 hover:text-indigo-700 hover:border-indigo-200 transition-all">
                                         {q}
@@ -1192,16 +1192,16 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                 ))}
                             </div>
                             <div className="grid gap-2 text-sm text-slate-500 dark:text-slate-400 sm:grid-cols-3">
-                                <div className="flex items-center gap-1.5"><CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0" /> Free start Â· KES 20/day via M-PESA</div>
+                                <div className="flex items-center gap-1.5"><CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0" /> Free start · KES 20/day via M-PESA</div>
                                 <div className="flex items-center gap-1.5"><CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0" /> Official notes and past papers</div>
-                                <div className="flex items-center gap-1.5"><CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0" /> Parent progress proof Â· teacher tools</div>
+                                <div className="flex items-center gap-1.5"><CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0" /> Parent progress proof · teacher tools</div>
                             </div>
                             <div className="mt-6 flex flex-col sm:flex-row gap-3">
                                 <button
                                     onClick={() => handleLearnerQuickStart('SMART_TUTOR', 'ask_akili')}
                                     className="w-full sm:w-auto min-h-[46px] rounded-xl bg-indigo-600 hover:bg-indigo-700 px-5 text-sm font-black text-white flex items-center justify-center gap-2"
                                 >
-                                    Try Free â€” No Sign-up Needed <ChevronRight className="w-4 h-4" />
+                                    Try Free — No Sign-up Needed <ChevronRight className="w-4 h-4" />
                                 </button>
                                 <button
                                     onClick={() => handleRoleSelect(UserRole.TEACHER)}
@@ -2689,6 +2689,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
         </div>
     );
 };
+
+
+
 
 
 
