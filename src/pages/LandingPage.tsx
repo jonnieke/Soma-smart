@@ -567,7 +567,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
     const navigationGuideItems = [
         {
             title: 'Learners',
-            description: 'Ask Akili, open notes, revise with past papers, take drills, and listen to lessons.',
+            description: 'Ask Akili, open notes, revise past papers, take drills, and listen to lessons.',
             icon: GraduationCap,
             cta: 'Open Learner',
             action: () => handleLearnerQuickStart('SMART_TUTOR', 'ask_akili'),
@@ -591,7 +591,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
         },
         {
             title: 'Library',
-            description: 'Browse official free notes, syllabus guides, and KCSE/KPSEA past papers.',
+            description: 'Browse official notes, syllabus guides, and KCSE/KPSEA past papers.',
             icon: BookOpen,
             cta: 'Open Library',
             action: handleLibraryAccess,
@@ -603,7 +603,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
         {
             title: 'Ask Akili',
             kicker: 'Instant Doubt Solver',
-            description: 'For the "I am stuck" moment: quick answer, learner-friendly notes, and follow-up practice.',
+            description: 'Quick answer, learner-friendly notes, and follow-up practice.',
             icon: MessageCircle,
             cta: 'Ask now',
             accent: 'bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-950/40 dark:text-indigo-200 dark:border-indigo-800',
@@ -613,7 +613,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
         {
             title: 'Exam Prep',
             kicker: 'KCSE & KPSEA Drills',
-            description: 'Past-paper practice, examiner-style feedback, weak-area repair, and topic drills that do not stop at answers.',
+            description: 'Past-paper practice, clear feedback, weak-area repair, and topic drills.',
             icon: Target,
             cta: 'Start prep',
             accent: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-200 dark:border-amber-800',
@@ -623,7 +623,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
         {
             title: 'Listen & Learn',
             kicker: 'Audio Revision',
-            description: 'Turn notes into listening lessons for commutes, chores, revision breaks, and low-reading-energy days.',
+            description: 'Turn notes into listening lessons for commutes, chores, and revision breaks.',
             icon: Headphones,
             cta: 'Listen',
             accent: 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/40 dark:text-rose-200 dark:border-rose-800',
@@ -633,7 +633,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
         {
             title: 'Library',
             kicker: 'Official Free Materials',
-            description: 'Open notes, syllabuses as guides, and past papers with grade, subject, and source filters.',
+            description: 'Open notes, syllabuses, and past papers with grade and subject filters.',
             icon: BookOpen,
             cta: 'Open library',
             accent: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-200 dark:border-emerald-800',
@@ -1213,7 +1213,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
 
                             <div className="mt-5 sm:mt-6 hidden sm:block rounded-2xl border border-slate-200 bg-white/80 p-3 sm:p-4 shadow-sm backdrop-blur dark:border-slate-700 dark:bg-slate-800/70">
                                 <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400 mb-2">First time here?</p>
-                                <h3 className="text-sm font-black text-slate-900 dark:text-white mb-3">Choose what you need now</h3>
+                                <h3 className="text-sm font-black text-slate-900 dark:text-white mb-3">Pick what you need now</h3>
                                 <div className="grid grid-cols-2 gap-2">
                                     <button
                                         onClick={() => handleLearnerQuickStart('SMART_TUTOR', 'ask_akili')}
@@ -1428,10 +1428,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                 <Sparkles className="h-3.5 w-3.5" /> Window shop the platform
                             </div>
                             <h2 className="mt-4 text-3xl md:text-4xl font-black tracking-tight text-slate-950 dark:text-white">
-                                Choose the problem. Somo opens the right tool.
+                                Pick one task. Somo opens the right tool.
                             </h2>
                             <p className="mt-3 max-w-2xl text-base font-medium leading-relaxed text-slate-600 dark:text-slate-300">
-                                From a stuck learner to a busy teacher or a parent checking progress, every path leads to a working feature, not a brochure page.
+                                From a stuck learner to a busy teacher or a parent checking progress, every path leads to a working feature.
                             </p>
                         </div>
                         <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-800 dark:bg-slate-900">
@@ -1448,7 +1448,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                             onClick={() => handleFeatureLaunch('learner_workspace', () => handleRoleSelect(UserRole.LEARNER))}
                             className="hidden sm:inline-flex items-center gap-2 text-sm font-black text-indigo-700 hover:text-indigo-900 dark:text-indigo-300 dark:hover:text-indigo-100"
                         >
-                            Open full learner workspace <ArrowRight className="h-4 w-4" />
+                            Open learner workspace <ArrowRight className="h-4 w-4" />
                         </button>
                     </div>
 
@@ -1484,7 +1484,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                     <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-700 dark:text-emerald-300">Teacher productivity</p>
                                     <h3 className="mt-2 text-2xl font-black text-slate-950 dark:text-white">Plan, teach, mark, and follow up faster.</h3>
                                     <p className="mt-2 max-w-2xl text-sm font-medium leading-relaxed text-slate-700 dark:text-slate-300">
-                                        Teachers can start from the work they need done today: create a lesson, run Darasa mode, or mark learner work with useful feedback.
+                                        Teachers can start from the work they need today: create a lesson, run Darasa mode, or mark learner work with useful feedback.
                                     </p>
                                 </div>
                                 <button
@@ -2170,10 +2170,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                             <div className="max-w-2xl">
                                 <p className="text-[11px] font-black uppercase tracking-[0.24em] text-indigo-600">No sign-up required to start</p>
                                 <h2 className="mt-3 text-3xl font-black tracking-tight sm:text-4xl">
-                                    Open the app. Solve a real problem in the next 2 minutes.
+                                    Open the app. Solve one real problem in the next 2 minutes.
                                 </h2>
                                 <p className="mt-4 text-base font-medium leading-relaxed text-slate-600">
-                                    A learner can solve one hard question, a teacher can prepare one lesson, and a parent can check whether study is actually happening • right now, for free.
+                                    A learner can solve one hard question, a teacher can prepare one lesson, and a parent can check whether study is actually happening — right now, for free.
                                 </p>
                             </div>
 
@@ -2184,7 +2184,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                 >
                                     <GraduationCap className="h-6 w-6 text-indigo-600" />
                                     <span className="mt-3 block text-sm font-black">Learner</span>
-                                    <span className="mt-1 block text-xs font-bold leading-relaxed text-slate-600">Ask Akili and practice the method.</span>
+                                    <span className="mt-1 block text-xs font-bold leading-relaxed text-slate-600">Ask Akili for a direct answer.</span>
                                 </button>
                                 <button
                                     onClick={() => handleFeatureLaunch('final_cta_teacher', () => handleRoleSelect(UserRole.TEACHER))}
@@ -2689,6 +2689,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
         </div>
     );
 };
+
+
 
 
 
