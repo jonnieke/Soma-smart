@@ -10,6 +10,9 @@ export const pesapalService = {
      * Initiates a payment and returns the redirect_url for the iframe
      */
     async initiatePayment(userId: string, plan: SubscriptionPlan, customer: { email: string, firstName: string, lastName: string, phone: string }, materialId?: string) {
+        if (materialId) {
+            return pesapalService.initiateMaterialPayment(userId, materialId, plan.name, Number(plan.price), customer);
+        }
         // Encode duration in reference for Edge Function to parse
         const reference = plan.isCreditPack
             ? `CREDIT_${plan.credits || 0}_${userId.slice(0, 5)}_${Date.now()}`
@@ -75,7 +78,7 @@ export const pesapalService = {
             status: 'PENDING',
             method: 'MPESA',
             reference_code: reference,
-            description: `MKT:${materialId}|${materialTitle.slice(0, 50)}`,
+            description: `MKT:${materialId}|PHONE:${customer.phone}|${materialTitle.slice(0, 50)}`,
             created_at: new Date().toISOString()
         });
 

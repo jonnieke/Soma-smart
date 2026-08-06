@@ -59,28 +59,8 @@ export const PricingPage: React.FC = () => {
 
             localStorage.removeItem('soma_pending_payment_ref');
 
-            // Handle marketplace material purchase
-            if (reference.startsWith('MKT_')) {
-                const { data: tx } = await supabase.from('transactions').select('description, user_id').eq('reference_code', reference).maybeSingle();
-                const match = tx?.description?.match(/MKT:([^|]+)/);
-                if (match) {
-                    const materialId = match[1];
-                    const { data: material } = await supabase.from('marketplace_materials').select('teacher_id, price, download_count').eq('id', materialId).maybeSingle();
-                    if (material) {
-                        const { data: wallet } = await supabase.from('teacher_wallets').select('balance').eq('id', material.teacher_id).maybeSingle();
-                        if (wallet) {
-                            await supabase.from('teacher_wallets').update({ balance: wallet.balance + material.price }).eq('id', material.teacher_id);
-                        } else {
-                            await supabase.from('teacher_wallets').insert({ id: material.teacher_id, balance: material.price, currency: 'KES' });
-                        }
-                        await supabase.from('marketplace_materials').update({ download_count: (material.download_count || 0) + 1 }).eq('id', materialId);
-                    }
-                    const purchased = JSON.parse(localStorage.getItem('soma_purchased_materials') || '[]');
-                    if (!purchased.includes(materialId)) {
-                        localStorage.setItem('soma_purchased_materials', JSON.stringify([...purchased, materialId]));
-                    }
-                }
-            }
+            // Marketplace entitlements and the 60/40 ledger are granted only by the
+            // Pesapal Edge Function after it verifies the payment with Pesapal.
 
             await refreshProfile();
             setVerifySuccess(true);

@@ -1,5 +1,5 @@
 import React from 'react';
-import { LayoutDashboard, Users, CreditCard, Settings, LogOut, Menu, X, BookOpen, ClipboardCheck, BarChart3, Brain, FileText } from 'lucide-react';
+import { LayoutDashboard, Users, CreditCard, Settings, LogOut, Menu, X, BookOpen, ClipboardCheck, BarChart3, Brain, FileText, Store } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../../../lib/supabase';
@@ -48,6 +48,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children, activeTab, o
         { id: 'OVERVIEW', label: 'Overview', icon: <LayoutDashboard className="w-5 h-5" /> },
         { id: 'USERS', label: 'User Management', icon: <Users className="w-5 h-5" /> },
         { id: 'EXAMS', label: 'Past Papers', icon: <ClipboardCheck className="w-5 h-5" /> },
+        { id: 'CREATOR_MATERIALS', label: 'Creator Materials', icon: <Store className="w-5 h-5" /> },
         { id: 'FINANCE', label: 'Financials', icon: <CreditCard className="w-5 h-5" /> },
         { id: 'KNOWLEDGE', label: 'CBE Knowledge Base', icon: <BookOpen className="w-5 h-5 text-indigo-400" /> },
         { id: 'CURRICULUM', label: 'Curriculum & AI', icon: <BookOpen className="w-5 h-5" /> },

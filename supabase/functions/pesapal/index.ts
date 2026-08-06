@@ -97,7 +97,7 @@ serve(async (req) => {
                     .eq('reference_code', merchant_reference)
 
                 // 2. Apply purchased entitlement
-                const { data: tx } = await supabase.from('transactions').select('user_id, amount').eq('reference_code', merchant_reference).single()
+                const { data: tx } = await supabase.from('transactions').select('user_id, amount, description').eq('reference_code', merchant_reference).single()
 
                 if (tx) {
                     if (merchant_reference.startsWith('CREDIT_')) {
@@ -128,6 +128,41 @@ serve(async (req) => {
                             }
                         }
                         return statusData
+                    }
+
+                    if (merchant_reference.startsWith('MKT_')) {
+                        const materialId = String(tx.description || '').match(/MKT:([^|]+)/)?.[1]
+                        const buyerPhone = String(tx.description || '').match(/PHONE:([^|]+)/)?.[1] || String(tx.user_id)
+                        if (!materialId) throw new Error('Marketplace transaction is missing its material ID')
+
+                        const { data: existingOrder } = await supabase
+                            .from('creator_orders')
+                            .select('id')
+                            .eq('payment_reference', merchant_reference)
+                            .maybeSingle()
+
+                        if (!existingOrder) {
+                            const { data: material } = await supabase
+                                .from('creator_materials')
+                                .select('price_kes')
+                                .eq('id', materialId)
+                                .eq('status', 'PUBLISHED')
+                                .single()
+                            if (!material || Number(material.price_kes) !== Number(tx.amount)) {
+                                throw new Error('Marketplace payment does not match the published listing')
+                            }
+
+                            const { error: saleError } = await supabase.rpc('record_creator_material_sale', {
+                                p_material_id: materialId,
+                                p_buyer_id: tx.user_id,
+                                p_buyer_phone: buyerPhone,
+                                p_payment_reference: merchant_reference,
+                                p_gross_amount_kes: Number(tx.amount),
+                                p_statutory_adjustments_kes: 0
+                            })
+                            if (saleError) throw saleError
+                        }
+                        return { ...statusData, material_id: materialId, entitlement_granted: true }
                     }
 
                     if (!merchant_reference.startsWith('SUB_')) {

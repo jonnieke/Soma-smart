@@ -54,11 +54,10 @@ const ContactUsPage = React.lazy(() => safeImport(() => import('./pages/ContactU
 const AskSomo = React.lazy(() => safeImport(() => import('./components/AskSomo').then(module => ({ default: module.AskSomo }))));
 
 // Phase 4 — Marketplace & District
-const MarketplacePage = React.lazy(() => safeImport(() => import('./features/marketplace/MarketplacePage').then(module => ({ default: module.MarketplacePage }))));
-const SellerDashboard = React.lazy(() => safeImport(() => import('./features/marketplace/SellerDashboard').then(module => ({ default: module.SellerDashboard }))));
+const MarketplacePage = React.lazy(() => safeImport(() => import('./features/marketplace/CreatorMarketplacePage').then(module => ({ default: module.CreatorMarketplacePage }))));
 const DistrictDashboard = React.lazy(() => safeImport(() => import('./features/district/DistrictDashboard').then(module => ({ default: module.DistrictDashboard }))));
-const SellerOnboardingView = React.lazy(() => safeImport(() => import('./features/marketplace/SellerOnboardingView').then(module => ({ default: module.SellerOnboardingView }))));
-const PurchasedLibraryView = React.lazy(() => safeImport(() => import('./features/marketplace/PurchasedLibraryView').then(module => ({ default: module.PurchasedLibraryView }))));
+const PurchasedLibraryView = React.lazy(() => safeImport(() => import('./features/marketplace/CreatorPurchasedLibraryPage').then(module => ({ default: module.CreatorPurchasedLibraryPage }))));
+const CreatorStudioPage = React.lazy(() => safeImport(() => import('./features/marketplace/CreatorStudioPage').then(module => ({ default: module.CreatorStudioPage }))));
 
 
 // Phase 5 — Assessment Delivery, Marking & Intelligence
@@ -303,8 +302,8 @@ const App: React.FC = () => {
                             <Route path="/teacher/paper-studio/questions" element={<TeacherPage />} />
                             <Route path="/teacher/paper-studio/editor/:id" element={<TeacherPage />} />
                             <Route path="/teacher/school-library" element={<TeacherPage />} />
-                            <Route path="/teacher/paper-bank" element={<TeacherPage />} />
-                            <Route path="/teacher/earnings" element={<TeacherPage />} />
+                            <Route path="/teacher/paper-bank" element={<MarketplacePage />} />
+                            <Route path="/teacher/earnings" element={<CreatorStudioPage />} />
                             <Route path="/teacher/notes" element={<TeacherPage />} />
                             <Route path="/teacher/homework" element={<TeacherPage />} />
                             <Route path="/teacher/marking" element={<TeacherPage />} />
@@ -327,16 +326,17 @@ const App: React.FC = () => {
                             <Route path="/school/assessment" element={<SchoolWorkspaceLayout />} />
                             <Route path="/school/assessment/*" element={<SchoolWorkspaceLayout />} />
                             <Route path="/marketplace" element={<MarketplacePage />} />
-                            <Route path="/marketplace/sell" element={<SellerDashboard />} />
-                            <Route path="/teacher/paper-bank" element={<MarketplacePage />} />
+                            <Route path="/marketplace/sell" element={<CreatorStudioPage />} />
+                            <Route path="/marketplace/purchased" element={<PurchasedLibraryView />} />
                             <Route path="/teacher/paper-bank/search" element={<MarketplacePage />} />
                             <Route path="/teacher/paper-bank/purchases" element={<PurchasedLibraryView />} />
                             <Route path="/teacher/paper-bank/library" element={<PurchasedLibraryView />} />
-                            <Route path="/teacher/seller" element={<SellerDashboard />} />
-                            <Route path="/teacher/seller/onboarding" element={<SellerOnboardingView />} />
-                            <Route path="/teacher/seller/listings" element={<SellerDashboard />} />
-                            <Route path="/teacher/seller/earnings" element={<SellerDashboard />} />
-                            <Route path="/teacher/seller/withdrawals" element={<SellerDashboard />} />
+                            <Route path="/teacher/creator-studio" element={<CreatorStudioPage />} />
+                            <Route path="/teacher/seller" element={<CreatorStudioPage />} />
+                            <Route path="/teacher/seller/onboarding" element={<CreatorStudioPage />} />
+                            <Route path="/teacher/seller/listings" element={<CreatorStudioPage />} />
+                            <Route path="/teacher/seller/earnings" element={<CreatorStudioPage />} />
+                            <Route path="/teacher/seller/withdrawals" element={<Navigate to="/teacher/creator-studio" replace />} />
                             <Route path="/district" element={<DistrictDashboard />} />
                             <Route path="/district/:districtId" element={<DistrictDashboard />} />
 

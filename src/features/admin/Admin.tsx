@@ -7,6 +7,7 @@ import { FinancialsView } from './views/Financials';
 import { SettingsView } from './views/Settings';
 import { CurriculumView } from './views/Curriculum';
 import { ExamsView } from './views/Exams';
+import { CreatorMaterialsView } from './views/CreatorMaterials';
 import { AnalyticsView } from './views/Analytics';
 import { StrategyLabView } from './views/StrategyLab';
 import { Lock } from 'lucide-react';
@@ -69,6 +70,7 @@ export const AdminDashboard: React.FC<AdminProps> = ({ onNavigate, authStatus = 
             {activeTab === 'FINANCE' && <FinancialsView />}
             {activeTab === 'CURRICULUM' && <CurriculumView />}
             {activeTab === 'EXAMS' && <ExamsView />}
+            {activeTab === 'CREATOR_MATERIALS' && <CreatorMaterialsView />}
             {activeTab === 'ANALYTICS' && <AnalyticsView />}
             {activeTab === 'STRATEGY_LAB' && <StrategyLabView />}
             {activeTab === 'JOURNAL' && <JournalView />}

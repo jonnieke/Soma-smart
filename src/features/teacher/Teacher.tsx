@@ -39,7 +39,6 @@ const loadTeacherGeminiService = () => safeImport(() => import('../../services/g
 const DarasaMode = React.lazy(() => safeImport(() => import('./DarasaMode').then(module => ({ default: module.DarasaMode }))));
 const MyClassroom = React.lazy(() => safeImport(() => import('./MyClassroom').then(module => ({ default: module.MyClassroom }))));
 const CreationHub = React.lazy(() => safeImport(() => import('./CreationHub').then(module => ({ default: module.CreationHub }))));
-const MarketplaceManager = React.lazy(() => safeImport(() => import('./MarketplaceManager').then(module => ({ default: module.MarketplaceManager }))));
 const MarkingManager = React.lazy(() => safeImport(() => import('./MarkingManager').then(module => ({ default: module.MarkingManager }))));
 const TeacherReports = React.lazy(() => safeImport(() => import('./TeacherReports').then(module => ({ default: module.TeacherReports }))));
 const TeacherDashboardOverview = React.lazy(() => safeImport(() => import('./TeacherDashboardOverview').then(module => ({ default: module.TeacherDashboardOverview }))));
@@ -81,8 +80,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
         isOnline, language,
         teacherWallet, teacherDarasaUsage, isAvailableForTutoring, toggleTutoringAvailability, fetchEarnings, requestWithdrawal,
         activeTutoringRequests, acceptTutoringRequest, submitTutoringResponse,
-        chatMessages, sendChatMessage, fetchChatMessages,
-        marketplaceMaterials, listMaterial
+        chatMessages, sendChatMessage, fetchChatMessages
     } = useApp();
     const baseTranslations = (translations as Record<string, any>).EN ?? Object.values(translations)[0] ?? {};
     const activeTranslations = (translations as Record<string, any>)[language] ?? baseTranslations;
@@ -139,6 +137,10 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
     });
     const [teacherNotice, setTeacherNotice] = useState<{ type: 'success' | 'error' | 'info'; text: string } | null>(null);
     const [activeTab, setActiveTab] = useState<TeacherActiveTab>(initialTab || 'DASHBOARD');
+
+    useEffect(() => {
+        if (activeTab === 'MARKETPLACE') navigate('/teacher/creator-studio');
+    }, [activeTab, navigate]);
     const [loading, setLoading] = useState(false);
     const [showWithdrawModal, setShowWithdrawModal] = useState(false);
     const [withdrawAmount, setWithdrawAmount] = useState('');
@@ -319,13 +321,6 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
     const [teacherChatInput, setTeacherChatInput] = useState('');
     const [teacherChatSending, setTeacherChatSending] = useState(false);
     const teacherChatEndRef = useRef<HTMLDivElement>(null);
-
-    // Phase 3: Marketplace Upload
-    const [listingTitle, setListingTitle] = useState("");
-    const [listingFileUrl, setListingFileUrl] = useState("");
-    const [listingPrice, setListingPrice] = useState(50);
-    const [listingCategory, setListingCategory] = useState<'NOTES' | 'REVISION_PAPER' | 'MARKING_SCHEME' | 'RECORDED_LESSON'>('NOTES');
-    const [showUploadPortal, setShowUploadPortal] = useState(false);
 
     // Recording
     const [isRecording, setIsRecording] = useState(false);
@@ -1225,17 +1220,6 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                     </motion.div>
                 )}
 
-                {launchFeatures.marketplace && activeTab === 'MARKETPLACE' && (
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                        <MarketplaceManager
-                            teacherProfile={teacherProfile}
-                            earnings={teacherWallet?.balance || 0}
-                            listings={marketplaceMaterials.filter(m => m.teacherId === teacherProfile?.id)}
-                            onPublishNew={() => setShowUploadPortal(true)}
-                        />
-                    </motion.div>
-                )}
-
                 {activeTab === 'CREATION_HUB' && (
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
                         <CreationHub selectedClass={selectedClass} selectedSubject={selectedSubject} onNavigateToTool={(tool) => setActiveTab(tool)} />
@@ -2107,175 +2091,6 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                         />
                     )
                 }
-
-                {/* Phase 3: Marketplace Upload Portal */}
-                <AnimatePresence>
-                    {showUploadPortal && (
-                        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-6 overflow-y-auto">
-                            <motion.div
-                                initial={{ opacity: 0, scale: 0.9, y: 20 }}
-                                animate={{ opacity: 1, scale: 1, y: 0 }}
-                                exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                                className="bg-white rounded-[2.5rem] w-full max-w-lg shadow-2xl relative overflow-hidden"
-                            >
-                                <div className="bg-blue-600 p-8 text-white relative overflow-hidden">
-                                    <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 blur-2xl"></div>
-                                    <button
-                                        onClick={() => setShowUploadPortal(false)}
-                                        className="absolute top-4 right-4 p-2 hover:bg-white/20 rounded-full transition-colors"
-                                    >
-                                        <X className="w-6 h-6" />
-                                    </button>
-                                    <div className="relative z-10 flex items-center gap-4 mb-2">
-                                        <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-md">
-                                            <Plus className="w-6 h-6" />
-                                        </div>
-                                        <div>
-                                            <h3 className="text-2xl font-black">List Material</h3>
-                                            <p className="text-blue-100 text-xs font-bold uppercase tracking-widest">Monetize your expertise</p>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="p-8 space-y-6">
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div className="space-y-2">
-                                            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Class/Grade</label>
-                                            <div className="bg-slate-50 p-4 rounded-2xl border-2 border-slate-100 font-bold text-slate-700 text-sm flex items-center gap-3">
-                                                <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center text-blue-600">
-                                                    <Layers className="w-4 h-4" />
-                                                </div>
-                                                {selectedClass}
-                                            </div>
-                                        </div>
-                                        <div className="space-y-2">
-                                            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Subject</label>
-                                            <div className="bg-slate-50 p-4 rounded-2xl border-2 border-slate-100 font-bold text-slate-700 text-sm flex items-center gap-3">
-                                                <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center text-blue-600">
-                                                    <BookOpen className="w-4 h-4" />
-                                                </div>
-                                                {selectedSubject}
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div className="space-y-2">
-                                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Material Title</label>
-                                        <div className="relative">
-                                            <input
-                                                type="text"
-                                                value={listingTitle}
-                                                onChange={(e) => setListingTitle(e.target.value)}
-                                                placeholder="e.g. Grade 4 Math Term 1 Revision Notes"
-                                                className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 pl-12 text-slate-700 font-bold focus:border-blue-500 focus:bg-white transition-all outline-none"
-                                            />
-                                            <Type className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-                                        </div>
-                                    </div>
-
-                                    <div className="space-y-2">
-                                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Material Link</label>
-                                        <div className="relative">
-                                            <input
-                                                type="url"
-                                                value={listingFileUrl}
-                                                onChange={(e) => setListingFileUrl(e.target.value)}
-                                                placeholder="Paste a real material link"
-                                                className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 pl-12 text-slate-700 font-bold focus:border-blue-500 focus:bg-white transition-all outline-none"
-                                            />
-                                            <FileText className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-                                        </div>
-                                    </div>
-
-                                    <div className="space-y-2">
-                                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Category</label>
-                                        <div className="relative">
-                                            <select
-                                                value={listingCategory}
-                                                onChange={(e) => setListingCategory(e.target.value as any)}
-                                                className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 pl-12 text-slate-700 font-bold focus:border-blue-500 focus:bg-white transition-all outline-none appearance-none"
-                                            >
-                                                <option value="NOTES">Lesson Notes</option>
-                                                <option value="REVISION_PAPER">Revision Paper</option>
-                                                <option value="MARKING_SCHEME">Marking Scheme</option>
-                                                <option value="RECORDED_LESSON">Recorded Lesson</option>
-                                            </select>
-                                            <ClipboardList className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-                                            <ChevronRight className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 rotate-90" />
-                                        </div>
-                                    </div>
-
-                                    <div className="space-y-2">
-                                        <div className="flex justify-between items-center bg-blue-50 px-4 py-2 rounded-xl border border-blue-100 mb-4">
-                                            <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest">Pricing</span>
-                                            <span className="text-sm font-black text-blue-700">KES {listingPrice}</span>
-                                        </div>
-                                        <input
-                                            type="range"
-                                            min="50"
-                                            max="1000"
-                                            step="50"
-                                            value={listingPrice}
-                                            onChange={(e) => setListingPrice(parseInt(e.target.value))}
-                                            className="w-full h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-blue-600"
-                                        />
-                                        <div className="flex justify-center mt-2">
-                                            <span className="text-slate-400 text-[10px] font-bold uppercase tracking-widest">Recommended: KES 150 - 300</span>
-                                        </div>
-                                    </div>
-
-                                    <div className="pt-2">
-                                        <Button
-                                            fullWidth
-                                            className="bg-blue-600 hover:bg-blue-700 text-white shadow-xl shadow-blue-100 py-4 text-lg"
-                                            onClick={async () => {
-                                                if (!listingTitle.trim()) {
-                                                    showTeacherNotice('error', "Please enter a material title.");
-                                                    return;
-                                                }
-                                                if (!teacherProfile) {
-                                                    showTeacherNotice('error', "Please log in as a teacher before listing material.");
-                                                    return;
-                                                }
-                                                const fileUrl = listingFileUrl.trim();
-                                                if (!/^https?:\/\/\S+$/i.test(fileUrl)) {
-                                                    showTeacherNotice('error', "Please paste a valid material link.");
-                                                    return;
-                                                }
-                                                setLoading(true);
-                                                const res = await listMaterial({
-                                                    teacherId: teacherProfile.id,
-                                                    teacherName: teacherProfile.name,
-                                                    title: listingTitle,
-                                                    description: `${listingCategory.toLowerCase()} for ${selectedClass} ${selectedSubject}.`,
-                                                    price: listingPrice,
-                                                    grade: selectedClass,
-                                                    subject: selectedSubject,
-                                                    category: listingCategory,
-                                                    fileUrl
-                                                });
-                                                setLoading(false);
-                                                if (res.success) {
-                                                    setListingTitle("");
-                                                    setListingFileUrl("");
-                                                    setShowUploadPortal(false);
-                                                    setListingPrice(50);
-                                                    setListingCategory('NOTES');
-                                                    showTeacherNotice('success', "Material listed in the marketplace.");
-                                                } else {
-                                                    showTeacherNotice('error', res.message || "Could not list material. Please try again.");
-                                                }
-                                            }}
-                                        >
-                                            Create Listing
-                                        </Button>
-                                        <p className="text-center text-slate-400 text-[10px] mt-4 font-bold uppercase tracking-widest">This will be visible to all students in your grade</p>
-                                    </div>
-                                </div>
-                            </motion.div>
-                        </div>
-                    )}
-                </AnimatePresence>
 
                 <LogoutModal
                     isOpen={showLogoutModal}
