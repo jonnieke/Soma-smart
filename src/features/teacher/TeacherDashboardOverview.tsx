@@ -166,57 +166,57 @@ export const TeacherDashboardOverview: React.FC<TeacherDashboardOverviewProps> =
 
   const primaryHubCards = [
     {
-      title: 'Exam Paper Generator',
-      subtitle: 'Soma Paper Studio',
-      desc: 'Create CBC, KCSE & KPSEA exam papers with instant KNEC marking schemes.',
+      title: 'Teach',
+      subtitle: 'Create quickly',
+      desc: 'Draft lesson notes, schemes, and starter quizzes without digging through menus.',
       route: '/teacher/paper-studio',
-      badge: 'Popular',
-      badgeBg: 'bg-indigo-100 text-indigo-700 border-indigo-200',
-      icon: <FileText className="w-6 h-6 text-indigo-600" />,
-      btnText: 'Open Paper Studio',
-      btnBg: 'bg-indigo-600 hover:bg-indigo-700 text-white',
-    },
-    {
-      title: 'CBC Schemes & Lesson Maker',
-      subtitle: 'Lesson Creation Studio',
-      desc: 'Generate complete KICD-compliant schemes of work and structured lesson plans.',
-      tab: 'CREATION_HUB' as TeacherDashboardTab,
-      badge: 'CBC / CBE',
-      badgeBg: 'bg-emerald-100 text-emerald-700 border-emerald-200',
-      icon: <Sparkles className="w-6 h-6 text-emerald-600" />,
-      btnText: 'Launch Lesson Maker',
+      badge: 'Start here',
+      badgeBg: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+      icon: <FileText className="w-6 h-6 text-emerald-600" />,
+      btnText: 'Open teaching tools',
       btnBg: 'bg-emerald-600 hover:bg-emerald-700 text-white',
     },
     {
-      title: 'Darasa Mode & Marking',
-      subtitle: 'Classroom & Assessment',
-      desc: 'Live board teaching mode, voice recaps, and automated assignment marking.',
+      title: 'Share',
+      subtitle: 'Post to class',
+      desc: 'Send notes, recaps, and homework to learners in one clear action.',
       tab: 'DARASA_MODE' as TeacherDashboardTab,
-      badge: 'Interactive',
-      badgeBg: 'bg-purple-100 text-purple-700 border-purple-200',
-      icon: <CheckCircle2 className="w-6 h-6 text-purple-600" />,
-      btnText: 'Open Darasa Mode',
-      btnBg: 'bg-purple-600 hover:bg-purple-700 text-white',
+      badge: 'Fast share',
+      badgeBg: 'bg-sky-50 text-sky-700 border-sky-200',
+      icon: <Sparkles className="w-6 h-6 text-sky-600" />,
+      btnText: 'Open class sharing',
+      btnBg: 'bg-sky-600 hover:bg-sky-700 text-white',
     },
     {
-      title: 'Syllabus Tracker',
-      subtitle: 'Curriculum Progress',
-      desc: 'Track KICD topic progress, term milestones, and student mastery.',
+      title: 'Track',
+      subtitle: 'See progress',
+      desc: 'Check syllabus coverage, activity, and recent learner requests at a glance.',
       tab: 'SYLLABUS_TRACKER' as TeacherDashboardTab,
-      badge: 'KICD Aligned',
-      badgeBg: 'bg-amber-100 text-amber-700 border-amber-200',
+      badge: 'Stay informed',
+      badgeBg: 'bg-amber-50 text-amber-700 border-amber-200',
       icon: <BookOpen className="w-6 h-6 text-amber-600" />,
-      btnText: 'View Syllabus',
-      btnBg: 'bg-amber-600 hover:bg-amber-700 text-white',
+      btnText: 'Open progress view',
+      btnBg: 'bg-amber-500 hover:bg-amber-600 text-white',
+    },
+    {
+      title: 'Earn',
+      subtitle: 'Monetize content',
+      desc: 'Manage paid materials and earnings without a complicated creator setup.',
+      route: '/teacher/creator-studio',
+      badge: 'Optional',
+      badgeBg: 'bg-violet-50 text-violet-700 border-violet-200',
+      icon: <Library className="w-6 h-6 text-violet-600" />,
+      btnText: 'Open earnings',
+      btnBg: 'bg-violet-600 hover:bg-violet-700 text-white',
     },
   ];
 
   const secondaryQuickTools = [
-    { title: 'Lesson Notes', tab: 'CONVERT' as TeacherDashboardTab, icon: <FileText className="w-4 h-4 text-emerald-600" /> },
-    { title: 'Lesson Plan', tab: 'LESSON_PLAN_GENERATOR' as TeacherDashboardTab, icon: <BookOpen className="w-4 h-4 text-indigo-600" /> },
-    { title: 'Scheme of Work', tab: 'SCHEMES' as TeacherDashboardTab, icon: <ClipboardList className="w-4 h-4 text-amber-600" /> },
-    { title: 'Homework Draft', tab: 'HOMEWORK' as TeacherDashboardTab, icon: <Target className="w-4 h-4 text-rose-600" /> },
-    { title: 'Auto-Marking', tab: 'MARKING' as TeacherDashboardTab, icon: <CheckCircle2 className="w-4 h-4 text-purple-600" /> },
+    { title: 'Notes', tab: 'CONVERT' as TeacherDashboardTab, icon: <FileText className="w-4 h-4 text-emerald-600" /> },
+    { title: 'Plans', tab: 'LESSON_PLAN_GENERATOR' as TeacherDashboardTab, icon: <BookOpen className="w-4 h-4 text-indigo-600" /> },
+    { title: 'Scheme', tab: 'SCHEMES' as TeacherDashboardTab, icon: <ClipboardList className="w-4 h-4 text-amber-600" /> },
+    { title: 'Homework', tab: 'HOMEWORK' as TeacherDashboardTab, icon: <Target className="w-4 h-4 text-rose-600" /> },
+    { title: 'Marking', tab: 'MARKING' as TeacherDashboardTab, icon: <CheckCircle2 className="w-4 h-4 text-violet-600" /> },
   ];
 
   const teachingLoop = [
@@ -269,7 +269,7 @@ export const TeacherDashboardOverview: React.FC<TeacherDashboardOverviewProps> =
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
       {/* --- CLASSROOM CONTEXT & COMMAND BAR --- */}
-      <section className="bg-gradient-to-r from-emerald-900 via-slate-900 to-indigo-950 text-white rounded-3xl p-6 sm:p-8 shadow-xl border border-emerald-800/50 relative overflow-hidden">
+      <section className="bg-white text-slate-900 rounded-[2rem] p-6 sm:p-8 shadow-sm border border-slate-200 relative overflow-hidden">
         <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
 
         <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
@@ -277,28 +277,28 @@ export const TeacherDashboardOverview: React.FC<TeacherDashboardOverviewProps> =
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-black uppercase tracking-wider border border-emerald-500/30">
               <GraduationCap className="w-3.5 h-3.5 text-emerald-400" /> Educator Command Desk
             </div>
-            <h1 className="text-2xl sm:text-4xl font-black text-white tracking-tight">
+            <h1 className="text-2xl sm:text-4xl font-black text-slate-900 tracking-tight">
               Welcome back, {teacherProfile?.name?.split(' ')[0] || 'Mwalimu'}
             </h1>
-            <p className="text-slate-300 text-sm font-medium max-w-2xl leading-relaxed">
-              Select your class and subject below to unlock tailored KICD lesson notes, exam blueprints, automated marking, and syllabus tracking.
+            <p className="text-slate-600 text-sm font-medium max-w-2xl leading-relaxed">
+              Keep the day simple: pick a class and subject, create what you need, share it to learners, then check progress when you return.
             </p>
           </div>
 
           {/* Context Selector Pill Container */}
-          <div className="bg-white/10 backdrop-blur-md p-4 rounded-2xl border border-white/15 space-y-3 shrink-0 lg:w-80">
-            <p className="text-[11px] font-black uppercase tracking-wider text-emerald-300">Active Classroom Context</p>
+          <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-3 shrink-0 lg:w-80">
+            <p className="text-[11px] font-black uppercase tracking-wider text-emerald-700">Class + subject</p>
             <div className="grid grid-cols-2 gap-2">
               <label className="block">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-300 mb-1 block">Class</span>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1 block">Class</span>
                 <select
                   value={selectedClass}
                   onChange={(e) => onClassChange(e.target.value)}
-                  className="w-full rounded-xl bg-slate-900/80 border border-white/20 px-3 py-2 text-xs font-bold text-white focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                  className="w-full rounded-xl bg-white border border-slate-200 px-3 py-2 text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-400"
                 >
                   <option value="">Select Class</option>
                   {availableClasses.map((item) => (
-                    <option key={item} value={item} className="bg-slate-900 text-white">
+                    <option key={item} value={item} className="bg-white text-slate-900">
                       {item}
                     </option>
                   ))}
@@ -306,15 +306,15 @@ export const TeacherDashboardOverview: React.FC<TeacherDashboardOverviewProps> =
               </label>
 
               <label className="block">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-300 mb-1 block">Subject</span>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1 block">Subject</span>
                 <select
                   value={selectedSubject}
                   onChange={(e) => onSubjectChange(e.target.value)}
-                  className="w-full rounded-xl bg-slate-900/80 border border-white/20 px-3 py-2 text-xs font-bold text-white focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                  className="w-full rounded-xl bg-white border border-slate-200 px-3 py-2 text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-400"
                 >
                   <option value="">Select Subject</option>
                   {availableSubjects.map((item) => (
-                    <option key={item} value={item} className="bg-slate-900 text-white">
+                    <option key={item} value={item} className="bg-white text-slate-900">
                       {item}
                     </option>
                   ))}
@@ -322,9 +322,9 @@ export const TeacherDashboardOverview: React.FC<TeacherDashboardOverviewProps> =
               </label>
             </div>
             {walletBalance !== null && (
-              <div className="flex items-center justify-between pt-1 border-t border-white/10 text-xs font-bold text-slate-300">
+              <div className="flex items-center justify-between pt-1 border-t border-slate-200 text-xs font-bold text-slate-600">
                 <span>Wallet Balance</span>
-                <span className="text-emerald-400">KES {walletBalance.toFixed(0)}</span>
+                <span className="text-emerald-600">KES {walletBalance.toFixed(0)}</span>
               </div>
             )}
           </div>
@@ -332,16 +332,16 @@ export const TeacherDashboardOverview: React.FC<TeacherDashboardOverviewProps> =
 
         {/* Quick Signals / Alerts */}
         {showQuickStart && (
-          <div className="mt-6 rounded-2xl bg-emerald-900/60 border border-emerald-500/40 p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="mt-6 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <Zap className="w-5 h-5 text-amber-400 shrink-0" />
-              <p className="text-xs font-medium text-emerald-100">
-                <strong className="text-white">Quick Start:</strong> Select a Class &amp; Subject above, then click <strong>Paper Studio</strong> or <strong>Lesson Maker</strong> below.
+              <p className="text-xs font-medium text-emerald-900">
+                <strong className="text-slate-900">Quick Start:</strong> Select a Class &amp; Subject above, then click <strong>Paper Studio</strong> or <strong>Lesson Maker</strong> below.
               </p>
             </div>
             <button
               onClick={onDismissQuickStart}
-              className="px-3 py-1 bg-white/10 hover:bg-white/20 rounded-xl text-xs font-bold text-white transition-colors shrink-0"
+              className="px-3 py-1 bg-white/10 hover:bg-white/20 rounded-xl text-xs font-bold text-slate-900 transition-colors shrink-0"
             >
               Dismiss
             </button>
@@ -349,10 +349,10 @@ export const TeacherDashboardOverview: React.FC<TeacherDashboardOverviewProps> =
         )}
 
         {workflowStepSignal && (
-          <div className="mt-4 rounded-2xl bg-indigo-900/60 border border-indigo-500/40 p-4 flex items-center justify-between gap-3">
-            <p className="text-xs font-medium text-indigo-100">{workflowStepSignal.message}</p>
+          <div className="mt-4 rounded-2xl border border-indigo-200 bg-indigo-50 p-4 flex items-center justify-between gap-3">
+            <p className="text-xs font-medium text-indigo-900">{workflowStepSignal.message}</p>
             {onResetWorkflowProgress && (
-              <button onClick={onResetWorkflowProgress} className="px-3 py-1 bg-white/10 rounded-xl text-xs font-bold text-white hover:bg-white/20">
+              <button onClick={onResetWorkflowProgress} className="px-3 py-1 bg-white/10 rounded-xl text-xs font-bold text-slate-900 hover:bg-white/20">
                 Reset
               </button>
             )}
@@ -398,13 +398,13 @@ export const TeacherDashboardOverview: React.FC<TeacherDashboardOverviewProps> =
       </section>
 
       {/* --- QUICK ACTION TOOL STRIP --- */}
-      <section className="bg-slate-100 dark:bg-slate-800/50 rounded-2xl p-3 flex items-center gap-2 overflow-x-auto border border-slate-200/80">
-        <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 shrink-0 px-2">Quick Tools:</span>
+      <section className="bg-white rounded-2xl p-3 flex items-center gap-2 overflow-x-auto border border-slate-200 shadow-sm">
+        <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 shrink-0 px-2">Quick actions:</span>
         {secondaryQuickTools.map((tool) => (
           <button
             key={tool.title}
             onClick={() => nav(tool.tab)}
-            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white dark:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-emerald-50 hover:text-emerald-700 border border-slate-200/60 shadow-sm transition-colors shrink-0"
+            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-50 text-xs font-bold text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 border border-slate-200 shadow-sm transition-colors shrink-0"
           >
             {tool.icon}
             <span>{tool.title}</span>
@@ -432,7 +432,7 @@ export const TeacherDashboardOverview: React.FC<TeacherDashboardOverviewProps> =
               : 'border-transparent text-slate-500 hover:text-slate-800'
           }`}
         >
-          Syllabus Tracker
+          Syllabus
         </button>
         <button
           onClick={() => setActiveOverviewTab('ANALYTICS')}
@@ -442,7 +442,7 @@ export const TeacherDashboardOverview: React.FC<TeacherDashboardOverviewProps> =
               : 'border-transparent text-slate-500 hover:text-slate-800'
           }`}
         >
-          Analytics &amp; Recent Activity
+          Activity
         </button>
       </div>
 
@@ -452,11 +452,11 @@ export const TeacherDashboardOverview: React.FC<TeacherDashboardOverviewProps> =
           {/* Left Column: Teaching Loop & Intervention */}
           <div className="lg:col-span-2 space-y-6">
             {/* Teaching Loop Status */}
-            <section className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm space-y-5">
+            <section className="bg-white rounded-[1.75rem] border border-slate-200 p-6 shadow-sm space-y-5">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">Classroom Workflow</p>
-                  <h3 className="text-lg font-black text-slate-900">Active Teaching Loop</h3>
+                  <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">Today's focus</p>
+                  <h3 className="text-lg font-black text-slate-900">Simple teaching loop</h3>
                 </div>
                 <span className="px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-black border border-emerald-200">
                   {loopPercent}% Complete
@@ -489,10 +489,10 @@ export const TeacherDashboardOverview: React.FC<TeacherDashboardOverviewProps> =
             </section>
 
             {/* Recommended Intervention Card */}
-            <section className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm space-y-4">
+            <section className="bg-white rounded-[1.75rem] border border-slate-200 p-6 shadow-sm space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-[10px] font-black uppercase tracking-wider text-indigo-600">Smart Recommendation</p>
+                  <p className="text-[10px] font-black uppercase tracking-wider text-indigo-600">Recommended next move</p>
                   <h3 className="text-lg font-black text-slate-900">{intervention.title}</h3>
                 </div>
                 <button
@@ -534,11 +534,11 @@ export const TeacherDashboardOverview: React.FC<TeacherDashboardOverviewProps> =
           {/* Right Column: Classroom Follow-Ups & Quick Tools */}
           <div className="space-y-6">
             {/* Student Requests */}
-            <section className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm space-y-4">
+            <section className="bg-white rounded-[1.75rem] border border-slate-200 p-6 shadow-sm space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">Classroom Requests</p>
-                  <h3 className="text-base font-black text-slate-900">Student Follow-up</h3>
+                  <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">Learner follow-up</p>
+                  <h3 className="text-base font-black text-slate-900">Open requests</h3>
                 </div>
                 <span className="px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700 text-xs font-bold">
                   {pendingResponses} Open
@@ -573,11 +573,11 @@ export const TeacherDashboardOverview: React.FC<TeacherDashboardOverviewProps> =
             </section>
 
             {/* Recent Creations Quick List */}
-            <section className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm space-y-4">
+            <section className="bg-white rounded-[1.75rem] border border-slate-200 p-6 shadow-sm space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">Recent Materials</p>
-                  <h3 className="text-base font-black text-slate-900">Pick Up Work</h3>
+                  <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">Recent work</p>
+                  <h3 className="text-base font-black text-slate-900">Pick up where you left off</h3>
                 </div>
                 <button onClick={() => nav('LIBRARY')} className="text-xs font-bold text-emerald-600 hover:text-emerald-700">
                   View All
@@ -614,7 +614,7 @@ export const TeacherDashboardOverview: React.FC<TeacherDashboardOverviewProps> =
 
       {/* --- TAB 2: SYLLABUS TRACKER --- */}
       {activeOverviewTab === 'SYLLABUS' && (
-        <section className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm">
+        <section className="bg-white rounded-[1.75rem] border border-slate-200 p-6 shadow-sm">
           <SyllabusTracker teacherId={teacherId} selectedClass={selectedClass} selectedSubject={selectedSubject} onNavigate={nav} />
         </section>
       )}
@@ -622,7 +622,7 @@ export const TeacherDashboardOverview: React.FC<TeacherDashboardOverviewProps> =
       {/* --- TAB 3: ANALYTICS & ACTIVITY --- */}
       {activeOverviewTab === 'ANALYTICS' && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <section className="lg:col-span-2 bg-white rounded-3xl border border-slate-200 p-6 shadow-sm space-y-4">
+          <section className="lg:col-span-2 bg-white rounded-[1.75rem] border border-slate-200 p-6 shadow-sm space-y-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">Teacher Workflow</p>
@@ -668,10 +668,10 @@ export const TeacherDashboardOverview: React.FC<TeacherDashboardOverviewProps> =
           </section>
 
           {/* Desk Health Summary */}
-          <section className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm space-y-4">
+          <section className="bg-white rounded-[1.75rem] border border-slate-200 p-6 shadow-sm space-y-4">
             <div>
-              <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">Desk Metrics</p>
-              <h3 className="text-base font-black text-slate-900">Resource Health</h3>
+              <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">Desk health</p>
+              <h3 className="text-base font-black text-slate-900">Simple counts</h3>
             </div>
 
             <div className="space-y-3">
