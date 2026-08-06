@@ -284,7 +284,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
         setDetailedLimitReached(false);
         try {
             const text = await callGeminiProxy(
-                `Answer this academic question in exactly 1 precise sentence. No markdown, no formatting. Use correct curriculum terminology relevant to the Kenyan KCSE/CBC syllabus. State only the essential result or definition â€” no explanation of method. Question: ${questionInput}`
+                `Answer this academic question in exactly 1 precise sentence. No markdown, no formatting. Use correct curriculum terminology relevant to the Kenyan KCSE/CBC syllabus. State only the essential result or definition — no extra detail. Question: ${questionInput}`
             );
             setGeneratedAnswer(text || 'I analysed this but could not generate a summary.');
             trackFunnelEvent('learner_answer_generated', {
@@ -339,7 +339,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
         setIsGeneratingDetailed(true);
         try {
             const text = await callGeminiProxy(
-                `Provide a learner-friendly direct answer in short bullet points for the following question, aligned to the Kenyan CBC/KPSEA/KCSE curriculum. Lead with the direct answer first. Then add only the key points a learner needs to revise. Avoid step-by-step explanation and avoid paragraph blocks. Use these sections only if helpful: Direct answer, Key points, Example, Exam tip. Keep every bullet clear, short, and learner-ready. Do not use markdown bold. Question: ${activeQuestion}`
+                `Provide a learner-friendly direct answer in short bullet points for the following question, aligned to the Kenyan CBC/KPSEA/KCSE curriculum. Lead with the direct answer first. Then add only the key points a learner needs to revise. Avoid long tutoring text and avoid paragraph blocks. Use these sections only if helpful: Direct answer, Key points, Example, Exam tip. Keep every bullet clear, short, and learner-ready. Do not use markdown bold. Question: ${activeQuestion}`
             );
             const cleaned = (text || '')
                 .replace(/\*\*(.*?)\*\*/g, '$1')
@@ -347,7 +347,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                 .replace(/^#{1,6}\s*/gm, '')
                 .replace(/\*(.*?)\*/g, '$1')
                 .replace(/\*/g, '');
-            setDetailedAnswer(cleaned || 'Unable to generate explanation.');
+            setDetailedAnswer(cleaned || 'Unable to generate answer.');
             trackFunnelEvent('detailed_view_opened', { source: 'landing_hero', uses_left: Math.max(0, 5 - (count + 1)) });
         } catch (err: any) {
             const code = err?.message ?? '';
@@ -1594,7 +1594,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                     Meet your powerful new Exam Assistant.
                                 </h2>
                                 <p className="text-slate-300 text-lg md:text-xl font-medium max-w-2xl leading-relaxed">
-                                    Practice with past papers, get examiner-style explanations, repair weak topics, and build confidence before KCSE, KPSEA, and school exams.
+                                    Practice with past papers, get clear answers, repair weak topics, and build confidence before KCSE, KPSEA, and school exams.
                                 </p>
                             </div>
 
@@ -1629,7 +1629,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                         {[
                             {
-                                quote: "I used to fail Chemistry consistently. After using Somo Smart for two weeks before my mid-term, I got a B+. The step-by-step mole calculations finally made sense.",
+                                quote: "I used to fail Chemistry consistently. After using Somo Smart for two weeks before my mid-term, I got a B+. The mole calculations finally made sense.",
                                 name: "Kevin M.",
                                 tag: "Form 3",
                                 emoji: "C",
@@ -1697,7 +1697,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                             <Sparkles className="w-4 h-4" /> Zero Friction
                         </div>
                         <h2 className="text-3xl md:text-5xl font-bold text-slate-900 dark:text-white mb-6 tracking-tight">Learning Made <span className="text-blue-600 dark:text-blue-400">Simple</span></h2>
-                        <p className="text-slate-600 dark:text-slate-400 text-lg font-medium max-w-2xl mx-auto">Move from confusion to practice in four steps: ask, understand, test yourself, then track progress.</p>
+                        <p className="text-slate-600 dark:text-slate-400 text-lg font-medium max-w-2xl mx-auto">Move from confusion to practice in four steps: ask, answer, test yourself, then track progress.</p>
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 relative z-10">
@@ -1715,8 +1715,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                             <div className="w-14 h-14 bg-purple-50 dark:bg-purple-900/40 text-purple-600 dark:text-purple-400 rounded-xl flex items-center justify-center mb-6">
                                 <MessageSquare className="w-7 h-7" />
                             </div>
-                            <h3 className="font-bold text-slate-900 dark:text-white text-lg mb-3">Akili Explains</h3>
-                            <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">Ask Akili breaks the problem into plain steps and checks whether you understand the method.</p>
+                            <h3 className="font-bold text-slate-900 dark:text-white text-lg mb-3">Akili Answers</h3>
+                            <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">Ask Akili gives a direct answer and checks whether you understand it.</p>
                         </div>
 
                         {/* Step 3 */}
@@ -1724,8 +1724,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                             <div className="w-14 h-14 bg-emerald-50 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 rounded-xl flex items-center justify-center mb-6">
                                 <CheckSquare className="w-7 h-7" />
                             </div>
-                            <h3 className="font-bold text-slate-900 dark:text-white text-lg mb-3">Practice the Idea</h3>
-                            <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">Turn the explanation into short drills so you learn the method, not just the answer.</p>
+                            <h3 className="font-bold text-slate-900 dark:text-white text-lg mb-3">Test Yourself</h3>
+                            <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">Turn the answer into short drills so you learn the idea, not just the final result.</p>
                         </div>
 
                         {/* Step 4 */}
@@ -1772,7 +1772,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                 <MessageSquare className="w-6 h-6" />
                             </div>
                             <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-3">Darasa Mode (No More Missed Notes)</h3>
-                            <p className="text-slate-600 dark:text-slate-400 leading-relaxed font-medium max-w-xl">Capture live teaching automatically with real-time transcription and topic summaries, so learners stop missing key points and teachers stop repeating the same explanations.</p>
+                            <p className="text-slate-600 dark:text-slate-400 leading-relaxed font-medium max-w-xl">Capture live teaching automatically with real-time transcription and topic summaries, so learners stop missing key points and teachers stop repeating the same lesson points.</p>
                         </div>
 
                         {/* 2. Vertical Feature: Marking Manager */}
@@ -1790,7 +1790,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                 <BookOpen className="w-6 h-6" />
                             </div>
                             <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">Powerful Examination Assistant</h3>
-                            <p className="text-slate-600 dark:text-slate-400 text-sm font-medium">Generate CBE-aligned lesson plans, access verified KCSE and KPSEA past papers, and get direct answers and learner-friendly revision support instantly.</p>
+                            <p className="text-slate-600 dark:text-slate-400 text-sm font-medium">Generate CBE-aligned lesson plans, access verified KCSE and KPSEA past papers, and get direct answers and revision support instantly.</p>
                         </div>
 
                         {/* 4. Horizontal Feature 2: Analytics Span 2 */}
@@ -2577,7 +2577,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                             <h3 className="text-lg font-bold text-slate-900 mb-2">2. How We Use Your Data</h3>
                             <p>All data is used strictly to provide the educational service:</p>
                             <ul className="list-disc pl-5 space-y-1 mt-2">
-                                <li>To generate Smart explanations relevant to your grade level.</li>
+                                <li>To generate Smart answers relevant to your grade level.</li>
                                 <li>To track learning progress for Parents and Teachers.</li>
                                 <li>To improve the accuracy of our educational content.</li>
                             </ul>
@@ -2689,6 +2689,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
         </div>
     );
 };
+
+
+
+
 
 
 
