@@ -150,24 +150,55 @@ ALTER TABLE withdrawal_requests ENABLE ROW LEVEL SECURITY;
 ALTER TABLE districts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE district_audit_events ENABLE ROW LEVEL SECURITY;
 
+-- Central membership check. SECURITY DEFINER avoids recursive RLS evaluation on school_memberships.
+CREATE OR REPLACE FUNCTION public.is_active_school_member(
+  p_school_id TEXT,
+  p_required_roles TEXT[] DEFAULT NULL
+) RETURNS BOOLEAN
+LANGUAGE SQL
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT EXISTS (
+    SELECT 1
+    FROM public.school_memberships membership
+    WHERE membership.school_id::TEXT = p_school_id
+      AND membership.user_id = auth.uid()
+      AND membership.status = 'active'
+      AND (
+        p_required_roles IS NULL
+        OR membership.roles && p_required_roles
+      )
+  );
+$$;
+
+REVOKE ALL ON FUNCTION public.is_active_school_member(TEXT, TEXT[]) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.is_active_school_member(TEXT, TEXT[]) TO authenticated;
+
 -- Allow school admins to view own subscriptions
+DROP POLICY IF EXISTS "school_admins_view_own_subscriptions" ON school_subscriptions;
 CREATE POLICY "school_admins_view_own_subscriptions"
   ON school_subscriptions FOR SELECT
-  USING (auth.uid()::text = school_id OR auth.uid()::text IN (
-    SELECT user_id FROM school_members WHERE school_id = school_subscriptions.school_id AND role IN ('OWNER', 'ADMIN')
-  ));
+  USING (
+    auth.uid()::text = school_id
+    OR public.is_active_school_member(school_id, ARRAY['OWNER', 'ADMIN']::TEXT[])
+  );
 
 -- Allow sellers to view own listings and all approved listings
+DROP POLICY IF EXISTS "sellers_view_own_or_approved_listings" ON marketplace_listings;
 CREATE POLICY "sellers_view_own_or_approved_listings"
   ON marketplace_listings FOR SELECT
   USING (moderation_status = 'APPROVED' OR auth.uid()::text = seller_id);
 
 -- Allow sellers to manage own wallet
+DROP POLICY IF EXISTS "sellers_manage_own_wallet" ON seller_wallets;
 CREATE POLICY "sellers_manage_own_wallet"
   ON seller_wallets FOR ALL
   USING (auth.uid()::text = seller_id);
 
 -- Allow sellers to view own purchases and withdrawals
+DROP POLICY IF EXISTS "sellers_view_own_withdrawals" ON withdrawal_requests;
 CREATE POLICY "sellers_view_own_withdrawals"
   ON withdrawal_requests FOR SELECT
   USING (auth.uid()::text = seller_id);

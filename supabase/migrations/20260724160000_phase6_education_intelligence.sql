@@ -112,4 +112,4 @@ ALTER TABLE question_quality_profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE benchmark_snapshots ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "learners_view_own_progress" ON learner_progress_signals FOR SELECT USING (auth.uid()::text = learner_id);
-CREATE POLICY "teachers_manage_interventions" ON intervention_groups FOR ALL USING (auth.uid()::text = teacher_id OR auth.uid()::text IN (SELECT user_id FROM school_members WHERE school_id = intervention_groups.school_id));
+CREATE POLICY "teachers_manage_interventions" ON intervention_groups FOR ALL USING (auth.uid()::text = teacher_id OR public.is_active_school_member(intervention_groups.school_id));

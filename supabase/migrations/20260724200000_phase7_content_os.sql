@@ -114,4 +114,4 @@ ALTER TABLE publisher_profiles ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "public_view_active_curriculum" ON curriculum_frameworks FOR SELECT USING (status = 'active');
 CREATE POLICY "public_view_curriculum_nodes" ON curriculum_nodes FOR SELECT USING (status = 'active');
-CREATE POLICY "teachers_manage_own_resources" ON educational_resources FOR ALL USING (auth.uid()::text = owner_id OR school_id IN (SELECT school_id FROM school_members WHERE user_id = auth.uid()::text));
+CREATE POLICY "teachers_manage_own_resources" ON educational_resources FOR ALL USING (auth.uid()::text = owner_id OR public.is_active_school_member(school_id));

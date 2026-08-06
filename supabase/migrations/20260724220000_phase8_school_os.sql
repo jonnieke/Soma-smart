@@ -110,4 +110,4 @@ ALTER TABLE learner_guardian_links ENABLE ROW LEVEL SECURITY;
 ALTER TABLE school_invoices ENABLE ROW LEVEL SECURITY;
 ALTER TABLE school_support_requests ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "tenants_view_own_data" ON tenants FOR SELECT USING (id IN (SELECT tenant_id FROM school_members WHERE user_id = auth.uid()::text));
+CREATE POLICY "tenants_view_own_data" ON tenants FOR SELECT USING (public.is_active_school_member(id));

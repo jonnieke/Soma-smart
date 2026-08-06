@@ -150,5 +150,5 @@ CREATE POLICY "learners_view_own_attempts" ON assessment_attempts FOR SELECT USI
 CREATE POLICY "learners_view_own_mastery" ON learner_mastery FOR SELECT USING (auth.uid()::text = learner_id);
 
 -- Teacher policies
-CREATE POLICY "teachers_manage_own_assignments" ON assessment_assignments FOR ALL USING (auth.uid()::text = teacher_id OR auth.uid()::text IN (SELECT user_id FROM school_members WHERE school_id = assessment_assignments.school_id));
+CREATE POLICY "teachers_manage_own_assignments" ON assessment_assignments FOR ALL USING (auth.uid()::text = teacher_id OR public.is_active_school_member(assessment_assignments.school_id));
 CREATE POLICY "teachers_manage_assigned_attempts" ON assessment_attempts FOR ALL USING (TRUE);
