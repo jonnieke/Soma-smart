@@ -339,7 +339,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
         setIsGeneratingDetailed(true);
         try {
             const text = await callGeminiProxy(
-                `Provide a learner-friendly point-form answer guide for the following question, aligned to the Kenyan CBC/KPSEA/KCSE curriculum. Avoid a paragraph block. Use short headings and bullet points only: Direct answer, Key points, Working or reason, Example, Exam tip. Be detailed enough for a learner to revise from, but keep each bullet clear and short. Do not use markdown bold. Question: ${activeQuestion}`
+                `Provide a learner-friendly direct answer in point form for the following question, aligned to the Kenyan CBC/KPSEA/KCSE curriculum. Avoid a paragraph block. Use short headings and bullet points only: Direct answer, Key points, Working or reason, Example, Exam tip. Be detailed enough for a learner to revise from, but keep each bullet clear and short. Do not use markdown bold. Question: ${activeQuestion}`
             );
             const cleaned = (text || '')
                 .replace(/\*\*(.*?)\*\*/g, '$1')
@@ -354,7 +354,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
             if (code === 'GUEST_LIMIT_REACHED' || code === 'PLAN_LIMIT_REACHED' || code === 'FEATURE_LIMIT_REACHED') {
                 setDetailedLimitReached(true);
             } else if (code === 'RATE_LIMIT') {
-                setDetailedAnswer('High demand right now ï¿½ please close and try again in a few seconds.');
+                setDetailedAnswer('High demand right now — please close and try again in a few seconds.');
             } else if (err instanceof TypeError) {
                 setDetailedAnswer('No connection. Please check your internet and try again.');
             } else {

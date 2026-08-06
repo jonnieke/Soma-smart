@@ -833,7 +833,7 @@ const AskAkiliDemo: React.FC<Props> = (props) => {
           />
           <h2 className="text-lg font-black">Ask Akili</h2>
         </div>
-        <span className="text-sm font-bold text-blue-100">Step-by-step answer</span>
+        <span className="text-sm font-bold text-blue-100">Point-form answer</span>
       </div>
       <div className="space-y-3 p-4">
         <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-400 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100">
@@ -918,7 +918,7 @@ const AskAkiliDemo: React.FC<Props> = (props) => {
             <span className="flex items-center gap-2 text-xs font-black">
               <ListChecks className="h-4 w-4 text-blue-600" /> Explain it
             </span>
-            <span className="text-[11px] font-semibold leading-4 text-slate-500">Show 3 photosynthesis steps</span>
+            <span className="text-[11px] font-semibold leading-4 text-slate-500">Show a short photosynthesis answer</span>
           </button>
           <button
             onClick={() => {
@@ -956,7 +956,7 @@ const AskAkiliDemo: React.FC<Props> = (props) => {
             <span className="flex items-center gap-2 text-xs font-black">
               <Notebook className="h-4 w-4 text-blue-600" /> Save it
             </span>
-            <span className="text-[11px] font-semibold leading-4 text-slate-500">Preview the notebook entry</span>
+            <span className="text-[11px] font-semibold leading-4 text-slate-500">Preview the saved notebook note</span>
           </button>
         </div>
         <button
