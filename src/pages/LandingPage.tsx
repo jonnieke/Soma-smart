@@ -284,7 +284,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
         setDetailedLimitReached(false);
         try {
             const text = await callGeminiProxy(
-                `Answer this academic question in exactly 1 precise sentence. No markdown, no formatting. Use correct curriculum terminology relevant to the Kenyan KCSE/CBC syllabus. State only the essential result or definition — no extra detail. Question: ${questionInput}`
+                `Answer this academic question in exactly 1 precise sentence. No markdown, no formatting. Use correct curriculum terminology relevant to the Kenyan KCSE/CBC syllabus. State only the essential result or definition ï¿½ no extra detail. Question: ${questionInput}`
             );
             setGeneratedAnswer(text || 'I analysed this but could not generate a summary.');
             trackFunnelEvent('learner_answer_generated', {
@@ -343,7 +343,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
             );
             const cleaned = (text || '')
                 .replace(/\*\*(.*?)\*\*/g, '$1')
-                .replace(/^[*-]\s/gm, '• ')
+                .replace(/^[*-]\s/gm, 'ï¿½ ')
                 .replace(/^#{1,6}\s*/gm, '')
                 .replace(/\*(.*?)\*/g, '$1')
                 .replace(/\*/g, '');
@@ -354,7 +354,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
             if (code === 'GUEST_LIMIT_REACHED' || code === 'PLAN_LIMIT_REACHED' || code === 'FEATURE_LIMIT_REACHED') {
                 setDetailedLimitReached(true);
             } else if (code === 'RATE_LIMIT') {
-                setDetailedAnswer('High demand right now — please close and try again in a few seconds.');
+                setDetailedAnswer('High demand right now ï¿½ please close and try again in a few seconds.');
             } else if (err instanceof TypeError) {
                 setDetailedAnswer('No connection. Please check your internet and try again.');
             } else {
@@ -1062,7 +1062,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                 <span className="block text-indigo-600 dark:text-indigo-400 mt-2">CBC, KPSEA &amp; KCSE learners.</span>
                             </h1>
                             <p className="text-base sm:text-lg text-slate-600 dark:text-slate-400 font-medium leading-relaxed mb-6 sm:mb-8 max-w-lg">
-                                Ask any question, get direct answers, listen to notes aloud, and show parents real weekly progress — built for Kenyan learners.
+                                Ask any question, get direct answers, listen to notes aloud, and show parents real weekly progress ï¿½ built for Kenyan learners.
                             </p>
 
                             {/* Solve It chat window */}
@@ -1192,16 +1192,16 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                 ))}
                             </div>
                             <div className="grid gap-2 text-sm text-slate-500 dark:text-slate-400 sm:grid-cols-3">
-                                <div className="flex items-center gap-1.5"><CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0" /> Free start · KES 20/day via M-PESA</div>
+                                <div className="flex items-center gap-1.5"><CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0" /> Free start ï¿½ KES 20/day via M-PESA</div>
                                 <div className="flex items-center gap-1.5"><CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0" /> Official notes and past papers</div>
-                                <div className="flex items-center gap-1.5"><CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0" /> Parent progress proof · teacher tools</div>
+                                <div className="flex items-center gap-1.5"><CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0" /> Parent progress proof ï¿½ teacher tools</div>
                             </div>
                             <div className="mt-6 flex flex-col sm:flex-row gap-3">
                                 <button
                                     onClick={() => handleLearnerQuickStart('SMART_TUTOR', 'ask_akili')}
                                     className="w-full sm:w-auto min-h-[46px] rounded-xl bg-indigo-600 hover:bg-indigo-700 px-5 text-sm font-black text-white flex items-center justify-center gap-2"
                                 >
-                                    Try Free — No Sign-up Needed <ChevronRight className="w-4 h-4" />
+                                    Try Free ï¿½ No Sign-up Needed <ChevronRight className="w-4 h-4" />
                                 </button>
                                 <button
                                     onClick={() => handleRoleSelect(UserRole.TEACHER)}
@@ -1613,6 +1613,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
             </>
             )}
 
+            {showLegacySections && (
+            <>
             {/* --- STUDENT TESTIMONIALS --- */}
             <section className="py-16 bg-white dark:bg-slate-950 transition-colors border-t border-slate-200 dark:border-slate-800">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -2173,7 +2175,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                     Open the app. Solve one real problem in the next 2 minutes.
                                 </h2>
                                 <p className="mt-4 text-base font-medium leading-relaxed text-slate-600">
-                                    A learner can solve one hard question, a teacher can prepare one lesson, and a parent can check whether study is actually happening — right now, for free.
+                                    A learner can solve one hard question, a teacher can prepare one lesson, and a parent can check whether study is actually happening ï¿½ right now, for free.
                                 </p>
                             </div>
 
@@ -2207,6 +2209,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                     </div>
                 </div>
             </section>
+
+            </>
+            )}
 
             {/* --- BOTTOM FOOTER --- */}
             <footer className="bg-white dark:bg-slate-950 py-12 border-t border-slate-100 dark:border-slate-800 transition-colors overflow-hidden">
