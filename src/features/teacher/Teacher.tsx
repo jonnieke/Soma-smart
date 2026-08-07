@@ -950,12 +950,9 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
     const creationTabs = ['CREATION_HUB', 'CONVERT', 'VOICE', 'QUIZ', 'SCHEMES', 'LESSON_POLISH', 'HOMEWORK'] as const;
     const primaryTeacherNav = [
         { tab: 'DASHBOARD', label: 'Home' },
-        { tab: 'CREATION_HUB', label: 'Create Content' },
-        { tab: 'PAPER_STUDIO', label: 'Exam Generator' },
-        { tab: 'STUDENTS', label: 'Classroom' },
-        { tab: 'MARKING', label: 'Marking' },
-        { tab: 'LIBRARY', label: 'Library' },
-        { tab: 'CPD_HUB', label: 'CPD & Training' },
+        { tab: 'CREATION_HUB', label: 'Teach' },
+        { tab: 'SYLLABUS_TRACKER', label: 'Track' },
+        { tab: 'EARNINGS', label: 'Earn' },
     ] as const;
     const normalizedClassForSetup = String(selectedClass || '').trim().toLowerCase();
     const normalizedSubjectForSetup = String(selectedSubject || '').trim().toLowerCase();
@@ -971,10 +968,10 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
     ].filter(Boolean).length;
     const setupComplete = setupCompletedSteps >= 3;
     const isTeacherNavActive = (tab: typeof primaryTeacherNav[number]['tab']) => {
+        if (tab === 'DASHBOARD') return activeTab === 'DASHBOARD';
         if (tab === 'CREATION_HUB') return creationTabs.includes(activeTab as any);
-        if ((tab as string) === 'PAPER_STUDIO') return location.pathname.startsWith('/teacher/paper-studio');
-        if (tab === 'STUDENTS') return activeTab === 'STUDENTS';
-        if (tab === 'MARKING') return ['MARKING', 'BLACKBOARD'].includes(activeTab);
+        if (tab === 'SYLLABUS_TRACKER') return activeTab === 'SYLLABUS_TRACKER';
+        if (tab === 'EARNINGS') return activeTab === 'EARNINGS';
         return activeTab === tab;
     };
     const dismissSetupNudge = () => {
@@ -1067,10 +1064,23 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                             <button
                                 key={item.tab}
                                 onClick={() => {
-                                    if ((item.tab as string) === 'PAPER_STUDIO') {
+                                    if (item.tab === 'DASHBOARD') {
+                                        setActiveTab('DASHBOARD');
+                                        navigate('/teacher');
+                                        return;
+                                    }
+                                    if (item.tab === 'CREATION_HUB') {
+                                        setActiveTab('CREATION_HUB');
                                         navigate('/teacher/paper-studio');
-                                    } else {
-                                        setActiveTab(item.tab === 'CREATION_HUB' ? 'CONVERT' : item.tab as any);
+                                        return;
+                                    }
+                                    if (item.tab === 'SYLLABUS_TRACKER') {
+                                        setActiveTab('SYLLABUS_TRACKER');
+                                        return;
+                                    }
+                                    if (item.tab === 'EARNINGS') {
+                                        setActiveTab('EARNINGS');
+                                        navigate('/teacher/creator-studio');
                                     }
                                 }}
                                 className={`pb-1 text-base tracking-wide font-black transition-all ${isTeacherNavActive(item.tab) ? 'text-emerald-600 border-b-2 border-emerald-600' : 'text-slate-500 hover:text-slate-900'}`}
@@ -1915,7 +1925,8 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                                         </Button>
                                     )}
                                     </>
-                                )}                                <Button
+                                )}
+                                <Button
                                     variant="outline"
                                     onClick={() => setActiveTab('BLACKBOARD')}
                                     disabled={!generatedNote}
