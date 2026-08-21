@@ -356,7 +356,7 @@ export const TeacherReports: React.FC = () => {
         doc.setFillColor(99, 102, 241); doc.roundedRect(lm - 2, y - 5, lw + 4, 9, 2, 2, 'F');
         addLine('CLASS SUMMARY', 10, true, [255, 255, 255]); y += 1;
         addLine(`Class Average: ${summary.classAverage}%  |  Pass Rate: ${summary.passRate}%  |  At Risk: ${summary.atRisk}  |  Total Students: ${summary.totalStudents}`);
-        if (narrative) { y += 2; addLine('smart narrative', 10, true, [99, 102, 241]); addLine(narrative); }
+        if (narrative) { y += 2; addLine('AI PEDAGOGICAL NARRATIVE', 10, true, [99, 102, 241]); addLine(narrative); }
         // Topics
         y += 4; doc.setFillColor(99, 102, 241); doc.roundedRect(lm - 2, y - 5, lw + 4, 9, 2, 2, 'F');
         addLine('TOPIC PERFORMANCE', 10, true, [255, 255, 255]); y += 1;
