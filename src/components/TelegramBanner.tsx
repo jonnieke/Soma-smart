@@ -4,12 +4,14 @@ import { TelegramService, TELEGRAM_CHANNEL_URL } from '../services/telegramServi
 
 interface TelegramBannerProps {
     variant?: 'COMPACT' | 'FULL';
+    theme?: 'dark' | 'light';
     title?: string;
     description?: string;
 }
 
 export const TelegramBanner: React.FC<TelegramBannerProps> = ({
     variant = 'FULL',
+    theme = 'dark',
     title = 'Join 20,000+ Candidates on Telegram',
     description = 'Get daily KCSE & KPSEA revision quizzes, past paper alerts, and AI study tips directly in your Telegram app.'
 }) => {
@@ -21,6 +23,30 @@ export const TelegramBanner: React.FC<TelegramBannerProps> = ({
     };
 
     if (variant === 'COMPACT') {
+        if (theme === 'light') {
+            return (
+                <div className="rounded-2xl bg-white p-4 border border-sky-200/90 shadow-2xs flex items-center justify-between gap-3 text-slate-900">
+                    <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-9 h-9 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center shrink-0 border border-sky-200">
+                            <Send className="w-4 h-4" />
+                        </div>
+                        <div className="min-w-0">
+                            <h4 className="text-xs font-black text-slate-900 truncate">{title}</h4>
+                            <p className="text-[11px] text-slate-500 truncate font-medium">Daily revision drills on Telegram</p>
+                        </div>
+                    </div>
+
+                    <button
+                        onClick={handleJoin}
+                        className="shrink-0 bg-sky-500 hover:bg-sky-600 text-white font-black text-xs px-3.5 py-2 rounded-xl transition-all shadow-xs flex items-center gap-1.5"
+                    >
+                        <span>Join</span>
+                        <ExternalLink className="w-3.5 h-3.5" />
+                    </button>
+                </div>
+            );
+        }
+
         return (
             <div className="rounded-2xl bg-gradient-to-r from-sky-900/90 via-slate-900 to-indigo-950 p-4 border border-sky-500/30 flex items-center justify-between gap-3 text-white">
                 <div className="flex items-center gap-3 min-w-0">
@@ -40,6 +66,52 @@ export const TelegramBanner: React.FC<TelegramBannerProps> = ({
                     <span>Join Channel</span>
                     <ExternalLink className="w-3.5 h-3.5" />
                 </button>
+            </div>
+        );
+    }
+
+    // FULL VARIANT
+    if (theme === 'light') {
+        return (
+            <div className="rounded-2xl bg-white p-5 border border-sky-200/90 shadow-2xs flex flex-col justify-between gap-4">
+                <div className="flex items-start gap-3.5">
+                    <div className="w-10 h-10 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center font-bold shrink-0 border border-sky-200 mt-0.5">
+                        <Send className="w-5 h-5" />
+                    </div>
+
+                    <div className="space-y-1 min-w-0">
+                        <div className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-sky-50 border border-sky-200 text-sky-700 text-[10px] font-black uppercase tracking-wider">
+                            <Flame className="w-3 h-3 text-amber-500 fill-amber-500" /> Telegram Revision
+                        </div>
+                        <h3 className="text-xs sm:text-sm font-black text-slate-900 leading-snug">
+                            {title}
+                        </h3>
+                        <p className="text-[11px] text-slate-500 font-medium leading-relaxed line-clamp-2">
+                            {description}
+                        </p>
+                    </div>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2 pt-1">
+                    <button
+                        onClick={handleJoin}
+                        className="bg-sky-500 hover:bg-sky-600 text-white font-black text-xs px-3.5 py-2 rounded-xl transition-all shadow-xs inline-flex items-center gap-1.5"
+                    >
+                        <Send className="w-3.5 h-3.5" />
+                        <span>Join Channel</span>
+                    </button>
+
+                    <button
+                        onClick={() => {
+                            TelegramService.haptic('medium');
+                            TelegramService.openBot('revision');
+                        }}
+                        className="bg-slate-100 hover:bg-slate-200/80 text-slate-700 font-bold text-xs px-3.5 py-2 rounded-xl border border-slate-200 transition-all inline-flex items-center gap-1.5"
+                    >
+                        <Sparkles className="w-3.5 h-3.5 text-sky-600" />
+                        <span>Launch Bot</span>
+                    </button>
+                </div>
             </div>
         );
     }
