@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { TrendingUp, BookOpen, Star, Wallet, ArrowUpRight, Download, Plus, History, CheckCircle, Clock, XCircle } from 'lucide-react';
 import { paperBankMarketplaceService, MarketplaceListing, SellerWalletSummary, SellerStats, WithdrawalRequest } from '../../services/paperBankMarketplaceService';
-
-const SELLER_ID = 'teacher_user';
+import { useApp } from '../../context/AppContext';
 
 const StatusBadge: React.FC<{ status: string }> = ({ status }) => {
   const map: Record<string, string> = {
@@ -21,6 +20,8 @@ const StatusBadge: React.FC<{ status: string }> = ({ status }) => {
 };
 
 export const SellerDashboard: React.FC = () => {
+  const { teacherProfile, userId } = useApp();
+  const sellerId = teacherProfile?.id || userId || 'teacher_user';
   const [wallet, setWallet] = useState<SellerWalletSummary | null>(null);
   const [stats, setStats] = useState<SellerStats | null>(null);
   const [myListings, setMyListings] = useState<MarketplaceListing[]>([]);
@@ -32,18 +33,18 @@ export const SellerDashboard: React.FC = () => {
   const [withdrawalSuccess, setWithdrawalSuccess] = useState(false);
 
   useEffect(() => {
-    const w = paperBankMarketplaceService.getSellerWallet(SELLER_ID);
-    const s = paperBankMarketplaceService.getSellerStats(SELLER_ID);
-    const h = paperBankMarketplaceService.getWithdrawalHistory(SELLER_ID);
+    const w = paperBankMarketplaceService.getSellerWallet(sellerId);
+    const s = paperBankMarketplaceService.getSellerStats(sellerId);
+    const h = paperBankMarketplaceService.getWithdrawalHistory(sellerId);
     setWallet(w);
     setStats(s);
     setWithdrawalHistory(h);
     setWithdrawalPhone(w.withdrawalPhone);
 
     paperBankMarketplaceService.getMarketplaceListings().then((all) => {
-      setMyListings(all.filter((l) => l.sellerId === SELLER_ID));
+      setMyListings(all.filter((l) => l.sellerId === sellerId));
     });
-  }, []);
+  }, [sellerId]);
 
   const handleWithdrawal = async () => {
     const amount = parseFloat(withdrawalAmount);
@@ -52,9 +53,9 @@ export const SellerDashboard: React.FC = () => {
     setWithdrawalLoading(true);
     setWithdrawalError('');
     try {
-      const req = await paperBankMarketplaceService.requestWithdrawal(amount, withdrawalPhone.trim(), SELLER_ID);
+      const req = await paperBankMarketplaceService.requestWithdrawal(amount, withdrawalPhone.trim(), sellerId);
       setWithdrawalHistory((prev) => [req, ...prev]);
-      const updatedWallet = paperBankMarketplaceService.getSellerWallet(SELLER_ID);
+      const updatedWallet = paperBankMarketplaceService.getSellerWallet(sellerId);
       setWallet(updatedWallet);
       setWithdrawalAmount('');
       setWithdrawalSuccess(true);
