@@ -7,7 +7,7 @@ import {
     Loader2, LogOut, ShieldCheck, Sparkles, Star, Target, Zap,
     Headphones, Volume2, Mic, Flame, CheckCircle2, MessageCircle,
     Trophy, Calendar, Play, Bot, Notebook, ArrowUpRight, Compass,
-    SlidersHorizontal, Search, Check
+    SlidersHorizontal, Search, Check, Eye, Download, X
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { UserRole } from '../../types';
@@ -75,6 +75,8 @@ export const RevisionPortal: React.FC = () => {
     const [showLogoutModal, setShowLogoutModal] = useState(false);
     const [pathway, setPathway] = useState<CandidatePathway>('KCSE');
     const [selectedSubject, setSelectedSubject] = useState('ALL');
+    const [selectedYear, setSelectedYear] = useState('ALL');
+    const [selectedPaperModal, setSelectedPaperModal] = useState<PublishedExam | null>(null);
     const [publishedExams, setPublishedExams] = useState<PublishedExam[]>([]);
     const [loadingExams, setLoadingExams] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
@@ -90,13 +92,22 @@ export const RevisionPortal: React.FC = () => {
 
     const pathwayConfig = PATHWAYS.find(item => item.id === pathway) || PATHWAYS[0];
 
+    const availableYears = useMemo(() => {
+        const set = new Set<string>();
+        publishedExams.forEach(e => {
+            if (e.year) set.add(String(e.year));
+        });
+        return ['ALL', ...Array.from(set).sort((a, b) => b.localeCompare(a))];
+    }, [publishedExams]);
+
     const pathwayExams = useMemo(() => publishedExams.filter(exam => {
         const examType = String(exam.exam_type || exam.examType || '').toUpperCase().replace(/[_ -]?STYLE$/, '');
         const gradeMatch = String(exam.grade || '').toLowerCase().includes(pathwayConfig.grade.toLowerCase());
         const searchMatch = !searchQuery || String(exam.title || '').toLowerCase().includes(searchQuery.toLowerCase()) || String(exam.subject || '').toLowerCase().includes(searchQuery.toLowerCase());
         const subjectMatch = selectedSubject === 'ALL' || String(exam.subject || '').toLowerCase().includes(selectedSubject.toLowerCase());
-        return (examType === pathway || gradeMatch) && searchMatch && subjectMatch;
-    }), [pathway, pathwayConfig.grade, publishedExams, searchQuery, selectedSubject]);
+        const yearMatch = selectedYear === 'ALL' || String(exam.year || '') === selectedYear;
+        return (examType === pathway || gradeMatch) && searchMatch && subjectMatch && yearMatch;
+    }), [pathway, pathwayConfig.grade, publishedExams, searchQuery, selectedSubject, selectedYear]);
 
     const pathwayCounts = useMemo(() => {
         return PATHWAYS.reduce((acc, item) => {
@@ -474,24 +485,46 @@ export const RevisionPortal: React.FC = () => {
                         </div>
                     </div>
 
-                    {/* Quick Subject Filter Chips */}
-                    <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
-                        {FILTER_SUBJECTS.map(subj => {
-                            const isSelected = selectedSubject === subj;
-                            return (
-                                <button
-                                    key={subj}
-                                    onClick={() => setSelectedSubject(subj)}
-                                    className={`px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap transition-all ${
-                                        isSelected
-                                            ? 'bg-slate-900 text-white shadow-xs'
-                                            : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100 hover:text-slate-900'
-                                    }`}
-                                >
-                                    {subj}
-                                </button>
-                            );
-                        })}
+                    {/* Filter Bar: Subjects & Years */}
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none flex-1">
+                            {FILTER_SUBJECTS.map(subj => {
+                                const isSelected = selectedSubject === subj;
+                                return (
+                                    <button
+                                        key={subj}
+                                        onClick={() => setSelectedSubject(subj)}
+                                        className={`px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap transition-all ${
+                                            isSelected
+                                                ? 'bg-slate-900 text-white shadow-xs'
+                                                : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100 hover:text-slate-900'
+                                        }`}
+                                    >
+                                        {subj}
+                                    </button>
+                                );
+                            })}
+                        </div>
+
+                        {/* Year Pills */}
+                        {availableYears.length > 2 && (
+                            <div className="flex items-center gap-1 shrink-0 overflow-x-auto pb-1">
+                                <span className="text-[10px] font-black uppercase text-slate-400 mr-1">Year:</span>
+                                {availableYears.map(yr => (
+                                    <button
+                                        key={yr}
+                                        onClick={() => setSelectedYear(yr)}
+                                        className={`px-2.5 py-0.5 rounded-lg text-xs font-bold transition-all ${
+                                            selectedYear === yr
+                                                ? 'bg-indigo-600 text-white'
+                                                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                        }`}
+                                    >
+                                        {yr}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
                     </div>
 
                     {/* Compact Visual Exam Grid (4 columns on desktop, 2-3 on tablet/mobile) */}
@@ -509,7 +542,7 @@ export const RevisionPortal: React.FC = () => {
                                         key={exam.id}
                                         initial={{ opacity: 0, y: 6 }}
                                         animate={{ opacity: 1, y: 0 }}
-                                        onClick={() => startRevision(exam.id)}
+                                        onClick={() => setSelectedPaperModal(exam)}
                                         className="group cursor-pointer rounded-2xl bg-white hover:bg-slate-50/80 p-4 border border-slate-200/90 hover:border-indigo-500 shadow-2xs hover:shadow-md transition-all flex flex-col justify-between"
                                     >
                                         <div>
@@ -545,7 +578,9 @@ export const RevisionPortal: React.FC = () => {
 
                                         {/* Action footer */}
                                         <div className="mt-3.5 pt-2.5 border-t border-slate-100 flex items-center justify-between text-xs font-black text-indigo-600 group-hover:text-indigo-700">
-                                            <span>Attempt Paper</span>
+                                            <span className="flex items-center gap-1">
+                                                <Sparkles className="w-3.5 h-3.5" /> Practice / Preview
+                                            </span>
                                             <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
                                         </div>
                                     </motion.div>
@@ -608,6 +643,132 @@ export const RevisionPortal: React.FC = () => {
                 </div>
 
             </main>
+
+            {/* Paper Quick Action & Preview Modal */}
+            <AnimatePresence>
+                {selectedPaperModal && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
+                        <motion.div
+                            initial={{ scale: 0.95, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.95, opacity: 0 }}
+                            className="bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden border border-slate-200"
+                        >
+                            {/* Modal Header */}
+                            <div className="p-6 bg-slate-50 border-b border-slate-200/80 relative">
+                                <button
+                                    onClick={() => setSelectedPaperModal(null)}
+                                    className="absolute right-4 top-4 w-8 h-8 rounded-full bg-white hover:bg-slate-200 border border-slate-200 flex items-center justify-center text-slate-500 hover:text-slate-900 transition-colors"
+                                >
+                                    <X className="w-4 h-4" />
+                                </button>
+                                <div className="flex items-center gap-2 mb-2">
+                                    <span className="px-2.5 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider bg-indigo-100 text-indigo-800 border border-indigo-200">
+                                        {selectedPaperModal.subject}
+                                    </span>
+                                    {selectedPaperModal.year && (
+                                        <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-200 text-slate-700">
+                                            {selectedPaperModal.year}
+                                        </span>
+                                    )}
+                                    <span className="text-[10px] font-bold text-slate-500">
+                                        {selectedPaperModal.grade}
+                                    </span>
+                                </div>
+                                <h3 className="text-base sm:text-lg font-black text-slate-900 leading-snug">
+                                    {selectedPaperModal.title}
+                                </h3>
+                                <div className="flex items-center gap-4 mt-3 text-xs font-bold text-slate-500">
+                                    {selectedPaperModal.duration_minutes && (
+                                        <span className="flex items-center gap-1">
+                                            <Clock className="w-3.5 h-3.5 text-slate-400" /> {selectedPaperModal.duration_minutes} Minutes
+                                        </span>
+                                    )}
+                                    {selectedPaperModal.total_marks && (
+                                        <span className="flex items-center gap-1">
+                                            <Award className="w-3.5 h-3.5 text-amber-500" /> {selectedPaperModal.total_marks} Marks
+                                        </span>
+                                    )}
+                                    <span className="flex items-center gap-1 text-emerald-600">
+                                        <CheckCircle2 className="w-3.5 h-3.5" /> Marking Scheme Available
+                                    </span>
+                                </div>
+                            </div>
+
+                            {/* Modal Action Options */}
+                            <div className="p-6 space-y-3">
+                                {/* Option 1: AI Interactive Practice */}
+                                <button
+                                    onClick={() => {
+                                        const paper = selectedPaperModal;
+                                        setSelectedPaperModal(null);
+                                        startRevision(paper);
+                                    }}
+                                    className="w-full p-4 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white text-left transition-all shadow-md shadow-indigo-600/20 flex items-center justify-between group"
+                                >
+                                    <div className="flex items-center gap-3.5">
+                                        <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center font-bold shrink-0">
+                                            <Sparkles className="w-5 h-5 text-white" />
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-black text-white leading-tight">
+                                                Attempt Online with AI Coach
+                                            </p>
+                                            <p className="text-[11px] text-indigo-100 font-medium mt-0.5">
+                                                Timed quiz mode, instant scoring &amp; Akili step-by-step guidance.
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <ArrowRight className="w-5 h-5 text-white/80 group-hover:translate-x-1 transition-transform shrink-0" />
+                                </button>
+
+                                {/* Option 2: Reader Preview */}
+                                <button
+                                    onClick={() => {
+                                        const paperId = selectedPaperModal.id;
+                                        setSelectedPaperModal(null);
+                                        navigate(`/exam-papers/${encodeURIComponent(String(paperId))}/read`);
+                                    }}
+                                    className="w-full p-4 rounded-2xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-900 text-left transition-all flex items-center justify-between group"
+                                >
+                                    <div className="flex items-center gap-3.5">
+                                        <div className="w-10 h-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center font-bold text-slate-700 shrink-0">
+                                            <Eye className="w-5 h-5 text-indigo-600" />
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-black text-slate-900 leading-tight">
+                                                Preview Paper &amp; Marking Scheme
+                                            </p>
+                                            <p className="text-[11px] text-slate-500 font-medium mt-0.5">
+                                                Read full exam questions and check official answer keys.
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <ArrowRight className="w-5 h-5 text-slate-400 group-hover:translate-x-1 transition-transform shrink-0" />
+                                </button>
+
+                                {/* Option 3: Full Paper Bank Download */}
+                                <button
+                                    onClick={() => {
+                                        const paperId = selectedPaperModal.id;
+                                        setSelectedPaperModal(null);
+                                        navigate(`/exam-papers?paper=${encodeURIComponent(String(paperId))}`);
+                                    }}
+                                    className="w-full p-3.5 rounded-2xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 text-left transition-all flex items-center justify-between group"
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <FileText className="w-4 h-4 text-slate-400" />
+                                        <span className="text-xs font-bold text-slate-700">
+                                            View in Exam Paper Bank (PDF Download)
+                                        </span>
+                                    </div>
+                                    <ArrowUpRight className="w-4 h-4 text-slate-400 group-hover:text-slate-700 transition-colors" />
+                                </button>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
 
             {/* Login & Register Modals */}
             <LoginModal

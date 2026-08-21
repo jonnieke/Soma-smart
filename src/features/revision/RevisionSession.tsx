@@ -209,6 +209,7 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
     const [currentExplanation, setCurrentExplanation] = useState<QuestionExplanation | null>(null);
     const [loadingExplanation, setLoadingExplanation] = useState(false);
     const [readyToAnswer, setReadyToAnswer] = useState(false);
+    const [showHint, setShowHint] = useState(false);
 
     // Per-question timer
     const [questionTimerActive, setQuestionTimerActive] = useState(false);
@@ -1494,6 +1495,39 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
                             </div>
                             <p className="text-slate-800 text-sm leading-relaxed font-black">{displayQuestionText}</p>
                             <QuestionDiagramSupport question={question} sourcePaperUrl={sourcePaperUrl} />
+
+                            {/* Akili Clue / Hint Toggle */}
+                            {practiceMode !== ExamPracticeMode.TIMED_QUIZ && !showModelAnswer && (
+                                <div className="mt-4 pt-3 border-t border-slate-100 flex flex-col gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowHint(!showHint)}
+                                        className="self-start inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 text-xs font-bold transition-colors"
+                                    >
+                                        <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+                                        <span>{showHint ? 'Hide Akili Clue' : '💡 Ask Akili for a Clue'}</span>
+                                    </button>
+
+                                    {showHint && (
+                                        <motion.div
+                                            initial={{ opacity: 0, height: 0 }}
+                                            animate={{ opacity: 1, height: 'auto' }}
+                                            className="p-3.5 bg-amber-50/80 rounded-xl border border-amber-200 text-amber-900 text-xs font-medium space-y-1"
+                                        >
+                                            <p className="font-bold text-amber-950 flex items-center gap-1">
+                                                <Target className="w-3.5 h-3.5 text-amber-600" /> Topic Clue ({question.topic}):
+                                            </p>
+                                            <p className="leading-relaxed">
+                                                {question.explanation
+                                                    ? question.explanation
+                                                    : question.competency
+                                                        ? `Focus on demonstrating: ${question.competency}. State key formulas and show each intermediate step.`
+                                                        : `Recall core concepts from ${question.topic}. Structure your points clearly and double-check units.`}
+                                            </p>
+                                        </motion.div>
+                                    )}
+                                </div>
+                            )}
                         </motion.div>
 
                         {/* Answer Input */}
@@ -1538,7 +1572,7 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
                                     <button
                                         onClick={practiceMode === ExamPracticeMode.TIMED_QUIZ ? handleSaveTimedAnswer : handleSubmitAnswer}
                                         disabled={(practiceMode !== ExamPracticeMode.TIMED_QUIZ && !userAnswer.trim()) || isMarking}
-                                        className="bg-indigo-600 hover:bg-indigo-700 text-slate-900 px-6 py-2.5 rounded-xl font-bold text-sm disabled:opacity-50 transition-all flex items-center gap-2 shadow-md shadow-indigo-500/20"
+                                        className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-xl font-black text-sm disabled:opacity-50 transition-all flex items-center gap-2 shadow-md shadow-indigo-500/20"
                                     >
                                         {practiceMode === ExamPracticeMode.TIMED_QUIZ ? (currentQuestionIdx === quizQuestions.length - 1 ? 'Submit Exam' : 'Save & Next') : 'Submit Answer'} <ArrowRight className="w-4 h-4" />
                                     </button>
