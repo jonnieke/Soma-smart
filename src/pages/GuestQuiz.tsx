@@ -113,14 +113,14 @@ export const GuestQuiz: React.FC = () => {
     return (
         <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6">
             <Helmet>
-                <title>Assignment | Somo Smart</title>
+                <title>Assignment | Soma AI</title>
                 <meta name="theme-color" content="#25D366" />
             </Helmet>
 
             <div className="w-full max-w-md bg-white rounded-3xl shadow-xl border-2 border-slate-200 overflow-hidden">
                 {/* Header */}
                 <div className="bg-[#25D366] p-6 text-white text-center">
-                    <h1 className="text-2xl font-black tracking-tight mb-1">Somo Smart</h1>
+                    <h1 className="text-2xl font-black tracking-tight mb-1">Soma AI</h1>
                     <p className="text-emerald-50 font-medium text-sm opacity-90">Classroom Assignment</p>
                 </div>
 

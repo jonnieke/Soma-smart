@@ -93,8 +93,8 @@ export const PricingPage: React.FC = () => {
     return (
         <div className="relative min-h-screen">
             <Helmet>
-                <title>Somo Smart Pricing | Affordable AI Education in Kenya</title>
-                <meta name="description" content="Explore Somo Smart's affordable pricing plans for Kenyan students, parents, and teachers. Get unlimited access to CBC and KCSE past papers and our AI study tutor starting at just KES 20." />
+                <title>Soma AI Pricing | Affordable AI Education in Kenya</title>
+                <meta name="description" content="Explore Soma AI's affordable pricing plans for Kenyan students, parents, and teachers. Get unlimited access to CBC and KCSE past papers and our AI study tutor starting at just KES 20." />
                 <meta name="keywords" content="somo smart pricing, learning app subscription kenya, kcse revision cost, affordable cbc learning, smart tutor subscription" />
 
                 {/* AIO */}
@@ -103,7 +103,7 @@ export const PricingPage: React.FC = () => {
                 <meta name="pricing-structure" content="Daily, Weekly, Monthly, Termly Options Available" />
 
                 {/* Open Graph */}
-                <meta property="og:title" content="Somo Smart Pricing | Affordable AI Education in Kenya" />
+                <meta property="og:title" content="Soma AI Pricing | Affordable AI Education in Kenya" />
                 <meta property="og:description" content="Explore affordable plans for unlimited CBC and KCSE AI-assisted learning. Unlock your potential today." />
                 <meta property="og:url" content="https://www.somaai.co.ke/pricing" />
 
@@ -126,7 +126,7 @@ export const PricingPage: React.FC = () => {
                                 <CheckCircle2 className="w-16 h-16 text-green-500 mx-auto mb-6" />
                                 <h2 className="text-2xl font-black text-slate-900 mb-2">Payment Confirmed!</h2>
                                 <p className="text-slate-500 font-medium">
-                                    {pendingRef?.startsWith('MKT_') ? 'Material unlocked! Redirecting to marketplace...' : 'Welcome to Somo Pro. Redirecting you to your dashboard...'}
+                                    {pendingRef?.startsWith('MKT_') ? 'Material unlocked! Redirecting to marketplace...' : 'Welcome to Soma AI Pro. Redirecting you to your dashboard...'}
                                 </p>
                             </>
                         )}
@@ -152,7 +152,7 @@ export const PricingPage: React.FC = () => {
                                     View Pricing Plans
                                 </Button>
                                 <a
-                                    href={`https://wa.me/254722763760?text=${encodeURIComponent(`Hi Somo Smart Support, I need assistance with payment verification. Reference: ${pendingRef || 'N/A'}`)}`}
+                                    href={`https://wa.me/254722763760?text=${encodeURIComponent(`Hi Soma AI Support, I need assistance with payment verification. Reference: ${pendingRef || 'N/A'}`)}`}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="w-full mt-2 inline-flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl py-3 text-sm transition-all shadow-sm"

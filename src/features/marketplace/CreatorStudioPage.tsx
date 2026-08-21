@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft, BadgeCheck, Banknote, BookOpen, CheckCircle2, ChevronRight,
   Clock3, FileCheck2, FileText, GraduationCap, Plus, Send, Share2, ShieldCheck,
@@ -12,6 +12,12 @@ import {
   CreatorMaterialRecord,
   CreatorProfileRecord,
 } from '../../services/creatorMarketplaceService';
+import { getTeacherComposerDraft, type TeacherComposerDraft } from '../../types/teacherComposer';
+import {
+  markTeacherComposerDraftConsumed,
+  loadTeacherComposerDraft,
+} from '../../types/teacherComposerHandoff';
+import { trackAnalyticsEvent } from '../../services/analyticsEventService';
 
 const CATEGORIES: Array<{ id: CreatorMaterialCategory; label: string; help: string }> = [
   { id: 'EXAM_PAPER', label: 'Exam paper', help: 'A complete assessment, preferably with a marking guide.' },
@@ -89,9 +95,19 @@ const CreatorOnboarding: React.FC<{ onComplete: (profile: CreatorProfileRecord) 
   );
 };
 
-const SubmitMaterialModal: React.FC<{ onClose: () => void; onCreated: (record: CreatorMaterialRecord) => void }> = ({ onClose, onCreated }) => {
-  const [form, setForm] = useState({ title: '', description: '', category: 'EXAM_PAPER' as CreatorMaterialCategory, subject: '', grade: '', curriculum: 'CBC', examBody: '', year: new Date().getFullYear(), priceKes: 50 });
-  const [source, setSource] = useState<File | null>(null);
+const SubmitMaterialModal: React.FC<{ onClose: () => void; onCreated: (record: CreatorMaterialRecord) => void; initialDraft?: TeacherComposerDraft }> = ({ onClose, onCreated, initialDraft }) => {
+  const [form, setForm] = useState({
+    title: initialDraft?.prompt.slice(0, 120) || '',
+    description: initialDraft?.prompt || '',
+    category: 'EXAM_PAPER' as CreatorMaterialCategory,
+    subject: '',
+    grade: '',
+    curriculum: 'CBC',
+    examBody: '',
+    year: new Date().getFullYear(),
+    priceKes: 50,
+  });
+  const [source, setSource] = useState<File | null>(initialDraft?.file || null);
   const [scheme, setScheme] = useState<File | null>(null);
   const [preview, setPreview] = useState<File | null>(null);
   const [rights, setRights] = useState(false);
@@ -126,15 +142,21 @@ const SubmitMaterialModal: React.FC<{ onClose: () => void; onCreated: (record: C
   );
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/45 p-4 backdrop-blur-sm">
+    <div role="dialog" aria-modal="true" aria-labelledby="submit-material-title" onKeyDown={(event) => { if (event.key === 'Escape') onClose(); }} className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/45 p-4 backdrop-blur-sm">
       <form onSubmit={submit} className="mx-auto my-4 max-w-3xl rounded-3xl bg-white shadow-2xl">
         <div className="sticky top-0 z-10 flex items-start justify-between rounded-t-3xl border-b border-slate-100 bg-white px-5 py-5 sm:px-7">
-          <div><h2 className="text-xl font-black text-slate-950">Submit teaching material</h2><p className="mt-1 text-sm text-slate-500">Upload once, review clearly, publish with confidence.</p></div>
-          <button type="button" onClick={onClose} className="rounded-xl p-2 text-slate-400 hover:bg-slate-100"><X className="h-5 w-5" /></button>
+          <div><h2 id="submit-material-title" className="text-xl font-black text-slate-950">Submit teaching material</h2><p className="mt-1 text-sm text-slate-500">Upload once, review clearly, publish with confidence.</p></div>
+          <button type="button" onClick={onClose} aria-label="Close material submission" className="rounded-xl p-2 text-slate-400 hover:bg-slate-100"><X className="h-5 w-5" /></button>
         </div>
         <div className="space-y-6 p-5 sm:p-7">
+          {initialDraft && (
+            <div className="flex items-start gap-3 rounded-2xl border border-indigo-200 bg-indigo-50 p-4 text-indigo-900">
+              <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-indigo-600" />
+              <div><p className="text-sm font-black">Homepage request restored</p><p className="mt-1 text-xs leading-5 text-indigo-700">Your description{initialDraft.file ? ' and attachment are' : ' is'} ready. Complete the listing details, then submit it for review.</p></div>
+            </div>
+          )}
           <div className="grid gap-4 sm:grid-cols-2">
-            <label className="sm:col-span-2"><span className={labelClass}>Title</span><input required className={inputClass} placeholder="Grade 6 Mathematics Term 2 Revision Paper" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} /></label>
+            <label className="sm:col-span-2"><span className={labelClass}>Title</span><input autoFocus required className={inputClass} placeholder="Grade 6 Mathematics Term 2 Revision Paper" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} /></label>
             <label><span className={labelClass}>Material type</span><select className={inputClass} value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value as CreatorMaterialCategory })}>{CATEGORIES.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}</select></label>
             <label><span className={labelClass}>Price (KES)</span><input min={10} max={5000} type="number" className={inputClass} value={form.priceKes} onChange={(e) => setForm({ ...form, priceKes: Number(e.target.value) })} /></label>
             <label><span className={labelClass}>Subject</span><input required className={inputClass} value={form.subject} onChange={(e) => setForm({ ...form, subject: e.target.value })} /></label>
@@ -165,10 +187,16 @@ const SubmitMaterialModal: React.FC<{ onClose: () => void; onCreated: (record: C
 
 export const CreatorStudioPage: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const [initialDraft, setInitialDraft] = useState(() =>
+    location.state && typeof location.state === 'object' && 'teacherComposerDraft' in location.state
+      ? getTeacherComposerDraft(location.state)
+      : null
+  );
   const [profile, setProfile] = useState<CreatorProfileRecord | null | undefined>(undefined);
   const [materials, setMaterials] = useState<CreatorMaterialRecord[]>([]);
   const [earnings, setEarnings] = useState<CreatorEarningsSummary>(emptyEarnings);
-  const [showSubmit, setShowSubmit] = useState(false);
+  const [showSubmit, setShowSubmit] = useState(Boolean(initialDraft));
   const [error, setError] = useState('');
 
   const load = useCallback(async () => {
@@ -187,6 +215,29 @@ export const CreatorStudioPage: React.FC = () => {
   }, []);
 
   useEffect(() => { void load(); }, [load]);
+  useEffect(() => {
+    let active = true;
+    void loadTeacherComposerDraft(location.state).then((draft) => {
+      if (!active) return;
+      setInitialDraft(draft);
+      if (draft) {
+        setShowSubmit(true);
+        void markTeacherComposerDraftConsumed();
+        void trackAnalyticsEvent({
+          eventType: 'TEACHER_WORKFLOW',
+          eventName: 'teacher_composer_handoff_completed',
+          role: 'TEACHER',
+          metadata: {
+            intent: draft.intent.toLowerCase(),
+            source: draft.source.toLowerCase(),
+            has_attachment: Boolean(draft.file),
+            destination: 'marketplace',
+          },
+        });
+      }
+    });
+    return () => { active = false; };
+  }, [location.state]);
   const shareCreatorPage = async () => {
     const url = `${window.location.origin}/marketplace?creator=${profile?.store_slug || profile?.user_id || ''}`;
     const text = `Explore ${profile?.display_name || 'my'} original learning materials on SomaAI.`;
@@ -200,7 +251,7 @@ export const CreatorStudioPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-950">
-      {showSubmit && <SubmitMaterialModal onClose={() => setShowSubmit(false)} onCreated={(record) => { setMaterials((current) => [record, ...current]); setShowSubmit(false); }} />}
+      {showSubmit && <SubmitMaterialModal initialDraft={initialDraft || undefined} onClose={() => setShowSubmit(false)} onCreated={(record) => { setMaterials((current) => [record, ...current]); setShowSubmit(false); }} />}
       <header className="border-b border-slate-200 bg-white"><div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4 sm:px-6"><button onClick={() => navigate('/teacher')} className="inline-flex items-center gap-2 text-sm font-bold text-slate-600 hover:text-indigo-700"><ArrowLeft className="h-4 w-4" /> Teacher home</button><div className="flex gap-2"><button onClick={shareCreatorPage} className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm font-bold text-slate-700"><Share2 className="h-4 w-4" /> Share shop</button><button onClick={() => setShowSubmit(true)} className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-black text-white hover:bg-indigo-700"><Plus className="h-4 w-4" /> Add material</button></div></div></header>
       <main className="mx-auto max-w-7xl space-y-7 px-4 py-8 sm:px-6">
         <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8"><div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-center"><div><div className="flex items-center gap-2 text-sm font-bold text-indigo-700"><BadgeCheck className="h-5 w-5" /> Creator profile · {profile.status.toLowerCase()}</div><h1 className="mt-2 text-3xl font-black tracking-tight">Welcome, {profile.display_name.split(' ')[0]}.</h1><p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">Submit original teaching resources, follow every review decision, and see exactly what SomaAI owes you each month.</p></div><div className="rounded-2xl border border-indigo-100 bg-indigo-50 px-5 py-4 text-sm text-indigo-900"><p className="font-black">60% belongs to you</p><p className="mt-1 text-xs leading-5 text-indigo-700">Monthly payout · transparent statement · no instant withdrawal wallet</p></div></div></section>

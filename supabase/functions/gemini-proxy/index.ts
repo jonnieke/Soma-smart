@@ -51,6 +51,67 @@ const DISABLE_GUEST_AI = envFlag('DISABLE_GUEST_AI');
 const DISABLE_AUDIO_GENERATION = envFlag('DISABLE_AUDIO_GENERATION');
 const DISABLE_TALK_AND_LEARN = envFlag('DISABLE_TALK_AND_LEARN');
 const KES_PER_USD = 130;
+const REMOTE_FILE_MAX_BYTES = Math.max(1_000_000, Number(Deno.env.get('REMOTE_FILE_MAX_BYTES') || '15728640'));
+const REMOTE_FILE_MIME_TYPES = new Set([
+    'application/pdf',
+    'image/jpeg',
+    'image/png',
+    'image/webp',
+    'text/plain',
+]);
+
+const remoteFileHosts = () => {
+    const hosts = new Set(
+        String(Deno.env.get('ALLOWED_REMOTE_FILE_HOSTS') || '')
+            .split(',')
+            .map(host => host.trim().toLowerCase())
+            .filter(Boolean)
+    );
+    try {
+        const supabaseUrl = Deno.env.get('SUPABASE_URL');
+        if (supabaseUrl) hosts.add(new URL(supabaseUrl).hostname.toLowerCase());
+    } catch {
+        // A missing/invalid SUPABASE_URL results in a closed allowlist.
+    }
+    return hosts;
+};
+
+const fetchRemoteFile = async (rawUrl: unknown, requestedMime: unknown) => {
+    const parsed = new URL(String(rawUrl || ''));
+    const hostname = parsed.hostname.toLowerCase();
+    if (parsed.protocol !== 'https:' || parsed.username || parsed.password) {
+        throw new Error('Remote files must use an HTTPS URL without embedded credentials');
+    }
+    if (!remoteFileHosts().has(hostname)) {
+        throw new Error('Remote file host is not allowed');
+    }
+
+    const normalizedRequestedMime = String(requestedMime || '').split(';')[0].trim().toLowerCase();
+    if (normalizedRequestedMime && !REMOTE_FILE_MIME_TYPES.has(normalizedRequestedMime)) {
+        throw new Error('Remote file type is not supported');
+    }
+
+    const response = await fetch(parsed, {
+        method: 'GET',
+        redirect: 'error',
+        signal: AbortSignal.timeout(15_000),
+        headers: { Accept: Array.from(REMOTE_FILE_MIME_TYPES).join(', ') },
+    });
+    if (!response.ok) throw new Error(`Remote file download failed (${response.status})`);
+
+    const contentLength = Number(response.headers.get('content-length') || '0');
+    if (contentLength > REMOTE_FILE_MAX_BYTES) throw new Error('Remote file exceeds the size limit');
+
+    const responseMime = String(response.headers.get('content-type') || '').split(';')[0].trim().toLowerCase();
+    const mimeType = responseMime || normalizedRequestedMime;
+    if (!mimeType || !REMOTE_FILE_MIME_TYPES.has(mimeType)) {
+        throw new Error('Remote server returned an unsupported file type');
+    }
+
+    const bytes = new Uint8Array(await response.arrayBuffer());
+    if (bytes.byteLength > REMOTE_FILE_MAX_BYTES) throw new Error('Remote file exceeds the size limit');
+    return { bytes, mimeType };
+};
 
 const getAdminEmails = () => new Set(
     String(Deno.env.get('ADMIN_EMAILS') || '')
@@ -350,7 +411,7 @@ const enforceUsageLimit = async (req: Request) => {
         }
     }
 
-    // No valid Supabase JWT — check for learner code (custom session system)
+    // No valid Supabase JWT ï¿½ check for learner code (custom session system)
     const studentCode = getRequestStudentCode(req);
     const codeVariants = studentCodeVariants(studentCode);
     if (codeVariants.length > 0) {
@@ -599,6 +660,24 @@ serve(async (req) => {
             return new Response("GEMINI_API_KEY not configured on server", { status: 500 });
         }
 
+        const supabase = getSupabaseAdmin();
+        const requester = await resolveRequester(req, supabase);
+        try {
+            await enforceFeatureLimit(supabase, requester, 'talk_and_learn', corsHeaders);
+        } catch (limitError) {
+            if (limitError instanceof Response) return limitError;
+            throw limitError;
+        }
+        await recordGeminiUsageCost(
+            supabase,
+            requester,
+            DEFAULT_GEMINI_MODEL,
+            'talk_and_learn',
+            'websocket-session',
+            null,
+            { usageMetadata: { promptTokenCount: 0, candidatesTokenCount: 0 } },
+        );
+
         const { socket: clientSocket, response } = Deno.upgradeWebSocket(req);
         
         const googleSocket = new WebSocket(`wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContent?key=${apiKey}`);
@@ -701,16 +780,15 @@ serve(async (req) => {
         const outputTokenCap = requester.isAdmin
             ? MAX_OUTPUT_TOKENS_ADMIN
             : paidPlan ? MAX_OUTPUT_TOKENS_PAID : MAX_OUTPUT_TOKENS_FREE;
-        const maxAllowedOutputTokens = requester.isAdmin ? MAX_OUTPUT_TOKENS_ADMIN : MAX_OUTPUT_TOKENS_PAID;
+        const maxAllowedOutputTokens = requester.isAdmin
+            ? MAX_OUTPUT_TOKENS_ADMIN
+            : paidPlan ? MAX_OUTPUT_TOKENS_PAID : MAX_OUTPUT_TOKENS_FREE;
         const requestedOutputTokens = Number(generationConfig?.maxOutputTokens || outputTokenCap);
         const cappedGenerationConfig = {
             ...(generationConfig || {}),
-            // Always use at least outputTokenCap (the plan floor) regardless of what the client requests.
-            // This prevents low client-side maxOutputTokens values (e.g. 2048) from truncating responses.
-            maxOutputTokens: Math.max(
-                outputTokenCap,
-                Number.isFinite(requestedOutputTokens) ? Math.min(requestedOutputTokens, maxAllowedOutputTokens) : outputTokenCap
-            ),
+            maxOutputTokens: Number.isFinite(requestedOutputTokens)
+                ? Math.min(Math.max(1, requestedOutputTokens), maxAllowedOutputTokens)
+                : outputTokenCap,
         };
 
         if (!contents) {
@@ -751,15 +829,12 @@ serve(async (req) => {
 
                             if (!targetUrl) throw new Error("fetchUrl object missing 'url' property");
 
-                            const fileRes = await fetch(targetUrl);
-                            if (!fileRes.ok) throw new Error(`Failed to fetch URL: ${fileRes.statusText}`);
-                            const arrayBuffer = await fileRes.arrayBuffer();
-                            const bytes = new Uint8Array(arrayBuffer);
+                            const { bytes, mimeType } = await fetchRemoteFile(targetUrl, targetMime);
                             const base64 = encodeBase64(bytes);
 
                             parts.push({
                                 inlineData: {
-                                    mimeType: targetMime || 'application/pdf',
+                                    mimeType,
                                     data: base64
                                 }
                             });
@@ -781,14 +856,11 @@ serve(async (req) => {
                         for (const part of content.parts) {
                             if (part.fetchUrl) {
                                 try {
-                                    const fileRes = await fetch(part.fetchUrl.url);
-                                    if (!fileRes.ok) throw new Error(`Failed to fetch URL: ${fileRes.statusText}`);
-                                    const arrayBuffer = await fileRes.arrayBuffer();
-                                    const bytes = new Uint8Array(arrayBuffer);
+                                    const { bytes, mimeType } = await fetchRemoteFile(part.fetchUrl.url, part.fetchUrl.mimeType);
                                     const base64 = encodeBase64(bytes);
 
                                     part.inlineData = {
-                                        mimeType: part.fetchUrl.mimeType || 'application/pdf',
+                                        mimeType,
                                         data: base64
                                     };
                                     delete part.fetchUrl;

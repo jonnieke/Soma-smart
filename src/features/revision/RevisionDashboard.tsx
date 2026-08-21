@@ -148,7 +148,7 @@ export const RevisionDashboard: React.FC = () => {
                             className="py-5 text-lg bg-indigo-600 hover:bg-indigo-700 text-white shadow-xl shadow-indigo-100 border-none group"
                         >
                             <span className="flex items-center justify-center gap-2">
-                                Upgrade to Somo Pro <ShieldCheck className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                                Upgrade to Soma AI Pro <ShieldCheck className="w-5 h-5 group-hover:scale-110 transition-transform" />
                             </span>
                         </Button>
                         <Button
@@ -220,13 +220,13 @@ export const RevisionDashboard: React.FC = () => {
                 if (checkingPaperAccess) return;
                 const itemType = getItemType(data);
 
-                // Syllabus items are always free â€” no paywall, straight to viewer
+                // Syllabus items are always free — no paywall, straight to viewer
                 if (itemType === 'syllabus') {
                     setActiveView({ type: 'syllabus', data });
                     return;
                 }
 
-                // Notes â€” check paywall but different viewer
+                // Notes — check paywall but different viewer
                 if (itemType === 'notes') {
                     if (role === UserRole.GUEST && revisionUsageCount >= 1) {
                         setShowRevisionPaywall(true);

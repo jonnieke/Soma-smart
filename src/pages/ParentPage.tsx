@@ -45,7 +45,7 @@ export const ParentPage: React.FC = () => {
 
         setSearching(false);
         if (error || !data) {
-            setSearchError('No learner found with that code. Ask your child for their student ID from the Somo Smart app.');
+            setSearchError('No learner found with that code. Ask your child for their student ID from the Soma AI app.');
             return;
         }
         const child: LinkedChild = {
@@ -69,9 +69,9 @@ export const ParentPage: React.FC = () => {
         <>
             <Helmet>
                 <html lang="en" />
-                <title>Parent Portal | Track Learner Progress &amp; Study Activity — Somo Smart</title>
-                <meta name="description" content="Mama Soma Parent Portal for Kenyan parents. Track your child's study time, subject scores, quiz attempts, and learning activity on Somo Smart." />
-                <meta name="keywords" content="Mama Soma Kenya, parent learning dashboard, track child KCSE progress, CBC parent monitoring Kenya, Somo Smart parent portal" />
+                <title>Parent Portal | Track Learner Progress &amp; Study Activity — Soma AI</title>
+                <meta name="description" content="Mama Soma Parent Portal for Kenyan parents. Track your child's study time, subject scores, quiz attempts, and learning activity on Soma AI." />
+                <meta name="keywords" content="Mama Soma Kenya, parent learning dashboard, track child KCSE progress, CBC parent monitoring Kenya, Soma AI parent portal" />
 
                 {/* AIO & Search Engine Optimization */}
                 <meta name="smart-search-index" content="index" />
@@ -81,9 +81,9 @@ export const ParentPage: React.FC = () => {
                 <meta name="robots" content="index, follow, max-image-preview:large" />
 
                 {/* OpenGraph */}
-                <meta property="og:site_name" content="Somo Smart" />
+                <meta property="og:site_name" content="Soma AI" />
                 <meta property="og:type" content="website" />
-                <meta property="og:title" content="Parent Portal | Track Learner Progress — Somo Smart" />
+                <meta property="og:title" content="Parent Portal | Track Learner Progress — Soma AI" />
                 <meta property="og:description" content="Mama Soma Parent Portal. Monitor your child's KCSE &amp; CBC learning progress." />
                 <meta property="og:image" content="https://www.somaai.co.ke/hero_option_a.png" />
                 <meta property="og:url" content="https://www.somaai.co.ke/parent" />
@@ -105,7 +105,7 @@ export const ParentPage: React.FC = () => {
                             <div>
                                 <p className="text-sm font-black text-slate-700 mb-1">Enter your child&apos;s student code</p>
                                 <p className="text-xs font-bold text-slate-400 mb-4">
-                                    Your child can find their code in the Somo Smart app under <span className="text-indigo-600">Me → Profile</span>.
+                                    Your child can find their code in the Soma AI app under <span className="text-indigo-600">Me → Profile</span>.
                                 </p>
                                 <div className="flex gap-2">
                                     <input
@@ -134,7 +134,7 @@ export const ParentPage: React.FC = () => {
                             <div className="border-t border-slate-100 pt-4">
                                 <p className="text-xs font-bold text-slate-400 text-center">
                                     Don&apos;t have an account?{' '}
-                                    <button onClick={() => navigate('/')} className="text-indigo-600 underline">Go to Somo Smart</button>
+                                    <button onClick={() => navigate('/')} className="text-indigo-600 underline">Go to Soma AI</button>
                                 </p>
                             </div>
                         </div>

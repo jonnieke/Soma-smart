@@ -41,7 +41,13 @@ import { LogoutModal } from '../components/LogoutModal';
 import { translations } from '../data/translations';
 import { ThemeToggle } from '../components/ThemeToggle';
 import { LandingHome } from '../components/LandingHome';
+import type { TeacherComposerDraft } from '../types/teacherComposer';
 import { examService } from '../services/examService';
+import {
+    buildTeacherComposerRouteState,
+    getTeacherComposerDestination,
+    saveTeacherComposerDraft,
+} from '../types/teacherComposerHandoff';
 import { examPaperBankService } from '../services/examPaperBankService';
 import { safeImport } from '../utils/safeImport';
 import { trackAnalyticsEvent } from '../services/analyticsEventService';
@@ -375,7 +381,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                 const slowTypes = ['2g', 'slow-2g'];
                 if (slowTypes.includes(connection.effectiveType)) {
                     toggleLowDataMode();
-                    console.info('[Somo Smart] Slow network detected, enabling Low-Data Mode automatically.');
+                    console.info('[Soma AI] Slow network detected, enabling Low-Data Mode automatically.');
                 }
                 // Also listen for changes during the session
                 const onChange = () => {
@@ -669,6 +675,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
     const handleRegistrationSuccess = () => {
         setShowRegistration(false);
         if (pendingRoute) {
+            if (pendingRouteState?.source === 'homepage_teacher_composer') {
+                trackFunnelEvent('teacher_composer_auth_completed', {
+                    method: 'registration',
+                    destination: pendingRoute,
+                });
+            }
             navigate(pendingRoute, pendingRouteState ? { state: pendingRouteState } : undefined);
             setPendingRoute(null);
             setPendingRouteState(null);
@@ -685,6 +697,37 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
         }
     };
 
+    const handleTeacherCompose = async (draft: TeacherComposerDraft) => {
+        const destination = getTeacherComposerDestination(draft);
+        const targetRoute = destination.route;
+        const routeState = buildTeacherComposerRouteState(draft);
+
+        await saveTeacherComposerDraft(draft);
+
+        setPendingRoute(targetRoute);
+        setPendingRouteState(routeState);
+        setRole(UserRole.TEACHER);
+
+        if (isRegistered && (role === UserRole.TEACHER || Boolean(teacherProfile?.id))) {
+            trackFunnelEvent('teacher_composer_auth_bypassed', {
+                intent: draft.intent.toLowerCase(),
+                destination: targetRoute,
+                has_attachment: Boolean(draft.file),
+            });
+            navigate(targetRoute, { state: routeState });
+            setPendingRoute(null);
+            setPendingRouteState(null);
+            return;
+        }
+
+        trackFunnelEvent('teacher_composer_auth_required', {
+            intent: draft.intent.toLowerCase(),
+            destination: targetRoute,
+            has_attachment: Boolean(draft.file),
+        });
+        setLoginTab('TEACHER');
+        setShowLogin(true);
+    };
     const handleCardClick = (card: { route: string; role?: UserRole, cta?: string }) => {
         if (card.cta === "Get Started" && card.route === "/learner") {
             // Frictionless Entry: Guest Mode
@@ -776,9 +819,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
 
             <Helmet>
                 <html lang="en" />
-                <title>Somo Smart | KCSE, KPSEA and CBC Study Support for Kenya</title>
-                <meta name="description" content="Somo Smart helps Kenyan learners, teachers and parents with direct answers, exam prep, official notes, past papers, audio learning and progress tracking." />
-                <meta name="keywords" content="Somo Smart, KCSE revision, KPSEA past papers, CBC notes, Kenyan learner app, teacher lesson notes, parent progress tracking" />
+                <title>Soma AI | KCSE, KPSEA and CBC Study Support for Kenya</title>
+                <meta name="description" content="Soma AI helps Kenyan learners, teachers and parents with direct answers, exam prep, official notes, past papers, audio learning and progress tracking." />
+                <meta name="keywords" content="Soma AI, KCSE revision, KPSEA past papers, CBC notes, Kenyan learner app, teacher lesson notes, parent progress tracking" />
 
                 {/* AIO/SEO specific meta tags */}
                 <meta name="smart-search-index" content="index" />
@@ -789,9 +832,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
 
                 {/* Search Engine Optimization */}
                 <meta name="robots" content="index, follow, max-image-preview:large" />
-                <meta name="author" content="Somo Smart" />
-                <meta property="og:site_name" content="Somo Smart" />
-                <meta property="og:title" content="Somo Smart | KCSE, KPSEA and CBC Study Support for Kenya" />
+                <meta name="author" content="Soma AI" />
+                <meta property="og:site_name" content="Soma AI" />
+                <meta property="og:title" content="Soma AI | KCSE, KPSEA and CBC Study Support for Kenya" />
                 <meta property="og:description" content="Direct answers, exam prep, official notes, past papers, audio learning and progress tracking for Kenyan learners, parents and teachers." />
                 <meta property="og:image" content="https://www.somaai.co.ke/hero_option_a.png" />
                 <meta property="og:type" content="website" />
@@ -800,7 +843,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                 {/* Twitter Meta */}
                 <meta name="twitter:card" content="summary_large_image" />
                 <meta name="twitter:site" content="@somasmart" />
-                <meta name="twitter:title" content="Somo Smart | KCSE, KPSEA and CBC Study Support for Kenya" />
+                <meta name="twitter:title" content="Soma AI | KCSE, KPSEA and CBC Study Support for Kenya" />
                 <meta name="twitter:description" content="Direct answers, exam prep, official notes, past papers, audio learning and progress tracking." />
 
                 <link rel="canonical" href="https://www.somaai.co.ke/" />
@@ -811,7 +854,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                     {JSON.stringify({
                         "@context": "https://schema.org",
                         "@type": "EducationalOrganization",
-                        "name": "Somo Smart",
+                        "name": "Soma AI",
                         "url": "https://www.somaai.co.ke",
                         "logo": "https://www.somaai.co.ke/favicon.png",
                         "description": "Study support for Kenyan learners, teachers and parents across KCSE, KPSEA and CBC.",
@@ -825,7 +868,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                     {JSON.stringify({
                         "@context": "https://schema.org",
                         "@type": "SoftwareApplication",
-                        "name": "Somo Smart",
+                        "name": "Soma AI",
                         "operatingSystem": "Web",
                         "applicationCategory": "EducationApplication",
                         "offers": {
@@ -843,7 +886,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                         "mainEntity": [
                             {
                                 "@type": "Question",
-                                "name": "What does Somo Smart do?",
+                                "name": "What does Soma AI do?",
                                 "acceptedAnswer": {
                                     "@type": "Answer",
                                     "text": "It helps Kenyan learners, teachers and parents with direct answers, exam prep, official notes, past papers, audio learning and progress tracking."
@@ -851,7 +894,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                             },
                             {
                                 "@type": "Question",
-                                "name": "Can teachers use Somo Smart?",
+                                "name": "Can teachers use Soma AI?",
                                 "acceptedAnswer": {
                                     "@type": "Answer",
                                     "text": "Yes. Teachers can create notes, lesson flow, quizzes, Darasa recaps and marking feedback."
@@ -877,6 +920,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                 onAskQuestion={(question) => { void handleOpenDetailedView(question); }}
                 onLearnerShortcut={handleLearnerQuickStart}
                 onTeacher={() => handleRoleSelect(UserRole.TEACHER)}
+                onTeacherCompose={handleTeacherCompose}
                 onParent={() => handleRoleSelect(UserRole.PARENT)}
                 onLibrary={handleLibraryAccess}
                 onExamPapers={(paperId) => navigate(paperId ? `/exam-papers?paper=${encodeURIComponent(String(paperId))}` : '/exam-papers')}
@@ -904,7 +948,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                     <div className="flex justify-between items-center py-3">
                         {/* Logo */}
                         <div className="flex items-center gap-3 cursor-pointer" onClick={() => window.scrollTo(0, 0)}>
-                            <img src={logoImg} alt="Somo Smart Logo" width={100} height={100} className="h-14 sm:h-16 w-auto object-contain" />
+                            <img src={logoImg} alt="Soma AI Logo" width={100} height={100} className="h-14 sm:h-16 w-auto object-contain" />
                         </div>
 
                         {/* Desktop Nav */}
@@ -1098,7 +1142,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                                     <Sparkles className="w-4 h-4 text-white" />
                                                 </div>
                                                 <div className="flex-1">
-                                                    <div className="text-[10px] font-black text-indigo-500 uppercase tracking-widest mb-2">Somo Smart Answer</div>
+                                                    <div className="text-[10px] font-black text-indigo-500 uppercase tracking-widest mb-2">Soma AI Answer</div>
                                                     {isGenerating ? (
                                                         <div className="space-y-2">
                                                             <div className="h-3 bg-slate-200 dark:bg-slate-700 rounded-full w-full animate-pulse" />
@@ -1603,7 +1647,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                         {[
                             {
-                                quote: "I used to fail Chemistry consistently. After using Somo Smart for two weeks before my mid-term, I got a B+. The mole calculations finally made sense.",
+                                quote: "I used to fail Chemistry consistently. After using Soma AI for two weeks before my mid-term, I got a B+. The mole calculations finally made sense.",
                                 name: "Kevin M.",
                                 tag: "Form 3",
                                 emoji: "C",
@@ -1617,7 +1661,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                 color: "emerald"
                             },
                             {
-                                quote: "I'm in Form 2 and struggle with English essays. Somo Smart helped me understand how to structure arguments. My teacher noticed the improvement without me even telling her I was using it.",
+                                quote: "I'm in Form 2 and struggle with English essays. Soma AI helped me understand how to structure arguments. My teacher noticed the improvement without me even telling her I was using it.",
                                 name: "Brian O.",
                                 tag: "Form 2",
                                 emoji: "E",
@@ -1895,7 +1939,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                 </div>
                             </div>
                             <p className="text-slate-600 dark:text-slate-400 italic leading-relaxed relative z-10 font-medium">
-                                &quot;Somo Smart explained Chemistry concepts that I struggled with for months. I moved from a C+ to an A- in my latest mocks. The Smart breakdown is just like having a personal tutor.&quot;
+                                &quot;Soma AI explained Chemistry concepts that I struggled with for months. I moved from a C+ to an A- in my latest mocks. The Smart breakdown is just like having a personal tutor.&quot;
                             </p>
                             <div className="mt-6 pt-6 border-t border-slate-200 dark:border-slate-800 flex items-center gap-2 text-xs font-bold text-blue-600 dark:text-blue-400">
                                 <GraduationCap className="w-4 h-4" /> Form 4 Candidate
@@ -1943,7 +1987,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                 </div>
                             </div>
                             <p className="text-slate-600 dark:text-slate-400 italic leading-relaxed relative z-10 font-medium">
-                                &quot;Since subscribing to Somo Smart, I can finally track exactly where my daughter is struggling. The predictive analytics told me she needed help in Algebra weeks before her midterm exams.&quot;
+                                &quot;Since subscribing to Soma AI, I can finally track exactly where my daughter is struggling. The predictive analytics told me she needed help in Algebra weeks before her midterm exams.&quot;
                             </p>
                             <div className="mt-6 pt-6 border-t border-slate-200 dark:border-slate-800 flex items-center gap-2 text-xs font-bold text-orange-600 dark:text-orange-400">
                                 <Users className="w-4 h-4" /> Parent of JSS Student
@@ -2176,7 +2220,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                         {/* Column 1: Brand & Local SEO */}
                         <div className="md:col-span-2">
                             <div className="flex items-center gap-2 cursor-pointer mb-4" onClick={() => window.scrollTo(0, 0)}>
-                                <img src={logoImg} alt="Somo Smart Logo" width={96} height={96} className="h-12 w-auto object-contain grayscale opacity-80 hover:grayscale-0 hover:opacity-100 transition-all dark:invert dark:opacity-60 dark:hover:invert-0 dark:hover:opacity-100" />
+                                <img src={logoImg} alt="Soma AI Logo" width={96} height={96} className="h-12 w-auto object-contain grayscale opacity-80 hover:grayscale-0 hover:opacity-100 transition-all dark:invert dark:opacity-60 dark:hover:invert-0 dark:hover:opacity-100" />
                             </div>
                             <p className="text-slate-500 dark:text-slate-400 text-sm mb-6 max-w-full sm:max-w-sm leading-relaxed">
                                 Kenya&apos;s leading Smart learning platform. Empowering students, teachers, and parents with strictly aligned CBC and KCSE educational tools.
@@ -2216,7 +2260,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                     </div>
 
                     <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-slate-500 dark:text-slate-400">
-                        <p>&copy; {new Date().getFullYear()} Somo Smart. All rights reserved.</p>
+                        <p>&copy; {new Date().getFullYear()} Soma AI. All rights reserved.</p>
                         
                         {/* Social Links */}
                         <div className="flex items-center gap-4">
@@ -2492,6 +2536,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                 onSuccess={(tab) => {
                     if (pendingRoute) {
                         navigate(pendingRoute, pendingRouteState ? { state: pendingRouteState } : undefined);
+                        if (pendingRouteState?.source === 'homepage_teacher_composer') {
+                            trackFunnelEvent('teacher_composer_auth_completed', {
+                                method: 'login',
+                                destination: pendingRoute,
+                            });
+                        }
                         setPendingRoute(null);
                         setPendingRouteState(null);
                     } else {
@@ -2555,7 +2605,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
 
                         <section>
                             <h3 className="text-lg font-bold text-slate-900 mb-2">4. Children&apos;s Privacy</h3>
-                            <p>Somo Smart is designed for students. We do not require email addresses or phone numbers from students under 13. Parent supervision is encouraged.</p>
+                            <p>Soma AI is designed for students. We do not require email addresses or phone numbers from students under 13. Parent supervision is encouraged.</p>
                         </section>
                     </div>
                 }
@@ -2568,17 +2618,17 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                 content={
                     <div className="space-y-6 text-sm text-slate-600">
                         <div className="p-4 bg-orange-50 rounded-lg border border-orange-100 text-orange-800">
-                            <strong>Important:</strong> Somo Smart is an educational aid, not a substitute for professional schooling.
+                            <strong>Important:</strong> Soma AI is an educational aid, not a substitute for professional schooling.
                         </div>
 
                         <section>
                             <h3 className="text-lg font-bold text-slate-900 mb-2">1. Acceptance of Terms</h3>
-                            <p>By accessing Somo Smart, you agree to be bound by these Terms of Service. If you do not agree, please do not use the platform.</p>
+                            <p>By accessing Soma AI, you agree to be bound by these Terms of Service. If you do not agree, please do not use the platform.</p>
                         </section>
 
                         <section>
                             <h3 className="text-lg font-bold text-slate-900 mb-2">2. Educational Disclaimer</h3>
-                            <p>The content provided by Somo Smart is generated by our Smart Engine. While we strive for accuracy:</p>
+                            <p>The content provided by Soma AI is generated by our Smart Engine. While we strive for accuracy:</p>
                             <ul className="list-disc pl-5 space-y-1 mt-2">
                                 <li>Information should be verified with official textbooks.</li>
                                 <li>We are not liable for any inaccuracies in exam preparation materials.</li>
@@ -2596,7 +2646,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
 
                         <section>
                             <h3 className="text-lg font-bold text-slate-900 mb-2">4. Subscription & Access</h3>
-                            <p>Somo Smart offers a limited free tier. Continued access to advanced features (Voice Notes, Unlimited Scanning) may require a premium subscription in the future.</p>
+                            <p>Soma AI offers a limited free tier. Continued access to advanced features (Voice Notes, Unlimited Scanning) may require a premium subscription in the future.</p>
                         </section>
                     </div>
                 }
@@ -2650,22 +2700,4 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
         </div>
     );
 };
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 

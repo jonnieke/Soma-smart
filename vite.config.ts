@@ -20,7 +20,7 @@ export default defineConfig(({ mode }) => {
         registerType: 'autoUpdate',
         includeAssets: ['favicon.png', 'apple-touch-icon.png', 'masked-icon.svg'],
         manifest: {
-          name: 'Somo Smart',
+          name: 'Soma AI',
           short_name: 'Somo',
           description: 'The ultimate AI learning companion',
           theme_color: '#4f46e5',
@@ -38,6 +38,9 @@ export default defineConfig(({ mode }) => {
           ]
         },
         workbox: {
+          skipWaiting: true,
+          clientsClaim: true,
+          cleanupOutdatedCaches: true,
           // Precache assets to ensure the shell loads offline
           globPatterns: ['**/*.{js,css,html,ico,png,svg,json,woff,woff2}']
         }

@@ -1,9 +1,5 @@
-import axios from 'axios';
 import { supabase } from '../lib/supabase';
-import { estimateElevenLabsCostKes, trackUsageCost } from './usageCostService';
-import { assertPlanLimit, recordPlanUsage } from './planLimitService';
-
-const LOCAL_API_KEY = import.meta.env.VITE_ELEVEN_LABS_API_KEY;
+import { assertPlanLimit } from './planLimitService';
 
 // ==========================================================
 // VOICE LIBRARY — curated from ElevenLabs premade catalogue
@@ -69,29 +65,6 @@ const PODCAST_VOICE_SETTINGS = {
     use_speaker_boost: true
 };
 
-const trackVoiceCost = (
-    text: string,
-    feature: string,
-    voiceId: string,
-    model = 'eleven_multilingual_v2',
-    extra: Record<string, unknown> = {}
-) => {
-    const characters = text.length;
-    recordPlanUsage(feature, characters);
-    void trackUsageCost({
-        provider: 'elevenlabs',
-        model,
-        feature,
-        inputTokens: characters,
-        estimatedCostKes: estimateElevenLabsCostKes(characters),
-        metadata: {
-            characters,
-            voice_id: voiceId,
-            ...extra,
-        },
-    });
-};
-
 export const stopSpeech = () => {
     if (currentAudio) {
         currentAudio.pause();
@@ -126,7 +99,6 @@ export const speak = async (text: string, language: 'EN' | 'SW' = 'EN'): Promise
     const cleanText = cleanForTTS(text);
     // Pick voice based on language: Alice (EN) or Brian (SW)
     const selectedVoiceId = language === 'SW' ? VOICE_ID_SW : VOICE_ID_EN;
-    const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
     const lowDataMode = localStorage.getItem('soma_low_data_mode') === 'true';
     if (lowDataMode) return speakWithBrowser(cleanText, language);
 
@@ -138,59 +110,30 @@ export const speak = async (text: string, language: 'EN' | 'SW' = 'EN'): Promise
     }
 
     // Check if we should attempt TTS at all
-    if (!isLocal && !import.meta.env.VITE_SUPABASE_URL) {
+    if (!import.meta.env.VITE_SUPABASE_URL) {
          // Fallback directly if no proxy config exists
     } else {
         try {
-            let audioBlob: Blob;
-
-            if (isLocal && LOCAL_API_KEY && LOCAL_API_KEY.length > 10) {
-                // Direct call bypass for local dev
-                const response = await axios.post(
-                    `https://api.elevenlabs.io/v1/text-to-speech/${selectedVoiceId}`,
-                    {
-                        text: cleanText,
-                        model_id: "eleven_multilingual_v2",
-                        voice_settings: LESSON_VOICE_SETTINGS,
-                    },
-                    {
-                        headers: {
-                            'xi-api-key': LOCAL_API_KEY,
-                            'Content-Type': 'application/json',
-                        },
-                        responseType: 'blob',
-                    }
-                );
-                audioBlob = response.data;
-            } else {
-                // Proxy call for production
-                const { data: { session } } = await supabase.auth.getSession();
-                const token = session?.access_token;
-                const studentCode = localStorage.getItem('soma_active_student') || '';
-                
-                const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-proxy`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
-                        ...(studentCode ? { 'x-student-code': studentCode } : {})
-                    },
-                    body: JSON.stringify({
-                        voiceId: selectedVoiceId,
-                        feature: 'listen_and_learn_voice',
-                        text: cleanText,
-                        model_id: "eleven_multilingual_v2",
-                        voice_settings: LESSON_VOICE_SETTINGS
-                    })
-                });
-
-                if (!response.ok) throw new Error("Proxy response not ok");
-                audioBlob = await response.blob();
-            }
-
-            if (isLocal && LOCAL_API_KEY && LOCAL_API_KEY.length > 10) {
-                trackVoiceCost(cleanText, 'listen_and_learn_voice', selectedVoiceId, 'eleven_multilingual_v2', { language });
-            }
+            const { data: { session } } = await supabase.auth.getSession();
+            const token = session?.access_token;
+            const studentCode = localStorage.getItem('soma_active_student') || '';
+            const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-proxy`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+                    ...(studentCode ? { 'x-student-code': studentCode } : {})
+                },
+                body: JSON.stringify({
+                    voiceId: selectedVoiceId,
+                    feature: 'listen_and_learn_voice',
+                    text: cleanText,
+                    model_id: "eleven_multilingual_v2",
+                    voice_settings: LESSON_VOICE_SETTINGS
+                })
+            });
+            if (!response.ok) throw new Error("Proxy response not ok");
+            const audioBlob = await response.blob();
 
             const audioUrl = URL.createObjectURL(audioBlob);
             const audio = new Audio(audioUrl);
@@ -248,12 +191,6 @@ export const playPodcast = async (
     const signal = podcastController.signal;
 
     const useElevenLabs = true; // We will attempt to use proxy by default
-    const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-
-    if (isLocal && (!LOCAL_API_KEY || LOCAL_API_KEY.length < 5)) {
-        throw new Error("ElevenLabs API key is missing locally, so Listen & Learn cannot use the natural voice.");
-    }
-
     const VOICES = {
         // Matilda — Knowledgeable, Professional, upbeat American female → "Rachel" host persona
         Host: "XrExE9yKIg1WjnnlVkGX",
@@ -263,49 +200,27 @@ export const playPodcast = async (
 
     // Helper to fetch audio
     const fetchAudio = async (text: string, voiceId: string): Promise<string> => {
-        let audioBlob: Blob;
         assertPlanLimit('listen_and_learn_podcast', text.length);
-
-        if (isLocal && LOCAL_API_KEY) {
-             const response = await axios.post(
-                `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`,
-                {
-                    text,
-                    model_id: "eleven_multilingual_v2",
-                    voice_settings: PODCAST_VOICE_SETTINGS,
-                },
-                {
-                    headers: { 'xi-api-key': LOCAL_API_KEY, 'Content-Type': 'application/json' },
-                    responseType: 'blob',
-                }
-            );
-            audioBlob = response.data;
-        } else {
-             const { data: { session } } = await supabase.auth.getSession();
-             const token = session?.access_token;
-             const studentCode = localStorage.getItem('soma_active_student') || '';
-             const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-proxy`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
-                    ...(studentCode ? { 'x-student-code': studentCode } : {})
-                },
-                body: JSON.stringify({
-                    voiceId,
-                    feature: 'listen_and_learn_podcast',
-                    text,
-                    model_id: "eleven_multilingual_v2",
-                    voice_settings: PODCAST_VOICE_SETTINGS
-                })
-             });
-             if (!response.ok) throw new Error("Proxy error for podcast");
-             audioBlob = await response.blob();
-        }
-
-        if (isLocal && LOCAL_API_KEY) {
-            trackVoiceCost(text, 'listen_and_learn_podcast', voiceId, 'eleven_multilingual_v2');
-        }
+        const { data: { session } } = await supabase.auth.getSession();
+        const token = session?.access_token;
+        const studentCode = localStorage.getItem('soma_active_student') || '';
+        const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-proxy`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+                ...(studentCode ? { 'x-student-code': studentCode } : {})
+            },
+            body: JSON.stringify({
+                voiceId,
+                feature: 'listen_and_learn_podcast',
+                text,
+                model_id: "eleven_multilingual_v2",
+                voice_settings: PODCAST_VOICE_SETTINGS
+            })
+        });
+        if (!response.ok) throw new Error("Proxy error for podcast");
+        const audioBlob = await response.blob();
         return URL.createObjectURL(audioBlob);
     };
 
@@ -411,10 +326,7 @@ export const playPodcast = async (
 export const speakConversational = async (text: string, voiceId: string): Promise<void> => {
     stopSpeech(); // Stop any existing speech
 
-    const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-
-    if (!isLocal || (isLocal && LOCAL_API_KEY && LOCAL_API_KEY.length > 10)) {
-        try {
+    try {
             const isSwahiliVoice = voiceId === 'nt9hK6jZNn8o3C1F4w9u' || voiceId === 'Xb7hK6jZNn8o3C1F4w9u';
             const payload: any = {
                 text,
@@ -428,41 +340,20 @@ export const speakConversational = async (text: string, voiceId: string): Promis
             };
             assertPlanLimit('conversational_voice', text.length);
 
-            let audioBlob: Blob;
-
-            if (isLocal && LOCAL_API_KEY) {
-                const response = await axios.post(
-                    `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`,
-                    payload,
-                    {
-                        headers: {
-                            'xi-api-key': LOCAL_API_KEY,
-                            'Content-Type': 'application/json',
-                        },
-                        responseType: 'blob',
-                    }
-                );
-                audioBlob = response.data;
-            } else {
-                const { data: { session } } = await supabase.auth.getSession();
-                const token = session?.access_token;
-                const studentCode = localStorage.getItem('soma_active_student') || '';
-                const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-proxy`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
-                        ...(studentCode ? { 'x-student-code': studentCode } : {})
-                    },
-                    body: JSON.stringify({ voiceId, feature: 'conversational_voice', ...payload })
-                });
-                if (!response.ok) throw new Error("Conversational proxy error");
-                audioBlob = await response.blob();
-            }
-
-            if (isLocal && LOCAL_API_KEY) {
-                trackVoiceCost(text, 'conversational_voice', voiceId, payload.model_id);
-            }
+            const { data: { session } } = await supabase.auth.getSession();
+            const token = session?.access_token;
+            const studentCode = localStorage.getItem('soma_active_student') || '';
+            const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-proxy`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+                    ...(studentCode ? { 'x-student-code': studentCode } : {})
+                },
+                body: JSON.stringify({ voiceId, feature: 'conversational_voice', ...payload })
+            });
+            if (!response.ok) throw new Error("Conversational proxy error");
+            const audioBlob = await response.blob();
 
             const audioUrl = URL.createObjectURL(audioBlob);
             const audio = new Audio(audioUrl);
@@ -481,9 +372,8 @@ export const speakConversational = async (text: string, voiceId: string): Promis
                 };
                 audio.play().catch(reject);
             });
-        } catch (error: any) {
-            console.error("ElevenLabs Conversational TTS failed:", error.response?.data || error.message);
-        }
+    } catch (error: any) {
+        console.error("ElevenLabs Conversational TTS failed:", error.message);
     }
 
     // Fallback: Browser native TTS

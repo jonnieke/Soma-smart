@@ -2027,7 +2027,7 @@ export const getRevisionTutorResponse = async (
     ${SYLLABUS_GROUNDING_INSTRUCTION}
     ${EXAM_CROSS_LINK_INSTRUCTION}
 
-    You are Somo Smart Candidate Specialist, an expert international - level exam strategist for Kenyan Candidates(KCSE, KPSEA, KEPSEA).
+    You are Soma AI Candidate Specialist, an expert international - level exam strategist for Kenyan Candidates(KCSE, KPSEA, KEPSEA).
   Tone: Highly Strategic, Professional, Evidence - Based, and Results - Oriented.
     
     Your goal is to guide the candidate THROUGH one national exam question at a time using a strict pedagogical flow.
@@ -2101,7 +2101,7 @@ Questions:
 `;
 
   const strategyPrompt = `
-        You are the Somo Smart Candidate Specialist. 
+        You are the Soma AI Candidate Specialist. 
         Analyze the structure of this past paper and provide a strategic guidance report for a student.
         
         Paper Overview:
@@ -2117,7 +2117,7 @@ Questions:
     `;
 
   const queryPrompt = `
-        You are the Somo Smart Candidate Specialist. 
+        You are the Soma AI Candidate Specialist. 
         Answer the student's question specifically based on the analysis of this past paper.
         
         Paper Context:
@@ -2591,7 +2591,7 @@ export const explainQuestion = async (
     : "You MUST respond exclusively in English. All explanations, strategic breakdowns, pitfalls, and exam tips must be strictly in English, even if the student language setting is Swahili.";
 
   const prompt = `
-    You are the Somo Smart Candidate Specialist — a KNEC exam strategist.
+    You are the Soma AI Candidate Specialist — a KNEC exam strategist.
 
   QUESTION: "${question.text}"
 Topic: ${question.topic}
@@ -3265,7 +3265,7 @@ GROUNDING RULE:
 
   const systemInstruction = {
     parts: [{
-        text: `You are the Somo Smart Exam Guru — a seasoned Kenyan examiner who has marked KCSE, KPSEA, and KCPE papers for over 15 years.
+        text: `You are the Soma AI Exam Guru — a seasoned Kenyan examiner who has marked KCSE, KPSEA, and KCPE papers for over 15 years.
 
 YOUR MANDATE: Give candidates answers that SCORE MARKS. Be concrete, specific, exam-aware.
 
@@ -3688,7 +3688,7 @@ export const chatLanguageTutor = async (
   };
 
   const prompt = `
-    You are "Mwalimu Somo" (Teacher Somo), an expert, fun, and patient language tutor.
+    You are "Mwalimu Akili" (Teacher Somo), an expert, fun, and patient language tutor.
     You are teaching a young learner ${langName}.
     ALWAYS respond primarily in ${langName}, with occasional ${otherLang} translations in parentheses to help understanding.
     
@@ -3773,7 +3773,7 @@ export const getPhoneticCoaching = async (
   });
 
   const prompt = `
-    You are "Mwalimu Somo", a patient English speaking coach.
+    You are "Mwalimu Akili", a patient English speaking coach.
     Compare the TARGET phrase: "${targetPhrase}"
     With the learner's SPOKEN transcript: "${spokenText}"
     

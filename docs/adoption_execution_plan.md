@@ -1,4 +1,4 @@
-# Somo Smart Adoption Execution Plan
+# Soma AI Adoption Execution Plan
 
 ## Objective
 Increase early adoption and repeat usage by sequencing work around three core loops:

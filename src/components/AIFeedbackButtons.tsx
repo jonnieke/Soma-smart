@@ -55,7 +55,7 @@ export const AIFeedbackButtons: React.FC<AIFeedbackButtonsProps> = ({
             <div className={`flex items-center gap-2 pt-3 mt-3 border-t border-slate-100 dark:border-slate-800 ${className}`}>
                 <CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0" />
                 <p className="text-xs font-bold text-slate-500 dark:text-slate-400">
-                    {submitted === 'GOOD' ? 'Great! Thanks for confirming.' : 'Thank you — your correction helps improve Somo Smart for all Kenyan learners.'}
+                    {submitted === 'GOOD' ? 'Great! Thanks for confirming.' : 'Thank you — your correction helps improve Soma AI for all Kenyan learners.'}
                 </p>
             </div>
         );

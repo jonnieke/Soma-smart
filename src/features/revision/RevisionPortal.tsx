@@ -149,9 +149,9 @@ export const RevisionPortal: React.FC = () => {
         <div className="min-h-screen bg-slate-900 text-slate-100 font-sans selection:bg-indigo-500 selection:text-white">
             <Helmet>
                 <html lang="en" />
-                <title>Candidates Exam Hub | KCSE, KPSEA &amp; KJSEA Revision — Somo Smart</title>
+                <title>Candidates Exam Hub | KCSE, KPSEA &amp; KJSEA Revision — Soma AI</title>
                 <meta name="description" content="The dedicated candidates hub for Kenyan KCSE, KPSEA &amp; CBC students. Listen to audio notes, practice past papers under exam conditions, and get instant AI exam coaching." />
-                <meta name="keywords" content="KCSE candidate revision, KPSEA candidates hub, CBC Grade 9 revision, listen and learn Kenya, KCSE past papers online, Somo Smart exam prep" />
+                <meta name="keywords" content="KCSE candidate revision, KPSEA candidates hub, CBC Grade 9 revision, listen and learn Kenya, KCSE past papers online, Soma AI exam prep" />
 
                 {/* AIO & Search Engine Optimization */}
                 <meta name="smart-search-index" content="index" />
@@ -161,9 +161,9 @@ export const RevisionPortal: React.FC = () => {
                 <meta name="robots" content="index, follow, max-image-preview:large" />
 
                 {/* OpenGraph */}
-                <meta property="og:site_name" content="Somo Smart" />
+                <meta property="og:site_name" content="Soma AI" />
                 <meta property="og:type" content="website" />
-                <meta property="og:title" content="Candidates Exam Hub | KCSE, KPSEA &amp; KJSEA Revision — Somo Smart" />
+                <meta property="og:title" content="Candidates Exam Hub | KCSE, KPSEA &amp; KJSEA Revision — Soma AI" />
                 <meta property="og:description" content="The dedicated candidates hub for Kenyan students. Listen to audio revision, attempt past papers, and fix weak topics." />
                 <meta property="og:image" content="https://www.somaai.co.ke/hero_option_a.png" />
                 <meta property="og:url" content="https://www.somaai.co.ke/revision" />
@@ -174,11 +174,11 @@ export const RevisionPortal: React.FC = () => {
                     {JSON.stringify({
                         "@context": "https://schema.org",
                         "@type": "Course",
-                        "name": "Somo Smart Candidates Revision Hub",
+                        "name": "Soma AI Candidates Revision Hub",
                         "description": "Comprehensive revision hub for KCSE, KPSEA and KJSEA candidates in Kenya.",
                         "provider": {
                             "@type": "Organization",
-                            "name": "Somo Smart",
+                            "name": "Soma AI",
                             "url": "https://www.somaai.co.ke"
                         },
                         "educationalLevel": ["Form 4 KCSE", "Grade 9 KJSEA", "Grade 6 KPSEA"],
@@ -198,8 +198,8 @@ export const RevisionPortal: React.FC = () => {
                         onClick={() => navigate('/')}
                         className="flex items-center gap-2.5 transition hover:opacity-90"
                     >
-                        <img src={logoImg} alt="Somo Smart Logo" className="h-9 w-9 object-contain" />
-                        <span className="text-xl font-black text-white">Somo Smart</span>
+                        <img src={logoImg} alt="Soma AI Logo" className="h-9 w-9 object-contain" />
+                        <span className="text-xl font-black text-white">Soma AI</span>
                         <span className="inline-flex items-center gap-1 rounded-full bg-indigo-500/20 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-indigo-300 border border-indigo-500/30">
                             <Flame className="w-3 h-3 text-amber-400 fill-amber-400" /> Candidates Hub
                         </span>

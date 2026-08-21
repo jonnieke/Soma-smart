@@ -76,13 +76,13 @@ export const formatStudyNoteForWhatsApp = (note: StudyNote) => {
     : content;
 
   return [
-    '*Somo Smart Study Note*',
+    '*Soma AI Study Note*',
     `*${compactText(note.title)}*`,
     heading,
     '',
     trimmedContent,
     '',
-    `Revise, listen and practise on Somo Smart: ${SOMO_LEARNER_URL}`,
+    `Revise, listen and practise on Soma AI: ${SOMO_LEARNER_URL}`,
   ].filter((line, index, lines) => line || (index > 0 && lines[index - 1])).join('\n');
 };
 
@@ -103,7 +103,7 @@ export const formatAkiliAnswerForWhatsApp = (answer: {
     .slice(0, 5)
     .map(point => cleanShareText(point).slice(0, 180));
   const summaryPoints = rawSummaryPoints.map(point => `- ${point}`);
-  const footer = `Learn, listen and practise on Somo Smart: ${SOMO_LEARNER_URL}`;
+  const footer = `Learn, listen and practise on Soma AI: ${SOMO_LEARNER_URL}`;
   const cleanedExplanation = cleanShareText(answer.explanation);
   const baseExplanation = cleanedExplanation.length >= 180
     ? cleanedExplanation
@@ -157,7 +157,7 @@ export const formatWeeklyProgressForWhatsApp = (progress: {
   const learnerName = compactText(progress.learnerName || 'Learner').slice(0, 80);
   const grade = progress.grade ? compactText(progress.grade).slice(0, 60) : 'Learner';
   const lines = [
-    '*Somo Smart Weekly Progress*',
+    '*Soma AI Weekly Progress*',
     `*${learnerName}* | ${grade}`,
     '',
     `Study streak: *${Math.max(0, Math.round(progress.streak))} day${progress.streak === 1 ? '' : 's'}*`,
@@ -175,12 +175,12 @@ export const formatWeeklyProgressForWhatsApp = (progress: {
 export const formatParentConnectionForWhatsApp = (learnerName?: string) => {
   const learner = compactText(learnerName || 'Your learner').slice(0, 80);
   return [
-    '*Somo Smart parent connection*',
+    '*Soma AI parent connection*',
     '',
     `${learner} connected this number for learning updates.`,
     'Study notes and quiz progress can now be shared with you when the learner chooses. Nothing is sent automatically.',
     '',
-    `Open Somo Smart: ${SOMO_LEARNER_URL}`,
+    `Open Soma AI: ${SOMO_LEARNER_URL}`,
   ].join('\n');
 };
 export const formatQuizResultForWhatsApp = (result: {
@@ -198,7 +198,7 @@ export const formatQuizResultForWhatsApp = (result: {
       : 'A useful starting point - review the topic and try again.';
 
   return [
-    '*Somo Smart Learning Update*',
+    '*Soma AI Learning Update*',
     `*${topic}*${grade ? ` | ${grade}` : ''}`,
     '',
     `Quiz score: *${score}%*`,
@@ -222,11 +222,11 @@ export const formatStudyPackForWhatsApp = (notes: StudyNote[], grade?: string) =
   });
 
   return [
-    '*Somo Smart*',
+    '*Soma AI*',
     packHeading,
     '',
     ...noteSections.flatMap(section => [section, '']),
-    'Open Somo Smart to listen, practise and test yourself: ' + SOMO_LEARNER_URL,
+    'Open Soma AI to listen, practise and test yourself: ' + SOMO_LEARNER_URL,
   ].join('\n').trim();
 };
 

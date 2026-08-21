@@ -115,7 +115,7 @@ export const Overview: React.FC = () => {
                         </div>
                         <h2 className="text-3xl md:text-4xl font-black tracking-tight mb-3">One view for users, content, revenue, and platform health.</h2>
                         <p className="text-slate-300/90 max-w-2xl leading-relaxed">
-                            This is the operational layer for Somo Smart: who is onboarded, what learners are using, where the content lives,
+                            This is the operational layer for Soma AI: who is onboarded, what learners are using, where the content lives,
                             and whether the platform is keeping its margin while helping students and teachers.
                         </p>
                     </div>

@@ -41,7 +41,7 @@ export const OfflinePage: React.FC = () => {
 
                 <div className="pt-4 border-t border-slate-100">
                     <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">
-                        Tip: Open Somo Smart while online to save lessons for later
+                        Tip: Open Soma AI while online to save lessons for later
                     </p>
                 </div>
             </div>

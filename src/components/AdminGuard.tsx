@@ -123,7 +123,7 @@ export const AdminGuard: React.FC<AdminGuardProps> = ({ children, onNavigateBack
                     <div className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg shadow-indigo-500/20">
                         <Lock className="w-8 h-8 text-white" />
                     </div>
-                    <h2 className="text-2xl font-bold text-white mb-2">Somo Admin</h2>
+                    <h2 className="text-2xl font-bold text-white mb-2">Soma AI Admin</h2>
                     <p className="text-slate-400 text-sm mb-6">Sign in with an authorized admin account.</p>
                     <p className="text-slate-500 text-xs mb-6 leading-relaxed">
                         A teacher email can also unlock admin, as long as it&apos;s added to the admin allowlist.

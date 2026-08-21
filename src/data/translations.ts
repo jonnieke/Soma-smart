@@ -3,7 +3,7 @@ export const translations = {
         hero: {
             pillStudents: "Built for Kenyan Students & Teachers",
             pillTeachers: "Teachers: Save planning time",
-            headline: "Somo Smart - A study coach for CBC learners ",
+            headline: "Soma AI - A study coach for CBC learners ",
             gradient: "& time-saving tools for Kenyan teachers.",
             subheadline: "Learners scan homework and get instant, step-by-step explanations. Teachers auto-generate exams, notes & mark papers in minutes, not hours.",
             ctaLearner: "Try Learner for Free",
@@ -31,7 +31,7 @@ export const translations = {
                 desc: "Mark a whole class in minutes. Get your evenings back."
             },
             homework: {
-                title: "Somo Smart Homework",
+                title: "Soma AI Homework",
                 desc: "Personalized homework for KCSE & CBC in seconds."
             }
         },
@@ -39,7 +39,7 @@ export const translations = {
             badge: "The Teacher's Secret Weapon",
             title: "A professional teaching assistant ",
             gradient: "in your pocket.",
-            desc: "Somo Smart isn't just about the technology; it's about professional leverage. We give you back your evenings by automating the most time-consuming parts of the job.",
+            desc: "Soma AI isn't just about the technology; it's about professional leverage. We give you back your evenings by automating the most time-consuming parts of the job.",
             printables: {
                 title: "Printable Materials in Seconds",
                 desc: "Generate professional KCSE/CBC exams, schemes of work, and lesson plans as PDFs ready for the printer."
@@ -50,7 +50,7 @@ export const translations = {
             },
             marking: {
                 title: "Automated Marking",
-                desc: "Just scan a stack of assignments. Somo Smart marks them instantly based on your specific criteria."
+                desc: "Just scan a stack of assignments. Soma AI marks them instantly based on your specific criteria."
             },
             saveTime: {
                 hours: "10+ Hours",
@@ -61,20 +61,20 @@ export const translations = {
         roles: {
             title: "Unlock Your ",
             gradient: "Potential.",
-            subtitle: "Whether you're a student aiming for top grades or a teacher reclaiming your time, Somo Smart is built for you.",
+            subtitle: "Whether you're a student aiming for top grades or a teacher reclaiming your time, Soma AI is built for you.",
             student: {
                 title: "For Learners",
                 desc: "Ace your exams with your smart powered study companion.",
                 points: [
                     "Scan & Learn Instantly",
-                    "Simple Somo Smart Explanations",
+                    "Simple Soma AI Explanations",
                     "Unlimited CBC & KCSE Revision Quizzes"
                 ],
                 cta: "Start Learning"
             },
             teacher: {
                 title: "For Teachers",
-                desc: "Teach better, work less. Let Somo Smart handle the prep.",
+                desc: "Teach better, work less. Let Soma AI handle the prep.",
                 points: [
                     "Auto-Mark Papers in Seconds",
                     "Printable Exams & Plans",
@@ -104,7 +104,7 @@ export const translations = {
             subtitle: "Get from a confused student to a subject master in 4 easy steps.",
             steps: [
                 { title: "Scan or Upload", desc: "Snap a photo of your textbook, notes or homework." },
-                { title: "Get Explanations", desc: "Somo Smart breaks it down into simple terms you understand." },
+                { title: "Get Explanations", desc: "Soma AI breaks it down into simple terms you understand." },
                 { title: "Smart Quizzes", desc: "Test your knowledge with your smart study companion's practice questions." },
                 { title: "Listen & Revise", desc: "Listen to simplified lessons on the go to remember more." }
             ]
@@ -204,7 +204,7 @@ export const translations = {
                 pricingPlans: "Pricing Plans",
                 logout: "Logout",
                 internetReq: "Internet Required",
-                connectPrompt: "Connect to internet to use Somo Smart",
+                connectPrompt: "Connect to internet to use Soma AI",
                 topicPrompt: "Enter a topic and upload files to start."
             },
             onboarding: {
@@ -234,7 +234,7 @@ export const translations = {
                 recordTitle: "Record Your Class",
                 recordDesc: "Capture the lesson in real-time. Somo will generate comprehensive notes, summaries, and quizzes automatically.",
                 generatingTitle: "Generating Lesson...",
-                generatingDesc: "Somo Smart is analyzing the audio, creating notes, highlighting key terms, and generating quiz questions.",
+                generatingDesc: "Soma AI is analyzing the audio, creating notes, highlighting key terms, and generating quiz questions.",
                 reviewTitle: "Review Recording",
                 reviewDesc: "Listen to verify clarity before we analyze it.",
                 retake: "Retake",
@@ -246,12 +246,12 @@ export const translations = {
                 recentLessons: "Recent Lessons",
                 copiedToClipboard: "Copied to clipboard",
                 lessonSaved: "Lesson Saved Successfully to your Teacher Account!",
-                shareText: "Books *Lesson: {topic}*\n\n{summary}\n\nStart learning on Somo Smart!",
+                shareText: "Books *Lesson: {topic}*\n\n{summary}\n\nStart learning on Soma AI!",
                 copyLinkManual: "Link copied to clipboard! (Share menu closed)",
                 lessonDetailsCopied: "Lesson details copied to clipboard!",
                 limitReachedTitle: "Free Sessions Exhausted",
-                limitReachedDesc: "You've successfully generated 3 lessons using Darasa Mode! Upgrade to Somo Pro for Teachers to continue recording unlimited lessons.",
-                upgradeNow: "Upgrade to Somo Pro",
+                limitReachedDesc: "You've successfully generated 3 lessons using Darasa Mode! Upgrade to Soma AI Pro for Teachers to continue recording unlimited lessons.",
+                upgradeNow: "Upgrade to Soma AI Pro",
                 freeUses: "Free Lessons Left",
                 limitToast: "You have {count} free lessons remaining."
             },
@@ -281,7 +281,7 @@ export const translations = {
         hero: {
             pillStudents: "Built for Kenyan Students & Teachers",
             pillTeachers: "Teachers: Save planning time",
-            headline: "Somo Smart - A study coach for CBC learners ",
+            headline: "Soma AI - A study coach for CBC learners ",
             gradient: "& des outils gain de temps pour les enseignants kényans.",
             subheadline: "Les apprenants scannent leurs devoirs et obtiennent des explications étape par étape. Les enseignants génèrent automatiquement examens, notes et corrigent en minutes — pas en heures.",
             ctaLearner: "Essayer Apprenant Gratuitement",
@@ -309,7 +309,7 @@ export const translations = {
                 desc: "Corrigez une classe entière en quelques minutes. Récupérez vos soirées."
             },
             homework: {
-                title: "Devoirs Somo Smart",
+                title: "Devoirs Soma AI",
                 desc: "Devoirs personnalisés pour KCSE & CBC en quelques secondes."
             }
         },
@@ -317,7 +317,7 @@ export const translations = {
             badge: "L'arme secrète de l'enseignant",
             title: "Un assistant d'enseignement professionnel ",
             gradient: "dans votre poche.",
-            desc: "Somo Smart n'est pas seulement une question de technologie ; c'est un levier professionnel. Nous vous rendons vos soirées en automatisant les parties les plus chronophages de votre travail.",
+            desc: "Soma AI n'est pas seulement une question de technologie ; c'est un levier professionnel. Nous vous rendons vos soirées en automatisant les parties les plus chronophages de votre travail.",
             printables: {
                 title: "Supports imprimables en quelques secondes",
                 desc: "Générez des examens KCSE/CBC professionnels, des plans de travail et des cours au format PDF prêts pour l'impression."
@@ -328,7 +328,7 @@ export const translations = {
             },
             marking: {
                 title: "Notation automatisée",
-                desc: "Scannez simplement une pile de devoirs. Somo Smart les note instantanément selon vos critères spécifiques."
+                desc: "Scannez simplement une pile de devoirs. Soma AI les note instantanément selon vos critères spécifiques."
             },
             saveTime: {
                 hours: "10+ Heures",
@@ -339,20 +339,20 @@ export const translations = {
         roles: {
             title: "Libérez votre ",
             gradient: "Potentiel.",
-            subtitle: "Que vous soyez un étudiant visant l'excellence ou un enseignant souhaitant gagner du temps, Somo Smart est fait pour vous.",
+            subtitle: "Que vous soyez un étudiant visant l'excellence ou un enseignant souhaitant gagner du temps, Soma AI est fait pour vous.",
             student: {
                 title: "Pour les Apprenants",
                 desc: "Réussissez vos examens avec votre compagnon d'étude intelligent.",
                 points: [
                     "Scannez et apprenez instantanément",
-                    "Explications simples Somo Smart",
+                    "Explications simples Soma AI",
                     "Quiz de révision CBC & KCSE illimités"
                 ],
                 cta: "Commencer à apprendre"
             },
             teacher: {
                 title: "Pour les Enseignants",
-                desc: "Enseignez mieux, travaillez moins. Laissez Somo Smart gérer la préparation.",
+                desc: "Enseignez mieux, travaillez moins. Laissez Soma AI gérer la préparation.",
                 points: [
                     "Correction automatique en quelques secondes",
                     "Examens et plans imprimables",
@@ -382,7 +382,7 @@ export const translations = {
             subtitle: "Passez d'un étudiant confus à un maître du sujet en 4 étapes simples.",
             steps: [
                 { title: "Scanner ou Télécharger", desc: "Prenez une photo de votre manuel, de vos notes ou de vos devoirs." },
-                { title: "Obtenir des explications", desc: "Somo Smart décompose le contenu en termes simples que vous comprenez." },
+                { title: "Obtenir des explications", desc: "Soma AI décompose le contenu en termes simples que vous comprenez." },
                 { title: "Quiz intelligents", desc: "Testez vos connaissances avec les questions d'entraînement de votre compagnon d'étude." },
                 { title: "Écouter et réviser", desc: "Écoutez des leçons simplifiées lors de vos déplacements pour mieux mémoriser." }
             ]
@@ -405,7 +405,7 @@ export const translations = {
             actions: {
                 scan: "Scanner Devoirs",
                 audio: "Écouter Leçon",
-                topic: "Demander à Somo Smart",
+                topic: "Demander à Soma AI",
                 library: "Ma Bibliothèque",
                 pastPapers: "Révision CBC & KCSE",
                 lessonRecap: "Résumé du Cours",
@@ -482,7 +482,7 @@ export const translations = {
                 pricingPlans: "Tarifs",
                 logout: "Déconnexion",
                 internetReq: "Internet Requis",
-                connectPrompt: "Connectez-vous à Internet pour utiliser Somo Smart",
+                connectPrompt: "Connectez-vous à Internet pour utiliser Soma AI",
                 topicPrompt: "Entrez un sujet et téléchargez des fichiers pour commencer."
             },
             onboarding: {
@@ -512,7 +512,7 @@ export const translations = {
                 recordTitle: "Enregistrez votre cours",
                 recordDesc: "Capturez la leçon en temps réel. Somo générera automatiquement des notes complètes, des résumés et des quiz.",
                 generatingTitle: "Génération de la leçon...",
-                generatingDesc: "Somo Smart analyse l'audio, crée des notes, souligne les termes clés et génére des questions de quiz.",
+                generatingDesc: "Soma AI analyse l'audio, crée des notes, souligne les termes clés et génére des questions de quiz.",
                 reviewTitle: "Réviser l'enregistrement",
                 reviewDesc: "Écoutez pour vérifier la clarté avant l'analyse.",
                 retake: "Recommencer",
@@ -524,12 +524,12 @@ export const translations = {
                 recentLessons: "Leçons récentes",
                 copiedToClipboard: "Copié dans le presse-papiers",
                 lessonSaved: "Leçon enregistrée avec succès dans votre compte enseignant !",
-                shareText: "Books *Leçon : {topic}*\n\n{summary}\n\nCommencez à apprendre sur Somo Smart !",
+                shareText: "Books *Leçon : {topic}*\n\n{summary}\n\nCommencez à apprendre sur Soma AI !",
                 copyLinkManual: "Lien copié dans le presse-papiers ! (Menu de partage fermé)",
                 lessonDetailsCopied: "Détails de la leçon copiés dans le presse-papiers !",
                 limitReachedTitle: "Sessions Gratuites Épuisées",
-                limitReachedDesc: "Vous avez généré avec succès 3 leçons en mode Darasa ! Passez à Somo Pro pour les Enseignants pour continuer à enregistrer des leçons illimitées.",
-                upgradeNow: "Passer à Somo Pro",
+                limitReachedDesc: "Vous avez généré avec succès 3 leçons en mode Darasa ! Passez à Soma AI Pro pour les Enseignants pour continuer à enregistrer des leçons illimitées.",
+                upgradeNow: "Passer à Soma AI Pro",
                 freeUses: "Leçons Gratuites Restantes",
                 limitToast: "Il vous reste {count} leçons gratuites."
             },

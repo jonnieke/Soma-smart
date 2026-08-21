@@ -136,8 +136,8 @@ export class ErrorBoundary extends Component<Props, State> {
                         {/* Message */}
                         <p className="text-slate-500 dark:text-slate-400 mb-6 text-sm leading-relaxed">
                             {isOffline
-                                ? 'Somo Smart needs an internet connection to load this section. Please check your network and try again.'
-                                : 'Somo Smart encountered an unexpected error. This is usually caused by a stale cached version. Refreshing typically fixes it.'}
+                                ? 'Soma AI needs an internet connection to load this section. Please check your network and try again.'
+                                : 'Soma AI encountered an unexpected error. This is usually caused by a stale cached version. Refreshing typically fixes it.'}
                         </p>
 
                         {/* CTA */}

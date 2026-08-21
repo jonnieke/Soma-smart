@@ -76,7 +76,7 @@ export const SessionConflictModal: React.FC = () => {
 
                             <div className="mt-8 flex items-center justify-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-slate-50 py-2 rounded-full">
                                 <Sparkles className="w-3 h-3 text-orange-400" />
-                                Secured by Somo Smart Protection
+                                Secured by Soma AI Protection
                             </div>
                         </div>
                     </div>

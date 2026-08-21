@@ -32,6 +32,7 @@ import { safeImport } from '../../utils/safeImport';
 import { shareToWhatsApp, shareToTelegram } from '../../utils/shareUtils';
 import { TeacherDashboardTab } from './teacherNavigation';
 import { launchFeatures } from '../../config/launchFeatures';
+import type { TeacherComposerDraft } from '../../types/teacherComposer';
 
 type TeacherGeminiService = typeof import('../../services/geminiService');
 
@@ -69,9 +70,10 @@ type TeacherActiveTab = 'DASHBOARD' | TeacherDashboardTab | 'EARNINGS' | 'HOME' 
 interface TeacherProps {
     onNavigate: (view: ViewState) => void;
     initialTab?: TeacherActiveTab;
+    initialDraft?: TeacherComposerDraft;
 }
 
-export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTab }) => {
+export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTab, initialDraft }) => {
     const {
         teacherUsageCount, incrementTeacherUsage, teacherProfile,
         updateTeacherProfile, teacherHistory, saveTeacherActivity,
@@ -135,7 +137,16 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
             return false;
         }
     });
-    const [teacherNotice, setTeacherNotice] = useState<{ type: 'success' | 'error' | 'info'; text: string } | null>(null);
+    const [teacherNotice, setTeacherNotice] = useState<{ type: 'success' | 'error' | 'info'; text: string } | null>(() => {
+        if (!initialDraft) return null;
+        const messages = {
+            CREATE: 'Your homepage request is ready. Review the details, then create your resource.',
+            MARK: 'Your marking request is ready. Add learner and rubric details, then run the grader.',
+            ASSESS: 'Your assessment brief is ready. Review the settings, then generate it.',
+            MARKETPLACE: 'Your marketplace draft is ready for review.',
+        };
+        return { type: 'info', text: messages[initialDraft.intent] };
+    });
     const [activeTab, setActiveTab] = useState<TeacherActiveTab>(initialTab || 'DASHBOARD');
 
     useEffect(() => {
@@ -185,7 +196,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                 // We have profile, go ahead
                 const paymentDetails = {
                     amount: plan.price,
-                    description: `Somo Smart ${plan.name} Subscription`,
+                    description: `Soma AI ${plan.name} Subscription`,
                     email: teacherProfile.email, // Ensure email is in profile or context
                     phoneNumber: "", // Option to add phone if available
                     firstName: teacherProfile.name.split(' ')[0],
@@ -290,11 +301,19 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
 
     // Exam Generator State
     const [showExamGen, setShowExamGen] = useState(false);
-    const [advFiles, setAdvFiles] = useState<File[]>([]);
-    const [advTopic, setAdvTopic] = useState("");
+    const [advFiles, setAdvFiles] = useState<File[]>(() =>
+        initialDraft?.intent === 'ASSESS' && initialDraft.file ? [initialDraft.file] : []
+    );
+    const [advTopic, setAdvTopic] = useState(
+        initialDraft?.intent === 'ASSESS' ? initialDraft.prompt : ""
+    );
     const [advCount, setAdvCount] = useState(5);
     const [advType, setAdvType] = useState<'MCQ' | 'OPEN'>('MCQ');
-    const [lessonPlanDraft, setLessonPlanDraft] = useState<{ topic: string; grade: string; subject: string; objectives?: string } | null>(null);
+    const [lessonPlanDraft, setLessonPlanDraft] = useState<{ topic: string; grade: string; subject: string; objectives?: string } | null>(() =>
+        initialDraft?.intent === 'CREATE'
+            ? { topic: initialDraft.prompt, grade: selectedClass, subject: selectedSubject, objectives: initialDraft.file ? `Use the attached source file: ${initialDraft.file.name}` : undefined }
+            : null
+    );
     const [schemeDraft, setSchemeDraft] = useState<{ grade: string; subject: string; term: string; year: string } | null>(null);
     const [homeworkDraft, setHomeworkDraft] = useState<{ topic: string; grade: string; subject: string; difficulty: 'EASY' | 'MEDIUM' | 'HARD' } | null>(null);
 
@@ -303,7 +322,9 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
     const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
 
     // PDF Selection State
-    const [pdfFile, setPdfFile] = useState<File | null>(null);
+    const [pdfFile, setPdfFile] = useState<File | null>(
+        initialDraft?.intent === 'CREATE' ? initialDraft.file || null : null
+    );
 
     // Results
     const [generatedNote, setGeneratedNote] = useState<TeacherNote | null>(null);
@@ -1055,7 +1076,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                 <div className="max-w-[1440px] mx-auto px-4 md:px-8 h-[72px] flex items-center justify-between">
                     {/* Left: Logo - clickable to go home */}
                     <div className="flex items-center gap-3 cursor-pointer group" onClick={() => { setActiveTab('DASHBOARD'); navigate('/teacher'); }}>
-                        <img src={logoImg} alt="Somo Smart Logo" className="h-10 w-auto object-contain group-hover:scale-105 transition-transform" />
+                        <img src={logoImg} alt="Soma AI Logo" className="h-10 w-auto object-contain group-hover:scale-105 transition-transform" />
                     </div>
 
                     {/* Center: Core Navigation */}
@@ -1454,7 +1475,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                 }
                 {
                     activeTab === 'MARKING' && (
-                        <MarkingManager />
+                        <MarkingManager initialDraft={initialDraft?.intent === 'MARK' ? initialDraft : undefined} />
                     )
                 }
                 {activeTab === 'BLACKBOARD' && !generatedNote && (
@@ -2390,7 +2411,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                                         <p className="text-slate-400 max-w-md">
                                             {isPro
                                                 ? `You are on the ${selectedPlan?.name || 'Pro'} Plan. Your next billing date is ${new Date().toLocaleDateString()}.`
-                                                : "You are currently on the Free Plan with limited access to Somo Smart tools."}
+                                                : "You are currently on the Free Plan with limited access to Soma AI tools."}
                                         </p>
                                     </div>
                                     <div className="flex gap-4">

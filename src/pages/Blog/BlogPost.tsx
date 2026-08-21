@@ -43,7 +43,7 @@ export const BlogPost: React.FC = () => {
                             slug: 'how-to-prepare-for-kcse-mathematics',
                             title: 'How to Prepare for KCSE Mathematics: A Comprehensive Guide',
                             excerpt: 'Discover proven strategies and techniques to master KCSE Mathematics. From understanding core concepts to practicing past papers efficiently, this guide covers everything you need to score an A.',
-                            content: '# How to Prepare for KCSE Mathematics\n\nMathematics is often considered a challenging subject, but with the right preparation strategy, you can easily secure top marks in your KCSE exams.\n\n## 1. Understand the Syllabus\nThe first step is to thoroughly review the KNEC syllabus. Make sure you cover all topics from Form 1 to Form 4.\n\n## 2. Practice Past Papers\nPracticing past papers is crucial. It familiarizes you with the exam format and the types of questions commonly asked.\n\n## 3. Focus on Weak Areas\nUse Somo Smart analytics to identify topics where you struggle the most and dedicate more time to them.\n\n## 4. Seek Help\nDon’t hesitate to ask your teachers or use the **Somo Smart AI Explainer** whenever you get stuck.\n\n## Conclusion\nConsistency is key. Practice daily and stay positive. You got this!',
+                            content: '# How to Prepare for KCSE Mathematics\n\nMathematics is often considered a challenging subject, but with the right preparation strategy, you can easily secure top marks in your KCSE exams.\n\n## 1. Understand the Syllabus\nThe first step is to thoroughly review the KNEC syllabus. Make sure you cover all topics from Form 1 to Form 4.\n\n## 2. Practice Past Papers\nPracticing past papers is crucial. It familiarizes you with the exam format and the types of questions commonly asked.\n\n## 3. Focus on Weak Areas\nUse Soma AI analytics to identify topics where you struggle the most and dedicate more time to them.\n\n## 4. Seek Help\nDon’t hesitate to ask your teachers or use the **Soma AI AI Explainer** whenever you get stuck.\n\n## Conclusion\nConsistency is key. Practice daily and stay positive. You got this!',
                             cover_image_url: 'https://images.unsplash.com/photo-1632559646295-c1e14afb8e5c?w=1200&q=80',
                             author_name: 'Somo Education Team',
                             read_time_minutes: 4,
@@ -122,7 +122,7 @@ export const BlogPost: React.FC = () => {
         <div className="min-h-screen bg-white dark:bg-slate-950 transition-colors selection:bg-blue-100 dark:selection:bg-blue-900/40">
             <Helmet>
                 <html lang="en" />
-                <title>{post.title} | Somo Smart Blog</title>
+                <title>{post.title} | Soma AI Blog</title>
                 <meta name="description" content={post.excerpt} />
                 <meta name="keywords" content={`KCSE revision, KPSEA guide, CBC Kenya education, ${post.title.toLowerCase()}`} />
 
@@ -133,7 +133,7 @@ export const BlogPost: React.FC = () => {
                 <meta name="robots" content="index, follow, max-image-preview:large" />
 
                 {/* OpenGraph */}
-                <meta property="og:site_name" content="Somo Smart" />
+                <meta property="og:site_name" content="Soma AI" />
                 <meta property="og:title" content={post.title} />
                 <meta property="og:description" content={post.excerpt} />
                 <meta property="og:image" content={post.cover_image_url} />
@@ -157,7 +157,7 @@ export const BlogPost: React.FC = () => {
                         },
                         "publisher": {
                             "@type": "Organization",
-                            "name": "Somo Smart",
+                            "name": "Soma AI",
                             "url": "https://www.somaai.co.ke"
                         },
                         "mainEntityOfPage": {
@@ -232,7 +232,7 @@ export const BlogPost: React.FC = () => {
                 <div className="mt-20 pt-10 border-t border-slate-200 dark:border-slate-800 text-center">
                     <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-4">Did you find this helpful?</h3>
                     <p className="text-slate-600 dark:text-slate-400 mb-8 max-w-lg mx-auto">
-                        Put these strategies into practice immediately with Somo Smart&apos;s AI Revision Assistant.
+                        Put these strategies into practice immediately with Soma AI&apos;s AI Revision Assistant.
                     </p>
                     <button onClick={() => navigate('/learner')} className="px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold transition-all shadow-lg hover:shadow-blue-600/30 hover:-translate-y-1">
                         Start Learning Free

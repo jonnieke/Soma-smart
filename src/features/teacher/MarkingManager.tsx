@@ -7,13 +7,14 @@ import { classroomService, ClassMember, GradebookEntry, AssignmentPost } from '.
 import { useApp } from '../../context/AppContext';
 import { AIFeedbackButtons } from '../../components/AIFeedbackButtons';
 
-export const MarkingManager: React.FC = () => {
+import type { TeacherComposerDraft } from '../../types/teacherComposer';
+export const MarkingManager: React.FC<{ initialDraft?: TeacherComposerDraft }> = ({ initialDraft }) => {
     const { isOnline } = useApp();
-    const [view, setView] = useState<'OVERVIEW' | 'GRADE'>('OVERVIEW');
+    const [view, setView] = useState<'OVERVIEW' | 'GRADE'>(initialDraft ? 'GRADE' : 'OVERVIEW');
 
     // Grading State
-    const [selectedFile, setSelectedFile] = useState<File | null>(null);
-    const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+    const [selectedFile, setSelectedFile] = useState<File | null>(initialDraft?.file || null);
+    const [previewUrl, setPreviewUrl] = useState<string | null>(() => initialDraft?.file ? URL.createObjectURL(initialDraft.file) : null);
     const [isProcessing, setIsProcessing] = useState(false);
 
     // Context State
@@ -22,8 +23,8 @@ export const MarkingManager: React.FC = () => {
     const [selectedStudentId, setSelectedStudentId] = useState<string>('');
     const [recentAssignments, setRecentAssignments] = useState<AssignmentPost[]>([]);
     const [recentGradebook, setRecentGradebook] = useState<GradebookEntry[]>([]);
-    const [assignmentTitle, setAssignmentTitle] = useState("Math Quiz: Decimals");
-    const [assignmentContext, setAssignmentContext] = useState("Grade 5 Mathematics - Topic: Operations on Decimals");
+    const [assignmentTitle, setAssignmentTitle] = useState(initialDraft?.prompt.slice(0, 80) || "Math Quiz: Decimals");
+    const [assignmentContext, setAssignmentContext] = useState(initialDraft?.prompt || "Grade 5 Mathematics - Topic: Operations on Decimals");
     const [totalMarks, setTotalMarks] = useState<number>(10);
     const [rubric, setRubric] = useState("1. Correct addition formulation (2 marks)\n2. Correct carry-overs (3 marks)\n3. Correct decimal placement (2 marks)\n4. Final answer correct (3 marks)");
 
@@ -38,6 +39,10 @@ export const MarkingManager: React.FC = () => {
     const [memoryUpdateSuccess, setMemoryUpdateSuccess] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    React.useEffect(() => () => {
+        if (previewUrl) URL.revokeObjectURL(previewUrl);
+    }, [previewUrl]);
 
     const loadTeacherMarkingData = React.useCallback(async () => {
         if (!teacherProfile) return;

@@ -135,7 +135,7 @@ export const TeacherDashboardOverview: React.FC<TeacherDashboardOverviewProps> =
 
   const sharePlan = async () => {
     const text = [
-      'Somo Smart Teacher Intervention Plan',
+      'Soma AI Teacher Intervention Plan',
       `Class: ${hasContext ? selectedClass : 'Not selected'}`,
       `Subject: ${hasContext ? selectedSubject : 'Not selected'}`,
       `Focus: ${intervention.title}`,
@@ -150,7 +150,7 @@ export const TeacherDashboardOverview: React.FC<TeacherDashboardOverviewProps> =
     ].join('\n');
     try {
       if (navigator.share) {
-        await navigator.share({ title: 'Somo Smart teacher intervention plan', text });
+        await navigator.share({ title: 'Soma AI teacher intervention plan', text });
         setShareState('shared');
       } else if (navigator.clipboard?.writeText) {
         await navigator.clipboard.writeText(text);
@@ -455,7 +455,7 @@ export const TeacherDashboardOverview: React.FC<TeacherDashboardOverviewProps> =
             <section className="bg-white rounded-[1.75rem] border border-slate-200 p-6 shadow-sm space-y-5">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">Today's focus</p>
+                  <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">Today&apos;s focus</p>
                   <h3 className="text-lg font-black text-slate-900">Simple teaching loop</h3>
                 </div>
                 <span className="px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-black border border-emerald-200">

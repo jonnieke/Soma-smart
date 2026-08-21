@@ -13,6 +13,11 @@ entrypoint = "./functions/recover-notes/index.ts"
 [functions.gemini-proxy]
 verify_jwt = false
 
+# Pesapal IPN calls are unauthenticated provider callbacks. Every browser/admin
+# route in the function performs its own user/admin verification.
+[functions.pesapal]
+verify_jwt = false
+
 [functions.search-knowledge]
 verify_jwt = false
 

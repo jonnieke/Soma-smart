@@ -16,7 +16,7 @@ interface ChatMessage {
 const SUPPORT_KNOWLEDGE: Array<{ keywords: string[]; answer: string; options?: Array<{ label: string; action: string }> }> = [
     {
         keywords: ['payment', 'mpesa', 'm-pesa', 'subscribe', 'pay', 'kes', 'pricing', 'charged', 'stk'],
-        answer: 'M-Pesa payments on Somo Smart are instant! Plans start at KES 20/day and KES 499/month. If your payment was completed but not reflected yet, click "Verify Payment" on the Pricing Page or enter your M-Pesa transaction code.',
+        answer: 'M-Pesa payments on Soma AI are instant! Plans start at KES 20/day and KES 499/month. If your payment was completed but not reflected yet, click "Verify Payment" on the Pricing Page or enter your M-Pesa transaction code.',
         options: [
             { label: 'Go to Pricing & Payment Verification', action: 'GOTO_PRICING' },
             { label: 'Chat with Human Agent on WhatsApp', action: 'WHATSAPP_PAYMENT' }
@@ -58,7 +58,7 @@ export const SomoSupportChatbot: React.FC<{ onClose?: () => void }> = ({ onClose
         {
             id: 'msg-1',
             sender: 'BOT',
-            text: '👋 Hi! I am your Somo Smart AI Support Assistant. How can I help you today?',
+            text: '👋 Hi! I am your Soma AI AI Support Assistant. How can I help you today?',
             options: [
                 { label: '💳 M-Pesa & Payment Help', action: 'QUERY_PAYMENT' },
                 { label: '📚 Past Papers & Marking Schemes', action: 'QUERY_PAPERS' },
@@ -107,7 +107,7 @@ export const SomoSupportChatbot: React.FC<{ onClose?: () => void }> = ({ onClose
                         sender: 'BOT',
                         text: 'I could not find a direct answer to that query in our quick guide. Would you like to connect directly with our human support team on WhatsApp (0722763760)?',
                         showWhatsAppButton: true,
-                        whatsappMessage: `Hi Somo Smart Support, I need help with: ${query}`
+                        whatsappMessage: `Hi Soma AI Support, I need help with: ${query}`
                     }
                 ]);
             }
@@ -116,7 +116,7 @@ export const SomoSupportChatbot: React.FC<{ onClose?: () => void }> = ({ onClose
 
     const handleOptionClick = (option: { label: string; action: string }) => {
         if (option.action === 'WHATSAPP_HUMAN' || option.action === 'WHATSAPP_PAYMENT') {
-            openWhatsAppShare(`Hi Somo Smart Support (0722763760), I need assistance with my account.`, TARGET_WHATSAPP);
+            openWhatsAppShare(`Hi Soma AI Support (0722763760), I need assistance with my account.`, TARGET_WHATSAPP);
             return;
         }
         if (option.action === 'GOTO_PRICING') { window.location.assign('/pricing'); return; }
@@ -192,7 +192,7 @@ export const SomoSupportChatbot: React.FC<{ onClose?: () => void }> = ({ onClose
                             {/* WhatsApp Escalation Button */}
                             {msg.showWhatsAppButton && (
                                 <button
-                                    onClick={() => openWhatsAppShare(msg.whatsappMessage || 'Hi Somo Smart Support, I need assistance.', TARGET_WHATSAPP)}
+                                    onClick={() => openWhatsAppShare(msg.whatsappMessage || 'Hi Soma AI Support, I need assistance.', TARGET_WHATSAPP)}
                                     className="w-full bg-[#25D366] hover:bg-[#20ba59] text-white text-xs font-extrabold py-2.5 px-3 rounded-xl shadow-md transition-all flex items-center justify-center gap-2"
                                 >
                                     <MessageCircle className="w-4 h-4" />

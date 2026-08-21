@@ -224,9 +224,9 @@ export const ExamPaperBankPage: React.FC = () => {
     <div className="min-h-screen bg-[#f7f8fc] text-slate-950">
       <Helmet>
         <html lang="en" />
-        <title>KCSE, KPSEA &amp; CBC Exam Paper Bank Kenya | Somo Smart Past Papers</title>
+        <title>KCSE, KPSEA &amp; CBC Exam Paper Bank Kenya | Soma AI Past Papers</title>
         <meta name="description" content="Download and attempt KCSE, KPSEA, and CBC past papers with official marking schemes for Kenya. Practice online with timed exam revision, step-by-step answers, and instant marking." />
-        <meta name="keywords" content="KCSE past papers, KPSEA past papers, CBC exam papers Kenya, KNEC revision papers, KCSE marking schemes, Form 4 revision papers, Grade 6 7 8 9 exam papers, Kenyan mock papers, Somo Smart exam paper bank" />
+        <meta name="keywords" content="KCSE past papers, KPSEA past papers, CBC exam papers Kenya, KNEC revision papers, KCSE marking schemes, Form 4 revision papers, Grade 6 7 8 9 exam papers, Kenyan mock papers, Soma AI exam paper bank" />
 
         {/* AIO & Search Engine Optimization */}
         <meta name="smart-search-index" content="index" />
@@ -236,9 +236,9 @@ export const ExamPaperBankPage: React.FC = () => {
         <meta name="robots" content="index, follow, max-image-preview:large" />
 
         {/* OpenGraph / Facebook */}
-        <meta property="og:site_name" content="Somo Smart" />
+        <meta property="og:site_name" content="Soma AI" />
         <meta property="og:type" content="website" />
-        <meta property="og:title" content="KCSE, KPSEA &amp; CBC Exam Paper Bank Kenya | Somo Smart" />
+        <meta property="og:title" content="KCSE, KPSEA &amp; CBC Exam Paper Bank Kenya | Soma AI" />
         <meta property="og:description" content="Access official KCSE, KPSEA &amp; CBC revision papers with complete marking schemes and timed online practice." />
         <meta property="og:image" content="https://www.somaai.co.ke/hero_option_a.png" />
         <meta property="og:url" content="https://www.somaai.co.ke/exam-papers" />
@@ -256,7 +256,7 @@ export const ExamPaperBankPage: React.FC = () => {
           {JSON.stringify({
             "@context": "https://schema.org",
             "@type": "ItemList",
-            "name": "Somo Smart KCSE, KPSEA & CBC Exam Paper Bank",
+            "name": "Soma AI KCSE, KPSEA & CBC Exam Paper Bank",
             "description": "Comprehensive collection of Kenyan KCSE, KPSEA, and CBC past examination papers with marking schemes.",
             "url": "https://www.somaai.co.ke/exam-papers",
             "itemListElement": [
@@ -297,7 +297,7 @@ export const ExamPaperBankPage: React.FC = () => {
                 "name": "Where can I get official KCSE past papers with marking schemes in Kenya?",
                 "acceptedAnswer": {
                   "@type": "Answer",
-                  "text": "Somo Smart Exam Paper Bank provides official KCSE past papers with complete marking schemes for revision online or download."
+                  "text": "Soma AI Exam Paper Bank provides official KCSE past papers with complete marking schemes for revision online or download."
                 }
               },
               {
@@ -305,15 +305,15 @@ export const ExamPaperBankPage: React.FC = () => {
                 "name": "Can I practice KPSEA and CBC past papers online?",
                 "acceptedAnswer": {
                   "@type": "Answer",
-                  "text": "Yes. Somo Smart allows learners to attempt timed KPSEA and CBC papers online with instant AI marking and step-by-step explanations."
+                  "text": "Yes. Soma AI allows learners to attempt timed KPSEA and CBC papers online with instant AI marking and step-by-step explanations."
                 }
               },
               {
                 "@type": "Question",
-                "name": "How much do exam papers cost on Somo Smart?",
+                "name": "How much do exam papers cost on Soma AI?",
                 "acceptedAnswer": {
                   "@type": "Answer",
-                  "text": "Exam papers start from KES 20 per paper or are accessible via Somo Smart Pro subscription plans."
+                  "text": "Exam papers start from KES 20 per paper or are accessible via Soma AI Pro subscription plans."
                 }
               }
             ]
@@ -323,9 +323,9 @@ export const ExamPaperBankPage: React.FC = () => {
 
       <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
-          <button onClick={() => navigate('/')} className="flex items-center gap-2" aria-label="Somo Smart homepage">
-            <img src={logoImg} alt="Somo Smart Logo" className="h-10 w-10 object-contain" />
-            <span className="text-xl font-black text-[#07133f]">Somo Smart</span>
+          <button onClick={() => navigate('/')} className="flex items-center gap-2" aria-label="Soma AI homepage">
+            <img src={logoImg} alt="Soma AI Logo" className="h-10 w-10 object-contain" />
+            <span className="text-xl font-black text-[#07133f]">Soma AI</span>
           </button>
           <div className="flex items-center gap-2">
             <button onClick={() => navigate('/')} className="hidden rounded-xl border border-slate-200 px-4 py-2 text-sm font-bold text-slate-700 sm:inline-flex">Home</button>

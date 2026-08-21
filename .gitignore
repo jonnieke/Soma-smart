@@ -27,7 +27,15 @@ dist-ssr
 .env
 .env.local
 .env.*
+!.env.example
+!supabase/.env.example
 
 supabase/.temp/
 
 .vercel
+
+# Test artifacts
+test-results/
+playwright-report/
+coverage/
+blob-report/

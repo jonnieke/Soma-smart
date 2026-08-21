@@ -72,7 +72,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children, activeTab, o
                     </div>
                     {isSidebarOpen && (
                         <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="font-bold text-white text-lg tracking-tight">
-                            Somo Admin
+                            Soma AI Admin
                         </motion.span>
                     )}
                 </div>
@@ -145,7 +145,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children, activeTab, o
                                         A
                                     </div>
                                     <span className="font-bold text-white text-lg tracking-tight">
-                                        Somo Admin
+                                        Soma AI Admin
                                     </span>
                                 </div>
                                 <button onClick={() => setIsMobileMenuOpen(false)} className="p-1 text-slate-500 hover:text-white">

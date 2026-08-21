@@ -15,6 +15,12 @@ import { QuestionBankBrowser } from '../features/teacher/paperStudio/QuestionBan
 import { SchoolWorkspace } from '../features/teacher/paperStudio/SchoolWorkspace';
 import { PaperBankMarketplace } from '../features/teacher/paperBank/PaperBankMarketplace';
 import { SellerEarningsDashboard } from '../features/teacher/paperBank/SellerEarningsDashboard';
+import { getTeacherComposerDraft } from '../types/teacherComposer';
+import {
+    markTeacherComposerDraftConsumed,
+    loadTeacherComposerDraft,
+} from '../types/teacherComposerHandoff';
+import { trackAnalyticsEvent } from '../services/analyticsEventService';
 
 type TeacherInitialTab = 'DASHBOARD' | 'CREATION_HUB' | TeacherDashboardTab | 'EARNINGS' | 'HOME' | 'VOICE' | 'MARKETPLACE' | 'PROFILE' | 'REPORTS';
 
@@ -23,6 +29,38 @@ export const TeacherPage: React.FC = () => {
     const location = useLocation();
     const { isRegistered, role, teacherProfile } = useApp();
     const state = location.state as { initialTab?: TeacherInitialTab } | null;
+    const [composerDraft, setComposerDraft] = useState(() =>
+        location.state && typeof location.state === 'object' && 'teacherComposerDraft' in location.state
+            ? getTeacherComposerDraft(location.state)
+            : null
+    );
+    const [composerDraftReady, setComposerDraftReady] = useState(Boolean(composerDraft));
+
+    React.useEffect(() => {
+        let active = true;
+        void loadTeacherComposerDraft(location.state).then((draft) => {
+            if (!active) return;
+            setComposerDraft(draft);
+            setComposerDraftReady(true);
+            if (draft) {
+                void trackAnalyticsEvent({
+                    eventType: 'TEACHER_WORKFLOW',
+                    eventName: 'teacher_composer_handoff_completed',
+                    role: 'TEACHER',
+                    metadata: {
+                        intent: draft.intent.toLowerCase(),
+                        source: draft.source.toLowerCase(),
+                        has_attachment: Boolean(draft.file),
+                        destination: 'teacher',
+                    },
+                });
+                void markTeacherComposerDraftConsumed();
+            }
+        });
+        return () => {
+            active = false;
+        };
+    }, [location.state]);
 
     const [showLoginModal, setShowLoginModal] = useState(false);
     const [showRegisterModal, setShowRegisterModal] = useState(false);
@@ -66,9 +104,9 @@ export const TeacherPage: React.FC = () => {
         <>
             <Helmet>
                 <html lang="en" />
-                <title>Teacher Studio, Paper Studio &amp; Paper Bank | Somo Smart</title>
+                <title>Teacher Studio, Paper Studio &amp; Paper Bank | Soma AI</title>
                 <meta name="description" content="AI-powered teaching studio for Kenyan educators. Create CBC lesson plans, schemes of work, CATs, topical quizzes, automated assignment marking, and professional examination papers." />
-                <meta name="keywords" content="Kenyan teacher studio, Soma Paper Studio, Soma Paper Bank, CBC schemes of work generator, KCSE lesson plans, automated quiz marker Kenya, Darasa classroom recap, Somo Smart teacher" />
+                <meta name="keywords" content="Kenyan teacher studio, Soma Paper Studio, Soma Paper Bank, CBC schemes of work generator, KCSE lesson plans, automated quiz marker Kenya, Darasa classroom recap, Soma AI teacher" />
 
                 {/* AIO & Search Engine Optimization */}
                 <meta name="smart-search-index" content="index" />
@@ -78,9 +116,9 @@ export const TeacherPage: React.FC = () => {
                 <meta name="robots" content="index, follow, max-image-preview:large" />
 
                 {/* OpenGraph */}
-                <meta property="og:site_name" content="Somo Smart" />
+                <meta property="og:site_name" content="Soma AI" />
                 <meta property="og:type" content="website" />
-                <meta property="og:title" content="Teacher Studio &amp; Paper Studio — Somo Smart" />
+                <meta property="og:title" content="Teacher Studio &amp; Paper Studio — Soma AI" />
                 <meta property="og:description" content="Create schemes of work, lesson plans, quizzes, and professional examination papers for CBC and KCSE." />
                 <meta property="og:image" content="https://www.somaai.co.ke/hero_option_a.png" />
                 <meta property="og:url" content="https://www.somaai.co.ke/teacher" />
@@ -91,13 +129,13 @@ export const TeacherPage: React.FC = () => {
                     {JSON.stringify({
                         "@context": "https://schema.org",
                         "@type": "SoftwareApplication",
-                        "name": "Somo Smart Teacher Studio",
+                        "name": "Soma AI Teacher Studio",
                         "operatingSystem": "Web, Android, iOS",
                         "applicationCategory": "EducationalApplication",
                         "description": "Comprehensive teaching studio for Kenyan teachers to generate CBC schemes of work, lesson plans, and mark assessments.",
                         "provider": {
                             "@type": "Organization",
-                            "name": "Somo Smart",
+                            "name": "Soma AI",
                             "url": "https://www.somaai.co.ke"
                         },
                         "offers": {
@@ -169,10 +207,15 @@ export const TeacherPage: React.FC = () => {
                     onOpenPaperEditor={(id) => navigate(`/teacher/paper-studio/editor/${id}`)}
                     onOpenQuestionBank={() => navigate('/teacher/paper-studio/questions')}
                 />
+            ) : !composerDraftReady ? (
+                <div className="grid min-h-[60vh] place-items-center bg-slate-50" role="status">
+                    <p className="text-sm font-bold text-slate-500">Restoring your teacher request?</p>
+                </div>
             ) : (
                 <TeacherDashboard
                     onNavigate={handleNavigate}
                     initialTab={initialTab}
+                    initialDraft={composerDraft || undefined}
                 />
             )}
         </>

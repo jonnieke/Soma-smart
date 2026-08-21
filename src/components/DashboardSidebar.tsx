@@ -213,7 +213,7 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
               <Sparkles className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h1 className="text-base font-bold text-white tracking-tight">Somo Smart</h1>
+              <h1 className="text-base font-bold text-white tracking-tight">Soma AI</h1>
               <p className="text-[10px] text-blue-200 font-medium">Powered by Akili ✨</p>
             </div>
           </div>
@@ -410,7 +410,7 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
         {isPro && (
           <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-amber-500/10 border border-amber-500/20">
             <Crown className="w-4 h-4 text-amber-500" />
-            <span className="text-xs font-bold text-amber-500">Somo Pro</span>
+            <span className="text-xs font-bold text-amber-500">Soma AI Pro</span>
           </div>
         )}
 

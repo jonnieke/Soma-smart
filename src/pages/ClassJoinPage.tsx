@@ -101,7 +101,7 @@ export const ClassJoinPage: React.FC = () => {
     return (
         <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
             <Helmet>
-                <title>Join Class | Somo Smart</title>
+                <title>Join Class | Soma AI</title>
                 <meta name="theme-color" content="#25D366" />
             </Helmet>
 
@@ -111,7 +111,7 @@ export const ClassJoinPage: React.FC = () => {
                         <Users className="w-8 h-8" />
                     </div>
                     <h1 className="text-2xl font-black">Join Class</h1>
-                    <p className="text-sm font-bold text-emerald-50 mt-1">Somo Smart Classroom</p>
+                    <p className="text-sm font-bold text-emerald-50 mt-1">Soma AI Classroom</p>
                 </div>
 
                 <div className="p-8">
@@ -188,7 +188,7 @@ export const ClassJoinPage: React.FC = () => {
                             {status === 'missing' && (
                                 <div className="bg-amber-50 border-2 border-amber-200 rounded-2xl p-4 flex gap-3">
                                     <AlertCircle className="w-5 h-5 text-amber-600 shrink-0" />
-                                    <p className="text-sm font-bold text-amber-800">This class invite could not be found. You can still continue to Somo Smart.</p>
+                                    <p className="text-sm font-bold text-amber-800">This class invite could not be found. You can still continue to Soma AI.</p>
                                 </div>
                             )}
 

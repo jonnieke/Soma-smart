@@ -46,6 +46,50 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
     const [loading, setLoading] = useState(false);
     const [errorMessage, setErrorMessage] = useState("");
     const [copied, setCopied] = useState(false);
+    const dialogRef = React.useRef<HTMLDivElement>(null);
+    const returnFocusRef = React.useRef<HTMLElement | null>(null);
+    const onCloseRef = React.useRef(onClose);
+
+    React.useEffect(() => {
+        onCloseRef.current = onClose;
+    }, [onClose]);
+
+    React.useEffect(() => {
+        if (!isOpen) return;
+        returnFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+        const focusTimer = window.requestAnimationFrame(() => {
+            dialogRef.current?.querySelector<HTMLElement>(
+                'input:not([disabled]), button:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+            )?.focus();
+        });
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if (event.key === 'Escape') {
+                event.preventDefault();
+                onCloseRef.current();
+                return;
+            }
+            if (event.key !== 'Tab' || !dialogRef.current) return;
+            const focusable = Array.from(dialogRef.current.querySelectorAll<HTMLElement>(
+                'input:not([disabled]), button:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+            )).filter((element) => element.offsetParent !== null);
+            if (focusable.length === 0) return;
+            const first = focusable[0];
+            const last = focusable[focusable.length - 1];
+            if (event.shiftKey && document.activeElement === first) {
+                event.preventDefault();
+                last.focus();
+            } else if (!event.shiftKey && document.activeElement === last) {
+                event.preventDefault();
+                first.focus();
+            }
+        };
+        document.addEventListener('keydown', handleKeyDown);
+        return () => {
+            window.cancelAnimationFrame(focusTimer);
+            document.removeEventListener('keydown', handleKeyDown);
+            returnFocusRef.current?.focus();
+        };
+    }, [isOpen]);
 
     // Reset when opened
     React.useEffect(() => {
@@ -297,7 +341,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
     const handleWhatsAppShare = () => {
         if (!studentCode) return;
         const msg = encodeURIComponent(
-            `My Somo Smart Student ID is: *${studentCode}*\n\nDownload the app and use this ID to log in: https://somosmart.co.ke`
+            `My Soma AI Student ID is: *${studentCode}*\n\nDownload the app and use this ID to log in: https://somaai.co.ke`
         );
         window.open(`https://wa.me/?text=${msg}`, '_blank', 'noopener,noreferrer');
     };
@@ -307,6 +351,10 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
     return (
         <AnimatePresence>
             <div
+                ref={dialogRef}
+                role="dialog"
+                aria-modal="true"
+                aria-label="Create a Soma account"
                 className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-4 sm:p-6 bg-black/60 backdrop-blur-sm overflow-y-auto"
                 onClick={onClose}
             >
@@ -329,6 +377,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
 
                         <button
                             onClick={onClose}
+                            aria-label="Close registration"
                             className="p-2 text-slate-400 hover:text-slate-600 transition-colors bg-slate-50 rounded-full"
                         >
                             <X className="w-5 h-5" />
@@ -364,7 +413,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
                                 </h2>
                                 <p className="text-slate-500 text-sm font-medium leading-relaxed max-w-xs mx-auto">
                                     {role === 'SCHOOL'
-                                        ? 'Join the Somo Smart network and empower your school.'
+                                        ? 'Join the Soma AI network and empower your school.'
                                         : role === 'TEACHER'
                                             ? 'Create your professional profile to start teaching.'
                                             : 'Register free and get your personal Student ID.'}

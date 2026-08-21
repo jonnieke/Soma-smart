@@ -367,7 +367,7 @@ export const AnalyticsView: React.FC = () => {
                     </div>
                     <h2 className="text-3xl font-black text-slate-900">Platform analytics, not a blank shell.</h2>
                     <p className="text-slate-500 mt-1 max-w-2xl">
-                        This tab shows what Somo Smart is actually doing: who joined, who is active, what content is being used,
+                        This tab shows what Soma AI is actually doing: who joined, who is active, what content is being used,
                         where learning activity is concentrated, and whether growth is staying profitable.
                     </p>
                 </div>
@@ -393,7 +393,7 @@ export const AnalyticsView: React.FC = () => {
                         <p className={`text-sm ${isConfigured ? 'text-emerald-700' : 'text-amber-700'} max-w-2xl`}>
                             {isConfigured
                                 ? `Tracking measurement ID ${gaId}.`
-                                : 'Add VITE_GA_MEASUREMENT_ID if you want external website analytics. The dashboard below already uses Somo Smart data directly.'
+                                : 'Add VITE_GA_MEASUREMENT_ID if you want external website analytics. The dashboard below already uses Soma AI data directly.'
                             }
                         </p>
                     </div>

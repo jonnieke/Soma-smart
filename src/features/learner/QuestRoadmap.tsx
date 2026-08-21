@@ -636,7 +636,7 @@ export const QuestRoadmap: React.FC<QuestRoadmapProps> = ({
                 </div>
               ) : (
                 <>
-                  {/* Action 1: Study Topic (Somo Smart Chat) */}
+                  {/* Action 1: Study Topic (Soma AI Chat) */}
                   <button
                     onClick={() => onStudyTopic(selectedNode.title)}
                     className="w-full py-3 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-2xl font-black text-xs uppercase tracking-wider shadow-lg shadow-blue-500/15 hover:shadow-xl hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2 group"

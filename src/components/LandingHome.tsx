@@ -4,8 +4,10 @@ import {
   BarChart3,
   BookOpen,
   Bot,
+  Camera,
   ChevronLeft,
   ChevronRight,
+  CheckCircle2,
   CircleHelp,
   Clock,
   ExternalLink,
@@ -18,8 +20,12 @@ import {
   Monitor,
   Notebook,
   Search,
+  Send,
   Share2,
   ShieldCheck,
+  Sparkles,
+  Store,
+  Upload,
   Users,
   Volume2,
   X,
@@ -29,6 +35,7 @@ import { ExamPaperTickerBelt } from './ExamPaperTickerBelt';
 import learnerImg from '../assets/images/hero_learner_emotional.png';
 import parentImg from '../assets/images/parent.png';
 import mascotImg from '../assets/images/somo_buddy_avatar.png';
+import type { TeacherComposerDraft, TeacherComposerIntent } from '../types/teacherComposer';
 
 type Props = {
   isRegistered: boolean;
@@ -40,6 +47,7 @@ type Props = {
     targetIntent?: string
   ) => void;
   onTeacher: () => void;
+  onTeacherCompose: (draft: TeacherComposerDraft) => void;
   onParent: () => void;
   onLibrary: () => void;
   onExamPapers: (paperId?: string | number) => void;
@@ -304,10 +312,10 @@ export const LandingHome: React.FC<Props> = (props) => {
           <button
             onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
             className="flex items-center gap-2 focus-visible:ring-2 focus-visible:ring-blue-600"
-            aria-label="Somo Smart home"
+            aria-label="Soma AI home"
           >
             <img src={logoImg} alt="" width={44} height={44} className="h-10 w-10 object-contain" />
-            <span className="text-2xl font-black tracking-[0] text-[#07133f]">Somo Smart</span>
+            <span className="text-2xl font-black tracking-[0] text-[#07133f]">Soma AI</span>
           </button>
           <nav aria-label="Main navigation" className="hidden items-center gap-9 md:flex">
             {nav.map(([label, action]) => (
@@ -403,12 +411,12 @@ export const LandingHome: React.FC<Props> = (props) => {
               </button>
               <button
                 onClick={() => {
-                  props.onTrack('teacher_cta_clicked', { source: 'landing_hero' });
-                  props.onTeacher();
+                  props.onTrack('teacher_cta_clicked', { source: 'landing_hero', destination: 'teacher_composer' });
+                  document.getElementById('teacher-composer-heading')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 }}
                 className="inline-flex min-h-12 items-center justify-center gap-2 rounded-lg border border-blue-600 bg-white px-6 font-bold text-blue-600 hover:bg-blue-50"
               >
-                <Users className="h-5 w-5" /> I&apos;m a Teacher
+                <Sparkles className="h-5 w-5" /> Create with Soma
               </button>
             </div>
             <div className="mt-4 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs font-semibold text-slate-600">
@@ -418,9 +426,9 @@ export const LandingHome: React.FC<Props> = (props) => {
                 <span className="w-1/3 bg-emerald-600" />
               </span>
               <span>Built for Kenyan learners</span>
-              <span>Â·</span>
+              <span>·</span>
               <span>Low-data friendly</span>
-              <span>Â·</span>
+              <span>·</span>
               <span>Parent progress reports</span>
             </div>
           </div>
@@ -439,6 +447,8 @@ export const LandingHome: React.FC<Props> = (props) => {
           <AskAkiliDemo {...props} />
         </div>
       </section>
+
+      <TeacherComposer onSubmit={props.onTeacherCompose} onTrack={props.onTrack} />
 
       <section
         aria-labelledby="latest-papers-heading"
@@ -666,7 +676,7 @@ export const LandingHome: React.FC<Props> = (props) => {
       >
         <div className="mx-auto max-w-[1440px] px-4 sm:px-6 lg:px-10">
           <h2 id="helps-heading" className="text-center text-2xl font-black text-slate-900">
-            What Somo Smart helps with
+            What Soma AI helps with
           </h2>
           <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-2">
             {helps.map(({ title, text, Icon, tone, action }) => (
@@ -733,8 +743,8 @@ const LandingFooter: React.FC<{
       <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-5">
         <div className="lg:col-span-2 space-y-4">
           <div className="flex items-center gap-2">
-            <img src={logoImg} alt="Somo Smart Logo" width={36} height={36} className="h-9 w-9 object-contain" />
-            <span className="text-xl font-black text-white">Somo Smart</span>
+            <img src={logoImg} alt="Soma AI Logo" width={36} height={36} className="h-9 w-9 object-contain" />
+            <span className="text-xl font-black text-white">Soma AI</span>
           </div>
           <p className="max-w-sm text-xs leading-relaxed text-slate-400">
             Kenyan study assistant for CBC, KPSEA, and KCSE. Helping learners understand homework, revise past papers, and build academic confidence.
@@ -775,10 +785,10 @@ const LandingFooter: React.FC<{
       </div>
 
       <div className="mt-10 border-t border-slate-800/80 pt-6 text-center text-xs text-slate-500 flex flex-col sm:flex-row items-center justify-between gap-3">
-        <p>Â© {new Date().getFullYear()} Somo Smart. Built with pride for Kenyan Education.</p>
+        <p>© {new Date().getFullYear()} Soma AI. Built with pride for Kenyan Education.</p>
         <p className="flex items-center gap-4">
           <a href="/contact" className="hover:text-slate-400 transition-colors">Contact Support</a>
-          <span>Â·</span>
+          <span>·</span>
           <a href="/pricing" className="hover:text-slate-400 transition-colors">M-Pesa Pricing</a>
         </p>
       </div>
@@ -1190,3 +1200,266 @@ const TrustStrip = () => (
 
 
 
+type SpeechRecognitionEventLike = Event & {
+  results: ArrayLike<{ 0: { transcript: string } }>;
+};
+
+type SpeechRecognitionLike = {
+  continuous: boolean;
+  interimResults: boolean;
+  lang: string;
+  start: () => void;
+  stop: () => void;
+  onresult: ((event: SpeechRecognitionEventLike) => void) | null;
+  onend: (() => void) | null;
+  onerror: ((event: { error?: string }) => void) | null;
+};
+
+const teacherIntents: Array<{ id: TeacherComposerIntent; label: string; hint: string }> = [
+  { id: 'CREATE', label: 'Create material', hint: 'Notes, lesson plans and schemes' },
+  { id: 'MARK', label: 'Mark learner work', hint: 'Feedback and corrections' },
+  { id: 'ASSESS', label: 'Build an assessment', hint: 'Questions and marking guides' },
+  { id: 'MARKETPLACE', label: 'Prepare to sell', hint: 'Private draft before review' },
+];
+
+const TeacherComposer: React.FC<{
+  onSubmit: (draft: TeacherComposerDraft) => void;
+  onTrack: (eventName: string, params?: Record<string, unknown>) => void;
+}> = ({ onSubmit, onTrack }) => {
+  const [prompt, setPrompt] = React.useState('');
+  const [intent, setIntent] = React.useState<TeacherComposerIntent>('CREATE');
+  const [file, setFile] = React.useState<File | undefined>();
+  const [source, setSource] = React.useState<TeacherComposerDraft['source']>('TEXT');
+  const [isListening, setIsListening] = React.useState(false);
+  const [message, setMessage] = React.useState('');
+  const uploadRef = React.useRef<HTMLInputElement | null>(null);
+  const scanRef = React.useRef<HTMLInputElement | null>(null);
+  const recognitionRef = React.useRef<SpeechRecognitionLike | null>(null);
+  const trackedOpenRef = React.useRef(false);
+  const [isOnline, setIsOnline] = React.useState(() => navigator.onLine);
+
+  React.useEffect(() => {
+    if (trackedOpenRef.current) return;
+    trackedOpenRef.current = true;
+    onTrack('teacher_composer_viewed', { source: 'homepage' });
+  }, [onTrack]);
+
+  React.useEffect(() => {
+    const handleOnline = () => {
+      setIsOnline(true);
+      setMessage((current) => current.startsWith('You are offline') ? '' : current);
+    };
+    const handleOffline = () => {
+      setIsOnline(false);
+      setMessage('You are offline. Reconnect before continuing; your text and attachment will stay here.');
+    };
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => { window.removeEventListener('online', handleOnline); window.removeEventListener('offline', handleOffline); };
+  }, []);
+
+  const chooseFile = (selected: File | undefined, nextSource: 'SCAN' | 'UPLOAD') => {
+    if (!selected) return;
+    const hasAcceptedType = selected.type.startsWith('image/')
+      || ['application/pdf', 'text/plain', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/vnd.ms-powerpoint', 'application/vnd.openxmlformats-officedocument.presentationml.presentation'].includes(selected.type)
+      || /\.(pdf|doc|docx|ppt|pptx|txt|png|jpe?g|webp)$/i.test(selected.name);
+    if (!hasAcceptedType) {
+      setMessage('That file type is not supported. Choose an image, PDF, Word, PowerPoint or text file.');
+      onTrack('teacher_composer_error', { stage: 'attachment', reason: 'unsupported_file_type' });
+      return;
+    }
+    if (selected.size > 20 * 1024 * 1024) {
+      setMessage('Choose a file smaller than 20 MB.');
+      onTrack('teacher_composer_error', { stage: 'attachment', reason: 'file_too_large' });
+      return;
+    }
+    setFile(selected);
+    setSource(nextSource);
+    setMessage('');
+    onTrack('teacher_composer_attachment_added', {
+      source: nextSource.toLowerCase(),
+      file_type: selected.type || 'unknown',
+    });
+  };
+
+  const toggleVoice = () => {
+    if (isListening && recognitionRef.current) {
+      recognitionRef.current.stop();
+      return;
+    }
+    const speechWindow = window as typeof window & {
+      SpeechRecognition?: new () => SpeechRecognitionLike;
+      webkitSpeechRecognition?: new () => SpeechRecognitionLike;
+    };
+    const Recognition = speechWindow.SpeechRecognition || speechWindow.webkitSpeechRecognition;
+    if (!Recognition) {
+      setMessage('Voice input is not supported by this browser. You can still type your request.');
+      onTrack('teacher_composer_error', { stage: 'voice', reason: 'unsupported_browser' });
+      return;
+    }
+    const recognition = new Recognition();
+    recognition.continuous = false;
+    recognition.interimResults = false;
+    recognition.lang = 'en-KE';
+    recognition.onresult = (event) => {
+      const transcript = event.results[0]?.[0]?.transcript?.trim();
+      if (transcript) setPrompt((current) => [current, transcript].filter(Boolean).join(' '));
+      setSource('VOICE');
+      setMessage('');
+    };
+    recognition.onend = () => setIsListening(false);
+    recognition.onerror = (event) => {
+      setIsListening(false);
+      const reason = event.error || 'unknown';
+      if (reason === 'not-allowed' || reason === 'service-not-allowed') {
+        setMessage('Microphone access was blocked. Allow microphone permission in your browser, or type your request.');
+      } else if (reason === 'network') {
+        setMessage('Voice input needs a network connection. Reconnect, then try again or type your request.');
+      } else if (reason === 'no-speech') {
+        setMessage('No speech was detected. Move closer to the microphone and try again.');
+      } else {
+        setMessage('I could not hear that clearly. Please try again or type your request.');
+      }
+      onTrack('teacher_composer_error', { stage: 'voice', reason });
+    };
+    recognitionRef.current = recognition;
+    setIsListening(true);
+    setMessage('Listening... speak naturally.');
+    try {
+      recognition.start();
+      onTrack('teacher_composer_input_started', { input_method: 'voice' });
+    } catch {
+      setIsListening(false);
+      setMessage('The microphone could not start. Check browser permission, then try again.');
+      onTrack('teacher_composer_error', { stage: 'voice', reason: 'start_failed' });
+    }
+  };
+
+  React.useEffect(() => () => recognitionRef.current?.stop(), []);
+
+  const submit = () => {
+    if (!isOnline) {
+      setMessage('You are offline. Reconnect before continuing; your request is still here.');
+      onTrack('teacher_composer_error', { stage: 'continue', reason: 'offline' });
+      return;
+    }
+
+    const cleanPrompt = prompt.trim();
+    if (!cleanPrompt && !file) {
+      setMessage('Tell Soma what you need, or attach the work you want to use.');
+      onTrack('teacher_composer_error', { stage: 'continue', reason: 'empty_request' });
+      return;
+    }
+    onTrack('teacher_composer_continue_clicked', {
+      intent: intent.toLowerCase(),
+      source: source.toLowerCase(),
+      has_attachment: Boolean(file),
+    });
+    onSubmit({ prompt: cleanPrompt, intent, file, source });
+  };
+
+  return (
+    <section aria-labelledby="teacher-composer-heading" className="border-b border-indigo-100 bg-[#f6f7ff] py-10">
+      <div className="mx-auto max-w-5xl px-4 sm:px-6">
+        <div className="mb-5 text-center">
+          <p className="inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-white px-3 py-1 text-xs font-black uppercase tracking-[0.16em] text-indigo-700">
+            <Sparkles className="h-3.5 w-3.5" /> For teachers
+          </p>
+          <h2 id="teacher-composer-heading" className="mt-3 text-3xl font-black text-[#07133f] sm:text-4xl">Create with Soma</h2>
+          <p className="mx-auto mt-2 max-w-2xl text-sm font-medium leading-6 text-slate-600 sm:text-base">
+            Type, speak, scan or upload. Your work starts privately, and you choose where it goes.
+          </p>
+        </div>
+
+        <div className="rounded-3xl border border-indigo-100 bg-white p-4 shadow-xl shadow-indigo-100/60 sm:p-6">
+          <label htmlFor="teacher-composer-input" className="sr-only">Describe what you want Soma to do</label>
+          <textarea
+            id="teacher-composer-input"
+            aria-describedby="teacher-composer-status teacher-composer-privacy"
+            value={prompt}
+            onFocus={() => onTrack('teacher_composer_input_started', { input_method: 'text' })}
+            onChange={(event) => {
+              setPrompt(event.target.value);
+              if (source !== 'VOICE') setSource('TEXT');
+              setMessage('');
+            }}
+            onKeyDown={(event) => {
+              if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') submit();
+            }}
+            rows={4}
+            placeholder="Ask Soma to create, mark, improve, or prepare your teaching material..."
+            className="w-full resize-none rounded-2xl border-0 bg-slate-50 px-4 py-4 text-base font-medium text-slate-900 outline-none ring-1 ring-slate-200 placeholder:text-slate-400 focus:bg-white focus:ring-2 focus:ring-indigo-500"
+          />
+
+          {file && (
+            <div role="status" className="mt-3 flex items-center justify-between gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2.5">
+              <div className="flex min-w-0 items-center gap-2 text-sm font-bold text-emerald-800">
+                <CheckCircle2 className="h-4 w-4 shrink-0" />
+                <span className="truncate">{file.name}</span>
+                <span className="shrink-0 text-xs font-medium text-emerald-600">{(file.size / 1024 / 1024).toFixed(1)} MB</span>
+              </div>
+              <button type="button" onClick={() => setFile(undefined)} className="rounded-lg p-1 text-emerald-700 hover:bg-emerald-100" aria-label="Remove attachment">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          )}
+
+          <div role="group" aria-label="Choose what Soma should do" className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+            {teacherIntents.map((item) => (
+              <button
+                type="button"
+                key={item.id}
+                onClick={() => {
+                  setIntent(item.id);
+                  onTrack('teacher_composer_intent_selected', { intent: item.id.toLowerCase() });
+                }}
+                aria-pressed={intent === item.id}
+                aria-describedby={`teacher-intent-${item.id.toLowerCase()}-hint`}
+                className={`rounded-xl border px-3 py-3 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:ring-offset-2 ${intent === item.id ? 'border-indigo-500 bg-indigo-50 ring-1 ring-indigo-500' : 'border-slate-200 hover:border-indigo-200 hover:bg-slate-50'}`}
+              >
+                <span className="block text-sm font-black text-slate-900">{item.label}</span>
+                <span id={`teacher-intent-${item.id.toLowerCase()}-hint`} className="mt-0.5 block text-xs font-medium text-slate-500">{item.hint}</span>
+              </button>
+            ))}
+          </div>
+
+          <div className="mt-4 flex flex-col gap-3 border-t border-slate-100 pt-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-wrap gap-2">
+              <button type="button" onClick={toggleVoice} aria-pressed={isListening} aria-label={isListening ? 'Stop voice input' : 'Start voice input'} className={`inline-flex min-h-11 items-center gap-2 rounded-xl border px-3.5 text-sm font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:ring-offset-2 ${isListening ? 'border-rose-300 bg-rose-50 text-rose-700' : 'border-slate-200 text-slate-700 hover:bg-slate-50'}`}>
+                <Mic className="h-4 w-4" /> {isListening ? 'Stop' : 'Voice'}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  onTrack('teacher_composer_input_started', { input_method: 'scan' });
+                  scanRef.current?.click();
+                }}
+                className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-slate-200 px-3.5 text-sm font-bold text-slate-700 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:ring-offset-2">
+                <Camera className="h-4 w-4" /> Scan
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  onTrack('teacher_composer_input_started', { input_method: 'upload' });
+                  uploadRef.current?.click();
+                }}
+                className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-slate-200 px-3.5 text-sm font-bold text-slate-700 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:ring-offset-2">
+                <Upload className="h-4 w-4" /> Upload
+              </button>
+              <input ref={scanRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={(event) => chooseFile(event.target.files?.[0], 'SCAN')} />
+              <input ref={uploadRef} type="file" accept="image/*,.pdf,.doc,.docx,.ppt,.pptx,.txt" className="hidden" onChange={(event) => chooseFile(event.target.files?.[0], 'UPLOAD')} />
+            </div>
+            <button type="button" onClick={submit} aria-describedby="teacher-composer-status" className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-indigo-600 px-6 text-sm font-black text-white shadow-lg shadow-indigo-200 transition hover:bg-indigo-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:ring-offset-2">
+              Continue <Send className="h-4 w-4" />
+            </button>
+          </div>
+
+          <div className="mt-3 flex flex-col gap-2 text-xs font-medium text-slate-500 sm:flex-row sm:items-center sm:justify-between">
+            <p id="teacher-composer-status" role="status" aria-live="polite" aria-atomic="true" className={message ? 'text-amber-700' : ''}>{message || 'Tip: press Ctrl + Enter to continue.'}</p>
+            <p id="teacher-composer-privacy" className="inline-flex items-center gap-1.5"><Store className="h-3.5 w-3.5" /> Marketplace publishing always requires your approval.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+};

@@ -1,6 +1,6 @@
 /**
- * Telegram WebApp & Bot Integration Service for Somo Smart
- * Enables running Somo Smart as a native Telegram Mini App (TWA),
+ * Telegram WebApp & Bot Integration Service for Soma AI
+ * Enables running Soma AI as a native Telegram Mini App (TWA),
  * seamlessly authenticating Telegram users, and sharing revision content across Telegram channels.
  */
 
@@ -150,7 +150,7 @@ export class TelegramService {
     }
 
     /**
-     * Joins the official Somo Smart Telegram Revision Channel
+     * Joins the official Soma AI Telegram Revision Channel
      */
     static joinChannel(): void {
         const webApp = this.getWebApp();

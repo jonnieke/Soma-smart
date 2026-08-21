@@ -23,7 +23,7 @@ interface AppContextType {
   incrementUsage: () => void;
   registerStudent: (name: string, grade: string, pin: string, parentPhone?: string, educationLevel?: EducationLevel, institutionName?: string) => Promise<{ success: boolean; message?: string; data?: string }>;
   registerTeacher: (name: string, email: string, password: string, classes: string[], subjects: string[], phone: string) => Promise<{ success: boolean; message?: string }>;
-  login: (code: string) => Promise<boolean>;
+  login: (code: string, pin?: string) => Promise<boolean>;
   loginParent: (code: string, phone: string) => Promise<{ success: boolean; message?: string }>;
   loginTeacher: (email: string, pass: string) => Promise<{ success: boolean; message?: string }>;
   resetPassword: (email: string) => Promise<boolean>;
@@ -963,12 +963,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       } else {
         // 2. No Supabase session? Check for persistent local Student ID
         const savedStudentCode = localStorage.getItem('soma_active_student');
-        if (savedStudentCode) {
-          console.log("Found persistent student session:", savedStudentCode);
+        const savedStudentPin = localStorage.getItem('soma_active_student_pin');
+        if (savedStudentCode && savedStudentPin) {
           const { data: profile } = await supabase
             .from('profiles')
             .select('*')
             .in('student_id', studentCodeVariants(savedStudentCode))
+            .eq('recovery_pin', savedStudentPin)
             .maybeSingle();
 
           if (profile) {
@@ -976,16 +977,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             currentUserId = profile.id;
             setUserId(profile.id);
             setStudentCode(profile.student_id);
-            if (profile.recovery_pin) {
-              localStorage.setItem('soma_active_student_pin', profile.recovery_pin);
-            } else {
-              const defaultPin = profile.parent_pin || "1234";
-              localStorage.setItem('soma_active_student_pin', defaultPin);
-              supabase.from('profiles').update({ recovery_pin: defaultPin }).eq('id', profile.id).then(({ error }) => {
-                if (error) console.error("Failed to auto-set recovery_pin:", error);
-                else console.log("Auto-healed recovery_pin to:", defaultPin);
-              });
-            }
+            localStorage.setItem('soma_active_student_pin', savedStudentPin);
             setStudentProfile({
               id: profile.id,
               name: profile.full_name,
@@ -1022,7 +1014,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             }
           } else {
             localStorage.removeItem('soma_active_student');
+            localStorage.removeItem('soma_active_student_pin');
           }
+        } else if (savedStudentCode) {
+          localStorage.removeItem('soma_active_student');
         }
       }
 
@@ -2330,7 +2325,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   };
 
-  const login = async (codeInput: string): Promise<boolean> => {
+  const login = async (codeInput: string, pinInput?: string): Promise<boolean> => {
     try {
       // CLEAR ANY EXISTING SESSIONS FIRST
       const { data: { session } } = await supabase.auth.getSession();
@@ -2343,11 +2338,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       setRole(UserRole.NONE);
 
       const sanitizedCode = codeInput.trim().toUpperCase(); // Force uppercase
+      const sanitizedPin = String(pinInput || '').trim();
+      if (!/^\d{4,6}$/.test(sanitizedPin)) return false;
 
       const { data: profile, error } = await supabase
         .from('profiles')
         .select('*')
         .in('student_id', studentCodeVariants(sanitizedCode))
+        .eq('recovery_pin', sanitizedPin)
         .maybeSingle(); // Use maybeSingle to avoid 406 error if not found
 
       if (error || !profile) return false;
@@ -2379,15 +2377,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
       // PERSIST LOGIN
       localStorage.setItem('soma_active_student', profile.student_id);
-      if (profile.recovery_pin) {
-        localStorage.setItem('soma_active_student_pin', profile.recovery_pin);
-      } else {
-        const defaultPin = profile.parent_pin || "1234";
-        localStorage.setItem('soma_active_student_pin', defaultPin);
-        supabase.from('profiles').update({ recovery_pin: defaultPin }).eq('id', profile.id).then(({ error }) => {
-          if (error) console.error("Failed to auto-set recovery_pin on login:", error);
-        });
-      }
+      localStorage.setItem('soma_active_student_pin', sanitizedPin);
       await syncLearningCredits(profile.id, profile.student_id);
 
       // Update Session ID for Single Device Login

@@ -12,7 +12,7 @@ export const ReferralView: React.FC = () => {
     const codeBase = (studentCode || userId || '').slice(0, 6).toUpperCase();
     const referralCode = codeBase ? `SOMO-${codeBase}` : 'SOMO-FRIEND';
     const referralLink = `https://somaai.co.ke/?ref=${referralCode}`;
-    const shareText = `Use my code ${referralCode} to join Somo Smart — the best AI study app for KCSE, KPSEA & CBC! 🚀 Sign up free:`;
+    const shareText = `Use my code ${referralCode} to join Soma AI — the best AI study app for KCSE, KPSEA & CBC! 🚀 Sign up free:`;
 
     useEffect(() => {
         if (!referralCode || referralCode === 'SOMO-FRIEND') return;

@@ -1,4 +1,4 @@
-// Somo Smart Service Worker — Offline-first caching for Kenyan connectivity
+// Soma AI Service Worker — Offline-first caching for Kenyan connectivity
 const CACHE_NAME = 'somo-smart-v1';
 const STATIC_ASSETS = [
     '/',

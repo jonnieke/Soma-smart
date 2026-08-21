@@ -259,7 +259,7 @@ export const MyClassroom: React.FC<MyClassroomProps> = ({ teacherProfile, select
             const resolvedShareUrl = classId.startsWith('local-class:')
                 ? `${baseJoinUrl}?class=${encodeURIComponent(className)}`
                 : `https://somaai.co.ke/class/${classId}`;
-            const shareMessage = `New announcement for ${className}: ${textToShare} - View on Somo Smart: ${resolvedShareUrl}`;
+            const shareMessage = `New announcement for ${className}: ${textToShare} - View on Soma AI: ${resolvedShareUrl}`;
             openWhatsAppShare(shareMessage, shareWindow);
             showClassroomNotice('success', "Announcement posted and WhatsApp handoff started.");
             onWorkflowStepCompleted?.(
@@ -289,7 +289,7 @@ export const MyClassroom: React.FC<MyClassroomProps> = ({ teacherProfile, select
         const trendIcon = student.trend === 'UP' ? '📈' : student.trend === 'DOWN' ? '📉' : '➖';
         const cbc = getCBCDescriptor(student.averageScore);
 
-        const message = `*Somo Smart Progress Report* 📚
+        const message = `*Soma AI Progress Report* 📚
 *Student:* ${student.name}
 *Class:* ${selectedClass}
 *Overall Mastery:* ${student.averageScore}% (${cbc.code} - ${cbc.label}) ${trendIcon}
@@ -363,7 +363,7 @@ View full dashboard: https://somaai.co.ke/parent/${student.id}`;
                             <Smartphone className="w-4 h-4" /> Copy Code
                         </button>
                         <a
-                            href={`https://wa.me/?text=${encodeURIComponent(`Join my ${selectedClass} class on Somo Smart!\n\nGo to: https://somaai.co.ke/join\nEnter code: ${currentClassId.slice(0, 8).toUpperCase()}\n\nOr click: ${classJoinUrl}`)}`}
+                            href={`https://wa.me/?text=${encodeURIComponent(`Join my ${selectedClass} class on Soma AI!\n\nGo to: https://somaai.co.ke/join\nEnter code: ${currentClassId.slice(0, 8).toUpperCase()}\n\nOr click: ${classJoinUrl}`)}`}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="flex items-center gap-2 bg-[#25D366] hover:bg-[#128C7E] text-white px-4 py-2 rounded-xl text-xs font-black transition-colors"
@@ -387,7 +387,7 @@ View full dashboard: https://somaai.co.ke/parent/${student.id}`;
                     topPerformer ? `🏆 Top student: ${topPerformer.name} (${topPerformer.averageScore}%)` : null,
                     mostCommonWeakTopic ? `📌 Focus area: ${mostCommonWeakTopic}` : null,
                     ``,
-                    `Powered by Somo Smart — somaai.co.ke`,
+                    `Powered by Soma AI — somaai.co.ke`,
                 ].filter(Boolean).join('\n');
                 return (
                     <div className="bg-gradient-to-r from-indigo-600 to-violet-600 rounded-[2rem] p-5 text-white flex items-center gap-4 shadow-lg shadow-indigo-200/50">
@@ -521,7 +521,7 @@ View full dashboard: https://somaai.co.ke/parent/${student.id}`;
                                             </div>
                                             <p className="text-slate-600 font-medium mb-3">{post.content}</p>
                                             <button
-                                                onClick={() => openWhatsAppShare(`New announcement for ${selectedClass}: ${post.content} - View on Somo Smart: ${classroomShareUrl}`)}
+                                                onClick={() => openWhatsAppShare(`New announcement for ${selectedClass}: ${post.content} - View on Soma AI: ${classroomShareUrl}`)}
                                                 className="inline-flex items-center gap-1.5 bg-[#25D366]/10 text-[#128C7E] px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-[#25D366]/20 transition-colors"
                                             >
                                                 <Share2 className="w-3.5 h-3.5" /> Share to WhatsApp
@@ -662,7 +662,7 @@ View full dashboard: https://somaai.co.ke/parent/${student.id}`;
                                     </div>
                                     <div>
                                         <h3 className="font-black text-emerald-900 flex items-center gap-2">
-                                            Somo Smart Insight <Sparkles className="w-4 h-4 text-amber-500" />
+                                            Soma AI Insight <Sparkles className="w-4 h-4 text-amber-500" />
                                         </h3>
                                         <p className="text-sm font-medium text-slate-700 leading-relaxed mt-1">
                                             <strong>{mostCommonWeakTopic}</strong> is a projected struggle area for {studentsNeedingHelp > 0 ? studentsNeedingHelp : decoratedStudents.length} students.
@@ -716,7 +716,7 @@ View full dashboard: https://somaai.co.ke/parent/${student.id}`;
                                 <div className="text-center p-8 bg-slate-50 border-2 border-dashed border-slate-300 rounded-[2rem] flex flex-col items-center gap-4">
                                     <p className="text-slate-500 font-bold">No students have joined this class yet.</p>
                                     <a 
-                                        href={`https://wa.me/?text=${encodeURIComponent(`Join my Somo Smart class: ${selectedClass} - ${classJoinUrl}`)}`}
+                                        href={`https://wa.me/?text=${encodeURIComponent(`Join my Soma AI class: ${selectedClass} - ${classJoinUrl}`)}`}
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         className="inline-flex items-center gap-2 bg-[#25D366] text-white px-6 py-3 rounded-xl font-bold shadow-md hover:bg-[#128C7E] transition-colors"

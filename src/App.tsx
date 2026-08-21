@@ -323,11 +323,11 @@ const App: React.FC = () => {
                             <Route path="/teacher/darasa" element={<TeacherPage />} />
                             <Route path="/reset-password" element={<ResetPassword />} />
                             <Route path="/pricing" element={<PricingPage />} />
-                            <Route path="/school/assessment" element={<SchoolWorkspaceLayout />} />
-                            <Route path="/school/assessment/*" element={<SchoolWorkspaceLayout />} />
-                            <Route path="/marketplace" element={<MarketplacePage />} />
-                            <Route path="/marketplace/sell" element={<CreatorStudioPage />} />
-                            <Route path="/marketplace/purchased" element={<PurchasedLibraryView />} />
+                            <Route path="/school/assessment" element={launchFeatures.schoolWorkspaceEnabled ? <SchoolWorkspaceLayout /> : <Navigate to="/" replace />} />
+                            <Route path="/school/assessment/*" element={launchFeatures.schoolWorkspaceEnabled ? <SchoolWorkspaceLayout /> : <Navigate to="/" replace />} />
+                            <Route path="/marketplace" element={launchFeatures.marketplace ? <MarketplacePage /> : <Navigate to="/" replace />} />
+                            <Route path="/marketplace/sell" element={launchFeatures.marketplace ? <CreatorStudioPage /> : <Navigate to="/" replace />} />
+                            <Route path="/marketplace/purchased" element={launchFeatures.marketplacePurchasesEnabled ? <PurchasedLibraryView /> : <Navigate to="/marketplace" replace />} />
                             <Route path="/teacher/paper-bank/search" element={<MarketplacePage />} />
                             <Route path="/teacher/paper-bank/purchases" element={<PurchasedLibraryView />} />
                             <Route path="/teacher/paper-bank/library" element={<PurchasedLibraryView />} />
@@ -337,21 +337,20 @@ const App: React.FC = () => {
                             <Route path="/teacher/seller/listings" element={<CreatorStudioPage />} />
                             <Route path="/teacher/seller/earnings" element={<CreatorStudioPage />} />
                             <Route path="/teacher/seller/withdrawals" element={<Navigate to="/teacher/creator-studio" replace />} />
-                            <Route path="/district" element={<DistrictDashboard />} />
-                            <Route path="/district/:districtId" element={<DistrictDashboard />} />
+                            <Route path="/district" element={launchFeatures.districtOversightEnabled ? <DistrictDashboard /> : <Navigate to="/" replace />} />
+                            <Route path="/district/:districtId" element={launchFeatures.districtOversightEnabled ? <DistrictDashboard /> : <Navigate to="/" replace />} />
 
                             {/* Phase 5 — Teacher Routes */}
-                            <Route path="/teacher/assessments" element={<TeacherAssessmentsView />} />
-                            <Route path="/teacher/assessments/create" element={<TeacherAssessmentsView />} />
-                            <Route path="/teacher/assessments/:assessmentId" element={<TeacherAssessmentsView />} />
-                            <Route path="/teacher/assessments/:assessmentId/assign" element={<TeacherAssessmentsView />} />
-                            <Route path="/teacher/assessments/:assessmentId/submissions" element={<TeacherMarkingCentreView />} />
-                            <Route path="/teacher/marking" element={<TeacherMarkingCentreView />} />
-                            <Route path="/teacher/marking/:attemptId" element={<TeacherMarkingInterface />} />
-                            <Route path="/teacher/results" element={<TeacherResultsAnalyticsView />} />
-                            <Route path="/teacher/results/:assessmentId" element={<TeacherResultsAnalyticsView />} />
-                            <Route path="/teacher/insights" element={<TeacherResultsAnalyticsView />} />
-                            <Route path="/teacher/reports" element={<TeacherReportsView />} />
+                            <Route path="/teacher/assessments" element={launchFeatures.assessmentDeliveryEnabled ? <TeacherAssessmentsView /> : <Navigate to="/teacher" replace />} />
+                            <Route path="/teacher/assessments/create" element={launchFeatures.assessmentDeliveryEnabled ? <TeacherAssessmentsView /> : <Navigate to="/teacher" replace />} />
+                            <Route path="/teacher/assessments/:assessmentId" element={launchFeatures.assessmentDeliveryEnabled ? <TeacherAssessmentsView /> : <Navigate to="/teacher" replace />} />
+                            <Route path="/teacher/assessments/:assessmentId/assign" element={launchFeatures.assessmentDeliveryEnabled ? <TeacherAssessmentsView /> : <Navigate to="/teacher" replace />} />
+                            <Route path="/teacher/assessments/:assessmentId/submissions" element={launchFeatures.assessmentDeliveryEnabled ? <TeacherMarkingCentreView /> : <Navigate to="/teacher" replace />} />
+                            <Route path="/teacher/marking/:attemptId" element={launchFeatures.assessmentDeliveryEnabled ? <TeacherMarkingInterface /> : <Navigate to="/teacher/marking" replace />} />
+                            <Route path="/teacher/results" element={launchFeatures.assessmentDeliveryEnabled ? <TeacherResultsAnalyticsView /> : <Navigate to="/teacher" replace />} />
+                            <Route path="/teacher/results/:assessmentId" element={launchFeatures.assessmentDeliveryEnabled ? <TeacherResultsAnalyticsView /> : <Navigate to="/teacher" replace />} />
+                            <Route path="/teacher/insights" element={launchFeatures.assessmentDeliveryEnabled ? <TeacherResultsAnalyticsView /> : <Navigate to="/teacher" replace />} />
+                            <Route path="/teacher/reports" element={launchFeatures.assessmentDeliveryEnabled ? <TeacherReportsView /> : <Navigate to="/teacher" replace />} />
 
                             {/* Phase 5 — Learner Routes */}
                             <Route path="/learner/assessments" element={<LearnerAssessmentsView />} />
@@ -363,8 +362,8 @@ const App: React.FC = () => {
                             <Route path="/learner/revision-plan" element={<LearnerRevisionPlanView />} />
 
                             {/* Phase 5 — School Routes */}
-                            <Route path="/school/assessment-performance" element={<SchoolAssessmentPerformanceView />} />
-                            <Route path="/school/assessment-performance/*" element={<SchoolAssessmentPerformanceView />} />
+                            <Route path="/school/assessment-performance" element={launchFeatures.assessmentDeliveryEnabled ? <SchoolAssessmentPerformanceView /> : <Navigate to="/" replace />} />
+                            <Route path="/school/assessment-performance/*" element={launchFeatures.assessmentDeliveryEnabled ? <SchoolAssessmentPerformanceView /> : <Navigate to="/" replace />} />
 
                             {/* Phase 5 — Admin Routes */}
                             <Route path="/admin/assessment-delivery" element={<AdminGuard onNavigateBack={() => navigate('/')}><AdminAssessmentDeliveryView /></AdminGuard>} />
@@ -373,49 +372,49 @@ const App: React.FC = () => {
                             <Route path="/admin/assessment-costs" element={<AdminGuard onNavigateBack={() => navigate('/')}><AdminAssessmentDeliveryView /></AdminGuard>} />
 
                             {/* Phase 6 — Teacher Intelligence Routes */}
-                            <Route path="/teacher/intelligence" element={<TeacherIntelligenceDashboardView />} />
-                            <Route path="/teacher/intelligence/*" element={<TeacherIntelligenceDashboardView />} />
+                            <Route path="/teacher/intelligence" element={launchFeatures.educationIntelligenceEnabled ? <TeacherIntelligenceDashboardView /> : <Navigate to="/teacher" replace />} />
+                            <Route path="/teacher/intelligence/*" element={launchFeatures.educationIntelligenceEnabled ? <TeacherIntelligenceDashboardView /> : <Navigate to="/teacher" replace />} />
 
                             {/* Phase 6 — Learner Progress Routes */}
                             <Route path="/learner/progress" element={<LearnerProgressView />} />
                             <Route path="/learner/progress/*" element={<LearnerProgressView />} />
 
                             {/* Phase 6 — School Intelligence Routes */}
-                            <Route path="/school/intelligence" element={<SchoolIntelligenceView />} />
-                            <Route path="/school/intelligence/*" element={<SchoolIntelligenceView />} />
+                            <Route path="/school/intelligence" element={launchFeatures.educationIntelligenceEnabled ? <SchoolIntelligenceView /> : <Navigate to="/" replace />} />
+                            <Route path="/school/intelligence/*" element={launchFeatures.educationIntelligenceEnabled ? <SchoolIntelligenceView /> : <Navigate to="/" replace />} />
 
                             {/* Phase 6 — Admin Intelligence Routes */}
                             <Route path="/admin/education-intelligence" element={<AdminGuard onNavigateBack={() => navigate('/')}><AdminEducationIntelligenceView /></AdminGuard>} />
                             <Route path="/admin/education-intelligence/*" element={<AdminGuard onNavigateBack={() => navigate('/')}><AdminEducationIntelligenceView /></AdminGuard>} />
 
                             {/* Phase 7 — Teacher Content OS Routes */}
-                            <Route path="/teacher/content" element={<TeacherContentOSView />} />
-                            <Route path="/teacher/content/*" element={<TeacherContentOSView />} />
+                            <Route path="/teacher/content" element={launchFeatures.contentOSEnabled ? <TeacherContentOSView /> : <Navigate to="/teacher" replace />} />
+                            <Route path="/teacher/content/*" element={launchFeatures.contentOSEnabled ? <TeacherContentOSView /> : <Navigate to="/teacher" replace />} />
 
                             {/* Phase 7 — School Content OS Routes */}
-                            <Route path="/school/content" element={<SchoolContentLibraryView />} />
-                            <Route path="/school/content/*" element={<SchoolContentLibraryView />} />
+                            <Route path="/school/content" element={launchFeatures.contentOSEnabled ? <SchoolContentLibraryView /> : <Navigate to="/" replace />} />
+                            <Route path="/school/content/*" element={launchFeatures.contentOSEnabled ? <SchoolContentLibraryView /> : <Navigate to="/" replace />} />
 
                             {/* Phase 7 — Publisher Portal Routes */}
-                            <Route path="/publisher" element={<PublisherPortalView />} />
-                            <Route path="/publisher/*" element={<PublisherPortalView />} />
+                            <Route path="/publisher" element={launchFeatures.publisherPortalEnabled ? <PublisherPortalView /> : <Navigate to="/" replace />} />
+                            <Route path="/publisher/*" element={launchFeatures.publisherPortalEnabled ? <PublisherPortalView /> : <Navigate to="/" replace />} />
 
                             {/* Phase 7 — Admin Content OS Routes */}
                             <Route path="/admin/content-os" element={<AdminGuard onNavigateBack={() => navigate('/')}><AdminContentOSView /></AdminGuard>} />
                             <Route path="/admin/content-os/*" element={<AdminGuard onNavigateBack={() => navigate('/')}><AdminContentOSView /></AdminGuard>} />
 
                             {/* Phase 8 — School OS Routes */}
-                            <Route path="/school" element={<SchoolOSDashboardView />} />
-                            <Route path="/school/setup" element={<SchoolOSDashboardView />} />
-                            <Route path="/school/people" element={<SchoolOSDashboardView />} />
-                            <Route path="/school/classes" element={<SchoolOSDashboardView />} />
-                            <Route path="/school/calendar" element={<SchoolOSDashboardView />} />
-                            <Route path="/school/billing" element={<SchoolOSDashboardView />} />
-                            <Route path="/school/*" element={<SchoolOSDashboardView />} />
+                            <Route path="/school" element={launchFeatures.schoolOSEnabled ? <SchoolOSDashboardView /> : <Navigate to="/" replace />} />
+                            <Route path="/school/setup" element={launchFeatures.schoolOSEnabled ? <SchoolOSDashboardView /> : <Navigate to="/" replace />} />
+                            <Route path="/school/people" element={launchFeatures.schoolOSEnabled ? <SchoolOSDashboardView /> : <Navigate to="/" replace />} />
+                            <Route path="/school/classes" element={launchFeatures.schoolOSEnabled ? <SchoolOSDashboardView /> : <Navigate to="/" replace />} />
+                            <Route path="/school/calendar" element={launchFeatures.schoolOSEnabled ? <SchoolOSDashboardView /> : <Navigate to="/" replace />} />
+                            <Route path="/school/billing" element={launchFeatures.schoolBillingEnabled ? <SchoolOSDashboardView /> : <Navigate to="/" replace />} />
+                            <Route path="/school/*" element={launchFeatures.schoolOSEnabled ? <SchoolOSDashboardView /> : <Navigate to="/" replace />} />
 
                             {/* Phase 8 — Multi-Campus Institution Routes */}
-                            <Route path="/institution" element={<InstitutionDashboardView />} />
-                            <Route path="/institution/*" element={<InstitutionDashboardView />} />
+                            <Route path="/institution" element={launchFeatures.schoolOSEnabled ? <InstitutionDashboardView /> : <Navigate to="/" replace />} />
+                            <Route path="/institution/*" element={launchFeatures.schoolOSEnabled ? <InstitutionDashboardView /> : <Navigate to="/" replace />} />
 
                             {/* Phase 8 — Admin Institution & Platform Health Routes */}
                             <Route path="/admin/institutions" element={<AdminGuard onNavigateBack={() => navigate('/')}><AdminInstitutionsView /></AdminGuard>} />
@@ -438,13 +437,13 @@ const App: React.FC = () => {
                             <Route path="/school/renewal" element={<SchoolGrowthPortalView />} />
 
                             {/* Phase 9 — Partner Routes */}
-                            <Route path="/partner" element={<PartnerPortalView />} />
-                            <Route path="/partner/referrals" element={<PartnerPortalView />} />
-                            <Route path="/partner/schools" element={<PartnerPortalView />} />
-                            <Route path="/partner/campaigns" element={<PartnerPortalView />} />
-                            <Route path="/partner/earnings" element={<PartnerPortalView />} />
-                            <Route path="/partner/deployments" element={<PartnerPortalView />} />
-                            <Route path="/partner/reports" element={<PartnerPortalView />} />
+                            <Route path="/partner" element={launchFeatures.partnerPortalEnabled ? <PartnerPortalView /> : <Navigate to="/" replace />} />
+                            <Route path="/partner/referrals" element={launchFeatures.partnerPortalEnabled ? <PartnerPortalView /> : <Navigate to="/" replace />} />
+                            <Route path="/partner/schools" element={launchFeatures.partnerPortalEnabled ? <PartnerPortalView /> : <Navigate to="/" replace />} />
+                            <Route path="/partner/campaigns" element={launchFeatures.partnerPortalEnabled ? <PartnerPortalView /> : <Navigate to="/" replace />} />
+                            <Route path="/partner/earnings" element={launchFeatures.partnerPortalEnabled ? <PartnerPortalView /> : <Navigate to="/" replace />} />
+                            <Route path="/partner/deployments" element={launchFeatures.partnerPortalEnabled ? <PartnerPortalView /> : <Navigate to="/" replace />} />
+                            <Route path="/partner/reports" element={launchFeatures.partnerPortalEnabled ? <PartnerPortalView /> : <Navigate to="/" replace />} />
 
                             {/* Phase 9 — Admin Growth OS Routes */}
                             <Route path="/admin/growth" element={<AdminGuard onNavigateBack={() => navigate('/')}><AdminGrowthOSView /></AdminGuard>} />
@@ -455,30 +454,30 @@ const App: React.FC = () => {
                             <Route path="/admin/platform/*" element={<AdminGuard onNavigateBack={() => navigate('/')}><AdminPlatformCoreView /></AdminGuard>} />
 
                             {/* Phase 10 — Enterprise Organization Routes */}
-                            <Route path="/organization/settings" element={<OrganizationEnterpriseView />} />
-                            <Route path="/organization/security" element={<OrganizationEnterpriseView />} />
-                            <Route path="/organization/identity" element={<OrganizationEnterpriseView />} />
-                            <Route path="/organization/audit" element={<OrganizationEnterpriseView />} />
-                            <Route path="/organization/api-access" element={<OrganizationEnterpriseView />} />
-                            <Route path="/organization/integrations" element={<OrganizationEnterpriseView />} />
-                            <Route path="/organization/data-governance" element={<OrganizationEnterpriseView />} />
-                            <Route path="/organization/service-status" element={<OrganizationEnterpriseView />} />
-                            <Route path="/organization/support" element={<OrganizationEnterpriseView />} />
-                            <Route path="/organization/*" element={<OrganizationEnterpriseView />} />
+                            <Route path="/organization/settings" element={launchFeatures.platformReliabilityEnabled ? <OrganizationEnterpriseView /> : <Navigate to="/" replace />} />
+                            <Route path="/organization/security" element={launchFeatures.platformReliabilityEnabled ? <OrganizationEnterpriseView /> : <Navigate to="/" replace />} />
+                            <Route path="/organization/identity" element={launchFeatures.platformReliabilityEnabled ? <OrganizationEnterpriseView /> : <Navigate to="/" replace />} />
+                            <Route path="/organization/audit" element={launchFeatures.platformReliabilityEnabled ? <OrganizationEnterpriseView /> : <Navigate to="/" replace />} />
+                            <Route path="/organization/api-access" element={launchFeatures.platformReliabilityEnabled ? <OrganizationEnterpriseView /> : <Navigate to="/" replace />} />
+                            <Route path="/organization/integrations" element={launchFeatures.platformReliabilityEnabled ? <OrganizationEnterpriseView /> : <Navigate to="/" replace />} />
+                            <Route path="/organization/data-governance" element={launchFeatures.platformReliabilityEnabled ? <OrganizationEnterpriseView /> : <Navigate to="/" replace />} />
+                            <Route path="/organization/service-status" element={launchFeatures.platformReliabilityEnabled ? <OrganizationEnterpriseView /> : <Navigate to="/" replace />} />
+                            <Route path="/organization/support" element={launchFeatures.platformReliabilityEnabled ? <OrganizationEnterpriseView /> : <Navigate to="/" replace />} />
+                            <Route path="/organization/*" element={launchFeatures.platformReliabilityEnabled ? <OrganizationEnterpriseView /> : <Navigate to="/" replace />} />
 
                             {/* Phase 10 — Developer Portal Routes */}
-                            <Route path="/developers" element={<DeveloperPortalView />} />
-                            <Route path="/developers/apps" element={<DeveloperPortalView />} />
-                            <Route path="/developers/api-keys" element={<DeveloperPortalView />} />
-                            <Route path="/developers/webhooks" element={<DeveloperPortalView />} />
-                            <Route path="/developers/usage" element={<DeveloperPortalView />} />
-                            <Route path="/developers/logs" element={<DeveloperPortalView />} />
-                            <Route path="/developers/docs" element={<DeveloperPortalView />} />
-                            <Route path="/developers/sandbox" element={<DeveloperPortalView />} />
-                            <Route path="/developers/*" element={<DeveloperPortalView />} />
+                            <Route path="/developers" element={launchFeatures.developerPortalEnabled ? <DeveloperPortalView /> : <Navigate to="/" replace />} />
+                            <Route path="/developers/apps" element={launchFeatures.developerPortalEnabled ? <DeveloperPortalView /> : <Navigate to="/" replace />} />
+                            <Route path="/developers/api-keys" element={launchFeatures.developerPortalEnabled ? <DeveloperPortalView /> : <Navigate to="/" replace />} />
+                            <Route path="/developers/webhooks" element={launchFeatures.developerPortalEnabled ? <DeveloperPortalView /> : <Navigate to="/" replace />} />
+                            <Route path="/developers/usage" element={launchFeatures.developerPortalEnabled ? <DeveloperPortalView /> : <Navigate to="/" replace />} />
+                            <Route path="/developers/logs" element={launchFeatures.developerPortalEnabled ? <DeveloperPortalView /> : <Navigate to="/" replace />} />
+                            <Route path="/developers/docs" element={launchFeatures.developerPortalEnabled ? <DeveloperPortalView /> : <Navigate to="/" replace />} />
+                            <Route path="/developers/sandbox" element={launchFeatures.developerPortalEnabled ? <DeveloperPortalView /> : <Navigate to="/" replace />} />
+                            <Route path="/developers/*" element={launchFeatures.developerPortalEnabled ? <DeveloperPortalView /> : <Navigate to="/" replace />} />
 
                             {/* Phase 10 — Public Operational & Trust Routes */}
-                            <Route path="/status" element={<PublicStatusTrustView />} />
+                            <Route path="/status" element={launchFeatures.publicStatusPageEnabled ? <PublicStatusTrustView /> : <Navigate to="/" replace />} />
                             <Route path="/security" element={<PublicStatusTrustView />} />
                             <Route path="/trust" element={<PublicStatusTrustView />} />
                             <Route path="/api/docs" element={<PublicStatusTrustView />} />

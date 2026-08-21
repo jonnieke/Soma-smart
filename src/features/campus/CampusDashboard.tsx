@@ -110,7 +110,7 @@ export const CampusDashboard: React.FC = () => {
                                     <div>
                                         <h3 className="text-xl font-bold mb-1">Unlock Campus Pro</h3>
                                         <p className="text-indigo-100 max-w-md">
-                                            Get unlimited PDF summaries, deeper research analysis, and plagiarism checks with Somo Smart Pro.
+                                            Get unlimited PDF summaries, deeper research analysis, and plagiarism checks with Soma AI Pro.
                                         </p>
                                     </div>
                                 </div>

@@ -1492,7 +1492,7 @@ export const generatePodcastScript = async (content: string, topic: string): Pro
   });
 
   const prompt = `
-    You are the producer of a popular educational podcast called "Somo Smart Audio".
+    You are the producer of a popular educational podcast called "Soma AI Audio".
     Your task is to convert the following educational content into a lively, engaging 2 - minute podcast script between two hosts:
     - ** Host(Rachel) **: Enthusiastic, introduces the topic, asks guiding questions, and summarizes key points.
     - ** Guest(Expert) **: Knowledgeable but accessible, explains complex ideas with analogies and examples.
@@ -1503,7 +1503,7 @@ Material:
 "${content.slice(0, 15000).replace(/"/g, "'")}"
 
   ** Rules:**
-    1. Start with a catchy intro(e.g., "Welcome back to Somo Smart Audio...").
+    1. Start with a catchy intro(e.g., "Welcome back to Soma AI Audio...").
     2. Make it sound like a real conversation(use "Exactly!", "That's a great point", "Wait, so you mean...").
     3. Keep explanations simple and use analogies.
     4. End with a quick takeaway or study tip.

@@ -19,9 +19,9 @@ export const LearnerPage: React.FC = () => {
         <>
             <Helmet>
                 <html lang="en" />
-                <title>Study Dashboard | Somo Smart — AI Learning for Kenyan Students</title>
+                <title>Study Dashboard | Soma AI — AI Learning for Kenyan Students</title>
                 <meta name="description" content="Your personalized AI study dashboard for Kenya. Ask homework questions, get step-by-step explanations, practice CBC, KPSEA & KCSE past papers, and track subject mastery." />
-                <meta name="keywords" content="Somo Smart learner, KCSE revision, KPSEA past papers, CBC notes, Ask Akili AI, Kenyan study assistant, step-by-step homework help" />
+                <meta name="keywords" content="Soma AI learner, KCSE revision, KPSEA past papers, CBC notes, Ask Akili AI, Kenyan study assistant, step-by-step homework help" />
 
                 {/* AIO & Search Engine Optimization */}
                 <meta name="smart-search-index" content="index" />
@@ -30,9 +30,9 @@ export const LearnerPage: React.FC = () => {
                 <meta name="robots" content="index, follow, max-image-preview:large" />
 
                 {/* OpenGraph / Facebook */}
-                <meta property="og:site_name" content="Somo Smart" />
+                <meta property="og:site_name" content="Soma AI" />
                 <meta property="og:type" content="website" />
-                <meta property="og:title" content="Study Dashboard | Somo Smart — AI Learning for Kenyan Students" />
+                <meta property="og:title" content="Study Dashboard | Soma AI — AI Learning for Kenyan Students" />
                 <meta property="og:description" content="Personalized study dashboard with Ask Akili AI tutor, past papers, official notes, audio lessons, and progress tracking." />
                 <meta property="og:image" content="https://www.somaai.co.ke/hero_option_a.png" />
                 <meta property="og:url" content="https://www.somaai.co.ke/learner" />
@@ -40,7 +40,7 @@ export const LearnerPage: React.FC = () => {
                 {/* Twitter */}
                 <meta name="twitter:card" content="summary_large_image" />
                 <meta name="twitter:site" content="@somasmart" />
-                <meta name="twitter:title" content="Study Dashboard | Somo Smart" />
+                <meta name="twitter:title" content="Study Dashboard | Soma AI" />
                 <meta name="twitter:description" content="Step-by-step CBC, KPSEA & KCSE study assistance, past paper practice, and AI tutoring for Kenyan students." />
 
                 <link rel="canonical" href="https://www.somaai.co.ke/learner" />
@@ -50,7 +50,7 @@ export const LearnerPage: React.FC = () => {
                     {JSON.stringify({
                         "@context": "https://schema.org",
                         "@type": "EducationalApplication",
-                        "name": "Somo Smart Learner Dashboard",
+                        "name": "Soma AI Learner Dashboard",
                         "operatingSystem": "Web, Mobile",
                         "applicationCategory": "EducationalApplication",
                         "url": "https://www.somaai.co.ke/learner",

@@ -61,9 +61,9 @@ export const BlogIndex: React.FC = () => {
         <div className="min-h-screen bg-white dark:bg-slate-950 transition-colors">
             <Helmet>
                 <html lang="en" />
-                <title>Educational Journal &amp; Exam Insights | Somo Smart Blog</title>
-                <meta name="description" content="Discover study tips, exam strategies, and educational insights tailored for the Kenyan CBC, KPSEA, and KCSE curriculum on the Somo Smart Journal." />
-                <meta name="keywords" content="KCSE study tips, KPSEA exam strategy, CBC Kenya educational insights, Somo Smart journal" />
+                <title>Educational Journal &amp; Exam Insights | Soma AI Blog</title>
+                <meta name="description" content="Discover study tips, exam strategies, and educational insights tailored for the Kenyan CBC, KPSEA, and KCSE curriculum on the Soma AI Journal." />
+                <meta name="keywords" content="KCSE study tips, KPSEA exam strategy, CBC Kenya educational insights, Soma AI journal" />
 
                 {/* AIO & Search Engine Optimization */}
                 <meta name="smart-search-index" content="index" />
@@ -72,9 +72,9 @@ export const BlogIndex: React.FC = () => {
                 <meta name="robots" content="index, follow, max-image-preview:large" />
 
                 {/* OpenGraph */}
-                <meta property="og:site_name" content="Somo Smart" />
+                <meta property="og:site_name" content="Soma AI" />
                 <meta property="og:type" content="website" />
-                <meta property="og:title" content="Educational Journal &amp; Exam Insights | Somo Smart Blog" />
+                <meta property="og:title" content="Educational Journal &amp; Exam Insights | Soma AI Blog" />
                 <meta property="og:description" content="Study strategies, platform updates, and deep dives into the Kenyan secondary and primary educational curriculum." />
                 <meta property="og:image" content="https://www.somaai.co.ke/hero_option_a.png" />
                 <meta property="og:url" content="https://www.somaai.co.ke/blog" />

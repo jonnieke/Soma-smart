@@ -1,6 +1,6 @@
-# Somo Smart
+# Soma AI
 
-Somo Smart is an affordable study and teacher-assist platform for Kenyan CBC, KPSEA, and KCSE learners.
+Soma AI is an affordable study and teacher-assist platform for Kenyan CBC, KPSEA, and KCSE learners.
 
 - Learners understand schoolwork, listen to notes, practise, and track weak topics.
 - Teachers create lesson content, quizzes, assignments, and feedback faster.
@@ -117,7 +117,7 @@ Critical manual checks:
 
 ## Safety and privacy
 
-Somo Smart serves minors. Do not send names, email addresses, phone numbers, or raw learner questions to generic analytics. Use internal IDs, role, plan, school ID, and event names. All learner, teacher, parent, and school records require reviewed RLS policies.
+Soma AI serves minors. Do not send names, email addresses, phone numbers, or raw learner questions to generic analytics. Use internal IDs, role, plan, school ID, and event names. All learner, teacher, parent, and school records require reviewed RLS policies.
 
 ## Production domains
 

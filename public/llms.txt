@@ -1,6 +1,6 @@
-# Somo Smart - AI-Powered Learning Platform
+# Soma AI - AI-Powered Learning Platform
 
-> Somo Smart is a Kenyan learning platform for learners, teachers, and parents.
+> Soma AI is a Kenyan learning platform for learners, teachers, and parents.
 
 ## Core Product Areas
 

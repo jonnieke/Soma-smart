@@ -154,7 +154,7 @@ export const DigitalBlackboard: React.FC<DigitalBlackboardProps> = ({ onClose, t
             {/* Watermark */}
             <div className="absolute bottom-8 right-8 opacity-20 flex items-center gap-2 pointer-events-none">
                 <MonitorPlay className="w-4 h-4" />
-                <span className="text-[10px] font-black uppercase tracking-widest">Somo Smart Teach Mode</span>
+                <span className="text-[10px] font-black uppercase tracking-widest">Soma AI Teach Mode</span>
             </div>
         </motion.div>
     );

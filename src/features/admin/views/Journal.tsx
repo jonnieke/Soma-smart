@@ -214,7 +214,7 @@ export const JournalView: React.FC = () => {
                                         <User className="absolute left-3 top-3 w-4 h-4 text-slate-400" />
                                         <input 
                                             type="text"
-                                            value={currentPost?.author_name || 'Somo Smart Team'}
+                                            value={currentPost?.author_name || 'Soma AI Team'}
                                             onChange={(e) => setCurrentPost(prev => ({ ...prev, author_name: e.target.value }))}
                                             className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border-2 border-slate-100 rounded-xl focus:border-indigo-500 outline-none transition-all font-bold text-sm"
                                         />
@@ -266,7 +266,7 @@ export const JournalView: React.FC = () => {
                 <button 
                     onClick={() => {
                         setCurrentPost({
-                            author_name: 'Somo Smart Team',
+                            author_name: 'Soma AI Team',
                             read_time_minutes: 5,
                             published_at: new Date().toISOString()
                         });

@@ -262,7 +262,7 @@ export const SchoolDashboard: React.FC = () => {
             {/* Sidebar */}
             <aside className="w-72 bg-white/70 backdrop-blur-xl border border-white/50 flex flex-col hidden lg:flex m-4 rounded-[2.5rem] shadow-[0_8px_32px_rgba(0,0,0,0.04)] relative z-10 h-[calc(100vh-2rem)] sticky top-4">
                 <div className="p-8 border-b border-slate-100/50 flex items-center justify-center">
-                    <img src={logoImg} alt="Somo Smart" className="h-12 w-auto object-contain" />
+                    <img src={logoImg} alt="Soma AI" className="h-12 w-auto object-contain" />
                 </div>
 
                 <nav className="flex-1 p-6 space-y-2">

@@ -350,7 +350,7 @@ function buildStepByStepGuide(explanation: ExplanationResult | null, grade: stri
           detail: subtopic.blocks
             ?.map((block) => {
               if (block.type === 'paragraph') return block.text || '';
-              if (block.type === 'list' && Array.isArray(block.items)) return block.items.join(' • ');
+              if (block.type === 'list' && Array.isArray(block.items)) return block.items.join(' ï¿½ ');
               return '';
             })
             .filter(Boolean)
@@ -1881,7 +1881,7 @@ Stay anchored to this context unless I ask for something broader.`;
         educationLevel === EducationLevel.CAMPUS ? 'University curriculum' :
           'CBC/KCSE'
         }.`,
-      teacherName: 'Somo Smart Verified',
+      teacherName: 'Soma AI Verified',
       isVerified: true,
       price: r.type === 'SYLLABUS' ? 0 : 0, // In logic, if it's premium verified, we check Pro
       grade: r.grade,
@@ -2401,7 +2401,7 @@ Stay anchored to this context unless I ask for something broader.`;
       doc.setFont("helvetica", "bold");
       doc.setFontSize(24);
       doc.setTextColor(255, 255, 255);
-      doc.text("Somo Smart Revision", pageWidth / 2, 22, { align: 'center' });
+      doc.text("Soma AI Revision", pageWidth / 2, 22, { align: 'center' });
 
       doc.setFontSize(10);
       doc.text("Official Study Material - CBC/KCSE Aligned", pageWidth / 2, 32, { align: 'center' });
@@ -2490,7 +2490,7 @@ Stay anchored to this context unless I ask for something broader.`;
       doc.setFont("helvetica", "italic");
       doc.setFontSize(9);
       doc.setTextColor(146, 64, 14); // Amber-900
-      const examHelp = "Focus on the bolded concepts above. They are frequently assessed in national exams. Practice active recall by taking the Somo Smart quiz for this topic.";
+      const examHelp = "Focus on the bolded concepts above. They are frequently assessed in national exams. Practice active recall by taking the Soma AI quiz for this topic.";
       const examLines = doc.splitTextToSize(examHelp, contentWidth);
       doc.text(examLines, margin, yPos);
 
@@ -2500,7 +2500,7 @@ Stay anchored to this context unless I ask for something broader.`;
         doc.setPage(i);
         doc.setFontSize(8);
         doc.setTextColor(148, 163, 184); // Slate-400
-        doc.text(`Page ${i} of ${totalPages} | Prepared by Somo Smart AI`, pageWidth / 2, pageHeight - 10, { align: 'center' });
+        doc.text(`Page ${i} of ${totalPages} | Prepared by Soma AI AI`, pageWidth / 2, pageHeight - 10, { align: 'center' });
       }
 
       const downloadFileName = `${material.title || 'lesson_notes'}_somo_smart.pdf`
@@ -5549,7 +5549,7 @@ ${explanation.explanation}
                   </div>
                   <div>
                     <h2 className="text-lg font-bold text-slate-800">Get the App</h2>
-                    <p className="text-xs text-slate-400 font-medium">Install Somo Smart on your home screen</p>
+                    <p className="text-xs text-slate-400 font-medium">Install Soma AI on your home screen</p>
                   </div>
                 </div>
 
@@ -5589,7 +5589,7 @@ ${explanation.explanation}
                       const result = await Notification.requestPermission();
                       setNotifStatus(result as 'granted' | 'denied');
                       if (result === 'granted') {
-                        new Notification('Somo Smart', {
+                        new Notification('Soma AI', {
                           body: "Reminders enabled! We'll nudge you at 6pm if you haven't studied.",
                           icon: '/icons/icon-192x192.png',
                         });
@@ -5669,7 +5669,7 @@ ${explanation.explanation}
                       className="mt-0.5 h-5 w-5 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 disabled:opacity-40"
                     />
                     <span className="text-xs font-semibold leading-5 text-slate-600">
-                      I confirm this parent or guardian agreed to receive learning updates on WhatsApp. Somo Smart will not send anything automatically.
+                      I confirm this parent or guardian agreed to receive learning updates on WhatsApp. Soma AI will not send anything automatically.
                     </span>
                   </label>
 
@@ -7302,7 +7302,7 @@ ${explanation.explanation}
                           {podcastLoading ? <Loader2 className="w-5 h-5 text-white animate-spin" /> : <Headphones className="w-5 h-5 text-white" />}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.15em] leading-none mb-1">Somo Smart Audio</p>
+                          <p className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.15em] leading-none mb-1">Soma AI Audio</p>
                           <p className="text-white font-bold text-sm truncate leading-tight">
                             {podcastScript?.title || (explanation?.topic ? 'Generating episode...' : '')}
                           </p>
@@ -7902,7 +7902,7 @@ ${explanation.explanation}
               <div className="bg-white rounded-[2rem] w-full max-w-sm shadow-2xl overflow-hidden">
                 <div className="bg-gradient-to-r from-indigo-600 to-purple-600 p-6 text-white text-center">
                   <div className="text-3xl mb-2">Class</div>
-                  <h2 className="text-xl font-black">Welcome to Somo Smart!</h2>
+                  <h2 className="text-xl font-black">Welcome to Soma AI!</h2>
                   <p className="text-indigo-100 text-sm mt-1">{"Let's personalise your learning"}</p>
                   <div className="flex justify-center gap-2 mt-3">
                     <div className={`w-6 h-1.5 rounded-full ${onboardStep >= 1 ? 'bg-white' : 'bg-white/30'}`} />
@@ -8462,7 +8462,7 @@ ${explanation.explanation}
                   className="bg-white border-2 border-slate-200 text-slate-700 text-[10px] font-bold uppercase tracking-wider rounded-xl px-3 py-2 outline-none focus:border-indigo-500 transition-all cursor-pointer"
                 >
                   <option value="ALL">All Sources</option>
-                  <option value="SOMO">Somo Smart</option>
+                  <option value="SOMO">Soma AI</option>
                   <option value="TEACHERS">Teacher Picks</option>
                 </select>
 
@@ -8530,7 +8530,7 @@ ${explanation.explanation}
                     const isNotes = item.category === 'NOTES';
                     const isPastPaper = item.category === 'PAST_PAPER';
                     const isVerified = item.isVerified;
-                    const sourceType = isVerified ? 'Somo Smart' : 'Teacher';
+                    const sourceType = isVerified ? 'Soma AI' : 'Teacher';
                     const alignmentTag = getGradeLevel(item.grade || '') === EducationLevel.JUNIOR ? 'CBC/KPSEA' : 'KCSE';
                     const createdAtValue = (item as any).createdAt ? new Date((item as any).createdAt) : null;
                     const reviewedLabel = createdAtValue && !isNaN(createdAtValue.getTime())
@@ -8586,7 +8586,7 @@ ${explanation.explanation}
                           <div className="flex items-center gap-2 mb-4 text-[8px] font-black uppercase tracking-widest">
                             <span className="text-slate-400">{item.subject}</span>
                             <span className="text-slate-200">/</span>
-                            <span className="text-slate-400">{isVerified ? "Somo Smart" : item.teacherName}</span>
+                            <span className="text-slate-400">{isVerified ? "Soma AI" : item.teacherName}</span>
                           </div>
                           <div className="flex flex-wrap gap-1.5 mb-4">
                             <span className="px-2 py-0.5 rounded-md text-[8px] font-black uppercase tracking-wider bg-slate-50 text-slate-600 border border-slate-200">

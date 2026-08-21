@@ -6,7 +6,7 @@ export const ExamRoomsListPage: React.FC = () => {
     return (
         <>
             <Helmet>
-                <title>Exam Rooms | Somo Smart</title>
+                <title>Exam Rooms | Soma AI</title>
                 <meta name="description" content="Join collaborative study rooms and prep for exams with peers and AI." />
             </Helmet>
             <ExamRooms />

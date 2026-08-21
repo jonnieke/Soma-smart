@@ -446,7 +446,7 @@ export const ParentDashboard: React.FC<ParentProps> = ({ onNavigate, activityLog
 
     const shareWeeklyProof = async () => {
         const summary = [
-            'Somo Smart weekly learning proof',
+            'Soma AI weekly learning proof',
             `Student ID: ${validStudentCode}`,
             `Average score: ${stats.avgScore}%`,
             `Study missions completed: ${proofStats.studyMissions}`,
@@ -460,7 +460,7 @@ export const ParentDashboard: React.FC<ParentProps> = ({ onNavigate, activityLog
         try {
             if (navigator.share) {
                 await navigator.share({
-                    title: 'Somo Smart weekly learning proof',
+                    title: 'Soma AI weekly learning proof',
                     text: summary
                 });
                 setProofShareStatus('shared');
@@ -830,7 +830,7 @@ export const ParentDashboard: React.FC<ParentProps> = ({ onNavigate, activityLog
                     <div className="mt-4 flex flex-col sm:flex-row gap-3">
                         <a
                             href={`https://wa.me/?text=${encodeURIComponent([
-                                '📚 *Somo Smart Weekly Proof*',
+                                '📚 *Soma AI Weekly Proof*',
                                 `Student: ${validStudentCode}`,
                                 `Average score: ${stats.avgScore}%`,
                                 `Study missions: ${proofStats.studyMissions}`,
@@ -1088,7 +1088,7 @@ export const ParentDashboard: React.FC<ParentProps> = ({ onNavigate, activityLog
                                 <div>
                                     <Sparkles className="w-8 h-8 text-slate-300 mx-auto mb-3" />
                                     <p className="text-slate-500 font-bold text-sm">Waiting for cloud sync...</p>
-                                    <p className="text-xs text-slate-400 mt-1">Somo Smart is building the mastery graph.</p>
+                                    <p className="text-xs text-slate-400 mt-1">Soma AI is building the mastery graph.</p>
                                 </div>
                             </div>
                         )}
@@ -1101,7 +1101,7 @@ export const ParentDashboard: React.FC<ParentProps> = ({ onNavigate, activityLog
                         </div>
                         <div className="relative z-10">
                             <h3 className="text-xl font-black text-slate-900 dark:text-white mb-6 flex items-center gap-2">
-                                <Sparkles className="w-6 h-6 text-indigo-500" /> Somo Smart Insights
+                                <Sparkles className="w-6 h-6 text-indigo-500" /> Soma AI Insights
                             </h3>
                             {stats.weakAreas.length > 0 ? (
                                 <div className="space-y-4">

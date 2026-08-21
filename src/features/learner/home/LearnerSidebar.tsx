@@ -76,9 +76,9 @@ export const LearnerSidebar: React.FC<LearnerSidebarProps> = ({
     <div className="flex h-full flex-col bg-white text-[#151a42]">
       <div className="flex items-center justify-between px-5 py-6">
         <button type="button" onClick={() => choose('HOME')} className="flex items-center gap-3 text-left">
-          <img src={logo} alt="Somo Smart" className="h-10 w-10 object-contain" width={40} height={40} />
+          <img src={logo} alt="Soma AI" className="h-10 w-10 object-contain" width={40} height={40} />
           <span>
-            <strong className="block text-[15px] font-black tracking-[0]">SOMO SMART</strong>
+            <strong className="block text-[15px] font-black tracking-[0]">SOMA AI</strong>
             <span className="block text-xs text-[#707893]">Learn with Akili</span>
           </span>
         </button>

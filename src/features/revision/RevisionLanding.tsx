@@ -473,7 +473,7 @@ Use plain text. No markdown headings or symbols.`;
     return (
         <div className="min-h-screen bg-slate-50 font-sans text-slate-800 text-slate-900 transition-colors duration-300">
             <Helmet>
-                <title>Revision Hub | Somo Smart — KCSE &amp; KPSEA Exam Prep</title>
+                <title>Revision Hub | Soma AI — KCSE &amp; KPSEA Exam Prep</title>
                 <meta name="description" content="smart-powered exam prep: scan questions, access past papers, get instant guidance from Exam Guru." />
             </Helmet>
 

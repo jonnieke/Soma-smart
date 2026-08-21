@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Lock, LogIn, User, GraduationCap, X, Plus, CheckCircle, Eye, EyeOff, School as SchoolIcon } from 'lucide-react';
@@ -14,6 +14,50 @@ interface LoginModalProps {
 
 export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, initialTab = 'STUDENT', onSwitchToRegister, onSuccess }) => {
     const { login, loginTeacher, loginSchool, recoverStudentId, resetPassword } = useApp();
+    const dialogRef = useRef<HTMLDivElement>(null);
+    const returnFocusRef = useRef<HTMLElement | null>(null);
+    const onCloseRef = useRef(onClose);
+    useEffect(() => {
+        onCloseRef.current = onClose;
+    }, [onClose]);
+
+
+    useEffect(() => {
+        if (!isOpen) return;
+        returnFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+        const focusTimer = window.requestAnimationFrame(() => {
+            dialogRef.current?.querySelector<HTMLElement>(
+                'input:not([disabled]), button:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+            )?.focus();
+        });
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if (event.key === 'Escape') {
+                event.preventDefault();
+                onCloseRef.current();
+                return;
+            }
+            if (event.key !== 'Tab' || !dialogRef.current) return;
+            const focusable = Array.from(dialogRef.current.querySelectorAll<HTMLElement>(
+                'input:not([disabled]), button:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+            )).filter((element) => element.offsetParent !== null);
+            if (focusable.length === 0) return;
+            const first = focusable[0];
+            const last = focusable[focusable.length - 1];
+            if (event.shiftKey && document.activeElement === first) {
+                event.preventDefault();
+                last.focus();
+            } else if (!event.shiftKey && document.activeElement === last) {
+                event.preventDefault();
+                first.focus();
+            }
+        };
+        document.addEventListener('keydown', handleKeyDown);
+        return () => {
+            window.cancelAnimationFrame(focusTimer);
+            document.removeEventListener('keydown', handleKeyDown);
+            returnFocusRef.current?.focus();
+        };
+    }, [isOpen]);
     const navigate = useNavigate();
 
     // Tab State
@@ -21,6 +65,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, initial
 
     // Student State
     const [code, setCode] = useState("");
+    const [studentPin, setStudentPin] = useState("");
     const [error, setError] = useState("");
     const [showRecents, setShowRecents] = useState(false);
     const [showRecovery, setShowRecovery] = useState(false);
@@ -60,14 +105,9 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, initial
 
     const handleRecentClick = (recentCode: string) => {
         setCode(recentCode);
-        login(recentCode).then(success => {
-            if (success) {
-                onClose();
-                if (onSuccess) onSuccess('STUDENT');
-                else navigate('/learner');
-            }
-            else setError("Expired or Invalid ID");
-        });
+        setStudentPin("");
+        setShowRecents(false);
+        setError("");
     };
 
     const removeRecent = (e: React.MouseEvent, codeToRemove: string) => {
@@ -83,13 +123,13 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, initial
         setError("");
 
         if (activeTab === 'STUDENT') {
-            const success = await login(code);
+            const success = await login(code, studentPin);
             if (success) {
                 onClose();
                 if (onSuccess) onSuccess('STUDENT');
                 else navigate('/learner');
             } else {
-                setError("Invalid Student ID. Please check and try again.");
+                setError("Invalid Student ID or PIN. Please check and try again.");
             }
         } else if (activeTab === 'TEACHER') {
             setLoading(true);
@@ -139,7 +179,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, initial
     if (showReset) {
         return (
             <AnimatePresence>
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={onClose}>
+                <div ref={dialogRef} role="dialog" aria-modal="true" aria-label="Reset password" className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={onClose}>
                     <motion.div
                         initial={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
@@ -207,7 +247,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, initial
     if (showRecents && activeTab === 'STUDENT') {
         return (
             <AnimatePresence>
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={onClose}>
+                <div ref={dialogRef} role="dialog" aria-modal="true" aria-label="Recent student accounts" className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={onClose}>
                     <motion.div
                         initial={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
@@ -277,7 +317,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, initial
     if (showRecovery) {
         return (
             <AnimatePresence>
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={onClose}>
+                <div ref={dialogRef} role="dialog" aria-modal="true" aria-label="Recover student ID" className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={onClose}>
                     <motion.div
                         initial={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
@@ -371,7 +411,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, initial
     // Main Login View
     return (
         <AnimatePresence>
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={onClose}>
+            <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="login-modal-title" className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={onClose}>
                 <motion.div
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
@@ -405,13 +445,14 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, initial
                             <div className={`w-16 h-16 ${activeTab === 'STUDENT' ? 'bg-blue-100 text-blue-600' : activeTab === 'SCHOOL' ? 'bg-blue-900/10 text-blue-900' : 'bg-indigo-100 text-indigo-600'} rounded-full flex items-center justify-center mx-auto mb-4 transition-colors`}>
                                 {activeTab === 'STUDENT' ? <Lock className="w-8 h-8" /> : activeTab === 'SCHOOL' ? <SchoolIcon className="w-8 h-8" /> : <GraduationCap className="w-8 h-8" />}
                             </div>
-                            <h2 className="text-2xl font-bold text-gray-900">{activeTab === 'STUDENT' ? "Student Login" : activeTab === 'SCHOOL' ? "School Hub Login" : "Teacher Login"}</h2>
-                            <p className="text-gray-500 mt-2">{activeTab === 'STUDENT' ? "Enter your Student ID to continue." : "Enter your email and password."}</p>
+                            <h2 id="login-modal-title" className="text-2xl font-bold text-gray-900">{activeTab === 'STUDENT' ? "Student Login" : activeTab === 'SCHOOL' ? "School Hub Login" : "Teacher Login"}</h2>
+                            <p className="text-gray-500 mt-2">{activeTab === 'STUDENT' ? "Enter your Student ID and PIN to continue." : "Enter your email and password."}</p>
                         </div>
 
                         <form onSubmit={handleSubmit} className="space-y-4">
 
                             {activeTab === 'STUDENT' ? (
+                                <>
                                 <div>
                                     <div className="flex justify-between items-center mb-1">
                                         <label className="block text-sm font-medium text-gray-700">Student ID</label>
@@ -448,6 +489,22 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, initial
                                         </button>
                                     )}
                                 </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Secret PIN</label>
+                                    <input
+                                        type="password"
+                                        inputMode="numeric"
+                                        autoComplete="current-password"
+                                        required
+                                        minLength={4}
+                                        maxLength={6}
+                                        value={studentPin}
+                                        onChange={(event) => setStudentPin(event.target.value.replace(/\D/g, ''))}
+                                        className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none font-mono tracking-widest text-center"
+                                        placeholder="••••"
+                                    />
+                                </div>
+                                </>
                             ) : (
                                 <>
                                     <div>

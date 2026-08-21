@@ -31,9 +31,9 @@ export const TeacherLanding: React.FC<TeacherLandingProps> = ({ onLogin, onRegis
       <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/95 backdrop-blur-sm px-4 py-3 sm:px-6">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-3">
           <button onClick={() => navigate('/teacher')} className="flex items-center gap-2 transition hover:opacity-90">
-            <img src={logoImg} alt="Somo Smart Logo" className="h-9 w-9 object-contain" />
+            <img src={logoImg} alt="Soma AI Logo" className="h-9 w-9 object-contain" />
             <div className="flex items-center gap-2">
-              <span className="text-lg font-black text-slate-900 sm:text-xl">Somo Smart</span>
+              <span className="text-lg font-black text-slate-900 sm:text-xl">Soma AI</span>
               <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-emerald-700">
                 <GraduationCap className="h-3 w-3" /> Teacher
               </span>

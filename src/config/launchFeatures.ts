@@ -17,7 +17,7 @@ export const launchFeatures = {
   // Soma Paper Studio & Assessment Engine Flags
   paperStudioEnabled: enabled(import.meta.env.VITE_ENABLE_PAPER_STUDIO, true),
   uploadBlueprintEnabled: enabled(import.meta.env.VITE_ENABLE_UPLOAD_BLUEPRINT, true),
-  schoolWorkspaceEnabled: enabled(import.meta.env.VITE_ENABLE_SCHOOL_WORKSPACE, true),
+  schoolWorkspaceEnabled: enabled(import.meta.env.VITE_ENABLE_SCHOOL_WORKSPACE, false),
   sellerEarningsEnabled: enabled(import.meta.env.VITE_ENABLE_SELLER_EARNINGS, true),
   docxExportEnabled: enabled(import.meta.env.VITE_ENABLE_DOCX_EXPORT, true),
   // Phase 4 Feature Flags — Soma Paper Bank
@@ -26,16 +26,16 @@ export const launchFeatures = {
   marketplacePurchasesEnabled: enabled(import.meta.env.VITE_ENABLE_MARKETPLACE_PURCHASES, true),
 
   mpesaPaymentsEnabled: enabled(import.meta.env.VITE_ENABLE_MPESA_PAYMENTS, true),
-  sellerWithdrawalsEnabled: enabled(import.meta.env.VITE_ENABLE_SELLER_WITHDRAWALS, true),
-  schoolSellerAccountsEnabled: enabled(import.meta.env.VITE_ENABLE_SCHOOL_SELLER_ACCOUNTS, true),
-  marketplaceBundlesEnabled: enabled(import.meta.env.VITE_ENABLE_MARKETPLACE_BUNDLES, true),
+  sellerWithdrawalsEnabled: enabled(import.meta.env.VITE_ENABLE_SELLER_WITHDRAWALS, false),
+  schoolSellerAccountsEnabled: enabled(import.meta.env.VITE_ENABLE_SCHOOL_SELLER_ACCOUNTS, false),
+  marketplaceBundlesEnabled: enabled(import.meta.env.VITE_ENABLE_MARKETPLACE_BUNDLES, false),
   marketplaceReviewsEnabled: enabled(import.meta.env.VITE_ENABLE_MARKETPLACE_REVIEWS, true),
   marketplaceModerationEnabled: enabled(import.meta.env.VITE_ENABLE_MARKETPLACE_MODERATION, true),
-  schoolBillingEnabled: enabled(import.meta.env.VITE_ENABLE_SCHOOL_BILLING, true),
-  districtOversightEnabled: enabled(import.meta.env.VITE_ENABLE_DISTRICT_OVERSIGHT, true),
+  schoolBillingEnabled: enabled(import.meta.env.VITE_ENABLE_SCHOOL_BILLING, false),
+  districtOversightEnabled: enabled(import.meta.env.VITE_ENABLE_DISTRICT_OVERSIGHT, false),
 
   // Phase 5 — Assessment Delivery, Marking and Intelligence Flags
-  assessmentDeliveryEnabled: enabled(import.meta.env.VITE_ENABLE_ASSESSMENT_DELIVERY, true),
+  assessmentDeliveryEnabled: enabled(import.meta.env.VITE_ENABLE_ASSESSMENT_DELIVERY, false),
   onlineAssessmentEnabled: enabled(import.meta.env.VITE_ENABLE_ONLINE_ASSESSMENT, true),
   paperAssessmentEnabled: enabled(import.meta.env.VITE_ENABLE_PAPER_ASSESSMENT, true),
   hybridAssessmentEnabled: enabled(import.meta.env.VITE_ENABLE_HYBRID_ASSESSMENT, true),
@@ -51,7 +51,7 @@ export const launchFeatures = {
   assessmentCertificatesEnabled: enabled(import.meta.env.VITE_ENABLE_ASSESSMENT_CERTIFICATES, true),
 
   // Phase 6 — Soma Education Intelligence Flags
-  educationIntelligenceEnabled: enabled(import.meta.env.VITE_ENABLE_EDUCATION_INTELLIGENCE, true),
+  educationIntelligenceEnabled: enabled(import.meta.env.VITE_ENABLE_EDUCATION_INTELLIGENCE, false),
   learnerRiskSignalsEnabled: enabled(import.meta.env.VITE_ENABLE_LEARNER_RISK_SIGNALS, true),
   interventionGroupsEnabled: enabled(import.meta.env.VITE_ENABLE_INTERVENTION_GROUPS, true),
   revisionImpactEnabled: enabled(import.meta.env.VITE_ENABLE_REVISION_IMPACT, true),
@@ -65,7 +65,7 @@ export const launchFeatures = {
   dataQualityMonitoringEnabled: enabled(import.meta.env.VITE_ENABLE_DATA_QUALITY_MONITORING, true),
 
   // Phase 7 — Soma Content and Curriculum Operating System (Soma Content OS) Flags
-  contentOSEnabled: enabled(import.meta.env.VITE_ENABLE_CONTENT_OS, true),
+  contentOSEnabled: enabled(import.meta.env.VITE_ENABLE_CONTENT_OS, false),
   curriculumExplorerEnabled: enabled(import.meta.env.VITE_ENABLE_CURRICULUM_EXPLORER, true),
   resourceStudioEnabled: enabled(import.meta.env.VITE_ENABLE_RESOURCE_STUDIO, true),
   lessonBuilderEnabled: enabled(import.meta.env.VITE_ENABLE_LESSON_BUILDER, true),
@@ -82,7 +82,7 @@ export const launchFeatures = {
   offlineContentPacksEnabled: enabled(import.meta.env.VITE_ENABLE_OFFLINE_CONTENT_PACKS, false),
 
   // Phase 8 — Soma School Operating System and Institutional Scale (Soma School OS) Flags
-  schoolOSEnabled: enabled(import.meta.env.VITE_ENABLE_SCHOOL_OS, true),
+  schoolOSEnabled: enabled(import.meta.env.VITE_ENABLE_SCHOOL_OS, false),
   institutionalOnboardingEnabled: enabled(import.meta.env.VITE_ENABLE_INSTITUTIONAL_ONBOARDING, true),
   academicCalendarEnabled: enabled(import.meta.env.VITE_ENABLE_ACADEMIC_CALENDAR, true),
   classManagementEnabled: enabled(import.meta.env.VITE_ENABLE_CLASS_MANAGEMENT, true),
@@ -100,7 +100,7 @@ export const launchFeatures = {
   offlineSchoolSyncEnabled: enabled(import.meta.env.VITE_ENABLE_OFFLINE_SCHOOL_SYNC, false),
 
   // Phase 9 — Soma Growth, Distribution and Ecosystem (Soma Growth OS) Flags
-  growthOSEnabled: enabled(import.meta.env.VITE_ENABLE_GROWTH_OS, true),
+  growthOSEnabled: enabled(import.meta.env.VITE_ENABLE_GROWTH_OS, false),
   growthAnalyticsEnabled: enabled(import.meta.env.VITE_ENABLE_GROWTH_ANALYTICS, true),
   teacherReferralEnabled: enabled(import.meta.env.VITE_ENABLE_TEACHER_REFERRAL, true),
   schoolReferralEnabled: enabled(import.meta.env.VITE_ENABLE_SCHOOL_REFERRAL, true),
@@ -118,7 +118,7 @@ export const launchFeatures = {
   institutionLeadManagementEnabled: enabled(import.meta.env.VITE_ENABLE_INSTITUTION_LEAD_MANAGEMENT, false),
 
   // Phase 10 — Soma Platform Reliability, Governance and International Expansion Flags
-  platformReliabilityEnabled: enabled(import.meta.env.VITE_ENABLE_PLATFORM_RELIABILITY, true),
+  platformReliabilityEnabled: enabled(import.meta.env.VITE_ENABLE_PLATFORM_RELIABILITY, false),
   securityOperationsEnabled: enabled(import.meta.env.VITE_ENABLE_SECURITY_OPERATIONS, true),
   privacyOperationsEnabled: enabled(import.meta.env.VITE_ENABLE_PRIVACY_OPERATIONS, true),
   incidentManagementEnabled: enabled(import.meta.env.VITE_ENABLE_INCIDENT_MANAGEMENT, true),
@@ -142,7 +142,7 @@ export const launchFeatures = {
   publicStatusPageEnabled: enabled(import.meta.env.VITE_ENABLE_PUBLIC_STATUS_PAGE, false),
 
   // Phase 11 — Soma Strategic Intelligence Layer Flags
-  strategicIntelligenceEnabled: enabled(import.meta.env.VITE_ENABLE_STRATEGIC_INTELLIGENCE, true),
+  strategicIntelligenceEnabled: enabled(import.meta.env.VITE_ENABLE_STRATEGIC_INTELLIGENCE, false),
   curriculumKnowledgeGraphEnabled: enabled(import.meta.env.VITE_ENABLE_CURRICULUM_KNOWLEDGE_GRAPH, true),
   assessmentEvidenceNetworkEnabled: enabled(import.meta.env.VITE_ENABLE_ASSESSMENT_EVIDENCE_NETWORK, true),
   questionQualityNetworkEnabled: enabled(import.meta.env.VITE_ENABLE_QUESTION_QUALITY_NETWORK, true),

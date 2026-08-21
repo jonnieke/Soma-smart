@@ -18,14 +18,14 @@ export const formatMarkdownForSocial = (markdown: string): string => {
 
 export const shareToWhatsApp = (title: string, content: string) => {
   const formattedContent = formatMarkdownForSocial(content);
-  const text = `*📚 ${title.trim()}*\n\n${formattedContent}\n\n---\n*Shared via Somo Smart Teacher Studio*\nhttps://www.somaai.co.ke`;
+  const text = `*📚 ${title.trim()}*\n\n${formattedContent}\n\n---\n*Shared via Soma AI Teacher Studio*\nhttps://www.somaai.co.ke`;
   const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
   window.open(url, '_blank');
 };
 
 export const shareToTelegram = (title: string, content: string) => {
   const formattedContent = formatMarkdownForSocial(content);
-  const text = `*📚 ${title.trim()}*\n\n${formattedContent}\n\n---\n*Shared via Somo Smart Teacher Studio*`;
+  const text = `*📚 ${title.trim()}*\n\n${formattedContent}\n\n---\n*Shared via Soma AI Teacher Studio*`;
   const url = `https://t.me/share/url?url=${encodeURIComponent('https://www.somaai.co.ke')}&text=${encodeURIComponent(text)}`;
   window.open(url, '_blank');
 };

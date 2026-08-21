@@ -120,7 +120,7 @@ export const SomaGuidePage: React.FC = () => {
                 <meta name="robots" content="index, follow, max-image-preview:large" />
 
                 {/* OpenGraph */}
-                <meta property="og:site_name" content="Somo Smart" />
+                <meta property="og:site_name" content="Soma AI" />
                 <meta property="og:type" content="website" />
                 <meta property="og:title" content="Soma Guide | KCSE, KPSEA &amp; CBC Academic Calendar &amp; Exam Updates Kenya" />
                 <meta property="og:description" content="School term dates, KNEC exam countdowns, study strategy guides, and direct revision tools for Kenya." />
@@ -133,7 +133,7 @@ export const SomaGuidePage: React.FC = () => {
                     {JSON.stringify({
                         "@context": "https://schema.org",
                         "@type": "EducationalOrganization",
-                        "name": "Somo Smart Academic Guide",
+                        "name": "Soma AI Academic Guide",
                         "url": "https://www.somaai.co.ke/guide",
                         "description": "Official academic guide, school calendars, and exam strategy for Kenyan learners.",
                         "educationalLevel": ["Primary", "Junior Secondary", "Senior Secondary"]
@@ -144,9 +144,9 @@ export const SomaGuidePage: React.FC = () => {
             {/* Functional Header Navbar */}
             <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur">
                 <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-                    <button onClick={() => navigate('/')} className="flex items-center gap-2.5" aria-label="Somo Smart homepage">
-                        <img src={logoImg} alt="Somo Smart Logo" className="h-9 w-9 object-contain" />
-                        <span className="text-xl font-black text-[#07133f]">Somo Smart</span>
+                    <button onClick={() => navigate('/')} className="flex items-center gap-2.5" aria-label="Soma AI homepage">
+                        <img src={logoImg} alt="Soma AI Logo" className="h-9 w-9 object-contain" />
+                        <span className="text-xl font-black text-[#07133f]">Soma AI</span>
                         <span className="inline-flex rounded-full bg-indigo-50 border border-indigo-100 px-2.5 py-0.5 text-[10px] font-black uppercase text-indigo-700">
                             Academic Guide
                         </span>
@@ -176,7 +176,7 @@ export const SomaGuidePage: React.FC = () => {
                     <div className="absolute top-0 right-0 w-80 h-80 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
                     <div className="relative z-10 max-w-3xl space-y-4">
                         <div className="inline-flex items-center gap-2 rounded-full bg-indigo-500/20 px-3.5 py-1 text-xs font-extrabold text-indigo-200 border border-indigo-400/20">
-                            <BookOpen className="w-3.5 h-3.5 text-indigo-300" /> Somo Smart Guide &amp; Calendar
+                            <BookOpen className="w-3.5 h-3.5 text-indigo-300" /> Soma AI Guide &amp; Calendar
                         </div>
                         <h1 className="text-3xl sm:text-5xl font-black tracking-tight text-white leading-tight">
                             Your Practical Guide to <span className="text-indigo-300">Kenyan Exams</span>
@@ -400,7 +400,7 @@ export const SomaGuidePage: React.FC = () => {
                         <div className="space-y-1">
                             <h3 className="text-lg font-black text-white">Have Questions About Exam Guidance?</h3>
                             <p className="text-xs text-slate-300 font-medium">
-                                Chat with our Somo Smart academic support team directly on WhatsApp <span className="text-emerald-400 font-bold">+254 722 763 760</span>.
+                                Chat with our Soma AI academic support team directly on WhatsApp <span className="text-emerald-400 font-bold">+254 722 763 760</span>.
                             </p>
                         </div>
                     </div>

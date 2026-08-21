@@ -64,7 +64,7 @@ describe('WhatsApp learning shares', () => {
       weakTopics: ['Fractions'],
     });
 
-    expect(message).toContain('*Somo Smart Weekly Progress*');
+    expect(message).toContain('*Soma AI Weekly Progress*');
     expect(message).toContain('*Amina* | Grade 7');
     expect(message).toContain('Quiz average: 82%');
     expect(message).toContain('Revising next: Fractions');
@@ -74,7 +74,7 @@ describe('WhatsApp learning shares', () => {
   it('explains the parent connection without promising automatic messages', () => {
     const message = formatParentConnectionForWhatsApp('Amina');
 
-    expect(message).toContain('*Somo Smart parent connection*');
+    expect(message).toContain('*Soma AI parent connection*');
     expect(message).toContain('Amina connected this number');
     expect(message).toContain('Nothing is sent automatically');
   });
@@ -85,7 +85,7 @@ describe('WhatsApp learning shares', () => {
       grade: 'Grade 7',
     });
 
-    expect(message).toContain('*Somo Smart Learning Update*');
+    expect(message).toContain('*Soma AI Learning Update*');
     expect(message).toContain('*Fractions and decimals* | Grade 7');
     expect(message).toContain('Quiz score: *85%*');
     expect(message).toContain('Strong work');
