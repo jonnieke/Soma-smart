@@ -11,23 +11,29 @@ describe('plan limit enforcement', () => {
     localStorage.clear();
   });
 
-  it('keeps the client limit mirror aligned with launch tiers', () => {
-    expect(PLAN_LIMITS.FREE.ai_generation).toBe(10);
-    expect(PLAN_LIMITS.DAILY.ai_generation).toBe(30);
-    expect(PLAN_LIMITS.MONTHLY.ai_generation).toBe(450);
-    expect(getPlanLimit('teacher_ai', 'TERMLY')).toBe(650);
+  it('keeps paid tiers unlimited for early stage adoption', () => {
+    expect(PLAN_LIMITS.FREE.ai_generation).toBe(50);
+    expect(PLAN_LIMITS.DAILY.ai_generation).toBe(Infinity);
+    expect(PLAN_LIMITS.MONTHLY.ai_generation).toBe(Infinity);
+    expect(getPlanLimit('teacher_ai', 'TERMLY')).toBe(Infinity);
+    expect(getPlanLimit('ai_generation', 'PRO')).toBe(Infinity);
   });
 
-  it('does not grant paid access from local payment timestamps', () => {
+  it('allows paid subscribers unlimited assertions', () => {
+    localStorage.setItem('soma_subscription_plan', 'MONTHLY');
+    localStorage.setItem('soma_subscription_expiry', new Date(Date.now() + 86400000).toISOString());
+
+    // Record high usage
+    for (let index = 0; index < 500; index += 1) {
+      recordPlanUsage('ai_generation');
+    }
+
+    expect(assertPlanLimit('ai_generation')).toBe(true);
+  });
+
+  it('reports the mirrored threshold for free users after exceeding limit', () => {
     localStorage.setItem('soma_subscription_plan', 'FREE');
-    localStorage.setItem('soma_last_payment_time', String(Date.now()));
-    localStorage.setItem('soma_last_payment_amount', '499');
-
-    expect(getPlanLimit('ai_generation')).toBe(10);
-  });
-
-  it('reports the mirrored threshold without blocking the backend entitlement check', () => {
-    for (let index = 0; index < 10; index += 1) {
+    for (let index = 0; index < 50; index += 1) {
       recordPlanUsage('ai_generation');
     }
 

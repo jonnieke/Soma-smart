@@ -39,8 +39,8 @@ const corsHeadersFor = (req: Request) => {
 };
 
 const envFlag = (name: string) => String(Deno.env.get(name) || '').toLowerCase() === 'true';
-const FREE_AI_DAILY_LIMIT = Number(Deno.env.get('FREE_AI_DAILY_LIMIT') || '10');
-const GUEST_AI_DAILY_LIMIT = Number(Deno.env.get('GUEST_AI_DAILY_LIMIT') || '3');
+const FREE_AI_DAILY_LIMIT = Number(Deno.env.get('FREE_AI_DAILY_LIMIT') || '50');
+const GUEST_AI_DAILY_LIMIT = Number(Deno.env.get('GUEST_AI_DAILY_LIMIT') || '20');
 const DEFAULT_GEMINI_MODEL = Deno.env.get('DEFAULT_GEMINI_MODEL') || Deno.env.get('GEMINI_MODEL') || 'gemini-2.5-flash';
 const HEAVY_GEMINI_MODEL = Deno.env.get('HEAVY_GEMINI_MODEL') || DEFAULT_GEMINI_MODEL;
 const EMBEDDING_MODEL = Deno.env.get('GEMINI_EMBEDDING_MODEL') || 'gemini-embedding-001';
@@ -125,15 +125,30 @@ const isAdminEmail = (email: unknown) => {
     return Boolean(normalized && getAdminEmails().has(normalized));
 };
 
+const UNLIMITED_PROXY_LIMITS = {
+    ai_generation: 99999999,
+    exam_guru: 99999999,
+    exam_marking: 99999999,
+    quiz_generation: 99999999,
+    practice_generation: 99999999,
+    notes_generation: 99999999,
+    notebook_generation: 99999999,
+    listen_and_learn: 99999999,
+    talk_and_learn: 99999999,
+    grounded_library_help: 99999999,
+    deep_document_analysis: 99999999,
+    teacher_ai: 99999999,
+};
+
 const FEATURE_LIMITS: Record<string, Record<string, number>> = {
-    GUEST: { ai_generation: 3, exam_guru: 1, exam_marking: 0, quiz_generation: 1, practice_generation: 1, notes_generation: 1, notebook_generation: 1, listen_and_learn: 1, talk_and_learn: 1, grounded_library_help: 0, deep_document_analysis: 0, teacher_ai: 0 },
-    FREE: { ai_generation: 10, exam_guru: 3, exam_marking: 1, quiz_generation: 3, practice_generation: 3, notes_generation: 3, notebook_generation: 5, listen_and_learn: 3, talk_and_learn: 3, grounded_library_help: 1, deep_document_analysis: 0, teacher_ai: 3 },
-    DAILY: { ai_generation: 30, exam_guru: 15, exam_marking: 6, quiz_generation: 10, practice_generation: 12, notes_generation: 10, notebook_generation: 15, listen_and_learn: 10, talk_and_learn: 10, grounded_library_help: 12, deep_document_analysis: 3, teacher_ai: 10 },
-    WEEKLY: { ai_generation: 120, exam_guru: 80, exam_marking: 35, quiz_generation: 60, practice_generation: 80, notes_generation: 60, notebook_generation: 80, listen_and_learn: 50, talk_and_learn: 50, grounded_library_help: 70, deep_document_analysis: 18, teacher_ai: 60 },
-    MONTHLY: { ai_generation: 450, exam_guru: 300, exam_marking: 150, quiz_generation: 250, practice_generation: 300, notes_generation: 220, notebook_generation: 250, listen_and_learn: 150, talk_and_learn: 150, grounded_library_help: 300, deep_document_analysis: 80, teacher_ai: 220 },
-    TERMLY: { ai_generation: 1200, exam_guru: 800, exam_marking: 420, quiz_generation: 700, practice_generation: 850, notes_generation: 650, notebook_generation: 700, listen_and_learn: 500, talk_and_learn: 500, grounded_library_help: 850, deep_document_analysis: 240, teacher_ai: 650 },
-    ANNUAL: { ai_generation: 4000, exam_guru: 2500, exam_marking: 1500, quiz_generation: 2200, practice_generation: 2800, notes_generation: 2000, notebook_generation: 2400, listen_and_learn: 1800, talk_and_learn: 1800, grounded_library_help: 3000, deep_document_analysis: 900, teacher_ai: 2000 },
-    PRO: { ai_generation: 450, exam_guru: 300, exam_marking: 150, quiz_generation: 250, practice_generation: 300, notes_generation: 220, notebook_generation: 250, listen_and_learn: 150, talk_and_learn: 150, grounded_library_help: 300, deep_document_analysis: 80, teacher_ai: 220 },
+    GUEST: { ai_generation: 20, exam_guru: 5, exam_marking: 3, quiz_generation: 5, practice_generation: 5, notes_generation: 5, notebook_generation: 5, listen_and_learn: 5, talk_and_learn: 5, grounded_library_help: 3, deep_document_analysis: 1, teacher_ai: 3 },
+    FREE: { ai_generation: 50, exam_guru: 20, exam_marking: 10, quiz_generation: 20, practice_generation: 20, notes_generation: 20, notebook_generation: 20, listen_and_learn: 20, talk_and_learn: 20, grounded_library_help: 10, deep_document_analysis: 5, teacher_ai: 20 },
+    DAILY: { ...UNLIMITED_PROXY_LIMITS },
+    WEEKLY: { ...UNLIMITED_PROXY_LIMITS },
+    MONTHLY: { ...UNLIMITED_PROXY_LIMITS },
+    TERMLY: { ...UNLIMITED_PROXY_LIMITS },
+    ANNUAL: { ...UNLIMITED_PROXY_LIMITS },
+    PRO: { ...UNLIMITED_PROXY_LIMITS },
 };
 const MODEL_PRICING_USD_PER_1M: Record<string, { input: number; output: number }> = {
     'gemini-1.5-flash': { input: 0.075, output: 0.30 },

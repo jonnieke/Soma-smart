@@ -19,114 +19,45 @@ type PlanLimitMap = Record<string, Partial<Record<BillableFeature, number>>>;
 
 const DAILY_KEY = () => new Date().toISOString().slice(0, 10);
 
-// UX mirror of the Edge Function limits. The backend remains authoritative.
-// Keep these values aligned with supabase/functions/gemini-proxy/index.ts.
+// Early stage adoption: Paid tiers have UNLIMITED access across all features.
+const UNLIMITED_PAID_LIMITS: Record<BillableFeature, number> = {
+  ai_generation: Infinity,
+  exam_guru: Infinity,
+  exam_marking: Infinity,
+  quiz_generation: Infinity,
+  practice_generation: Infinity,
+  notes_generation: Infinity,
+  grounded_library_help: Infinity,
+  deep_document_analysis: Infinity,
+  teacher_ai: Infinity,
+  listen_and_learn: Infinity,
+  listen_and_learn_voice: Infinity,
+  listen_and_learn_podcast: Infinity,
+  conversational_voice: Infinity,
+};
+
 export const PLAN_LIMITS: PlanLimitMap = {
   FREE: {
-    ai_generation: 10,
-    exam_guru: 3,
-    exam_marking: 1,
-    quiz_generation: 3,
-    practice_generation: 3,
-    notes_generation: 3,
-    grounded_library_help: 1,
-    deep_document_analysis: 0,
-    teacher_ai: 3,
-    listen_and_learn: 3,
-    listen_and_learn_voice: 30000,
-    listen_and_learn_podcast: 8000,
-    conversational_voice: 12000,
+    ai_generation: 50,
+    exam_guru: 20,
+    exam_marking: 10,
+    quiz_generation: 20,
+    practice_generation: 20,
+    notes_generation: 20,
+    grounded_library_help: 10,
+    deep_document_analysis: 5,
+    teacher_ai: 20,
+    listen_and_learn: 20,
+    listen_and_learn_voice: 150000,
+    listen_and_learn_podcast: 50000,
+    conversational_voice: 60000,
   },
-  DAILY: {
-    ai_generation: 30,
-    exam_guru: 15,
-    exam_marking: 6,
-    quiz_generation: 10,
-    practice_generation: 12,
-    notes_generation: 10,
-    grounded_library_help: 12,
-    deep_document_analysis: 3,
-    teacher_ai: 10,
-    listen_and_learn: 10,
-    listen_and_learn_voice: 80000,
-    listen_and_learn_podcast: 30000,
-    conversational_voice: 30000,
-  },
-  WEEKLY: {
-    ai_generation: 120,
-    exam_guru: 80,
-    exam_marking: 35,
-    quiz_generation: 60,
-    practice_generation: 80,
-    notes_generation: 60,
-    grounded_library_help: 70,
-    deep_document_analysis: 18,
-    teacher_ai: 60,
-    listen_and_learn: 50,
-    listen_and_learn_voice: 350000,
-    listen_and_learn_podcast: 140000,
-    conversational_voice: 140000,
-  },
-  MONTHLY: {
-    ai_generation: 450,
-    exam_guru: 300,
-    exam_marking: 150,
-    quiz_generation: 250,
-    practice_generation: 300,
-    notes_generation: 220,
-    grounded_library_help: 300,
-    deep_document_analysis: 80,
-    teacher_ai: 220,
-    listen_and_learn: 150,
-    listen_and_learn_voice: 1200000,
-    listen_and_learn_podcast: 500000,
-    conversational_voice: 500000,
-  },
-  TERMLY: {
-    ai_generation: 1200,
-    exam_guru: 800,
-    exam_marking: 420,
-    quiz_generation: 700,
-    practice_generation: 850,
-    notes_generation: 650,
-    grounded_library_help: 850,
-    deep_document_analysis: 240,
-    teacher_ai: 650,
-    listen_and_learn: 500,
-    listen_and_learn_voice: 3500000,
-    listen_and_learn_podcast: 1500000,
-    conversational_voice: 1500000,
-  },
-  ANNUAL: {
-    ai_generation: 4000,
-    exam_guru: 2500,
-    exam_marking: 1500,
-    quiz_generation: 2200,
-    practice_generation: 2800,
-    notes_generation: 2000,
-    grounded_library_help: 3000,
-    deep_document_analysis: 900,
-    teacher_ai: 2000,
-    listen_and_learn: 1800,
-    listen_and_learn_voice: 15000000,
-    listen_and_learn_podcast: 6500000,
-    conversational_voice: 6500000,
-  },
-  PRO: {
-    ai_generation: 450,
-    exam_guru: 300,
-    exam_marking: 150,
-    quiz_generation: 250,
-    practice_generation: 300,
-    notes_generation: 220,
-    grounded_library_help: 300,
-    deep_document_analysis: 80,
-    teacher_ai: 220,
-    listen_and_learn: 150,
-    listen_and_learn_voice: 1200000,
-    listen_and_learn_podcast: 500000,
-    conversational_voice: 500000,
-  },
+  DAILY: { ...UNLIMITED_PAID_LIMITS },
+  WEEKLY: { ...UNLIMITED_PAID_LIMITS },
+  MONTHLY: { ...UNLIMITED_PAID_LIMITS },
+  TERMLY: { ...UNLIMITED_PAID_LIMITS },
+  ANNUAL: { ...UNLIMITED_PAID_LIMITS },
+  PRO: { ...UNLIMITED_PAID_LIMITS },
 };
 
 const FEATURE_LABELS: Record<string, string> = {
@@ -191,31 +122,6 @@ export const sanitizeLearningCredits = (value: unknown) => {
   return Math.floor(parsed);
 };
 
-const creditUnitsForFeature = (feature: string, units: number) => {
-  if (feature === 'deep_document_analysis') return Math.max(2, units * 2);
-  if (feature === 'grounded_library_help') return Math.max(1, units);
-  return feature.includes('voice') || feature.includes('podcast')
-    ? Math.max(1, Math.ceil(units / 1000))
-    : Math.max(1, units);
-};
-
-
-const normalizeCreditExpiry = (value?: string | Date | null) => {
-  if (!value) return null;
-  const date = typeof value === 'string' ? new Date(value) : value;
-  return Number.isFinite(date.getTime()) ? date.toISOString() : null;
-};
-
-const clearLearningCreditStorage = () => {
-  try {
-    localStorage.removeItem(CREDIT_KEY);
-    localStorage.removeItem(CREDIT_EXPIRY_KEY);
-    localStorage.removeItem(CREDIT_SYNCED_AT_KEY);
-  } catch {
-    // Ignore storage failures.
-  }
-};
-
 export const getLearningCreditsExpiry = () => {
   const raw = localStorage.getItem(CREDIT_EXPIRY_KEY);
   if (!raw) return null;
@@ -256,6 +162,22 @@ export const getCreditPackExpiry = (duration?: string | null) => {
       return null;
   }
   return expiry.toISOString();
+};
+
+const clearLearningCreditStorage = () => {
+  try {
+    localStorage.removeItem(CREDIT_KEY);
+    localStorage.removeItem(CREDIT_EXPIRY_KEY);
+    localStorage.removeItem(CREDIT_SYNCED_AT_KEY);
+  } catch {
+    // Ignore storage failures.
+  }
+};
+
+const normalizeCreditExpiry = (value?: string | Date | null) => {
+  if (!value) return null;
+  const date = typeof value === 'string' ? new Date(value) : value;
+  return Number.isFinite(date.getTime()) ? date.toISOString() : null;
 };
 
 export const getLearningCredits = () => {
@@ -321,7 +243,7 @@ export const spendLearningCredits = (credits: number) => {
 
 export const getPlanLimit = (feature: string, plan = getStoredPlan()) => {
   const normalized = normalizeFeature(feature);
-  return PLAN_LIMITS[plan]?.[normalized] ?? PLAN_LIMITS.FREE[normalized] ?? PLAN_LIMITS.FREE.ai_generation ?? 3;
+  return PLAN_LIMITS[plan]?.[normalized] ?? PLAN_LIMITS.FREE[normalized] ?? PLAN_LIMITS.FREE.ai_generation ?? 50;
 };
 
 export const getPlanUsage = (feature: string, plan = getStoredPlan()) => {
@@ -331,14 +253,17 @@ export const getPlanUsage = (feature: string, plan = getStoredPlan()) => {
 
 export const assertPlanLimit = (feature: string, units = 1) => {
   const plan = getStoredPlan();
+  // Paid users have unlimited access
+  if (plan !== 'FREE') {
+    return true;
+  }
+
   const normalized = normalizeFeature(feature);
   const limit = getPlanLimit(normalized, plan);
   const used = getPlanUsage(normalized, plan);
   const withinLimit = limit > 0 && used + units <= limit;
 
   if (!withinLimit) {
-    // This is an advisory UI signal only. The Edge Function verifies the
-    // account, consumes database credits, and decides whether to allow usage.
     try {
       window.dispatchEvent(new CustomEvent('soma-plan-limit-near', {
         detail: { feature: normalized, plan, limit, used, units }
@@ -360,7 +285,3 @@ export const recordPlanUsage = (feature: string, units = 1) => {
   localStorage.setItem('soma_plan_usage_date', DAILY_KEY());
   return next;
 };
-
-
-
-
