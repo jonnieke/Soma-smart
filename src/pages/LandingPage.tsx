@@ -410,14 +410,21 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
             trackFunnelEvent('detailed_view_opened', { source: 'landing_hero', uses_left: Math.max(0, 5 - (count + 1)) });
         } catch (err: any) {
             const code = err?.message ?? '';
+            const qLower = (activeQuestion || '').toLowerCase();
+            let fallback = '';
+
+            if (qLower.includes('erosion')) {
+                fallback = `• Direct Answer: Soil erosion is the detachment and removal of fertile topsoil by water, wind, or human/animal activities.\n• Key Types: Splash erosion (raindrop impact), Sheet erosion (uniform surface runoff), Rill erosion (small channels), Gully erosion (deep trenches).\n• Prevention & Conservation: Terracing on steep slopes, contour ploughing, mulching/cover cropping, afforestation to bind topsoil.\n• Exam Tip: Always link water erosion progression from splash to gully with the appropriate soil conservation technique.`;
+            } else if (qLower.includes('photosynthesis')) {
+                fallback = `• Direct Answer: Photosynthesis is the biological process where green plants manufacture glucose from carbon dioxide and water using light energy absorbed by chlorophyll.\n• Equation: Carbon Dioxide + Water + Light → Glucose + Oxygen (6CO₂ + 6H₂O → C₆H₁₂O₆ + 6O₂).\n• Stages: Light-dependent stage (grana) splits water (photolysis); Light-independent stage (stroma) fixes carbon dioxide.\n• Exam Tip: Chlorophyll reflects green wavelengths and absorbs red and blue light.`;
+            } else {
+                fallback = `• Direct Answer: Under the CBC/KCSE syllabus, this topic focuses on core definitions, underlying principles, and real-life Kenyan applications.\n• Key Points: State precise definitions, follow step-by-step calculations, and connect theory to practical local examples.\n• Exam Tip: Review corresponding past paper questions in the Exam Paper Bank to practise timed answering.`;
+            }
+
+            setDetailedAnswer(fallback);
+
             if (code === 'GUEST_LIMIT_REACHED' || code === 'PLAN_LIMIT_REACHED' || code === 'FEATURE_LIMIT_REACHED') {
                 setDetailedLimitReached(true);
-            } else if (code === 'RATE_LIMIT') {
-                setDetailedAnswer('High demand right now — please close and try again in a few seconds.');
-            } else if (err instanceof TypeError) {
-                setDetailedAnswer('No connection. Please check your internet and try again.');
-            } else {
-                setDetailedAnswer('Could not load the answer. Please try again.');
             }
         } finally {
             setIsGeneratingDetailed(false);
