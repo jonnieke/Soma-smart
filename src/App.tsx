@@ -353,6 +353,8 @@ const App: React.FC = () => {
                             <Route path="/teacher/reports" element={launchFeatures.assessmentDeliveryEnabled ? <TeacherReportsView /> : <Navigate to="/teacher" replace />} />
 
                             {/* Phase 5 — Learner Routes */}
+                            <Route path="/exam/take/:assignmentId" element={<LearnerAssessmentTakeView />} />
+                            <Route path="/exam/take/:assignmentId/result" element={<LearnerAssessmentResultView />} />
                             <Route path="/learner/assessments" element={<LearnerAssessmentsView />} />
                             <Route path="/learner/assessments/:assignmentId" element={<LearnerAssessmentsView />} />
                             <Route path="/learner/assessments/:assignmentId/start" element={<LearnerAssessmentTakeView />} />

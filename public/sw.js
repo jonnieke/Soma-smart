@@ -1,9 +1,12 @@
 // Soma AI Service Worker — Offline-first caching for Kenyan connectivity
-const CACHE_NAME = 'somo-smart-v1';
+const CACHE_NAME = 'somo-smart-v2';
 const STATIC_ASSETS = [
     '/',
+    '/favicon.png',
     '/manifest.json',
     '/robots.txt',
+    '/revision',
+    '/exam-papers',
     '/assets/icon-192.png',
     '/assets/icon-512.png',
     '/assets/apple-touch-icon.png',

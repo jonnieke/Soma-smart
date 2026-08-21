@@ -6,7 +6,7 @@ import { Header, Card, Button } from '../../components/Shared';
 import { ViewState, LearnerActivity } from '../../types';
 import { calculateTotalXP, calculateLevel } from '../../services/gamificationService';
 import { LogoutModal } from '../../components/LogoutModal';
-import { Book, CheckCircle, Clock, Lock, User, TrendingUp, Award, AlertCircle, ChevronRight, Activity, Calendar, Star, Zap, Home, X, LogOut, CreditCard, Sparkles, Brain } from 'lucide-react';
+import { Book, CheckCircle, Clock, Lock, User, TrendingUp, Award, AlertCircle, ChevronRight, Activity, Calendar, Star, Zap, Home, X, LogOut, CreditCard, Sparkles, Brain, MessageCircle } from 'lucide-react';
 import { loadMasteryFromCloud } from '../../services/learnerMemoryService';
 import { MasteryDashboard } from '../../components/MasteryDashboard';
 import { SubjectHeatmap, ParentAIInsight } from './ParentEnhancements';
@@ -482,6 +482,15 @@ export const ParentDashboard: React.FC<ParentProps> = ({ onNavigate, activityLog
         }
     };
 
+    const shareWhatsAppWeeklyDigest = () => {
+        const text = `📊 *Soma AI Weekly Learner Progress Digest*\n\nStudent ID: *${validStudentCode}*\nAverage Score: *${stats.avgScore}%* (${stats.masteryLevel})\nStudy Touches: *${proofStats.studySessions}*\nQuizzes Completed: *${proofStats.quizzes}*\nRecall Breaks: *${proofStats.activeRecallBreaks}*\n\n🎯 *Focus Recommendation:*\n${proofStats.nextAction}\n\nTrack real-time CBC progress: https://somaai.co.ke/parent`;
+        window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+        trackFunnelEvent('parent_whatsapp_digest_shared', {
+            avg_score: stats.avgScore,
+            student_code: validStudentCode
+        });
+    };
+
 
     // --- LOGIN VIEW ---
     if (!isAuthenticated) {
@@ -707,12 +716,18 @@ export const ParentDashboard: React.FC<ParentProps> = ({ onNavigate, activityLog
                                 </p>
                             </div>
 
-                            <div className="flex flex-col sm:flex-row gap-3 mt-6">
+                            <div className="flex flex-wrap gap-3 mt-6">
+                                <button
+                                    onClick={shareWhatsAppWeeklyDigest}
+                                    className="rounded-2xl bg-[#25D366] text-white px-5 py-3 text-xs font-black uppercase tracking-wider hover:bg-[#20bd5a] transition-colors flex items-center gap-1.5 shadow-sm"
+                                >
+                                    <MessageCircle className="w-4 h-4" /> WhatsApp Digest
+                                </button>
                                 <button
                                     onClick={shareWeeklyProof}
                                     className="rounded-2xl bg-white text-slate-950 px-5 py-3 text-xs font-black uppercase tracking-wider hover:bg-slate-100 transition-colors"
                                 >
-                                    Share Weekly Proof
+                                    Share Proof
                                 </button>
                                 <button
                                     onClick={() => navigate('/learner')}
