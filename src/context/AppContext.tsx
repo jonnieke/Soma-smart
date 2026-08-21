@@ -2002,27 +2002,30 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const syncLearningCredits = async (profileId: string, studentId?: string | null) => {
     if (!profileId) return;
 
-    try {
-      const { data: rpcCredits, error: rpcError } = await supabase.rpc('get_learning_credit_status', {
-        p_profile_id: profileId,
-        p_student_id: studentId || null
-      });
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(profileId);
+    if (isUuid) {
+      try {
+        const { data: rpcCredits, error: rpcError } = await supabase.rpc('get_learning_credit_status', {
+          p_profile_id: profileId,
+          p_student_id: (studentId && isUuid) ? studentId : null
+        });
 
-      const rpcRow = Array.isArray(rpcCredits) ? rpcCredits[0] : rpcCredits;
-      if (!rpcError && rpcRow) {
-        const sanitizedRpcCredits = sanitizeLearningCredits((rpcRow as any).credits || 0);
-        const rpcExpiry = (rpcRow as any).credit_expires_at ? String((rpcRow as any).credit_expires_at) : null;
-        localStorage.setItem('soma_learning_credits', String(sanitizedRpcCredits));
-        if (rpcExpiry) {
-          localStorage.setItem('soma_learning_credits_expires_at', rpcExpiry);
-        } else {
-          localStorage.removeItem('soma_learning_credits_expires_at');
+        const rpcRow = Array.isArray(rpcCredits) ? rpcCredits[0] : rpcCredits;
+        if (!rpcError && rpcRow) {
+          const sanitizedRpcCredits = sanitizeLearningCredits((rpcRow as any).credits || 0);
+          const rpcExpiry = (rpcRow as any).credit_expires_at ? String((rpcRow as any).credit_expires_at) : null;
+          localStorage.setItem('soma_learning_credits', String(sanitizedRpcCredits));
+          if (rpcExpiry) {
+            localStorage.setItem('soma_learning_credits_expires_at', rpcExpiry);
+          } else {
+            localStorage.removeItem('soma_learning_credits_expires_at');
+          }
+          setLearningCredits(sanitizedRpcCredits);
+          return;
         }
-        setLearningCredits(sanitizedRpcCredits);
-        return;
+      } catch (err) {
+        warnIfDev('Learning credit RPC sync failed:', err);
       }
-    } catch (err) {
-      warnIfDev('Learning credit RPC sync failed:', err);
     }
 
     let { data: creditRow, error: creditError } = await supabase
