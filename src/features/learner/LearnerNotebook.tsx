@@ -9,6 +9,7 @@ import {
   Plus,
   RotateCcw,
   Search,
+  Sparkles,
   Trash2,
   Volume2,
   X,
@@ -35,6 +36,7 @@ interface LearnerNotebookProps {
   onOpenNote: (note: StudyNote) => void;
   onListenNote: (note: StudyNote) => void;
   onQuizNote: (note: StudyNote) => void;
+  onAskAkili?: (note: StudyNote) => void;
   onRegister: () => void;
   onNoteSaved?: (note: StudyNote) => void;
   onWhatsAppShare?: (note: StudyNote, destination: 'contact' | 'parent') => void;
@@ -58,6 +60,7 @@ export const LearnerNotebook: React.FC<LearnerNotebookProps> = ({
   onOpenNote,
   onListenNote,
   onQuizNote,
+  onAskAkili,
   onRegister,
   onNoteSaved,
   onWhatsAppShare,
@@ -374,7 +377,7 @@ export const LearnerNotebook: React.FC<LearnerNotebookProps> = ({
                   {note.content}
                 </p>
 
-                <div className="mt-4 grid grid-cols-3 gap-2">
+                <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-2">
                   <button
                     type="button"
                     onClick={() => onOpenNote(note)}
@@ -401,6 +404,16 @@ export const LearnerNotebook: React.FC<LearnerNotebookProps> = ({
                     <ClipboardList className="h-3.5 w-3.5" />
                     Test me
                   </button>
+                  {onAskAkili && (
+                    <button
+                      type="button"
+                      onClick={() => onAskAkili(note)}
+                      className="inline-flex items-center justify-center gap-1 rounded-lg bg-purple-50 px-2 py-2 text-[11px] font-black text-purple-700 hover:bg-purple-100"
+                    >
+                      <Sparkles className="h-3.5 w-3.5 text-purple-600" />
+                      Ask Akili
+                    </button>
+                  )}
                 </div>
 
                 <div className={'mt-2 grid gap-2 ' + (parentPhone ? 'grid-cols-2' : 'grid-cols-1')}>

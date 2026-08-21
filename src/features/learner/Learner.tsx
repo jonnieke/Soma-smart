@@ -798,6 +798,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
   const [expandedRecaps, setExpandedRecaps] = useState<number[]>([]);
   const [tutorInitialActiveMode, setTutorInitialActiveMode] = useState<'TALKBACK' | 'LANGUAGE_TUTOR'>('TALKBACK');
   const [tutorInitialTutorMode, setTutorInitialTutorMode] = useState<'conversation' | 'pronunciation' | 'sentences' | 'story'>('conversation');
+  const [customTutorSyllabusContext, setCustomTutorSyllabusContext] = useState<any>(undefined);
   const [revisionInitialSubject, setRevisionInitialSubject] = useState<string>('All');
   const [revisionInitialSearchQuery, setRevisionInitialSearchQuery] = useState<string>('');
   const [completedRecallChecks, setCompletedRecallChecks] = useState<number[]>([]);
@@ -4334,9 +4335,10 @@ ${explanation.explanation}
           <ConversationalTutor
             onBeforeMessage={() => checkLimit({ type: 'TALKBACK_MESSAGE' })}
             initialActiveMode={tutorInitialActiveMode}
-            syllabusContext={tutorSyllabusContext}
+            syllabusContext={customTutorSyllabusContext || tutorSyllabusContext}
             initialTutorMode={tutorInitialTutorMode}
             onBack={() => {
+              setCustomTutorSyllabusContext(undefined);
               setMode('MENU');
               setSidebarTab('HOME');
             }}
@@ -5073,6 +5075,17 @@ ${explanation.explanation}
             });
             setSidebarTab('NOTEBOOK');
             setMode('RESULT');
+          }}
+          onAskAkili={(note) => {
+            setCustomTutorSyllabusContext({
+              subject: note.subject,
+              topic: note.topic || note.title,
+              grade: note.grade || studentProfile?.grade,
+            });
+            setTutorInitialActiveMode('TALKBACK');
+            setTutorInitialTutorMode('conversation');
+            setMode('TALKBACK');
+            setSidebarTab('HOME');
           }}
           onListenNote={async (note) => {
             try {

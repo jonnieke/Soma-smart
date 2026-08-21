@@ -5,7 +5,7 @@ import {
     MessageCircle, Languages, Sparkles,
     Globe, Loader2, RefreshCw,
     Headphones, PenTool, BookText,
-    PhoneCall, PhoneOff
+    PhoneCall, PhoneOff, BookmarkPlus, CheckCircle2, BookOpen
 } from 'lucide-react';
 import {
     chatTalkback, chatLanguageTutor, transcribeAudioForChat,
@@ -18,6 +18,7 @@ import {
     TALKBACK_VOICES, LANGUAGE_TUTOR_VOICES,
     queueSpeak, clearSpeechQueue
 } from '../../services/elevenLabsService';
+import { getNotebookOwnerKey, saveStudyNote } from '../../services/notebookService';
 
 import somoBuddyImg from '../../assets/images/somo_buddy_avatar.png';
 import { GeminiLiveSession } from '../../services/geminiLiveService';
@@ -163,7 +164,9 @@ const ChatBubble: React.FC<{
     isTutor?: boolean;
     onSpeak?: (text: string) => void;
     isSpeaking?: boolean;
-}> = ({ message, tutorResponse, isLanguageTutor, isTutor, onSpeak, isSpeaking }) => {
+    onSaveNote?: (text: string) => void;
+    isSaved?: boolean;
+}> = ({ message, tutorResponse, isLanguageTutor, isTutor, onSpeak, isSpeaking, onSaveNote, isSaved }) => {
     const isUser = message.role === 'user';
 
     return (
@@ -192,18 +195,42 @@ const ChatBubble: React.FC<{
                 >
                     <p className="whitespace-pre-wrap font-medium">{message.text.replace(/\*\*/g, '')}</p>
                     {!isUser && (
-                        <button
-                            onClick={() => onSpeak?.(message.text)}
-                            className={`mt-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold tracking-wide transition-all ${isSpeaking
-                                ? 'bg-indigo-50 text-indigo-600 ring-1 ring-indigo-200'
-                                : 'bg-slate-50 text-slate-600 hover:bg-slate-100 hover:text-slate-800 border-2 border-slate-300'
-                            }`}
-                        >
-                            {isSpeaking
-                                ? <><VolumeX className="w-4 h-4" /> Stop</>
-                                : <><Volume2 className="w-4 h-4" /> Listen</>
-                            }
-                        </button>
+                        <div className="mt-3 flex flex-wrap items-center gap-2">
+                            <button
+                                onClick={() => onSpeak?.(message.text)}
+                                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold tracking-wide transition-all ${isSpeaking
+                                    ? 'bg-indigo-50 text-indigo-600 ring-1 ring-indigo-200'
+                                    : 'bg-slate-50 text-slate-600 hover:bg-slate-100 hover:text-slate-800 border-2 border-slate-300'
+                                }`}
+                            >
+                                {isSpeaking
+                                    ? <><VolumeX className="w-3.5 h-3.5" /> Stop</>
+                                    : <><Volume2 className="w-3.5 h-3.5" /> Listen</>
+                                }
+                            </button>
+
+                            {onSaveNote && (
+                                <button
+                                    onClick={() => onSaveNote(message.text)}
+                                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold tracking-wide transition-all ${isSaved
+                                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-300'
+                                        : 'bg-slate-50 text-slate-600 hover:bg-emerald-50 hover:text-emerald-700 border-2 border-slate-300'
+                                    }`}
+                                >
+                                    {isSaved ? (
+                                        <>
+                                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                                            <span>Saved to Notebook</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <BookmarkPlus className="w-3.5 h-3.5 text-slate-500 group-hover:text-emerald-600" />
+                                            <span>Save to Notebook</span>
+                                        </>
+                                    )}
+                                </button>
+                            )}
+                        </div>
                     )}
                 </div>
 
@@ -320,10 +347,11 @@ export const ConversationalTutor: React.FC<ConversationalTutorProps> = ({
     initialTutorMode = 'conversation',
     syllabusContext
 }) => {
-    const { educationLevel } = useApp();
+    const { educationLevel, studentCode, studentProfile, userId, isRegistered } = useApp();
     const [activeMode, setActiveMode] = useState<ActiveMode>(initialActiveMode);
     const [chatLang, setChatLang] = useState<ChatLang>('en');
     const [tutorMode, setTutorMode] = useState<TutorMode>(initialTutorMode);
+    const [savedTimestamps, setSavedTimestamps] = useState<Set<number>>(new Set());
 
     const [messages, setMessages] = useState<TalkbackMessage[]>(() => [{
         role: 'ai',
@@ -338,6 +366,24 @@ export const ConversationalTutor: React.FC<ConversationalTutorProps> = ({
     const [recordingTime, setRecordingTime] = useState(0);
     const [isLiveCall, setIsLiveCall] = useState(false);
     const liveSessionRef = useRef<GeminiLiveSession | null>(null);
+
+    const handleSaveToNotebook = (msg: TalkbackMessage) => {
+        const ownerKey = getNotebookOwnerKey(studentCode, studentProfile?.id || userId);
+        const cleanContent = msg.text.replace(/\*\*/g, '').trim();
+        const firstLine = cleanContent.split('\n')[0]?.slice(0, 60) || 'Ask Akili Explanation';
+        const title = syllabusContext?.topic ? `${syllabusContext.topic}: ${firstLine}` : firstLine;
+        
+        saveStudyNote(ownerKey, {
+            title,
+            content: cleanContent,
+            subject: syllabusContext?.subject || 'General',
+            grade: syllabusContext?.grade || studentProfile?.grade,
+            source: 'ai_answer',
+            masteryStatus: 'new',
+            userId
+        });
+        setSavedTimestamps(prev => new Set(prev).add(msg.timestamp));
+    };
 
     const chatEndRef = useRef<HTMLDivElement>(null);
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -1133,6 +1179,8 @@ export const ConversationalTutor: React.FC<ConversationalTutorProps> = ({
                                     isTutor={isTutor}
                                     onSpeak={msg.role === 'ai' ? handleSpeak : undefined}
                                     isSpeaking={isSpeaking}
+                                    onSaveNote={msg.role === 'ai' ? () => handleSaveToNotebook(msg) : undefined}
+                                    isSaved={savedTimestamps.has(msg.timestamp)}
                                 />
                             ))}
                         </AnimatePresence>
