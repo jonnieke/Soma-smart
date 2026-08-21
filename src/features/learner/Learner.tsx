@@ -9698,118 +9698,173 @@ ${explanation.explanation}
 
       <AnimatePresence>
         {showLimitModal && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-white/85 backdrop-blur-sm p-4">
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-md p-4">
             <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl relative overflow-hidden"
+              initial={{ scale: 0.9, opacity: 0, y: 15 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 15 }}
+              className="bg-white rounded-[2rem] p-6 max-w-md w-full shadow-2xl relative overflow-hidden border border-slate-200"
             >
-              <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-100 rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl"></div>
-              <div className="absolute bottom-0 left-0 w-24 h-24 bg-amber-100 rounded-full translate-y-1/2 -translate-x-1/2 blur-xl"></div>
-
-              <div className="relative z-10 text-center">
-                <div className="w-16 h-16 bg-gradient-to-br from-indigo-100 to-white rounded-2xl flex items-center justify-center mx-auto mb-4 border border-indigo-50 shadow-sm">
-                  <Sparkles className="w-8 h-8 text-indigo-600" />
+              {/* Header */}
+              <div className="text-center mb-5">
+                <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-3 border border-indigo-100 shadow-2xs">
+                  <Sparkles className="w-6 h-6" />
                 </div>
 
-                <h3 className="text-xl font-black text-slate-800 mb-2">Continue learning with Akili</h3>
-                <p className="text-slate-500 text-sm leading-relaxed mb-6">
-                  {(() => {
-                    const ctx = getPaywallActionContext(pendingPaywallAction);
-                    return (
-                      <>
-                        You already <span className="font-bold text-slate-700">{ctx.completed}</span>. Choose a learner plan to <span className="font-bold text-slate-700">{ctx.next}</span> and keep your progress proof in one place.
-                      </>
-                    );
-                  })()}
+                <h3 className="text-xl font-black text-slate-950 tracking-tight">Unlock Unlimited Study Access</h3>
+                <p className="text-slate-500 text-xs font-medium mt-1">
+                  Choose a pass to continue with Akili step-by-step guidance &amp; exam solutions.
                 </p>
+              </div>
 
-                <div className="mb-6 bg-indigo-50 rounded-2xl border border-indigo-100 p-4 text-left">
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-500 mb-2">What parents and learners get</p>
-                  <ul className="space-y-1.5 text-xs font-bold text-slate-700">
-                    <li>Step-by-step Ask Akili help that asks the learner to try first</li>
-                    <li>Continue voice, quizzes, marking, and repair drills with learner plans</li>
-                    <li>Notes, original papers, and shareable parent progress proof</li>
-                  </ul>
-                </div>
+              {/* 1-Tap Plan Selector Grid */}
+              <div className="grid grid-cols-1 gap-2.5 mb-5">
+                {/* 1. Daily */}
+                <button
+                  onClick={() => {
+                    const plan = STUDENT_PLANS.find(p => p.duration === 'DAILY') || STUDENT_PLANS[0];
+                    setSelectedPlan(plan);
+                    setShowLimitModal(false);
+                    setMode('PAYMENT' as any);
+                  }}
+                  className="w-full p-3.5 rounded-2xl border-2 border-slate-200 hover:border-indigo-500 hover:bg-indigo-50/40 bg-white transition-all text-left flex items-center justify-between group shadow-2xs"
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="w-8 h-8 rounded-xl bg-slate-100 group-hover:bg-indigo-600 group-hover:text-white text-slate-700 font-black text-xs flex items-center justify-center transition-colors">
+                      1D
+                    </span>
+                    <div>
+                      <p className="text-xs font-black text-slate-900">Daily Pass</p>
+                      <p className="text-[10px] text-slate-500 font-semibold">24 hours unlimited access</p>
+                    </div>
+                  </div>
+                  <span className="text-sm font-black text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-lg border border-indigo-100">
+                    KES 20
+                  </span>
+                </button>
 
-                <div className="space-y-3">
-                  <Button
-                    fullWidth
-                    onClick={() => {
-                      trackFunnelEvent('pricing_opened', {
-                        source: 'learner_limit_modal',
-                        role: role || 'GUEST',
-                        action_type: pendingPaywallAction?.type || 'UNKNOWN'
-                      });
-                      setShowLimitModal(false);
-                      handlePricingNavigation();
-                    }}
-                    className="py-4 text-base shadow-xl shadow-indigo-200"
-                  >
-                    See learner plans
-                  </Button>
-                  <button
-                    onClick={() => {
-                      setShowLimitModal(false);
-                      handlePricingNavigation();
-                    }}
-                    className="w-full rounded-2xl border-2 border-indigo-100 bg-indigo-50 px-4 py-3 text-left hover:border-indigo-200 hover:bg-indigo-100 transition-colors"
-                  >
-                    <span className="block text-[10px] font-black uppercase tracking-[0.18em] text-indigo-500">Prefer to keep going?</span>
-                    <span className="mt-1 flex items-center justify-between gap-3">
-                      <span className="text-sm font-black text-slate-800">Open a smaller learner plan</span>
-                      <span className="text-sm font-black text-indigo-700">from KES 20</span>
+                {/* 2. Weekly - Most Popular */}
+                <button
+                  onClick={() => {
+                    const plan = STUDENT_PLANS.find(p => p.duration === 'WEEKLY') || STUDENT_PLANS[1];
+                    setSelectedPlan(plan);
+                    setShowLimitModal(false);
+                    setMode('PAYMENT' as any);
+                  }}
+                  className="w-full p-3.5 rounded-2xl border-2 border-indigo-600 bg-indigo-50/60 hover:bg-indigo-100/60 transition-all text-left flex items-center justify-between group shadow-xs relative"
+                >
+                  <span className="absolute -top-2.5 right-4 bg-indigo-600 text-white text-[9px] font-black uppercase px-2 py-0.5 rounded-full tracking-wider shadow-2xs">
+                    Most Popular
+                  </span>
+                  <div className="flex items-center gap-3">
+                    <span className="w-8 h-8 rounded-xl bg-indigo-600 text-white font-black text-xs flex items-center justify-center shadow-2xs">
+                      7D
                     </span>
-                    <span className="mt-1 block text-[11px] font-bold text-slate-500">
-                      Plans keep revision, marking, and voice moving without interruption.
+                    <div>
+                      <p className="text-xs font-black text-slate-900">Weekly Pass</p>
+                      <p className="text-[10px] text-slate-500 font-semibold">7 days unlimited access</p>
+                    </div>
+                  </div>
+                  <span className="text-sm font-black text-indigo-700 bg-white px-2.5 py-1 rounded-lg border border-indigo-200 shadow-2xs">
+                    KES 100
+                  </span>
+                </button>
+
+                {/* 3. Monthly - Best Value */}
+                <button
+                  onClick={() => {
+                    const plan = STUDENT_PLANS.find(p => p.duration === 'MONTHLY') || STUDENT_PLANS[2];
+                    setSelectedPlan(plan);
+                    setShowLimitModal(false);
+                    setMode('PAYMENT' as any);
+                  }}
+                  className="w-full p-3.5 rounded-2xl border-2 border-emerald-500 hover:bg-emerald-50/40 bg-white transition-all text-left flex items-center justify-between group shadow-2xs relative"
+                >
+                  <span className="absolute -top-2.5 right-4 bg-emerald-600 text-white text-[9px] font-black uppercase px-2 py-0.5 rounded-full tracking-wider shadow-2xs">
+                    Best Value
+                  </span>
+                  <div className="flex items-center gap-3">
+                    <span className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-700 font-black text-xs flex items-center justify-center">
+                      30D
                     </span>
-                  </button>
-                  <button
-                    onClick={async () => {
-                      setLoading(true);
-                      setLoadingText("Verifying Transactions...");
-                      try {
-                        const success = await verifySubscription();
-                        setLoading(false);
-                        if (success) {
-                          alert("Awesome! Your premium subscription has been successfully restored!");
-                          setShowLimitModal(false);
-                        } else {
-                          // Ask for custom reference code
-                          const codeInput = prompt(
-                            "Auto-scan did not find a recent payment. If you paid on a different device or account, please enter that device's Student Code (e.g. SOM-1234), your phone number, or receipt reference code to link it:"
-                          );
-                          if (codeInput && codeInput.trim()) {
-                            setLoading(true);
-                            setLoadingText("Verifying custom reference...");
-                            const customSuccess = await verifySubscription(codeInput.trim());
-                            setLoading(false);
-                            if (customSuccess) {
-                              alert("Awesome! Your premium subscription has been successfully restored!");
-                              setShowLimitModal(false);
-                            } else {
-                              alert("We couldn't verify this payment reference. Please double check the code or contact support.");
-                            }
+                    <div>
+                      <p className="text-xs font-black text-slate-900">Monthly Pass</p>
+                      <p className="text-[10px] text-slate-500 font-semibold">30 days unlimited access</p>
+                    </div>
+                  </div>
+                  <span className="text-sm font-black text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200">
+                    KES 300
+                  </span>
+                </button>
+
+                {/* 4. Termly */}
+                <button
+                  onClick={() => {
+                    const plan = STUDENT_PLANS.find(p => p.duration === 'TERMLY') || STUDENT_PLANS[3];
+                    setSelectedPlan(plan);
+                    setShowLimitModal(false);
+                    setMode('PAYMENT' as any);
+                  }}
+                  className="w-full p-3.5 rounded-2xl border-2 border-slate-200 hover:border-indigo-500 hover:bg-indigo-50/40 bg-white transition-all text-left flex items-center justify-between group shadow-2xs"
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="w-8 h-8 rounded-xl bg-slate-100 group-hover:bg-indigo-600 group-hover:text-white text-slate-700 font-black text-xs flex items-center justify-center transition-colors">
+                      Term
+                    </span>
+                    <div>
+                      <p className="text-xs font-black text-slate-900">Termly Pass</p>
+                      <p className="text-[10px] text-slate-500 font-semibold">Full term unlimited access</p>
+                    </div>
+                  </div>
+                  <span className="text-sm font-black text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-lg border border-indigo-100">
+                    KES 700
+                  </span>
+                </button>
+              </div>
+
+              {/* Actions & Recovery */}
+              <div className="space-y-2 text-center pt-1 border-t border-slate-100">
+                <button
+                  onClick={async () => {
+                    setLoading(true);
+                    setLoadingText("Verifying Transactions...");
+                    try {
+                      const success = await verifySubscription();
+                      setLoading(false);
+                      if (success) {
+                        alert("Awesome! Your premium subscription has been successfully restored!");
+                        setShowLimitModal(false);
+                      } else {
+                        const codeInput = prompt("Enter your phone number or student code (e.g. 0712345678 or SOMA-1234) to link recent payment:");
+                        if (codeInput && codeInput.trim()) {
+                          setLoading(true);
+                          setLoadingText("Verifying custom reference...");
+                          const customSuccess = await verifySubscription(codeInput.trim());
+                          setLoading(false);
+                          if (customSuccess) {
+                            alert("Awesome! Your premium subscription has been successfully restored!");
+                            setShowLimitModal(false);
+                          } else {
+                            alert("Could not find a recent payment for this number. Please check or contact support on 0722763760.");
                           }
                         }
-                      } catch (err) {
-                        setLoading(false);
-                        alert("An error occurred during verification. Please try again or refresh the page.");
                       }
-                    }}
-                    className="w-full text-indigo-600 hover:text-indigo-700 font-bold text-xs uppercase tracking-widest transition-colors py-1 block"
-                  >
-                    Already subscribed? Restore access
-                  </button>
-                  <button
-                    onClick={() => setShowLimitModal(false)}
-                    className="text-slate-400 font-bold text-xs uppercase tracking-widest hover:text-slate-600 transition-colors"
-                  >
-                    Cancel to Dashboard
-                  </button>
-                </div>
+                    } catch (err) {
+                      setLoading(false);
+                      alert("An error occurred during verification. Please try again.");
+                    }
+                  }}
+                  className="w-full text-indigo-600 hover:text-indigo-800 font-black text-xs py-1.5 transition-colors"
+                >
+                  Already paid? Restore Access
+                </button>
+
+                <button
+                  onClick={() => setShowLimitModal(false)}
+                  className="text-slate-400 font-bold text-xs hover:text-slate-600 transition-colors py-1 block mx-auto"
+                >
+                  Cancel to Dashboard
+                </button>
               </div>
             </motion.div>
           </div>

@@ -12,6 +12,9 @@ import { examPaperBankService } from '../../services/examPaperBankService';
 import { RevisionMode, TeacherActivity, ViewState, UserRole, ExamAnalysis } from '../../types';
 import { Button } from '../../components/Shared';
 
+import { STUDENT_PLANS } from '../../data/pricing';
+import { PaymentFlow } from '../subscription/PaymentFlow';
+
 type ActiveView =
     | { type: 'landing' }
     | { type: 'syllabus'; data: any }
@@ -30,6 +33,7 @@ export const RevisionDashboard: React.FC = () => {
     const [showRevisionPaywall, setShowRevisionPaywall] = useState(false);
     const [lockedPaperId, setLockedPaperId] = useState<string | number | null>(null);
     const [checkingPaperAccess, setCheckingPaperAccess] = useState(false);
+    const [selectedPlanForCheckout, setSelectedPlanForCheckout] = useState<any>(null);
     const queryParams = new URLSearchParams(location.search);
     const previewPaperId = queryParams.get('preview') === '1' ? queryParams.get('paper') : null;
     const previewSource = queryParams.get('previewSource') === 'marking_scheme' ? 'marking_scheme' : 'paper';
@@ -58,12 +62,9 @@ export const RevisionDashboard: React.FC = () => {
             setActiveView({ type: 'exam', data: paper as any, mode });
         } catch (error) {
             console.error('Could not verify revision access for paper:', error);
-            setLockedPaperId(paperId);
             setShowRevisionPaywall(true);
         } finally {
             setCheckingPaperAccess(false);
-            sessionStorage.removeItem('soma_pending_exam');
-            sessionStorage.removeItem('soma_pending_exam_id');
         }
     };
 
@@ -101,74 +102,129 @@ export const RevisionDashboard: React.FC = () => {
 
     }, [activeView.type, location.search, isPro]);
 
-    // Helper to determine item type
     const getItemType = (data: File | TeacherActivity): 'syllabus' | 'notes' | 'paper' => {
-        if (data instanceof File) return 'paper'; // User uploaded file = past paper
-        const title = ((data as any).title || '').toLowerCase();
-        if (title.includes('syllabus')) return 'syllabus';
-        if (title.includes('notes') || title.includes('note')) return 'notes';
+        if (data instanceof File) return 'paper';
+        const payload = data as any;
+        const category = (payload?.category || payload?.resource_type || payload?.type || '').toUpperCase();
+        if (category === 'SYLLABUS') return 'syllabus';
+        if (category === 'NOTE' || category === 'NOTES' || category === 'STUDY_NOTE') return 'notes';
         return 'paper'; // Default: treat as past paper
     };
 
+    if (selectedPlanForCheckout) {
+        return (
+            <PaymentFlow
+                plan={selectedPlanForCheckout}
+                materialId={lockedPaperId ? String(lockedPaperId) : undefined}
+                onSuccess={() => {
+                    setSelectedPlanForCheckout(null);
+                    setShowRevisionPaywall(false);
+                    if (lockedPaperId) {
+                        openPaperRevision(lockedPaperId);
+                    }
+                }}
+                onCancel={() => setSelectedPlanForCheckout(null)}
+            />
+        );
+    }
+
     if (showRevisionPaywall) {
         return (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-white/70 p-4 backdrop-blur-md">
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-md">
                 <motion.div
-                    initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                    initial={{ scale: 0.9, opacity: 0, y: 15 }}
                     animate={{ scale: 1, opacity: 1, y: 0 }}
-                    className="bg-white rounded-[2.5rem] p-10 max-w-md w-full text-center relative overflow-hidden shadow-2xl border border-[#ece8fb] transition-colors"
+                    className="bg-white rounded-[2rem] p-6 max-w-md w-full shadow-2xl relative overflow-hidden border border-slate-200"
                 >
-                    <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-indigo-300 via-purple-300 to-indigo-300" />
-
-                    <div className="w-20 h-20 bg-indigo-50 rounded-3xl flex items-center justify-center mx-auto mb-6 text-indigo-600 shadow-inner">
-                        <Lock className="w-10 h-10" />
+                    <div className="text-center mb-5">
+                        <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-3 border border-indigo-100 shadow-2xs">
+                            <Sparkles className="w-6 h-6" />
+                        </div>
+                        <h2 className="text-xl font-black text-slate-950 tracking-tight">Unlock Revision Mode</h2>
+                        <p className="text-slate-500 text-xs font-medium mt-1">
+                            Choose a pass to attempt full papers with timer and smart marking scheme.
+                        </p>
                     </div>
 
-                    <h2 className="text-3xl font-black text-slate-900 mb-3 tracking-tight">Revision Mode is locked</h2>
-                    <p className="text-slate-600 font-medium mb-8 leading-relaxed">
-                        Exam paper revision is included in a normal SomaAI subscription. If you only need this one paper, buy the exam paper package and Revision Mode unlocks for that paper.
-                    </p>
-
-                    <div className="space-y-4 mb-8">
-                        <div className="flex items-center gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                            <TrendingUp className="w-5 h-5 text-emerald-500" />
-                            <span className="text-sm font-bold text-slate-700">Unlimited Papers & smart marking</span>
-                        </div>
-                        <div className="flex items-center gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                            <Sparkles className="w-5 h-5 text-amber-500" />
-                            <span className="text-sm font-bold text-slate-700">Predicted Questions & Exam Strategy</span>
-                        </div>
-                    </div>
-
-                    <div className="space-y-3">
-                        <Button
-                            fullWidth
-                            variant="primary"
-                            onClick={() => navigate('/pricing')}
-                            className="py-5 text-lg bg-indigo-600 hover:bg-indigo-700 text-white shadow-xl shadow-indigo-100 border-none group"
+                    <div className="grid grid-cols-1 gap-2.5 mb-5">
+                        <button
+                            onClick={() => {
+                                const plan = STUDENT_PLANS.find(p => p.duration === 'DAILY') || STUDENT_PLANS[0];
+                                setSelectedPlanForCheckout(plan);
+                            }}
+                            className="w-full p-3.5 rounded-2xl border-2 border-slate-200 hover:border-indigo-500 hover:bg-indigo-50/40 bg-white transition-all text-left flex items-center justify-between group shadow-2xs"
                         >
-                            <span className="flex items-center justify-center gap-2">
-                                Upgrade to Soma AI Pro <ShieldCheck className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                            <div className="flex items-center gap-3">
+                                <span className="w-8 h-8 rounded-xl bg-slate-100 group-hover:bg-indigo-600 group-hover:text-white text-slate-700 font-black text-xs flex items-center justify-center transition-colors">
+                                    1D
+                                </span>
+                                <div>
+                                    <p className="text-xs font-black text-slate-900">Daily Pass</p>
+                                    <p className="text-[10px] text-slate-500 font-semibold">24h unlimited paper revision</p>
+                                </div>
+                            </div>
+                            <span className="text-sm font-black text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-lg border border-indigo-100">
+                                KES 20
                             </span>
-                        </Button>
-                        <Button
-                            fullWidth
-                            variant="outline"
-                            onClick={() => navigate(lockedPaperId ? `/exam-papers?paper=${encodeURIComponent(String(lockedPaperId))}` : '/exam-papers')}
-                            className="py-4 font-bold text-indigo-700 dark:text-indigo-300 border-2 border-indigo-200 hover:bg-indigo-50 dark:border-indigo-800 dark:hover:bg-indigo-950/40"
+                        </button>
+
+                        <button
+                            onClick={() => {
+                                const plan = STUDENT_PLANS.find(p => p.duration === 'WEEKLY') || STUDENT_PLANS[1];
+                                setSelectedPlanForCheckout(plan);
+                            }}
+                            className="w-full p-3.5 rounded-2xl border-2 border-indigo-600 bg-indigo-50/60 hover:bg-indigo-100/60 transition-all text-left flex items-center justify-between group shadow-xs relative"
                         >
-                            {lockedPaperId ? 'Buy this paper for Revision Mode' : 'Browse Exam Paper Bank'}
-                        </Button>
+                            <span className="absolute -top-2.5 right-4 bg-indigo-600 text-white text-[9px] font-black uppercase px-2 py-0.5 rounded-full tracking-wider shadow-2xs">
+                                Most Popular
+                            </span>
+                            <div className="flex items-center gap-3">
+                                <span className="w-8 h-8 rounded-xl bg-indigo-600 text-white font-black text-xs flex items-center justify-center shadow-2xs">
+                                    7D
+                                </span>
+                                <div>
+                                    <p className="text-xs font-black text-slate-900">Weekly Pass</p>
+                                    <p className="text-[10px] text-slate-500 font-semibold">7 days full papers &amp; marking</p>
+                                </div>
+                            </div>
+                            <span className="text-sm font-black text-indigo-700 bg-white px-2.5 py-1 rounded-lg border border-indigo-200 shadow-2xs">
+                                KES 100
+                            </span>
+                        </button>
+
+                        <button
+                            onClick={() => {
+                                const plan = STUDENT_PLANS.find(p => p.duration === 'MONTHLY') || STUDENT_PLANS[2];
+                                setSelectedPlanForCheckout(plan);
+                            }}
+                            className="w-full p-3.5 rounded-2xl border-2 border-emerald-500 hover:bg-emerald-50/40 bg-white transition-all text-left flex items-center justify-between group shadow-2xs relative"
+                        >
+                            <span className="absolute -top-2.5 right-4 bg-emerald-600 text-white text-[9px] font-black uppercase px-2 py-0.5 rounded-full tracking-wider shadow-2xs">
+                                Best Value
+                            </span>
+                            <div className="flex items-center gap-3">
+                                <span className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-700 font-black text-xs flex items-center justify-center">
+                                    30D
+                                </span>
+                                <div>
+                                    <p className="text-xs font-black text-slate-900">Monthly Pass</p>
+                                    <p className="text-[10px] text-slate-500 font-semibold">30 days unlimited access</p>
+                                </div>
+                            </div>
+                            <span className="text-sm font-black text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200">
+                                KES 300
+                            </span>
+                        </button>
+                    </div>
+
+                    <div className="space-y-2 text-center pt-2 border-t border-slate-100">
                         <button
                             onClick={() => setShowRevisionPaywall(false)}
-                            className="text-slate-400 text-xs font-black uppercase tracking-widest hover:text-slate-600 transition-colors pt-4"
+                            className="text-slate-400 font-bold text-xs hover:text-slate-600 transition-colors py-1 block mx-auto"
                         >
                             Return to Revision Hub
                         </button>
                     </div>
-
-
-                    <div className="absolute -bottom-12 -right-12 w-32 h-32 bg-indigo-100 rounded-full blur-2xl opacity-60" />
                 </motion.div>
             </div>
         );

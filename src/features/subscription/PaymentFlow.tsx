@@ -335,30 +335,46 @@ export const PaymentFlow: React.FC<Props> = ({ plan, materialId, onSuccess, onCa
     };
 
     const handlePayment = async () => {
-        if (!isRegistered && !isGuestExistingStudent) {
-            setError('For guest checkout, use Existing student and verify a SOMA ID first.');
+        const cleanPhone = phone.replace(/\s+/g, '').replace(/^(\+?254|0)/, '');
+        if (!cleanPhone || cleanPhone.length < 9) {
+            setError('Please enter a valid M-Pesa phone number (e.g. 0712345678)');
             return;
         }
 
-        if (isGuestExistingStudent && !existingStudentProfileId) {
-            const resolved = await resolveExistingStudent();
-            if (!resolved) return;
+        const localCode = (studentProfile as any)?.student_id || (studentProfile as any)?.studentCode || existingStudentCode || localStorage.getItem('soma_active_student') || localStorage.getItem('soma_student_code');
+        let profileId = studentProfile?.id || teacherProfile?.id || existingStudentProfileId || existingStudentProfileIdRef.current || userId;
+
+        // If not already resolved to a UUID, try resolving by student code
+        if (!profileId && localCode) {
+            try {
+                const { data: matchedProfile } = await supabase
+                    .from('profiles')
+                    .select('id, full_name, email, student_id')
+                    .in('student_id', studentCodeVariants(localCode))
+                    .maybeSingle();
+                if (matchedProfile?.id) {
+                    profileId = matchedProfile.id;
+                    setExistingStudentProfileId(matchedProfile.id);
+                    existingStudentProfileIdRef.current = matchedProfile.id;
+                    if (!firstName && matchedProfile.full_name) {
+                        const parts = matchedProfile.full_name.split(' ');
+                        setFirstName(parts[0] || 'Learner');
+                        setLastName(parts.slice(1).join(' ') || 'User');
+                    }
+                }
+            } catch (err) {
+                console.warn('Auto profile resolution skipped:', err);
+            }
         }
 
-        if (!phone || (!isRegistered && !isGuestExistingStudent && (!firstName || !lastName || !email))) {
-            setError(isRegistered ? 'Please enter your phone number' : 'Please fill in all contact details');
-            return;
-        }
-
-        const profileId = studentProfile?.id || teacherProfile?.id || existingStudentProfileId || existingStudentProfileIdRef.current;
         if (profileId && isSubscriptionCheckout) {
             const existingSub = await hasActiveSubscription(profileId);
             if (existingSub.active) {
                 setError(`Already subscribed: ${getPlanLabel(existingSub.plan)} is still active. Redirecting...`);
                 setStep('SUCCESS');
                 setTimeout(async () => {
-                    if (!isRegistered && existingStudentCode) {
-                        await login(existingStudentCode);
+                    if (localCode) {
+                        await login(localCode);
                     }
                     onSuccess();
                 }, 900);
@@ -372,39 +388,27 @@ export const PaymentFlow: React.FC<Props> = ({ plan, materialId, onSuccess, onCa
             plan_id: plan?.id,
             plan_name: plan?.name,
             amount_kes: plan?.price,
-            is_registered: isRegistered,
-            role
-        });
-        trackFunnelEvent('payment_initiated', {
-            plan_id: plan?.id,
-            plan_name: plan?.name,
-            amount_kes: plan?.price,
-            is_registered: isRegistered,
+            is_registered: Boolean(profileId),
             role
         });
 
         try {
-            // Auto-register NEW learners so their payment attaches to a real account
-            let finalUid = userId || studentProfile?.id || teacherProfile?.id || existingStudentProfileId || existingStudentProfileIdRef.current;
+            let finalUid = profileId;
             let finalEmail = email || studentProfile?.email || teacherProfile?.email;
             
-            if (!isRegistered && payerMode === 'NEW') {
+            // Auto-register new guest learners who have no student code yet
+            if (!finalUid && !localCode) {
                 setIsResolvingStudent(true);
-                const regResult = await registerStudent(`${firstName} ${lastName}`.trim(), 'Unknown', '1234', `254${phone.replace(/^0/, '')}`);
-                if (!regResult.success || !regResult.data) {
-                    setError(regResult.message || 'Failed to create student account automatically.');
-                    setStep('INPUT');
-                    setIsResolvingStudent(false);
-                    return;
-                }
-                
-                // Get the real UID
-                const newCode = regResult.data;
-                const { data: newProfile } = await supabase.from('profiles').select('id, email').eq('student_id', newCode).maybeSingle();
-                if (newProfile?.id) {
-                    finalUid = newProfile.id;
-                    finalEmail = email || newProfile.email;
-                    setExistingStudentCode(newCode); // Save for login later
+                const defaultName = `${firstName || 'Learner'} ${lastName || 'User'}`.trim();
+                const regResult = await registerStudent(defaultName, 'Unknown', '1234', `254${cleanPhone}`);
+                if (regResult?.success && regResult?.data) {
+                    const newCode = regResult.data;
+                    const { data: newProfile } = await supabase.from('profiles').select('id, email').eq('student_id', newCode).maybeSingle();
+                    if (newProfile?.id) {
+                        finalUid = newProfile.id;
+                        finalEmail = email || newProfile.email;
+                        setExistingStudentCode(newCode);
+                    }
                 }
                 setIsResolvingStudent(false);
             }
@@ -416,7 +420,7 @@ export const PaymentFlow: React.FC<Props> = ({ plan, materialId, onSuccess, onCa
                 email: finalEmail,
                 firstName: firstName || (role === 'TEACHER' ? 'Teacher' : 'Learner'),
                 lastName: lastName || 'User',
-                phone: `254${phone.replace(/^0/, '')}`
+                phone: `254${cleanPhone}`
             }, materialId);
 
             if (response.redirect_url) {
@@ -482,12 +486,15 @@ export const PaymentFlow: React.FC<Props> = ({ plan, materialId, onSuccess, onCa
         return () => window.clearTimeout(timeout);
     }, [step, iframeUrl, iframeLoaded, autoOpenedCheckout]);
 
+    const activeStudentCode = (studentProfile as any)?.student_id || (studentProfile as any)?.studentCode || localStorage.getItem('soma_active_student') || localStorage.getItem('soma_student_code') || existingStudentCode;
+    const isUserIdentified = Boolean(studentProfile || teacherProfile || userId || activeStudentCode);
+
     return (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md">
             <motion.div
                 initial={{ scale: 0.9, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
-                className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-md overflow-hidden"
+                className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-md overflow-hidden border border-slate-200"
             >
                 <AnimatePresence mode="wait">
                     {step === 'INPUT' && (
@@ -496,147 +503,70 @@ export const PaymentFlow: React.FC<Props> = ({ plan, materialId, onSuccess, onCa
                             initial={{ opacity: 0, x: 20 }}
                             animate={{ opacity: 1, x: 0 }}
                             exit={{ opacity: 0, x: -20 }}
-                            className="p-8"
+                            className="p-6 sm:p-8"
                         >
-                            <button onClick={onCancel} className="mb-6 flex items-center gap-2 text-slate-400 hover:text-slate-600 font-bold text-sm">
-                                <ArrowLeft className="w-4 h-4" /> Back to plans
+                            <button onClick={onCancel} className="mb-4 flex items-center gap-1.5 text-slate-400 hover:text-slate-700 font-bold text-xs">
+                                <ArrowLeft className="w-3.5 h-3.5" /> Back to plans
                             </button>
 
-                            <div className="flex items-center gap-4 mb-8">
-                                <div className="w-16 h-16 bg-green-100 rounded-2xl flex items-center justify-center text-green-600">
-                                    <Smartphone className="w-8 h-8" />
+                            <div className="flex items-center gap-3.5 mb-6 p-4 rounded-2xl bg-emerald-50 border border-emerald-200/80">
+                                <div className="w-12 h-12 bg-emerald-500 text-white rounded-xl flex items-center justify-center font-black shrink-0 shadow-xs">
+                                    <Smartphone className="w-6 h-6" />
                                 </div>
-                                <div>
-                                    <h2 className="text-2xl font-black text-slate-900">M-Pesa checkout</h2>
-                                    <p className="text-slate-500 font-medium">Continue with your learning plan for KES {plan.price.toLocaleString()}</p>
+                                <div className="min-w-0">
+                                    <span className="text-[10px] font-black uppercase tracking-wider text-emerald-700">M-Pesa Fast Checkout</span>
+                                    <h2 className="text-lg font-black text-slate-900 leading-tight truncate">{plan.name || 'Selected Plan'}</h2>
+                                    <p className="text-xs font-extrabold text-emerald-700 mt-0.5">KES {plan.price.toLocaleString()}</p>
                                 </div>
                             </div>
 
                             <div className="space-y-4">
-                                {!isRegistered && (
-                                    <div className="grid grid-cols-2 gap-2 p-1 bg-slate-100 rounded-xl">
-                                        <button
-                                            type="button"
-                                            onClick={() => setPayerMode('NEW')}
-                                            className={`py-2 rounded-lg text-xs font-black uppercase tracking-widest transition ${payerMode === 'NEW' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'}`}
-                                        >
-                                            New learner
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={() => setPayerMode('EXISTING')}
-                                            className={`py-2 rounded-lg text-xs font-black uppercase tracking-widest transition ${payerMode === 'EXISTING' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'}`}
-                                        >
-                                            Existing student
-                                        </button>
-                                    </div>
-                                )}
-                                {!isRegistered && payerMode === 'NEW' && (
-                                    <div className="mx-1 p-3 rounded-lg bg-indigo-50 border border-indigo-200 text-indigo-800 text-xs font-medium">
-                                        We will automatically generate a <span className="font-black">SOMA ID</span> after payment so you can access your resources on any device.
+                                {/* Student badge if in session */}
+                                {activeStudentCode && (
+                                    <div className="bg-slate-50 p-3 rounded-xl border border-slate-200/80 flex items-center justify-between">
+                                        <div>
+                                            <p className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Account</p>
+                                            <p className="text-xs font-bold text-slate-800">{studentProfile?.name || firstName || 'Learner'}</p>
+                                        </div>
+                                        <span className="px-2.5 py-1 rounded-md bg-indigo-50 border border-indigo-200 text-[10px] font-black text-indigo-700">
+                                            {activeStudentCode}
+                                        </span>
                                     </div>
                                 )}
 
-                                <div className="bg-indigo-50/50 p-4 rounded-2xl border border-indigo-100 mb-2">
-                                    <p className="text-[10px] font-black uppercase text-indigo-400 tracking-widest mb-1">Billing details</p>
-                                    <p className="font-bold text-slate-700">{firstName} {lastName}</p>
-                                    <p className="text-[10px] text-slate-400 truncate">{email}</p>
-                                </div>
-
-                                {!isRegistered && payerMode === 'EXISTING' && (
-                                    <div className="bg-slate-50 p-4 rounded-2xl border-2 border-slate-100">
-                                        <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest block mb-1">Student ID</label>
-                                        <div className="flex items-center gap-2">
-                                            <input
-                                                type="text"
-                                                placeholder="SOMA-XXXX"
-                                                className="w-full bg-transparent font-bold uppercase outline-none placeholder:text-slate-300"
-                                                value={existingStudentCode}
-                                                onChange={(e) => {
-                                                    setExistingStudentCode(e.target.value.toUpperCase());
-                                                    setExistingStudentProfileId(null);
-                                                    existingStudentProfileIdRef.current = null;
-                                                }}
-                                            />
-                                            <button
-                                                type="button"
-                                                onClick={resolveExistingStudent}
-                                                disabled={isResolvingStudent || !existingStudentCode.trim()}
-                                                className="px-3 py-2 rounded-lg bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest disabled:opacity-50"
-                                            >
-                                                {isResolvingStudent ? 'Checking...' : existingStudentProfileId ? 'Verified' : 'Verify'}
-                                            </button>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {!isRegistered && payerMode === 'NEW' && (
-                                    <div className="grid grid-cols-1 gap-3">
-                                        <div className="bg-slate-50 p-4 rounded-2xl border-2 border-slate-100">
-                                            <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest block mb-1">First Name</label>
-                                            <input
-                                                type="text"
-                                                placeholder="e.g. Amina"
-                                                className="w-full bg-transparent font-bold outline-none placeholder:text-slate-300"
-                                                value={firstName}
-                                                onChange={(e) => setFirstName(e.target.value)}
-                                            />
-                                        </div>
-                                        <div className="bg-slate-50 p-4 rounded-2xl border-2 border-slate-100">
-                                            <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest block mb-1">Last Name</label>
-                                            <input
-                                                type="text"
-                                                placeholder="e.g. Otieno"
-                                                className="w-full bg-transparent font-bold outline-none placeholder:text-slate-300"
-                                                value={lastName}
-                                                onChange={(e) => setLastName(e.target.value)}
-                                            />
-                                        </div>
-                                        <div className="bg-slate-50 p-4 rounded-2xl border-2 border-slate-100">
-                                            <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest block mb-1">Email Address</label>
-                                            <input
-                                                type="email"
-                                                placeholder="e.g. parent@email.com"
-                                                className="w-full bg-transparent font-bold outline-none placeholder:text-slate-300"
-                                                value={email}
-                                                onChange={(e) => setEmail(e.target.value)}
-                                            />
-                                        </div>
-                                    </div>
-                                )}
-
-                                <div className="bg-slate-50 p-4 rounded-2xl border-2 border-slate-100">
-                                    <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest block mb-1">M-Pesa Phone Number</label>
-                                    <div className="flex items-center gap-3">
-                                        <span className="font-bold text-slate-400">+254</span>
+                                {/* Phone Number Input */}
+                                <div className="bg-slate-50 p-4 rounded-2xl border-2 border-slate-200 focus-within:border-emerald-500 transition-colors">
+                                    <label className="text-[10px] font-black uppercase text-slate-500 tracking-wider block mb-1">M-Pesa Phone Number</label>
+                                    <div className="flex items-center gap-2">
+                                        <span className="font-black text-xs text-slate-500">+254</span>
                                         <input
                                             type="tel"
-                                            placeholder="7XX XXX XXX"
-                                            className="w-full bg-transparent font-bold outline-none placeholder:text-slate-300"
+                                            placeholder="7XX XXX XXX or 01XX XXX XXX"
+                                            className="w-full bg-transparent font-black text-slate-900 outline-none placeholder:text-slate-400 text-base"
                                             value={phone}
                                             onChange={(e) => setPhone(e.target.value)}
+                                            autoFocus
                                         />
                                     </div>
                                 </div>
 
-                                {error && <p className="text-red-500 text-xs font-bold text-center">{error}</p>}
+                                {error && (
+                                    <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-bold text-center">
+                                        {error}
+                                    </div>
+                                )}
 
                                 <button
                                     onClick={handlePayment}
-                                    className="w-full py-5 bg-indigo-600 text-white rounded-2xl font-black text-lg shadow-xl shadow-indigo-100 hover:bg-indigo-700 transition-all flex items-center justify-center gap-3"
+                                    className="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-black text-base shadow-lg shadow-emerald-600/20 transition-all flex items-center justify-center gap-2"
                                 >
-                                    Continue to M-Pesa <ArrowRight className="w-6 h-6" />
+                                    <span>Pay KES {plan.price.toLocaleString()} via M-Pesa</span>
+                                    <ArrowRight className="w-5 h-5" />
                                 </button>
 
-                                <div className="flex flex-col items-center justify-center gap-3 pt-6">
-                                    <div className="flex items-center gap-2 text-slate-400 text-[10px] font-black uppercase tracking-widest">
-                                        <ShieldCheck className="w-4 h-4 text-emerald-500" /> Secure checkout
-                                    </div>
-                                    <div className="flex gap-4 opacity-50 grayscale scale-75">
-                                        <div className="w-10 h-6 bg-slate-200 rounded"></div>
-                                        <div className="w-10 h-6 bg-slate-200 rounded"></div>
-                                        <div className="w-10 h-6 bg-slate-200 rounded"></div>
-                                    </div>
+                                <div className="flex items-center justify-center gap-2 pt-2 text-slate-400 text-[10px] font-black uppercase tracking-wider">
+                                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                                    <span>Instant STK Push · Safe &amp; Verified</span>
                                 </div>
                             </div>
                         </motion.div>
