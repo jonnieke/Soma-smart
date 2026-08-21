@@ -160,6 +160,7 @@ export const PaymentFlow: React.FC<Props> = ({ plan, materialId, onSuccess, onCa
     const isRegistered = !!(studentProfile || teacherProfile);
     const isGuestExistingStudent = !isRegistered && payerMode === 'EXISTING';
     const GUEST_DUMMY_UUID = '00000000-0000-0000-0000-000000000000';
+    const paymentInitiatedAtRef = useRef<number>(0);
 
     // Poll for payment success when in IFRAME
     useEffect(() => {
@@ -181,14 +182,17 @@ export const PaymentFlow: React.FC<Props> = ({ plan, materialId, onSuccess, onCa
                     data = refData;
                 }
 
-                if (!data) {
+                if (!data && paymentInitiatedAtRef.current > 0) {
+                    // Only match transactions created strictly during this active checkout session
+                    const isoSince = new Date(paymentInitiatedAtRef.current - 15000).toISOString();
                     const { data: latestData } = await supabase
-                    .from('transactions')
-                    .select('status')
-                    .eq('user_id', uid)
-                    .order('created_at', { ascending: false })
-                    .limit(1)
-                    .maybeSingle();
+                        .from('transactions')
+                        .select('status, created_at')
+                        .eq('user_id', uid)
+                        .gte('created_at', isoSince)
+                        .order('created_at', { ascending: false })
+                        .limit(1)
+                        .maybeSingle();
                     data = latestData;
                 }
 
@@ -424,6 +428,7 @@ export const PaymentFlow: React.FC<Props> = ({ plan, materialId, onSuccess, onCa
             }, materialId);
 
             if (response.redirect_url) {
+                paymentInitiatedAtRef.current = Date.now();
                 setIframeUrl(response.redirect_url);
                 setPaymentReference(response.client_reference || null);
                 setPaymentUserId(uid);
@@ -663,20 +668,26 @@ export const PaymentFlow: React.FC<Props> = ({ plan, materialId, onSuccess, onCa
                     {step === 'ERROR' && (
                         <motion.div
                             key="error"
-                            initial={{ opacity: 0, scale: 0.9 }}
+                            initial={{ opacity: 0, scale: 0.95 }}
                             animate={{ opacity: 1, scale: 1 }}
-                            className="p-12 text-center"
+                            className="p-8 sm:p-10 text-center"
                         >
-                            <div className="w-24 h-24 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-8 text-red-600">
-                                <XCircle className="w-12 h-12" />
+                            <div className="w-20 h-20 bg-rose-50 border border-rose-200 rounded-3xl flex items-center justify-center mx-auto mb-5 text-rose-600 shadow-xs">
+                                <Smartphone className="w-10 h-10" />
                             </div>
-                            <h2 className="text-2xl font-black text-slate-900 mb-2">Payment paused</h2>
-                            <p className="text-slate-500 font-medium mb-8">It seems the payment was declined or timed out. You can try again when ready.</p>
+                            <h2 className="text-2xl font-black text-slate-900 mb-2">M-Pesa Prompt Incomplete</h2>
+                            <p className="text-slate-500 font-medium text-sm mb-6 leading-relaxed">
+                                The prompt timed out or was cancelled on your phone. Tap below to send a fresh M-Pesa prompt.
+                            </p>
                             <button
-                                onClick={() => setStep('INPUT')}
-                                className="w-full py-4 bg-slate-900 text-white rounded-xl font-bold"
+                                onClick={() => {
+                                    setError('');
+                                    setStep('INPUT');
+                                }}
+                                className="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-black text-sm shadow-lg shadow-emerald-600/20 transition-all flex items-center justify-center gap-2"
                             >
-                                Try again
+                                <span>Send Fresh M-Pesa Prompt</span>
+                                <ArrowRight className="w-4 h-4" />
                             </button>
                         </motion.div>
                     )}
