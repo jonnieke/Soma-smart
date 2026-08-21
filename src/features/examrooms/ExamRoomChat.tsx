@@ -6,7 +6,8 @@ import { ExamRoom, ExamRoomMessage, UserRole } from '../../types';
 import { DashboardLayout } from '../../components/DashboardLayout';
 import {
     ArrowLeft, Send, Sparkles, Image as ImageIcon,
-    ThumbsUp, Users, Info, Loader2, Pin, LogOut
+    ThumbsUp, Users, Info, Loader2, Pin, LogOut,
+    Swords, Trophy, Timer, CheckCircle2, XCircle, Flame, Award
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -21,6 +22,35 @@ export const ExamRoomChat: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [sending, setSending] = useState(false);
     const [askingAI, setAskingAI] = useState(false);
+
+    // Speed Quiz Battle State
+    const [isBattleOpen, setIsBattleOpen] = useState(false);
+    const [battleQIndex, setBattleQIndex] = useState(0);
+    const [battleSecondsLeft, setBattleSecondsLeft] = useState(15);
+    const [battleScore, setBattleScore] = useState(0);
+    const [battleSelected, setBattleSelected] = useState<string | null>(null);
+    const [battleFinished, setBattleFinished] = useState(false);
+
+    const battleQuestions = [
+        {
+            q: `In ${room?.subject || 'KCSE Revision'}, what is the fundamental principle applied when solving rate and ratio problems?`,
+            options: ['Direct & Inverse Proportion', 'Pythagorean Theorem', 'Binomial Expansion', 'Matrices Multiplication'],
+            answer: 'Direct & Inverse Proportion',
+            pts: 100
+        },
+        {
+            q: 'Which cognitive strategy yields the highest retention during active exam preparation?',
+            options: ['Active Recall & Spaced Testing', 'Passive Highlighting', 'Re-reading Notes 5 Times', 'Cramming Before Sleep'],
+            answer: 'Active Recall & Spaced Testing',
+            pts: 100
+        },
+        {
+            q: 'What is the standard step to verify a calculated result before submitting a paper?',
+            options: ['Dimensional Analysis & Unit Consistency', 'Ignoring Working Steps', 'Relying on Guesswork', 'Leaving It Blank'],
+            answer: 'Dimensional Analysis & Unit Consistency',
+            pts: 100
+        }
+    ];
 
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -41,6 +71,64 @@ export const ExamRoomChat: React.FC = () => {
     useEffect(() => {
         scrollToBottom();
     }, [messages]);
+
+    // Battle countdown
+    useEffect(() => {
+        if (!isBattleOpen || battleFinished) return;
+        const timer = setInterval(() => {
+            setBattleSecondsLeft(prev => {
+                if (prev <= 1) {
+                    handleBattleNextQuestion();
+                    return 15;
+                }
+                return prev - 1;
+            });
+        }, 1000);
+        return () => clearInterval(timer);
+    }, [isBattleOpen, battleQIndex, battleFinished]);
+
+    const handleStartBattle = () => {
+        setIsBattleOpen(true);
+        setBattleQIndex(0);
+        setBattleSecondsLeft(15);
+        setBattleScore(0);
+        setBattleSelected(null);
+        setBattleFinished(false);
+    };
+
+    const handleSelectBattleAnswer = (option: string) => {
+        if (battleSelected !== null) return;
+        setBattleSelected(option);
+        const currentQ = battleQuestions[battleQIndex];
+        if (option === currentQ.answer) {
+            setBattleScore(prev => prev + currentQ.pts);
+        }
+        setTimeout(() => {
+            handleBattleNextQuestion();
+        }, 1200);
+    };
+
+    const handleBattleNextQuestion = () => {
+        setBattleSelected(null);
+        if (battleQIndex + 1 < battleQuestions.length) {
+            setBattleQIndex(prev => prev + 1);
+            setBattleSecondsLeft(15);
+        } else {
+            setBattleFinished(true);
+            const victoryMsg: ExamRoomMessage = {
+                id: `battle-${Date.now()}`,
+                room_id: room?.id || 'room',
+                user_id: 'system',
+                user_name: 'Soma Battle Arena',
+                user_role: UserRole.SCHOOL,
+                message_type: 'AI_EXPLANATION',
+                content: `⚔️ **Live Battle Complete!**\nCandidate **${studentProfile?.name || 'Peer'}** completed the speed challenge with **${battleScore + (battleSelected === battleQuestions[battleQIndex]?.answer ? battleQuestions[battleQIndex]?.pts : 0)} XP**! 🏆`,
+                created_at: new Date().toISOString(),
+                upvotes: 3
+            };
+            setMessages(prev => [...prev, victoryMsg]);
+        }
+    };
 
     const handleLeaveRoom = async () => {
         if (!room || !studentProfile) return;
@@ -264,7 +352,14 @@ export const ExamRoomChat: React.FC = () => {
                             </div>
                         </div>
                     </div>
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={handleStartBattle}
+                            className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-md active:scale-95"
+                            title="Start Live Group Quiz Battle"
+                        >
+                            <Swords className="w-3.5 h-3.5" /> Battle ⚔️
+                        </button>
                         <button
                             onClick={handleLeaveRoom}
                             className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-red-500 transition-colors"
@@ -419,6 +514,88 @@ export const ExamRoomChat: React.FC = () => {
                 </div>
 
             </div>
+
+            {/* Speed Quiz Battle Modal */}
+            <AnimatePresence>
+                {isBattleOpen && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-md p-4"
+                    >
+                        <motion.div
+                            initial={{ scale: 0.95, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.95, opacity: 0 }}
+                            className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl max-w-lg w-full overflow-hidden"
+                        >
+                            {/* Battle Header */}
+                            <div className="bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 p-6 text-white text-center relative">
+                                <div className="flex items-center justify-between text-xs font-black uppercase tracking-widest mb-2">
+                                    <span className="flex items-center gap-1"><Flame className="w-4 h-4" /> Live Battle</span>
+                                    <span className="flex items-center gap-1"><Timer className="w-4 h-4" /> {battleSecondsLeft}s</span>
+                                </div>
+                                <h3 className="text-xl font-black">{room?.subject || 'KCSE'} Speed Challenge</h3>
+                                <p className="text-xs text-white/80 mt-1">Question {battleQIndex + 1} of {battleQuestions.length}</p>
+                            </div>
+
+                            {/* Battle Content */}
+                            {!battleFinished ? (
+                                <div className="p-6 space-y-6">
+                                    <h4 className="text-base font-bold text-slate-900 dark:text-white leading-relaxed">
+                                        {battleQuestions[battleQIndex].q}
+                                    </h4>
+
+                                    <div className="grid grid-cols-1 gap-2.5">
+                                        {battleQuestions[battleQIndex].options.map((opt) => {
+                                            const isSelected = battleSelected === opt;
+                                            const isCorrect = opt === battleQuestions[battleQIndex].answer;
+                                            return (
+                                                <button
+                                                    key={opt}
+                                                    type="button"
+                                                    disabled={battleSelected !== null}
+                                                    onClick={() => handleSelectBattleAnswer(opt)}
+                                                    className={`p-4 rounded-2xl border text-left font-bold text-sm transition-all flex items-center justify-between ${
+                                                        isSelected
+                                                            ? isCorrect
+                                                                ? 'bg-emerald-50 border-emerald-500 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300'
+                                                                : 'bg-rose-50 border-rose-500 text-rose-800 dark:bg-rose-950/40 dark:text-rose-300'
+                                                            : 'border-slate-200 dark:border-slate-800 hover:border-amber-400 text-slate-700 dark:text-slate-200'
+                                                    }`}
+                                                >
+                                                    <span>{opt}</span>
+                                                    {isSelected && (
+                                                        isCorrect ? <CheckCircle2 className="w-5 h-5 text-emerald-600" /> : <XCircle className="w-5 h-5 text-rose-600" />
+                                                    )}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="p-8 text-center space-y-5">
+                                    <div className="w-16 h-16 bg-amber-100 dark:bg-amber-900/30 text-amber-600 rounded-full flex items-center justify-center mx-auto shadow-inner">
+                                        <Trophy className="w-8 h-8" />
+                                    </div>
+                                    <div>
+                                        <h4 className="text-2xl font-black text-slate-900 dark:text-white">Battle Finished!</h4>
+                                        <p className="text-xs text-slate-500 mt-1">You earned <strong>{battleScore} XP</strong> for active recall mastery!</p>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsBattleOpen(false)}
+                                        className="w-full py-3.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white rounded-2xl font-black text-xs uppercase tracking-wider transition-all shadow-lg shadow-orange-500/20"
+                                    >
+                                        Return to Exam Room
+                                    </button>
+                                </div>
+                            )}
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </DashboardLayout>
     );
 };
