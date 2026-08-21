@@ -6,13 +6,14 @@ import {
     ScanLine, CheckCircle, Menu, X, CheckSquare, Play, BookOpen, LogOut,
     CreditCard, AlertCircle, FileText, Clock, Award, ArrowRight, School,
     Sparkles, Zap, Building2, TrendingUp, Quote, Globe, ShieldCheck, BarChart, Star,
-    Facebook, Twitter, Instagram, Linkedin, MapPin, Store, Mic, Send, Flame, Target, MessageCircle, Brain, CheckCheck, Headphones
+    Facebook, Twitter, Instagram, Linkedin, MapPin, Store, Mic, Send, Flame, Target, MessageCircle, Brain, CheckCheck, Headphones, Share2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ReactGA from 'react-ga4';
 import { UserRole } from '../types';
 import { useApp } from '../context/AppContext';
 import { supabase } from '../lib/supabase';
+import { saveStudyNote, getNotebookOwnerKey } from '../services/notebookService';
 import { GA_MEASUREMENT_ID } from '../config/analytics';
 
 // Import Assets
@@ -312,12 +313,16 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
         }
     };
 
-    const handleOpenDetailedView = async (questionOverride?: string) => {
+    const handleOpenDetailedView = async (questionOverride?: string, fileOverride?: File) => {
         const activeQuestion = (questionOverride || questionInput).trim();
         const previousQuestion = questionInput.trim();
-        if (!activeQuestion) return;
+        if (!activeQuestion && !fileOverride) return;
         setQuestionInput(activeQuestion);
-        trackFunnelEvent('detailed_view_clicked', { source: 'landing_hero', is_registered: isRegistered });
+        trackFunnelEvent('detailed_view_clicked', {
+            source: 'landing_hero',
+            is_registered: isRegistered,
+            has_file: Boolean(fileOverride),
+        });
         setDetailedLimitReached(false);
 
         // Registered users go straight to the learner workspace. Guests stay in the homepage demo preview.
@@ -332,7 +337,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
         try { count = parseInt(localStorage.getItem('soma_hero_detailed_uses') || '0', 10); } catch { /* ignore */ }
         setShowDetailedView(true);
         if (isGeneratingDetailed) return;
-        if (detailedAnswer && previousQuestion === activeQuestion) return;
+        if (detailedAnswer && previousQuestion === activeQuestion && !fileOverride) return;
         if (count >= 5) {
             setDetailedLimitReached(true);
             return;
@@ -344,23 +349,71 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
         setDetailedAnswer(null);
         setIsGeneratingDetailed(true);
         try {
-            const text = await callGeminiProxy(
-                `Provide a learner-friendly direct answer in short bullet points for the following question, aligned to the Kenyan CBC/KPSEA/KCSE curriculum. Lead with the direct answer first. Then add only the key points a learner needs to revise. Avoid long tutoring text and avoid paragraph blocks. Use these sections only if helpful: Direct answer, Key points, Example, Exam tip. Keep every bullet clear, short, and learner-ready. Do not use markdown bold. Question: ${activeQuestion}`
-            );
+            let text = '';
+            if (fileOverride && fileOverride.type.startsWith('image/')) {
+                const base64Data = await new Promise<string>((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onloadend = () => {
+                        const res = reader.result as string;
+                        resolve(res.split(',')[1] || res);
+                    };
+                    reader.onerror = reject;
+                    reader.readAsDataURL(fileOverride);
+                });
+                const payload = {
+                    feature: 'ai_generation',
+                    contents: [{
+                        role: 'user',
+                        parts: [
+                            { text: `Analyze this homework problem image and provide a learner-friendly direct answer in short bullet points, aligned to the Kenyan CBC/KCSE curriculum. Question: ${activeQuestion || 'Explain this homework question'}` },
+                            { inlineData: { data: base64Data, mimeType: fileOverride.type } }
+                        ]
+                    }]
+                };
+                const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/gemini-proxy`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+                        ...(studentCode ? { 'x-student-code': studentCode } : {})
+                    },
+                    body: JSON.stringify(payload)
+                });
+                const data = await resp.json();
+                text = data.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
+            } else {
+                text = await callGeminiProxy(
+                    `Provide a learner-friendly direct answer in short bullet points for the following question, aligned to the Kenyan CBC/KPSEA/KCSE curriculum. Lead with the direct answer first. Then add only the key points a learner needs to revise. Avoid long tutoring text and avoid paragraph blocks. Use these sections only if helpful: Direct answer, Key points, Example, Exam tip. Keep every bullet clear, short, and learner-ready. Do not use markdown bold. Question: ${activeQuestion}`
+                );
+            }
             const cleaned = (text || '')
                 .replace(/\*\*(.*?)\*\*/g, '$1')
-                .replace(/^[*-]\s/gm, '� ')
+                .replace(/^[*-]\s/gm, '• ')
                 .replace(/^#{1,6}\s*/gm, '')
                 .replace(/\*(.*?)\*/g, '$1')
                 .replace(/\*/g, '');
             setDetailedAnswer(cleaned || 'Unable to generate answer.');
+
+            // Auto-save to offline notebook so the student never loses it
+            try {
+                const ownerKey = getNotebookOwnerKey(studentCode, null);
+                saveStudyNote(ownerKey, {
+                    title: activeQuestion || (fileOverride ? fileOverride.name : 'Homework Solution'),
+                    content: cleaned,
+                    source: 'ai_answer',
+                    subject: 'General'
+                });
+            } catch {
+                // Ignore local save issues
+            }
+
             trackFunnelEvent('detailed_view_opened', { source: 'landing_hero', uses_left: Math.max(0, 5 - (count + 1)) });
         } catch (err: any) {
             const code = err?.message ?? '';
             if (code === 'GUEST_LIMIT_REACHED' || code === 'PLAN_LIMIT_REACHED' || code === 'FEATURE_LIMIT_REACHED') {
                 setDetailedLimitReached(true);
             } else if (code === 'RATE_LIMIT') {
-                setDetailedAnswer('High demand right now � please close and try again in a few seconds.');
+                setDetailedAnswer('High demand right now — please close and try again in a few seconds.');
             } else if (err instanceof TypeError) {
                 setDetailedAnswer('No connection. Please check your internet and try again.');
             } else {
@@ -917,7 +970,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                 isRegistered={isRegistered}
                 userName={studentProfile?.name || teacherProfile?.name}
                 onStartLearning={() => handleRoleSelect(UserRole.LEARNER)}
-                onAskQuestion={(question) => { void handleOpenDetailedView(question); }}
+                onAskQuestion={(question, file) => { void handleOpenDetailedView(question, file); }}
                 onLearnerShortcut={handleLearnerQuickStart}
                 onTeacher={() => handleRoleSelect(UserRole.TEACHER)}
                 onTeacherCompose={handleTeacherCompose}
@@ -2362,11 +2415,30 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                             </div>
                                         ) : detailedAnswer ? (
                                             <div className="space-y-4 text-sm leading-relaxed text-slate-700 dark:text-slate-300">
-                                                <div className="rounded-2xl border border-indigo-100 bg-indigo-50/80 p-4 text-indigo-950 dark:border-indigo-900/40 dark:bg-indigo-950/30 dark:text-indigo-100">
-                                                    <p className="text-[10px] font-black uppercase tracking-[0.18em] text-indigo-600 dark:text-indigo-300">Direct answer guide</p>
-                                                    <p className="mt-2 text-sm font-medium">We keep the answer open here so guests can see the direct answer first before signing up.</p>
+                                                <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-indigo-100 bg-indigo-50/80 p-3.5 text-indigo-950 dark:border-indigo-900/40 dark:bg-indigo-950/30 dark:text-indigo-100">
+                                                    <div className="min-w-0">
+                                                        <div className="flex items-center gap-2">
+                                                            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-indigo-600 dark:text-indigo-300">CBC &amp; KCSE Direct Answer</p>
+                                                            <span className="inline-flex items-center gap-1 rounded-full border border-emerald-300 bg-emerald-50 px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300">
+                                                                <CheckCircle className="h-3 w-3 text-emerald-600" /> Saved Offline
+                                                            </span>
+                                                        </div>
+                                                        <p className="mt-1 text-xs font-medium text-slate-600 dark:text-slate-300">Point-form notes saved to your notebook for revision.</p>
+                                                    </div>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            const text = `*Soma AI Homework Solution*\n\n*Question:* ${questionInput}\n\n*Solution:*\n${detailedAnswer || ''}\n\n_Studying with Soma AI (CBC & KCSE Study Companion)_`;
+                                                            window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank', 'noopener,noreferrer');
+                                                            trackFunnelEvent('homework_shared_whatsapp', { question: questionInput, source: 'detailed_view_modal' });
+                                                        }}
+                                                        className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-300 bg-white px-3 py-1.5 text-xs font-black text-emerald-800 hover:bg-emerald-50 shadow-sm transition"
+                                                        title="Share solution to WhatsApp"
+                                                    >
+                                                        <Share2 className="h-3.5 w-3.5 text-emerald-600" /> WhatsApp Solution
+                                                    </button>
                                                 </div>
-                                                <div className="whitespace-pre-wrap font-medium">{detailedAnswer}</div>
+                                                <div className="whitespace-pre-wrap font-medium rounded-xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900/40 p-4">{detailedAnswer}</div>
                                             </div>
                                         ) : (
                                             <div className="space-y-4">

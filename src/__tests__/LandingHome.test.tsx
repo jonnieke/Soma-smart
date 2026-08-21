@@ -70,7 +70,40 @@ describe('LandingHome', () => {
     });
     fireEvent.click(screen.getByRole('button', { name: /send question/i }));
 
-    expect(baseProps.onAskQuestion).toHaveBeenCalledWith('What is photosynthesis?');
+    expect(baseProps.onAskQuestion).toHaveBeenCalledWith('What is photosynthesis?', undefined);
+  });
+
+  it('populates question when a quick syllabus chip is clicked', () => {
+    render(
+      <MemoryRouter>
+        <LandingHome {...baseProps} />
+      </MemoryRouter>
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Grade 8 Science' }));
+    expect(screen.getByLabelText(/ask a homework question/i)).toHaveValue(
+      'Grade 8 Science: How do plants adapt to arid environments?'
+    );
+  });
+
+  it('submits homework with attached photo file', () => {
+    const { container } = render(
+      <MemoryRouter>
+        <LandingHome {...baseProps} />
+      </MemoryRouter>
+    );
+
+    const cameraInput = container.querySelector<HTMLInputElement>('input[aria-label="Capture homework photo"]');
+    const photoFile = new File(['image-bytes'], 'homework.jpg', { type: 'image/jpeg' });
+    fireEvent.change(cameraInput!, { target: { files: [photoFile] } });
+
+    expect(screen.getByText(/attached: homework\.jpg/i)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /send question/i }));
+
+    expect(baseProps.onAskQuestion).toHaveBeenCalledWith(
+      'Analyze and explain homework problem from homework.jpg',
+      photoFile
+    );
   });
 
   it('hands a teacher request to the selected workflow', () => {
@@ -127,15 +160,15 @@ describe('LandingHome', () => {
   });
 
   it('rejects unsupported attachment types with a useful message', () => {
-    const { container } = render(
+    render(
       <MemoryRouter>
         <LandingHome {...baseProps} />
       </MemoryRouter>
     );
-    const upload = container.querySelector<HTMLInputElement>('input[accept*=".pdf"]');
+    const upload = screen.getByLabelText<HTMLInputElement>(/attach notes or work/i);
     const file = new File(['unsafe'], 'answers.exe', { type: 'application/x-msdownload' });
 
-    fireEvent.change(upload!, { target: { files: [file] } });
+    fireEvent.change(upload, { target: { files: [file] } });
 
     expect(screen.getByRole('status')).toHaveTextContent(/file type is not supported/i);
     expect(baseProps.onTeacherCompose).not.toHaveBeenCalled();

@@ -9,9 +9,9 @@ test('homepage exposes the teacher-first composer and auth handoff', async ({ pa
 
   await expect(page.getByRole('button', { name: 'Soma AI home' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Create with Soma' })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Voice' })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Scan' })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Upload' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Start voice input' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Scan', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Upload', exact: true })).toBeVisible();
 
   await page.getByLabel('Describe what you want Soma to do').fill('Create a Grade 8 science lesson plan');
   await page.getByRole('button', { name: 'Continue' }).click();

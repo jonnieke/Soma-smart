@@ -41,7 +41,7 @@ type Props = {
   isRegistered: boolean;
   userName?: string;
   onStartLearning: () => void;
-  onAskQuestion: (question: string) => void;
+  onAskQuestion: (question: string, file?: File) => void;
   onLearnerShortcut: (
     targetTab: 'SMART_TUTOR' | 'RESOURCES' | 'SUBJECTS' | 'TALKBACK' | 'NOTEBOOK',
     targetIntent?: string
@@ -798,7 +798,13 @@ const LandingFooter: React.FC<{
 
 const AskAkiliDemo: React.FC<Props> = (props) => {
   const [question, setQuestion] = React.useState('');
+  const [attachedFile, setAttachedFile] = React.useState<File | null>(null);
+  const [isListening, setIsListening] = React.useState(false);
+  const [voiceNotice, setVoiceNotice] = React.useState<string | null>(null);
   const [demoView, setDemoView] = React.useState<'answer' | 'steps' | 'quiz' | 'note'>('answer');
+  const cameraInputRef = React.useRef<HTMLInputElement | null>(null);
+  const fileInputRef = React.useRef<HTMLInputElement | null>(null);
+
   const sampleQuestion = 'What is photosynthesis?';
   const sampleAnswer = 'Photosynthesis is the process used by green plants to make their own food. They use sunlight, water, and carbon dioxide to produce glucose (food) and oxygen.';
   const sampleSteps = [
@@ -812,15 +818,83 @@ const AskAkiliDemo: React.FC<Props> = (props) => {
     { q: 'What is the main food made?', a: 'Glucose' },
   ];
 
+  const quickChips = [
+    { label: 'Grade 8 Science', prompt: 'Grade 8 Science: How do plants adapt to arid environments?' },
+    { label: 'Form 3 Math', prompt: 'Form 3 Mathematics: Solve quadratic equations by completing the square.' },
+    { label: 'KPSEA English', prompt: 'KPSEA English: What are the main parts of speech with examples?' },
+    { label: 'KCSE Biology', prompt: 'KCSE Biology: Explain the process of gaseous exchange in alveoli.' },
+    { label: 'Grade 7 Agriculture', prompt: 'Grade 7 Agriculture: Describe methods of soil conservation.' },
+  ];
+
   const openQuestion = (override?: string) => {
     const cleaned = (override || question).trim();
-    if (!cleaned) return;
+    if (!cleaned && !attachedFile) return;
     props.onTrack('ask_akili_home_question_submitted', {
       source: 'landing_hero',
       question_length: cleaned.length,
+      has_attachment: Boolean(attachedFile),
     });
-    props.onAskQuestion(cleaned);
+    props.onAskQuestion(cleaned || (attachedFile ? `Explain attached question from ${attachedFile.name}` : ''), attachedFile || undefined);
     setQuestion('');
+    setAttachedFile(null);
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setAttachedFile(file);
+    if (!question.trim()) {
+      setQuestion(`Analyze and explain homework problem from ${file.name}`);
+    }
+    props.onTrack('ask_akili_hero_file_attached', {
+      source: 'landing_hero',
+      fileName: file.name,
+      fileType: file.type,
+    });
+  };
+
+  const startVoiceInput = () => {
+    const SpeechRecognition =
+      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+
+    if (!SpeechRecognition) {
+      setVoiceNotice('Voice input is not supported on this browser. Please type your question.');
+      props.onTrack('ask_akili_voice_unsupported', { source: 'landing_hero' });
+      return;
+    }
+
+    try {
+      const recognition = new SpeechRecognition();
+      recognition.lang = 'en-KE';
+      recognition.interimResults = false;
+      recognition.maxAlternatives = 1;
+
+      setIsListening(true);
+      setVoiceNotice('Listening... speak your homework question now.');
+
+      recognition.onresult = (event: any) => {
+        const transcript = event.results?.[0]?.[0]?.transcript || '';
+        if (transcript) {
+          setQuestion((prev) => (prev ? `${prev} ${transcript}` : transcript));
+          setVoiceNotice(null);
+          props.onTrack('ask_akili_voice_transcribed', { source: 'landing_hero', textLength: transcript.length });
+        }
+      };
+
+      recognition.onerror = () => {
+        setIsListening(false);
+        setVoiceNotice('Could not hear clearly. Please try again or type.');
+      };
+
+      recognition.onend = () => {
+        setIsListening(false);
+      };
+
+      recognition.start();
+    } catch {
+      setIsListening(false);
+      setVoiceNotice('Voice recognition could not start.');
+    }
   };
 
   const showSampleQuestion = (view: 'answer' | 'steps' | 'quiz' | 'note') => {
@@ -832,6 +906,25 @@ const AskAkiliDemo: React.FC<Props> = (props) => {
 
   return (
     <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl shadow-slate-300/60">
+      {/* Hidden file & camera inputs */}
+      <input
+        type="file"
+        ref={cameraInputRef}
+        accept="image/*"
+        capture="environment"
+        onChange={handleFileChange}
+        className="hidden"
+        aria-label="Capture homework photo"
+      />
+      <input
+        type="file"
+        ref={fileInputRef}
+        accept="image/*,.pdf,.doc,.docx"
+        onChange={handleFileChange}
+        className="hidden"
+        aria-label="Upload homework document"
+      />
+
       <div className="flex items-center justify-between bg-[#051b50] px-4 py-3 text-white">
         <div className="flex items-center gap-3">
           <img
@@ -841,13 +934,20 @@ const AskAkiliDemo: React.FC<Props> = (props) => {
             height={42}
             className="h-10 w-10 rounded-full border-2 border-white/30 bg-white object-cover"
           />
-          <h2 className="text-lg font-black">Ask Akili</h2>
+          <div>
+            <h2 className="text-lg font-black leading-none">Ask Akili</h2>
+            <p className="text-[10px] font-semibold text-blue-200 mt-1">Instant CBC &amp; KCSE Solutions</p>
+          </div>
         </div>
-        <span className="text-sm font-bold text-blue-100">Point-form answer</span>
+        <span className="rounded-full bg-blue-500/20 px-2.5 py-1 text-xs font-bold text-blue-100 border border-blue-400/30">
+          Point-form answer
+        </span>
       </div>
+
       <div className="space-y-3 p-4">
-        <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-400 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100">
-          <Search className="h-4 w-4 shrink-0" />
+        {/* Search input with camera, upload, and voice icons */}
+        <div className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-2.5 py-2 text-sm text-slate-400 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100">
+          <Search className="h-4 w-4 shrink-0 text-slate-400" />
           <input
             type="text"
             value={question}
@@ -862,19 +962,96 @@ const AskAkiliDemo: React.FC<Props> = (props) => {
             className="w-full bg-transparent outline-none text-sm text-slate-800 placeholder:text-slate-400"
             aria-label="Ask a homework question"
           />
+
+          {/* Snap photo button */}
+          <button
+            type="button"
+            onClick={() => cameraInputRef.current?.click()}
+            title="Snap homework photo"
+            aria-label="Snap photo"
+            className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-500 hover:bg-blue-50 hover:text-blue-600 transition"
+          >
+            <Camera className="h-4 w-4" />
+          </button>
+
+          {/* Upload document/image */}
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            title="Upload homework image or PDF"
+            aria-label="Upload homework file"
+            className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-500 hover:bg-blue-50 hover:text-blue-600 transition"
+          >
+            <Upload className="h-4 w-4" />
+          </button>
+
+          {/* Voice input button */}
+          <button
+            type="button"
+            onClick={startVoiceInput}
+            title="Speak question"
+            aria-label="Ask with voice"
+            className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition ${isListening ? 'bg-red-50 text-red-600 animate-pulse' : 'text-slate-500 hover:bg-blue-50 hover:text-blue-600'}`}
+          >
+            <Mic className="h-4 w-4" />
+          </button>
+
+          {/* Submit button */}
           <button
             type="button"
             onClick={() => openQuestion()}
-            disabled={!question.trim()}
-            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-blue-600 text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
+            disabled={!question.trim() && !attachedFile}
+            className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-600 text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
             aria-label="Send question"
           >
             <ArrowRight className="h-4 w-4" />
           </button>
         </div>
 
-        <div className="rounded-lg border border-blue-200 bg-blue-50/50 px-3 py-2.5 text-sm font-bold text-slate-800">
-          Photosynthesis: how green plants make food
+        {/* Attachment preview banner */}
+        {attachedFile && (
+          <div className="flex items-center justify-between gap-2 rounded-lg border border-indigo-200 bg-indigo-50/70 px-3 py-1.5 text-xs text-indigo-900">
+            <span className="truncate font-semibold">Attached: {attachedFile.name}</span>
+            <button
+              type="button"
+              onClick={() => setAttachedFile(null)}
+              className="text-indigo-600 hover:text-indigo-900 font-bold ml-1"
+              aria-label="Remove attachment"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        )}
+
+        {/* Voice status feedback */}
+        {voiceNotice && (
+          <p className="text-xs font-semibold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-md" role="status">
+            {voiceNotice}
+          </p>
+        )}
+
+        {/* Quick subject & grade chips */}
+        <div className="space-y-1.5">
+          <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">Quick syllabus topics</p>
+          <div className="flex flex-wrap gap-1.5">
+            {quickChips.map((chip) => (
+              <button
+                key={chip.label}
+                type="button"
+                onClick={() => {
+                  setQuestion(chip.prompt);
+                  props.onTrack('ask_akili_quick_chip_clicked', { label: chip.label, source: 'landing_hero' });
+                }}
+                className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-bold text-slate-700 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 transition"
+              >
+                {chip.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="rounded-lg border border-blue-200 bg-blue-50/50 px-3 py-2 text-xs font-bold text-slate-800">
+          Sample: Photosynthesis (How green plants make food)
         </div>
 
         <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
@@ -923,24 +1100,24 @@ const AskAkiliDemo: React.FC<Props> = (props) => {
               props.onTrack('ask_akili_demo_steps_clicked', { source: 'ask_akili_demo' });
             }}
             aria-pressed={demoView === 'steps'}
-            className={`flex min-h-16 flex-col items-start justify-center gap-1 rounded-lg border px-3 py-2 text-left transition ${demoView === 'steps' ? 'border-blue-300 bg-blue-50 text-blue-800 shadow-sm' : 'border-slate-200 text-slate-800 hover:bg-slate-50'}`}
+            className={`flex min-h-14 flex-col items-start justify-center gap-0.5 rounded-lg border px-3 py-1.5 text-left transition ${demoView === 'steps' ? 'border-blue-300 bg-blue-50 text-blue-800 shadow-sm' : 'border-slate-200 text-slate-800 hover:bg-slate-50'}`}
           >
-            <span className="flex items-center gap-2 text-xs font-black">
-              <ListChecks className="h-4 w-4 text-blue-600" /> Explain it
+            <span className="flex items-center gap-1.5 text-xs font-black">
+              <ListChecks className="h-3.5 w-3.5 text-blue-600" /> Explain it
             </span>
-            <span className="text-[11px] font-semibold leading-4 text-slate-500">Show a short photosynthesis answer</span>
+            <span className="text-[10px] font-semibold text-slate-500">Step-by-step points</span>
           </button>
           <button
             onClick={() => {
               props.onTrack('latest_exam_papers_demo_clicked', { source: 'ask_akili_demo' });
               props.onRevision();
             }}
-            className="flex min-h-16 flex-col items-start justify-center gap-1 rounded-lg border border-emerald-200 px-3 py-2 text-left text-slate-800 transition hover:bg-emerald-50"
+            className="flex min-h-14 flex-col items-start justify-center gap-0.5 rounded-lg border border-emerald-200 px-3 py-1.5 text-left text-slate-800 transition hover:bg-emerald-50"
           >
-            <span className="flex items-center gap-2 text-xs font-black">
-              <FileText className="h-4 w-4 text-emerald-600" /> Latest papers
+            <span className="flex items-center gap-1.5 text-xs font-black">
+              <FileText className="h-3.5 w-3.5 text-emerald-600" /> Latest papers
             </span>
-            <span className="text-[11px] font-semibold leading-4 text-slate-500">Open exam papers that work</span>
+            <span className="text-[10px] font-semibold text-slate-500">Practice past papers</span>
           </button>
           <button
             onClick={() => {
@@ -948,12 +1125,12 @@ const AskAkiliDemo: React.FC<Props> = (props) => {
               props.onTrack('ask_akili_demo_quiz_clicked', { source: 'ask_akili_demo' });
             }}
             aria-pressed={demoView === 'quiz'}
-            className={`flex min-h-16 flex-col items-start justify-center gap-1 rounded-lg border px-3 py-2 text-left transition ${demoView === 'quiz' ? 'border-violet-300 bg-violet-50 text-violet-800 shadow-sm' : 'border-slate-200 text-slate-800 hover:bg-slate-50'}`}
+            className={`flex min-h-14 flex-col items-start justify-center gap-0.5 rounded-lg border px-3 py-1.5 text-left transition ${demoView === 'quiz' ? 'border-violet-300 bg-violet-50 text-violet-800 shadow-sm' : 'border-slate-200 text-slate-800 hover:bg-slate-50'}`}
           >
-            <span className="flex items-center gap-2 text-xs font-black">
-              <CircleHelp className="h-4 w-4 text-violet-600" /> Test me
+            <span className="flex items-center gap-1.5 text-xs font-black">
+              <CircleHelp className="h-3.5 w-3.5 text-violet-600" /> Test me
             </span>
-            <span className="text-[11px] font-semibold leading-4 text-slate-500">Show a short photosynthesis quiz</span>
+            <span className="text-[10px] font-semibold text-slate-500">Instant micro-quiz</span>
           </button>
           <button
             onClick={() => {
@@ -961,18 +1138,18 @@ const AskAkiliDemo: React.FC<Props> = (props) => {
               props.onTrack('save_to_notebook_demo_clicked', { source: 'ask_akili_demo' });
             }}
             aria-pressed={demoView === 'note'}
-            className={`flex min-h-16 flex-col items-start justify-center gap-1 rounded-lg border px-3 py-2 text-left transition ${demoView === 'note' ? 'border-blue-300 bg-blue-50 text-blue-800 shadow-sm' : 'border-slate-200 text-slate-800 hover:bg-slate-50'}`}
+            className={`flex min-h-14 flex-col items-start justify-center gap-0.5 rounded-lg border px-3 py-1.5 text-left transition ${demoView === 'note' ? 'border-blue-300 bg-blue-50 text-blue-800 shadow-sm' : 'border-slate-200 text-slate-800 hover:bg-slate-50'}`}
           >
-            <span className="flex items-center gap-2 text-xs font-black">
-              <Notebook className="h-4 w-4 text-blue-600" /> Save it
+            <span className="flex items-center gap-1.5 text-xs font-black">
+              <Notebook className="h-3.5 w-3.5 text-blue-600" /> Save it
             </span>
-            <span className="text-[11px] font-semibold leading-4 text-slate-500">Preview the saved notebook note</span>
+            <span className="text-[10px] font-semibold text-slate-500">Offline notebook</span>
           </button>
         </div>
         <button
           type="button"
           onClick={() => openQuestion(sampleQuestion)}
-          className="flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-3 text-sm font-black text-white transition hover:bg-blue-700"
+          className="flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-black text-white transition hover:bg-blue-700"
         >
           Open this full answer in Ask Akili <ArrowRight className="h-4 w-4" />
         </button>
@@ -1447,7 +1624,7 @@ const TeacherComposer: React.FC<{
                 <Upload className="h-4 w-4" /> Upload
               </button>
               <input ref={scanRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={(event) => chooseFile(event.target.files?.[0], 'SCAN')} />
-              <input ref={uploadRef} type="file" accept="image/*,.pdf,.doc,.docx,.ppt,.pptx,.txt" className="hidden" onChange={(event) => chooseFile(event.target.files?.[0], 'UPLOAD')} />
+              <input ref={uploadRef} type="file" aria-label="Attach notes or work" accept="image/*,.pdf,.doc,.docx,.ppt,.pptx,.txt" className="hidden" onChange={(event) => chooseFile(event.target.files?.[0], 'UPLOAD')} />
             </div>
             <button type="button" onClick={submit} aria-describedby="teacher-composer-status" className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-indigo-600 px-6 text-sm font-black text-white shadow-lg shadow-indigo-200 transition hover:bg-indigo-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:ring-offset-2">
               Continue <Send className="h-4 w-4" />
