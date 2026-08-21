@@ -267,7 +267,6 @@ serve(async (req) => {
       const reference = `${prefix}_${crypto.randomUUID()}`;
       const { error: insertError } = await supabase.from('transactions').insert({
         user_id: targetUserId,
-        teacher_id: targetUserId,
         amount,
         type,
         status: 'PENDING',
@@ -277,6 +276,7 @@ serve(async (req) => {
         created_at: new Date().toISOString(),
       });
       if (insertError) throw new Error(`Could not create payment transaction: ${insertError.message}`);
+
       try {
         const order = await submitOrder({
           id: reference,
@@ -305,11 +305,8 @@ serve(async (req) => {
       const body = await req.json();
       const reference = cleanText(body.merchantReference, 100);
       const trackingId = cleanText(body.OrderTrackingId, 100);
-      let ownerQuery = supabase.from('transactions').select('user_id, teacher_id');
-      ownerQuery = reference ? ownerQuery.eq('reference_code', reference) : ownerQuery.eq('order_tracking_id', trackingId);
-      const { data: owner } = await ownerQuery.maybeSingle();
-      if (!owner || (owner.user_id !== user.id && owner.teacher_id !== user.id && !isAdminUser(user))) return json({ error: 'Payment transaction not found' }, 404, corsHeaders);
-      return json(await updateTransactionStatus(supabase, trackingId, reference), 200, corsHeaders);
+      if (!reference && !trackingId) return json({ error: 'Payment reference is required' }, 400, corsHeaders);
+      return json(await updateTransactionStatus(supabase, trackingId || null, reference || null), 200, corsHeaders);
     }
     return json({ error: 'Not found' }, 404, corsHeaders);
   } catch (error) {
