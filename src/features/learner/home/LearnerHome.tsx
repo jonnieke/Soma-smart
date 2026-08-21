@@ -18,6 +18,7 @@ import {
   MoreHorizontal,
   ScanLine,
   Search,
+  ShieldCheck,
   Sparkles,
   Target,
   Upload,
@@ -38,6 +39,8 @@ type LearnerHomeProps = {
   learnerName: string;
   grade: string;
   sessionsLeft: number;
+  isPro?: boolean;
+  subscriptionPlan?: string;
   avatarUrl?: string | null;
   latestTopic?: string;
   latestTopicDescription?: string;
@@ -48,6 +51,7 @@ type LearnerHomeProps = {
   featuredSubject?: string;
   onOpenMenu: () => void;
   onProfile: () => void;
+  onPlans?: () => void;
   onTeach: (topic: string) => void;
   onScan: () => void;
   onUpload: () => void;
@@ -194,16 +198,23 @@ export const LearnerHome: React.FC<LearnerHomeProps> = ({
   learnerName,
   grade,
   sessionsLeft,
+  isPro = false,
+  subscriptionPlan,
   avatarUrl,
   latestTopic = 'Photosynthesis',
-  latestTopicDescription,
-  latestTopicSummary = [],
-  latestProgress = 70,
+  latestTopicDescription = 'Plants turn light, water, and air into food.',
+  latestTopicSummary = [
+    'Chloroplasts absorb sunlight inside plant leaves.',
+    'Water moves from roots while carbon dioxide enters through stomata.',
+    'Glucose gives energy to the plant and oxygen is released for us.',
+  ],
+  latestProgress = 0,
   recommendedTopic = 'Linear Equations',
-  recommendationReason,
-  featuredSubject,
+  recommendationReason = 'A short revision lesson should help lock in the idea.',
+  featuredSubject = 'Mathematics',
   onOpenMenu,
   onProfile,
+  onPlans,
   onTeach,
   onScan,
   onUpload,
@@ -257,10 +268,32 @@ export const LearnerHome: React.FC<LearnerHomeProps> = ({
               <span>{grade || 'Grade 7'}</span>
               <ChevronDown className="h-4 w-4" />
             </button>
-            <button type="button" onClick={onProfile} className="hidden h-11 items-center gap-2 rounded-2xl border border-[#e5e3f4] bg-white px-4 text-sm font-semibold text-[#313a60] sm:flex">
-              <Sparkles className="h-4 w-4 text-amber-500" />
-              <span>{sessionsLeft} learning session{sessionsLeft === 1 ? '' : 's'} left</span>
-            </button>
+
+            {/* Payment / Upgrade Button */}
+            {!isPro ? (
+              <button
+                type="button"
+                onClick={onPlans || onProfile}
+                className={`h-11 flex items-center gap-2 rounded-2xl border-2 px-3.5 sm:px-4 text-xs sm:text-sm font-black transition-all shadow-xs ${
+                  sessionsLeft <= 0
+                    ? 'border-rose-300 bg-rose-50 text-rose-700 hover:bg-rose-100'
+                    : 'border-indigo-400 bg-indigo-50/80 text-indigo-800 hover:bg-indigo-100'
+                }`}
+              >
+                <Sparkles className="h-4 w-4 text-amber-500 animate-pulse" />
+                <span>{sessionsLeft <= 0 ? '0 Left · Get Pass' : `${sessionsLeft} Free · Upgrade`}</span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={onPlans || onProfile}
+                className="h-11 flex items-center gap-2 rounded-2xl border border-emerald-300 bg-emerald-50 px-3.5 sm:px-4 text-xs sm:text-sm font-black text-emerald-800 hover:bg-emerald-100 transition-colors shadow-2xs"
+              >
+                <ShieldCheck className="h-4 w-4 text-emerald-600" />
+                <span>{subscriptionPlan && subscriptionPlan !== 'FREE' ? `${subscriptionPlan} · Upgrade` : 'PRO · Upgrade'}</span>
+              </button>
+            )}
+
             <button type="button" onClick={onProfile} className="flex h-11 items-center gap-2" aria-label="Open learner profile">
               {avatarUrl ? (
                 <img src={avatarUrl} alt="Learner profile" className="h-11 w-11 rounded-full object-cover" />

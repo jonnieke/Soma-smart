@@ -4969,6 +4969,8 @@ ${explanation.explanation}
           learnerName={studentProfile?.name || profile?.name || 'Learner'}
           grade={studentProfile?.grade || 'Grade 7'}
           sessionsLeft={sessionsLeft}
+          isPro={isPro}
+          subscriptionPlan={subscriptionPlan}
           latestTopic={latestLearningSnapshot.topic}
           latestTopicDescription={latestLearningSnapshot.description}
           latestTopicSummary={latestLearningSnapshot.summaryPoints}
@@ -4982,6 +4984,7 @@ ${explanation.explanation}
           featuredSubject={featuredSubject}
           onOpenMenu={() => setSidebarOpen(true)}
           onProfile={() => setMode('PROFILE')}
+          onPlans={() => runWithRecallExitGuard(() => setMode('PRICING'))}
           onTeach={(topic) => {
             setPromptText(topic);
             void handlePromptSubmit(topic);
@@ -9397,6 +9400,8 @@ ${explanation.explanation}
         onPlans={() => runWithRecallExitGuard(() => setMode('PRICING'))}
         onParent={() => navigate('/parent')}
         sessionsLeft={Math.max(0, 5 - usageCount)}
+        isPro={isPro}
+        subscriptionPlan={subscriptionPlan}
       />
 
       {/* Main Content */}

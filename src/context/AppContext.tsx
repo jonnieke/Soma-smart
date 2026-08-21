@@ -256,18 +256,26 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
 
 
-  const [studentCode, setStudentCode] = useState<string>("");
-  const [usageCount, setUsageCount] = useState<number>(() => {
-    const saved = localStorage.getItem('somo_daily_usage');
-    const lastDate = localStorage.getItem('somo_daily_date');
-    const today = new Date().toLocaleDateString();
-    if (lastDate !== today) {
-      localStorage.setItem('somo_daily_date', today);
-      localStorage.setItem('somo_daily_usage', '0');
-      localStorage.removeItem('somo_guest_usage_general');
+  const getTodayISO = () => new Date().toISOString().slice(0, 10);
+  const getPersistedDailyCount = (key: string, dateKey: string): number => {
+    try {
+      const today = getTodayISO();
+      const lastDate = localStorage.getItem(dateKey);
+      if (lastDate !== today) {
+        localStorage.setItem(dateKey, today);
+        localStorage.setItem(key, '0');
+        return 0;
+      }
+      const saved = localStorage.getItem(key);
+      return saved ? Math.max(0, parseInt(saved, 10) || 0) : 0;
+    } catch {
       return 0;
     }
-    return saved ? parseInt(saved) : 0;
+  };
+
+  const [studentCode, setStudentCode] = useState<string>("");
+  const [usageCount, setUsageCount] = useState<number>(() => {
+    return getPersistedDailyCount('somo_daily_usage', 'somo_daily_date');
   });
   // studyUsageCount removed
   const [isRegistered, setIsRegistered] = useState<boolean>(false);
@@ -279,15 +287,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   // Teacher State — guest count persisted daily (registered count comes from Supabase on login)
   const [teacherUsageCount, setTeacherUsageCount] = useState<number>(() => {
-    const saved = localStorage.getItem('soma_teacher_usage');
-    const lastDate = localStorage.getItem('soma_teacher_date');
-    const today = new Date().toLocaleDateString();
-    if (lastDate !== today) {
-      localStorage.setItem('soma_teacher_date', today);
-      localStorage.setItem('soma_teacher_usage', '0');
-      return 0;
-    }
-    return saved ? parseInt(saved) : 0;
+    return getPersistedDailyCount('soma_teacher_usage', 'soma_teacher_date');
   });
   const [teacherDarasaUsage, setTeacherDarasaUsage] = useState<number>(0);
   const [teacherProfile, setTeacherProfile] = useState<TeacherProfile | null>(null);
@@ -314,15 +314,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   // Revision State — persisted daily (same pattern as somo_daily_usage)
   const [revisionUsageCount, setRevisionUsageCount] = useState<number>(() => {
-    const saved = localStorage.getItem('soma_revision_usage');
-    const lastDate = localStorage.getItem('soma_revision_date');
-    const today = new Date().toLocaleDateString();
-    if (lastDate !== today) {
-      localStorage.setItem('soma_revision_date', today);
-      localStorage.setItem('soma_revision_usage', '0');
-      return 0;
-    }
-    return saved ? parseInt(saved) : 0;
+    return getPersistedDailyCount('soma_revision_usage', 'soma_revision_date');
   });
 
   // Super Teacher Phase 2: Adaptive Tutoring State
@@ -340,16 +332,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [subscriptionPlan, setSubscriptionPlan] = useState<SubscriptionTier>('FREE');
   const [subscriptionExpiry, setSubscriptionExpiry] = useState<string | null>(null);
   const [downloadUsageCount, setDownloadUsageCount] = useState<number>(() => {
-    const saved = localStorage.getItem('soma_download_usage');
-    const lastDate = localStorage.getItem('soma_download_date');
-    const today = new Date().toLocaleDateString();
-
-    if (lastDate !== today) {
-      localStorage.setItem('soma_download_date', today);
-      localStorage.setItem('soma_download_usage', '0');
-      return 0;
-    }
-    return parseInt(saved || '0');
+    return getPersistedDailyCount('soma_download_usage', 'soma_download_date');
   });
   const [extraDownloads, setExtraDownloads] = useState<number>(() => {
     return parseInt(localStorage.getItem('soma_extra_downloads') || '0');
@@ -1848,8 +1831,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   }, [userId]);
 
   const startGuestSession = () => {
-    const saved = parseInt(localStorage.getItem('somo_guest_usage_general') || '0');
-    const savedRevision = parseInt(localStorage.getItem('somo_guest_usage_revision') || '0');
+    const saved = getPersistedDailyCount('somo_daily_usage', 'somo_daily_date');
+    const savedRevision = getPersistedDailyCount('soma_revision_usage', 'soma_revision_date');
     setUsageCount(saved);
     setRevisionUsageCount(savedRevision);
 
@@ -1870,11 +1853,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       return;
     }
 
-    // Non-registered / Guest: persist to the daily key and reset it at midnight.
+    // Non-registered / Guest: persist to daily key
     setUsageCount(prev => {
       const newCount = prev + 1;
-      localStorage.removeItem('somo_guest_usage_general');
-      const today = new Date().toLocaleDateString();
+      const today = getTodayISO();
       localStorage.setItem('somo_daily_usage', newCount.toString());
       localStorage.setItem('somo_daily_date', today);
       return newCount;
@@ -1894,13 +1876,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
     setRevisionUsageCount(prev => {
       const newCount = prev + 1;
-      const today = new Date().toLocaleDateString();
+      const today = getTodayISO();
       localStorage.setItem('soma_revision_usage', newCount.toString());
       localStorage.setItem('soma_revision_date', today);
-      // Legacy guest key kept for backward compat
-      if (role === UserRole.GUEST) {
-        localStorage.setItem('soma_guest_usage_revision', newCount.toString());
-      }
       return newCount;
     });
   };

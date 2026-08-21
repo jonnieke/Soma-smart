@@ -69,7 +69,7 @@ export const RevisionPortal: React.FC = () => {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
     const requestedPaperId = searchParams.get('paper');
-    const { isRegistered, studentCode, setRole, logout, studentProfile } = useApp();
+    const { isRegistered, studentCode, setRole, logout, studentProfile, isPro, subscriptionPlan } = useApp();
     const [showLogin, setShowLogin] = useState(false);
     const [showRegister, setShowRegister] = useState(false);
     const [showLogoutModal, setShowLogoutModal] = useState(false);
@@ -126,14 +126,44 @@ export const RevisionPortal: React.FC = () => {
         }
     }, [loadingExams, pathway, pathwayCounts, pathwayExams.length, publishedExams.length, studentProfile?.grade]);
 
-    const startRevision = (openExamId?: string | number, modeOverride?: string) => {
-        setRole(UserRole.REVISION);
-        const search = new URLSearchParams();
-        if (openExamId) search.set('paper', String(openExamId));
-        if (modeOverride) search.set('mode', modeOverride);
-        if (pathway) search.set('pathway', pathway);
-        const query = search.toString();
-        navigate(`/revision/dashboard${query ? `?${query}` : ''}`);
+    const openSubjectTab = (subjectName: string) => {
+        setRole(UserRole.LEARNER);
+        navigate('/learner', { state: { targetTab: 'SUBJECTS', targetSubject: subjectName } });
+    };
+
+    const startRevision = (examOrId?: PublishedExam | string | number) => {
+        setRole(UserRole.LEARNER);
+        let targetExam: any = null;
+        if (examOrId && typeof examOrId === 'object') {
+            targetExam = {
+                id: examOrId.id,
+                title: examOrId.title,
+                grade: examOrId.grade,
+                subject: examOrId.subject,
+                term: examOrId.term,
+                exam_type: examOrId.exam_type || examOrId.examType
+            };
+        } else if (examOrId) {
+            const found = publishedExams.find(p => String(p.id) === String(examOrId));
+            if (found) {
+                targetExam = {
+                    id: found.id,
+                    title: found.title,
+                    grade: found.grade,
+                    subject: found.subject,
+                    term: found.term,
+                    exam_type: found.exam_type || found.examType
+                };
+            } else {
+                targetExam = { id: examOrId };
+            }
+        }
+        navigate('/learner', {
+            state: {
+                targetTab: 'REVISION',
+                targetExam
+            }
+        });
     };
 
     const openAudioRevision = () => {
@@ -159,7 +189,6 @@ export const RevisionPortal: React.FC = () => {
                 <meta name="description" content="The dedicated candidates hub for Kenyan KCSE, KPSEA &amp; CBC students. Listen to audio notes, practice past papers under exam conditions, and get instant AI exam coaching." />
                 <meta name="keywords" content="KCSE candidate revision, KPSEA candidates hub, CBC Grade 9 revision, listen and learn Kenya, KCSE past papers online, Soma AI exam prep" />
 
-                {/* OpenGraph */}
                 <meta property="og:site_name" content="Soma AI" />
                 <meta property="og:type" content="website" />
                 <meta property="og:title" content="Candidates Exam Hub | KCSE, KPSEA &amp; KJSEA Revision — Soma AI" />
@@ -169,7 +198,6 @@ export const RevisionPortal: React.FC = () => {
                 <link rel="canonical" href="https://www.somaai.co.ke/revision" />
             </Helmet>
 
-            {/* Clean Light Header Navbar */}
             <header className="sticky top-0 z-50 border-b border-slate-200/90 bg-white/95 backdrop-blur-xl px-4 py-3 sm:px-8 shadow-xs">
                 <div className="mx-auto flex max-w-7xl items-center justify-between">
                     <button
@@ -183,23 +211,42 @@ export const RevisionPortal: React.FC = () => {
                         </span>
                     </button>
 
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2.5 sm:gap-3">
+                        {!isPro ? (
+                            <button
+                                onClick={() => navigate('/pricing')}
+                                className="flex items-center gap-1.5 rounded-xl border border-amber-300 bg-amber-50/80 hover:bg-amber-100 px-3 py-1.5 sm:px-3.5 sm:py-2 text-xs font-black text-amber-900 transition-colors shadow-2xs"
+                            >
+                                <Sparkles className="h-3.5 w-3.5 text-amber-600 animate-pulse" />
+                                <span className="hidden xs:inline">Pass from KES 20</span>
+                                <span className="xs:hidden">Plans</span>
+                            </button>
+                        ) : (
+                            <button
+                                onClick={() => navigate('/pricing')}
+                                className="flex items-center gap-1.5 rounded-xl border border-emerald-300 bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 sm:px-3.5 sm:py-2 text-xs font-black text-emerald-800 transition-colors shadow-2xs"
+                            >
+                                <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
+                                <span>PRO · Upgrade</span>
+                            </button>
+                        )}
+
                         <button
                             onClick={() => navigate('/contact')}
-                            className="hidden text-xs font-bold text-slate-600 hover:text-slate-950 sm:inline-block"
+                            className="hidden text-xs font-bold text-slate-600 hover:text-slate-950 md:inline-block"
                         >
                             Help (0722763760)
                         </button>
 
                         {isRegistered ? (
-                            <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-2.5">
                                 <div className="hidden text-right sm:block">
                                     <p className="text-xs font-black text-slate-900">{studentProfile?.name?.split(' ')[0] || 'Candidate'}</p>
                                     <p className="text-[10px] font-bold text-indigo-600">{studentCode}</p>
                                 </div>
                                 <button
                                     onClick={() => startRevision()}
-                                    className="rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 text-xs font-black shadow-md shadow-indigo-600/20 transition-all"
+                                    className="rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white px-3.5 py-2 text-xs font-black shadow-md shadow-indigo-600/20 transition-all"
                                 >
                                     My Exam Space
                                 </button>
@@ -215,15 +262,15 @@ export const RevisionPortal: React.FC = () => {
                             <div className="flex items-center gap-2">
                                 <button
                                     onClick={() => setShowLogin(true)}
-                                    className="px-3.5 py-2 text-xs font-black text-slate-700 hover:text-slate-950"
+                                    className="px-2.5 sm:px-3.5 py-2 text-xs font-black text-slate-700 hover:text-slate-950"
                                 >
                                     Sign In
                                 </button>
                                 <button
                                     onClick={() => setShowRegister(true)}
-                                    className="rounded-xl bg-indigo-600 hover:bg-indigo-700 px-4 py-2 text-xs font-black text-white shadow-sm transition-colors"
+                                    className="rounded-xl bg-indigo-600 hover:bg-indigo-700 px-3.5 py-2 text-xs font-black text-white shadow-sm transition-colors"
                                 >
-                                    Start Free
+                                    Register
                                 </button>
                             </div>
                         )}
@@ -231,10 +278,9 @@ export const RevisionPortal: React.FC = () => {
                 </div>
             </header>
 
-            {/* Latest Exam Paper Ticker Belt */}
             <ExamPaperTickerBelt
                 papers={publishedExams}
-                onPaperClick={(paperId) => startRevision(paperId)}
+                onPaperClick={(paperId) => startRevision(publishedExams.find(p => p.id === paperId))}
             />
 
             <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 space-y-8">
