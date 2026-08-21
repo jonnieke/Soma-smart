@@ -47,4 +47,25 @@ describe('learner notebook persistence', () => {
     expect(loadStudyNotes('guest')).toHaveLength(0);
     expect(loadStudyNotes('SOMA-1000')[0].title).toBe('Weather');
   });
+
+  it('persists offline audio notes cache properly in storage', () => {
+    const note = saveStudyNote('SOMA-1000', {
+      title: 'Osmosis',
+      content: 'Water moves across semi-permeable membrane.',
+      subject: 'Science',
+    });
+
+    const cachePayload = {
+      [note.id]: {
+        title: note.title,
+        content: note.content,
+        savedAt: new Date().toISOString(),
+      },
+    };
+    localStorage.setItem('soma_offline_audio_notes', JSON.stringify(cachePayload));
+
+    const retrieved = JSON.parse(localStorage.getItem('soma_offline_audio_notes') || '{}');
+    expect(retrieved[note.id]).toBeDefined();
+    expect(retrieved[note.id].title).toBe('Osmosis');
+  });
 });

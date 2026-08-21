@@ -23,6 +23,7 @@ import {
   updateStudyNoteMastery,
 } from '../../services/notebookService';
 import { formatStudyNoteForWhatsApp, formatStudyPackForWhatsApp, openWhatsAppShare } from '../../services/whatsappService';
+import { NotebookAudioPlayer } from '../../components/NotebookAudioPlayer';
 
 interface LearnerNotebookProps {
   ownerKey: string;
@@ -70,6 +71,7 @@ export const LearnerNotebook: React.FC<LearnerNotebookProps> = ({
   const [draftSubject, setDraftSubject] = React.useState('');
   const [draftContent, setDraftContent] = React.useState('');
   const [selectedNoteIds, setSelectedNoteIds] = React.useState<Set<string>>(new Set());
+  const [activeAudioNote, setActiveAudioNote] = React.useState<StudyNote | null>(null);
 
   const refresh = React.useCallback(() => {
     setNotes(loadStudyNotes(ownerKey));
@@ -382,7 +384,10 @@ export const LearnerNotebook: React.FC<LearnerNotebookProps> = ({
                   </button>
                   <button
                     type="button"
-                    onClick={() => onListenNote(note)}
+                    onClick={() => {
+                      setActiveAudioNote(note);
+                      onListenNote(note);
+                    }}
                     className="inline-flex items-center justify-center gap-1 rounded-lg bg-indigo-50 px-2 py-2 text-[11px] font-black text-indigo-700 hover:bg-indigo-100"
                   >
                     <Volume2 className="h-3.5 w-3.5" />
@@ -450,6 +455,17 @@ export const LearnerNotebook: React.FC<LearnerNotebookProps> = ({
           </section>
         )}
       </main>
+
+      {/* Floating Bottom Audio Player */}
+      <NotebookAudioPlayer
+        note={activeAudioNote}
+        onClose={() => setActiveAudioNote(null)}
+        onMasteryChange={(status) => {
+          if (activeAudioNote) {
+            setMastery(activeAudioNote, status);
+          }
+        }}
+      />
     </div>
   );
 };
