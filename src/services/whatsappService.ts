@@ -230,3 +230,150 @@ export const formatStudyPackForWhatsApp = (notes: StudyNote[], grade?: string) =
   ].join('\n').trim();
 };
 
+export const formatHomeworkQuestionForWhatsApp = (
+  question: string,
+  grade?: string,
+  subject?: string
+) => {
+  const cleanQ = compactText(question);
+  const gradeText = grade ? ` | ${compactText(grade)}` : '';
+  const subjectText = subject ? ` (${compactText(subject)})` : '';
+
+  return [
+    '*Soma AI Homework Bot*',
+    `*Question${subjectText}:* ${cleanQ}${gradeText}`,
+    '',
+    'Please reply with a step-by-step CBC / KPSEA / KCSE solution with explanation.',
+    '',
+    `Or solve online: ${SOMO_LEARNER_URL}`,
+  ].join('\n');
+};
+
+export const buildDirectWhatsAppBotUrl = (
+  question: string,
+  grade?: string,
+  subject?: string,
+  targetPhone = '254722763760'
+) => {
+  const message = formatHomeworkQuestionForWhatsApp(question, grade, subject);
+  return buildWhatsAppUrl(message, targetPhone);
+};
+
+export const formatExamPaperPreviewForWhatsApp = (paper: {
+  title: string;
+  year?: number | string;
+  subject?: string;
+  grade?: string;
+  paperId?: string | number;
+}) => {
+  const title = compactText(paper.title);
+  const details = [paper.subject, paper.grade, paper.year ? `Year ${paper.year}` : null]
+    .filter(Boolean)
+    .join(' | ');
+
+  const paperUrl = paper.paperId
+    ? `https://somaai.co.ke/exam-papers?paper=${encodeURIComponent(String(paper.paperId))}`
+    : 'https://somaai.co.ke/exam-papers';
+
+  return [
+    '*Soma AI Exam Paper Bank*',
+    `*${title}*`,
+    details,
+    '',
+    'Access full past paper, questions, and official KNEC marking scheme:',
+    paperUrl,
+  ].filter(Boolean).join('\n');
+};
+
+export const formatPracticeQuizForWhatsApp = (quiz: {
+  topic: string;
+  grade?: string;
+  subject?: string;
+  questions: Array<{ q: string; a: string; options?: string[] }>;
+}) => {
+  const header = `*Soma AI Quick Quiz: ${compactText(quiz.topic)}*`;
+  const context = [quiz.subject, quiz.grade].filter(Boolean).join(' | ');
+
+  const questionBlocks = quiz.questions.slice(0, 5).map((item, index) => {
+    const opts = item.options?.length
+      ? '\n' + item.options.map((opt, i) => `  ${String.fromCharCode(65 + i)}) ${opt}`).join('\n')
+      : '';
+    return `${index + 1}. *${compactText(item.q)}*${opts}\n   _Answer: ${compactText(item.a)}_`;
+  });
+
+  return [
+    header,
+    context,
+    '',
+    ...questionBlocks,
+    '',
+    `Practise interactively on Soma AI: ${SOMO_LEARNER_URL}`,
+  ].filter(Boolean).join('\n');
+};
+
+export interface InboundWhatsAppWebhookMessage {
+  from: string;
+  text?: string;
+  messageId: string;
+  type: 'text' | 'image' | 'audio' | 'document' | 'other';
+  mediaUrl?: string;
+  mimeType?: string;
+  timestamp: string;
+}
+
+export const parseInboundWhatsAppMessage = (payload: any): InboundWhatsAppWebhookMessage | null => {
+  try {
+    // Standard Meta Cloud API format
+    const entry = payload?.entry?.[0];
+    const change = entry?.changes?.[0]?.value;
+    const message = change?.messages?.[0];
+    const contact = change?.contacts?.[0];
+
+    if (message) {
+      const from = message.from || contact?.wa_id || '';
+      const type = message.type || 'text';
+      const text = message.text?.body || message.caption || '';
+      let mediaUrl = undefined;
+      let mimeType = undefined;
+
+      if (type === 'image') {
+        mediaUrl = message.image?.id || message.image?.url;
+        mimeType = message.image?.mime_type;
+      } else if (type === 'audio') {
+        mediaUrl = message.audio?.id || message.audio?.url;
+        mimeType = message.audio?.mime_type;
+      } else if (type === 'document') {
+        mediaUrl = message.document?.id || message.document?.url;
+        mimeType = message.document?.mime_type;
+      }
+
+      return {
+        from: normalizeWhatsAppPhone(from),
+        text,
+        messageId: message.id || `msg-${Date.now()}`,
+        type: type === 'image' || type === 'audio' || type === 'document' ? type : 'text',
+        mediaUrl,
+        mimeType,
+        timestamp: message.timestamp ? new Date(parseInt(message.timestamp, 10) * 1000).toISOString() : new Date().toISOString(),
+      };
+    }
+
+    // Direct JSON payload format (e.g., from custom aggregator/Twilio/Infobip)
+    if (payload?.from && (payload?.text || payload?.body || payload?.message)) {
+      return {
+        from: normalizeWhatsAppPhone(payload.from),
+        text: payload.text || payload.body || payload.message || '',
+        messageId: payload.messageId || payload.id || `msg-${Date.now()}`,
+        type: payload.type || 'text',
+        mediaUrl: payload.mediaUrl || payload.media_url,
+        mimeType: payload.mimeType || payload.mime_type,
+        timestamp: payload.timestamp || new Date().toISOString(),
+      };
+    }
+
+    return null;
+  } catch {
+    return null;
+  }
+};
+

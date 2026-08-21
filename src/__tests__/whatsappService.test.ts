@@ -1,5 +1,19 @@
 import { describe, expect, it } from 'vitest';
-import { buildWhatsAppUrl, formatAkiliAnswerForWhatsApp, formatParentConnectionForWhatsApp, formatQuizResultForWhatsApp, formatStudyNoteForWhatsApp, formatStudyPackForWhatsApp, formatWeeklyProgressForWhatsApp, normalizeWhatsAppPhone } from '../services/whatsappService';
+import {
+  buildDirectWhatsAppBotUrl,
+  buildWhatsAppUrl,
+  formatAkiliAnswerForWhatsApp,
+  formatExamPaperPreviewForWhatsApp,
+  formatHomeworkQuestionForWhatsApp,
+  formatParentConnectionForWhatsApp,
+  formatPracticeQuizForWhatsApp,
+  formatQuizResultForWhatsApp,
+  formatStudyNoteForWhatsApp,
+  formatStudyPackForWhatsApp,
+  formatWeeklyProgressForWhatsApp,
+  normalizeWhatsAppPhone,
+  parseInboundWhatsAppMessage,
+} from '../services/whatsappService';
 import { StudyNote } from '../types';
 
 const note: StudyNote = {
@@ -51,6 +65,7 @@ describe('WhatsApp learning shares', () => {
     expect(message).toContain('Key points');
     expect(message.length).toBeLessThanOrEqual(1800);
   });
+
   it('formats a weekly progress update without private account identifiers', () => {
     const message = formatWeeklyProgressForWhatsApp({
       learnerName: 'Amina',
@@ -71,6 +86,7 @@ describe('WhatsApp learning shares', () => {
     expect(message).not.toContain('student_id');
     expect(message.length).toBeLessThanOrEqual(1800);
   });
+
   it('explains the parent connection without promising automatic messages', () => {
     const message = formatParentConnectionForWhatsApp('Amina');
 
@@ -78,6 +94,7 @@ describe('WhatsApp learning shares', () => {
     expect(message).toContain('Amina connected this number');
     expect(message).toContain('Nothing is sent automatically');
   });
+
   it('formats a parent-friendly quiz progress update', () => {
     const message = formatQuizResultForWhatsApp({
       topic: 'Fractions and decimals',
@@ -90,6 +107,7 @@ describe('WhatsApp learning shares', () => {
     expect(message).toContain('Quiz score: *85%*');
     expect(message).toContain('Strong work');
   });
+
   it('combines selected notes into one bounded revision pack', () => {
     const pack = formatStudyPackForWhatsApp([
       note,
@@ -101,5 +119,89 @@ describe('WhatsApp learning shares', () => {
     expect(pack).toContain('2. *Cell structure*');
     expect(pack.length).toBeLessThanOrEqual(1800);
     expect(pack).not.toContain('private-id');
+  });
+
+  it('formats homework questions for direct WhatsApp Bot prompt', () => {
+    const formatted = formatHomeworkQuestionForWhatsApp('Solve 2x + 5 = 15', 'Grade 8', 'Mathematics');
+    expect(formatted).toContain('*Soma AI Homework Bot*');
+    expect(formatted).toContain('Solve 2x + 5 = 15 | Grade 8');
+    expect(formatted).toContain('(Mathematics)');
+    expect(formatted).toContain('CBC / KPSEA / KCSE');
+
+    const botUrl = buildDirectWhatsAppBotUrl('Solve 2x + 5 = 15', 'Grade 8', 'Mathematics');
+    expect(botUrl).toContain('https://wa.me/254722763760?text=');
+    expect(botUrl).toContain('Solve%202x%20%2B%205%20%3D%2015');
+  });
+
+  it('formats exam paper preview links with KNEC guidance', () => {
+    const preview = formatExamPaperPreviewForWhatsApp({
+      title: 'Integrated Science Paper 1',
+      year: 2024,
+      subject: 'Science',
+      grade: 'KPSEA',
+      paperId: 'kpsea-sci-2024',
+    });
+
+    expect(preview).toContain('*Soma AI Exam Paper Bank*');
+    expect(preview).toContain('Integrated Science Paper 1');
+    expect(preview).toContain('Year 2024');
+    expect(preview).toContain('https://somaai.co.ke/exam-papers?paper=kpsea-sci-2024');
+  });
+
+  it('formats interactive practice quizzes for study groups', () => {
+    const quiz = formatPracticeQuizForWhatsApp({
+      topic: 'Digestive System',
+      grade: 'Grade 8',
+      subject: 'Science',
+      questions: [
+        { q: 'Where does protein digestion begin?', a: 'Stomach', options: ['Mouth', 'Stomach', 'Small Intestine'] },
+      ],
+    });
+
+    expect(quiz).toContain('*Soma AI Quick Quiz: Digestive System*');
+    expect(quiz).toContain('1. *Where does protein digestion begin?*');
+    expect(quiz).toContain('A) Mouth');
+    expect(quiz).toContain('B) Stomach');
+    expect(quiz).toContain('_Answer: Stomach_');
+  });
+
+  it('parses inbound WhatsApp webhook payloads for text and media messages', () => {
+    // Meta Cloud API payload
+    const metaPayload = {
+      entry: [
+        {
+          changes: [
+            {
+              value: {
+                messages: [
+                  {
+                    from: '254712345678',
+                    id: 'wamid.HBgM',
+                    type: 'text',
+                    text: { body: 'What is Newton second law?' },
+                    timestamp: '1721500000',
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      ],
+    };
+
+    const parsedMeta = parseInboundWhatsAppMessage(metaPayload);
+    expect(parsedMeta).not.toBeNull();
+    expect(parsedMeta?.from).toBe('254712345678');
+    expect(parsedMeta?.text).toBe('What is Newton second law?');
+    expect(parsedMeta?.type).toBe('text');
+
+    // Direct JSON payload
+    const directPayload = {
+      from: '0722763760',
+      text: 'Explain fractions in Grade 5',
+    };
+    const parsedDirect = parseInboundWhatsAppMessage(directPayload);
+    expect(parsedDirect?.from).toBe('254722763760');
+    expect(parsedDirect?.text).toBe('Explain fractions in Grade 5');
   });
 });

@@ -60,10 +60,11 @@ export const SomoSupportChatbot: React.FC<{ onClose?: () => void }> = ({ onClose
             sender: 'BOT',
             text: '👋 Hi! I am your Soma AI AI Support Assistant. How can I help you today?',
             options: [
+                { label: '🤖 Solve Homework on WhatsApp', action: 'WHATSAPP_HOMEWORK' },
                 { label: '💳 M-Pesa & Payment Help', action: 'QUERY_PAYMENT' },
                 { label: '📚 Past Papers & Marking Schemes', action: 'QUERY_PAPERS' },
                 { label: '🎓 Teacher Workspace & Schemes', action: 'QUERY_TEACHER' },
-                { label: '💬 Chat with Human Agent on WhatsApp', action: 'WHATSAPP_HUMAN' }
+                { label: '💬 Chat with Support Agent', action: 'WHATSAPP_HUMAN' }
             ]
         }
     ]);
@@ -115,6 +116,10 @@ export const SomoSupportChatbot: React.FC<{ onClose?: () => void }> = ({ onClose
     };
 
     const handleOptionClick = (option: { label: string; action: string }) => {
+        if (option.action === 'WHATSAPP_HOMEWORK') {
+            openWhatsAppShare('*Soma AI Homework Bot*\n*Question:* Please help me solve this homework question:\n\n', TARGET_WHATSAPP);
+            return;
+        }
         if (option.action === 'WHATSAPP_HUMAN' || option.action === 'WHATSAPP_PAYMENT') {
             openWhatsAppShare(`Hi Soma AI Support (0722763760), I need assistance with my account.`, TARGET_WHATSAPP);
             return;
