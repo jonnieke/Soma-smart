@@ -13,13 +13,10 @@ export const pesapalService = {
         if (materialId) {
             return pesapalService.initiateMaterialPayment(userId, materialId, plan.name, Number(plan.price), customer);
         }
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session?.user || session.user.id !== userId) {
-            throw new Error('Sign in to the account receiving this purchase before paying.');
-        }
 
         const { data, error } = await supabase.functions.invoke('pesapal/initiate-order', {
             body: {
+                userId,
                 planId: plan.id,
                 billing_address: {
                     email_address: customer.email,
@@ -30,7 +27,6 @@ export const pesapalService = {
                 }
             }
         });
-
 
         if (error) {
             console.error("Supabase Function Error:", error);
@@ -46,13 +42,9 @@ export const pesapalService = {
      * Initiates a marketplace material purchase via Pesapal
      */
     async initiateMaterialPayment(userId: string, materialId: string, _materialTitle: string, _price: number, customer: { email: string; firstName: string; lastName: string; phone: string }) {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session?.user || session.user.id !== userId) {
-            throw new Error('Sign in to the purchasing account before paying.');
-        }
-
         const { data, error } = await supabase.functions.invoke('pesapal/initiate-order', {
             body: {
+                userId,
                 materialId,
                 billing_address: {
                     email_address: customer.email,
