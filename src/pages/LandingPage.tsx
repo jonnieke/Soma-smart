@@ -2280,6 +2280,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                     </div>
                 </div>
             </footer>
+            </>)}
+
             {/* --- DETAILED VIEW MODAL --- */}
             <AnimatePresence>
                 {showDetailedView && (
@@ -2510,8 +2512,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                     </motion.div>
                 )}
             </AnimatePresence>
-
-            </>)}
 
             <RegistrationModal
                 isOpen={showRegistration}
