@@ -224,6 +224,14 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
             <X className="w-5 h-5 text-slate-400" />
           </button>
         </div>
+        <a
+          href="/"
+          className="mt-3 inline-flex items-center gap-1.5 text-[11px] font-semibold text-blue-200/80 transition-colors hover:text-white"
+          aria-label="Go to the public Soma AI homepage"
+        >
+          <Home className="h-3.5 w-3.5" />
+          Soma AI homepage
+        </a>
       </div>
 
       {/* Education Level Switcher */}
