@@ -8056,7 +8056,11 @@ ${explanation.explanation}
       <RegistrationModal
         isOpen={showRegistration}
         onClose={() => setShowRegistration(false)}
-        onSuccess={() => setShowRegistration(false)}
+        onSuccess={() => {
+          setShowRegistration(false);
+          // Keep the answer the learner asked for in view after free sign-up.
+          setFadedSolutionData(prev => ({ ...prev, show: true }));
+        }}
         onSwitchToLogin={() => { setShowRegistration(false); setShowLogin(true); }}
       />
       <LoginModal
