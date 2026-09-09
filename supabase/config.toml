@@ -26,3 +26,6 @@ verify_jwt = false
 
 [functions.notify-users]
 verify_jwt = true
+
+[functions.admin-reset-pin]
+verify_jwt = false

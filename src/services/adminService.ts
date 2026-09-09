@@ -584,6 +584,12 @@ export const fetchAllUsers = async (): Promise<AdminUser[]> => {
     return data || [];
 };
 
+export const resetLearnerPin = async (learnerId: string): Promise<{ studentId: string; temporaryPin: string }> => {
+    const { data, error } = await supabase.functions.invoke('admin-reset-pin', { body: { learnerId } });
+    if (error || !data?.temporaryPin) throw new Error(data?.error || error?.message || 'PIN reset failed');
+    return data;
+};
+
 export interface SchoolCognitiveHealth {
     averageScore: number;
     totalMasteredTopics: number;

@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Search, Filter, MoreHorizontal, UserCheck2, School, Users, Sparkles, GraduationCap } from 'lucide-react';
-import { fetchAllUsers, AdminUser } from '../../../services/adminService';
+import { fetchAllUsers, resetLearnerPin, AdminUser } from '../../../services/adminService';
 import { Button } from '../../../components/Shared';
 import { useLocation, useNavigate } from 'react-router-dom';
 
@@ -14,6 +14,8 @@ export const UsersView: React.FC = () => {
     const [search, setSearch] = useState(initialSearch);
     const [users, setUsers] = useState<AdminUser[]>([]);
     const [loading, setLoading] = useState(true);
+    const [resettingId, setResettingId] = useState<string | null>(null);
+    const [resetResult, setResetResult] = useState<{ studentId: string; temporaryPin: string } | null>(null);
 
     useEffect(() => {
         fetchAllUsers().then(data => {
@@ -59,6 +61,14 @@ export const UsersView: React.FC = () => {
             u.id.toLowerCase().includes(search.toLowerCase())
         )
     );
+
+    const handleResetPin = async (user: AdminUser) => {
+        if (user.role !== 'LEARNER' || !window.confirm(`Reset the PIN for ${user.student_id || user.full_name}? The learner will be signed out.`)) return;
+        setResettingId(user.id); setResetResult(null);
+        try { setResetResult(await resetLearnerPin(user.id)); }
+        catch (error) { window.alert(error instanceof Error ? error.message : 'PIN reset failed'); }
+        finally { setResettingId(null); }
+    };
 
     return (
         <div className="space-y-6">
@@ -174,9 +184,7 @@ export const UsersView: React.FC = () => {
                                         </td>
                                         <td className="px-6 py-4 text-slate-500 text-xs">{new Date(u.created_at).toLocaleDateString()}</td>
                                         <td className="px-6 py-4 text-right">
-                                            <button className="text-slate-400 hover:text-indigo-600">
-                                                <MoreHorizontal className="w-5 h-5" />
-                                            </button>
+                                            {activeTab === 'LEARNER' ? <button onClick={() => handleResetPin(u)} disabled={resettingId === u.id} className="rounded-lg border border-amber-200 px-3 py-1.5 text-xs font-bold text-amber-700 hover:bg-amber-50 disabled:opacity-50">{resettingId === u.id ? 'Resetting…' : 'Reset PIN'}</button> : <MoreHorizontal className="ml-auto w-5 h-5 text-slate-400" />}
                                         </td>
                                     </tr>
                                 ))
@@ -185,6 +193,8 @@ export const UsersView: React.FC = () => {
                     </table>
                 </div>
             </div>
+
+            {resetResult && <div role="alert" className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5 text-sm text-emerald-900"><p className="font-bold">PIN reset complete for {resetResult.studentId}.</p><p className="mt-1">Temporary PIN: <code className="rounded bg-white px-2 py-1 font-mono font-black">{resetResult.temporaryPin}</code></p><p className="mt-2 text-xs">Share it privately with the learner. It will not be shown again.</p><button onClick={() => setResetResult(null)} className="mt-3 text-xs font-bold underline">Hide temporary PIN</button></div>}
 
             <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-6 text-sm text-slate-500">
                 The table is now clean enough to support support, onboarding, and account checks without jumping into the database.
